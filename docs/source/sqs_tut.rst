@@ -15,12 +15,12 @@ The recommended method of doing this is as follows::
 
     >>> import boto.sqs
     >>> conn = boto.sqs.connect_to_region(
-    ...     "us-east-1",
+    ...     "us-west-2",
     ...     aws_access_key_id='<aws access key'>,
     ...     aws_secret_access_key='<aws secret key>')
 
 At this point the variable conn will point to an SQSConnection object in the
-US-EAST-1 region. Bear in mind that just as any other AWS service, SQS is
+US-WEST-2 region. Bear in mind that just as any other AWS service, SQS is
 region-specific. In this example, the AWS access key and AWS secret key are
 passed in to the method explicitely. Alternatively, you can set the environment
 variables:
@@ -31,7 +31,7 @@ variables:
 and then simply call::
 
     >>> import boto.sqs
-    >>> conn = boto.sqs.connect_to_region("us-east-1")
+    >>> conn = boto.sqs.connect_to_region("us-west-2")
 
 In either case, conn will point to an SQSConnection object which we will
 use throughout the remainder of this tutorial.
@@ -217,7 +217,7 @@ If I want to delete the entire queue, I would use:
 
 >>> conn.delete_queue(q)
 
-However, and this is a good safe guard, this won't succeed unless the queue is empty.
+This will delete the queue, even if there are still messages within the queue.
 
 Additional Information
 ----------------------

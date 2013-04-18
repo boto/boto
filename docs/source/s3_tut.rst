@@ -28,10 +28,10 @@ and then call the constructor without any arguments, like this:
 >>> conn = S3Connection()
 
 There is also a shortcut function in the boto package, called connect_s3
-that may provide a slightly easier means of creating a connection:
+that may provide a slightly easier means of creating a connection::
 
->>> import boto
->>> conn = boto.connect_s3()
+    >>> import boto
+    >>> conn = boto.connect_s3()
 
 In either case, conn will point to an S3Connection object which we will
 use throughout the remainder of this tutorial.
@@ -44,14 +44,14 @@ create a bucket.  A bucket is a container used to store key/value pairs
 in S3.  A bucket can hold an unlimited amount of data so you could potentially
 have just one bucket in S3 for all of your information.  Or, you could create
 separate buckets for different types of data.  You can figure all of that out
-later, first let's just create a bucket.  That can be accomplished like this:
+later, first let's just create a bucket.  That can be accomplished like this::
 
->>> bucket = conn.create_bucket('mybucket')
-Traceback (most recent call last):
-  File "<stdin>", line 1, in ?
-  File "boto/connection.py", line 285, in create_bucket
-    raise S3CreateError(response.status, response.reason)
-boto.exception.S3CreateError: S3Error[409]: Conflict
+    >>> bucket = conn.create_bucket('mybucket')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in ?
+      File "boto/connection.py", line 285, in create_bucket
+        raise S3CreateError(response.status, response.reason)
+    boto.exception.S3CreateError: S3Error[409]: Conflict
 
 Whoa.  What happended there?  Well, the thing you have to know about
 buckets is that they are kind of like domain names.  It's one flat name
@@ -72,21 +72,26 @@ Creating a Bucket In Another Location
 The example above assumes that you want to create a bucket in the
 standard US region.  However, it is possible to create buckets in
 other locations.  To do so, first import the Location object from the
-boto.s3.connection module, like this:
+boto.s3.connection module, like this::
 
->>> from boto.s3.connection import Location
->>> dir(Location)
-['DEFAULT', 'EU', 'USWest', 'APSoutheast', '__doc__', '__module__']
->>>
+    >>> from boto.s3.connection import Location
+    >>> print '\n'.join(i for i in dir(Location) if i[0].isupper())
+    APNortheast
+    APSoutheast
+    APSoutheast2
+    DEFAULT
+    EU
+    SAEast
+    USWest
+    USWest2
 
-As you can see, the Location object defines three possible locations;
-DEFAULT, EU, USWest, and APSoutheast.  By default, the location is the
-empty string which is interpreted as the US Classic Region, the
-original S3 region.  However, by specifying another location at the
-time the bucket is created, you can instruct S3 to create the bucket
-in that location.  For example:
+As you can see, the Location object defines a number of possible locations.  By
+default, the location is the empty string which is interpreted as the US
+Classic Region, the original S3 region.  However, by specifying another
+location at the time the bucket is created, you can instruct S3 to create the
+bucket in that location.  For example::
 
->>> conn.create_bucket('mybucket', location=Location.EU)
+    >>> conn.create_bucket('mybucket', location=Location.EU)
 
 will create the bucket in the EU region (assuming the name is available).
 
@@ -99,34 +104,36 @@ or what format you use to store it.  All you need is a key that is unique
 within your bucket.
 
 The Key object is used in boto to keep track of data stored in S3.  To store
-new data in S3, start by creating a new Key object:
+new data in S3, start by creating a new Key object::
 
->>> from boto.s3.key import Key
->>> k = Key(bucket)
->>> k.key = 'foobar'
->>> k.set_contents_from_string('This is a test of S3')
+    >>> from boto.s3.key import Key
+    >>> k = Key(bucket)
+    >>> k.key = 'foobar'
+    >>> k.set_contents_from_string('This is a test of S3')
 
 The net effect of these statements is to create a new object in S3 with a
 key of "foobar" and a value of "This is a test of S3".  To validate that
-this worked, quit out of the interpreter and start it up again.  Then:
+this worked, quit out of the interpreter and start it up again.  Then::
 
->>> import boto
->>> c = boto.connect_s3()
->>> b = c.create_bucket('mybucket') # substitute your bucket name here
->>> from boto.s3.key import Key
->>> k = Key(b)
->>> k.key = 'foobar'
->>> k.get_contents_as_string()
-'This is a test of S3'
+    >>> import boto
+    >>> c = boto.connect_s3()
+    >>> b = c.create_bucket('mybucket') # substitute your bucket name here
+    >>> from boto.s3.key import Key
+    >>> k = Key(b)
+    >>> k.key = 'foobar'
+    >>> k.get_contents_as_string()
+    'This is a test of S3'
 
 So, we can definitely store and retrieve strings.  A more interesting
 example may be to store the contents of a local file in S3 and then retrieve
 the contents to another local file.
 
->>> k = Key(b)
->>> k.key = 'myfile'
->>> k.set_contents_from_filename('foo.jpg')
->>> k.get_contents_to_filename('bar.jpg')
+::
+
+    >>> k = Key(b)
+    >>> k.key = 'myfile'
+    >>> k.set_contents_from_filename('foo.jpg')
+    >>> k.get_contents_to_filename('bar.jpg')
 
 There are a couple of things to note about this.  When you send data to
 S3 from a file or filename, boto will attempt to determine the correct
@@ -136,24 +143,77 @@ guessing.  The other thing to note is that boto does stream the content
 to and from S3 so you should be able to send and receive large files without
 any problem.
 
+Accessing A Bucket
+------------------
+
+Once a bucket exists, you can access it by getting the bucket. For example::
+
+    >>> mybucket = conn.get_bucket('mybucket') # Substitute in your bucket name
+    >>> mybucket.list()
+    <listing of keys in the bucket)
+
+By default, this method tries to validate the bucket's existence. You can
+override this behavior by passing ``validate=False``.::
+
+    >>> nonexistent = conn.get_bucket('i-dont-exist-at-all', validate=False)
+
+If the bucket does not exist, a ``S3ResponseError`` will commonly be thrown. If
+you'd rather not deal with any exceptions, you can use the ``lookup`` method.::
+
+    >>> nonexistent = conn.lookup('i-dont-exist-at-all')
+    >>> if nonexistent is None:
+    ...     print "No such bucket!"
+    ...
+    No such bucket!
+
+Deleting A Bucket
+-----------------
+
+Removing a bucket can be done using the ``delete_bucket`` method. For example::
+
+    >>> conn.delete_bucket('mybucket') # Substitute in your bucket name
+
+The bucket must be empty of keys or this call will fail & an exception will be
+raised. You can remove a non-empty bucket by doing something like::
+
+    >>> full_bucket = conn.get_bucket('bucket-to-delete')
+    # It's full of keys. Delete them all.
+    >>> for key in full_bucket.list():
+    ...     key.delete()
+    ...
+    # The bucket is empty now. Delete it.
+    >>> conn.delete_bucket('bucket-to-delete')
+
+.. warning::
+
+    This method can cause data loss! Be very careful when using it.
+
+    Additionally, be aware that using the above method for removing all keys
+    and deleting the bucket involves a request for each key. As such, it's not
+    particularly fast & is very chatty.
+
 Listing All Available Buckets
 -----------------------------
 In addition to accessing specific buckets via the create_bucket method
 you can also get a list of all available buckets that you have created.
 
->>> rs = conn.get_all_buckets()
+::
+
+    >>> rs = conn.get_all_buckets()
 
 This returns a ResultSet object (see the SQS Tutorial for more info on
 ResultSet objects).  The ResultSet can be used as a sequence or list type
 object to retrieve Bucket objects.
 
->>> len(rs)
-11
->>> for b in rs:
-... print b.name
-...
-<listing of available buckets>
->>> b = rs[0]
+::
+
+    >>> len(rs)
+    11
+    >>> for b in rs:
+    ... print b.name
+    ...
+    <listing of available buckets>
+    >>> b = rs[0]
 
 Setting / Getting the Access Control List for Buckets and Keys
 --------------------------------------------------------------
@@ -195,17 +255,19 @@ You can also retrieve the current ACL for a Bucket or Key object using the
 get_acl object.  This method parses the AccessControlPolicy response sent
 by S3 and creates a set of Python objects that represent the ACL.
 
->>> acp = b.get_acl()
->>> acp
-<boto.acl.Policy instance at 0x2e6940>
->>> acp.acl
-<boto.acl.ACL instance at 0x2e69e0>
->>> acp.acl.grants
-[<boto.acl.Grant instance at 0x2e6a08>]
->>> for grant in acp.acl.grants:
-...   print grant.permission, grant.display_name, grant.email_address, grant.id
-...
-FULL_CONTROL <boto.user.User instance at 0x2e6a30>
+::
+
+    >>> acp = b.get_acl()
+    >>> acp
+    <boto.acl.Policy instance at 0x2e6940>
+    >>> acp.acl
+    <boto.acl.ACL instance at 0x2e69e0>
+    >>> acp.acl.grants
+    [<boto.acl.Grant instance at 0x2e6a08>]
+    >>> for grant in acp.acl.grants:
+    ...   print grant.permission, grant.display_name, grant.email_address, grant.id
+    ...
+    FULL_CONTROL <boto.user.User instance at 0x2e6a30>
 
 The Python objects representing the ACL can be found in the acl.py module
 of boto.
@@ -213,10 +275,10 @@ of boto.
 Both the Bucket object and the Key object also provide shortcut
 methods to simplify the process of granting individuals specific
 access.  For example, if you want to grant an individual user READ
-access to a particular object in S3 you could do the following:
+access to a particular object in S3 you could do the following::
 
->>> key = b.lookup('mykeytoshare')
->>> key.add_email_grant('READ', 'foo@bar.com')
+    >>> key = b.lookup('mykeytoshare')
+    >>> key.add_email_grant('READ', 'foo@bar.com')
 
 The email address provided should be the one associated with the users
 AWS account.  There is a similar method called add_user_grant that accepts the
@@ -227,23 +289,23 @@ Setting/Getting Metadata Values on Key Objects
 S3 allows arbitrary user metadata to be assigned to objects within a bucket.
 To take advantage of this S3 feature, you should use the set_metadata and
 get_metadata methods of the Key object to set and retrieve metadata associated
-with an S3 object.  For example:
+with an S3 object.  For example::
 
->>> k = Key(b)
->>> k.key = 'has_metadata'
->>> k.set_metadata('meta1', 'This is the first metadata value')
->>> k.set_metadata('meta2', 'This is the second metadata value')
->>> k.set_contents_from_filename('foo.txt')
+    >>> k = Key(b)
+    >>> k.key = 'has_metadata'
+    >>> k.set_metadata('meta1', 'This is the first metadata value')
+    >>> k.set_metadata('meta2', 'This is the second metadata value')
+    >>> k.set_contents_from_filename('foo.txt')
 
 This code associates two metadata key/value pairs with the Key k.  To retrieve
-those values later:
+those values later::
 
->>> k = b.get_key('has_metadata')
->>> k.get_metadata('meta1')
-'This is the first metadata value'
->>> k.get_metadata('meta2')
-'This is the second metadata value'
->>>
+    >>> k = b.get_key('has_metadata')
+    >>> k.get_metadata('meta1')
+    'This is the first metadata value'
+    >>> k.get_metadata('meta2')
+    'This is the second metadata value'
+    >>>
 
 Setting/Getting/Deleting CORS Configuration on a Bucket
 -------------------------------------------------------
@@ -254,12 +316,12 @@ in a different domain. With CORS support in Amazon S3, you can build
 rich client-side web applications with Amazon S3 and selectively allow
 cross-origin access to your Amazon S3 resources.
 
-To create a CORS configuration and associate it with a bucket:
+To create a CORS configuration and associate it with a bucket::
 
->>> from boto.s3.cors import CORSConfiguration
->>> cors_cfg = CORSConfiguration()
->>> cors_cfg.add_rule(['PUT', 'POST', 'DELETE'], 'https://www.example.com', allowed_header='*', max_age_seconds=3000, expose_header='x-amz-server-side-encryption')
->>> cors_cfg.add_rule('GET', '*')
+    >>> from boto.s3.cors import CORSConfiguration
+    >>> cors_cfg = CORSConfiguration()
+    >>> cors_cfg.add_rule(['PUT', 'POST', 'DELETE'], 'https://www.example.com', allowed_header='*', max_age_seconds=3000, expose_header='x-amz-server-side-encryption')
+    >>> cors_cfg.add_rule('GET', '*')
 
 The above code creates a CORS configuration object with two rules.
 
@@ -270,20 +332,20 @@ The above code creates a CORS configuration object with two rules.
   return any requested headers.
 * The second rule allows cross-origin GET requests from all origins.
 
-To associate this configuration with a bucket:
+To associate this configuration with a bucket::
 
->>> import boto
->>> c = boto.connect_s3()
->>> bucket = c.lookup('mybucket')
->>> bucket.set_cors(cors_cfg)
+    >>> import boto
+    >>> c = boto.connect_s3()
+    >>> bucket = c.lookup('mybucket')
+    >>> bucket.set_cors(cors_cfg)
 
-To retrieve the CORS configuration associated with a bucket:
+To retrieve the CORS configuration associated with a bucket::
 
->>> cors_cfg = bucket.get_cors()
+    >>> cors_cfg = bucket.get_cors()
 
-And, finally, to delete all CORS configurations from a bucket:
+And, finally, to delete all CORS configurations from a bucket::
 
->>> bucket.delete_cors()
+    >>> bucket.delete_cors()
 
 Transitioning Objects to Glacier
 --------------------------------
@@ -298,48 +360,50 @@ configurations are assigned to buckets and require these parameters:
 * The date (or time period) when you want S3 to perform these actions.
 
 For example, given a bucket ``s3-glacier-boto-demo``, we can first retrieve the
-bucket:
+bucket::
 
->>> import boto
->>> c = boto.connect_s3()
->>> bucket = c.get_bucket('s3-glacier-boto-demo')
+    >>> import boto
+    >>> c = boto.connect_s3()
+    >>> bucket = c.get_bucket('s3-glacier-boto-demo')
 
 Then we can create a lifecycle object.  In our example, we want all objects
 under ``logs/*`` to transition to Glacier 30 days after the object is created.
 
->>> from boto.s3.lifecycle import Lifecycle, Transition, Rule
->>> to_glacier = Transition(days=30, storage_class='GLACIER')
->>> rule = Rule('ruleid', 'logs/', 'Enabled', transition=to_glacier)
->>> lifecycle = Lifecycle()
->>> lifecycle.append(rule)
+::
+
+    >>> from boto.s3.lifecycle import Lifecycle, Transition, Rule
+    >>> to_glacier = Transition(days=30, storage_class='GLACIER')
+    >>> rule = Rule('ruleid', 'logs/', 'Enabled', transition=to_glacier)
+    >>> lifecycle = Lifecycle()
+    >>> lifecycle.append(rule)
 
 .. note::
 
   For API docs for the lifecycle objects, see :py:mod:`boto.s3.lifecycle`
 
-We can now configure the bucket with this lifecycle policy:
+We can now configure the bucket with this lifecycle policy::
 
->>> bucket.configure_lifecycle(lifecycle)
+    >>> bucket.configure_lifecycle(lifecycle)
 True
 
-You can also retrieve the current lifecycle policy for the bucket:
+You can also retrieve the current lifecycle policy for the bucket::
 
->>> current = bucket.get_lifecycle_config()
->>> print current[0].transition
-<Transition: in: 30 days, GLACIER>
+    >>> current = bucket.get_lifecycle_config()
+    >>> print current[0].transition
+    <Transition: in: 30 days, GLACIER>
 
 When an object transitions to Glacier, the storage class will be
-updated.  This can be seen when you **list** the objects in a bucket:
+updated.  This can be seen when you **list** the objects in a bucket::
 
->>> for key in bucket.list():
-...   print key, key.storage_class
-...
-<Key: s3-glacier-boto-demo,logs/testlog1.log> GLACIER
+    >>> for key in bucket.list():
+    ...   print key, key.storage_class
+    ...
+    <Key: s3-glacier-boto-demo,logs/testlog1.log> GLACIER
 
-You can also use the prefix argument to the ``bucket.list`` method:
+You can also use the prefix argument to the ``bucket.list`` method::
 
->>> print list(b.list(prefix='logs/testlog1.log'))[0].storage_class
-u'GLACIER'
+    >>> print list(b.list(prefix='logs/testlog1.log'))[0].storage_class
+    u'GLACIER'
 
 
 Restoring Objects from Glacier
@@ -351,34 +415,36 @@ method of the key object.
 The ``restore`` method takes an integer that specifies the number of days
 to keep the object in S3.
 
->>> import boto
->>> c = boto.connect_s3()
->>> bucket = c.get_bucket('s3-glacier-boto-demo')
->>> key = bucket.get_key('logs/testlog1.log')
->>> key.restore(days=5)
+::
+
+    >>> import boto
+    >>> c = boto.connect_s3()
+    >>> bucket = c.get_bucket('s3-glacier-boto-demo')
+    >>> key = bucket.get_key('logs/testlog1.log')
+    >>> key.restore(days=5)
 
 It takes about 4 hours for a restore operation to make a copy of the archive
 available for you to access.  While the object is being restored, the
-``ongoing_restore`` attribute will be set to ``True``:
+``ongoing_restore`` attribute will be set to ``True``::
 
 
->>> key = bucket.get_key('logs/testlog1.log')
->>> print key.ongoing_restore
-True
+    >>> key = bucket.get_key('logs/testlog1.log')
+    >>> print key.ongoing_restore
+    True
 
 When the restore is finished, this value will be ``False`` and the expiry
-date of the object will be non ``None``:
+date of the object will be non ``None``::
 
->>> key = bucket.get_key('logs/testlog1.log')
->>> print key.ongoing_restore
-False
->>> print key.expiry_date
-"Fri, 21 Dec 2012 00:00:00 GMT"
+    >>> key = bucket.get_key('logs/testlog1.log')
+    >>> print key.ongoing_restore
+    False
+    >>> print key.expiry_date
+    "Fri, 21 Dec 2012 00:00:00 GMT"
 
 
 .. note:: If there is no restore operation either in progress or completed,
   the ``ongoing_restore`` attribute will be ``None``.
 
-Once the object is restored you can then download the contents:
+Once the object is restored you can then download the contents::
 
->>> key.get_contents_to_filename('testlog1.log')
+    >>> key.get_contents_to_filename('testlog1.log')

@@ -29,7 +29,10 @@ import argparse
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    description = ("Runs boto unit and/or integration tests. "
+                   "Arguments will be passed on to nosetests. "
+                   "See nosetests --help for more information.")
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-t', '--service-tests', action="append", default=[],
                         help="Run tests for a given service.  This will "
                         "run any test tagged with the specified value, "

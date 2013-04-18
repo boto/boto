@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""Unit tests for GS versioning support."""
+"""Integration tests for GS versioning support."""
 
 import StringIO
 import os
@@ -116,13 +116,13 @@ class GSGenerationConditionalsTest(GSTestCase):
         k.set_contents_from_string(s1)
 
         g1 = k.generation
-        mg1 = k.meta_generation
+        mg1 = k.metageneration
         self.assertEqual(str(mg1), "1")
         b.set_acl("public-read", key_name="foo")
 
         k = b.get_key("foo")
         g2 = k.generation
-        mg2 = k.meta_generation
+        mg2 = k.metageneration
 
         self.assertEqual(g2, g1)
         self.assertGreater(mg2, mg1)
@@ -145,7 +145,7 @@ class GSGenerationConditionalsTest(GSTestCase):
 
         k = b.get_key("foo")
         g3 = k.generation
-        mg3 = k.meta_generation
+        mg3 = k.metageneration
         self.assertEqual(g3, g2)
         self.assertGreater(mg3, mg2)
 
@@ -181,13 +181,13 @@ class GSGenerationConditionalsTest(GSTestCase):
         k.set_contents_from_string(s1)
 
         g1 = k.generation
-        mg1 = k.meta_generation
+        mg1 = k.metageneration
         self.assertEqual(str(mg1), "1")
         b.set_canned_acl("public-read", key_name="foo")
 
         k = b.get_key("foo")
         g2 = k.generation
-        mg2 = k.meta_generation
+        mg2 = k.metageneration
 
         self.assertEqual(g2, g1)
         self.assertGreater(mg2, mg1)
@@ -211,7 +211,7 @@ class GSGenerationConditionalsTest(GSTestCase):
 
         k = b.get_key("foo")
         g3 = k.generation
-        mg3 = k.meta_generation
+        mg3 = k.metageneration
         self.assertEqual(g3, g2)
         self.assertGreater(mg3, mg2)
 
@@ -225,7 +225,7 @@ class GSGenerationConditionalsTest(GSTestCase):
         k.set_contents_from_string(s1)
 
         g1 = k.generation
-        mg1 = k.meta_generation
+        mg1 = k.metageneration
         self.assertEqual(str(mg1), "1")
 
         acl_xml = (
@@ -241,7 +241,7 @@ class GSGenerationConditionalsTest(GSTestCase):
 
         k = b.get_key("foo")
         g2 = k.generation
-        mg2 = k.meta_generation
+        mg2 = k.metageneration
 
         self.assertEqual(g2, g1)
         self.assertGreater(mg2, mg1)
@@ -262,7 +262,7 @@ class GSGenerationConditionalsTest(GSTestCase):
 
         k = b.get_key("foo")
         g3 = k.generation
-        mg3 = k.meta_generation
+        mg3 = k.metageneration
         self.assertEqual(g3, g2)
         self.assertGreater(mg3, mg2)
 
@@ -275,13 +275,13 @@ class GSGenerationConditionalsTest(GSTestCase):
         k.set_contents_from_string("test1")
 
         g1 = k.generation
-        mg1 = k.meta_generation
+        mg1 = k.metageneration
         self.assertEqual(str(mg1), "1")
         k.set_acl("public-read")
 
         k = b.get_key("foo")
         g2 = k.generation
-        mg2 = k.meta_generation
+        mg2 = k.metageneration
 
         self.assertEqual(g2, g1)
         self.assertGreater(mg2, mg1)
@@ -302,7 +302,7 @@ class GSGenerationConditionalsTest(GSTestCase):
 
         k = b.get_key("foo")
         g3 = k.generation
-        mg3 = k.meta_generation
+        mg3 = k.metageneration
         self.assertEqual(g3, g2)
         self.assertGreater(mg3, mg2)
 
@@ -314,13 +314,13 @@ class GSGenerationConditionalsTest(GSTestCase):
         k.set_contents_from_string("test1")
 
         g1 = k.generation
-        mg1 = k.meta_generation
+        mg1 = k.metageneration
         self.assertEqual(str(mg1), "1")
         k.set_canned_acl("public-read")
 
         k = b.get_key("foo")
         g2 = k.generation
-        mg2 = k.meta_generation
+        mg2 = k.metageneration
 
         self.assertEqual(g2, g1)
         self.assertGreater(mg2, mg1)
@@ -343,7 +343,7 @@ class GSGenerationConditionalsTest(GSTestCase):
 
         k = b.get_key("foo")
         g3 = k.generation
-        mg3 = k.meta_generation
+        mg3 = k.metageneration
         self.assertEqual(g3, g2)
         self.assertGreater(mg3, mg2)
 
@@ -356,7 +356,7 @@ class GSGenerationConditionalsTest(GSTestCase):
         k.set_contents_from_string(s1)
 
         g1 = k.generation
-        mg1 = k.meta_generation
+        mg1 = k.metageneration
         self.assertEqual(str(mg1), "1")
 
         acl_xml = (
@@ -372,7 +372,7 @@ class GSGenerationConditionalsTest(GSTestCase):
 
         k = b.get_key("foo")
         g2 = k.generation
-        mg2 = k.meta_generation
+        mg2 = k.metageneration
 
         self.assertEqual(g2, g1)
         self.assertGreater(mg2, mg1)
@@ -392,7 +392,7 @@ class GSGenerationConditionalsTest(GSTestCase):
 
         k = b.get_key("foo")
         g3 = k.generation
-        mg3 = k.meta_generation
+        mg3 = k.metageneration
         self.assertEqual(g3, g2)
         self.assertGreater(mg3, mg2)
 

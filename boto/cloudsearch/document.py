@@ -117,7 +117,7 @@ class DocumentServiceConnection(object):
         """
         Schedule a document to be removed from the CloudSearch service
 
-        The document will not actually be scheduled for removal until .commit() is called
+        The document will not actually be scheduled for removal until :func:`commit` is called
 
         :type _id: string
         :param _id: The unique ID of this document.
@@ -145,7 +145,7 @@ class DocumentServiceConnection(object):
         """
         Clear the working documents from this DocumentServiceConnection
 
-        This should be used after a commit() if the connection will be reused
+        This should be used after :func:`commit` if the connection will be reused
         for another set of documents.
         """
 
@@ -187,15 +187,19 @@ class DocumentServiceConnection(object):
 
         url = "http://%s/2011-02-01/documents/batch" % (self.endpoint)
 
-        request_config = {
-            'pool_connections': 20,
-            'keep_alive': True,
-            'max_retries': 5,
-            'pool_maxsize': 50
-        }
-
-        r = requests.post(url, data=sdf, config=request_config,
-            headers={'Content-Type': 'application/json'})
+        # Keep-alive is automatic in a post-1.0 requests world.
+        session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=20,
+            pool_maxsize=50
+        )
+        # Now kludge in the right number of retries.
+        # Once we're requiring ``requests>=1.2.1``, this can become an
+        # initialization parameter above.
+        adapter.max_retries = 5
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        r = session.post(url, data=sdf, headers={'Content-Type': 'application/json'})
 
         return CommitResponse(r, self, sdf)
 
@@ -206,12 +210,14 @@ class CommitResponse(object):
     :type response: :class:`requests.models.Response`
     :param response: Response from Cloudsearch /documents/batch API
 
-    :type doc_service: :class:`exfm.cloudsearch.DocumentServiceConnection`
+    :type doc_service: :class:`boto.cloudsearch.document.DocumentServiceConnection`
     :param doc_service: Object containing the documents posted and methods to
         retry
 
     :raises: :class:`boto.exception.BotoServerError`
-    :raises: :class:`exfm.cloudsearch.SearchServiceException`
+    :raises: :class:`boto.cloudsearch.document.SearchServiceException`
+    :raises: :class:`boto.cloudsearch.document.EncodingError`
+    :raises: :class:`boto.cloudsearch.document.ContentTooLongError`
     """
     def __init__(self, response, doc_service, sdf):
         self.response = response
@@ -252,7 +258,7 @@ class CommitResponse(object):
         :type response_num: int
         :param response_num: Number of adds or deletes in the response.
 
-        :raises: :class:`exfm.cloudsearch.SearchServiceException`
+        :raises: :class:`boto.cloudsearch.document.CommitMismatchError`
         """
         commit_num = len([d for d in self.doc_service.documents_batch
             if d['type'] == type_])

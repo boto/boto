@@ -20,8 +20,8 @@
 # IN THE SOFTWARE.
 #
 
-import json
 import boto
+from boto.compat import json
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 from boto.exception import JSONResponseError

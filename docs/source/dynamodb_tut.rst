@@ -16,8 +16,9 @@ Creating a Connection
 The first step in accessing DynamoDB is to create a connection to the service.
 To do so, the most straight forward way is the following::
 
-    >>> import boto
-    >>> conn = boto.connect_dynamodb(
+    >>> import boto.dynamodb
+    >>> conn = boto.dynamodb.connect_to_region(
+            'us-west-2',
             aws_access_key_id='<YOUR_AWS_KEY_ID>',
             aws_secret_access_key='<YOUR_AWS_SECRET_KEY>')
     >>> conn
@@ -27,7 +28,7 @@ Bear in mind that if you have your credentials in boto config in your home
 directory, the two keyword arguments in the call above are not needed. More
 details on configuration can be found in :doc:`boto_config_tut`.
 
-The :py:func:`boto.connect_dynamodb` functions returns a
+The :py:func:`boto.dynamodb.connect_to_region` function returns a
 :py:class:`boto.dynamodb.layer2.Layer2` instance, which is a high-level API
 for working with DynamoDB. Layer2 is a set of abstractions that sit atop
 the lower level :py:class:`boto.dynamodb.layer1.Layer1` API, which closely
@@ -56,7 +57,7 @@ hash key element, and the optional range key element. This is explained in
 greater detail in DynamoDB's `Data Model`_ documentation.
 
 We'll start by defining a schema that has a hash key and a range key that
-are both keys::
+are both strings::
 
     >>> message_table_schema = conn.create_schema(
             hash_key_name='forum_name',
@@ -297,7 +298,7 @@ method, or by passing in the
 the ``dynamizer`` param::
 
     >>> from boto.dynamodb.types import Dynamizer
-    >>> conn = boto.connect_dynamodb(dynamizer=Dynamizer)
+    >>> conn = boto.dynamodb.connect_to_region(dynamizer=Dynamizer)
 
 This mechanism can also be used if you want to customize the encoding/decoding
 process of DynamoDB types.
