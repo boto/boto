@@ -26,21 +26,21 @@ class AESCipher:
         return self.unpad(cipher.decrypt( enc[self.BS:] ))
 
     def encryptFP(self,fp):
+        initialOffset = fp.tell()
         plaincontent = fp.read()
         ciphercontent = self.encrypt(plaincontent)
-        fp.truncate(0)
+        fp.truncate(initialOffset)
         fp.write(ciphercontent)
-        fp.seek(0)
+        fp.seek(initialOffset)
         return fp
 
     def decryptFP(self,fp):
+        initialOffset = fp.tell()
         ciphercontent = fp.read()
         plaincontent = self.decrypt(ciphercontent)
-        #reset the filepointer to the beginning
-        # or original offset?
-        fp.truncate(0)
+        fp.truncate(initialOffset)
         fp.write(plaincontent)
-        fp.seek(0)
+        fp.seek(initialOffset)
         return fp
 
 class EncryptedKey(boto.s3.key.Key):
@@ -57,25 +57,41 @@ class EncryptedKey(boto.s3.key.Key):
     raw calling of 'key.send_file' and 'key.get_file' will not be protected however.
 
     """
-    def __init__(self, encryptionKey, bucket=None, name=None):
+    def __init__(self, encryptionKey=None, bucket=None, name=None):
         self.encryptionKey = encryptionKey
         self.aes = AESCipher(hashlib.sha256(encryptionKey).digest())
         super(EncryptedKey,self).__init__(bucket,name)
 
+    def set_encryption_key(self,encryptionKey):
+        self.encryptionKey = encryptionKey
+
+    def check_null_encryption_key(self):
+        if (type(self.encryptionKey) != 'str' and len(self.encryptionkey) < 1):
+            #raise an exception
+            raise ValueError('encryptionKey string not set in EncryptedKey object')
 
     def set_contents_from_file(self,fp, headers=None, replace=True, 
         cb=None, num_cb=10, policy=None, md5=None, reduced_redundancy=False, 
         query_args=None, encrypt_key=False, size=None, rewind=False):
+
+        #ensure we have a key to use
+        self.checkNullEncryptionKey()
+
         fp = self.aes.encryptFP(fp)
-        return super(EncryptedKey,self).set_contents_from_file(fp,headers,replace,cb,num_cb,policy,md5,reduced_redundancy,query_args,encrypt_key,size,rewind)
+        r = super(EncryptedKey,self).set_contents_from_file(fp,headers,replace,
+            cb,num_cb,policy,md5,reduced_redundancy,query_args,encrypt_key,size,rewind)
+        return r
 
 
     def get_contents_to_file(self,fp, headers=None, cb=None, 
         num_cb=10, torrent=False, version_id=None, 
         res_download_handler=None, response_headers=None):
-        super(EncryptedKey,self).get_contents_to_file(fp,headers,cb,num_cb,torrent,version_id,res_download_handler,response_headers)
-        #make sure we are at the beginning of the file
-        #or is the offset important?
-        fp.seek(0)
+
+        #ensure we have a key to use
+        self.checkNullEncryptionKey()
+
+        super(EncryptedKey,self).get_contents_to_file(fp,headers,cb,num_cb,
+            torrent,version_id,res_download_handler,response_headers)
+
         fp = self.aes.decryptFP(fp)
 

@@ -12,13 +12,16 @@ if (bucket == None):
     print "no bucket"
 
 string = "this is a test string2"
+keyname = "cipherString3.txt"
 
-ekey = EncryptedKey("password",bucket,"cipherString2.txt")
+ekey = EncryptedKey("password",bucket,keyname)
 
 ekey.set_contents_from_string(string)
 
+print "original plaintext: " , string
 print "done putting, now getting."
-
-ekey = EncryptedKey("password",bucket,"cipherString2.txt")
-print ekey.get_contents_as_string()
+key = Key(bucket,keyname)
+ekey2 = EncryptedKey("password",bucket,keyname)
+print "reg key contents: ",key.get_contents_as_string()
+print "enc key contents: ",ekey2.get_contents_as_string()
 
