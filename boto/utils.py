@@ -722,6 +722,7 @@ class Password(object):
            self.hashfunc = hashfunc
 
     def set(self, value):
+        value = ensure_bytes(value)
         self.str = self.hashfunc(value).hexdigest()
 
     def __str__(self):
@@ -730,6 +731,7 @@ class Password(object):
     def __eq__(self, other):
         if other == None:
             return False
+        other = ensure_bytes(other)
         return str(self.hashfunc(other).hexdigest()) == str(self.str)
 
     def __len__(self):
