@@ -58,7 +58,7 @@ class TestPassword(unittest.TestCase):
 
         password = SHA224Password()
         password.set('foo')
-        self.assertEquals(hashlib.sha224('foo').hexdigest(), str(password))
+        self.assertEquals(hashlib.sha224(b'foo').hexdigest(), str(password))
 
     def test_hmac(self):
         def hmac_hashfunc(cls, msg):
