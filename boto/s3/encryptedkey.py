@@ -57,16 +57,18 @@ class EncryptedKey(boto.s3.key.Key):
     raw calling of 'key.send_file' and 'key.get_file' will not be protected however.
 
     """
-    def __init__(self, encryptionKey=None, bucket=None, name=None):
+    def __init__(self, bucket=None, name=None,encryptionKey=None):
         self.encryptionKey = encryptionKey
-        self.aes = AESCipher(hashlib.sha256(encryptionKey).digest())
+        if (encryptionKey != None):
+            self.aes = AESCipher(hashlib.sha256(encryptionKey).digest())
         super(EncryptedKey,self).__init__(bucket,name)
 
     def set_encryption_key(self,encryptionKey):
         self.encryptionKey = encryptionKey
+        self.aes = AESCipher(hashlib.sha256(encryptionKey).digest())
 
     def check_null_encryption_key(self):
-        if (type(self.encryptionKey) != 'str' and len(self.encryptionkey) < 1):
+        if (type(self.encryptionKey) != 'str' and len(self.encryptionKey) < 1):
             #raise an exception
             raise ValueError('encryptionKey string not set in EncryptedKey object')
 
@@ -75,7 +77,7 @@ class EncryptedKey(boto.s3.key.Key):
         query_args=None, encrypt_key=False, size=None, rewind=False):
 
         #ensure we have a key to use
-        self.checkNullEncryptionKey()
+        self.check_null_encryption_key()
 
         fp = self.aes.encryptFP(fp)
         r = super(EncryptedKey,self).set_contents_from_file(fp,headers,replace,
@@ -88,7 +90,7 @@ class EncryptedKey(boto.s3.key.Key):
         res_download_handler=None, response_headers=None):
 
         #ensure we have a key to use
-        self.checkNullEncryptionKey()
+        self.check_null_encryption_key()
 
         super(EncryptedKey,self).get_contents_to_file(fp,headers,cb,num_cb,
             torrent,version_id,res_download_handler,response_headers)

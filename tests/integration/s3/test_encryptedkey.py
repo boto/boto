@@ -10,14 +10,17 @@ from boto.s3.connection import S3Connection
 from boto.s3.encryptedkey import EncryptedKey
 from boto.exception import S3ResponseError
 
+encryptionkey = "p@ssword123"
+
 class S3EncryptedKeyTest (unittest.TestCase):
     s3 = True
-    encryptionkey = "p@ssword123"
+    s3key2 = True
 
     def setUp(self):
         self.conn = S3Connection()
         self.bucket_name = 'keytest-%d' % int(time.time())
-        self.bucket = self.conn.create_bucket(self.bucket_name, EncryptedKey)
+        self.bucket = self.conn.create_bucket(self.bucket_name)
+        self.bucket.set_key_class(EncryptedKey)
 
     def tearDown(self):
         for key in self.bucket:
