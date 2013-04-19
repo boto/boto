@@ -7,7 +7,7 @@ from tests.unit import unittest
 import time
 import StringIO
 from boto.s3.connection import S3Connection
-from boto.s3.key import EncryptedKey
+from boto.s3.encryptedkey import EncryptedKey
 from boto.exception import S3ResponseError
 
 class S3EncryptedKeyTest (unittest.TestCase):
@@ -17,7 +17,7 @@ class S3EncryptedKeyTest (unittest.TestCase):
     def setUp(self):
         self.conn = S3Connection()
         self.bucket_name = 'keytest-%d' % int(time.time())
-        self.bucket = self.conn.create_bucket(self.bucket_name)
+        self.bucket = self.conn.create_bucket(self.bucket_name, EncryptedKey)
 
     def tearDown(self):
         for key in self.bucket:

@@ -8,7 +8,7 @@ from boto.s3.bucket import Bucket
 
 class TestS3EncryptedKey(AWSMockServiceTestCase):
 
- connection_class = S3Connection
+    connection_class = S3Connection
 
     def setUp(self):
         super(TestS3Key, self).setUp()
@@ -17,10 +17,12 @@ class TestS3EncryptedKey(AWSMockServiceTestCase):
         return "default body"
 
     def test_with_blank_encryptionkey(self):
+        pass
 
 
 
 
 
 if __name__ == '__main__':
-    unittest.main()
+#    unittest.main()
+    pass
