@@ -5,6 +5,8 @@ from Crypto import Random
 import base64
 import hashlib
 import os
+import StringIO
+import math
 
 
 class AESCipher:
@@ -46,6 +48,24 @@ class AESCipher:
         fp.seek(initialOffset)
         return fp
 
+    """
+    For a given plaintext and blocksize,
+    computes how large in bytes the resultant ciphertext will be
+    """
+    def compute_encrypted_size(self,content):
+        blocksize = self.BS
+        contentlen = len(content)
+        print 'contentlen:' , contentlen
+        contentlen = float(contentlen)
+        paddedcontentlen = blocksize * (int(math.ceil(contentlen/blocksize)))
+        paddedcontentlen = paddedcontentlen + blocksize #add the IV
+        print 'paddedlen:' , paddedcontentlen
+        base64len = 4 * int(math.ceil( paddedcontentlen / 3.0))
+        print 'b64:' , base64len
+        return base64len
+
+
+
 class EncryptedKey(boto.s3.key.Key):
     """
     Extends the Key class to perform local AES Encryption on files and strings
@@ -82,25 +102,39 @@ class EncryptedKey(boto.s3.key.Key):
         #ensure we have a key to use
         self.check_null_encryption_key()
 
-        #check if the contents is at EOF , if so, skip the encryption step.
-        #print '#######################################'
-        #spos = fp.tell()
-        #print spos
-        #fp.seek(0,os.SEEK_END)
-        #endpos = fp.tell()
-        #print endpos
-        #fp.seek(spos)
-        #if endpos != spos: 
-        #    fp = self.aes.encryptFP(fp)
+        #rewind requested, go to start of file
+        if rewind == True:
+            fp.seek(0)
+
+        #if size is set, only encrypt up to that point
+        if size != None:
+            contents = fp.read(size)
+            fp = StringIO.StringIO(contents)
+            #now reset the size to reflect the encrypted size
+            size = self.aes.compute_encrypted_size(contents)
+
 
         initial = fp.tell()
         contents = fp.read()
         print 'contents:',contents
         fp.seek(initial)
 
-        
-        #if size is set, only encrypt up to that point
-        fp = self.aes.encryptFP(fp)
+        #check if the contents is at EOF , if so, skip the encryption step.
+        print '#######################################'
+        spos = fp.tell()
+        print spos
+        fp.seek(0,os.SEEK_END)
+        endpos = fp.tell()
+        print endpos
+        fp.seek(spos)
+        if endpos != spos: 
+            fp = self.aes.encryptFP(fp)
+        else:
+            print "skipped enc"
+            #it means we are at the EOF
+
+
+        #fp = self.aes.encryptFP(fp)
         r = super(EncryptedKey,self).set_contents_from_file(fp,headers,replace,
             cb,num_cb,policy,md5,reduced_redundancy,query_args,encrypt_key,size,rewind)
         return r
@@ -120,5 +154,20 @@ class EncryptedKey(boto.s3.key.Key):
 
         #rewind to where we got the file pointer
         fp.seek(initialOffset)
-        fp = self.aes.decryptFP(fp)
+
+        #check if the contents is at EOF , if so, skip the encryption step.
+        print 'dencrypt#######################################'
+        spos = fp.tell()
+        print spos
+        fp.seek(0,os.SEEK_END)
+        endpos = fp.tell()
+        print endpos
+        fp.seek(spos)
+        if endpos != spos: 
+            fp = self.aes.decryptFP(fp)
+        else:
+            print "skipped denc"
+            #it means we are at the EOF
+
+
 
