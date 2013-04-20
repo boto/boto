@@ -77,13 +77,9 @@ class S3EncryptedKeyTest (unittest.TestCase):
         #to account for block padding up to 128 bits (16 bytes)
         #and the IV (which is one 16 byte block)
         #and Base64 encoding which has some overhead.
-        blocksize = k.aes.BS
-
         encryptedsize = k.aes.compute_encrypted_size(content)
-        print "enc size:", encryptedsize
 
         k.set_contents_from_file(sfp)
-        print "k size:",k.size
         self.assertEqual(k.size, encryptedsize)
         kn = self.bucket.new_key("k")
         kn.set_encryption_key(encryptionkey)
@@ -94,15 +90,10 @@ class S3EncryptedKeyTest (unittest.TestCase):
         # set "567890123456789" to the key
         sfp = StringIO.StringIO(content)
         sfp.seek(5,os.SEEK_SET)
-        print sfp.tell()
-        k = None
         k = self.bucket.new_key("k2")
         k.set_encryption_key(encryptionkey)
-
         encryptedsize = k.aes.compute_encrypted_size(content[5:])
-        print "enc size:", encryptedsize
         k.set_contents_from_file(sfp)
-        print "k size:",k.size
         self.assertEqual(k.size, encryptedsize)
 
         kn = self.bucket.new_key("k2")
@@ -117,12 +108,9 @@ class S3EncryptedKeyTest (unittest.TestCase):
         k = self.bucket.new_key("k3")
         k.set_encryption_key(encryptionkey)
         k.set_contents_from_file(sfp, size=5)
-
         encryptedsize = k.aes.compute_encrypted_size(content[5:10])
 
-        print "enc size:", encryptedsize
-        print "k size:",k.size
-        #self.assertEqual(k.size, encryptedsize)
+        self.assertEqual(k.size, encryptedsize)
         self.assertEqual(sfp.tell(), 10)
         kn = self.bucket.new_key("k3")
         kn.set_encryption_key(encryptionkey)
@@ -432,60 +420,3 @@ class S3EncryptedKeyTest (unittest.TestCase):
             # Must start with a / or http
             key.set_redirect('')
 
-
-#class S3EncryptedKeyTest(S3KeyTest):
-#    
-#    encryptionkey = "p@ssword123"
-#
-#    def setUp(self):
-#        self.conn = S3Connection()
-#        self.bucket_name = 'encryptedkeytest-%d' % int(time.time())
-#        #set the keytype for the bucket, to EncryptedKey.
-#        self.bucket = self.conn.create_bucket(self.bucket_name, boto.s3.encryptedkey.EncryptedKey)
-#
-#
-#    def tearDown(self):
-#        for key in self.bucket:
-#            key.delete()
-#        self.bucket.delete()
-#
-#    def test_contents_from_string(self):
-#        #put a string, and attempt to recover
-#        #string value should be identical
-#        content = "12345678"
-#        k = self.bucket.new_key("k")
-#        k.set_encryption_key(encryptionkey)
-#        k.set_contents_from_string(content)
-#        contentReturned = k.get_contents_as_string()
-#        self.assertEqual(content,contentReturned)
-#
-#    def test_contents_from_file(self):
-#        #create a file pointer, read the contents,
-#        #put to S3, retrieve it back, and ensure files are identical
-#        content = "12345678"
-#        sfp = StringIO.StringIO()
-#        sfp.write(content)
-#        sfp.seek(0)
-#
-#        k = self.bucket.new_key("k")
-#        k.set_encryption_key(encryptionkey)
-#        k.set_contents_from_string(content)
-#        contentReturned = k.get_contents_to_file()
-#        self.assertEqual(content,contentReturned)
-#
-#
-#
-#
-#    def test_contents_from_filename(self):
-#        #create a random file, read the contents,
-#        #put to S3, retrieve it back, and ensure files are identical
-#
-#
-#    def test_nonzero_file_offset(self):
-#        #test with filepointer that is not at the start of the file
-#
-#    def test_null_content(self);
-#        #test that an empty string and file don't cause errors.
-#
-#
-#    def 

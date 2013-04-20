@@ -48,9 +48,7 @@ class AESCipher:
     def decryptFP(self,fp):
         initialOffset = fp.tell()
         ciphercontent = fp.read()
-        print "ciphercontent:",ciphercontent
         plaincontent = self.decrypt(ciphercontent)
-        print "plain:",plaincontent
         fp.truncate(initialOffset)
         fp.write(plaincontent)
         fp.seek(initialOffset)
@@ -63,13 +61,10 @@ class AESCipher:
     def compute_encrypted_size(self,content):
         blocksize = self.BS
         contentlen = len(content)
-        print 'contentlen:' , contentlen
         contentlen = float(contentlen)
         paddedcontentlen = blocksize * (int(math.ceil(contentlen/blocksize)))
         paddedcontentlen = paddedcontentlen + blocksize #add the IV
-        print 'paddedlen:' , paddedcontentlen
         base64len = 4 * int(math.ceil( paddedcontentlen / 3.0))
-        print 'b64:' , base64len
         return base64len
 
 
@@ -148,7 +143,6 @@ class EncryptedKey(boto.s3.key.Key):
         # break some code) so we consume the third tuple value here and
         # return the remainder of the tuple to the caller, thereby preserving
         # the existing interface.
-        print "sizes: ",self.size, data_size
         self.size = data_size
         return (hex_digest, b64_digest)
 
@@ -159,7 +153,6 @@ class EncryptedKey(boto.s3.key.Key):
 
         #ensure we have a key to use
         self.check_null_encryption_key()
-
 
         if (fp == None):
             #calling to try to reuse the fp saved away by compute_encrypted_md5
@@ -182,22 +175,17 @@ class EncryptedKey(boto.s3.key.Key):
 
             initial = fp.tell()
             contents = fp.read()
-            print 'contents:',contents
             fp.seek(initial)
 
             #check if the contents is at EOF , if so, skip the encryption step.
-            print '#######################################'
             spos = fp.tell()
-            print spos
             fp.seek(0,os.SEEK_END)
             endpos = fp.tell()
-            print endpos
             fp.seek(spos)
             if endpos != spos: 
                 fp = self.aes.encryptFP(fp)
-            else:
-                print "skipped enc"
-                #it means we are at the EOF
+            #else it means we are at the EOF so no need to encrypt
+
         #end if(fp==None)
 
         r = super(EncryptedKey,self).set_contents_from_file(fp,headers,replace,
@@ -220,19 +208,11 @@ class EncryptedKey(boto.s3.key.Key):
         #rewind to where we got the file pointer
         fp.seek(initialOffset)
 
-        #check if the contents is at EOF , if so, skip the encryption step.
-        print 'dencrypt#######################################'
+        #check if the contents is at EOF , if so, skip the decryption step.
         spos = fp.tell()
-        print spos
         fp.seek(0,os.SEEK_END)
         endpos = fp.tell()
-        print endpos
         fp.seek(spos)
         if endpos != spos: 
             fp = self.aes.decryptFP(fp)
-        else:
-            print "skipped denc"
-            #it means we are at the EOF
-
-
 
