@@ -34,6 +34,7 @@ from boto.exception import S3ResponseError
 
 class S3KeyTest (unittest.TestCase):
     s3 = True
+    s3key1 = True
 
     def setUp(self):
         self.conn = S3Connection()
@@ -158,8 +159,10 @@ class S3KeyTest (unittest.TestCase):
     def test_file_callback(self):
         def callback(wrote, total):
             self.my_cb_cnt += 1
+            print 'cnt ',self.my_cb_cnt
             self.assertNotEqual(wrote, self.my_cb_last, "called twice with same value")
             self.my_cb_last = wrote
+            print 'last ',self.my_cb_last
 
         # Zero bytes written => 1 call
         self.my_cb_cnt = 0
@@ -349,6 +352,8 @@ class S3KeyTest (unittest.TestCase):
         self.assertTrue(self.my_cb_cnt <= 1000)
         self.assertEqual(self.my_cb_last, 20)
         self.assertEqual(s, content)
+
+        self.assertEquals(1,0)
 
     def test_website_redirects(self):
         self.bucket.configure_website('index.html')

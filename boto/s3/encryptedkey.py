@@ -2,6 +2,7 @@
 import boto.s3.key
 from Crypto.Cipher import AES
 from Crypto import Random
+from boto.utils import compute_md5
 import base64
 import hashlib
 import os
@@ -29,12 +30,19 @@ class AESCipher:
         return self.unpad(cipher.decrypt( enc[self.BS:] ))
 
     def encryptFP(self,fp):
-        initialOffset = fp.tell()
-        plaincontent = fp.read()
-        ciphercontent = self.encrypt(plaincontent)
-        fp.truncate(initialOffset)
-        fp.write(ciphercontent)
-        fp.seek(initialOffset)
+        if (fp == None):
+            #we had a precomputed encrypted fp
+            #from an MD5 computation,
+            #and the user wants to use it
+            fp = self.efp
+        else:
+            #computing a new encrypted fp.
+            initialOffset = fp.tell()
+            plaincontent = fp.read()
+            ciphercontent = self.encrypt(plaincontent)
+            fp.truncate(initialOffset)
+            fp.write(ciphercontent)
+            fp.seek(initialOffset)
         return fp
 
     def decryptFP(self,fp):
@@ -95,6 +103,56 @@ class EncryptedKey(boto.s3.key.Key):
             #raise an exception
             raise ValueError('encryptionKey string not set in EncryptedKey object')
 
+    def compute_encrypted_md5(self, fp, size=None):
+        """
+        This function saves away the encrypted content, so that it matches 
+        later, and another random IV isn't regenerated.
+        To use this saved encrypted file pointer (efp), call set_contents_from_file
+        with fp == None
+
+        :type fp: file
+        :param fp: File pointer to the file to MD5 hash.  The file
+            pointer will encrpyted and then hashed.
+            the fp will be reset to the same position before the
+            method returns.
+
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read
+            from the file pointer (fp). This is useful when uploading
+            a file in multiple parts where the file is being split
+            in place into different parts. Less bytes may be available.
+        """
+        #avoid modifying the original fp
+        spos = fp.tell()
+        #only read the size specified, if specified
+        if (size != None):
+            content = fp.read(size)
+            #also adjust the size variable, since we are encrypting
+            size = self.aes.compute_encrypted_size(content)
+        else:
+            content = fp.read()
+        fp.seek(spos)
+
+        #encrypt the content, so we can hash it
+        efp = StringIO.StringIO(content)
+        efp = self.aes.encryptFP(efp)
+
+        self.aes.efp = efp # save for later in case they do a real encryption
+        #this ensures the same random IV is used so that the md5 matches.
+
+        hex_digest, b64_digest, data_size = compute_md5(efp, size=size)
+        # Returned values are MD5 hash, base64 encoded MD5 hash, and data size.
+        # The internal implementation of compute_md5() needs to return the
+        # data size but we don't want to return that value to the external
+        # caller because it changes the class interface (i.e. it might
+        # break some code) so we consume the third tuple value here and
+        # return the remainder of the tuple to the caller, thereby preserving
+        # the existing interface.
+        print "sizes: ",self.size, data_size
+        self.size = data_size
+        return (hex_digest, b64_digest)
+
+
     def set_contents_from_file(self,fp, headers=None, replace=True, 
         cb=None, num_cb=10, policy=None, md5=None, reduced_redundancy=False, 
         query_args=None, encrypt_key=False, size=None, rewind=False):
@@ -102,39 +160,46 @@ class EncryptedKey(boto.s3.key.Key):
         #ensure we have a key to use
         self.check_null_encryption_key()
 
-        #rewind requested, go to start of file
-        if rewind == True:
-            fp.seek(0)
 
-        #if size is set, only encrypt up to that point
-        if size != None:
-            contents = fp.read(size)
-            fp = StringIO.StringIO(contents)
-            #now reset the size to reflect the encrypted size
-            size = self.aes.compute_encrypted_size(contents)
-
-
-        initial = fp.tell()
-        contents = fp.read()
-        print 'contents:',contents
-        fp.seek(initial)
-
-        #check if the contents is at EOF , if so, skip the encryption step.
-        print '#######################################'
-        spos = fp.tell()
-        print spos
-        fp.seek(0,os.SEEK_END)
-        endpos = fp.tell()
-        print endpos
-        fp.seek(spos)
-        if endpos != spos: 
-            fp = self.aes.encryptFP(fp)
+        if (fp == None):
+            #calling to try to reuse the fp saved away by compute_encrypted_md5
+            fp = self.aes.encryptFP(None)
+            size = None #set size in case somebody set it in the call.
         else:
-            print "skipped enc"
-            #it means we are at the EOF
+            #proceed as normal
+
+            #rewind requested, go to start of file
+            if rewind == True:
+                fp.seek(0)
+
+            #if size is set, only encrypt up to that point
+            if size != None:
+                contents = fp.read(size)
+                fp = StringIO.StringIO(contents)
+                #now reset the size to reflect the encrypted size
+                size = self.aes.compute_encrypted_size(contents)
 
 
-        #fp = self.aes.encryptFP(fp)
+            initial = fp.tell()
+            contents = fp.read()
+            print 'contents:',contents
+            fp.seek(initial)
+
+            #check if the contents is at EOF , if so, skip the encryption step.
+            print '#######################################'
+            spos = fp.tell()
+            print spos
+            fp.seek(0,os.SEEK_END)
+            endpos = fp.tell()
+            print endpos
+            fp.seek(spos)
+            if endpos != spos: 
+                fp = self.aes.encryptFP(fp)
+            else:
+                print "skipped enc"
+                #it means we are at the EOF
+        #end if(fp==None)
+
         r = super(EncryptedKey,self).set_contents_from_file(fp,headers,replace,
             cb,num_cb,policy,md5,reduced_redundancy,query_args,encrypt_key,size,rewind)
         return r
