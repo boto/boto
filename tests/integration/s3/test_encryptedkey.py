@@ -5,12 +5,26 @@ tests for the EncryptedKey S3 class
 
 from tests.unit import unittest
 import time
+import math
+import os
 import StringIO
 from boto.s3.connection import S3Connection
 from boto.s3.encryptedkey import EncryptedKey
 from boto.exception import S3ResponseError
 
 encryptionkey = "p@ssword123"
+
+def compute_encrypted_size(content,blocksize):
+    contentlen = len(content)
+    print 'contentlen:' , contentlen
+    contentlen = float(contentlen)
+    paddedcontentlen = blocksize * (int(math.ceil(contentlen/blocksize)))
+    paddedcontentlen = paddedcontentlen + blocksize #add the IV
+    print 'paddedlen:' , paddedcontentlen
+    base64len = 4 * int(math.ceil( paddedcontentlen / 3.0))
+    print 'b64:' , base64len
+    return base64len
+
 
 class S3EncryptedKeyTest (unittest.TestCase):
     s3 = True
@@ -63,14 +77,25 @@ class S3EncryptedKeyTest (unittest.TestCase):
 
     def test_set_contents_as_file(self):
         content="01234567890123456789"
+
         sfp = StringIO.StringIO(content)
 
         # fp is set at 0 for just opened (for read) files.
         # set_contents should write full content to key.
         k = self.bucket.new_key("k")
         k.set_encryption_key(encryptionkey)
+
+        #to account for block padding up to 128 bits (16 bytes)
+        #and the IV (which is one 16 byte block)
+        #and Base64 encoding which has some overhead.
+        blocksize = k.aes.BS
+
+        encryptedsize = compute_encrypted_size(content,blocksize)
+        print "enc size:", encryptedsize
+
         k.set_contents_from_file(sfp)
-        self.assertEqual(k.size, 20)
+        print "k size:",k.size
+        self.assertEqual(k.size, encryptedsize)
         kn = self.bucket.new_key("k")
         kn.set_encryption_key(encryptionkey)
         ks = kn.get_contents_as_string()
@@ -78,25 +103,39 @@ class S3EncryptedKeyTest (unittest.TestCase):
 
         # set fp to 5 and set contents. this should
         # set "567890123456789" to the key
-        sfp.seek(5)
-        k = self.bucket.new_key("k")
+        sfp = StringIO.StringIO(content)
+        sfp.seek(5,os.SEEK_SET)
+        print sfp.tell()
+        k = None
+        k = self.bucket.new_key("k2")
         k.set_encryption_key(encryptionkey)
+
+        encryptedsize = compute_encrypted_size(content[5:],blocksize)
+        print "enc size:", encryptedsize
         k.set_contents_from_file(sfp)
-        self.assertEqual(k.size, 15)
-        kn = self.bucket.new_key("k")
+        print "k size:",k.size
+        self.assertEqual(k.size, encryptedsize)
+
+        kn = self.bucket.new_key("k2")
         kn.set_encryption_key(encryptionkey)
         ks = kn.get_contents_as_string()
         self.assertEqual(ks, content[5:])
 
         # set fp to 5 and only set 5 bytes. this should
         # write the value "56789" to the key.
+        sfp = StringIO.StringIO(content)
         sfp.seek(5)
-        k = self.bucket.new_key("k")
+        k = self.bucket.new_key("k3")
         k.set_encryption_key(encryptionkey)
         k.set_contents_from_file(sfp, size=5)
-        self.assertEqual(k.size, 5)
+
+        encryptedsize = compute_encrypted_size(content[5:10],blocksize)
+
+        print "enc size:", encryptedsize
+        print "k size:",k.size
+        self.assertEqual(k.size, encryptedsize)
         self.assertEqual(sfp.tell(), 10)
-        kn = self.bucket.new_key("k")
+        kn = self.bucket.new_key("k3")
         kn.set_encryption_key(encryptionkey)
         ks = kn.get_contents_as_string()
         self.assertEqual(ks, content[5:10])

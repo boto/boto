@@ -4,6 +4,7 @@ from Crypto.Cipher import AES
 from Crypto import Random
 import base64
 import hashlib
+import os
 
 
 class AESCipher:
@@ -37,7 +38,9 @@ class AESCipher:
     def decryptFP(self,fp):
         initialOffset = fp.tell()
         ciphercontent = fp.read()
+        print "ciphercontent:",ciphercontent
         plaincontent = self.decrypt(ciphercontent)
+        print "plain:",plaincontent
         fp.truncate(initialOffset)
         fp.write(plaincontent)
         fp.seek(initialOffset)
@@ -79,6 +82,24 @@ class EncryptedKey(boto.s3.key.Key):
         #ensure we have a key to use
         self.check_null_encryption_key()
 
+        #check if the contents is at EOF , if so, skip the encryption step.
+        #print '#######################################'
+        #spos = fp.tell()
+        #print spos
+        #fp.seek(0,os.SEEK_END)
+        #endpos = fp.tell()
+        #print endpos
+        #fp.seek(spos)
+        #if endpos != spos: 
+        #    fp = self.aes.encryptFP(fp)
+
+        initial = fp.tell()
+        contents = fp.read()
+        print 'contents:',contents
+        fp.seek(initial)
+
+        
+        #if size is set, only encrypt up to that point
         fp = self.aes.encryptFP(fp)
         r = super(EncryptedKey,self).set_contents_from_file(fp,headers,replace,
             cb,num_cb,policy,md5,reduced_redundancy,query_args,encrypt_key,size,rewind)
@@ -92,8 +113,12 @@ class EncryptedKey(boto.s3.key.Key):
         #ensure we have a key to use
         self.check_null_encryption_key()
 
+        initialOffset = fp.tell()
+
         super(EncryptedKey,self).get_contents_to_file(fp,headers,cb,num_cb,
             torrent,version_id,res_download_handler,response_headers)
 
+        #rewind to where we got the file pointer
+        fp.seek(initialOffset)
         fp = self.aes.decryptFP(fp)
 
