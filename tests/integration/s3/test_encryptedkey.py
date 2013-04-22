@@ -15,7 +15,6 @@ encryptionkey = "p@ssword123"
 
 class S3EncryptedKeyTest (unittest.TestCase):
     s3 = True
-    s3key2 = True
 
     def setUp(self):
         self.conn = S3Connection()

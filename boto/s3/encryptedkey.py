@@ -11,6 +11,18 @@ import math
 
 
 class AESCipher:
+    """
+    Support class which provides cryptographic functions on behalf
+    of an EncryptedKey instance. Each encryption uses the same encryption key,
+    but a new Random Initialization Vector. Encryption key is a passphrase that has been
+    hashed by SHA256 before becoming the key used in AES 256 CBC mode.
+
+    :ivar key: 256 bit hashed version of the user supplied passphrase. 
+    :ivar BS: block size in number of bytes.
+    :ivar pad: function to ensure data is divisible by the blocksize.
+    :ivar unpad: strips extra padding for decryption.
+    :ivar efp: encrypted filepointer stored from a compute_encrypted_md5 function call.
+    """
     def __init__( self, key ):
         self.key = key 
         self.BS = AES.block_size 
@@ -30,6 +42,16 @@ class AESCipher:
         return self.unpad(cipher.decrypt( enc[self.BS:] ))
 
     def encryptFP(self,fp):
+        """
+        Reads content from the filepointer, performs encryption,
+        writes encrypted content back into the filepointer starting at the offset
+        as it was first passed in.
+
+        if fp is None, then reuse an existing encrypted file pointer,
+        which would have been set by a compute_encrypted_md5 call.
+        Doing this ensures that the MD5's will match, (since the IV is random each time).
+
+        """
         if (fp == None):
             #we had a precomputed encrypted fp
             #from an MD5 computation,
@@ -46,6 +68,11 @@ class AESCipher:
         return fp
 
     def decryptFP(self,fp):
+        """
+        Reads content from the filepointer, performs decryption,
+        writes decrypted content back into the filepointer starting at the offset
+        as it was first passed in.
+        """
         initialOffset = fp.tell()
         ciphercontent = fp.read()
         plaincontent = self.decrypt(ciphercontent)
@@ -54,11 +81,11 @@ class AESCipher:
         fp.seek(initialOffset)
         return fp
 
-    """
-    For a given plaintext and blocksize,
-    computes how large in bytes the resultant ciphertext will be
-    """
     def compute_encrypted_size(self,content):
+        """
+        For a given plaintext and blocksize,
+        computes how large in bytes the resultant ciphertext will be
+        """
         blocksize = self.BS
         contentlen = len(content)
         contentlen = float(contentlen)
@@ -71,16 +98,22 @@ class AESCipher:
 
 class EncryptedKey(boto.s3.key.Key):
     """
-    Extends the Key class to perform local AES Encryption on files and strings
+    Extends the Key class to perform local AES Encryption (256 bit, Cipher Block Chaining)
+    on files and strings
 
-    Design goal to not break any functionality of the boto.s3.key.Key class.
+    Design goal was to not break any functionality of the boto.s3.key.Key class.
     Acts as an encryption and decryption wrapper class around the core S3 functionality
 
     By overriding set_contents_from_file and get_contents_from_file,
     we can protect many differenent parts of the api, including
     getter and setter functions for strings, filenames, and filepointers.
 
-    raw calling of 'key.send_file' and 'key.get_file' will not be protected however.
+    the calling of 'key.send_file' and 'key.get_file' will not be protected however, since this
+    shim lies one level above those functions, in set/get_contents_from_file overrides.
+
+    New ivars
+    :ivar encryptionKey: encryption key string (arbitrary length) to use for encryption and decryption
+    :ivar aes: AESCipher helper class to perform crypto functions.
 
     """
     def __init__(self, bucket=None, name=None,encryptionKey=None):
@@ -90,10 +123,19 @@ class EncryptedKey(boto.s3.key.Key):
         super(EncryptedKey,self).__init__(bucket,name)
 
     def set_encryption_key(self,encryptionKey):
+        """
+        In case the EncryptedKey was constructed without an encryption key,
+        allow it to be set, and instantiate the aes helper class.
+        """
         self.encryptionKey = encryptionKey
         self.aes = AESCipher(hashlib.sha256(encryptionKey).digest())
 
+    
     def check_null_encryption_key(self):
+        """
+        Function to ensure that an encryption key was set before any
+        file operations are began
+        """
         if (type(self.encryptionKey) != 'str' and len(self.encryptionKey) < 1):
             #raise an exception
             raise ValueError('encryptionKey string not set in EncryptedKey object')
@@ -133,7 +175,8 @@ class EncryptedKey(boto.s3.key.Key):
         efp = self.aes.encryptFP(efp)
 
         self.aes.efp = efp # save for later in case they do a real encryption
-        #this ensures the same random IV is used so that the md5 matches.
+        #this ensures that a new random IV isn't used so that the md5 matches,
+        #when encryption is actually performed.
 
         hex_digest, b64_digest, data_size = compute_md5(efp, size=size)
         # Returned values are MD5 hash, base64 encoded MD5 hash, and data size.
@@ -150,7 +193,20 @@ class EncryptedKey(boto.s3.key.Key):
     def set_contents_from_file(self,fp, headers=None, replace=True, 
         cb=None, num_cb=10, policy=None, md5=None, reduced_redundancy=False, 
         query_args=None, encrypt_key=False, size=None, rewind=False):
+        """
+        Subclass Override of Key.set_contents_from_file
+        Calling other 'set' functions inherited from Key will eventually
+        funnel to this function, which performs AES encryption on the data
+        before passing into the Key.send_file function. This function will also
+        recompute the size parameter (since encrpyted size is always larger than plaintext)
+        and it will also handle computed MD5's.
 
+        Before this function is called, the user should have set an encryption key
+        on the EncryptedKey object either by using the constructor argument, or calling the
+        set_encryption_key function.
+
+
+        """
         #ensure we have a key to use
         self.check_null_encryption_key()
 
@@ -158,6 +214,10 @@ class EncryptedKey(boto.s3.key.Key):
             #calling to try to reuse the fp saved away by compute_encrypted_md5
             fp = self.aes.encryptFP(None)
             size = None #set size in case somebody set it in the call.
+        #elif( fp != None and md5 != None):
+            #need to clarify how to handle this,
+            #they computed an MD5, but it will eventually change.
+            #should we raise an exception telling the user?
         else:
             #proceed as normal
 
@@ -196,6 +256,18 @@ class EncryptedKey(boto.s3.key.Key):
     def get_contents_to_file(self,fp, headers=None, cb=None, 
         num_cb=10, torrent=False, version_id=None, 
         res_download_handler=None, response_headers=None):
+        """
+        Subclass Override of Key.get_contents_to_file
+        Calling other 'get' functions inherited from Key will eventually
+        funnel to this function, which performs AES decryption on the data
+        before passing into the other wrapper functions such as get_contentes_as_string,
+        or get_contents_to_filename. 
+       
+       Before this function is called, the user should have set an encryption key
+        on the EncryptedKey object either by using the constructor argument, or calling the
+        set_encryption_key function.
+
+        """
 
         #ensure we have a key to use
         self.check_null_encryption_key()
