@@ -1,4 +1,4 @@
-from boto.dynamodb2.constants import STRING
+from boto.dynamodb2.types import STRING
 
 
 class BaseSchemaField(object):

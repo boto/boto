@@ -107,16 +107,33 @@ class Item(object):
         return self.table.delete_item(key=key_data)
 
 
+class ResultSet(object):
+    """
+
+    Example::
+
+        >>> page = ResultSet()
+        >>>
+    """
+    def __init__(self):
+        # FIXME: Not happy with any part of this API.
+        #        Problems include:
+        #        * Specifying how to continue
+        #        * Applying the right arguments to get the next "page"
+        #        * What about on "misses"?
+        #        * General upset & lack of satisfaction
+        pass
+
+
 class Table(object):
     """
 
     Example::
 
         >>> from boto.dynamodb.table import Table, HashKey, RangeKey, NUMBER
-        >>> users = Table('users')
 
         # Create the table.
-        >>> users.create(schema=[
+        >>> users = Table.create('users', schema=[
         ...     HashKey('username'),
         ...     RangeKey('date_joined', data_type=NUMBER)
         ... ])
@@ -170,22 +187,20 @@ class Table(object):
         }
         self.schema = None
         self.indexes = None
-        # FIXME: Maybe support this? Not sure what all should update it.
-        # FIXME: Also, IIRC, there's a lag time in this count. Is that accurate?
-        self.count = None
 
         if self.connection is None:
             self.connection = DynamoDBConnection()
 
         self._dynamizer = Dynamizer()
 
-    def create(self, schema, throughput=None, indexes=None):
+    @classmethod
+    def create(cls, table_name, schema, throughput=None, indexes=None,
+               connection=None):
         """
 
         Example::
 
-            >>> users = Table('users')
-            >>> users.create_table(schema=[
+            >>> users = Table.create_table('users', schema=[
             ...     HashKey('username'),
             ...     RangeKey('date_joined', data_type=NUMBER)
             ... ], throughput={
@@ -196,34 +211,35 @@ class Table(object):
             ... ])
 
         """
-        self.schema = schema
+        table = cls(table_name=table_name, connection=connection)
+        table.schema = schema
 
         if throughput is not None:
-            self.throughput = throughput
+            table.throughput = throughput
 
         if indexes is not None:
-            self.indexes = indexes
+            table.indexes = indexes
 
         # Prep the schema.
         raw_schema = []
         attribute_definitions = []
 
-        for field in self.schema:
+        for field in table.schema:
             raw_schema.append(field.schema())
             # Build the attributes off what we know.
             attribute_definitions.append(field.definition())
 
         raw_throughput = {
-            'ReadCapacityUnits': int(self.throughput['read']),
-            'WriteCapacityUnits': int(self.throughput['write']),
+            'ReadCapacityUnits': int(table.throughput['read']),
+            'WriteCapacityUnits': int(table.throughput['write']),
         }
         kwargs = {}
 
-        if self.indexes:
+        if table.indexes:
             # Prep the LSIs.
             raw_lsi = []
 
-            for index_field in self.indexes:
+            for index_field in table.indexes:
                 raw_lsi.append(index_field.schema())
                 # Again, build the attributes off what we know.
                 # HOWEVER, only add attributes *NOT* already seen.
@@ -235,25 +251,22 @@ class Table(object):
 
             kwargs['local_secondary_indexes'] = raw_lsi
 
-        self.connection.create_table(
-            self.table_name,
+        table.connection.create_table(
+            table.table_name,
             attribute_definitions,
             raw_schema,
             raw_throughput,
             **kwargs
         )
-        return True
+        return table
 
     def _introspect_schema(self, raw_schema):
-        # FIXME: Should we be inspecting the attributes as well to get the
-        #        correct datatype? If we don't use it anywhere, there's no
-        #        point.
         schema = []
 
         for field in raw_schema:
-            if field['KeyType'] is 'HASH':
+            if field['KeyType'] == 'HASH':
                 schema.append(HashKey(field['AttributeName']))
-            elif field['KeyType'] is 'RANGE':
+            elif field['KeyType'] == 'RANGE':
                 schema.append(RangeKey(field['AttributeName']))
             else:
                 raise exceptions.UnknownSchemaFieldError(
@@ -264,9 +277,6 @@ class Table(object):
         return schema
 
     def _introspect_indexes(self, raw_indexes):
-        # FIXME: Should we be inspecting the attributes as well to get the
-        #        correct datatype? If we don't use it anywhere, there's no
-        #        point.
         indexes = []
 
         for field in raw_indexes:
@@ -275,11 +285,11 @@ class Table(object):
                 'parts': []
             }
 
-            if field['Projection']['ProjectionType'] is 'ALL':
+            if field['Projection']['ProjectionType'] == 'ALL':
                 index_klass = AllIndex
-            elif field['Projection']['ProjectionType'] is 'KEYS_ONLY':
+            elif field['Projection']['ProjectionType'] == 'KEYS_ONLY':
                 index_klass = KeysOnlyIndex
-            elif field['Projection']['ProjectionType'] is 'INCLUDE':
+            elif field['Projection']['ProjectionType'] == 'INCLUDE':
                 index_klass = IncludeIndex
                 kwargs['includes'] = field['Projection']['NonKeyAttributes']
             else:

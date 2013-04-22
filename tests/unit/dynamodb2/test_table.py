@@ -1,11 +1,11 @@
 import mock
 import unittest
-from boto.dynamodb2.constants import STRING, NUMBER
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
                                    AllIndex, KeysOnlyIndex, IncludeIndex)
 from boto.dynamodb2.layer1 import DynamoDBConnection
 from boto.dynamodb2.table import Item, Table
+from boto.dynamodb2.types import STRING, NUMBER
 
 
 FakeDynamoDBConnection = mock.create_autospec(DynamoDBConnection)
@@ -432,11 +432,13 @@ class TableTestCase(unittest.TestCase):
         self.assertTrue(hasattr(groups.connection, 'assert_called_once_with'))
 
     def test_create_simple(self):
-        with mock.patch.object(self.users.connection, 'create_table', return_value={}) as mock_create_table:
-            retval = self.users.create(schema=[
+        conn = FakeDynamoDBConnection()
+
+        with mock.patch.object(conn, 'create_table', return_value={}) as mock_create_table:
+            retval = Table.create('users', schema=[
                 HashKey('username'),
                 RangeKey('date_joined', data_type=NUMBER)
-            ])
+            ], connection=conn)
             self.assertTrue(retval)
 
         self.assertTrue(mock_create_table.called)
@@ -466,8 +468,10 @@ class TableTestCase(unittest.TestCase):
         })
 
     def test_create_full(self):
-        with mock.patch.object(self.users.connection, 'create_table', return_value={}) as mock_create_table:
-            retval = self.users.create(schema=[
+        conn = FakeDynamoDBConnection()
+
+        with mock.patch.object(conn, 'create_table', return_value={}) as mock_create_table:
+            retval = Table.create('users', schema=[
                 HashKey('username'),
                 RangeKey('date_joined', data_type=NUMBER)
             ], throughput={
@@ -475,7 +479,7 @@ class TableTestCase(unittest.TestCase):
                 'write': 10,
             }, indexes=[
                 KeysOnlyIndex('FriendCountIndex', parts=[RangeKey('friend_count')]),
-            ])
+            ], connection=conn)
             self.assertTrue(retval)
 
         self.assertTrue(mock_create_table.called)
