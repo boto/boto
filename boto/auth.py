@@ -559,17 +559,22 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
 
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')
-        hmac = self._get_hmac()
+        hmac1 = self._get_hmac()
         keys = params.keys()
         keys.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
         pairs = []
+        sign_vals=[]
         for key in keys:
-            hmac.update(key)
+            #hmac1.update(key)
             val = boto.utils.get_utf8_value(params[key])
-            hmac.update(val)
+            #hmac1.update(val)
             pairs.append(key + '=' + urllib.quote(val))
+            sign_vals.append(key+val)
         qs = '&'.join(pairs)
-        return (qs, base64.b64encode(hmac.digest()))
+        signstring="".join(sign_vals)
+        new_h=hmac.new(self._provider.secret_key,signstring,sha)
+        boto.log.debug('signstring:\n%s' % signstring)
+        return (qs, base64.encodestring(new_h.digest()).strip())
 
 
 class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
