@@ -112,17 +112,70 @@ class ResultSet(object):
 
     Example::
 
-        >>> page = ResultSet()
-        >>>
+        >>> users = Table('users')
+        >>> results = ResultSet()
+        >>> results.to_call(users.query, username__gte='johndoe')
+        # Now iterate. When it runs out of results, it'll fetch the next page.
+        >>> for res in results:
+        ...     print res['username']
     """
     def __init__(self):
-        # FIXME: Not happy with any part of this API.
-        #        Problems include:
-        #        * Specifying how to continue
-        #        * Applying the right arguments to get the next "page"
-        #        * What about on "misses"?
-        #        * General upset & lack of satisfaction
-        pass
+        super(ResultSet, self).__init__()
+        self.the_callable = None
+        self.call_args = []
+        self.call_kwargs = {}
+        self._results = []
+        self._offset = -1
+        self._results_left = True
+        self._last_key_seen = None
+
+    @property
+    def first_key(self):
+        return 'exclusive_start_key'
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        self._offset += 1
+
+        if self._offset >= len(self._results):
+            self.fetch_more()
+
+        if self._results_left is False:
+            raise StopIteration()
+
+        return self._results[self._offset]
+
+    def to_call(self, the_callable, *args, **kwargs):
+        if not callable(the_callable):
+            raise ValueError(
+                'You must supply an object or function to be called.'
+            )
+
+        self.the_callable = the_callable
+        self.call_args = args
+        self.call_kwargs = kwargs
+
+    def fetch_more(self):
+        args = self.call_args[:]
+        kwargs = self.call_kwargs.copy()
+
+        if self._last_key_seen is not None:
+            kwargs[self.first_key] = self._last_key_seen
+
+        results = self.the_callable(*args, **kwargs)
+
+        if not len(results.get('results', [])):
+            self._results_left = False
+            return
+
+        self._results.extend(results['results'])
+        self._last_key_seen = results['last_key']
+
+        # Decrease the limit, if it's present.
+        if 'limit' in self.call_kwargs:
+            self.call_kwargs['limit'] -= len(results['results'])
 
 
 class Table(object):

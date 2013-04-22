@@ -4,7 +4,7 @@ from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
                                    AllIndex, KeysOnlyIndex, IncludeIndex)
 from boto.dynamodb2.layer1 import DynamoDBConnection
-from boto.dynamodb2.table import Item, Table
+from boto.dynamodb2.table import Item, Table, ResultSet
 from boto.dynamodb2.types import STRING, NUMBER
 
 
@@ -294,6 +294,134 @@ class ItemTestCase(unittest.TestCase):
             'username': {'S': 'johndoe'},
             'date_joined': {'N': '12345'}
         })
+
+
+def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
+    if exclusive_start_key is None:
+        exclusive_start_key = -1
+
+    end_cap = 13
+    results = []
+    start_key = exclusive_start_key + 1
+
+    for i in range(start_key, start_key + 5):
+        if i < end_cap:
+            results.append("%s %s #%s" % (greeting, name, i))
+
+    return {
+        'results': results,
+        'last_key': exclusive_start_key + 5
+    }
+
+
+class ResultSetTestCase(unittest.TestCase):
+    def setUp(self):
+        super(ResultSetTestCase, self).setUp()
+        self.results = ResultSet()
+        self.results.to_call(fake_results, 'john', greeting='Hello', limit=20)
+
+    def test_last_key(self):
+        self.assertEqual(self.results.last_key, 'LastEvaluatedKey')
+
+    def test_first_key(self):
+        self.assertEqual(self.results.first_key, 'exclusive_start_key')
+
+    def test_fetch_more(self):
+        # First "page".
+        self.results.fetch_more()
+        self.assertEqual(self.results._results, [
+            'Hello john #0',
+            'Hello john #1',
+            'Hello john #2',
+            'Hello john #3',
+            'Hello john #4',
+        ])
+        self.assertEqual(len(self.results._results), 5)
+
+        # Fake in a last key.
+        self.results._last_key_seen = 4
+        # Second "page".
+        self.results.fetch_more()
+        self.assertEqual(self.results._results, [
+            'Hello john #0',
+            'Hello john #1',
+            'Hello john #2',
+            'Hello john #3',
+            'Hello john #4',
+            'Hello john #5',
+            'Hello john #6',
+            'Hello john #7',
+            'Hello john #8',
+            'Hello john #9',
+        ])
+        self.assertEqual(len(self.results._results), 10)
+
+        # Fake in a last key.
+        self.results._last_key_seen = 9
+        # Last "page".
+        self.results.fetch_more()
+        self.assertEqual(self.results._results, [
+            'Hello john #0',
+            'Hello john #1',
+            'Hello john #2',
+            'Hello john #3',
+            'Hello john #4',
+            'Hello john #5',
+            'Hello john #6',
+            'Hello john #7',
+            'Hello john #8',
+            'Hello john #9',
+            'Hello john #10',
+            'Hello john #11',
+            'Hello john #12',
+        ])
+        self.assertEqual(len(self.results._results), 13)
+
+        # Fake in a key outside the range.
+        self.results._last_key_seen = 15
+        # Empty "page". Nothing new gets added
+        self.results.fetch_more()
+        self.assertEqual(self.results._results, [
+            'Hello john #0',
+            'Hello john #1',
+            'Hello john #2',
+            'Hello john #3',
+            'Hello john #4',
+            'Hello john #5',
+            'Hello john #6',
+            'Hello john #7',
+            'Hello john #8',
+            'Hello john #9',
+            'Hello john #10',
+            'Hello john #11',
+            'Hello john #12',
+        ])
+        self.assertEqual(len(self.results._results), 13)
+
+        # Make sure we won't check for results in the future.
+        self.assertFalse(self.results._results_left)
+
+    def test_iteration(self):
+        # First page.
+        self.assertEqual(self.results.next(), 'Hello john #0')
+        self.assertEqual(self.results.next(), 'Hello john #1')
+        self.assertEqual(self.results.next(), 'Hello john #2')
+        self.assertEqual(self.results.next(), 'Hello john #3')
+        self.assertEqual(self.results.next(), 'Hello john #4')
+        self.assertEqual(self.results.call_kwargs['limit'], 15)
+        # Second page.
+        self.assertEqual(self.results.next(), 'Hello john #5')
+        self.assertEqual(self.results.next(), 'Hello john #6')
+        self.assertEqual(self.results.next(), 'Hello john #7')
+        self.assertEqual(self.results.next(), 'Hello john #8')
+        self.assertEqual(self.results.next(), 'Hello john #9')
+        self.assertEqual(self.results.call_kwargs['limit'], 10)
+        # Third page.
+        self.assertEqual(self.results.next(), 'Hello john #10')
+        self.assertEqual(self.results.next(), 'Hello john #11')
+        self.assertEqual(self.results.next(), 'Hello john #12')
+        self.assertRaises(StopIteration, self.results.next)
+        self.assertEqual(self.results.call_kwargs['limit'], 7)
 
 
 class TableTestCase(unittest.TestCase):
