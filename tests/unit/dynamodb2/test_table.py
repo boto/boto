@@ -833,15 +833,6 @@ class TableTestCase(unittest.TestCase):
 
         mock_describe.assert_called_once_with('users')
 
-    def test_query(self):
-        pass
-
-    def test_scan(self):
-        pass
-
-    def test_batch_get(self):
-        pass
-
     def test_batch_write_no_writes(self):
         with mock.patch.object(self.users.connection, 'batch_write_item', return_value={}) as mock_batch:
             with self.users.batch_write() as batch:
@@ -944,3 +935,15 @@ class TableTestCase(unittest.TestCase):
                 batch.delete_item(username='johndoe25')
 
         self.assertEqual(mock_batch.call_count, 2)
+
+    def test_query(self):
+        pass
+
+    def test_scan(self):
+        pass
+
+    def test_batch_get(self):
+        pass
+
+    def test_count(self):
+        pass

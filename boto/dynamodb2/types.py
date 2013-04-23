@@ -11,3 +11,20 @@ BINARY = 'B'
 STRING_SET = 'SS'
 NUMBER_SET = 'NS'
 BINARY_SET = 'BS'
+
+FILTER_OPERATORS = {
+    'eq': 'EQ',
+    'ne': 'NE',
+    'lte': 'LE',
+    'lt': 'LT',
+    'gte': 'GE',
+    'gt': 'GT',
+    # FIXME: Is this necessary? i.e. ``whatever__null=False``
+    'nnull': 'NOT_NULL',
+    'null': 'NULL',
+    'contains': 'CONTAINS',
+    'ncontains': 'NOT_CONTAINS',
+    'beginswith': 'BEGINS_WITH',
+    'in': 'IN',
+    'between': 'BETWEEN',
+}

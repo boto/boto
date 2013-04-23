@@ -2,7 +2,7 @@ from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
                                    AllIndex, KeysOnlyIndex, IncludeIndex)
 from boto.dynamodb2.layer1 import DynamoDBConnection
-from boto.dynamodb2.types import Dynamizer
+from boto.dynamodb2.types import Dynamizer, FILTER_OPERATORS
 
 
 class Item(object):
@@ -171,7 +171,10 @@ class ResultSet(object):
             return
 
         self._results.extend(results['results'])
-        self._last_key_seen = results['last_key']
+        self._last_key_seen = results.get('last_key', None)
+
+        if self._last_key_seen is None:
+            self._results_left = False
 
         # Decrease the limit, if it's present.
         if 'limit' in self.call_kwargs:
@@ -441,16 +444,177 @@ class Table(object):
     def batch_write(self):
         return BatchTable(self)
 
-    def query(self, query_data, limit=None):
-        pass
+    def _build_filters(self, filter_kwargs):
+        """
+        FIXME: Build something like:
 
-    def scan(self, key=None, index=None):
-        pass
+            {
+                'username': {
+                    'AttributeValueList': [
+                        {'S': 'jane'},
+                    ],
+                    'ComparisonOperator': 'EQ',
+                },
+                'date_joined': {
+                    'AttributeValueList': [
+                        {'N': '1366050000'}
+                    ],
+                    'ComparisonOperator': 'GT',
+                }
+            }
+        """
+        filters = {}
+
+        for field_and_op, value in filter_kwargs.items():
+            field_bits = field_and_op.split('__')
+            fieldname = '__'.join(field_bits[:-1])
+
+            try:
+                op = FILTER_OPERATORS[field_bits[-1]]
+            except KeyError:
+                raise exceptions.UnknownFilterTypeError(
+                    "Operator '%s' from '%s' is not recognized." % (
+                        field_bits[-1],
+                        field_and_op
+                    )
+                )
+
+            lookup = {
+                'AttributeValueList': [],
+                # FIXME: Should we assume 'eq' if it's invalid?
+                'ComparisonOperator': op,
+            }
+
+            # Special-case the ``NULL/NOT_NULL`` case.
+            if op in ('null', 'nnull'):
+                del lookup['AttributeValueList']
+
+            # Finally, insert it into the filters.
+            filters[fieldname] = lookup
+
+        return filters
+
+    def query(self, limit=None, index=None, reverse=False, **filter_kwargs):
+        # TODO: Args to support:
+        #       * Kwarg-based filters (becomes ``key_conditions``)
+        #       * limit
+        #       * exclusive_start_key (we manage this)
+        #       * index_name
+        #       * consistent_read ?!!
+        #       * reverse
+        results = ResultSet()
+        kwargs = filter_kwargs.copy()
+        kwargs.update({
+            'limit': limit,
+            'index': index,
+            'reverse': reverse,
+        })
+        results.to_call(self._query, **kwargs)
+        return results
+
+    def _query(self, limit=None, index=None, reverse=False, exclusive_start_key=None, **filter_kwargs):
+        kwargs = {
+            'limit': limit,
+            'index_name': index,
+            'scan_index_forward': reverse,
+            'exclusive_start_key': exclusive_start_key,
+        }
+
+        # Convert the filters into something we can actually use.
+        kwargs['key_conditions'] = self._build_filters(filter_kwargs)
+
+        raw_results = self.connection.query(
+            self.table_name,
+            **kwargs
+        )
+        results = []
+
+        for raw_item in raw_results.get('Items', []):
+            item = Item(self)
+            item.load({
+                'Item': raw_item,
+            })
+            results.append(item)
+
+        return {
+            'results': results,
+            'last_key': raw_results.get('LastEvaluatedKey', None),
+        }
+
+    def scan(self, limit=None, **filter_kwargs):
+        # TODO: Args to support:
+        #       * Kwarg-based filters (becomes ``scan_filter``)
+        #       * limit
+        #       * exclusive_start_key (we manage this)
+        results = ResultSet()
+        kwargs = filter_kwargs.copy()
+        kwargs.update({
+            'limit': limit,
+        })
+        results.to_call(self._scan, **kwargs)
+        return results
+
+    def _scan(self, limit=None, exclusive_start_key=None, **filter_kwargs):
+        kwargs = {
+            'limit': limit,
+            'exclusive_start_key': exclusive_start_key,
+        }
+
+        # Convert the filters into something we can actually use.
+        kwargs['scan_filter'] = self._build_filters(filter_kwargs)
+
+        raw_results = self.connection.scan(
+            self.table_name,
+            **kwargs
+        )
+        results = []
+
+        for raw_item in raw_results.get('Items', []):
+            item = Item(self)
+            item.load({
+                'Item': raw_item,
+            })
+            results.append(item)
+
+        return {
+            'results': results,
+            'last_key': raw_results.get('LastEvaluatedKey', None),
+        }
 
     def batch_get(self, keys):
+        # TODO: There's a hard limit of 100 keys. We can do one of two things:
+        #       * Throw an exception so the user knows & doesn't use multiple
+        #         requests (avoiding additional charges)
+        #       * Give them what they want, glossing over the fact that it
+        #         takes multiple requests.
+        #       I think the latter makes more sense (& is likely what
+        #       ``query/scan`` will do), but it needs to be further thought out.
+
+        # TODO: Additional complication: This needs to handle both a subset of
+        #       keys returned (due to 1Mb limit) as well as handling more than
+        #       100 keys, with possibly/likely both happening at the same time.
+        #       Grumble.
+
+        # FIXME: Supplying a list of hashkeys isn't bad. Handling a list of
+        #        hash+range keys makes it worse. Does this affect the other
+        #        methods using a ``key`` parameter or can those be neatly
+        #        handled?
+
         # TODO: Since this is likely to get paginated, presenting the same
         #       interface as ``query/scan`` would be a smart idea.
         #       Not sure how to deal nicely with all the keys. :/
+        results = ResultSet()
+        results.to_call(self._batch_get, keys)
+        return results
+
+    def _batch_get(self):
+        # FIXME: Rage.
+        pass
+
+    def count(self):
+        # FIXME: This doesn't map directly onto the underlying API but
+        #        is a common database-style operation. Use ``scan`` (``query?``)
+        #        to build a count?
         pass
 
 

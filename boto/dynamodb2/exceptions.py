@@ -64,3 +64,7 @@ class UnknownSchemaFieldError(DynamoDBError):
 
 class UnknownIndexFieldError(DynamoDBError):
     pass
+
+
+class UnknownFilterTypeError(DynamoDBError):
+    pass
