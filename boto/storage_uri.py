@@ -101,15 +101,7 @@ class StorageUri(object):
         @return: A connection to storage service provider of the given URI.
         """
         connection_args = dict(self.connection_args or ())
-        # Use OrdinaryCallingFormat instead of boto-default
-        # SubdomainCallingFormat because the latter changes the hostname
-        # that's checked during cert validation for HTTPS connections,
-        # which will fail cert validation (when cert validation is enabled).
-        # Note: the following import can't be moved up to the start of
-        # this file else it causes a config import failure when run from
-        # the resumable upload/download tests.
-        from boto.s3.connection import OrdinaryCallingFormat
-        connection_args['calling_format'] = OrdinaryCallingFormat()
+
         if (hasattr(self, 'suppress_consec_slashes') and
             'suppress_consec_slashes' not in connection_args):
             connection_args['suppress_consec_slashes'] = (
@@ -126,6 +118,15 @@ class StorageUri(object):
                 self.provider_pool[self.scheme] = self.connection
             elif self.scheme == 'gs':
                 from boto.gs.connection import GSConnection
+                # Use OrdinaryCallingFormat instead of boto-default
+                # SubdomainCallingFormat because the latter changes the hostname
+                # that's checked during cert validation for HTTPS connections,
+                # which will fail cert validation (when cert validation is
+                # enabled). Note: the following import can't be moved up to the
+                # start of this file else it causes a config import failure when
+                # run from the resumable upload/download tests.
+                from boto.s3.connection import OrdinaryCallingFormat
+                connection_args['calling_format'] = OrdinaryCallingFormat()
                 self.connection = GSConnection(access_key_id,
                                                secret_access_key,
                                                **connection_args)
