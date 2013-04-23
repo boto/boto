@@ -2208,9 +2208,9 @@ class EC2Connection(AWSQueryConnection):
                                     it to AWS.
 
         :rtype: :class:`boto.ec2.keypair.KeyPair`
-        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
-                 The material attribute of the new KeyPair object
-                 will contain the the unencrypted PEM encoded RSA private key.
+        :return: A :class:`boto.ec2.keypair.KeyPair` object representing
+            the newly imported key pair.  This object will contain only
+            the key name and the fingerprint.
         """
         public_key_material = base64.b64encode(public_key_material)
         params = {'KeyName': key_name,
