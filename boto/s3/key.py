@@ -1419,6 +1419,7 @@ class Key(object):
             if e.errno == errno.ENOSPC:
                 raise StorageDataError('Out of space for destination file '
                                        '%s' % fp.name)
+            raise
         if cb and (cb_count <= 1 or i > 0) and data_len > 0:
             cb(data_len, cb_size)
         for alg in digesters:
