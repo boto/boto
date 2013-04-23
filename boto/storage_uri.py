@@ -122,7 +122,15 @@ class StorageUri(object):
                 # SubdomainCallingFormat because the latter changes the hostname
                 # that's checked during cert validation for HTTPS connections,
                 # which will fail cert validation (when cert validation is
-                # enabled). Note: the following import can't be moved up to the
+                # enabled).
+                #
+                # The same is not true for S3's HTTPS certificates. In fact,
+                # we don't want to do this for S3 because S3 requires the
+                # subdomain to match the location of the bucket. If the proper
+                # subdomain is not used, the server will return a 301 redirect
+                # with no Location header.
+                #
+                # Note: the following import can't be moved up to the
                 # start of this file else it causes a config import failure when
                 # run from the resumable upload/download tests.
                 from boto.s3.connection import OrdinaryCallingFormat
