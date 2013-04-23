@@ -320,9 +320,6 @@ class ResultSetTestCase(unittest.TestCase):
         self.results = ResultSet()
         self.results.to_call(fake_results, 'john', greeting='Hello', limit=20)
 
-    def test_last_key(self):
-        self.assertEqual(self.results.last_key, 'LastEvaluatedKey')
-
     def test_first_key(self):
         self.assertEqual(self.results.first_key, 'exclusive_start_key')
 
@@ -935,6 +932,55 @@ class TableTestCase(unittest.TestCase):
                 batch.delete_item(username='johndoe25')
 
         self.assertEqual(mock_batch.call_count, 2)
+
+    def test__build_filters(self):
+        filters = self.users._build_filters({
+            'username__eq': 'johndoe',
+            'date_joined__gte': 1234567,
+            'age__in': [30, 31, 32, 33],
+            'last_name__between': ['danzig', 'only'],
+            'first_name__null': False,
+            'gender__null': True,
+        })
+        self.assertEqual(filters, {
+            'username': {
+                'AttributeValueList': [
+                    {
+                        'S': 'johndoe',
+                    },
+                ],
+                'ComparisonOperator': 'EQ',
+            },
+            'date_joined': {
+                'AttributeValueList': [
+                    {
+                        'N': '1234567',
+                    },
+                ],
+                'ComparisonOperator': 'GE',
+            },
+            'age': {
+                'AttributeValueList': [{'NS': ['32', '33', '30', '31']}],
+                'ComparisonOperator': 'IN',
+            },
+            'last_name': {
+                'AttributeValueList': [{'SS': ['only', 'danzig']}],
+                'ComparisonOperator': 'BETWEEN',
+            },
+            'first_name': {
+                'ComparisonOperator': 'NOT_NULL'
+            },
+            'gender': {
+                'ComparisonOperator': 'NULL'
+            },
+        })
+
+        self.assertRaises(exceptions.UnknownFilterTypeError,
+            self.users._build_filters,
+            {
+                'darling__die': True,
+            }
+        )
 
     def test_query(self):
         pass

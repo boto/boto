@@ -485,9 +485,23 @@ class Table(object):
                 'ComparisonOperator': op,
             }
 
+            # Fix up the value for encoding, because it was built to only work
+            # with ``set``s.
+            if isinstance(value, (list, tuple)):
+                value = set(value)
+
             # Special-case the ``NULL/NOT_NULL`` case.
-            if op in ('null', 'nnull'):
+            if field_bits[-1] == 'null':
                 del lookup['AttributeValueList']
+
+                if value is False:
+                    lookup['ComparisonOperator'] = 'NOT_NULL'
+                else:
+                    lookup['ComparisonOperator'] = 'NULL'
+            else:
+                lookup['AttributeValueList'].append(
+                    self._dynamizer.encode(value)
+                )
 
             # Finally, insert it into the filters.
             filters[fieldname] = lookup
