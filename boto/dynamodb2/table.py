@@ -306,7 +306,9 @@ class Table(object):
             ...     'read':20,
             ...     'write': 10,
             ... }, indexes=[
-            ...     KeysOnlyIndex('MostRecentlyJoined', parts=[RangeKey('date_joined')]),
+            ...     KeysOnlyIndex('MostRecentlyJoined', parts=[
+            ...         RangeKey('date_joined')
+            ...     ]),
             ... ])
 
         """
@@ -321,12 +323,12 @@ class Table(object):
 
         # Prep the schema.
         raw_schema = []
-        attribute_definitions = []
+        attr_defs = []
 
         for field in table.schema:
             raw_schema.append(field.schema())
             # Build the attributes off what we know.
-            attribute_definitions.append(field.definition())
+            attr_defs.append(field.definition())
 
         raw_throughput = {
             'ReadCapacityUnits': int(table.throughput['read']),
@@ -345,14 +347,16 @@ class Table(object):
                 attr_define = index_field.definition()
 
                 for part in attr_define:
-                    if not part['AttributeName'] in [attr['AttributeName'] for attr in attribute_definitions]:
-                        attribute_definitions.append(part)
+                    attr_names = [attr['AttributeName'] for attr in attr_defs]
+
+                    if not part['AttributeName'] in attr_names:
+                        attr_defs.append(part)
 
             kwargs['local_secondary_indexes'] = raw_lsi
 
         table.connection.create_table(
             table_name=table.table_name,
-            attribute_definitions=attribute_definitions,
+            attribute_definitions=attr_defs,
             key_schema=raw_schema,
             provisioned_throughput=raw_throughput,
             **kwargs
@@ -566,7 +570,8 @@ class Table(object):
         results.to_call(self._query, **kwargs)
         return results
 
-    def _query(self, limit=None, index=None, reverse=False, exclusive_start_key=None, **filter_kwargs):
+    def _query(self, limit=None, index=None, reverse=False,
+               exclusive_start_key=None, **filter_kwargs):
         kwargs = {
             'limit': limit,
             'index_name': index,

@@ -43,7 +43,10 @@ class DynamoDBv2Test(unittest.TestCase):
             'read': 5,
             'write': 5,
         }, indexes={
-            KeysOnlyIndex('LastNameIndex', parts=[HashKey('username'), RangeKey('last_name')]),
+            KeysOnlyIndex('LastNameIndex', parts=[
+                HashKey('username'),
+                RangeKey('last_name')
+            ]),
         })
         self.addCleanup(users.delete)
 

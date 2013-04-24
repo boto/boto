@@ -235,7 +235,11 @@ class ItemTestCase(unittest.TestCase):
         })
         self.assertEqual(empty_item['username'], 'johndoe')
         self.assertEqual(empty_item['date_joined'], 1366056668)
-        self.assertEqual(sorted(empty_item['friends']), sorted(['alice', 'bob', 'jane']))
+        self.assertEqual(sorted(empty_item['friends']), sorted([
+            'alice',
+            'bob',
+            'jane'
+        ]))
 
     def test_get_keys(self):
         # Setup the data.
@@ -257,7 +261,8 @@ class ItemTestCase(unittest.TestCase):
 
     def test_save_no_changes(self):
         # Unchanged, no save.
-        with mock.patch.object(self.table, '_put_item', return_value=True) as mock_put_item:
+        with mock.patch.object(self.table, '_put_item', return_value=True) \
+                as mock_put_item:
             # Pretend we loaded it via ``get_item``...
             self.johndoe.mark_clean()
             self.assertFalse(self.johndoe.save())
@@ -266,7 +271,8 @@ class ItemTestCase(unittest.TestCase):
 
     def test_save_with_changes(self):
         # With changed data.
-        with mock.patch.object(self.table, '_put_item', return_value=True) as mock_put_item:
+        with mock.patch.object(self.table, '_put_item', return_value=True) \
+                as mock_put_item:
             self.johndoe['first_name'] = 'J'
             self.johndoe['new_attr'] = 'never_seen_before'
             self.assertTrue(self.johndoe.save())
@@ -287,7 +293,8 @@ class ItemTestCase(unittest.TestCase):
             RangeKey('date_joined'),
         ]
 
-        with mock.patch.object(self.table, 'delete_item', return_value=True) as mock_delete_item:
+        with mock.patch.object(self.table, 'delete_item', return_value=True) \
+                as mock_delete_item:
             self.johndoe.delete()
 
         self.assertTrue(mock_delete_item.called)
@@ -642,7 +649,8 @@ class TableTestCase(unittest.TestCase):
     def test_create_simple(self):
         conn = FakeDynamoDBConnection()
 
-        with mock.patch.object(conn, 'create_table', return_value={}) as mock_create_table:
+        with mock.patch.object(conn, 'create_table', return_value={}) \
+                as mock_create_table:
             retval = Table.create('users', schema=[
                 HashKey('username'),
                 RangeKey('date_joined', data_type=NUMBER)
@@ -679,7 +687,8 @@ class TableTestCase(unittest.TestCase):
     def test_create_full(self):
         conn = FakeDynamoDBConnection()
 
-        with mock.patch.object(conn, 'create_table', return_value={}) as mock_create_table:
+        with mock.patch.object(conn, 'create_table', return_value={}) \
+                as mock_create_table:
             retval = Table.create('users', schema=[
                 HashKey('username'),
                 RangeKey('date_joined', data_type=NUMBER)
@@ -687,7 +696,9 @@ class TableTestCase(unittest.TestCase):
                 'read':20,
                 'write': 10,
             }, indexes=[
-                KeysOnlyIndex('FriendCountIndex', parts=[RangeKey('friend_count')]),
+                KeysOnlyIndex('FriendCountIndex', parts=[
+                    RangeKey('friend_count')
+                ]),
             ], connection=conn)
             self.assertTrue(retval)
 
@@ -775,7 +786,10 @@ class TableTestCase(unittest.TestCase):
             }
         }
 
-        with mock.patch.object(self.users.connection, 'describe_table', return_value=expected) as mock_describe:
+        with mock.patch.object(
+                self.users.connection,
+                'describe_table',
+                return_value=expected) as mock_describe:
             self.assertEqual(self.users.throughput['read'], 5)
             self.assertEqual(self.users.throughput['write'], 5)
             self.assertEqual(self.users.schema, None)
@@ -792,7 +806,10 @@ class TableTestCase(unittest.TestCase):
         mock_describe.assert_called_once_with('users')
 
     def test_update(self):
-        with mock.patch.object(self.users.connection, 'update_table', return_value={}) as mock_update:
+        with mock.patch.object(
+                self.users.connection,
+                'update_table',
+                return_value={}) as mock_update:
             self.assertEqual(self.users.throughput['read'], 5)
             self.assertEqual(self.users.throughput['write'], 5)
             self.users.update(throughput={
@@ -808,7 +825,10 @@ class TableTestCase(unittest.TestCase):
         })
 
     def test_delete(self):
-        with mock.patch.object(self.users.connection, 'delete_table', return_value={}) as mock_delete:
+        with mock.patch.object(
+                self.users.connection,
+                'delete_table',
+                return_value={}) as mock_delete:
             self.assertTrue(self.users.delete())
 
         mock_delete.assert_called_once_with('users')
@@ -825,7 +845,10 @@ class TableTestCase(unittest.TestCase):
             }
         }
 
-        with mock.patch.object(self.users.connection, 'get_item', return_value=expected) as mock_get_item:
+        with mock.patch.object(
+                self.users.connection,
+                'get_item',
+                return_value=expected) as mock_get_item:
             item = self.users.get_item(username='johndoe')
             self.assertEqual(item['username'], 'johndoe')
             self.assertEqual(item['first_name'], 'John')
@@ -833,7 +856,10 @@ class TableTestCase(unittest.TestCase):
         mock_get_item.assert_called_once_with('users', {'username': {'S': 'johndoe'}})
 
     def test_put_item(self):
-        with mock.patch.object(self.users.connection, 'put_item', return_value={}) as mock_put_item:
+        with mock.patch.object(
+                self.users.connection,
+                'put_item',
+                return_value={}) as mock_put_item:
             self.users.put_item(data={
                 'username': 'johndoe',
                 'last_name': 'Doe',
@@ -847,16 +873,29 @@ class TableTestCase(unittest.TestCase):
         })
 
     def test_private_put_item(self):
-        with mock.patch.object(self.users.connection, 'put_item', return_value={}) as mock_put_item:
+        with mock.patch.object(
+                self.users.connection,
+                'put_item',
+                return_value={}) as mock_put_item:
             self.users._put_item({'some': 'data'})
 
         mock_put_item.assert_called_once_with('users', {'some': 'data'})
 
     def test_delete_item(self):
-        with mock.patch.object(self.users.connection, 'delete_item', return_value={}) as mock_delete_item:
+        with mock.patch.object(
+                self.users.connection,
+                'delete_item',
+                return_value={}) as mock_delete_item:
             self.assertTrue(self.users.delete_item(username='johndoe', date_joined=23456))
 
-        mock_delete_item.assert_called_once_with('users', {'username': {'S': 'johndoe'}, 'date_joined': {'N': '23456'}})
+        mock_delete_item.assert_called_once_with('users', {
+            'username': {
+                'S': 'johndoe'
+            },
+            'date_joined': {
+                'N': '23456'
+            }
+        })
 
     def test_get_key_fields_no_schema_populated(self):
         expected = {
@@ -905,7 +944,10 @@ class TableTestCase(unittest.TestCase):
             }
         }
 
-        with mock.patch.object(self.users.connection, 'describe_table', return_value=expected) as mock_describe:
+        with mock.patch.object(
+                self.users.connection,
+                'describe_table',
+                return_value=expected) as mock_describe:
             self.assertEqual(self.users.schema, None)
 
             key_fields = self.users.get_key_fields()
@@ -916,14 +958,20 @@ class TableTestCase(unittest.TestCase):
         mock_describe.assert_called_once_with('users')
 
     def test_batch_write_no_writes(self):
-        with mock.patch.object(self.users.connection, 'batch_write_item', return_value={}) as mock_batch:
+        with mock.patch.object(
+                self.users.connection,
+                'batch_write_item',
+                return_value={}) as mock_batch:
             with self.users.batch_write() as batch:
                 pass
 
         self.assertFalse(mock_batch.called)
 
     def test_batch_write(self):
-        with mock.patch.object(self.users.connection, 'batch_write_item', return_value={}) as mock_batch:
+        with mock.patch.object(
+                self.users.connection,
+                'batch_write_item',
+                return_value={}) as mock_batch:
             with self.users.batch_write() as batch:
                 batch.put_item(data={
                     'username': 'jane',
@@ -964,7 +1012,10 @@ class TableTestCase(unittest.TestCase):
         })
 
     def test_batch_write_dont_swallow_exceptions(self):
-        with mock.patch.object(self.users.connection, 'batch_write_item', return_value={}) as mock_batch:
+        with mock.patch.object(
+                self.users.connection,
+                'batch_write_item',
+                return_value={}) as mock_batch:
             try:
                 with self.users.batch_write() as batch:
                     raise Exception('OH NOES')
@@ -974,7 +1025,10 @@ class TableTestCase(unittest.TestCase):
         self.assertFalse(mock_batch.called)
 
     def test_batch_write_flushing(self):
-        with mock.patch.object(self.users.connection, 'batch_write_item', return_value={}) as mock_batch:
+        with mock.patch.object(
+                self.users.connection,
+                'batch_write_item',
+                return_value={}) as mock_batch:
             with self.users.batch_write() as batch:
                 batch.put_item(data={
                     'username': 'jane',
@@ -1159,7 +1213,10 @@ class TableTestCase(unittest.TestCase):
             "ScannedCount": 4
         }
 
-        with mock.patch.object(self.users.connection, 'query', return_value=expected) as mock_query:
+        with mock.patch.object(
+                self.users.connection,
+                'query',
+                return_value=expected) as mock_query:
             results = self.users._query(
                 limit=4,
                 reverse=True,
@@ -1191,7 +1248,10 @@ class TableTestCase(unittest.TestCase):
             },
         }
 
-        with mock.patch.object(self.users.connection, 'query', return_value=expected) as mock_query_2:
+        with mock.patch.object(
+                self.users.connection,
+                'query',
+                return_value=expected) as mock_query_2:
             results = self.users._query(
                 limit=4,
                 reverse=True,
@@ -1260,7 +1320,10 @@ class TableTestCase(unittest.TestCase):
             "ScannedCount": 4
         }
 
-        with mock.patch.object(self.users.connection, 'scan', return_value=expected) as mock_scan:
+        with mock.patch.object(
+                self.users.connection,
+                'scan',
+                return_value=expected) as mock_scan:
             results = self.users._scan(
                 limit=2,
                 friend_count__lte=2
@@ -1287,7 +1350,10 @@ class TableTestCase(unittest.TestCase):
             },
         }
 
-        with mock.patch.object(self.users.connection, 'scan', return_value=expected) as mock_scan_2:
+        with mock.patch.object(
+                self.users.connection,
+                'scan',
+                return_value=expected) as mock_scan_2:
             results = self.users._scan(
                 limit=3,
                 friend_count__lte=2,
@@ -1337,7 +1403,10 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(len(results._results), 0)
         self.assertEqual(results.the_callable, self.users._query)
 
-        with mock.patch.object(results, 'the_callable', return_value=items_1) as mock_query:
+        with mock.patch.object(
+                results,
+                'the_callable',
+                return_value=items_1) as mock_query:
             res_1 = results.next()
             # Now it should be populated.
             self.assertEqual(len(results._results), 2)
@@ -1357,7 +1426,10 @@ class TableTestCase(unittest.TestCase):
             ],
         }
 
-        with mock.patch.object(results, 'the_callable', return_value=items_2) as mock_query_2:
+        with mock.patch.object(
+                results,
+                'the_callable',
+                return_value=items_2) as mock_query_2:
             res_3 = results.next()
             # More should have been appended.
             self.assertEqual(len(results._results), 3)
@@ -1389,7 +1461,10 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(len(results._results), 0)
         self.assertEqual(results.the_callable, self.users._scan)
 
-        with mock.patch.object(results, 'the_callable', return_value=items_1) as mock_scan:
+        with mock.patch.object(
+                results,
+                'the_callable',
+                return_value=items_1) as mock_scan:
             res_1 = results.next()
             # Now it should be populated.
             self.assertEqual(len(results._results), 2)
@@ -1409,7 +1484,10 @@ class TableTestCase(unittest.TestCase):
             ],
         }
 
-        with mock.patch.object(results, 'the_callable', return_value=items_2) as mock_scan_2:
+        with mock.patch.object(
+                results,
+                'the_callable',
+                return_value=items_2) as mock_scan_2:
             res_3 = results.next()
             # More should have been appended.
             self.assertEqual(len(results._results), 3)
@@ -1458,7 +1536,10 @@ class TableTestCase(unittest.TestCase):
             }
         }
 
-        with mock.patch.object(self.users, 'describe', return_value=expected) as mock_count:
+        with mock.patch.object(
+                self.users,
+                'describe',
+                return_value=expected) as mock_count:
             self.assertEqual(self.users.count(), 5)
 
     def test_private_batch_get(self):
@@ -1499,7 +1580,10 @@ class TableTestCase(unittest.TestCase):
             },
         }
 
-        with mock.patch.object(self.users.connection, 'batch_get_item', return_value=expected) as mock_batch_get:
+        with mock.patch.object(
+                self.users.connection,
+                'batch_get_item',
+                return_value=expected) as mock_batch_get:
             results = self.users._batch_get(keys=[
                 {'username': 'alice', 'friend_count': 1},
                 {'username': 'bob', 'friend_count': 1},
@@ -1536,7 +1620,10 @@ class TableTestCase(unittest.TestCase):
             ],
         }
 
-        with mock.patch.object(self.users.connection, 'batch_get_item', return_value=expected) as mock_batch_get_2:
+        with mock.patch.object(
+                self.users.connection,
+                'batch_get_item',
+                return_value=expected) as mock_batch_get_2:
             results = self.users._batch_get(keys=[
                 {'username': 'alice', 'friend_count': 1},
                 {'username': 'bob', 'friend_count': 1},
@@ -1596,7 +1683,10 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(len(results._results), 0)
         self.assertEqual(results.the_callable, self.users._batch_get)
 
-        with mock.patch.object(results, 'the_callable', return_value=items_1) as mock_batch_get:
+        with mock.patch.object(
+                results,
+                'the_callable',
+                return_value=items_1) as mock_batch_get:
             res_1 = results.next()
             # Now it should be populated.
             self.assertEqual(len(results._results), 2)
@@ -1617,7 +1707,10 @@ class TableTestCase(unittest.TestCase):
             ],
         }
 
-        with mock.patch.object(results, 'the_callable', return_value=items_2) as mock_batch_get_2:
+        with mock.patch.object(
+                results,
+                'the_callable',
+                return_value=items_2) as mock_batch_get_2:
             res_3 = results.next()
             # More should have been appended.
             self.assertEqual(len(results._results), 3)
