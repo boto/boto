@@ -88,8 +88,8 @@ class DynamoDBv2Test(unittest.TestCase):
 
         jane = users.get_item(username='jane', friend_count=3)
         self.assertEqual(jane['first_name'], 'Jane')
-        jane.friend_count = 2
-        jane.save()
+        jane['last_name'] = 'Doh'
+        self.assertTrue(jane.save())
 
         results = users.query(
             username__eq='johndoe',
@@ -113,14 +113,18 @@ class DynamoDBv2Test(unittest.TestCase):
         johndoe = users.get_item(username='johndoe', friend_count=4)
         johndoe.delete()
 
-        # FIXME: Test this once it's implemented.
-        # results = users.batch_get(keys=[
-        #     {'username': 'bob', friend_count=1},
-        #     {'username': 'jane', friend_count=2}
-        # ])
-        #
-        # for res in results:
-        #     self.assertTrue(res['first_name'] in ['bob', 'jane'])
+        results = users.batch_get(keys=[
+            {'username': 'bob', 'friend_count': 1},
+            {'username': 'jane', 'friend_count': 3}
+        ])
+
+        batch_users = []
+
+        for res in results:
+            batch_users.append(res)
+            self.assertTrue(res['first_name'] in ['Bob', 'Jane'])
+
+        self.assertEqual(len(batch_users), 2)
 
         # Because lag time.
         self.assertTrue(users.count() > -1)

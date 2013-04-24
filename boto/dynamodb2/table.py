@@ -210,8 +210,8 @@ class BatchGetResultSet(ResultSet):
 
         for offset, key_data in enumerate(results.get('unprocessed_keys', [])):
             # We've got an unprocessed key. Reinsert it into the list.
-            # FIXME: Depending on DynamoDB v2's behavior on non-existant keys,
-            #        this could cause an infinite loop & lots of requests! Yikes!
+            # DynamoDB only returns valid keys, so there should be no risk of
+            # missing keys ever making it here.
             self._keys_left.insert(offset, key_data)
 
         if len(self._keys_left) <= 0:
@@ -678,10 +678,8 @@ class Table(object):
 
     def _batch_get(self, keys):
         items = {
-            'RequestItems': {
-                self.table_name: {
-                    'Keys': [],
-                },
+            self.table_name: {
+                'Keys': [],
             },
         }
 
@@ -691,7 +689,7 @@ class Table(object):
             for key, value in key_data.items():
                 raw_key[key] = self._dynamizer.encode(value)
 
-            items['RequestItems'][self.table_name]['Keys'].append(raw_key)
+            items[self.table_name]['Keys'].append(raw_key)
 
         raw_results = self.connection.batch_get_item(request_items=items)
         results = []
@@ -736,8 +734,6 @@ class BatchTable(object):
         return self
 
     def __exit__(self, type, value, traceback):
-        # FIXME: Crap. This swallows exceptions! Don't let it do that!
-
         if not self._to_put and not self._to_delete:
             return False
 

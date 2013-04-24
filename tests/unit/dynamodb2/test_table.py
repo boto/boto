@@ -1512,21 +1512,19 @@ class TableTestCase(unittest.TestCase):
             self.assertEqual(results['unprocessed_keys'], [])
 
         mock_batch_get.assert_called_once_with(request_items={
-            'RequestItems': {
-                'users': {
-                    'Keys': [
-                        {
-                            'username': {'S': 'alice'},
-                            'friend_count': {'N': '1'}
-                        },
-                        {
-                            'username': {'S': 'bob'},
-                            'friend_count': {'N': '1'}
-                        }, {
-                            'username': {'S': 'jane'},
-                        }
-                    ]
-                }
+            'users': {
+                'Keys': [
+                    {
+                        'username': {'S': 'alice'},
+                        'friend_count': {'N': '1'}
+                    },
+                    {
+                        'username': {'S': 'bob'},
+                        'friend_count': {'N': '1'}
+                    }, {
+                        'username': {'S': 'jane'},
+                    }
+                ]
             }
         })
 
@@ -1553,21 +1551,19 @@ class TableTestCase(unittest.TestCase):
             ])
 
         mock_batch_get_2.assert_called_once_with(request_items={
-            'RequestItems': {
-                'users': {
-                    'Keys': [
-                        {
-                            'username': {'S': 'alice'},
-                            'friend_count': {'N': '1'}
-                        },
-                        {
-                            'username': {'S': 'bob'},
-                            'friend_count': {'N': '1'}
-                        }, {
-                            'username': {'S': 'jane'},
-                        }
-                    ]
-                }
+            'users': {
+                'Keys': [
+                    {
+                        'username': {'S': 'alice'},
+                        'friend_count': {'N': '1'}
+                    },
+                    {
+                        'username': {'S': 'bob'},
+                        'friend_count': {'N': '1'}
+                    }, {
+                        'username': {'S': 'jane'},
+                    }
+                ]
             }
         })
 
