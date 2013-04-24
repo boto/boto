@@ -22,11 +22,11 @@ class SchemaFieldsTestCase(unittest.TestCase):
 
         self.assertEqual(hash_key.definition(), {
             'AttributeName': 'hello',
-            'AttributeType': 'HASH'
+            'AttributeType': 'S'
         })
         self.assertEqual(hash_key.schema(), {
             'AttributeName': 'hello',
-            'KeyType': 'S'
+            'KeyType': 'HASH'
         })
 
     def test_range_key(self):
@@ -37,11 +37,11 @@ class SchemaFieldsTestCase(unittest.TestCase):
 
         self.assertEqual(range_key.definition(), {
             'AttributeName': 'hello',
-            'AttributeType': 'RANGE'
+            'AttributeType': 'S'
         })
         self.assertEqual(range_key.schema(), {
             'AttributeName': 'hello',
-            'KeyType': 'S'
+            'KeyType': 'RANGE'
         })
 
     def test_alternate_type(self):
@@ -52,11 +52,11 @@ class SchemaFieldsTestCase(unittest.TestCase):
 
         self.assertEqual(alt_key.definition(), {
             'AttributeName': 'alt',
-            'AttributeType': 'HASH'
+            'AttributeType': 'N'
         })
         self.assertEqual(alt_key.schema(), {
             'AttributeName': 'alt',
-            'KeyType': 'N'
+            'KeyType': 'HASH'
         })
 
 
@@ -74,19 +74,19 @@ class IndexFieldTestCase(unittest.TestCase):
         self.assertEqual(all_index.projection_type, 'ALL')
 
         self.assertEqual(all_index.definition(), [
-            {'AttributeName': 'username', 'AttributeType': 'HASH'},
-            {'AttributeName': 'date_joined', 'AttributeType': 'RANGE'}
+            {'AttributeName': 'username', 'AttributeType': 'S'},
+            {'AttributeName': 'date_joined', 'AttributeType': 'S'}
         ])
         self.assertEqual(all_index.schema(), {
             'IndexName': 'AllKeys',
             'KeySchema': [
                 {
                     'AttributeName': 'username',
-                    'KeyType': 'S'
+                    'KeyType': 'HASH'
                 },
                 {
                     'AttributeName': 'date_joined',
-                    'KeyType': 'S'
+                    'KeyType': 'RANGE'
                 }
             ],
             'Projection': {
@@ -107,19 +107,19 @@ class IndexFieldTestCase(unittest.TestCase):
         self.assertEqual(keys_only.projection_type, 'KEYS_ONLY')
 
         self.assertEqual(keys_only.definition(), [
-            {'AttributeName': 'username', 'AttributeType': 'HASH'},
-            {'AttributeName': 'date_joined', 'AttributeType': 'RANGE'}
+            {'AttributeName': 'username', 'AttributeType': 'S'},
+            {'AttributeName': 'date_joined', 'AttributeType': 'S'}
         ])
         self.assertEqual(keys_only.schema(), {
             'IndexName': 'KeysOnly',
             'KeySchema': [
                 {
                     'AttributeName': 'username',
-                    'KeyType': 'S'
+                    'KeyType': 'HASH'
                 },
                 {
                     'AttributeName': 'date_joined',
-                    'KeyType': 'S'
+                    'KeyType': 'RANGE'
                 }
             ],
             'Projection': {
@@ -143,19 +143,19 @@ class IndexFieldTestCase(unittest.TestCase):
         self.assertEqual(include_index.projection_type, 'INCLUDE')
 
         self.assertEqual(include_index.definition(), [
-            {'AttributeName': 'username', 'AttributeType': 'HASH'},
-            {'AttributeName': 'date_joined', 'AttributeType': 'RANGE'}
+            {'AttributeName': 'username', 'AttributeType': 'S'},
+            {'AttributeName': 'date_joined', 'AttributeType': 'S'}
         ])
         self.assertEqual(include_index.schema(), {
             'IndexName': 'IncludeKeys',
             'KeySchema': [
                 {
                     'AttributeName': 'username',
-                    'KeyType': 'S'
+                    'KeyType': 'HASH'
                 },
                 {
                     'AttributeName': 'date_joined',
-                    'KeyType': 'S'
+                    'KeyType': 'RANGE'
                 }
             ],
             'Projection': {
@@ -291,10 +291,10 @@ class ItemTestCase(unittest.TestCase):
             self.johndoe.delete()
 
         self.assertTrue(mock_delete_item.called)
-        mock_delete_item.assert_called_once_with(key={
-            'username': {'S': 'johndoe'},
-            'date_joined': {'N': '12345'}
-        })
+        mock_delete_item.assert_called_once_with(
+            username='johndoe',
+            date_joined=12345
+        )
 
 
 def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
@@ -572,27 +572,28 @@ class TableTestCase(unittest.TestCase):
             self.assertTrue(retval)
 
         self.assertTrue(mock_create_table.called)
-        mock_create_table.assert_called_once_with('users', [
+        mock_create_table.assert_called_once_with(attribute_definitions=[
             {
                 'AttributeName': 'username',
-                'AttributeType': 'HASH'
+                'AttributeType': 'S'
             },
             {
                 'AttributeName': 'date_joined',
-                'AttributeType': 'RANGE'
+                'AttributeType': 'N'
             }
         ],
-        [
+        table_name='users',
+        key_schema=[
             {
-                'KeyType': 'S',
+                'KeyType': 'HASH',
                 'AttributeName': 'username'
             },
             {
-                'KeyType': 'N',
+                'KeyType': 'RANGE',
                 'AttributeName': 'date_joined'
             }
         ],
-        {
+        provisioned_throughput={
             'WriteCapacityUnits': 5,
             'ReadCapacityUnits': 5
         })
@@ -613,31 +614,32 @@ class TableTestCase(unittest.TestCase):
             self.assertTrue(retval)
 
         self.assertTrue(mock_create_table.called)
-        mock_create_table.assert_called_once_with('users', [
+        mock_create_table.assert_called_once_with(attribute_definitions=[
             {
                 'AttributeName': 'username',
-                'AttributeType': 'HASH'
+                'AttributeType': 'S'
             },
             {
                 'AttributeName': 'date_joined',
-                'AttributeType': 'RANGE'
+                'AttributeType': 'N'
             },
             {
                 'AttributeName': 'friend_count',
-                'AttributeType': 'RANGE'
+                'AttributeType': 'S'
             }
         ],
-        [
+        key_schema=[
             {
-                'KeyType': 'S',
+                'KeyType': 'HASH',
                 'AttributeName': 'username'
             },
             {
-                'KeyType': 'N',
+                'KeyType': 'RANGE',
                 'AttributeName': 'date_joined'
             }
         ],
-        {
+        table_name='users',
+        provisioned_throughput={
             'WriteCapacityUnits': 10,
             'ReadCapacityUnits': 20
         },
@@ -645,7 +647,7 @@ class TableTestCase(unittest.TestCase):
             {
                 'KeySchema': [
                     {
-                        'KeyType': 'S',
+                        'KeyType': 'RANGE',
                         'AttributeName': 'friend_count'
                     }
                 ],
@@ -658,7 +660,7 @@ class TableTestCase(unittest.TestCase):
 
     def test_describe(self):
         expected = {
-            "users": {
+            "Table": {
                 "AttributeDefinitions": [
                     {
                         "AttributeName": "username",
@@ -780,7 +782,7 @@ class TableTestCase(unittest.TestCase):
 
     def test_get_key_fields_no_schema_populated(self):
         expected = {
-            "users": {
+            "Table": {
                 "AttributeDefinitions": [
                     {
                         "AttributeName": "username",
@@ -855,7 +857,7 @@ class TableTestCase(unittest.TestCase):
                     'date_joined': 12342888
                 })
 
-        mock_batch.assert_called_once_with('users', {
+        mock_batch.assert_called_once_with({
             'users': [
                 {
                     'PutRequest': {
@@ -1341,7 +1343,7 @@ class TableTestCase(unittest.TestCase):
 
     def test_count(self):
         expected = {
-            "users": {
+            "Table": {
                 "AttributeDefinitions": [
                     {
                         "AttributeName": "username",

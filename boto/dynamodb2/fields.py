@@ -17,13 +17,13 @@ class BaseSchemaField(object):
     def definition(self):
         return {
             'AttributeName': self.name,
-            'AttributeType': self.attr_type,
+            'AttributeType': self.data_type,
         }
 
     def schema(self):
         return {
             'AttributeName': self.name,
-            'KeyType': self.data_type,
+            'KeyType': self.attr_type,
         }
 
 
@@ -64,7 +64,7 @@ class BaseIndexField(object):
         for part in self.parts:
             definition.append({
                 'AttributeName': part.name,
-                'AttributeType': part.attr_type,
+                'AttributeType': part.data_type,
             })
 
         return definition

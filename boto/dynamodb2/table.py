@@ -103,8 +103,13 @@ class Item(object):
         return returned
 
     def delete(self):
-        key_data = self.get_keys()
-        return self.table.delete_item(key=key_data)
+        key_fields = self.table.get_key_fields()
+        key_data = {}
+
+        for key in key_fields:
+            key_data[key] = self[key]
+
+        return self.table.delete_item(**key_data)
 
 
 class ResultSet(object):
@@ -308,10 +313,10 @@ class Table(object):
             kwargs['local_secondary_indexes'] = raw_lsi
 
         table.connection.create_table(
-            table.table_name,
-            attribute_definitions,
-            raw_schema,
-            raw_throughput,
+            table_name=table.table_name,
+            attribute_definitions=attribute_definitions,
+            key_schema=raw_schema,
+            provisioned_throughput=raw_throughput,
             **kwargs
         )
         return table
@@ -366,21 +371,18 @@ class Table(object):
 
         # Blindly update throughput, since what's on DynamoDB's end is likely
         # more correct.
-        self.throughput['read'] = int(result[self.table_name]\
-                                            ['ProvisionedThroughput']\
-                                            ['ReadCapacityUnits'])
-        self.throughput['write'] = int(result[self.table_name]\
-                                             ['ProvisionedThroughput']\
-                                             ['WriteCapacityUnits'])
+        raw_throughput = result['Table']['ProvisionedThroughput']
+        self.throughput['read'] = int(raw_throughput['ReadCapacityUnits'])
+        self.throughput['write'] = int(raw_throughput['WriteCapacityUnits'])
 
         if not self.schema:
             # Since we have the data, build the schema.
-            raw_schema = result[self.table_name]['KeySchema']
+            raw_schema = result['Table']['KeySchema']
             self.schema = self._introspect_schema(raw_schema)
 
         if not self.indexes:
             # Build the index information as well.
-            raw_indexes = result[self.table_name]['LocalSecondaryIndexes']
+            raw_indexes = result['Table']['LocalSecondaryIndexes']
             self.indexes = self._introspect_indexes(raw_indexes)
 
         # This is leaky.
@@ -721,7 +723,7 @@ class BatchTable(object):
                 }
             })
 
-        self.table.connection.batch_write_item(self.table.table_name, batch_data)
+        self.table.connection.batch_write_item(batch_data)
         self._to_put = []
         self._to_delete = []
         return True
