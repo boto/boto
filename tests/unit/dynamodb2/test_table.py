@@ -982,6 +982,206 @@ class TableTestCase(unittest.TestCase):
             }
         )
 
+    def test_private_query(self):
+        expected = {
+            "ConsumedCapacity": {
+                "CapacityUnits": 0.5,
+                "TableName": "users"
+            },
+            "Count": 4,
+            "Items": [
+                {
+                    'username': {'S': 'johndoe'},
+                    'first_name': {'S': 'John'},
+                    'last_name': {'S': 'Doe'},
+                    'date_joined': {'N': '1366056668'},
+                    'friend_count': {'N': '3'},
+                    'friends': {'SS': ['alice', 'bob', 'jane']},
+                },
+                {
+                    'username': {'S': 'jane'},
+                    'first_name': {'S': 'Jane'},
+                    'last_name': {'S': 'Doe'},
+                    'date_joined': {'N': '1366057777'},
+                    'friend_count': {'N': '2'},
+                    'friends': {'SS': ['alice', 'johndoe']},
+                },
+                {
+                    'username': {'S': 'alice'},
+                    'first_name': {'S': 'Alice'},
+                    'last_name': {'S': 'Expert'},
+                    'date_joined': {'N': '1366056680'},
+                    'friend_count': {'N': '1'},
+                    'friends': {'SS': ['jane']},
+                },
+                {
+                    'username': {'S': 'bob'},
+                    'first_name': {'S': 'Bob'},
+                    'last_name': {'S': 'Smith'},
+                    'date_joined': {'N': '1366056888'},
+                    'friend_count': {'N': '1'},
+                    'friends': {'SS': ['johndoe']},
+                },
+            ],
+            "ScannedCount": 4
+        }
+
+        with mock.patch.object(self.users.connection, 'query', return_value=expected) as mock_query:
+            results = self.users._query(
+                limit=4,
+                reverse=True,
+                username__between=['aaa', 'mmm']
+            )
+            usernames = [res['username'] for res in results['results']]
+            self.assertEqual(usernames, ['johndoe', 'jane', 'alice', 'bob'])
+            self.assertEqual(len(results['results']), 4)
+            self.assertEqual(results['last_key'], None)
+
+        mock_query.assert_called_once_with('users',
+            key_conditions={
+                'username': {
+                    'AttributeValueList': [
+                        {'SS': ['mmm', 'aaa']}
+                    ],
+                    'ComparisonOperator': 'BETWEEN',
+                }
+            },
+            index_name=None,
+            scan_index_forward=True,
+            limit=4
+        )
+
+        # Now alter the expected.
+        expected['LastEvaluatedKey'] = {
+            'username': {
+                'S': 'johndoe',
+            },
+        }
+
+        with mock.patch.object(self.users.connection, 'query', return_value=expected) as mock_query_2:
+            results = self.users._query(
+                limit=4,
+                reverse=True,
+                username__between=['aaa', 'mmm'],
+                exclusive_start_key={
+                    'username': 'adam',
+                }
+            )
+            usernames = [res['username'] for res in results['results']]
+            self.assertEqual(usernames, ['johndoe', 'jane', 'alice', 'bob'])
+            self.assertEqual(len(results['results']), 4)
+            self.assertEqual(results['last_key'], {'username': 'johndoe'})
+
+        mock_query_2.assert_called_once_with('users',
+            key_conditions={
+                'username': {
+                    'AttributeValueList': [
+                        {'SS': ['mmm', 'aaa']}
+                    ],
+                    'ComparisonOperator': 'BETWEEN',
+                }
+            },
+            index_name=None,
+            scan_index_forward=True,
+            limit=4,
+            exclusive_start_key={
+                'username': {
+                    'S': 'adam',
+                },
+            }
+        )
+
+    def test_private_scan(self):
+        expected = {
+            "ConsumedCapacity": {
+                "CapacityUnits": 0.5,
+                "TableName": "users"
+            },
+            "Count": 4,
+            "Items": [
+                {
+                    'username': {'S': 'alice'},
+                    'first_name': {'S': 'Alice'},
+                    'last_name': {'S': 'Expert'},
+                    'date_joined': {'N': '1366056680'},
+                    'friend_count': {'N': '1'},
+                    'friends': {'SS': ['jane']},
+                },
+                {
+                    'username': {'S': 'bob'},
+                    'first_name': {'S': 'Bob'},
+                    'last_name': {'S': 'Smith'},
+                    'date_joined': {'N': '1366056888'},
+                    'friend_count': {'N': '1'},
+                    'friends': {'SS': ['johndoe']},
+                },
+                {
+                    'username': {'S': 'jane'},
+                    'first_name': {'S': 'Jane'},
+                    'last_name': {'S': 'Doe'},
+                    'date_joined': {'N': '1366057777'},
+                    'friend_count': {'N': '2'},
+                    'friends': {'SS': ['alice', 'johndoe']},
+                },
+            ],
+            "ScannedCount": 4
+        }
+
+        with mock.patch.object(self.users.connection, 'scan', return_value=expected) as mock_scan:
+            results = self.users._scan(
+                limit=2,
+                friend_count__lte=2
+            )
+            usernames = [res['username'] for res in results['results']]
+            self.assertEqual(usernames, ['alice', 'bob', 'jane'])
+            self.assertEqual(len(results['results']), 3)
+            self.assertEqual(results['last_key'], None)
+
+        mock_scan.assert_called_once_with('users',
+            scan_filter={
+                'friend_count': {
+                    'AttributeValueList': [{'N': '2'}],
+                    'ComparisonOperator': 'LE',
+                }
+            },
+            limit=2
+        )
+
+        # Now alter the expected.
+        expected['LastEvaluatedKey'] = {
+            'username': {
+                'S': 'jane',
+            },
+        }
+
+        with mock.patch.object(self.users.connection, 'scan', return_value=expected) as mock_scan_2:
+            results = self.users._scan(
+                limit=3,
+                friend_count__lte=2,
+                exclusive_start_key={
+                    'username': 'adam',
+                }
+            )
+            usernames = [res['username'] for res in results['results']]
+            self.assertEqual(usernames, ['alice', 'bob', 'jane'])
+            self.assertEqual(len(results['results']), 3)
+            self.assertEqual(results['last_key'], {'username': 'jane'})
+
+        mock_scan_2.assert_called_once_with('users',
+            scan_filter={
+                'friend_count': {
+                    'AttributeValueList': [{'N': '2'}],
+                    'ComparisonOperator': 'LE',
+                }
+            },
+            limit=3,
+            exclusive_start_key={
+                'username': {
+                    'S': 'adam',
+                },
+            }
+        )
+
     def test_query(self):
         pass
 

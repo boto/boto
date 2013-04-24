@@ -531,8 +531,14 @@ class Table(object):
             'limit': limit,
             'index_name': index,
             'scan_index_forward': reverse,
-            'exclusive_start_key': exclusive_start_key,
         }
+
+        if exclusive_start_key:
+            kwargs['exclusive_start_key'] = {}
+
+            for key, value in exclusive_start_key.items():
+                kwargs['exclusive_start_key'][key] = \
+                    self._dynamizer.encode(value)
 
         # Convert the filters into something we can actually use.
         kwargs['key_conditions'] = self._build_filters(filter_kwargs)
@@ -542,6 +548,7 @@ class Table(object):
             **kwargs
         )
         results = []
+        last_key = None
 
         for raw_item in raw_results.get('Items', []):
             item = Item(self)
@@ -550,9 +557,15 @@ class Table(object):
             })
             results.append(item)
 
+        if raw_results.get('LastEvaluatedKey', None):
+            last_key = {}
+
+            for key, value in raw_results['LastEvaluatedKey'].items():
+                last_key[key] = self._dynamizer.decode(value)
+
         return {
             'results': results,
-            'last_key': raw_results.get('LastEvaluatedKey', None),
+            'last_key': last_key,
         }
 
     def scan(self, limit=None, **filter_kwargs):
@@ -571,8 +584,14 @@ class Table(object):
     def _scan(self, limit=None, exclusive_start_key=None, **filter_kwargs):
         kwargs = {
             'limit': limit,
-            'exclusive_start_key': exclusive_start_key,
         }
+
+        if exclusive_start_key:
+            kwargs['exclusive_start_key'] = {}
+
+            for key, value in exclusive_start_key.items():
+                kwargs['exclusive_start_key'][key] = \
+                    self._dynamizer.encode(value)
 
         # Convert the filters into something we can actually use.
         kwargs['scan_filter'] = self._build_filters(filter_kwargs)
@@ -582,6 +601,7 @@ class Table(object):
             **kwargs
         )
         results = []
+        last_key = None
 
         for raw_item in raw_results.get('Items', []):
             item = Item(self)
@@ -590,9 +610,15 @@ class Table(object):
             })
             results.append(item)
 
+        if raw_results.get('LastEvaluatedKey', None):
+            last_key = {}
+
+            for key, value in raw_results['LastEvaluatedKey'].items():
+                last_key[key] = self._dynamizer.decode(value)
+
         return {
             'results': results,
-            'last_key': raw_results.get('LastEvaluatedKey', None),
+            'last_key': last_key,
         }
 
     def batch_get(self, keys):
