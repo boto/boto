@@ -2,7 +2,7 @@ from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
                                    AllIndex, KeysOnlyIndex, IncludeIndex)
 from boto.dynamodb2.layer1 import DynamoDBConnection
-from boto.dynamodb2.types import Dynamizer, FILTER_OPERATORS
+from boto.dynamodb2.types import Dynamizer, FILTER_OPERATORS, QUERY_OPERATORS
 
 
 class Item(object):
@@ -140,10 +140,10 @@ class ResultSet(object):
         self._offset += 1
 
         if self._offset >= len(self._results):
-            self.fetch_more()
+            if self._results_left is False:
+                raise StopIteration()
 
-        if self._results_left is False:
-            raise StopIteration()
+            self.fetch_more()
 
         return self._results[self._offset]
 
@@ -177,7 +177,7 @@ class ResultSet(object):
             self._results_left = False
 
         # Decrease the limit, if it's present.
-        if 'limit' in self.call_kwargs:
+        if self.call_kwargs.get('limit'):
             self.call_kwargs['limit'] -= len(results['results'])
 
 
@@ -444,7 +444,7 @@ class Table(object):
     def batch_write(self):
         return BatchTable(self)
 
-    def _build_filters(self, filter_kwargs):
+    def _build_filters(self, filter_kwargs, using=QUERY_OPERATORS):
         """
         FIXME: Build something like:
 
@@ -470,7 +470,7 @@ class Table(object):
             fieldname = '__'.join(field_bits[:-1])
 
             try:
-                op = FILTER_OPERATORS[field_bits[-1]]
+                op = using[field_bits[-1]]
             except KeyError:
                 raise exceptions.UnknownFilterTypeError(
                     "Operator '%s' from '%s' is not recognized." % (
@@ -541,7 +541,10 @@ class Table(object):
                     self._dynamizer.encode(value)
 
         # Convert the filters into something we can actually use.
-        kwargs['key_conditions'] = self._build_filters(filter_kwargs)
+        kwargs['key_conditions'] = self._build_filters(
+            filter_kwargs,
+            using=QUERY_OPERATORS
+        )
 
         raw_results = self.connection.query(
             self.table_name,
@@ -594,7 +597,10 @@ class Table(object):
                     self._dynamizer.encode(value)
 
         # Convert the filters into something we can actually use.
-        kwargs['scan_filter'] = self._build_filters(filter_kwargs)
+        kwargs['scan_filter'] = self._build_filters(
+            filter_kwargs,
+            using=FILTER_OPERATORS
+        )
 
         raw_results = self.connection.scan(
             self.table_name,
@@ -652,10 +658,8 @@ class Table(object):
         pass
 
     def count(self):
-        # FIXME: This doesn't map directly onto the underlying API but
-        #        is a common database-style operation. Use ``scan`` (``query?``)
-        #        to build a count?
-        pass
+        info = self.describe()
+        return info[self.table_name].get('ItemCount', 0)
 
 
 class BatchTable(object):

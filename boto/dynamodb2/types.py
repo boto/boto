@@ -12,6 +12,16 @@ STRING_SET = 'SS'
 NUMBER_SET = 'NS'
 BINARY_SET = 'BS'
 
+QUERY_OPERATORS = {
+    'eq': 'EQ',
+    'lte': 'LE',
+    'lt': 'LT',
+    'gte': 'GE',
+    'gt': 'GT',
+    'beginswith': 'BEGINS_WITH',
+    'between': 'BETWEEN',
+}
+
 FILTER_OPERATORS = {
     'eq': 'EQ',
     'ne': 'NE',

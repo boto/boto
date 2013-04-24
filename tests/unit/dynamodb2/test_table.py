@@ -5,7 +5,8 @@ from boto.dynamodb2.fields import (HashKey, RangeKey,
                                    AllIndex, KeysOnlyIndex, IncludeIndex)
 from boto.dynamodb2.layer1 import DynamoDBConnection
 from boto.dynamodb2.table import Item, Table, ResultSet
-from boto.dynamodb2.types import STRING, NUMBER
+from boto.dynamodb2.types import (STRING, NUMBER,
+                                  FILTER_OPERATORS, QUERY_OPERATORS)
 
 
 FakeDynamoDBConnection = mock.create_autospec(DynamoDBConnection)
@@ -308,10 +309,14 @@ def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
         if i < end_cap:
             results.append("%s %s #%s" % (greeting, name, i))
 
-    return {
+    retval = {
         'results': results,
-        'last_key': exclusive_start_key + 5
     }
+
+    if exclusive_start_key + 5 < end_cap:
+        retval['last_key'] = exclusive_start_key + 5
+
+    return retval
 
 
 class ResultSetTestCase(unittest.TestCase):
@@ -941,7 +946,7 @@ class TableTestCase(unittest.TestCase):
             'last_name__between': ['danzig', 'only'],
             'first_name__null': False,
             'gender__null': True,
-        })
+        }, using=FILTER_OPERATORS)
         self.assertEqual(filters, {
             'username': {
                 'AttributeValueList': [
@@ -980,6 +985,54 @@ class TableTestCase(unittest.TestCase):
             {
                 'darling__die': True,
             }
+        )
+
+        q_filters = self.users._build_filters({
+            'username__eq': 'johndoe',
+            'date_joined__gte': 1234567,
+            'last_name__between': ['danzig', 'only'],
+            'gender__beginswith': 'm',
+        }, using=QUERY_OPERATORS)
+        self.assertEqual(q_filters, {
+            'username': {
+                'AttributeValueList': [
+                    {
+                        'S': 'johndoe',
+                    },
+                ],
+                'ComparisonOperator': 'EQ',
+            },
+            'date_joined': {
+                'AttributeValueList': [
+                    {
+                        'N': '1234567',
+                    },
+                ],
+                'ComparisonOperator': 'GE',
+            },
+            'last_name': {
+                'AttributeValueList': [{'SS': ['only', 'danzig']}],
+                'ComparisonOperator': 'BETWEEN',
+            },
+            'gender': {
+                'AttributeValueList': [{'S': 'm'}],
+                'ComparisonOperator': 'BEGINS_WITH',
+            },
+        })
+
+        self.assertRaises(exceptions.UnknownFilterTypeError,
+            self.users._build_filters,
+            {
+                'darling__die': True,
+            },
+            using=QUERY_OPERATORS
+        )
+        self.assertRaises(exceptions.UnknownFilterTypeError,
+            self.users._build_filters,
+            {
+                'first_name__null': True,
+            },
+            using=QUERY_OPERATORS
         )
 
     def test_private_query(self):
@@ -1183,13 +1236,151 @@ class TableTestCase(unittest.TestCase):
         )
 
     def test_query(self):
-        pass
+        items_1 = {
+            'results': [
+                Item(self.users, data={
+                    'username': 'johndoe',
+                    'first_name': 'John',
+                    'last_name': 'Doe',
+                }),
+                Item(self.users, data={
+                    'username': 'jane',
+                    'first_name': 'Jane',
+                    'last_name': 'Doe',
+                }),
+            ],
+            'last_key': 'jane',
+        }
+
+        results = self.users.query(last_name__eq='Doe')
+        self.assertTrue(isinstance(results, ResultSet))
+        self.assertEqual(len(results._results), 0)
+        self.assertEqual(results.the_callable, self.users._query)
+
+        with mock.patch.object(results, 'the_callable', return_value=items_1) as mock_query:
+            res_1 = results.next()
+            # Now it should be populated.
+            self.assertEqual(len(results._results), 2)
+            self.assertEqual(res_1['username'], 'johndoe')
+            res_2 = results.next()
+            self.assertEqual(res_2['username'], 'jane')
+
+        self.assertEqual(mock_query.call_count, 1)
+
+        items_2 = {
+            'results': [
+                Item(self.users, data={
+                    'username': 'foodoe',
+                    'first_name': 'Foo',
+                    'last_name': 'Doe',
+                }),
+            ],
+        }
+
+        with mock.patch.object(results, 'the_callable', return_value=items_2) as mock_query_2:
+            res_3 = results.next()
+            # More should have been appended.
+            self.assertEqual(len(results._results), 3)
+            self.assertEqual(res_3['username'], 'foodoe')
+
+            self.assertRaises(StopIteration, results.next)
+
+        self.assertEqual(mock_query_2.call_count, 1)
 
     def test_scan(self):
-        pass
+        items_1 = {
+            'results': [
+                Item(self.users, data={
+                    'username': 'johndoe',
+                    'first_name': 'John',
+                    'last_name': 'Doe',
+                }),
+                Item(self.users, data={
+                    'username': 'jane',
+                    'first_name': 'Jane',
+                    'last_name': 'Doe',
+                }),
+            ],
+            'last_key': 'jane',
+        }
 
-    def test_batch_get(self):
-        pass
+        results = self.users.scan(last_name__eq='Doe')
+        self.assertTrue(isinstance(results, ResultSet))
+        self.assertEqual(len(results._results), 0)
+        self.assertEqual(results.the_callable, self.users._scan)
+
+        with mock.patch.object(results, 'the_callable', return_value=items_1) as mock_scan:
+            res_1 = results.next()
+            # Now it should be populated.
+            self.assertEqual(len(results._results), 2)
+            self.assertEqual(res_1['username'], 'johndoe')
+            res_2 = results.next()
+            self.assertEqual(res_2['username'], 'jane')
+
+        self.assertEqual(mock_scan.call_count, 1)
+
+        items_2 = {
+            'results': [
+                Item(self.users, data={
+                    'username': 'zoeydoe',
+                    'first_name': 'Zoey',
+                    'last_name': 'Doe',
+                }),
+            ],
+        }
+
+        with mock.patch.object(results, 'the_callable', return_value=items_2) as mock_scan_2:
+            res_3 = results.next()
+            # More should have been appended.
+            self.assertEqual(len(results._results), 3)
+            self.assertEqual(res_3['username'], 'zoeydoe')
+
+            self.assertRaises(StopIteration, results.next)
+
+        self.assertEqual(mock_scan_2.call_count, 1)
 
     def test_count(self):
+        expected = {
+            "users": {
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "username",
+                        "AttributeType": "S"
+                    }
+                ],
+                "ItemCount": 5,
+                "KeySchema": [
+                    {
+                        "AttributeName": "username",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "LocalSecondaryIndexes": [
+                    {
+                        "IndexName": "UsernameIndex",
+                        "KeySchema": [
+                            {
+                                "AttributeName": "username",
+                                "KeyType": "HASH"
+                            }
+                        ],
+                        "Projection": {
+                            "ProjectionType": "KEYS_ONLY"
+                        }
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 20,
+                    "WriteCapacityUnits": 6
+                },
+                "TableName": "Thread",
+                "TableStatus": "ACTIVE"
+            }
+        }
+
+        with mock.patch.object(self.users, 'describe', return_value=expected) as mock_count:
+            self.assertEqual(self.users.count(), 5)
+
+    def test_batch_get(self):
+        # self.fail("This is an ugly beast & it makes me hate myself.")
         pass
