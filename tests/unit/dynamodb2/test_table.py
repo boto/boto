@@ -4,7 +4,7 @@ from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
                                    AllIndex, KeysOnlyIndex, IncludeIndex)
 from boto.dynamodb2.layer1 import DynamoDBConnection
-from boto.dynamodb2.table import Item, Table, ResultSet
+from boto.dynamodb2.table import Item, Table, ResultSet, BatchGetResultSet
 from boto.dynamodb2.types import (STRING, NUMBER,
                                   FILTER_OPERATORS, QUERY_OPERATORS)
 
@@ -424,6 +424,84 @@ class ResultSetTestCase(unittest.TestCase):
         self.assertEqual(self.results.next(), 'Hello john #12')
         self.assertRaises(StopIteration, self.results.next)
         self.assertEqual(self.results.call_kwargs['limit'], 7)
+
+
+def fake_batch_results(keys):
+    results = []
+    simulate_unprocessed = True
+
+    if len(keys) and keys[0] == 'george':
+        simulate_unprocessed = False
+
+    for key in keys:
+        results.append("hello %s" % key)
+
+    retval = {
+        'results': results,
+        'last_key': None,
+    }
+
+    if simulate_unprocessed:
+        retval['unprocessed_keys'] = ['george']
+
+    return retval
+
+
+class BatchGetResultSetTestCase(unittest.TestCase):
+    def setUp(self):
+        super(BatchGetResultSetTestCase, self).setUp()
+        self.results = BatchGetResultSet(keys=[
+            'alice',
+            'bob',
+            'jane',
+            'johndoe',
+        ], max_batch_get=3)
+        self.results.to_call(fake_batch_results)
+
+    def test_fetch_more(self):
+        # First "page".
+        self.results.fetch_more()
+        self.assertEqual(self.results._results, [
+            'hello alice',
+            'hello bob',
+            'hello jane',
+        ])
+        self.assertEqual(len(self.results._results), 3)
+        self.assertEqual(self.results._keys_left, ['george', 'johndoe'])
+
+        # Second "page".
+        self.results.fetch_more()
+        self.assertEqual(self.results._results, [
+            'hello alice',
+            'hello bob',
+            'hello jane',
+            'hello george',
+            'hello johndoe',
+        ])
+        self.assertEqual(len(self.results._results), 5)
+
+        # Empty "page". Nothing new gets added
+        self.results.fetch_more()
+        self.assertEqual(self.results._results, [
+            'hello alice',
+            'hello bob',
+            'hello jane',
+            'hello george',
+            'hello johndoe',
+        ])
+        self.assertEqual(len(self.results._results), 5)
+
+        # Make sure we won't check for results in the future.
+        self.assertFalse(self.results._results_left)
+
+    def test_iteration(self):
+        # First page.
+        self.assertEqual(self.results.next(), 'hello alice')
+        self.assertEqual(self.results.next(), 'hello bob')
+        self.assertEqual(self.results.next(), 'hello jane')
+        self.assertEqual(self.results.next(), 'hello george')
+        self.assertEqual(self.results.next(), 'hello johndoe')
+        self.assertRaises(StopIteration, self.results.next)
 
 
 class TableTestCase(unittest.TestCase):
@@ -1383,6 +1461,173 @@ class TableTestCase(unittest.TestCase):
         with mock.patch.object(self.users, 'describe', return_value=expected) as mock_count:
             self.assertEqual(self.users.count(), 5)
 
+    def test_private_batch_get(self):
+        expected = {
+            "ConsumedCapacity": {
+                "CapacityUnits": 0.5,
+                "TableName": "users"
+            },
+            'Responses': {
+                'users': [
+                    {
+                        'username': {'S': 'alice'},
+                        'first_name': {'S': 'Alice'},
+                        'last_name': {'S': 'Expert'},
+                        'date_joined': {'N': '1366056680'},
+                        'friend_count': {'N': '1'},
+                        'friends': {'SS': ['jane']},
+                    },
+                    {
+                        'username': {'S': 'bob'},
+                        'first_name': {'S': 'Bob'},
+                        'last_name': {'S': 'Smith'},
+                        'date_joined': {'N': '1366056888'},
+                        'friend_count': {'N': '1'},
+                        'friends': {'SS': ['johndoe']},
+                    },
+                    {
+                        'username': {'S': 'jane'},
+                        'first_name': {'S': 'Jane'},
+                        'last_name': {'S': 'Doe'},
+                        'date_joined': {'N': '1366057777'},
+                        'friend_count': {'N': '2'},
+                        'friends': {'SS': ['alice', 'johndoe']},
+                    },
+                ],
+            },
+            "UnprocessedKeys": {
+            },
+        }
+
+        with mock.patch.object(self.users.connection, 'batch_get_item', return_value=expected) as mock_batch_get:
+            results = self.users._batch_get(keys=[
+                {'username': 'alice', 'friend_count': 1},
+                {'username': 'bob', 'friend_count': 1},
+                {'username': 'jane'},
+            ])
+            usernames = [res['username'] for res in results['results']]
+            self.assertEqual(usernames, ['alice', 'bob', 'jane'])
+            self.assertEqual(len(results['results']), 3)
+            self.assertEqual(results['last_key'], None)
+            self.assertEqual(results['unprocessed_keys'], [])
+
+        mock_batch_get.assert_called_once_with(request_items={
+            'RequestItems': {
+                'users': {
+                    'Keys': [
+                        {
+                            'username': {'S': 'alice'},
+                            'friend_count': {'N': '1'}
+                        },
+                        {
+                            'username': {'S': 'bob'},
+                            'friend_count': {'N': '1'}
+                        }, {
+                            'username': {'S': 'jane'},
+                        }
+                    ]
+                }
+            }
+        })
+
+        # Now alter the expected.
+        del expected['Responses']['users'][2]
+        expected['UnprocessedKeys'] = {
+            'Keys': [
+                {'username': {'S': 'jane',}},
+            ],
+        }
+
+        with mock.patch.object(self.users.connection, 'batch_get_item', return_value=expected) as mock_batch_get_2:
+            results = self.users._batch_get(keys=[
+                {'username': 'alice', 'friend_count': 1},
+                {'username': 'bob', 'friend_count': 1},
+                {'username': 'jane'},
+            ])
+            usernames = [res['username'] for res in results['results']]
+            self.assertEqual(usernames, ['alice', 'bob'])
+            self.assertEqual(len(results['results']), 2)
+            self.assertEqual(results['last_key'], None)
+            self.assertEqual(results['unprocessed_keys'], [
+                {'username': 'jane'}
+            ])
+
+        mock_batch_get_2.assert_called_once_with(request_items={
+            'RequestItems': {
+                'users': {
+                    'Keys': [
+                        {
+                            'username': {'S': 'alice'},
+                            'friend_count': {'N': '1'}
+                        },
+                        {
+                            'username': {'S': 'bob'},
+                            'friend_count': {'N': '1'}
+                        }, {
+                            'username': {'S': 'jane'},
+                        }
+                    ]
+                }
+            }
+        })
+
     def test_batch_get(self):
-        # self.fail("This is an ugly beast & it makes me hate myself.")
-        pass
+        items_1 = {
+            'results': [
+                Item(self.users, data={
+                    'username': 'johndoe',
+                    'first_name': 'John',
+                    'last_name': 'Doe',
+                }),
+                Item(self.users, data={
+                    'username': 'jane',
+                    'first_name': 'Jane',
+                    'last_name': 'Doe',
+                }),
+            ],
+            'last_key': None,
+            'unprocessed_keys': [
+                'zoeydoe',
+            ]
+        }
+
+        results = self.users.batch_get(keys=[
+            {'username': 'johndoe'},
+            {'username': 'jane'},
+            {'username': 'zoeydoe'},
+        ])
+        self.assertTrue(isinstance(results, BatchGetResultSet))
+        self.assertEqual(len(results._results), 0)
+        self.assertEqual(results.the_callable, self.users._batch_get)
+
+        with mock.patch.object(results, 'the_callable', return_value=items_1) as mock_batch_get:
+            res_1 = results.next()
+            # Now it should be populated.
+            self.assertEqual(len(results._results), 2)
+            self.assertEqual(res_1['username'], 'johndoe')
+            res_2 = results.next()
+            self.assertEqual(res_2['username'], 'jane')
+
+        self.assertEqual(mock_batch_get.call_count, 1)
+        self.assertEqual(results._keys_left, ['zoeydoe'])
+
+        items_2 = {
+            'results': [
+                Item(self.users, data={
+                    'username': 'zoeydoe',
+                    'first_name': 'Zoey',
+                    'last_name': 'Doe',
+                }),
+            ],
+        }
+
+        with mock.patch.object(results, 'the_callable', return_value=items_2) as mock_batch_get_2:
+            res_3 = results.next()
+            # More should have been appended.
+            self.assertEqual(len(results._results), 3)
+            self.assertEqual(res_3['username'], 'zoeydoe')
+
+            self.assertRaises(StopIteration, results.next)
+
+        self.assertEqual(mock_batch_get_2.call_count, 1)
+        self.assertEqual(results._keys_left, [])

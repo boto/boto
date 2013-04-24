@@ -186,6 +186,42 @@ class ResultSet(object):
             self.call_kwargs['limit'] -= len(results['results'])
 
 
+class BatchGetResultSet(ResultSet):
+    def __init__(self, *args, **kwargs):
+        self._keys_left = kwargs.pop('keys', [])
+        self._max_batch_get = kwargs.pop('max_batch_get', 100)
+        super(BatchGetResultSet, self).__init__(*args, **kwargs)
+
+    def fetch_more(self):
+        args = self.call_args[:]
+        kwargs = self.call_kwargs.copy()
+
+        # Slice off the max we can fetch.
+        kwargs['keys'] = self._keys_left[:self._max_batch_get]
+        self._keys_left = self._keys_left[self._max_batch_get:]
+
+        results = self.the_callable(*args, **kwargs)
+
+        if not len(results.get('results', [])):
+            self._results_left = False
+            return
+
+        self._results.extend(results['results'])
+
+        for offset, key_data in enumerate(results.get('unprocessed_keys', [])):
+            # We've got an unprocessed key. Reinsert it into the list.
+            # FIXME: Depending on DynamoDB v2's behavior on non-existant keys,
+            #        this could cause an infinite loop & lots of requests! Yikes!
+            self._keys_left.insert(offset, key_data)
+
+        if len(self._keys_left) <= 0:
+            self._results_left = False
+
+        # Decrease the limit, if it's present.
+        if self.call_kwargs.get('limit'):
+            self.call_kwargs['limit'] -= len(results['results'])
+
+
 class Table(object):
     """
 
@@ -239,6 +275,8 @@ class Table(object):
         >>> users.delete()
 
     """
+    max_batch_get = 100
+
     def __init__(self, table_name, connection=None):
         self.table_name = table_name
         self.connection = connection
@@ -630,38 +668,62 @@ class Table(object):
         }
 
     def batch_get(self, keys):
-        # TODO: There's a hard limit of 100 keys. We can do one of two things:
-        #       * Throw an exception so the user knows & doesn't use multiple
-        #         requests (avoiding additional charges)
-        #       * Give them what they want, glossing over the fact that it
-        #         takes multiple requests.
-        #       I think the latter makes more sense (& is likely what
-        #       ``query/scan`` will do), but it needs to be further thought out.
-
-        # TODO: Additional complication: This needs to handle both a subset of
-        #       keys returned (due to 1Mb limit) as well as handling more than
-        #       100 keys, with possibly/likely both happening at the same time.
-        #       Grumble.
-
-        # FIXME: Supplying a list of hashkeys isn't bad. Handling a list of
-        #        hash+range keys makes it worse. Does this affect the other
-        #        methods using a ``key`` parameter or can those be neatly
-        #        handled?
-
-        # TODO: Since this is likely to get paginated, presenting the same
-        #       interface as ``query/scan`` would be a smart idea.
-        #       Not sure how to deal nicely with all the keys. :/
-        results = ResultSet()
-        results.to_call(self._batch_get, keys)
+        # TODO: Document that keys needs to be a list of dicts.
+        #       Sucks to expose the underlying (weak) API, but grump.
+        # We pass the keys to the constructor instead, so it can maintain it's
+        # own internal state as to what keeys have been processed.
+        results = BatchGetResultSet(keys=keys, max_batch_get=self.max_batch_get)
+        results.to_call(self._batch_get)
         return results
 
-    def _batch_get(self):
-        # FIXME: Rage.
-        pass
+    def _batch_get(self, keys):
+        items = {
+            'RequestItems': {
+                self.table_name: {
+                    'Keys': [],
+                },
+            },
+        }
+
+        for key_data in keys:
+            raw_key = {}
+
+            for key, value in key_data.items():
+                raw_key[key] = self._dynamizer.encode(value)
+
+            items['RequestItems'][self.table_name]['Keys'].append(raw_key)
+
+        raw_results = self.connection.batch_get_item(request_items=items)
+        results = []
+        unprocessed_keys = []
+
+        for raw_item in raw_results['Responses'].get(self.table_name, []):
+            item = Item(self)
+            item.load({
+                'Item': raw_item,
+            })
+            results.append(item)
+
+        raw_unproccessed = raw_results.get('UnprocessedKeys', {})
+
+        for raw_key in raw_unproccessed.get('Keys', []):
+            py_key = {}
+
+            for key, value in raw_key.items():
+                py_key[key] = self._dynamizer.decode(value)
+
+            unprocessed_keys.append(py_key)
+
+        return {
+            'results': results,
+            # NEVER return a ``last_key``. Just in-case
+            'last_key': None,
+            'unprocessed_keys': unprocessed_keys,
+        }
 
     def count(self):
         info = self.describe()
-        return info[self.table_name].get('ItemCount', 0)
+        return info['Table'].get('ItemCount', 0)
 
 
 class BatchTable(object):
