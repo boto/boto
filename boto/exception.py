@@ -409,6 +409,13 @@ class NoAuthHandlerFound(Exception):
     """Is raised when no auth handlers were found ready to authenticate."""
     pass
 
+class InvalidLifecycleConfigError(Exception):
+    """Exception raised when GCS lifecycle configuration XML is invalid."""
+
+    def __init__(self, message):
+        Exception.__init__(self, message)
+        self.message = message
+
 # Enum class for resumable upload failure disposition.
 class ResumableTransferDisposition(object):
     # START_OVER means an attempt to resume an existing transfer failed,
