@@ -36,26 +36,41 @@ class Item(object):
     def __init__(self, table, data=None):
         self.table = table
         self._data = {}
-        self._dirty_data = {}
+        self._orig_data = {}
+        self._is_dirty = False
         self._dynamizer = Dynamizer()
 
         if data:
             self._data = data
-            self._dirty_data = data
+            self._is_dirty = True
 
     def __getitem__(self, key):
-        # TODO: Is ``None`` a safe assumption here?
         return self._data.get(key, None)
 
     def __setitem__(self, key, value):
+        # Stow the original value if present, so we can track what's changed.
+        if key in self._data:
+            self._orig_data[key] = value
+
         self._data[key] = value
-        self._dirty_data[key] = value
+        self._is_dirty = True
+
+    def __delitem__(self, key):
+        if not key in self._data:
+            return
+
+        # Stow the original value, so we can track what's changed.
+        value = self._data[key]
+        del self._data[key]
+        self._orig_data[key] = value
+        self._is_dirty = True
 
     def needs_save(self):
-        return len(self._dirty_data) != 0
+        return self._is_dirty
 
     def mark_clean(self):
-        self._dirty_data = {}
+        self._orig_data = {}
+        self._is_dirty = False
 
     def load(self, data):
         """
@@ -89,7 +104,12 @@ class Item(object):
 
         return final_data
 
-    def save(self):
+    def partial_save(self):
+        # FIXME: Implement the ``update_item`` behavior.
+        pass
+
+    def save(self, overwrite=False):
+        # FIXME: Implement "safe" behavior!
         if not self.needs_save():
             return False
 

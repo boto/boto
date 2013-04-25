@@ -36,6 +36,7 @@ class DynamoDBv2Test(unittest.TestCase):
     dynamodb = True
 
     def test_integration(self):
+        # Test creating a full table with all options specified.
         users = Table.create('users', schema=[
             HashKey('username'),
             RangeKey('friend_count', data_type=NUMBER)
@@ -56,6 +57,7 @@ class DynamoDBv2Test(unittest.TestCase):
         # Wait for it.
         time.sleep(40)
 
+        # Test putting some items individually.
         users.put_item(data={
             'username': 'johndoe',
             'first_name': 'John',
@@ -72,6 +74,7 @@ class DynamoDBv2Test(unittest.TestCase):
 
         time.sleep(5)
 
+        # Test batch writing.
         with users.batch_write() as batch:
             batch.put_item({
                 'username': 'jane',
@@ -89,11 +92,53 @@ class DynamoDBv2Test(unittest.TestCase):
 
         time.sleep(5)
 
+        # Test getting an item & updating it.
+        # This is the "safe" variant (only write if there have been no
+        # changes).
         jane = users.get_item(username='jane', friend_count=3)
         self.assertEqual(jane['first_name'], 'Jane')
         jane['last_name'] = 'Doh'
         self.assertTrue(jane.save())
 
+        # Test strongly consistent getting of an item.
+        # Additionally, test the overwrite behavior.
+        client_1_jane = users.get_item(
+            username='jane',
+            friend_count=3,
+            consistent=True
+        )
+        self.assertEqual(jane['first_name'], 'Jane')
+        client_2_jane = users.get_item(
+            username='jane',
+            friend_count=3,
+            consistent=True
+        )
+        self.assertEqual(jane['first_name'], 'Jane')
+
+        # Write & assert the ``first_name`` is gone, then...
+        del client_1_jane['first_name']
+        self.assertTrue(client_1_jane.save())
+        check_name = users.get_item(
+            username='jane',
+            friend_count=3,
+            consistent=True
+        )
+        self.assertEqual(check_name['first_name'], None)
+
+        # ...overwrite the data with what's in memory.
+        client_2_jane['first_name'] = 'Jane'
+        self.assertTrue(client_2_jane.save())
+        check_name_again = users.get_item(
+            username='jane',
+            friend_count=3,
+            consistent=True
+        )
+        self.assertEqual(check_name_again['first_name'], 'Jane')
+
+
+        # FIXME: Test the partial update behavior.
+
+        # Test the eventually consistent query.
         results = users.query(
             username__eq='johndoe',
             last_name__eq='Doe',
@@ -104,23 +149,38 @@ class DynamoDBv2Test(unittest.TestCase):
         for res in results:
             self.assertTrue(res['username'] in ['johndoe',])
 
+        # Test the strongly consistent query.
+        c_results = users.query(
+            username__eq='johndoe',
+            last_name__eq='Doe',
+            index='LastNameIndex',
+            reverse=True,
+            consistent=True
+        )
+
+        for res in c_results:
+            self.assertTrue(res['username'] in ['johndoe',])
+
+        # Test scans without filters.
         all_users = users.scan(limit=7)
         self.assertEqual(all_users.next()['username'], 'bob')
         self.assertEqual(all_users.next()['username'], 'jane')
         self.assertEqual(all_users.next()['username'], 'johndoe')
 
+        # Test scans with a filter.
         filtered_users = users.scan(limit=2, username__beginswith='j')
         self.assertEqual(filtered_users.next()['username'], 'jane')
         self.assertEqual(filtered_users.next()['username'], 'johndoe')
 
+        # Test deleting a single item.
         johndoe = users.get_item(username='johndoe', friend_count=4)
         johndoe.delete()
 
+        # Test the eventually consistent batch get.
         results = users.batch_get(keys=[
             {'username': 'bob', 'friend_count': 1},
             {'username': 'jane', 'friend_count': 3}
         ])
-
         batch_users = []
 
         for res in results:
@@ -129,5 +189,18 @@ class DynamoDBv2Test(unittest.TestCase):
 
         self.assertEqual(len(batch_users), 2)
 
-        # Because lag time.
+        # Test the strongly consistent batch get.
+        c_results = users.batch_get(keys=[
+            {'username': 'bob', 'friend_count': 1},
+            {'username': 'jane', 'friend_count': 3}
+        ], consistent=True)
+        c_batch_users = []
+
+        for res in c_results:
+            c_batch_users.append(res)
+            self.assertTrue(res['first_name'] in ['Bob', 'Jane'])
+
+        self.assertEqual(len(c_batch_users), 2)
+
+        # Test count, but in a weak fashion. Because lag time.
         self.assertTrue(users.count() > -1)

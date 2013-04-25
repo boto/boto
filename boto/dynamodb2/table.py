@@ -234,11 +234,13 @@ class Table(object):
 
         return raw_key
 
-    def get_item(self, **kwargs):
-        # FIXME: The downside of a kwargs-based approach is the other options to
-        #        the low-level ``get_item``. Maybe add ``consistent_get_item``?
+    def get_item(self, consistent=False, **kwargs):
         raw_key = self._encode_keys(kwargs)
-        item_data = self.connection.get_item(self.table_name, raw_key)
+        item_data = self.connection.get_item(
+            self.table_name,
+            raw_key,
+            consistent_read=consistent
+        )
         item = Item(self)
         item.load(item_data)
         return item
@@ -255,8 +257,6 @@ class Table(object):
         return True
 
     def delete_item(self, **kwargs):
-        # FIXME: The downside of a kwargs-based approach is the other options to
-        #        the low-level ``get_item``. Maybe add ``consistent_get_item``?
         raw_key = self._encode_keys(kwargs)
         self.connection.delete_item(self.table_name, raw_key)
         return True
@@ -320,30 +320,26 @@ class Table(object):
 
         return filters
 
-    def query(self, limit=None, index=None, reverse=False, **filter_kwargs):
-        # TODO: Args to support:
-        #       * Kwarg-based filters (becomes ``key_conditions``)
-        #       * limit
-        #       * exclusive_start_key (we manage this)
-        #       * index_name
-        #       * consistent_read ?!!
-        #       * reverse
+    def query(self, limit=None, index=None, reverse=False, consistent=False,
+              **filter_kwargs):
         results = ResultSet()
         kwargs = filter_kwargs.copy()
         kwargs.update({
             'limit': limit,
             'index': index,
             'reverse': reverse,
+            'consistent': consistent,
         })
         results.to_call(self._query, **kwargs)
         return results
 
-    def _query(self, limit=None, index=None, reverse=False,
+    def _query(self, limit=None, index=None, reverse=False, consistent=False,
                exclusive_start_key=None, **filter_kwargs):
         kwargs = {
             'limit': limit,
             'index_name': index,
             'scan_index_forward': reverse,
+            'consistent_read': consistent,
         }
 
         if exclusive_start_key:
@@ -440,21 +436,24 @@ class Table(object):
             'last_key': last_key,
         }
 
-    def batch_get(self, keys):
+    def batch_get(self, keys, consistent=False):
         # TODO: Document that keys needs to be a list of dicts.
         #       Sucks to expose the underlying (weak) API, but grump.
         # We pass the keys to the constructor instead, so it can maintain it's
         # own internal state as to what keeys have been processed.
         results = BatchGetResultSet(keys=keys, max_batch_get=self.max_batch_get)
-        results.to_call(self._batch_get)
+        results.to_call(self._batch_get, consistent=False)
         return results
 
-    def _batch_get(self, keys):
+    def _batch_get(self, keys, consistent=False):
         items = {
             self.table_name: {
                 'Keys': [],
             },
         }
+
+        if consistent:
+            items[self.table_name]['ConsistentRead'] = True
 
         for key_data in keys:
             raw_key = {}

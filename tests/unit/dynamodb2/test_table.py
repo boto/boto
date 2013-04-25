@@ -211,6 +211,11 @@ class ItemTestCase(unittest.TestCase):
         # Test accessing the new key.
         self.assertEqual(self.johndoe['last_name'], 'Doe')
 
+        # Delete a key.
+        del self.johndoe['last_name']
+        # Test the now-missing-again key.
+        self.assertEqual(self.johndoe['last_name'], None)
+
     def test_needs_save(self):
         self.johndoe.mark_clean()
         self.assertFalse(self.johndoe.needs_save())
@@ -855,7 +860,9 @@ class TableTestCase(unittest.TestCase):
             self.assertEqual(item['username'], 'johndoe')
             self.assertEqual(item['first_name'], 'John')
 
-        mock_get_item.assert_called_once_with('users', {'username': {'S': 'johndoe'}})
+        mock_get_item.assert_called_once_with('users', {
+            'username': {'S': 'johndoe'}
+        }, consistent_read=False)
 
     def test_put_item(self):
         with mock.patch.object(
@@ -1240,7 +1247,8 @@ class TableTestCase(unittest.TestCase):
             },
             index_name=None,
             scan_index_forward=True,
-            limit=4
+            limit=4,
+            consistent_read=False
         )
 
         # Now alter the expected.
@@ -1260,7 +1268,8 @@ class TableTestCase(unittest.TestCase):
                 username__between=['aaa', 'mmm'],
                 exclusive_start_key={
                     'username': 'adam',
-                }
+                },
+                consistent=True
             )
             usernames = [res['username'] for res in results['results']]
             self.assertEqual(usernames, ['johndoe', 'jane', 'alice', 'bob'])
@@ -1283,7 +1292,8 @@ class TableTestCase(unittest.TestCase):
                 'username': {
                     'S': 'adam',
                 },
-            }
+            },
+            consistent_read=True
         )
 
     def test_private_scan(self):
