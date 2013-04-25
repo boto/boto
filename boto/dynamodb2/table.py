@@ -1,225 +1,10 @@
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
                                    AllIndex, KeysOnlyIndex, IncludeIndex)
+from boto.dynamodb2.items import Item
 from boto.dynamodb2.layer1 import DynamoDBConnection
+from boto.dynamodb2.results import ResultSet, BatchGetResultSet
 from boto.dynamodb2.types import Dynamizer, FILTER_OPERATORS, QUERY_OPERATORS
-
-
-class Item(object):
-    """
-
-
-    Example::
-
-        >>> from boto.dynamodb2.table import Item, Table
-        >>> users = Table('users')
-        >>> johndoe = Item(users, {
-        ...     'username': 'johndoe',
-        ...     'first_name': 'John',
-        ...     'last_name': 'Doe',
-        ...     'date_joined': int(time.time()),
-        ...     'friend_count': 3,
-        ...     'friends': ['alice', 'bob', 'jane']
-        ... })
-        >>> item.save()
-        # A second save does nothing, since the data hasn't changed.
-        >>> item.save()
-
-        # Manipulate the values.
-        >>> johndoe['friend_count'] = 2
-        >>> johndoe['friends'] = ['alice', 'bob']
-        >>> johndoe.needs_save()
-        True
-        >>> johndoe.save()
-
-        # All done. Clean up.
-        >>> johndoe.delete()
-
-    """
-    def __init__(self, table, data=None):
-        self.table = table
-        self._data = {}
-        self._dirty_data = {}
-        self._dynamizer = Dynamizer()
-
-        if data:
-            self._data = data
-            self._dirty_data = data
-
-    def __getitem__(self, key):
-        # TODO: Is ``None`` a safe assumption here?
-        return self._data.get(key, None)
-
-    def __setitem__(self, key, value):
-        self._data[key] = value
-        self._dirty_data[key] = value
-
-    def needs_save(self):
-        return len(self._dirty_data) != 0
-
-    def mark_clean(self):
-        self._dirty_data = {}
-
-    def load(self, data):
-        """
-        This is only useful when being handed raw data from DynamoDB directly.
-        If you have a Python datastructure already, use the ``__init__`` or
-        manually set the data instead.
-        """
-        self._data = {}
-
-        for field_name, field_value in data.get('Item', {}).items():
-            self[field_name] = self._dynamizer.decode(field_value)
-
-        self.mark_clean()
-
-    def get_keys(self):
-        key_fields = self.table.get_key_fields()
-        key_data = {}
-
-        for key in key_fields:
-            key_data[key] = self._dynamizer.encode(self[key])
-
-        return key_data
-
-    def prepare(self):
-        # This doesn't save on it's own. Rather, we prepare the datastructure
-        # and hand-off to the table to handle creation/update.
-        final_data = {}
-
-        for key, value in self._data.items():
-            final_data[key] = self._dynamizer.encode(value)
-
-        return final_data
-
-    def save(self):
-        if not self.needs_save():
-            return False
-
-        final_data = self.prepare()
-        returned = self.table._put_item(final_data)
-        # Mark the object as clean.
-        self.mark_clean()
-        return returned
-
-    def delete(self):
-        key_fields = self.table.get_key_fields()
-        key_data = {}
-
-        for key in key_fields:
-            key_data[key] = self[key]
-
-        return self.table.delete_item(**key_data)
-
-
-class ResultSet(object):
-    """
-
-    Example::
-
-        >>> users = Table('users')
-        >>> results = ResultSet()
-        >>> results.to_call(users.query, username__gte='johndoe')
-        # Now iterate. When it runs out of results, it'll fetch the next page.
-        >>> for res in results:
-        ...     print res['username']
-    """
-    def __init__(self):
-        super(ResultSet, self).__init__()
-        self.the_callable = None
-        self.call_args = []
-        self.call_kwargs = {}
-        self._results = []
-        self._offset = -1
-        self._results_left = True
-        self._last_key_seen = None
-
-    @property
-    def first_key(self):
-        return 'exclusive_start_key'
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        self._offset += 1
-
-        if self._offset >= len(self._results):
-            if self._results_left is False:
-                raise StopIteration()
-
-            self.fetch_more()
-
-        return self._results[self._offset]
-
-    def to_call(self, the_callable, *args, **kwargs):
-        if not callable(the_callable):
-            raise ValueError(
-                'You must supply an object or function to be called.'
-            )
-
-        self.the_callable = the_callable
-        self.call_args = args
-        self.call_kwargs = kwargs
-
-    def fetch_more(self):
-        args = self.call_args[:]
-        kwargs = self.call_kwargs.copy()
-
-        if self._last_key_seen is not None:
-            kwargs[self.first_key] = self._last_key_seen
-
-        results = self.the_callable(*args, **kwargs)
-
-        if not len(results.get('results', [])):
-            self._results_left = False
-            return
-
-        self._results.extend(results['results'])
-        self._last_key_seen = results.get('last_key', None)
-
-        if self._last_key_seen is None:
-            self._results_left = False
-
-        # Decrease the limit, if it's present.
-        if self.call_kwargs.get('limit'):
-            self.call_kwargs['limit'] -= len(results['results'])
-
-
-class BatchGetResultSet(ResultSet):
-    def __init__(self, *args, **kwargs):
-        self._keys_left = kwargs.pop('keys', [])
-        self._max_batch_get = kwargs.pop('max_batch_get', 100)
-        super(BatchGetResultSet, self).__init__(*args, **kwargs)
-
-    def fetch_more(self):
-        args = self.call_args[:]
-        kwargs = self.call_kwargs.copy()
-
-        # Slice off the max we can fetch.
-        kwargs['keys'] = self._keys_left[:self._max_batch_get]
-        self._keys_left = self._keys_left[self._max_batch_get:]
-
-        results = self.the_callable(*args, **kwargs)
-
-        if not len(results.get('results', [])):
-            self._results_left = False
-            return
-
-        self._results.extend(results['results'])
-
-        for offset, key_data in enumerate(results.get('unprocessed_keys', [])):
-            # We've got an unprocessed key. Reinsert it into the list.
-            # DynamoDB only returns valid keys, so there should be no risk of
-            # missing keys ever making it here.
-            self._keys_left.insert(offset, key_data)
-
-        if len(self._keys_left) <= 0:
-            self._results_left = False
-
-        # Decrease the limit, if it's present.
-        if self.call_kwargs.get('limit'):
-            self.call_kwargs['limit'] -= len(results['results'])
 
 
 class Table(object):
@@ -227,12 +12,12 @@ class Table(object):
 
     Example::
 
-        >>> from boto.dynamodb.table import Table, HashKey, RangeKey, NUMBER
+        >>> from boto.dynamodb2.fields import HashKey, RangeKey
+        >>> from boto.dynamodb2.table import Table
 
         # Create the table.
         >>> users = Table.create('users', schema=[
         ...     HashKey('username'),
-        ...     RangeKey('date_joined', data_type=NUMBER)
         ... ])
 
         # Create/update a user.
@@ -248,11 +33,10 @@ class Table(object):
 
         # Change & store the updated user.
         >>> jane['friends'] = ['johndoe']
-        # FIXME: This likely needs to do some locking/concurrency checking.
         >>> jane.save()
 
-        # TODO: Too Django-like? But it is a shorter syntax...
-        >>> names_with_j = users.query({'username__begins_with': 'j'}, limit=5)
+        # Run a query.
+        >>> names_with_j = users.query(username__begins_with': 'j', limit=5)
 
         >>> all_users = users.scan()
 
@@ -269,7 +53,7 @@ class Table(object):
         ...         'first_name': 'Alice',
         ...         'date_joined': int(time.time()),
         ...     })
-        ...     batch.delete_item(key={'username': 'jane'})
+        ...     batch.delete_item(username=jane')
 
         # Dust off & nuke it from orbit.
         >>> users.delete()
@@ -490,22 +274,7 @@ class Table(object):
 
     def _build_filters(self, filter_kwargs, using=QUERY_OPERATORS):
         """
-        FIXME: Build something like:
 
-            {
-                'username': {
-                    'AttributeValueList': [
-                        {'S': 'jane'},
-                    ],
-                    'ComparisonOperator': 'EQ',
-                },
-                'date_joined': {
-                    'AttributeValueList': [
-                        {'N': '1366050000'}
-                    ],
-                    'ComparisonOperator': 'GT',
-                }
-            }
         """
         filters = {}
 
@@ -525,7 +294,6 @@ class Table(object):
 
             lookup = {
                 'AttributeValueList': [],
-                # FIXME: Should we assume 'eq' if it's invalid?
                 'ComparisonOperator': op,
             }
 
