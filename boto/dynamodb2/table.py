@@ -245,15 +245,30 @@ class Table(object):
         item.load(item_data)
         return item
 
-    def put_item(self, data):
+    def put_item(self, data, overwrite=False):
         """
         Public API for creating an item.
         """
         item = Item(self, data=data)
-        return item.save()
+        return item.save(overwrite=overwrite)
 
-    def _put_item(self, item_data):
-        self.connection.put_item(self.table_name, item_data)
+    def _put_item(self, item_data, expects=None):
+        kwargs = {}
+
+        if expects is not None:
+            kwargs['expected'] = expects
+
+        self.connection.put_item(self.table_name, item_data, **kwargs)
+        return True
+
+    def _update_item(self, key, item_data, expects=None):
+        raw_key = self._encode_keys(key)
+        kwargs = {}
+
+        if expects is not None:
+            kwargs['expected'] = expects
+
+        self.connection.update_item(self.table_name, raw_key, item_data, **kwargs)
         return True
 
     def delete_item(self, **kwargs):
@@ -542,7 +557,7 @@ class BatchTable(object):
             item = Item(self.table, data=put)
             batch_data[self.table.table_name].append({
                 'PutRequest': {
-                    'Item': item.prepare(),
+                    'Item': item.prepare_full(),
                 }
             })
 

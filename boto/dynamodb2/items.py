@@ -1,6 +1,11 @@
 from boto.dynamodb2.types import Dynamizer
 
 
+class NEWVALUE(object):
+    # A marker for new data added.
+    pass
+
+
 class Item(object):
     """
 
@@ -44,13 +49,19 @@ class Item(object):
             self._data = data
             self._is_dirty = True
 
+            for key in data.keys():
+                self._orig_data[key] = NEWVALUE
+
     def __getitem__(self, key):
         return self._data.get(key, None)
 
     def __setitem__(self, key, value):
         # Stow the original value if present, so we can track what's changed.
         if key in self._data:
-            self._orig_data[key] = value
+            self._orig_data[key] = self._data[key]
+        else:
+            # Use a marker to indicate we've never seen a value for this key.
+            self._orig_data[key] = NEWVALUE
 
         self._data[key] = value
         self._is_dirty = True
@@ -72,6 +83,9 @@ class Item(object):
         self._orig_data = {}
         self._is_dirty = False
 
+    def mark_dirty(self):
+        self._is_dirty = True
+
     def load(self, data):
         """
         This is only useful when being handed raw data from DynamoDB directly.
@@ -86,15 +100,73 @@ class Item(object):
         self.mark_clean()
 
     def get_keys(self):
+        """
+        Returns a Python-style dict of the keys/values.
+        """
         key_fields = self.table.get_key_fields()
         key_data = {}
 
         for key in key_fields:
-            key_data[key] = self._dynamizer.encode(self[key])
+            key_data[key] = self[key]
 
         return key_data
 
-    def prepare(self):
+    def get_raw_keys(self):
+        """
+        Returns a DynamoDB-style dict of the keys/values.
+        """
+        raw_key_data = {}
+
+        for key, value in self.get_keys().items():
+            raw_key_data[key] = self._dynamizer.encode(value)
+
+        return raw_key_data
+
+    def build_expects(self, fields=None):
+        expects = {}
+
+        if fields is None:
+            fields = self._data.keys() + self._orig_data.keys()
+
+        # Only uniques.
+        fields = set(fields)
+
+        for key in fields:
+            expects[key] = {
+                'Exists': True,
+            }
+            value = None
+
+            # Check for invalid keys.
+            if not key in self._orig_data and not key in self._data:
+                raise ValueError("Unknown key %s provided." % key)
+
+            # States:
+            # * New field (_data & _orig_data w/ marker)
+            # * Unchanged field (only _data)
+            # * Modified field (_data & _orig_data)
+            # * Deleted field (only _orig_data)
+            if not key in self._orig_data:
+                # Existing field unchanged.
+                value = self._data[key]
+            else:
+                if key in self._data:
+                    if self._orig_data[key] is NEWVALUE:
+                        # New field.
+                        expects[key]['Exists'] = False
+                    else:
+                        # Existing field modified.
+                        value = self._orig_data[key]
+                else:
+                   # Existing field deleted.
+                    value = self._orig_data[key]
+
+            if value is not None:
+                expects[key]['Value'] = self._dynamizer.encode(value)
+
+        return expects
+
+    def prepare_full(self):
         # This doesn't save on it's own. Rather, we prepare the datastructure
         # and hand-off to the table to handle creation/update.
         final_data = {}
@@ -104,26 +176,57 @@ class Item(object):
 
         return final_data
 
-    def partial_save(self):
-        # FIXME: Implement the ``update_item`` behavior.
-        pass
+    def prepare_partial(self):
+        # This doesn't save on it's own. Rather, we prepare the datastructure
+        # and hand-off to the table to handle creation/update.
+        final_data = {}
 
-    def save(self, overwrite=False):
-        # FIXME: Implement "safe" behavior!
+        # Loop over ``_orig_data`` so that we only build up data that's changed.
+        for key, value in self._orig_data.items():
+            if key in self._data:
+                # It changed.
+                final_data[key] = {
+                    'Action': 'PUT',
+                    'Value': self._dynamizer.encode(self._data[key])
+                }
+            else:
+                # It was deleted.
+                final_data[key] = {
+                    'Action': 'DELETE',
+                }
+
+        return final_data
+
+    def partial_save(self):
         if not self.needs_save():
             return False
 
-        final_data = self.prepare()
-        returned = self.table._put_item(final_data)
+        key = self.get_keys()
+        # Build a new dict of only the data we're changing.
+        final_data = self.prepare_partial()
+        # Build expectations of only the fields we're planning to update.
+        expects = self.build_expects(fields=self._orig_data.keys())
+        returned = self.table._update_item(key, final_data, expects=expects)
+        # Mark the object as clean.
+        self.mark_clean()
+        return returned
+
+    def save(self, overwrite=False):
+        if not self.needs_save():
+            return False
+
+        final_data = self.prepare_full()
+        expects = None
+
+        if overwrite is False:
+            # Build expectations about *all* of the data.
+            expects = self.build_expects()
+
+        returned = self.table._put_item(final_data, expects=expects)
         # Mark the object as clean.
         self.mark_clean()
         return returned
 
     def delete(self):
-        key_fields = self.table.get_key_fields()
-        key_data = {}
-
-        for key in key_fields:
-            key_data[key] = self[key]
-
+        key_data = self.get_keys()
         return self.table.delete_item(**key_data)

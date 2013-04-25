@@ -255,15 +255,141 @@ class ItemTestCase(unittest.TestCase):
             RangeKey('date_joined'),
         ]
         self.assertEqual(self.johndoe.get_keys(), {
-            'username': {'S': 'johndoe'},
-            'date_joined': {'N': '12345'}
+            'username': 'johndoe',
+            'date_joined': 12345,
         })
 
-    def test_prepare(self):
-        self.assertEqual(self.johndoe.prepare(), {
+    def test_get_raw_keys(self):
+        # Setup the data.
+        self.table.schema = [
+            HashKey('username'),
+            RangeKey('date_joined'),
+        ]
+        self.assertEqual(self.johndoe.get_raw_keys(), {
+            'username': {'S': 'johndoe'},
+            'date_joined': {'N': '12345'},
+        })
+
+    def test_build_expects(self):
+        # Pristine.
+        self.assertEqual(self.johndoe.build_expects(), {
+            'first_name': {
+                'Exists': False,
+            },
+            'username': {
+                'Exists': False,
+            },
+            'date_joined': {
+                'Exists': False,
+            },
+        })
+
+        # Without modifications.
+        self.johndoe.mark_clean()
+        self.assertEqual(self.johndoe.build_expects(), {
+            'first_name': {
+                'Exists': True,
+                'Value': {
+                    'S': 'John',
+                },
+            },
+            'username': {
+                'Exists': True,
+                'Value': {
+                    'S': 'johndoe',
+                },
+            },
+            'date_joined': {
+                'Exists': True,
+                'Value': {
+                    'N': '12345',
+                },
+            },
+        })
+
+        # Change some data.
+        self.johndoe['first_name'] = 'Johann'
+        # Add some data.
+        self.johndoe['last_name'] = 'Doe'
+        # Delete some data.
+        del self.johndoe['date_joined']
+
+        # All fields (default).
+        self.assertEqual(self.johndoe.build_expects(), {
+            'first_name': {
+                'Exists': True,
+                'Value': {
+                    'S': 'John',
+                },
+            },
+            'last_name': {
+                'Exists': False,
+            },
+            'username': {
+                'Exists': True,
+                'Value': {
+                    'S': 'johndoe',
+                },
+            },
+            'date_joined': {
+                'Exists': True,
+                'Value': {
+                    'N': '12345',
+                },
+            },
+        })
+
+        # Only a subset of the fields.
+        self.assertEqual(self.johndoe.build_expects(fields=[
+            'first_name',
+            'last_name',
+            'date_joined',
+        ]), {
+            'first_name': {
+                'Exists': True,
+                'Value': {
+                    'S': 'John',
+                },
+            },
+            'last_name': {
+                'Exists': False,
+            },
+            'date_joined': {
+                'Exists': True,
+                'Value': {
+                    'N': '12345',
+                },
+            },
+        })
+
+    def test_prepare_full(self):
+        self.assertEqual(self.johndoe.prepare_full(), {
             'username': {'S': 'johndoe'},
             'first_name': {'S': 'John'},
             'date_joined': {'N': '12345'}
+        })
+
+    def test_prepare_partial(self):
+        self.johndoe.mark_clean()
+        # Change some data.
+        self.johndoe['first_name'] = 'Johann'
+        # Add some data.
+        self.johndoe['last_name'] = 'Doe'
+        # Delete some data.
+        del self.johndoe['date_joined']
+
+        self.assertEqual(self.johndoe.prepare_partial(), {
+            'date_joined': {
+                'Action': 'DELETE',
+            },
+            'first_name': {
+                'Action': 'PUT',
+                'Value': {'S': 'Johann'},
+            },
+            'last_name': {
+                'Action': 'PUT',
+                'Value': {'S': 'Doe'},
+            },
         })
 
     def test_save_no_changes(self):
@@ -280,6 +406,7 @@ class ItemTestCase(unittest.TestCase):
         # With changed data.
         with mock.patch.object(self.table, '_put_item', return_value=True) \
                 as mock_put_item:
+            self.johndoe.mark_clean()
             self.johndoe['first_name'] = 'J'
             self.johndoe['new_attr'] = 'never_seen_before'
             self.assertTrue(self.johndoe.save())
@@ -291,6 +418,107 @@ class ItemTestCase(unittest.TestCase):
             'first_name': {'S': 'J'},
             'new_attr': {'S': 'never_seen_before'},
             'date_joined': {'N': '12345'}
+        }, expects={
+            'username': {
+                'Value': {
+                    'S': 'johndoe',
+                },
+                'Exists': True,
+            },
+            'first_name': {
+                'Value': {
+                    'S': 'John',
+                },
+                'Exists': True,
+            },
+            'new_attr': {
+                'Exists': False,
+            },
+            'date_joined': {
+                'Value': {
+                    'N': '12345',
+                },
+                'Exists': True,
+            },
+        })
+
+    def test_save_with_changes_overwrite(self):
+        # With changed data.
+        with mock.patch.object(self.table, '_put_item', return_value=True) \
+                as mock_put_item:
+            self.johndoe['first_name'] = 'J'
+            self.johndoe['new_attr'] = 'never_seen_before'
+            # OVERWRITE ALL THE THINGS
+            self.assertTrue(self.johndoe.save(overwrite=True))
+            self.assertFalse(self.johndoe.needs_save())
+
+        self.assertTrue(mock_put_item.called)
+        mock_put_item.assert_called_once_with({
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'J'},
+            'new_attr': {'S': 'never_seen_before'},
+            'date_joined': {'N': '12345'}
+        }, expects=None)
+
+    def test_partial_no_changes(self):
+        # Unchanged, no save.
+        with mock.patch.object(self.table, '_update_item', return_value=True) \
+                as mock_update_item:
+            # Pretend we loaded it via ``get_item``...
+            self.johndoe.mark_clean()
+            self.assertFalse(self.johndoe.partial_save())
+
+        self.assertFalse(mock_update_item.called)
+
+    def test_partial_with_changes(self):
+        # Setup the data.
+        self.table.schema = [
+            HashKey('username'),
+        ]
+
+        # With changed data.
+        with mock.patch.object(self.table, '_update_item', return_value=True) \
+                as mock_update_item:
+            # Pretend we loaded it via ``get_item``...
+            self.johndoe.mark_clean()
+            # Now... MODIFY!!!
+            self.johndoe['first_name'] = 'J'
+            self.johndoe['last_name'] = 'Doe'
+            del self.johndoe['date_joined']
+            self.assertTrue(self.johndoe.partial_save())
+            self.assertFalse(self.johndoe.needs_save())
+
+        self.assertTrue(mock_update_item.called)
+        mock_update_item.assert_called_once_with({
+            'username': 'johndoe',
+        }, {
+            'first_name': {
+                'Action': 'PUT',
+                'Value': {'S': 'J'},
+            },
+            'last_name': {
+                'Action': 'PUT',
+                'Value': {'S': 'Doe'},
+            },
+            'date_joined': {
+                'Action': 'DELETE',
+            }
+        }, expects={
+            'first_name': {
+                'Value': {
+                    'S': 'John',
+                },
+                'Exists': True
+            },
+            'last_name': {
+                'Exists': False
+            },
+            'date_joined': {
+                'Value': {
+                    'N': '12345',
+                },
+                'Exists': True
+            },
         })
 
     def test_delete(self):
@@ -828,13 +1056,23 @@ class TableTestCase(unittest.TestCase):
             self.users.put_item(data={
                 'username': 'johndoe',
                 'last_name': 'Doe',
-                'date_joined': 2345,
+                'date_joined': 12345,
             })
 
         mock_put_item.assert_called_once_with('users', {
             'username': {'S': 'johndoe'},
             'last_name': {'S': 'Doe'},
-            'date_joined': {'N': '2345'}
+            'date_joined': {'N': '12345'}
+        }, expected={
+            'username': {
+                'Exists': False,
+            },
+            'last_name': {
+                'Exists': False,
+            },
+            'date_joined': {
+                'Exists': False,
+            }
         })
 
     def test_private_put_item(self):
@@ -845,6 +1083,23 @@ class TableTestCase(unittest.TestCase):
             self.users._put_item({'some': 'data'})
 
         mock_put_item.assert_called_once_with('users', {'some': 'data'})
+
+    def test_private_update_item(self):
+        with mock.patch.object(
+                self.users.connection,
+                'update_item',
+                return_value={}) as mock_update_item:
+            self.users._update_item({
+                'username': 'johndoe'
+            }, {
+                'some': 'data',
+            })
+
+        mock_update_item.assert_called_once_with('users', {
+            'username': {'S': 'johndoe'},
+        }, {
+            'some': 'data',
+        })
 
     def test_delete_item(self):
         with mock.patch.object(

@@ -126,17 +126,51 @@ class DynamoDBv2Test(unittest.TestCase):
         self.assertEqual(check_name['first_name'], None)
 
         # ...overwrite the data with what's in memory.
-        client_2_jane['first_name'] = 'Jane'
-        self.assertTrue(client_2_jane.save())
+        client_2_jane['first_name'] = 'Joan'
+        # Now a write that fails due to default expectations...
+        self.assertRaises(exceptions.JSONResponseError, client_2_jane.save)
+        # ... so we force an overwrite.
+        self.assertTrue(client_2_jane.save(overwrite=True))
         check_name_again = users.get_item(
             username='jane',
             friend_count=3,
             consistent=True
         )
-        self.assertEqual(check_name_again['first_name'], 'Jane')
+        self.assertEqual(check_name_again['first_name'], 'Joan')
 
+        # Reset it.
+        jane.mark_dirty()
+        self.assertTrue(jane.save(overwrite=True))
 
-        # FIXME: Test the partial update behavior.
+        # Test the partial update behavior.
+        client_3_jane = users.get_item(
+            username='jane',
+            friend_count=3,
+            consistent=True
+        )
+        client_4_jane = users.get_item(
+            username='jane',
+            friend_count=3,
+            consistent=True
+        )
+        client_3_jane['favorite_band'] = 'Feed Me'
+        # No ``overwrite`` needed due to new data.
+        self.assertTrue(client_3_jane.save())
+        # Expectations are only checked on the ``first_name``, so what wouldn't
+        # have succeeded by default does succeed here.
+        client_4_jane['first_name'] = 'Jacqueline'
+        self.assertTrue(client_4_jane.partial_save())
+        partial_jane = users.get_item(
+            username='jane',
+            friend_count=3,
+            consistent=True
+        )
+        self.assertEqual(partial_jane['favorite_band'], 'Feed Me')
+        self.assertEqual(partial_jane['first_name'], 'Jacqueline')
+
+        # Reset it.
+        jane.mark_dirty()
+        self.assertTrue(jane.save(overwrite=True))
 
         # Test the eventually consistent query.
         results = users.query(
