@@ -352,67 +352,34 @@ class ResultSetTestCase(unittest.TestCase):
             'Hello john #3',
             'Hello john #4',
         ])
-        self.assertEqual(len(self.results._results), 5)
 
         # Fake in a last key.
         self.results._last_key_seen = 4
         # Second "page".
         self.results.fetch_more()
         self.assertEqual(self.results._results, [
-            'Hello john #0',
-            'Hello john #1',
-            'Hello john #2',
-            'Hello john #3',
-            'Hello john #4',
             'Hello john #5',
             'Hello john #6',
             'Hello john #7',
             'Hello john #8',
             'Hello john #9',
         ])
-        self.assertEqual(len(self.results._results), 10)
 
         # Fake in a last key.
         self.results._last_key_seen = 9
         # Last "page".
         self.results.fetch_more()
         self.assertEqual(self.results._results, [
-            'Hello john #0',
-            'Hello john #1',
-            'Hello john #2',
-            'Hello john #3',
-            'Hello john #4',
-            'Hello john #5',
-            'Hello john #6',
-            'Hello john #7',
-            'Hello john #8',
-            'Hello john #9',
             'Hello john #10',
             'Hello john #11',
             'Hello john #12',
         ])
-        self.assertEqual(len(self.results._results), 13)
 
         # Fake in a key outside the range.
         self.results._last_key_seen = 15
         # Empty "page". Nothing new gets added
         self.results.fetch_more()
-        self.assertEqual(self.results._results, [
-            'Hello john #0',
-            'Hello john #1',
-            'Hello john #2',
-            'Hello john #3',
-            'Hello john #4',
-            'Hello john #5',
-            'Hello john #6',
-            'Hello john #7',
-            'Hello john #8',
-            'Hello john #9',
-            'Hello john #10',
-            'Hello john #11',
-            'Hello john #12',
-        ])
-        self.assertEqual(len(self.results._results), 13)
+        self.assertEqual(self.results._results, [])
 
         # Make sure we won't check for results in the future.
         self.assertFalse(self.results._results_left)
@@ -444,10 +411,13 @@ def fake_batch_results(keys):
     results = []
     simulate_unprocessed = True
 
-    if len(keys) and keys[0] == 'george':
+    if len(keys) and keys[0] == 'johndoe':
         simulate_unprocessed = False
 
     for key in keys:
+        if simulate_unprocessed and key == 'johndoe':
+            continue
+
         results.append("hello %s" % key)
 
     retval = {
@@ -456,7 +426,7 @@ def fake_batch_results(keys):
     }
 
     if simulate_unprocessed:
-        retval['unprocessed_keys'] = ['george']
+        retval['unprocessed_keys'] = ['johndoe']
 
     return retval
 
@@ -469,7 +439,7 @@ class BatchGetResultSetTestCase(unittest.TestCase):
             'bob',
             'jane',
             'johndoe',
-        ], max_batch_get=3)
+        ])
         self.results.to_call(fake_batch_results)
 
     def test_fetch_more(self):
@@ -480,30 +450,17 @@ class BatchGetResultSetTestCase(unittest.TestCase):
             'hello bob',
             'hello jane',
         ])
-        self.assertEqual(len(self.results._results), 3)
-        self.assertEqual(self.results._keys_left, ['george', 'johndoe'])
+        self.assertEqual(self.results._keys_left, ['johndoe'])
 
         # Second "page".
         self.results.fetch_more()
         self.assertEqual(self.results._results, [
-            'hello alice',
-            'hello bob',
-            'hello jane',
-            'hello george',
             'hello johndoe',
         ])
-        self.assertEqual(len(self.results._results), 5)
 
         # Empty "page". Nothing new gets added
         self.results.fetch_more()
-        self.assertEqual(self.results._results, [
-            'hello alice',
-            'hello bob',
-            'hello jane',
-            'hello george',
-            'hello johndoe',
-        ])
-        self.assertEqual(len(self.results._results), 5)
+        self.assertEqual(self.results._results, [])
 
         # Make sure we won't check for results in the future.
         self.assertFalse(self.results._results_left)
@@ -513,7 +470,6 @@ class BatchGetResultSetTestCase(unittest.TestCase):
         self.assertEqual(self.results.next(), 'hello alice')
         self.assertEqual(self.results.next(), 'hello bob')
         self.assertEqual(self.results.next(), 'hello jane')
-        self.assertEqual(self.results.next(), 'hello george')
         self.assertEqual(self.results.next(), 'hello johndoe')
         self.assertRaises(StopIteration, self.results.next)
 
@@ -1443,8 +1399,8 @@ class TableTestCase(unittest.TestCase):
                 'the_callable',
                 return_value=items_2) as mock_query_2:
             res_3 = results.next()
-            # More should have been appended.
-            self.assertEqual(len(results._results), 3)
+            # New results should have been found.
+            self.assertEqual(len(results._results), 1)
             self.assertEqual(res_3['username'], 'foodoe')
 
             self.assertRaises(StopIteration, results.next)
@@ -1501,8 +1457,8 @@ class TableTestCase(unittest.TestCase):
                 'the_callable',
                 return_value=items_2) as mock_scan_2:
             res_3 = results.next()
-            # More should have been appended.
-            self.assertEqual(len(results._results), 3)
+            # New results should have been found.
+            self.assertEqual(len(results._results), 1)
             self.assertEqual(res_3['username'], 'zoeydoe')
 
             self.assertRaises(StopIteration, results.next)
@@ -1724,8 +1680,8 @@ class TableTestCase(unittest.TestCase):
                 'the_callable',
                 return_value=items_2) as mock_batch_get_2:
             res_3 = results.next()
-            # More should have been appended.
-            self.assertEqual(len(results._results), 3)
+            # New results should have been found.
+            self.assertEqual(len(results._results), 1)
             self.assertEqual(res_3['username'], 'zoeydoe')
 
             self.assertRaises(StopIteration, results.next)

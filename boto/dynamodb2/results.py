@@ -24,6 +24,10 @@ class ResultSet(object):
     def first_key(self):
         return 'exclusive_start_key'
 
+    def _reset(self):
+        self._results = []
+        self._offset = 0
+
     def __iter__(self):
         return self
 
@@ -49,6 +53,8 @@ class ResultSet(object):
         self.call_kwargs = kwargs
 
     def fetch_more(self):
+        self._reset()
+
         args = self.call_args[:]
         kwargs = self.call_kwargs.copy()
 
@@ -79,6 +85,8 @@ class BatchGetResultSet(ResultSet):
         super(BatchGetResultSet, self).__init__(*args, **kwargs)
 
     def fetch_more(self):
+        self._reset()
+
         args = self.call_args[:]
         kwargs = self.call_kwargs.copy()
 
