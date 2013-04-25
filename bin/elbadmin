@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # Copyright (c) 2009 Chris Moyer http://coredumped.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -236,6 +236,9 @@ if __name__ == "__main__":
     parser.add_option("-l", "--listener",
                       help="Specify Listener in,out,proto",
                       action="append", default=[], dest="listeners")
+    parser.add_option("-r", "--region",
+                      help="Region to connect to",
+                      action="store", dest="my_region")
 
     (options, args) = parser.parse_args()
 
@@ -243,7 +246,11 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
 
-    elb = boto.connect_elb()
+    if not options.my_region:
+        elb = boto.connect_elb()
+    else:
+        import boto.ec2.elb
+        elb = boto.ec2.elb.connect_to_region(options.my_region)
 
     print "%s" % (elb.region.endpoint)
 
