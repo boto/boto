@@ -539,10 +539,12 @@ class AWSAuthConnection(object):
                                      aws_secret_access_key,
                                      security_token)
 
-        # allow config file to override default host
+        # Allow config file to override default host and port.
         if self.provider.host:
             self.host = self.provider.host
-
+        if self.provider.port:
+            self.port = self.provider.port
+        
         self._pool = ConnectionPool()
         self._connection = (self.server_name(), self.is_secure)
         self._last_rs = None

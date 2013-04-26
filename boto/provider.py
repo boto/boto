@@ -117,7 +117,8 @@ class Provider(object):
                                             'metadata-directive',
             RESUMABLE_UPLOAD_HEADER_KEY: None,
             SECURITY_TOKEN_HEADER_KEY: AWS_HEADER_PREFIX + 'security-token',
-            SERVER_SIDE_ENCRYPTION_KEY: AWS_HEADER_PREFIX + 'server-side-encryption',
+            SERVER_SIDE_ENCRYPTION_KEY: AWS_HEADER_PREFIX +
+                                         'server-side-encryption',
             VERSION_ID_HEADER_KEY: AWS_HEADER_PREFIX + 'version-id',
             STORAGE_CLASS_HEADER_KEY: AWS_HEADER_PREFIX + 'storage-class',
             MFA_HEADER_KEY: AWS_HEADER_PREFIX + 'mfa',
@@ -176,10 +177,13 @@ class Provider(object):
         self.get_credentials(access_key, secret_key)
         self.configure_headers()
         self.configure_errors()
-        # allow config file to override default host
+        # Allow config file to override default host and port.
         host_opt_name = '%s_host' % self.HostKeyMap[self.name]
         if config.has_option('Credentials', host_opt_name):
             self.host = config.get('Credentials', host_opt_name)
+        port_opt_name = '%s_port' % self.HostKeyMap[self.name]
+        if config.has_option('Credentials', port_opt_name):
+            self.port = config.getint('Credentials', port_opt_name)
 
     def get_access_key(self):
         if self._credentials_need_refresh():
