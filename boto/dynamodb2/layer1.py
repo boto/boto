@@ -51,6 +51,7 @@ class DynamoDBConnection(AWSQueryConnection):
         "ResourceNotFoundException": exceptions.ResourceNotFoundException,
         "InternalServerError": exceptions.InternalServerError,
         "ItemCollectionSizeLimitExceededException": exceptions.ItemCollectionSizeLimitExceededException,
+        "ValidationException": exceptions.ValidationException,
     }
 
     NumberRetries = 10
@@ -1419,9 +1420,12 @@ class DynamoDBConnection(AWSQueryConnection):
             response_body = response.read()
             boto.log.debug(response_body)
             data = json.loads(response_body)
-            if self.ThruputError in data.get('__type'):
+            if 'ProvisionedThroughputExceededException' in data.get('__type'):
                 self.throughput_exceeded_events += 1
-                msg = "%s, retry attempt %s" % (self.ThruputError, i)
+                msg = "%s, retry attempt %s" % (
+                    'ProvisionedThroughputExceededException',
+                    i
+                )
                 next_sleep = self._exponential_time(i)
                 i += 1
                 status = (msg, i, next_sleep)
@@ -1431,10 +1435,10 @@ class DynamoDBConnection(AWSQueryConnection):
                     # was exceeded.
                     raise exceptions.ProvisionedThroughputExceededException(
                         response.status, response.reason, data)
-            elif self.ConditionalCheckFailedError in data.get('__type'):
+            elif 'ConditionalCheckFailedException' in data.get('__type'):
                 raise exceptions.ConditionalCheckFailedException(
                     response.status, response.reason, data)
-            elif self.ValidationError in data.get('__type'):
+            elif 'ValidationException' in data.get('__type'):
                 raise exceptions.ValidationException(
                     response.status, response.reason, data)
             else:
