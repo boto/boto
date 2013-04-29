@@ -8,6 +8,7 @@ import hashlib
 import os
 import StringIO
 import math
+import StringIO
 
 
 class AESCipher:
@@ -62,10 +63,11 @@ class AESCipher:
             initialOffset = fp.tell()
             plaincontent = fp.read()
             ciphercontent = self.encrypt(plaincontent)
-            fp.truncate(initialOffset)
-            fp.write(ciphercontent)
-            fp.seek(initialOffset)
-        return fp
+            #open a new StringIO to act as fp, incase the one passed in wasn't open for writing.
+            fp_new = StringIO.StringIO()
+            fp_new.write(ciphercontent)
+            fp_new.seek(0)
+            return fp_new
 
     def decryptFP(self,fp):
         """
@@ -76,10 +78,11 @@ class AESCipher:
         initialOffset = fp.tell()
         ciphercontent = fp.read()
         plaincontent = self.decrypt(ciphercontent)
-        fp.truncate(initialOffset)
-        fp.write(plaincontent)
-        fp.seek(initialOffset)
-        return fp
+        #open a new StringIO to act as fp, incase the one passed in wasn't open for writing.
+        fp_new = StringIO.StringIO()
+        fp_new.write(plaincontent)
+        fp_new.seek(0)
+        return fp_new
 
     def compute_encrypted_size(self,content):
         """
