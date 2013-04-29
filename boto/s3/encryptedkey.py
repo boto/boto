@@ -8,7 +8,6 @@ import hashlib
 import os
 import StringIO
 import math
-import StringIO
 
 
 class AESCipher:
@@ -53,20 +52,25 @@ class AESCipher:
         Doing this ensures that the MD5's will match, (since the IV is random each time).
 
         """
-        if (fp == None):
+        if (fp is None):
             #we had a precomputed encrypted fp
             #from an MD5 computation,
             #and the user wants to use it
-            fp = self.efp
+            return self.efp
         else:
             #computing a new encrypted fp.
+            #save the initial offset, to return later.
             initialOffset = fp.tell()
+            fp.seek(0)
+            #open a new StringIO to act as fp, incase the one passed in wasn't open for writing.
+            #Re-read the entire file from fp, even if there was an offset.
+            fp_new = StringIO.StringIO()
+            fp_new.write(fp.read(initialOffset))
+            #then read past the offset, and use that as plaintext
             plaincontent = fp.read()
             ciphercontent = self.encrypt(plaincontent)
-            #open a new StringIO to act as fp, incase the one passed in wasn't open for writing.
-            fp_new = StringIO.StringIO()
             fp_new.write(ciphercontent)
-            fp_new.seek(0)
+            fp_new.seek(initialOffset)
             return fp_new
 
     def decryptFP(self,fp):
@@ -78,11 +82,13 @@ class AESCipher:
         initialOffset = fp.tell()
         ciphercontent = fp.read()
         plaincontent = self.decrypt(ciphercontent)
-        #open a new StringIO to act as fp, incase the one passed in wasn't open for writing.
-        fp_new = StringIO.StringIO()
-        fp_new.write(plaincontent)
-        fp_new.seek(0)
-        return fp_new
+        print plaincontent
+        print '-------------'
+        print initialOffset
+        fp.truncate(initialOffset)
+        fp.write(plaincontent)
+        fp.seek(initialOffset)
+        return fp
 
     def compute_encrypted_size(self,content):
         """
@@ -121,7 +127,7 @@ class EncryptedKey(boto.s3.key.Key):
     """
     def __init__(self, bucket=None, name=None,encryptionKey=None):
         self.encryptionKey = encryptionKey
-        if (encryptionKey != None):
+        if (encryptionKey is not None):
             self.aes = AESCipher(hashlib.sha256(encryptionKey).digest())
         super(EncryptedKey,self).__init__(bucket,name)
 
@@ -165,7 +171,7 @@ class EncryptedKey(boto.s3.key.Key):
         #avoid modifying the original fp
         spos = fp.tell()
         #only read the size specified, if specified
-        if (size != None):
+        if (size is not None):
             content = fp.read(size)
             #also adjust the size variable, since we are encrypting
             size = self.aes.compute_encrypted_size(content)
@@ -213,7 +219,7 @@ class EncryptedKey(boto.s3.key.Key):
         #ensure we have a key to use
         self.check_null_encryption_key()
 
-        if (fp == None):
+        if (fp is None):
             #calling to try to reuse the fp saved away by compute_encrypted_md5
             fp = self.aes.encryptFP(None)
             size = None #set size in case somebody set it in the call.
@@ -225,16 +231,15 @@ class EncryptedKey(boto.s3.key.Key):
             #proceed as normal
 
             #rewind requested, go to start of file
-            if rewind == True:
+            if rewind is True:
                 fp.seek(0)
 
             #if size is set, only encrypt up to that point
-            if size != None:
+            if size is not None:
                 contents = fp.read(size)
                 fp = StringIO.StringIO(contents)
                 #now reset the size to reflect the encrypted size
                 size = self.aes.compute_encrypted_size(contents)
-
 
             initial = fp.tell()
             contents = fp.read()
