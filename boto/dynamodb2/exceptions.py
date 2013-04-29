@@ -46,5 +46,9 @@ class InternalServerError(JSONResponseError):
     pass
 
 
+class ValidationException(JSONResponseError):
+    pass
+
+
 class ItemCollectionSizeLimitExceededException(JSONResponseError):
     pass
