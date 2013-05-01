@@ -1,5 +1,4 @@
-# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.
-# All Rights Reserved
+# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,28 +19,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+
 from boto.regioninfo import RegionInfo
 
 
 def regions():
     """
-    Get all available regions for the AWS Redshift service.
+    Get all available regions for the Amazon Support service.
 
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
-    from boto.redshift.layer1 import RedshiftConnection
-    cls = RedshiftConnection
+    from boto.support.layer1 import SupportConnection
     return [
-        RegionInfo(name='us-east-1',
-                   endpoint='redshift.us-east-1.amazonaws.com',
-                   connection_cls=cls),
-        RegionInfo(name='us-west-2',
-                   endpoint='redshift.us-west-2.amazonaws.com',
-                   connection_cls=cls),
-        RegionInfo(name='eu-west-1',
-                   endpoint='redshift.eu-west-1.amazonaws.com',
-                   connection_cls=cls),
+        RegionInfo(
+            name='us-east-1',
+            endpoint='support.us-east-1.amazonaws.com',
+            connection_cls=SupportConnection
+        ),
     ]
 
 

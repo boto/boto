@@ -85,6 +85,7 @@ Currently Supported Services
 * **Other**
 
   * Marketplace Web Services -- (:doc:`API Reference <ref/mws>`)
+  * :doc:`Support <support_tut>` -- (:doc:`API Reference <ref/support>`)
 
 Additional Resources
 --------------------
@@ -102,6 +103,17 @@ Additional Resources
 .. _Boto Twitter: http://twitter.com/pythonboto
 .. _IRC channel: http://webchat.freenode.net/?channels=boto
 .. _Follow Mitch on Twitter: http://twitter.com/garnaat
+
+
+Release Notes
+-------------
+
+.. toctree::
+   :titlesonly:
+   :glob:
+
+   releasenotes/*
+
 
 .. toctree::
    :hidden:
@@ -153,6 +165,8 @@ Additional Resources
    ref/elastictranscoder
    ref/redshift
    ref/dynamodb2
+   support_tut
+   ref/support
 
 
 Indices and tables

@@ -263,9 +263,9 @@ class ResumableDownloadHandler(object):
             headers = {}
 
         # Use num-retries from constructor if one was provided; else check
-        # for a value specified in the boto config file; else default to 5.
+        # for a value specified in the boto config file; else default to 6.
         if self.num_retries is None:
-            self.num_retries = config.getint('Boto', 'num_retries', 5)
+            self.num_retries = config.getint('Boto', 'num_retries', 6)
         progress_less_iterations = 0
 
         while True:  # Retry as long as we're making progress.

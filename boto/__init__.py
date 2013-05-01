@@ -36,7 +36,7 @@ import logging.config
 import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.9.0'
+__version__ = '2.9.1'
 Version = __version__  # for backware compatibility
 
 UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
@@ -672,6 +672,48 @@ def connect_opsworks(aws_access_key_id=None,
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
         **kwargs)
+
+
+def connect_redshift(aws_access_key_id=None,
+                     aws_secret_access_key=None,
+                     **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.redshift.layer1.RedshiftConnection`
+    :return: A connection to Amazon's Redshift service
+    """
+    from boto.redshift.layer1 import RedshiftConnection
+    return RedshiftConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_support(aws_access_key_id=None,
+                    aws_secret_access_key=None,
+                    **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.support.layer1.SupportConnection`
+    :return: A connection to Amazon's Support service
+    """
+    from boto.support.layer1 import SupportConnection
+    return SupportConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
 
 
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
