@@ -1,5 +1,14 @@
 class ResultSet(object):
     """
+    A class used to lazily handle page-to-page navigation through a set of
+    results.
+
+    It presents a transparent iterator interface, so that all the user has
+    to do is use it in a typical ``for`` loop (or list comprehension, etc.)
+    to fetch results, even if they weren't present in the current page of
+    results.
+
+    This is used by the ``Table.query`` & ``Table.scan`` methods.
 
     Example::
 
@@ -9,6 +18,7 @@ class ResultSet(object):
         # Now iterate. When it runs out of results, it'll fetch the next page.
         >>> for res in results:
         ...     print res['username']
+
     """
     def __init__(self):
         super(ResultSet, self).__init__()
@@ -25,6 +35,14 @@ class ResultSet(object):
         return 'exclusive_start_key'
 
     def _reset(self):
+        """
+        Resets the internal state of the ``ResultSet``.
+
+        This prevents results from being cached long-term & consuming
+        excess memory.
+
+        Largely internal.
+        """
         self._results = []
         self._offset = 0
 
@@ -43,6 +61,23 @@ class ResultSet(object):
         return self._results[self._offset]
 
     def to_call(self, the_callable, *args, **kwargs):
+        """
+        Sets up the callable & any arguments to run it with.
+
+        This is stored for subsequent calls so that those queries can be
+        run without requiring user intervention.
+
+        Example::
+
+            # Just an example callable.
+            >>> def squares_to(y):
+            ...     for x in range(1, y):
+            ...         yield x**2
+            >>> rs = ResultSet()
+            # Set up what to call & arguments.
+            >>> rs.to_call(squares_to, y=3)
+
+        """
         if not callable(the_callable):
             raise ValueError(
                 'You must supply an object or function to be called.'
@@ -53,6 +88,12 @@ class ResultSet(object):
         self.call_kwargs = kwargs
 
     def fetch_more(self):
+        """
+        When the iterator runs out of results, this method is run to re-execute
+        the callable (& arguments) to fetch the next page.
+
+        Largely internal.
+        """
         self._reset()
 
         args = self.call_args[:]

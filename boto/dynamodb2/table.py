@@ -9,70 +9,83 @@ from boto.dynamodb2.types import Dynamizer, FILTER_OPERATORS, QUERY_OPERATORS
 
 class Table(object):
     """
+    Interacts & models the behavior of a DynamoDB table.
 
-    Example::
-
-        >>> from boto.dynamodb2.fields import HashKey, RangeKey
-        >>> from boto.dynamodb2.table import Table
-
-        # Create the table.
-        >>> users = Table.create('users', schema=[
-        ...     HashKey('username'),
-        ... ])
-
-        # Create/update a user.
-        >>> users.put_item(data={
-        ...     'username': 'johndoe',
-        ...     'first_name': 'John',
-        ...     'last_name': 'Doe',
-        ...     'date_joined': int(time.time()),
-        ...     'friend_count': 3,
-        ...     'friends': ['alice', 'bob', 'jane']
-        ... })
-        >>> jane = users.get_item(username='jane')
-
-        # Change & store the updated user.
-        >>> jane['friends'] = ['johndoe']
-        >>> jane.save()
-
-        # Run a query.
-        >>> names_with_j = users.query(username__begins_with': 'j', limit=5)
-
-        >>> all_users = users.scan()
-
-        # Batching!
-        >>> with users.batch_write() as batch:
-        ...     batch.put_item(data={
-        ...         'username': 'anotherdoe',
-        ...         'first_name': 'Another',
-        ...         'last_name': 'Doe',
-        ...         'date_joined': int(time.time()),
-        ...     })
-        ...     batch.put_item(data={
-        ...         'username': 'alice',
-        ...         'first_name': 'Alice',
-        ...         'date_joined': int(time.time()),
-        ...     })
-        ...     batch.delete_item(username=jane')
-
-        # Dust off & nuke it from orbit.
-        >>> users.delete()
-
+    The ``Table`` object represents a set (or rough categorization) of
+    records within DynamoDB. The important part is that all records within the
+    table, while largely-schema-free, share the same schema & are essentially
+    namespaced for use in your application. For example, you might have a
+    ``users`` table or a ``forums`` table.
     """
     max_batch_get = 100
 
-    def __init__(self, table_name, connection=None):
+    def __init__(self, table_name, schema=None, throughput=None, indexes=None,
+                 connection=None):
+        """
+        Sets up a new in-memory ``Table``.
+
+        This is useful if the table already exists within DynamoDB & you simply
+        want to use it for additional interactions. The only required parameter
+        is the ``table_name``. However, under the hood, the object will call
+        ``describe_table`` to determine the schema/indexes/throughput. You
+        can avoid this extra call by passing in ``schema`` & ``indexes``.
+
+        **IMPORTANT** - If you're creating a new ``Table`` for the first time,
+        you should use the ``Table.create`` method instead, as it will
+        persist the table structure to DynamoDB.
+
+        Requires a ``table_name`` parameter, which should be a simple string
+        of the name of the table.
+
+        Optionally accepts a ``schema`` parameter, which should be a list of
+        ``BaseSchemaField`` subclasses representing the desired schema.
+
+        Optionally accepts a ``throughput`` parameter, which should be a
+        dictionary. If provided, it should specify a ``read`` & ``write`` key,
+        both of which should have an integer value associated with them.
+
+        Optionally accepts a ``indexes`` parameter, which should be a list of
+        ``BaseIndexField`` subclasses representing the desired indexes.
+
+        Optionally accepts a ``connection`` parameter, which should be a
+        ``DynamoDBConnection`` instance (or subclass). This is primarily useful
+        for specifying alternate connection parameters.
+
+        Example::
+
+            # The simple, it-already-exists case.
+            >>> conn = Table('users')
+
+            # The full, minimum-extra-calls case.
+            >>> from boto.dynamodb2.layer1 import DynamoDBConnection
+            >>> users = Table('users', schema=[
+            ...     HashKey('username'),
+            ...     RangeKey('date_joined', data_type=NUMBER)
+            ... ], throughput={
+            ...     'read':20,
+            ...     'write': 10,
+            ... }, indexes=[
+            ...     KeysOnlyIndex('MostRecentlyJoined', parts=[
+            ...         RangeKey('date_joined')
+            ...     ]),
+            ... ],
+            ... connection=DynamoDBConnection())
+
+        """
         self.table_name = table_name
         self.connection = connection
         self.throughput = {
             'read': 5,
             'write': 5,
         }
-        self.schema = None
-        self.indexes = None
+        self.schema = schema
+        self.indexes = indexes
 
         if self.connection is None:
             self.connection = DynamoDBConnection()
+
+        if throughput is not None:
+            self.throughput = throughput
 
         self._dynamizer = Dynamizer()
 
@@ -80,6 +93,39 @@ class Table(object):
     def create(cls, table_name, schema, throughput=None, indexes=None,
                connection=None):
         """
+        Creates a new table in DynamoDB & returns an in-memory ``Table`` object.
+
+        This will setup a brand new table within DynamoDB. The ``table_name``
+        must be unique for your AWS account. The ``schema`` is also required
+        to define the key structure of the table.
+
+        **IMPORTANT** - You should consider the usage pattern of your table
+        up-front, as the schema & indexes can **NOT** be modified once the
+        table is created, requiring the creation of a new table & migrating
+        the data should you wish to revise it.
+
+        **IMPORTANT** - If the table already exists in DynamoDB, additional
+        calls to this method will result in an error. If you just need
+        a ``Table`` object to interact with the existing table, you should
+        just initialize a new ``Table`` object, which requires only the
+        ``table_name``.
+
+        Requires a ``table_name`` parameter, which should be a simple string
+        of the name of the table.
+
+        Requires a ``schema`` parameter, which should be a list of
+        ``BaseSchemaField`` subclasses representing the desired schema.
+
+        Optionally accepts a ``throughput`` parameter, which should be a
+        dictionary. If provided, it should specify a ``read`` & ``write`` key,
+        both of which should have an integer value associated with them.
+
+        Optionally accepts a ``indexes`` parameter, which should be a list of
+        ``BaseIndexField`` subclasses representing the desired indexes.
+
+        Optionally accepts a ``connection`` parameter, which should be a
+        ``DynamoDBConnection`` instance (or subclass). This is primarily useful
+        for specifying alternate connection parameters.
 
         Example::
 
@@ -148,6 +194,10 @@ class Table(object):
         return table
 
     def _introspect_schema(self, raw_schema):
+        """
+        Given a raw schema structure back from a DynamoDB response, parse
+        out & build the high-level Python objects that represent them.
+        """
         schema = []
 
         for field in raw_schema:
@@ -164,6 +214,10 @@ class Table(object):
         return schema
 
     def _introspect_indexes(self, raw_indexes):
+        """
+        Given a raw index structure back from a DynamoDB response, parse
+        out & build the high-level Python objects that represent them.
+        """
         indexes = []
 
         for field in raw_indexes:
@@ -193,6 +247,28 @@ class Table(object):
         return indexes
 
     def describe(self):
+        """
+        Describes the current structure of the table in DynamoDB.
+
+        This information will be used to update the ``schema``, ``indexes``
+        and ``throughput`` information on the ``Table``. Some calls, such as
+        those involving creating keys or querying, will require this
+        information to be populated.
+
+        It also returns the full raw datastructure from DynamoDB, in the
+        event you'd like to parse out additional information (such as the
+        ``ItemCount`` or usage information).
+
+        Example::
+
+            >>> users.describe()
+            {
+                # Lots of keys here...
+            }
+            >>> len(users.schema)
+            2
+
+        """
         result = self.connection.describe_table(self.table_name)
 
         # Blindly update throughput, since what's on DynamoDB's end is likely
@@ -215,6 +291,28 @@ class Table(object):
         return result
 
     def update(self, throughput):
+        """
+        Updates table attributes in DynamoDB.
+
+        Currently, the only thing you can modify about a table after it has
+        been created is the throughput.
+
+        Requires a ``throughput`` parameter, which should be a
+        dictionary. If provided, it should specify a ``read`` & ``write`` key,
+        both of which should have an integer value associated with them.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # For a read-heavier application...
+            >>> users.update(throughput={
+            ...     'read': 20,
+            ...     'write': 10,
+            ... })
+            True
+
+        """
         self.throughput = throughput
         self.connection.update_table(self.table_name, {
             'ReadCapacityUnits': int(self.throughput['read']),
@@ -223,10 +321,42 @@ class Table(object):
         return True
 
     def delete(self):
+        """
+        Deletes a table in DynamoDB.
+
+        **IMPORTANT** - Be careful when using this method, there is no undo.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            >>> users.delete()
+            True
+
+        """
         self.connection.delete_table(self.table_name)
         return True
 
     def _encode_keys(self, keys):
+        """
+        Given a flat Python dictionary of keys/values, converts it into the
+        nested dictionary DynamoDB expects.
+
+        Converts::
+
+            {
+                'username': 'john',
+                'tags': [1, 2, 5],
+            }
+
+        ...to...::
+
+            {
+                'username': {'S': 'john'},
+                'tags': {'NS': ['1', '2', '5']},
+            }
+
+        """
         raw_key = {}
 
         for key, value in keys.items():
@@ -235,6 +365,45 @@ class Table(object):
         return raw_key
 
     def get_item(self, consistent=False, **kwargs):
+        """
+        Fetches an item (record) from a table in DynamoDB.
+
+        To specify the key of the item you'd like to get, you can specify the
+        key attributes as kwargs.
+
+        Optionally accepts a ``consistent`` parameter, which should be a
+        boolean. If you provide ``True``, it will perform
+        a consistent (but more expensive) read from DynamoDB.
+        (Default: ``False``)
+
+        Returns an ``Item`` instance containing all the data for that record.
+
+        Example::
+
+            # A simple hash key.
+            >>> john = users.get_item(username='johndoe')
+            >>> john['first_name']
+            'John'
+
+            # A complex hash+range key.
+            >>> john = users.get_item(username='johndoe', last_name='Doe')
+            >>> john['first_name']
+            'John'
+
+            # A consistent read (assuming the data might have just changed).
+            >>> john = users.get_item(username='johndoe', consistent=True)
+            >>> john['first_name']
+            'Johann'
+
+            # With a key that is an invalid variable name in Python.
+            # Also, assumes a different schema than previous examples.
+            >>> john = users.get_item(**{
+            ...     'date-joined': 127549192,
+            ... })
+            >>> john['first_name']
+            'John'
+
+        """
         raw_key = self._encode_keys(kwargs)
         item_data = self.connection.get_item(
             self.table_name,
@@ -247,12 +416,44 @@ class Table(object):
 
     def put_item(self, data, overwrite=False):
         """
-        Public API for creating an item.
+        Saves an entire item to DynamoDB.
+
+        By default, if any part of the ``Item``'s original data doesn't match
+        what's currently in DynamoDB, this request will fail. This prevents
+        other processes from updating the data in between when you read the
+        item & when your request to update the item's data is processed, which
+        would typically result in some data loss.
+
+        Requires a ``data`` parameter, which should be a dictionary of the data
+        you'd like to store in DynamoDB.
+
+        Optionally accepts an ``overwrite`` parameter, which should be a
+        boolean. If you provide ``True``, this will tell DynamoDB to blindly
+        overwrite whatever data is present, if any.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            >>> users.put_item(data={
+            ...     'username': 'jane',
+            ...     'first_name': 'Jane',
+            ...     'last_name': 'Doe',
+            ...     'date_joined': 126478915,
+            ... })
+            True
+
         """
         item = Item(self, data=data)
         return item.save(overwrite=overwrite)
 
     def _put_item(self, item_data, expects=None):
+        """
+        The internal variant of ``put_item`` (full data). This is used by the
+        ``Item`` objects, since that operation is represented at the
+        table-level by the API, but conceptually maps better to telling an
+        individual ``Item`` to save itself.
+        """
         kwargs = {}
 
         if expects is not None:
@@ -262,6 +463,12 @@ class Table(object):
         return True
 
     def _update_item(self, key, item_data, expects=None):
+        """
+        The internal variant of ``put_item`` (partial data). This is used by the
+        ``Item`` objects, since that operation is represented at the
+        table-level by the API, but conceptually maps better to telling an
+        individual ``Item`` to save itself.
+        """
         raw_key = self._encode_keys(key)
         kwargs = {}
 
@@ -272,11 +479,58 @@ class Table(object):
         return True
 
     def delete_item(self, **kwargs):
+        """
+        Deletes an item in DynamoDB.
+
+        **IMPORTANT** - Be careful when using this method, there is no undo.
+
+        To specify the key of the item you'd like to get, you can specify the
+        key attributes as kwargs.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # A simple hash key.
+            >>> users.delete_item(username='johndoe')
+            True
+
+            # A complex hash+range key.
+            >>> users.delete_item(username='jane', last_name='Doe')
+            True
+
+            # With a key that is an invalid variable name in Python.
+            # Also, assumes a different schema than previous examples.
+            >>> users.delete_item(**{
+            ...     'date-joined': 127549192,
+            ... })
+            True
+
+        """
         raw_key = self._encode_keys(kwargs)
         self.connection.delete_item(self.table_name, raw_key)
         return True
 
     def get_key_fields(self):
+        """
+        Returns the fields necessary to make a key for a table.
+
+        If the ``Table`` does not already have a populated ``schema``,
+        this will request it via a ``Table.describe`` call.
+
+        Returns a list of fieldnames (strings).
+
+        Example::
+
+            # A simple hash key.
+            >>> users.get_key_fields()
+            ['username']
+
+            # A complex hash+range key.
+            >>> users.get_key_fields()
+            ['username', 'last_name']
+
+        """
         if not self.schema:
             # We don't know the structure of the table. Get a description to
             # populate the schema.
@@ -285,11 +539,53 @@ class Table(object):
         return [field.name for field in self.schema]
 
     def batch_write(self):
+        """
+        Allows the batching of writes to DynamoDB.
+
+        Since each write/delete call to DynamoDB has a cost associated with it,
+        when loading lots of data, it makes sense to batch them, creating as
+        few calls as possible.
+
+        This returns a context manager that will transparently handle creating
+        these batches. The object you get back lightly-resembles a ``Table``
+        object, sharing just the ``put_item`` & ``delete_item`` methods
+        (which are all that DynamoDB can batch in terms of writing data).
+
+        DynamoDB's maximum batch size is 25 items per request. If you attempt
+        to put/delete more than that, the context manager will batch as many
+        as it can up to that number, then flush them to DynamoDB & continue
+        batching as more calls come in.
+
+        Example::
+
+            # Assuming a table with one record...
+            >>> with users.batch_write() as batch:
+            ...     batch.put_item(data={
+            ...         'username': 'johndoe',
+            ...         'first_name': 'John',
+            ...         'last_name': 'Doe',
+            ...         'owner': 1,
+            ...     })
+            ...     # Nothing across the wire yet.
+            ...     batch.delete_item(username='bob')
+            ...     # Still no requests sent.
+            ...     batch.put_item(data={
+            ...         'username': 'jane',
+            ...         'first_name': 'Jane',
+            ...         'last_name': 'Doe',
+            ...         'date_joined': 127436192,
+            ...     })
+            ...     # Nothing yet, but once we leave the context, the
+            ...     # put/deletes will be sent.
+
+        """
+        # PHENOMENAL COSMIC DOCS!!! itty-bitty code.
         return BatchTable(self)
 
     def _build_filters(self, filter_kwargs, using=QUERY_OPERATORS):
         """
-
+        An internal method for taking query/scan-style ``**kwargs`` & turning
+        them into the raw structure DynamoDB expects for filtering.
         """
         filters = {}
 
@@ -337,6 +633,74 @@ class Table(object):
 
     def query(self, limit=None, index=None, reverse=False, consistent=False,
               **filter_kwargs):
+        """
+        Queries for a set of matching items in a DynamoDB table.
+
+        Queries can be performed against a hash key, a hash+range key or
+        against any data stored in your local secondary indexes.
+
+        **Note** - You can not query against arbitrary fields within the data
+        stored in DynamoDB.
+
+        To specify the filters of the items you'd like to get, you can specify
+        the filters as kwargs. Each filter kwarg should follow the pattern
+        ``<fieldname>__<filter_operation>=<value_to_look_for>``.
+
+        Optionally accepts a ``limit`` parameter, which should be an integer
+        count of the total number of items to return. (Default: ``None`` -
+        all results)
+
+        Optionally accepts an ``index`` parameter, which should be a string of
+        name of the local secondary index you want to query against.
+        (Default: ``None``)
+
+        Optionally accepts a ``reverse`` parameter, which will present the
+        results in reverse order. (Default: ``None`` - normal order)
+
+        Optionally accepts a ``consistent`` parameter, which should be a
+        boolean. If you provide ``True``, it will force a consistent read of
+        the data (more expensive). (Default: ``False`` - use eventually
+        consistent reads)
+
+        Returns a ``ResultSet``, which transparently handles the pagination of
+        results you get back.
+
+        Example::
+
+            # Look for last names equal to "Doe".
+            >>> results = users.query(last_name__eq='Doe')
+            >>> for res in results:
+            ...     print res['first_name']
+            'John'
+            'Jane'
+
+            # Look for last names beginning with "D", in reverse order, limit 3.
+            >>> results = users.query(
+            ...     last_name__beginswith='D',
+            ...     reverse=True,
+            ...     limit=3
+            ... )
+            >>> for res in results:
+            ...     print res['first_name']
+            'Alice'
+            'Jane'
+            'John'
+
+            # Use an LSI & a consistent read.
+            >>> results = users.query(
+            ...     date_joined__gte=1236451000,
+            ...     owner__eq=1,
+            ...     index='DateJoinedIndex',
+            ...     consistent=True
+            ... )
+            >>> for res in results:
+            ...     print res['first_name']
+            'Alice'
+            'Bob'
+            'John'
+            'Fred'
+
+        """
         results = ResultSet()
         kwargs = filter_kwargs.copy()
         kwargs.update({
@@ -350,6 +714,10 @@ class Table(object):
 
     def _query(self, limit=None, index=None, reverse=False, consistent=False,
                exclusive_start_key=None, **filter_kwargs):
+        """
+        The internal method that performs the actual queries. Used extensively
+        by ``ResultSet`` to perform each (paginated) request.
+        """
         kwargs = {
             'limit': limit,
             'index_name': index,
@@ -396,10 +764,47 @@ class Table(object):
         }
 
     def scan(self, limit=None, **filter_kwargs):
-        # TODO: Args to support:
-        #       * Kwarg-based filters (becomes ``scan_filter``)
-        #       * limit
-        #       * exclusive_start_key (we manage this)
+        """
+        Scans across all items within a DynamoDB table.
+
+        Scans can be performed against a hash key or a hash+range key. You can
+        additionally filter the results after the table has been read but
+        before the response is returned.
+
+        To specify the filters of the items you'd like to get, you can specify
+        the filters as kwargs. Each filter kwarg should follow the pattern
+        ``<fieldname>__<filter_operation>=<value_to_look_for>``.
+
+        Optionally accepts a ``limit`` parameter, which should be an integer
+        count of the total number of items to return. (Default: ``None`` -
+        all results)
+
+        Returns a ``ResultSet``, which transparently handles the pagination of
+        results you get back.
+
+        Example::
+
+            # All results.
+            >>> everything = users.scan()
+
+            # Look for last names beginning with "D".
+            >>> results = users.scan(last_name__beginswith='D')
+            >>> for res in results:
+            ...     print res['first_name']
+            'Alice'
+            'John'
+            'Jane'
+
+            # Use an ``IN`` filter & limit.
+            >>> results = users.scan(
+            ...     age__in=[25, 26, 27, 28, 29],
+            ...     limit=1
+            ... )
+            >>> for res in results:
+            ...     print res['first_name']
+            'Alice'
+
+        """
         results = ResultSet()
         kwargs = filter_kwargs.copy()
         kwargs.update({
@@ -409,6 +814,10 @@ class Table(object):
         return results
 
     def _scan(self, limit=None, exclusive_start_key=None, **filter_kwargs):
+        """
+        The internal method that performs the actual scan. Used extensively
+        by ``ResultSet`` to perform each (paginated) request.
+        """
         kwargs = {
             'limit': limit,
         }
@@ -452,15 +861,50 @@ class Table(object):
         }
 
     def batch_get(self, keys, consistent=False):
-        # TODO: Document that keys needs to be a list of dicts.
-        #       Sucks to expose the underlying (weak) API, but grump.
+        """
+        Fetches many specific items in batch from a table.
+
+        Requires a ``keys`` parameter, which should be a list of dictionaries.
+        Each dictionary should consist of the keys values to specify.
+
+        Optionally accepts a ``consistent`` parameter, which should be a
+        boolean. If you provide ``True``, a strongly consistent read will be
+        used. (Default: False)
+
+        Returns a ``ResultSet``, which transparently handles the pagination of
+        results you get back.
+
+        Example::
+
+            >>> results = users.batch_get(keys=[
+            ...     {
+            ...         'username': 'johndoe',
+            ...     },
+            ...     {
+            ...         'username': 'jane',
+            ...     },
+            ...     {
+            ...         'username': 'fred',
+            ...     },
+            ... ])
+            >>> for res in results:
+            ...     print res['first_name']
+            'John'
+            'Jane'
+            'Fred'
+
+        """
         # We pass the keys to the constructor instead, so it can maintain it's
-        # own internal state as to what keeys have been processed.
+        # own internal state as to what keys have been processed.
         results = BatchGetResultSet(keys=keys, max_batch_get=self.max_batch_get)
         results.to_call(self._batch_get, consistent=False)
         return results
 
     def _batch_get(self, keys, consistent=False):
+        """
+        The internal method that performs the actual batch get. Used extensively
+        by ``BatchGetResultSet`` to perform each (paginated) request.
+        """
         items = {
             self.table_name: {
                 'Keys': [],
@@ -501,17 +945,36 @@ class Table(object):
 
         return {
             'results': results,
-            # NEVER return a ``last_key``. Just in-case
+            # NEVER return a ``last_key``. Just in-case any part of
+            # ``ResultSet`` peeks through, since much of the
+            # original underlying implementation is based on this key.
             'last_key': None,
             'unprocessed_keys': unprocessed_keys,
         }
 
     def count(self):
+        """
+        Returns a (very) eventually consistent count of the number of items
+        in a table.
+
+        Lag time is about 6 hours, so don't expect a high degree of accuracy.
+
+        Example::
+
+            >>> users.count()
+            6
+
+        """
         info = self.describe()
         return info['Table'].get('ItemCount', 0)
 
 
 class BatchTable(object):
+    """
+    Used by ``Table`` as the context manager for batch writes.
+
+    You likely don't want to try to use this object directly.
+    """
     def __init__(self, table):
         self.table = table
         self._to_put = []
@@ -528,7 +991,7 @@ class BatchTable(object):
         self.flush()
         return True
 
-    def put_item(self, data):
+    def put_item(self, data, overwrite=False):
         self._to_put.append(data)
 
         if self.should_flush():

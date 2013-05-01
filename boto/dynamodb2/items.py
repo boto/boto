@@ -8,37 +8,47 @@ class NEWVALUE(object):
 
 class Item(object):
     """
+    An object representing the item data within a DynamoDB table.
 
+    An item is largely schema-free, meaning it can contain any data. The only
+    limitation is that it must have data for the fields in the ``Table``'s
+    schema.
 
-    Example::
-
-        >>> from boto.dynamodb2.items import Item
-        >>> from boto.dynamodb2.table import Table
-        >>> users = Table('users')
-        >>> johndoe = Item(users, {
-        ...     'username': 'johndoe',
-        ...     'first_name': 'John',
-        ...     'last_name': 'Doe',
-        ...     'date_joined': int(time.time()),
-        ...     'friend_count': 3,
-        ...     'friends': ['alice', 'bob', 'jane']
-        ... })
-        >>> item.save()
-        # A second save does nothing, since the data hasn't changed.
-        >>> item.save()
-
-        # Manipulate the values.
-        >>> johndoe['friend_count'] = 2
-        >>> johndoe['friends'] = ['alice', 'bob']
-        >>> johndoe.needs_save()
-        True
-        >>> johndoe.save()
-
-        # All done. Clean up.
-        >>> johndoe.delete()
-
+    This object presents a dictionary-like interface for accessing/storing
+    data. It also tries to intelligently track how data has changed throughout
+    the life of the instance, to be as efficient as possible about updates.
     """
     def __init__(self, table, data=None):
+        """
+        Constructs an (unsaved) ``Item`` instance.
+
+        To persist the data in DynamoDB, you'll need to call the ``Item.save``
+        (or ``Item.partial_save``) on the instance.
+
+        Requires a ``table`` parameter, which should be a ``Table`` instance.
+        This is required, as DynamoDB's API is focus around all operations
+        being table-level. It's also for persisting schema around many objects.
+
+        Optionally accepts a ``data`` parameter, which should be a dictionary
+        of the fields & values of the item.
+
+        Example::
+
+            >>> users = Table('users')
+            >>> user = Item(users, data={
+            ...     'username': 'johndoe',
+            ...     'first_name': 'John',
+            ...     'date_joined': 1248o61592,
+            ... })
+
+            # Change existing data.
+            >>> user['first_name'] = 'Johann'
+            # Add more data.
+            >>> user['last_name'] = 'Doe'
+            # Delete data.
+            >>> del user['date_joined']
+
+        """
         self.table = table
         self._data = {}
         self._orig_data = {}
@@ -77,13 +87,52 @@ class Item(object):
         self._is_dirty = True
 
     def needs_save(self):
+        """
+        Returns whether or not the data has changed on the ``Item``.
+
+        Example:
+
+            >>> user.needs_save()
+            False
+            >>> user['first_name'] = 'Johann'
+            >>> user.needs_save()
+            True
+
+        """
         return self._is_dirty
 
     def mark_clean(self):
+        """
+        Marks an ``Item`` instance as no longer needing to be saved.
+
+        Example:
+
+            >>> user.needs_save()
+            False
+            >>> user['first_name'] = 'Johann'
+            >>> user.needs_save()
+            True
+            >>> user.mark_clean()
+            >>> user.needs_save()
+            False
+
+        """
         self._orig_data = {}
         self._is_dirty = False
 
     def mark_dirty(self):
+        """
+        Marks an ``Item`` instance as needing to be saved.
+
+        Example:
+
+            >>> user.needs_save()
+            False
+            >>> user.mark_dirty()
+            >>> user.needs_save()
+            True
+
+        """
         self._is_dirty = True
 
     def load(self, data):
@@ -91,6 +140,9 @@ class Item(object):
         This is only useful when being handed raw data from DynamoDB directly.
         If you have a Python datastructure already, use the ``__init__`` or
         manually set the data instead.
+
+        Largely internal, unless you know what you're doing or are trying to
+        mix the low-level & high-level APIs.
         """
         self._data = {}
 
@@ -102,6 +154,8 @@ class Item(object):
     def get_keys(self):
         """
         Returns a Python-style dict of the keys/values.
+
+        Largely internal.
         """
         key_fields = self.table.get_key_fields()
         key_data = {}
@@ -114,6 +168,8 @@ class Item(object):
     def get_raw_keys(self):
         """
         Returns a DynamoDB-style dict of the keys/values.
+
+        Largely internal.
         """
         raw_key_data = {}
 
@@ -123,6 +179,11 @@ class Item(object):
         return raw_key_data
 
     def build_expects(self, fields=None):
+        """
+        Builds up a list of expecations to hand off to DynamoDB on save.
+
+        Largely internal.
+        """
         expects = {}
 
         if fields is None:
@@ -167,6 +228,12 @@ class Item(object):
         return expects
 
     def prepare_full(self):
+        """
+        Runs through all fields & encodes them to be handed off to DynamoDB
+        as part of an ``save`` (``put_item``) call.
+
+        Largely internal.
+        """
         # This doesn't save on it's own. Rather, we prepare the datastructure
         # and hand-off to the table to handle creation/update.
         final_data = {}
@@ -177,6 +244,13 @@ class Item(object):
         return final_data
 
     def prepare_partial(self):
+        """
+        Runs through **ONLY** the changed/deleted fields & encodes them to be
+        handed off to DynamoDB as part of an ``partial_save`` (``update_item``)
+        call.
+
+        Largely internal.
+        """
         # This doesn't save on it's own. Rather, we prepare the datastructure
         # and hand-off to the table to handle creation/update.
         final_data = {}
@@ -198,6 +272,24 @@ class Item(object):
         return final_data
 
     def partial_save(self):
+        """
+        Saves only the changed data to DynamoDB.
+
+        Extremely useful for high-volume/high-write data sets, this allows
+        you to update only a handful of fields rather than having to push
+        entire items. This prevents many accidental overwrite situations as
+        well as saves on the amount of data to transfer over the wire.
+
+        Returns ``True`` on success, ``False`` if no save was performed or
+        the write failed.
+
+        Example::
+
+            >>> user['last_name'] = 'Doh!'
+            # Only the last name field will be sent to DynamoDB.
+            >>> user.partial_save()
+
+        """
         if not self.needs_save():
             return False
 
@@ -212,6 +304,36 @@ class Item(object):
         return returned
 
     def save(self, overwrite=False):
+        """
+        Saves all data to DynamoDB.
+
+        By default, this attempts to ensure that none of the underlying
+        data has changed. If any fields have changed in between when the
+        ``Item`` was constructed & when it is saved, this call will fail so
+        as not to cause any data loss.
+
+        If you're sure possibly overwriting data is acceptable, you can pass
+        an ``overwrite=True``. If that's not acceptable, you may be able to use
+        ``Item.partial_save`` to only write the changed field data.
+
+        Optionally accepts an ``overwrite`` parameter, which should be a
+        boolean. If you provide ``True``, the item will be forcibly overwritten
+        within DynamoDB, even if another process changed the data in the
+        meantime. (Default: ``False``)
+
+        Returns ``True`` on success, ``False`` if no save was performed or
+        the write failed.
+
+        Example::
+
+            >>> user['last_name'] = 'Doh!'
+            # All data on the Item is sent to DynamoDB.
+            >>> user.save()
+
+            # If it fails, you can overwrite.
+            >>> user.save(overwrite=True)
+
+        """
         if not self.needs_save():
             return False
 
@@ -228,5 +350,16 @@ class Item(object):
         return returned
 
     def delete(self):
+        """
+        Deletes the item's data to DynamoDB.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # Buh-bye now.
+            >>> user.delete()
+
+        """
         key_data = self.get_keys()
         return self.table.delete_item(**key_data)
