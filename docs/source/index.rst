@@ -110,9 +110,9 @@ Release Notes
 
 .. toctree::
    :titlesonly:
-   :glob:
 
-   releasenotes/*
+   releasenotes/v2.9.2
+   releasenotes/v2.9.1
 
 
 .. toctree::

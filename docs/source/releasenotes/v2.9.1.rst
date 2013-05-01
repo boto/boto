@@ -27,7 +27,7 @@ Features
     u'case-...'
 
   The :ref:`Support Tutorial <support_tut>` has more information on how to use
-  the new API. (SHA: <insert_here>)
+  the new API. (SHA: 8c0451)
 
 
 Bugfixes
