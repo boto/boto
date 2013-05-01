@@ -30,6 +30,7 @@ At the moment, boto supports:
   * Amazon DynamoDB
   * Amazon SimpleDB
   * Amazon ElastiCache
+  * Amazon Redshift
 
 * Deployment and Management
 
@@ -77,6 +78,7 @@ At the moment, boto supports:
 * Other
 
   * Marketplace Web Services
+  * AWS Support
 
 The goal of boto is to support the full breadth and depth of Amazon
 Web Services.  In addition, boto provides support for other public
