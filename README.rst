@@ -1,7 +1,7 @@
 ####
 boto
 ####
-boto 2.9.1
+boto 2.9.2
 30-Apr-2013
 
 .. image:: https://secure.travis-ci.org/boto/boto.png?branch=develop
