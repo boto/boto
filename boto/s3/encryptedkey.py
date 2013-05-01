@@ -82,9 +82,6 @@ class AESCipher:
         initialOffset = fp.tell()
         ciphercontent = fp.read()
         plaincontent = self.decrypt(ciphercontent)
-        print plaincontent
-        print '-------------'
-        print initialOffset
         fp.truncate(initialOffset)
         fp.write(plaincontent)
         fp.seek(initialOffset)
@@ -271,7 +268,7 @@ class EncryptedKey(boto.s3.key.Key):
         before passing into the other wrapper functions such as get_contentes_as_string,
         or get_contents_to_filename. 
        
-       Before this function is called, the user should have set an encryption key
+        Before this function is called, the user should have set an encryption key
         on the EncryptedKey object either by using the constructor argument, or calling the
         set_encryption_key function.
 
@@ -279,20 +276,23 @@ class EncryptedKey(boto.s3.key.Key):
 
         #ensure we have a key to use
         self.check_null_encryption_key()
-
         initialOffset = fp.tell()
-
         super(EncryptedKey,self).get_contents_to_file(fp,headers,cb,num_cb,
             torrent,version_id,res_download_handler,response_headers)
 
-        #rewind to where we got the file pointer
+        #We need to close the filepointer, re open it, and read in the content
+        #since sometimes the fp isn't in read+write mode.
+        name = fp.name
+        fp.close()
+        fp = open(name,'r') 
         fp.seek(initialOffset)
-
-        #check if the contents is at EOF , if so, skip the decryption step.
-        spos = fp.tell()
-        fp.seek(0,os.SEEK_END)
-        endpos = fp.tell()
-        fp.seek(spos)
-        if endpos != spos: 
-            fp = self.aes.decryptFP(fp)
-
+        encryptedcontent = fp.read()
+        fp.close()
+        
+        plaincontent = self.aes.decrypt(encryptedcontent)
+       
+        #open fp for writing with the same name, get rid of encrypted content, and write the plaintext
+        fp = open(name,'w') 
+        fp.truncate(initialOffset)
+        fp.write(plaincontent)
+       
