@@ -9,6 +9,14 @@ assumes that you have boto already downloaded and installed.
 
 .. _DynamoDB: http://aws.amazon.com/dynamodb/
 
+.. warning::
+
+    This tutorial covers the **ORIGINAL** release of DynamoDB.
+    It has since been supplanted by a second major version & an
+    updated API to talk to the new version. The documentation for the
+    new version of DynamoDB (& boto's support for it) is at
+    :doc:`DynamoDB v2 <dynamodb2_tut>`.
+
 
 Creating a Connection
 ---------------------
