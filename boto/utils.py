@@ -380,11 +380,31 @@ def get_instance_identity(version='latest', url='http://169.254.169.254',
 
 
 def get_instance_userdata(version='latest', sep=None,
-                          url='http://169.254.169.254'):
-    ud_url = _build_instance_metadata_url(url, version, 'user-data')
-    user_data = retry_url(ud_url, retry_on_404=False)
+                          url='http://169.254.169.254',
+                          timeout=None, num_retries=5):
+    """
+    Returns the instance userdata as a string by default.
+
+    If the sep is specified, userdata will be parsed as a python 
+    dictionary when the pattern "A=B" found between separators.
+
+    If the timeout is specified, the connection to the specified url
+    will time out after the specified number of seconds.
+
+    """
+    if timeout is not None:
+        original = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(timeout)
+    try:
+        ud_url = _build_instance_metadata_url(url, version, 'user-data')
+        user_data = retry_url(ud_url, retry_on_404=False, num_retries=num_retries)
+    except urllib2.URLError, e:
+        return None
+    finally:
+        if timeout is not None:
+            socket.setdefaulttimeout(original)
     if user_data:
-        if sep:
+        if sep is not None:
             l = user_data.split(sep)
             user_data = {}
             for nvpair in l:
