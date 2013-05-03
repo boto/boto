@@ -183,7 +183,7 @@ class Image(TaggedEC2Object):
         :param user_data:
 
         :type addressing_type:
-        :param daddressing_type:
+        :param addressing_type:
 
         :type instance_type: string
         :param instance_type: The type of instance to run.  Current choices are:
