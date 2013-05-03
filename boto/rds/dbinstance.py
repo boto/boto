@@ -259,6 +259,10 @@ class DBInstance(object):
         """
         Modify this DBInstance.
 
+        :type param_group: str
+        :param param_group: Name of DBParameterGroup to associate with
+                            this DBInstance.
+
         :type security_groups: list of str or list of DBSecurityGroup objects
         :param security_groups: List of names of DBSecurityGroup to
             authorize on this DBInstance.
