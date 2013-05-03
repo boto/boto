@@ -193,6 +193,28 @@ class TestCloudFormationDeleteStack(CloudFormationConnectionBase):
         with self.assertRaises(self.service_connection.ResponseError):
             api_response = self.service_connection.delete_stack('stack_name')
 
+class TestCloudFormationCancelUpdateStack(CloudFormationConnectionBase):
+    def default_body(self):
+        return json.dumps(
+            {u'CancelUpdateStackResponse':
+                 {u'ResponseMetadata': {u'RequestId': u'1'}}})
+
+    def test_cancel_update_stack(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.cancel_update_stack('stack_name')
+        self.assertEqual(api_response, json.loads(self.default_body()))
+        self.assert_request_parameters({
+            'Action': 'CancelUpdateStack',
+            'ContentType': 'JSON',
+            'StackName': 'stack_name',
+            'Version': '2010-05-15',
+        })
+
+    def test_cancel_update_fails(self):
+        self.set_http_response(status_code=400)
+        with self.assertRaises(self.service_connection.ResponseError):
+            api_response = self.service_connection.cancel_update_stack('stack_name')
+
 
 class TestCloudFormationDescribeStackResource(CloudFormationConnectionBase):
     def default_body(self):
