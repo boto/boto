@@ -50,7 +50,7 @@ At the moment, boto supports:
   * Amazon Simple Notification Server (SNS)
   * Amazon Simple Email Service (SES)
 
-* Montoring
+* Monitoring
 
   * Amazon CloudWatch
 
