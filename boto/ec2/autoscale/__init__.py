@@ -237,6 +237,10 @@ class AutoScaleConnection(AWSQueryConnection):
             params['SpotPrice'] = str(launch_config.spot_price)
         if launch_config.instance_profile_name is not None:
             params['IamInstanceProfile'] = launch_config.instance_profile_name
+        if launch_config.ebs_optimized:
+            params['EbsOptimized'] = True
+        else:
+            params['EbsOptimized'] = False
         return self.get_object('CreateLaunchConfiguration', params,
                                Request, verb='POST')
 
