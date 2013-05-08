@@ -185,8 +185,8 @@ class CloudWatchConnection(AWSQueryConnection):
             else:
                 raise Exception('Must specify a value or statistics to put.')
 
-            for key, value in metric_data.iteritems():
-                params['MetricData.member.%d.%s' % (index + 1, key)] = value
+            for key, val in metric_data.iteritems():
+                params['MetricData.member.%d.%s' % (index + 1, key)] = val
 
     def get_metric_statistics(self, period, start_time, end_time, metric_name,
                               namespace, statistics, dimensions=None,
