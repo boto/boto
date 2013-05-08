@@ -54,7 +54,7 @@ A ``HashKey+RangeKey`` combination is slightly different, in that the
 that can be referred to by a sorted range of values.
 
 For the local secondary indexes, you can choose from an ``AllIndex``, a
-``KeysOnlyIndex`` or a ``IncludeIndex``field. Each builds an index of values
+``KeysOnlyIndex`` or a ``IncludeIndex`` field. Each builds an index of values
 that can be queried on. The ``AllIndex`` duplicates all values onto the index
 (to prevent additional reads to fetch the data). The ``KeysOnlyIndex``
 duplicates only the keys from the schema onto the index. The ``IncludeIndex``

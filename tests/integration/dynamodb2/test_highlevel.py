@@ -57,6 +57,13 @@ class DynamoDBv2Test(unittest.TestCase):
         # Wait for it.
         time.sleep(40)
 
+        # Make sure things line up if we're introspecting the table.
+        users_hit_api = Table('users')
+        users_hit_api.describe()
+        self.assertEqual(len(users.schema), len(users_hit_api.schema))
+        self.assertEqual(users.throughput, users_hit_api.throughput)
+        self.assertEqual(len(users.indexes), len(users_hit_api.indexes))
+
         # Test putting some items individually.
         users.put_item(data={
             'username': 'johndoe',
@@ -238,3 +245,14 @@ class DynamoDBv2Test(unittest.TestCase):
 
         # Test count, but in a weak fashion. Because lag time.
         self.assertTrue(users.count() > -1)
+
+        # Test without LSIs (describe calls shouldn't fail).
+        forums = Table.create('forums', schema=[
+            HashKey('forum_name'),
+            RangeKey('subject')
+        ])
+        self.addCleanup(forums.delete)
+        time.sleep(40)
+        forums.describe()
+        self.assertEqual(forums.throughput['read'], 5)
+        self.assertEqual(forums.indexes, [])

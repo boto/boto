@@ -279,12 +279,12 @@ class Table(object):
 
         if not self.schema:
             # Since we have the data, build the schema.
-            raw_schema = result['Table']['KeySchema']
+            raw_schema = result['Table'].get('KeySchema', [])
             self.schema = self._introspect_schema(raw_schema)
 
         if not self.indexes:
             # Build the index information as well.
-            raw_indexes = result['Table']['LocalSecondaryIndexes']
+            raw_indexes = result['Table'].get('LocalSecondaryIndexes', [])
             self.indexes = self._introspect_indexes(raw_indexes)
 
         # This is leaky.
