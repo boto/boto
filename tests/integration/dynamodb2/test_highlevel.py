@@ -55,7 +55,7 @@ class DynamoDBv2Test(unittest.TestCase):
         self.assertEqual(users.throughput['read'], 5)
 
         # Wait for it.
-        time.sleep(40)
+        time.sleep(60)
 
         # Make sure things line up if we're introspecting the table.
         users_hit_api = Table('users')
@@ -247,12 +247,22 @@ class DynamoDBv2Test(unittest.TestCase):
         self.assertTrue(users.count() > -1)
 
         # Test without LSIs (describe calls shouldn't fail).
-        forums = Table.create('forums', schema=[
-            HashKey('forum_name'),
-            RangeKey('subject')
+        admins = Table.create('admins', schema=[
+            HashKey('username')
         ])
-        self.addCleanup(forums.delete)
-        time.sleep(40)
-        forums.describe()
-        self.assertEqual(forums.throughput['read'], 5)
-        self.assertEqual(forums.indexes, [])
+        self.addCleanup(admins.delete)
+        time.sleep(60)
+        admins.describe()
+        self.assertEqual(admins.throughput['read'], 5)
+        self.assertEqual(admins.indexes, [])
+
+        # Test simple querying.
+        results = admins.query(username__eq='johndoe')
+        admin_users = [res['username'] for res in results]
+        self.assertEqual(admin_users, [])
+        admins.put_item({'username': 'johndoe'})
+        time.sleep(5)
+        results = admins.query(username__eq='johndoe')
+        admin_users = [res['username'] for res in results]
+        self.assertEqual(admin_users, ['johndoe'])
+
