@@ -198,6 +198,43 @@ class ItemTestCase(unittest.TestCase):
             'date_joined': 12345,
         })
 
+    # The next couple methods make use of ``sorted(...)`` so we get consistent
+    # ordering everywhere & no erroneous failures.
+
+    def test_keys(self):
+        self.assertEqual(sorted(self.johndoe.keys()), [
+            'date_joined',
+            'first_name',
+            'username',
+        ])
+
+    def test_values(self):
+        self.assertEqual(sorted(self.johndoe.values()), [
+            12345,
+            'John',
+            'johndoe',
+        ])
+
+    def test_contains(self):
+        self.assertTrue('username' in self.johndoe)
+        self.assertTrue('first_name' in self.johndoe)
+        self.assertTrue('date_joined' in self.johndoe)
+        self.assertFalse('whatever' in self.johndoe)
+
+    def test_iter(self):
+        self.assertEqual(list(self.johndoe), [
+            'johndoe',
+            'John',
+            12345,
+        ])
+
+    def test_items(self):
+        self.assertEqual(sorted(self.johndoe.items()), [
+            ('date_joined', 12345),
+            ('first_name', 'John'),
+            ('username', 'johndoe'),
+        ])
+
     def test_attribute_access(self):
         self.assertEqual(self.johndoe['username'], 'johndoe')
         self.assertEqual(self.johndoe['first_name'], 'John')

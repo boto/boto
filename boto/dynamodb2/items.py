@@ -48,6 +48,13 @@ class Item(object):
             # Delete data.
             >>> del user['date_joined']
 
+            # Iterate over all the data.
+            >>> for field, val in user.items():
+            ...     print "%s: %s" % (field, val)
+            username: johndoe
+            first_name: John
+            date_joined: 1248o61592
+
         """
         self.table = table
         self._data = {}
@@ -85,6 +92,22 @@ class Item(object):
         del self._data[key]
         self._orig_data[key] = value
         self._is_dirty = True
+
+    def keys(self):
+        return self._data.keys()
+
+    def values(self):
+        return self._data.values()
+
+    def items(self):
+        return self._data.items()
+
+    def __iter__(self):
+        for key in self._data:
+            yield self._data[key]
+
+    def __contains__(self, key):
+        return key in self._data
 
     def needs_save(self):
         """
@@ -321,8 +344,7 @@ class Item(object):
         within DynamoDB, even if another process changed the data in the
         meantime. (Default: ``False``)
 
-        Returns ``True`` on success, ``False`` if no save was performed or
-        the write failed.
+        Returns ``True`` on success, ``False`` if no save was performed.
 
         Example::
 
