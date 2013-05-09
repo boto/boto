@@ -671,6 +671,23 @@ class ResultSetTestCase(unittest.TestCase):
         self.assertRaises(StopIteration, self.results.next)
         self.assertEqual(self.results.call_kwargs['limit'], 7)
 
+    def test_list(self):
+        self.assertEqual(list(self.results), [
+            'Hello john #0',
+            'Hello john #1',
+            'Hello john #2',
+            'Hello john #3',
+            'Hello john #4',
+            'Hello john #5',
+            'Hello john #6',
+            'Hello john #7',
+            'Hello john #8',
+            'Hello john #9',
+            'Hello john #10',
+            'Hello john #11',
+            'Hello john #12'
+        ])
+
 
 def fake_batch_results(keys):
     results = []
