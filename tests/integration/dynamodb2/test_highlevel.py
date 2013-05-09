@@ -256,9 +256,11 @@ class DynamoDBv2Test(unittest.TestCase):
         self.assertEqual(admins.throughput['read'], 5)
         self.assertEqual(admins.indexes, [])
 
-        # A single query term should fail.
+        # A single query term should fail on a table with *ONLY* a HashKey.
         self.assertRaises(
             exceptions.QueryError,
             admins.query,
             username__eq='johndoe'
         )
+        # But it shouldn't break on more complex tables.
+        res = users.query(username__eq='johndoe')
