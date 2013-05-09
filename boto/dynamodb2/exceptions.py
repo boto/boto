@@ -68,3 +68,7 @@ class UnknownIndexFieldError(DynamoDBError):
 
 class UnknownFilterTypeError(DynamoDBError):
     pass
+
+
+class QueryError(DynamoDBError):
+    pass

@@ -256,13 +256,9 @@ class DynamoDBv2Test(unittest.TestCase):
         self.assertEqual(admins.throughput['read'], 5)
         self.assertEqual(admins.indexes, [])
 
-        # Test simple querying.
-        results = admins.query(username__eq='johndoe')
-        admin_users = [res['username'] for res in results]
-        self.assertEqual(admin_users, [])
-        admins.put_item({'username': 'johndoe'})
-        time.sleep(5)
-        results = admins.query(username__eq='johndoe')
-        admin_users = [res['username'] for res in results]
-        self.assertEqual(admin_users, ['johndoe'])
-
+        # A single query term should fail.
+        self.assertRaises(
+            exceptions.QueryError,
+            admins.query,
+            username__eq='johndoe'
+        )

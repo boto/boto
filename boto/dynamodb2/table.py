@@ -701,6 +701,11 @@ class Table(object):
             'Fred'
 
         """
+        if len(filter_kwargs) <= 1:
+            raise exceptions.QueryError(
+                "You must specify more than one key to filter on."
+            )
+
         results = ResultSet()
         kwargs = filter_kwargs.copy()
         kwargs.update({
