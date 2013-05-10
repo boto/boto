@@ -114,7 +114,10 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
             self.provisioned_throughput,
             self.lsi
         )
-        self.assertEqual(result['TableDescription']['TableName'], self.table_name)
+        self.assertEqual(
+            result['TableDescription']['TableName'],
+            self.table_name
+        )
 
         description = self.dynamodb.describe_table(self.table_name)
         self.assertEqual(description['Table']['ItemCount'], 0)
@@ -137,7 +140,9 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
         }, consistent_read=True)
         self.assertEqual(record_1['Item']['username']['S'], 'johndoe')
         self.assertEqual(record_1['Item']['first_name']['S'], 'John')
-        self.assertEqual(record_1['Item']['friends']['SS'], ['alice', 'bob', 'jane'])
+        self.assertEqual(record_1['Item']['friends']['SS'], [
+            'alice', 'bob', 'jane'
+        ])
 
         # Now in a batch.
         self.dynamodb.batch_write_item({
@@ -192,7 +197,8 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
         # Now a scan.
         results = self.dynamodb.scan(self.table_name)
         self.assertEqual(results['Count'], 2)
-        self.assertEqual(sorted([res['username']['S'] for res in results['Items']]), ['jane', 'johndoe'])
+        s_items = sorted([res['username']['S'] for res in results['Items']])
+        self.assertEqual(s_items, ['jane', 'johndoe'])
 
         self.dynamodb.delete_item(self.table_name, key={
             'username': {'S': 'johndoe'},
@@ -219,7 +225,10 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
             ],
             self.provisioned_throughput
         )
-        self.assertEqual(result['TableDescription']['TableName'], self.table_name)
+        self.assertEqual(
+            result['TableDescription']['TableName'],
+            self.table_name
+        )
 
         description = self.dynamodb.describe_table(self.table_name)
         self.assertEqual(description['Table']['ItemCount'], 0)
@@ -241,4 +250,6 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
         }, consistent_read=True)
         self.assertEqual(johndoe['Item']['username']['S'], 'johndoe')
         self.assertEqual(johndoe['Item']['first_name']['S'], 'John')
-        self.assertEqual(johndoe['Item']['friends']['SS'], ['alice', 'bob', 'jane'])
+        self.assertEqual(johndoe['Item']['friends']['SS'], [
+            'alice', 'bob', 'jane'
+        ])
