@@ -760,6 +760,10 @@ class TableTestCase(unittest.TestCase):
     def setUp(self):
         super(TableTestCase, self).setUp()
         self.users = Table('users', connection=FakeDynamoDBConnection())
+        self.default_connection = DynamoDBConnection(
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret_key'
+        )
 
     def test__introspect_schema(self):
         raw_schema_1 = [
@@ -879,7 +883,7 @@ class TableTestCase(unittest.TestCase):
         )
 
     def test_initialization(self):
-        users = Table('users')
+        users = Table('users', connection=self.default_connection)
         self.assertEqual(users.table_name, 'users')
         self.assertTrue(isinstance(users.connection, DynamoDBConnection))
         self.assertEqual(users.throughput['read'], 5)

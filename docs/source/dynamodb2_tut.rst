@@ -72,6 +72,7 @@ Simple example::
 A full example::
 
     >>> from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex
+    >>> from boto.dynamodb2.layer1 import DynamoDBConnection
     >>> from boto.dynamodb2.table import Table
     >>> from boto.dynamodb2.types import Number
 
@@ -85,7 +86,13 @@ A full example::
     ...     AllIndex('EverythingIndex', parts=[
     ...         HashKey('account_type', data_type=NUMBER),
     ...     ])
-    ... ])
+    ... ],
+    ... # If you need to specify custom parameters like keys or region info...
+    ... connection=DynamoDBConnection(
+    ...     aws_access_key_id='key',
+    ...     aws_secret_access_key='key',
+    ...     region='us-west-2'
+    ... ))
 
 
 Using an Existing Table

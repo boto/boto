@@ -69,7 +69,11 @@ class Table(object):
             ...         RangeKey('date_joined')
             ...     ]),
             ... ],
-            ... connection=DynamoDBConnection())
+            ... connection=DynamoDBConnection(
+            ...     aws_access_key_id='key',
+            ...     aws_secret_access_key='key',
+            ...     region='us-west-2'
+            ... ))
 
         """
         self.table_name = table_name
