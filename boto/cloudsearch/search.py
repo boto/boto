@@ -37,7 +37,7 @@ class CommitMismatchError(Exception):
 
 
 class SearchResults(object):
-    
+
     def __init__(self, **attrs):
         self.rid = attrs['info']['rid']
         # self.doc_coverage_pct = attrs['info']['doc-coverage-pct']
@@ -79,16 +79,17 @@ class SearchResults(object):
 
 
 class Query(object):
-    
+
     RESULTS_PER_PAGE = 500
 
-    def __init__(self, q=None, bq=None, rank=None,
-                 return_fields=None, size=10,
+    def __init__(self, q=None, bq=None, rank_expressions=None,
+                 rank=None, return_fields=None, size=10,
                  start=0, facet=None, facet_constraints=None,
                  facet_sort=None, facet_top_n=None, t=None):
 
         self.q = q
         self.bq = bq
+        self.rank_expressions = rank_expressions or {}
         self.rank = rank or []
         self.return_fields = return_fields or []
         self.start = start
@@ -119,6 +120,10 @@ class Query(object):
         if self.bq:
             params['bq'] = self.bq
 
+        if self.rank_expressions:
+            for k, v in self.rank_expressions.iteritems():
+                params['rank-%s' % k] = v
+
         if self.rank:
             params['rank'] = ','.join(self.rank)
 
@@ -147,22 +152,24 @@ class Query(object):
 
 
 class SearchConnection(object):
-    
+
     def __init__(self, domain=None, endpoint=None):
         self.domain = domain
         self.endpoint = endpoint
         if not endpoint:
             self.endpoint = domain.search_service_endpoint
 
-    def build_query(self, q=None, bq=None, rank=None, return_fields=None,
-                    size=10, start=0, facet=None, facet_constraints=None,
-                    facet_sort=None, facet_top_n=None, t=None):
-        return Query(q=q, bq=bq, rank=rank, return_fields=return_fields,
-                     size=size, start=start, facet=facet,
-                     facet_constraints=facet_constraints,
+    def build_query(self, q=None, bq=None, rank_expressions=None,
+                    rank=None, return_fields=None, size=10, start=0,
+                    facet=None, facet_constraints=None, facet_sort=None,
+                    facet_top_n=None, t=None):
+
+        return Query(q=q, bq=bq, rank_expressions=rank_expressions,
+                     rank=rank, return_fields=return_fields, size=size,
+                     start=start, facet=facet, facet_constraints=facet_constraints,
                      facet_sort=facet_sort, facet_top_n=facet_top_n, t=t)
 
-    def search(self, q=None, bq=None, rank=None, return_fields=None,
+    def search(self, q=None, bq=None, rank_expressions=None, rank=None, return_fields=None,
                size=10, start=0, facet=None, facet_constraints=None,
                facet_sort=None, facet_top_n=None, t=None):
         """
@@ -178,6 +185,12 @@ class SearchConnection(object):
         :type bq: string
         :param bq: A string to perform a Boolean search. This can be used to
             create advanced searches.
+
+        :type rank_expressions: dict
+        :param rank_expressions: Use to define rank expressions in the search
+            request. These expressions are not stored within your domain
+            configuration
+            ``{'exp1': sin(text_relevance), exp2:cos(text_relevance)}``
 
         :type rank: List of strings
         :param rank: A list of fields or rank expressions used to order the
@@ -209,7 +222,7 @@ class SearchConnection(object):
         :param facet_sort: Rules used to specify the order in which facet
             values should be returned. Allowed values are *alpha*, *count*,
             *max*, *sum*. Use *alpha* to sort alphabetical, and *count* to sort
-            the facet by number of available result. 
+            the facet by number of available result.
             ``{'color': 'alpha', 'size': 'count'}``
 
         :type facet_top_n: dict
@@ -243,10 +256,10 @@ class SearchConnection(object):
         the search string.
 
         >>> search(bq="'Tim*'") # Return documents with words like Tim or Timothy)
-        
+
         Search terms can also be combined. Allowed operators are "and", "or",
         "not", "field", "optional", "token", "phrase", or "filter"
-        
+
         >>> search(bq="(and 'Tim' (field author 'John Smith'))")
 
         Facets allow you to show classification information about the search
@@ -258,17 +271,17 @@ class SearchConnection(object):
         With facet_constraints, facet_top_n and facet_sort more complicated
         constraints can be specified such as returning the top author out of
         John Smith and Mark Smith who have a document with the word Tim in it.
-        
-        >>> search(q='Tim', 
-        ...     facet=['Author'], 
-        ...     facet_constraints={'author': "'John Smith','Mark Smith'"}, 
-        ...     facet=['author'], 
-        ...     facet_top_n={'author': 1}, 
+
+        >>> search(q='Tim',
+        ...     facet=['Author'],
+        ...     facet_constraints={'author': "'John Smith','Mark Smith'"},
+        ...     facet=['author'],
+        ...     facet_top_n={'author': 1},
         ...     facet_sort={'author': 'count'})
         """
 
-        query = self.build_query(q=q, bq=bq, rank=rank,
-                                 return_fields=return_fields,
+        query = self.build_query(q=q, bq=bq, rank_expressions=rank_expressions,
+                                 rank=rank, return_fields=return_fields,
                                  size=size, start=start, facet=facet,
                                  facet_constraints=facet_constraints,
                                  facet_sort=facet_sort,
