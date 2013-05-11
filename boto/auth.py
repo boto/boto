@@ -328,13 +328,21 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         Select the headers from the request that need to be included
         in the StringToSign.
         """
+        host_header_value = self.host_header(self.host, http_request)
         headers_to_sign = {}
-        headers_to_sign = {'Host': self.host}
+        headers_to_sign = {'Host': host_header_value}
         for name, value in http_request.headers.items():
             lname = name.lower()
             if lname.startswith('x-amz'):
                 headers_to_sign[name] = value
         return headers_to_sign
+
+    def host_header(self, host, http_request):
+        port = http_request.port
+        secure = http_request.protocol == 'https'
+        if ((port == 80 and not secure) or (port == 443 and secure)):
+            return host
+        return '%s:%s' % (host, port)
 
     def query_string(self, http_request):
         parameter_names = sorted(http_request.params.keys())
