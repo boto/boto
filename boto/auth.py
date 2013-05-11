@@ -32,13 +32,14 @@ import boto.auth_handler
 import boto.exception
 import boto.plugin
 import boto.utils
-import hmac
-import sys
-import urllib
-import time
-import datetime
 import copy
+import datetime
 from email.utils import formatdate
+import hmac
+import os
+import sys
+import time
+import urllib
 
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
@@ -375,7 +376,11 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return ';'.join(l)
 
     def canonical_uri(self, http_request):
-        return http_request.auth_path
+        # Normalize the path.
+        normalized = os.path.normpath(http_request.auth_path)
+        # Then urlencode whatever's left.
+        encoded = urllib.quote(normalized)
+        return encoded
 
     def payload(self, http_request):
         body = http_request.body
