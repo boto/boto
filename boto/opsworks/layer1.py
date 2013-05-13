@@ -57,13 +57,33 @@ class OpsWorksConnection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['hmac-v4']
 
+    def attach_elastic_load_balancer(self, elastic_load_balancer_name,
+                                     layer_id):
+        """
+
+
+        :type elastic_load_balancer_name: string
+        :param elastic_load_balancer_name:
+
+        :type layer_id: string
+        :param layer_id:
+
+        """
+        params = {
+            'ElasticLoadBalancerName': elastic_load_balancer_name,
+            'LayerId': layer_id,
+        }
+        return self.make_request(action='AttachElasticLoadBalancer',
+                                 body=json.dumps(params))
+
     def clone_stack(self, source_stack_id, service_role_arn, name=None,
                     region=None, attributes=None,
                     default_instance_profile_arn=None, default_os=None,
                     hostname_theme=None, default_availability_zone=None,
                     custom_json=None, use_custom_cookbooks=None,
                     custom_cookbooks_source=None, default_ssh_key_name=None,
-                    clone_permissions=None, clone_app_ids=None):
+                    clone_permissions=None, clone_app_ids=None,
+                    default_root_device_type=None):
         """
         Creates a clone of a specified stack.
 
@@ -74,7 +94,7 @@ class OpsWorksConnection(AWSQueryConnection):
         :param name: The cloned stack name.
 
         :type region: string
-        :param region: The cloned stack AWS region, such as "us-west-2". For
+        :param region: The cloned stack AWS region, such as "us-east-1". For
             more information about AWS regions, see `Regions and Endpoints`_
 
         :type attributes: map
@@ -153,6 +173,9 @@ class OpsWorksConnection(AWSQueryConnection):
         :param clone_app_ids: A list of source stack app IDs to be included in
             the cloned stack.
 
+        :type default_root_device_type: string
+        :param default_root_device_type:
+
         """
         params = {
             'SourceStackId': source_stack_id,
@@ -184,17 +207,22 @@ class OpsWorksConnection(AWSQueryConnection):
             params['ClonePermissions'] = clone_permissions
         if clone_app_ids is not None:
             params['CloneAppIds'] = clone_app_ids
+        if default_root_device_type is not None:
+            params['DefaultRootDeviceType'] = default_root_device_type
         return self.make_request(action='CloneStack',
                                  body=json.dumps(params))
 
-    def create_app(self, stack_id, name, type, description=None,
-                   app_source=None, domains=None, enable_ssl=None,
-                   ssl_configuration=None, attributes=None):
+    def create_app(self, stack_id, name, type, shortname=None,
+                   description=None, app_source=None, domains=None,
+                   enable_ssl=None, ssl_configuration=None, attributes=None):
         """
         Creates an app for a specified stack.
 
         :type stack_id: string
         :param stack_id: The stack ID.
+
+        :type shortname: string
+        :param shortname:
 
         :type name: string
         :param name: The app name.
@@ -228,6 +256,8 @@ class OpsWorksConnection(AWSQueryConnection):
 
         """
         params = {'StackId': stack_id, 'Name': name, 'Type': type, }
+        if shortname is not None:
+            params['Shortname'] = shortname
         if description is not None:
             params['Description'] = description
         if app_source is not None:
@@ -294,7 +324,8 @@ class OpsWorksConnection(AWSQueryConnection):
 
     def create_instance(self, stack_id, layer_ids, instance_type,
                         auto_scaling_type=None, hostname=None, os=None,
-                        ssh_key_name=None, availability_zone=None):
+                        ssh_key_name=None, availability_zone=None,
+                        architecture=None, root_device_type=None):
         """
         Creates an instance in a specified stack.
 
@@ -347,6 +378,12 @@ class OpsWorksConnection(AWSQueryConnection):
         :param availability_zone: The instance Availability Zone. For more
             information, see `Regions and Endpoints`_.
 
+        :type architecture: string
+        :param architecture:
+
+        :type root_device_type: string
+        :param root_device_type:
+
         """
         params = {
             'StackId': stack_id,
@@ -363,6 +400,10 @@ class OpsWorksConnection(AWSQueryConnection):
             params['SshKeyName'] = ssh_key_name
         if availability_zone is not None:
             params['AvailabilityZone'] = availability_zone
+        if architecture is not None:
+            params['Architecture'] = architecture
+        if root_device_type is not None:
+            params['RootDeviceType'] = root_device_type
         return self.make_request(action='CreateInstance',
                                  body=json.dumps(params))
 
@@ -455,7 +496,8 @@ class OpsWorksConnection(AWSQueryConnection):
                      default_os=None, hostname_theme=None,
                      default_availability_zone=None, custom_json=None,
                      use_custom_cookbooks=None, custom_cookbooks_source=None,
-                     default_ssh_key_name=None):
+                     default_ssh_key_name=None,
+                     default_root_device_type=None):
         """
         Creates a new stack.
 
@@ -463,7 +505,7 @@ class OpsWorksConnection(AWSQueryConnection):
         :param name: The stack name.
 
         :type region: string
-        :param region: The stack AWS region, such as "us-west-2". For more
+        :param region: The stack AWS region, such as "us-east-1". For more
             information about Amazon regions, see `Regions and Endpoints`_.
 
         :type attributes: map
@@ -531,6 +573,9 @@ class OpsWorksConnection(AWSQueryConnection):
         :param default_ssh_key_name: A default SSH key for the stack instances.
             You can override this value when you create or update an instance.
 
+        :type default_root_device_type: string
+        :param default_root_device_type:
+
         """
         params = {
             'Name': name,
@@ -554,6 +599,8 @@ class OpsWorksConnection(AWSQueryConnection):
             params['CustomCookbooksSource'] = custom_cookbooks_source
         if default_ssh_key_name is not None:
             params['DefaultSshKeyName'] = default_ssh_key_name
+        if default_root_device_type is not None:
+            params['DefaultRootDeviceType'] = default_root_device_type
         return self.make_request(action='CreateStack',
                                  body=json.dumps(params))
 
@@ -744,7 +791,26 @@ class OpsWorksConnection(AWSQueryConnection):
         return self.make_request(action='DescribeElasticIps',
                                  body=json.dumps(params))
 
-    def describe_instances(self, stack_id=None, layer_id=None, app_id=None,
+    def describe_elastic_load_balancers(self, stack_id=None, layer_ids=None):
+        """
+
+
+        :type stack_id: string
+        :param stack_id:
+
+        :type layer_ids: list
+        :param layer_ids:
+
+        """
+        params = {}
+        if stack_id is not None:
+            params['StackId'] = stack_id
+        if layer_ids is not None:
+            params['LayerIds'] = layer_ids
+        return self.make_request(action='DescribeElasticLoadBalancers',
+                                 body=json.dumps(params))
+
+    def describe_instances(self, stack_id=None, layer_id=None,
                            instance_ids=None):
         """
         Requests a description of a set of instances associated with a
@@ -756,9 +822,6 @@ class OpsWorksConnection(AWSQueryConnection):
         :type layer_id: string
         :param layer_id: A layer ID.
 
-        :type app_id: string
-        :param app_id: An app ID.
-
         :type instance_ids: list
         :param instance_ids: An array of instance IDs to be described.
 
@@ -768,8 +831,6 @@ class OpsWorksConnection(AWSQueryConnection):
             params['StackId'] = stack_id
         if layer_id is not None:
             params['LayerId'] = layer_id
-        if app_id is not None:
-            params['AppId'] = app_id
         if instance_ids is not None:
             params['InstanceIds'] = instance_ids
         return self.make_request(action='DescribeInstances',
@@ -933,6 +994,25 @@ class OpsWorksConnection(AWSQueryConnection):
         if volume_ids is not None:
             params['VolumeIds'] = volume_ids
         return self.make_request(action='DescribeVolumes',
+                                 body=json.dumps(params))
+
+    def detach_elastic_load_balancer(self, elastic_load_balancer_name,
+                                     layer_id):
+        """
+
+
+        :type elastic_load_balancer_name: string
+        :param elastic_load_balancer_name:
+
+        :type layer_id: string
+        :param layer_id:
+
+        """
+        params = {
+            'ElasticLoadBalancerName': elastic_load_balancer_name,
+            'LayerId': layer_id,
+        }
+        return self.make_request(action='DetachElasticLoadBalancer',
                                  body=json.dumps(params))
 
     def get_hostname_suggestion(self, layer_id):
@@ -1159,7 +1239,8 @@ class OpsWorksConnection(AWSQueryConnection):
 
     def update_instance(self, instance_id, layer_ids=None,
                         instance_type=None, auto_scaling_type=None,
-                        hostname=None, os=None, ssh_key_name=None):
+                        hostname=None, os=None, ssh_key_name=None,
+                        architecture=None):
         """
         Updates a specified instance.
 
@@ -1205,6 +1286,9 @@ class OpsWorksConnection(AWSQueryConnection):
         :type ssh_key_name: string
         :param ssh_key_name: The instance SSH key name.
 
+        :type architecture: string
+        :param architecture:
+
         """
         params = {'InstanceId': instance_id, }
         if layer_ids is not None:
@@ -1219,6 +1303,8 @@ class OpsWorksConnection(AWSQueryConnection):
             params['Os'] = os
         if ssh_key_name is not None:
             params['SshKeyName'] = ssh_key_name
+        if architecture is not None:
+            params['Architecture'] = architecture
         return self.make_request(action='UpdateInstance',
                                  body=json.dumps(params))
 
@@ -1306,7 +1392,8 @@ class OpsWorksConnection(AWSQueryConnection):
                      default_instance_profile_arn=None, default_os=None,
                      hostname_theme=None, default_availability_zone=None,
                      custom_json=None, use_custom_cookbooks=None,
-                     custom_cookbooks_source=None, default_ssh_key_name=None):
+                     custom_cookbooks_source=None, default_ssh_key_name=None,
+                     default_root_device_type=None):
         """
         Updates a specified stack.
 
@@ -1381,6 +1468,9 @@ class OpsWorksConnection(AWSQueryConnection):
         :param default_ssh_key_name: A default SSH key for the stack instances.
             You can override this value when you create or update an instance.
 
+        :type default_root_device_type: string
+        :param default_root_device_type:
+
         """
         params = {'StackId': stack_id, }
         if name is not None:
@@ -1405,6 +1495,8 @@ class OpsWorksConnection(AWSQueryConnection):
             params['CustomCookbooksSource'] = custom_cookbooks_source
         if default_ssh_key_name is not None:
             params['DefaultSshKeyName'] = default_ssh_key_name
+        if default_root_device_type is not None:
+            params['DefaultRootDeviceType'] = default_root_device_type
         return self.make_request(action='UpdateStack',
                                  body=json.dumps(params))
 
