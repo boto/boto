@@ -409,6 +409,99 @@ Filtering a scan looks like::
     'John'
 
 
+Parallel Scan
+-------------
+
+DynamoDB also includes a feature called "Parallel Scan", which allows you
+to make use of **extra** read capacity to divide up your result set & scan
+an entire table faster.
+
+This does require extra code on the user's part & you should ensure that
+you need the speed boost, have enough data to justify it and have the extra
+capacity to read it without impacting other queries/scans.
+
+To run it, you should pick the ``total_segments`` to use, which is an integer
+representing the number of temporary partitions you'd divide your table into.
+You then need to spin up a thread/process for each one, giving each
+thread/process a ``segment``, which is a zero-based integer of the segment
+you'd like to scan.
+
+An example of using parallel scan to send out email to all users might look
+something like::
+
+    #!/usr/bin/env python
+    import threading
+
+    import boto.ses
+    import boto.dynamodb2
+    from boto.dynamodb2.table import Table
+
+
+    AWS_ACCESS_KEY_ID = '<YOUR_AWS_KEY_ID>'
+    AWS_SECRET_ACCESS_KEY = '<YOUR_AWS_SECRET_KEY>'
+    APPROVED_EMAIL = 'some@address.com'
+
+
+    def send_email(email):
+        # Using Amazon's Simple Email Service, send an email to a given
+        # email address. You must already have an email you've verified with
+        # AWS before this will work.
+        conn = boto.ses.connect_to_region(
+            'us-east-1',
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+        )
+        conn.send_email(
+            APPROVED_EMAIL,
+            "[OurSite] New feature alert!",
+            "We've got some exciting news! We added a new feature to...",
+            [email]
+        )
+
+
+    def process_segment(segment=0, total_segments=10):
+        # This method/function is executed in each thread, each getting its
+        # own segment to process through.
+        conn = boto.dynamodb2.connect_to_region(
+            'us-east-1',
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+        )
+        table = Table('users', connection=conn)
+
+        # We pass in the segment & total_segments to scan here.
+        for user in table.scan(segment=segment, total_segments=total_segments):
+            send_email(user['email'])
+
+
+    def send_all_emails():
+        pool = []
+        # We're choosing to divide the table in 3, then...
+        pool_size = 3
+
+        # ...spinning up a thread for each segment.
+        for i in range(pool_size):
+            worker = threading.Thread(
+                target=process_segment,
+                kwargs={
+                    'segment': i,
+                    'total_segments': pool_size,
+                }
+            )
+            pool.append(worker)
+            # We start them to let them start scanning & consuming their
+            # assigned segment.
+            worker.start()
+
+        # Finally, we wait for each to finish.
+        for thread in pool:
+            thread.join()
+
+
+    if __name__ == '__main__':
+        send_all_emails()
+
+
 Batch Reading
 -------------
 
