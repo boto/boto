@@ -201,7 +201,7 @@ class InstanceStatusSet(list):
             return None
 
     def endElement(self, name, value, connection):
-        if name == 'NextToken':
+        if name == 'nextToken':
             self.next_token = value
         setattr(self, name, value)
 
