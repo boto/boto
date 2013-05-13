@@ -177,8 +177,8 @@ class CloudWatchConnection(AWSQueryConnection):
                 metric_data['StatisticValues.SampleCount'] = s['samplecount']
                 metric_data['StatisticValues.Sum'] = s['sum']
                 if value != None:
-                    msg = 'You supplied a value and statistics for a metric.'
-                    msg += 'Posting statistics and not value.'
+                    msg = 'You supplied a value and statistics for a ' + \
+                          'metric.Posting statistics and not value.'
                     boto.log.warn(msg)
             elif value != None:
                 metric_data['Value'] = v
