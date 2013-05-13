@@ -65,6 +65,8 @@ Simple example::
     >>> from boto.dynamodb2.fields import HashKey
     >>> from boto.dynamodb2.table import Table
 
+    # Uses your ``aws_access_key_id`` & ``aws_secret_access_key`` from either a
+    # config file or environment variable & the default region.
     >>> users = Table.create('users', schema=[
     ...     HashKey('username'),
     ... ])
