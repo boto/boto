@@ -23,15 +23,14 @@
 import datetime
 
 from tests.unit import unittest
-# from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase
 
 from boto.ec2.cloudwatch import CloudWatchConnection
 
 
-class TestCloudWatchConnection(unittest.TestCase):
-    def setUp(self):
-        super(TestCloudWatchConnection, self).setUp()
-        self.api = CloudWatchConnection()
+class TestCloudWatchConnection(AWSMockServiceTestCase):
+
+    connection_class = CloudWatchConnection
 
     def test_build_put_params_multiple_everything(self):
         # This dictionary gets modified by the method call.
@@ -65,7 +64,7 @@ class TestCloudWatchConnection(unittest.TestCase):
         # The important part is that this shouldn't generate a warning (due
         # to overwriting a variable) & should have the correct number of
         # Metrics (2).
-        self.api.build_put_params(
+        self.service_connection.build_put_params(
             params,
             name=name,
             value=value,
