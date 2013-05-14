@@ -87,6 +87,14 @@ class BlockDeviceMapping(object):
         elif name == 'VirtualName':
             self.virtual_name = value
 
+    def build_params(self, params, i):
+        prefix = 'BlockDeviceMappings.member.%d.' % i
+        params[prefix + 'DeviceName'] = self.device_name
+        if self.virtual_name:
+            params[prefix + 'VirtualName'] = self.virtual_name
+        elif self.ebs:
+            params[prefix + 'Ebs.SnapshotId'] = self.ebs.snapshot_id
+            params[prefix + 'Ebs.VolumeSize'] = self.ebs.volume_size
 
 class LaunchConfiguration(object):
     def __init__(self, connection=None, name=None, image_id=None,

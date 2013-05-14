@@ -224,8 +224,9 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.ramdisk_id:
             params['RamdiskId'] = launch_config.ramdisk_id
         if launch_config.block_device_mappings:
-            self.build_list_params(params, launch_config.block_device_mappings,
-                                   'BlockDeviceMappings')
+            for i in xrange(1, len(launch_config.block_device_mappings) + 1):
+                bdm = launch_config.block_device_mappings[i - 1]
+                bdm.build_params(params, i)
         if launch_config.security_groups:
             self.build_list_params(params, launch_config.security_groups,
                                    'SecurityGroups')
