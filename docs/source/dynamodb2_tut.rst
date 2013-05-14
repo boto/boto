@@ -1,4 +1,4 @@
-.. dynamodbv2_tut:
+.. _dynamodb2_tut:
 
 ===============================================
 An Introduction to boto's DynamoDB v2 interface

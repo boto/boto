@@ -5,7 +5,7 @@ DynamoDB2
 =========
 
 High-Level API
-=============
+==============
 
 boto.dynamodb2.fields
 ---------------------
