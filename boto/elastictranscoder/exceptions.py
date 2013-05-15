@@ -44,3 +44,7 @@ class InternalServiceException(JSONResponseError):
 
 class ValidationException(JSONResponseError):
     pass
+
+
+class IncompatibleVersionException(JSONResponseError):
+    pass
