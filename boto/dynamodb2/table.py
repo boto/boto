@@ -773,7 +773,8 @@ class Table(object):
             'last_key': last_key,
         }
 
-    def scan(self, limit=None, **filter_kwargs):
+    def scan(self, limit=None, segment=None, total_segments=None,
+             **filter_kwargs):
         """
         Scans across all items within a DynamoDB table.
 
@@ -819,17 +820,22 @@ class Table(object):
         kwargs = filter_kwargs.copy()
         kwargs.update({
             'limit': limit,
+            'segment': segment,
+            'total_segments': total_segments,
         })
         results.to_call(self._scan, **kwargs)
         return results
 
-    def _scan(self, limit=None, exclusive_start_key=None, **filter_kwargs):
+    def _scan(self, limit=None, exclusive_start_key=None, segment=None,
+              total_segments=None, **filter_kwargs):
         """
         The internal method that performs the actual scan. Used extensively
         by ``ResultSet`` to perform each (paginated) request.
         """
         kwargs = {
             'limit': limit,
+            'segment': segment,
+            'total_segments': total_segments,
         }
 
         if exclusive_start_key:

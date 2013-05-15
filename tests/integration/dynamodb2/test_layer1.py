@@ -208,6 +208,39 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
         results = self.dynamodb.scan(self.table_name)
         self.assertEqual(results['Count'], 1)
 
+        # Parallel scan (minus client-side threading).
+        self.dynamodb.batch_write_item({
+            self.table_name: [
+                {
+                    'PutRequest': {
+                        'Item': {
+                            'username': {'S': 'johndoe'},
+                            'first_name': {'S': 'Johann'},
+                            'last_name': {'S': 'Does'},
+                            'date_joined': {'N': '1366058000'},
+                            'friend_count': {'N': '1'},
+                            'friends': {'SS': ['jane']},
+                        },
+                    },
+                    'PutRequest': {
+                        'Item': {
+                            'username': {'S': 'alice'},
+                            'first_name': {'S': 'Alice'},
+                            'last_name': {'S': 'Expert'},
+                            'date_joined': {'N': '1366056800'},
+                            'friend_count': {'N': '2'},
+                            'friends': {'SS': ['johndoe', 'jane']},
+                        },
+                    },
+                },
+            ]
+        })
+        time.sleep(20)
+        results = self.dynamodb.scan(self.table_name, segment=0, total_segments=2)
+        self.assertTrue(results['Count'] in [1, 2])
+        results = self.dynamodb.scan(self.table_name, segment=1, total_segments=2)
+        self.assertTrue(results['Count'] in [1, 2])
+
     def test_without_range_key(self):
         result = self.create_table(
             self.table_name,
