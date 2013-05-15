@@ -60,7 +60,7 @@ class Zone(object):
         return response['ChangeResourceRecordSetsResponse']['ChangeInfo']
 
     def _new_record(self, changes, resource_type, name, value, ttl, identifier,
-                   comment=""):
+                    health_check_id=None, failover_type=None, comment=""):
         """
         Add a CREATE change record to an existing ResourceRecordSets
 
@@ -79,19 +79,36 @@ class Zone(object):
         :type ttl: int
         :param ttl: The resource record cache time to live (TTL), in seconds.
 
-        :type identifier: tuple
-        :param identifier: A tuple for setting WRR or LBR attributes.  Valid
-           forms are:
+        :type identifier: tuple or string
+        :param identifier: In case of failover records, a string representing
+            the failover identifier. For WRR or LBR records, a tuple
+            containing identifier and weight/region. Valid forms:
 
            * (str, int): WRR record [e.g. ('foo',10)]
            * (str, str): LBR record [e.g. ('foo','us-east-1')
+           * str: Failover record [e.g. 'failover-active']
+
+        :type health_check_id: str
+        :param health_check_id: ID of the healthcheck to associate with. Don't
+            set if the record should not be associated with any healthcheck
+
+        :type failover_type: str
+        :param failover_type: The failover type of the record. Valid values
+            are. Set only if this record is part of active-passive
+            healthchecked record:
+
+            * PRIMARY
+            * SECONDARY
 
         :type comment: str
         :param comment: A comment that will be stored with the change.
         """
+
         weight = None
         region = None
-        if identifier is not None:
+
+        if (identifier is not None and
+                type(identifier) not in [str, unicode]):
             try:
                 int(identifier[1])
                 weight = identifier[1]
@@ -101,7 +118,9 @@ class Zone(object):
                 identifier = identifier[0]
         change = changes.add_change("CREATE", name, resource_type, ttl,
                                     identifier=identifier, weight=weight,
-                                    region=region)
+                                    region=region,
+                                    failover_type=failover_type,
+                                    health_check_id=health_check_id)
         if type(value) in [list, tuple, set]:
             for record in value:
                 change.add_value(record)
@@ -109,18 +128,19 @@ class Zone(object):
             change.add_value(value)
 
     def add_record(self, resource_type, name, value, ttl=60, identifier=None,
-                   comment=""):
+                   health_check_id=None, failover_type=None, comment=""):
         """
         Add a new record to this Zone.  See _new_record for parameter
         documentation.  Returns a Status object.
         """
         changes = ResourceRecordSets(self.route53connection, self.id, comment)
         self._new_record(changes, resource_type, name, value, ttl, identifier,
-                         comment)
+                         health_check_id, failover_type, comment)
         return Status(self.route53connection, self._commit(changes))
 
     def update_record(self, old_record, new_value, new_ttl=None,
-                      new_identifier=None, comment=""):
+                      new_identifier=None, new_health_check_id=None,
+                      new_failover_type=None, comment=""):
         """
         Update an existing record in this Zone.  Returns a Status object.
 
@@ -134,7 +154,8 @@ class Zone(object):
         changes = ResourceRecordSets(self.route53connection, self.id, comment)
         changes.add_change_record("DELETE", record)
         self._new_record(changes, record.type, record.name,
-                         new_value, new_ttl, new_identifier, comment)
+                         new_value, new_ttl, new_identifier,
+                         new_health_check_id, new_failover_type, comment)
         return Status(self.route53connection, self._commit(changes))
 
     def delete_record(self, record, comment=""):

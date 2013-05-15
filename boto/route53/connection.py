@@ -32,6 +32,7 @@ from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.route53.record import ResourceRecordSets
 from boto.route53.zone import Zone
+from boto.route53.healthckeck import Healthcheck
 import boto.jsonresponse
 import exception
 
@@ -43,18 +44,29 @@ HZXML = """<?xml version="1.0" encoding="UTF-8"?>
     <Comment>%(comment)s</Comment>
   </HostedZoneConfig>
 </CreateHostedZoneRequest>"""
-        
-#boto.set_stream_logger('dns')
 
+HCXML = """
+<CreateHealthCheckRequest xmlns="%(xmlns)s">
+   <CallerReference>%(caller_ref)s</CallerReference>
+   <HealthCheckConfig>
+      <IPAddress>%(ip)s</IPAddress>
+      <Port>%(port)d</Port>
+      <Type>%(type)s</Type>
+      %(custom)s
+   </HealthCheckConfig>
+</CreateHealthCheckRequest>
+"""
+
+#boto.set_stream_logger('dns')
 
 class Route53Connection(AWSAuthConnection):
     DefaultHost = 'route53.amazonaws.com'
     """The default Route53 API endpoint to connect to."""
 
-    Version = '2012-02-29'
+    Version = '2012-12-12'
     """Route53 API version."""
 
-    XMLNameSpace = 'https://route53.amazonaws.com/doc/2012-02-29/'
+    XMLNameSpace = 'https://route53.amazonaws.com/doc/2012-12-12/'
     """XML schema for this Route53 API version."""
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -401,3 +413,154 @@ class Route53Connection(AWSAuthConnection):
             if value and not value[-1] == '.':
                 value = "%s." % value
             return value
+
+    # Health Checks
+    def get_all_healthchecks(self, start_marker=None, healthcheck_list=None):
+        """
+        Returns a Python data structure with information about all
+        health checks defined for the AWS account.
+
+        :param int start_marker: start marker to pass when fetching additional
+            results after a truncated list
+        :param list healthcheck_list: a HealthChecks list to prepend to results
+        """
+
+        params = {}
+        if start_marker:
+            params = {'marker': start_marker}
+        response = self.make_request('GET', '/%s/healthcheck' % self.Version,
+                params=params)
+
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element(list_marker='HealthChecks',
+                                      item_marker=('HealthCheck',))
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+
+        if healthcheck_list:
+            e['ListHealthChecksResponse']['HealthChecks'].extend(
+                healthcheck_list)
+        while 'NextMarker' in e['ListHealthChecksResponse']:
+            next_marker = e['ListHealthChecksResponse']['NextMarker']
+            healthcheck_list = e['ListHealthChecksResponse']['HealthChecks']
+            e = self.get_all_healthchecks(next_marker, healthcheck_list)
+        return e
+
+    def get_healthchecks(self):
+        """
+        Returns a list of Healthcheck objects for all healthchecks defined
+        in the AWS Account
+        """
+        healthchecks = self.get_all_healthchecks()
+        return [Healthcheck(self, check) for check in
+                healthchecks['ListHealthChecksResponse']['HealthChecks']]
+
+    def get_healthcheck(self, healthcheck_id):
+        """
+        Return a Healthcheck for a healtch check specified by id
+
+        :type healthckeck_id: str
+        :param healthcheck_id: The unique identifier for the Health Check
+
+        """
+
+        uri = '/%s/healthcheck/%s' % (self.Version, healthcheck_id)
+        response = self.make_request('GET', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element(list_marker='CreateHealthCheckResponse',
+                                      item_marker=('HealthCheck',))
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return Healthcheck(self, e['GetHealthCheckResponse'][0])
+
+    def create_healthcheck(self, ip, port=None, type='tcp', path=None,
+                           host=None, caller_ref=None):
+        """
+        Create a new Health Check.  Returns Healthcheck object with the newly
+        created health check
+
+        :type ip: str
+        :param ip: The target IP of the healthcheck
+
+        :type port: int
+        :param port: The target port of the healthcheck. It healtchcheck type
+            if http and port is not specified it defaults to 80
+
+        :type type: str
+        :param type: The type of healthcheck. Can be one of 'tcp' or 'http'
+
+        :type path: str
+        :param path: Required for 'http' check type. The path must start
+            with '/'. If not specified defaults to '/'.
+
+        :type host: str
+        :param host: Sets the host header of a 'http' check type.
+
+        :type caller_ref: str
+        :param caller_ref: A unique string that identifies the request
+            and that allows failed CreateHostedZone requests to be retried
+            without the risk of executing the operation twice.  If you don't
+            provide a value for this, boto will generate a Type 4 UUID and
+            use that.
+        """
+
+        if caller_ref is None:
+            caller_ref = str(uuid.uuid4())
+        custom = ''
+        if type == 'http':
+            port = port or 80
+            if path:
+                custom += "\n<ResourcePath>%s</ResourcePath>" % path
+            if host:
+                custom += ("\n<FullyQualifiedDomainName>%s"
+                           "</FullyQualifiedDomainName>" % host)
+        if type == 'tcp':
+            path = ''
+            host = ''
+
+        params = {'ip': ip,
+                  'port': port,
+                  'type': type.upper(),
+                  'custom': custom,
+                  'caller_ref': caller_ref,
+                  'xmlns': self.XMLNameSpace}
+        xml_body = HCXML % params
+        uri = '/%s/healthcheck' % self.Version
+        response = self.make_request('POST', uri,
+                                     {'Content-Type': 'text/xml'}, xml_body)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status != 201:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+
+        e = boto.jsonresponse.Element(list_marker='CreateHealthCheckRequest',
+                                      item_marker=('HealthCheck',))
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return Healthcheck(self, e['CreateHealthCheckResponse']['HealthCheck'])
+
+    def delete_healthcheck(self, healthcheck_id):
+        uri = '/%s/healthcheck/%s' % (self.Version, healthcheck_id)
+        response = self.make_request('DELETE', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status not in (200, 204):
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element()
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
