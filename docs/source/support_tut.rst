@@ -21,8 +21,11 @@ At this point the variable ``conn`` will point to a ``SupportConnection``
 object. In this example, the AWS access key and AWS secret key are passed in to
 the method explicitly. Alternatively, you can set the environment variables:
 
-AWS_ACCESS_KEY_ID - Your AWS Access Key ID \
-AWS_SECRET_ACCESS_KEY - Your AWS Secret Access Key
+**AWS_ACCESS_KEY_ID**
+    Your AWS Access Key ID
+
+**AWS_SECRET_ACCESS_KEY**
+    Your AWS Secret Access Key
 
 and then call the constructor without any arguments, like this:
 

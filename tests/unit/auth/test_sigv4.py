@@ -62,6 +62,44 @@ class TestSigV4Handler(unittest.TestCase):
         query_string = auth.canonical_query_string(request)
         self.assertEqual(query_string, 'Foo.1=aaa&Foo.10=zzz')
 
+    def test_canonical_uri(self):
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
+                                 Mock(), self.provider)
+        request = HTTPRequest(
+            'GET', 'https', 'glacier.us-east-1.amazonaws.com', 443,
+            'x/./././x .html', None, {},
+            {'x-amz-glacier-version': '2012-06-01'}, '')
+        canonical_uri = auth.canonical_uri(request)
+        # This should be both normalized & urlencoded.
+        self.assertEqual(canonical_uri, 'x/x%20.html')
+
+    def test_headers_to_sign(self):
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
+                                 Mock(), self.provider)
+        request = HTTPRequest(
+            'GET', 'http', 'glacier.us-east-1.amazonaws.com', 80,
+            'x/./././x .html', None, {},
+            {'x-amz-glacier-version': '2012-06-01'}, '')
+        headers = auth.headers_to_sign(request)
+        # Port 80 & not secure excludes the port.
+        self.assertEqual(headers['Host'], 'glacier.us-east-1.amazonaws.com')
+
+        request = HTTPRequest(
+            'GET', 'https', 'glacier.us-east-1.amazonaws.com', 443,
+            'x/./././x .html', None, {},
+            {'x-amz-glacier-version': '2012-06-01'}, '')
+        headers = auth.headers_to_sign(request)
+        # SSL port excludes the port.
+        self.assertEqual(headers['Host'], 'glacier.us-east-1.amazonaws.com')
+
+        request = HTTPRequest(
+            'GET', 'https', 'glacier.us-east-1.amazonaws.com', 8080,
+            'x/./././x .html', None, {},
+            {'x-amz-glacier-version': '2012-06-01'}, '')
+        headers = auth.headers_to_sign(request)
+        # URL should include port.
+        self.assertEqual(headers['Host'], 'glacier.us-east-1.amazonaws.com:8080')
+
     def test_region_and_service_can_be_overriden(self):
         auth = HmacAuthV4Handler('queue.amazonaws.com',
                                  Mock(), self.provider)

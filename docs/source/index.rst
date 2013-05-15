@@ -34,8 +34,8 @@ Currently Supported Services
 * **Database**
 
   * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
+  * :doc:`DynamoDB2 <dynamodb2_tut>` -- (:doc:`API Reference <ref/dynamodb2>`) -- (:doc:`Migration Guide from v1 <migrations/dynamodb_v1_to_v2>`)
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
-  * DynamoDB2 -- (:doc:`API Reference <ref/dynamodb2>`)
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
   * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
   * Redshift -- (:doc:`API Reference <ref/redshift>`)
@@ -110,9 +110,10 @@ Release Notes
 
 .. toctree::
    :titlesonly:
-   :glob:
 
-   releasenotes/*
+   releasenotes/v2.9.3
+   releasenotes/v2.9.2
+   releasenotes/v2.9.1
 
 
 .. toctree::
@@ -167,6 +168,8 @@ Release Notes
    ref/dynamodb2
    support_tut
    ref/support
+   dynamodb2_tut
+   migrations/dynamodb_v1_to_v2
 
 
 Indices and tables

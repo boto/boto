@@ -94,7 +94,7 @@ class LaunchConfiguration(object):
                  instance_type='m1.small', kernel_id=None,
                  ramdisk_id=None, block_device_mappings=None,
                  instance_monitoring=False, spot_price=None,
-                 instance_profile_name=None):
+                 instance_profile_name=None, ebs_optimized=False):
         """
         A launch configuration.
 
@@ -140,6 +140,10 @@ class LaunchConfiguration(object):
         :param instance_profile_name: The name or the Amazon Resource
             Name (ARN) of the instance profile associated with the IAM
             role for the instance.
+
+        :type ebs_optimized: bool
+        :param ebs_optimized: Specifies whether the instance is optimized
+            for EBS I/O (true) or not (false).
         """
         self.connection = connection
         self.name = name
@@ -158,6 +162,7 @@ class LaunchConfiguration(object):
         self.spot_price = spot_price
         self.instance_profile_name = instance_profile_name
         self.launch_configuration_arn = None
+        self.ebs_optimized = ebs_optimized
 
     def __repr__(self):
         return 'LaunchConfiguration:%s' % self.name
@@ -201,6 +206,8 @@ class LaunchConfiguration(object):
             self.spot_price = float(value)
         elif name == 'IamInstanceProfile':
             self.instance_profile_name = value
+        elif name == 'EbsOptimized':
+            self.ebs_optimized = True if value.lower() == 'true' else False
         else:
             setattr(self, name, value)
 

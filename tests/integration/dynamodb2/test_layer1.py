@@ -114,7 +114,10 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
             self.provisioned_throughput,
             self.lsi
         )
-        self.assertEqual(result['TableDescription']['TableName'], self.table_name)
+        self.assertEqual(
+            result['TableDescription']['TableName'],
+            self.table_name
+        )
 
         description = self.dynamodb.describe_table(self.table_name)
         self.assertEqual(description['Table']['ItemCount'], 0)
@@ -137,7 +140,9 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
         }, consistent_read=True)
         self.assertEqual(record_1['Item']['username']['S'], 'johndoe')
         self.assertEqual(record_1['Item']['first_name']['S'], 'John')
-        self.assertEqual(record_1['Item']['friends']['SS'], ['alice', 'bob', 'jane'])
+        self.assertEqual(record_1['Item']['friends']['SS'], [
+            'alice', 'bob', 'jane'
+        ])
 
         # Now in a batch.
         self.dynamodb.batch_write_item({
@@ -192,7 +197,8 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
         # Now a scan.
         results = self.dynamodb.scan(self.table_name)
         self.assertEqual(results['Count'], 2)
-        self.assertEqual(sorted([res['username']['S'] for res in results['Items']]), ['jane', 'johndoe'])
+        s_items = sorted([res['username']['S'] for res in results['Items']])
+        self.assertEqual(s_items, ['jane', 'johndoe'])
 
         self.dynamodb.delete_item(self.table_name, key={
             'username': {'S': 'johndoe'},
@@ -201,6 +207,39 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
 
         results = self.dynamodb.scan(self.table_name)
         self.assertEqual(results['Count'], 1)
+
+        # Parallel scan (minus client-side threading).
+        self.dynamodb.batch_write_item({
+            self.table_name: [
+                {
+                    'PutRequest': {
+                        'Item': {
+                            'username': {'S': 'johndoe'},
+                            'first_name': {'S': 'Johann'},
+                            'last_name': {'S': 'Does'},
+                            'date_joined': {'N': '1366058000'},
+                            'friend_count': {'N': '1'},
+                            'friends': {'SS': ['jane']},
+                        },
+                    },
+                    'PutRequest': {
+                        'Item': {
+                            'username': {'S': 'alice'},
+                            'first_name': {'S': 'Alice'},
+                            'last_name': {'S': 'Expert'},
+                            'date_joined': {'N': '1366056800'},
+                            'friend_count': {'N': '2'},
+                            'friends': {'SS': ['johndoe', 'jane']},
+                        },
+                    },
+                },
+            ]
+        })
+        time.sleep(20)
+        results = self.dynamodb.scan(self.table_name, segment=0, total_segments=2)
+        self.assertTrue(results['Count'] in [1, 2])
+        results = self.dynamodb.scan(self.table_name, segment=1, total_segments=2)
+        self.assertTrue(results['Count'] in [1, 2])
 
     def test_without_range_key(self):
         result = self.create_table(
@@ -219,7 +258,10 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
             ],
             self.provisioned_throughput
         )
-        self.assertEqual(result['TableDescription']['TableName'], self.table_name)
+        self.assertEqual(
+            result['TableDescription']['TableName'],
+            self.table_name
+        )
 
         description = self.dynamodb.describe_table(self.table_name)
         self.assertEqual(description['Table']['ItemCount'], 0)
@@ -241,4 +283,6 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
         }, consistent_read=True)
         self.assertEqual(johndoe['Item']['username']['S'], 'johndoe')
         self.assertEqual(johndoe['Item']['first_name']['S'], 'John')
-        self.assertEqual(johndoe['Item']['friends']['SS'], ['alice', 'bob', 'jane'])
+        self.assertEqual(johndoe['Item']['friends']['SS'], [
+            'alice', 'bob', 'jane'
+        ])

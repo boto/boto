@@ -84,7 +84,7 @@ class SupportConnection(AWSQueryConnection):
     and how to call Trusted Advisor for results of checks on your
     resources.
     """
-    APIVersion = "2012-12-15"
+    APIVersion = "2013-04-15"
     DefaultRegionName = "us-east-1"
     DefaultRegionEndpoint = "support.us-east-1.amazonaws.com"
     ServiceName = "Support"
