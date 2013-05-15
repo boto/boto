@@ -1621,7 +1621,9 @@ class TableTestCase(unittest.TestCase):
                     'ComparisonOperator': 'LE',
                 }
             },
-            limit=2
+            limit=2,
+            segment=None,
+            total_segments=None
         )
 
         # Now alter the expected.
@@ -1640,7 +1642,9 @@ class TableTestCase(unittest.TestCase):
                 friend_count__lte=2,
                 exclusive_start_key={
                     'username': 'adam',
-                }
+                },
+                segment=None,
+                total_segments=None
             )
             usernames = [res['username'] for res in results['results']]
             self.assertEqual(usernames, ['alice', 'bob', 'jane'])
@@ -1659,7 +1663,9 @@ class TableTestCase(unittest.TestCase):
                 'username': {
                     'S': 'adam',
                 },
-            }
+            },
+            segment=None,
+            total_segments=None
         )
 
     def test_query(self):
