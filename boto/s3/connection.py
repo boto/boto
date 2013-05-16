@@ -460,7 +460,8 @@ class S3Connection(AWSAuthConnection):
                       location=Location.DEFAULT, policy=None):
         """
         Creates a new located bucket. By default it's in the USA. You can pass
-        Location.EU to create an European bucket.
+        Location.EU to create a European bucket (S3) or European Union bucket
+        (GCS).
 
         :type bucket_name: string
         :param bucket_name: The name of the new bucket

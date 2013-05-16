@@ -15,12 +15,12 @@ The recommended method of doing this is as follows::
 
     >>> import boto.rds
     >>> conn = boto.rds.connect_to_region(
-    ...     "us-east-1",
+    ...     "us-west-2",
     ...     aws_access_key_id='<aws access key'>,
     ...     aws_secret_access_key='<aws secret key>')
 
 At this point the variable conn will point to an RDSConnection object in the
-US-EAST-1 region. Bear in mind that just as any other AWS service, RDS is
+US-WEST-2 region. Bear in mind that just as any other AWS service, RDS is
 region-specific. In this example, the AWS access key and AWS secret key are
 passed in to the method explicitely. Alternatively, you can set the environment
 variables:
@@ -31,7 +31,7 @@ variables:
 and then simply call::
 
     >>> import boto.rds
-    >>> conn = boto.rds.connect_to_region("us-east-1")
+    >>> conn = boto.rds.connect_to_region("us-west-2")
 
 In either case, conn will point to an RDSConnection object which we will
 use throughout the remainder of this tutorial.
@@ -56,7 +56,7 @@ To check on the status of your RDS instance, you will have to query the RDS conn
     >>> db.status
     u'available'
     >>> db.endpoint
-    (u'db-master-1.aaaaaaaaaa.us-east-1.rds.amazonaws.com', 3306)
+    (u'db-master-1.aaaaaaaaaa.us-west-2.rds.amazonaws.com', 3306)
 
 Creating a Security Group
 -------------------------
@@ -82,10 +82,10 @@ Once you have reached this step, you can connect to your RDS instance as you
 would with any other MySQL instance::
 
     >>> db.endpoint
-    (u'db-master-1.aaaaaaaaaa.us-east-1.rds.amazonaws.com', 3306)
+    (u'db-master-1.aaaaaaaaaa.us-west-2.rds.amazonaws.com', 3306)
 
-    % mysql -h db-master-1.aaaaaaaaaa.us-east-1.rds.amazonaws.com -u root -phunter2
-    mysql> 
+    % mysql -h db-master-1.aaaaaaaaaa.us-west-2.rds.amazonaws.com -u root -phunter2
+    mysql>
 
 
 Making a backup
@@ -101,8 +101,8 @@ Once this snapshot is complete, you can create a new database instance from
 it::
 
     >>> db2 = conn.restore_dbinstance_from_dbsnapshot(
-    ...    'db-master-1-2013-02-05', 
+    ...    'db-master-1-2013-02-05',
     ...    'db-restored-1',
     ...    'db.m1.small',
-    ...    'us-east-1')
+    ...    'us-west-2')
 

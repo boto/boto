@@ -1,6 +1,6 @@
 # Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
-# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -33,7 +33,7 @@ from datetime import timedelta
 import boto
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
-from boto.ec2.image import Image, ImageAttribute
+from boto.ec2.image import Image, ImageAttribute, CopyImage
 from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
@@ -58,6 +58,7 @@ from boto.ec2.vmtype import VmType
 from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
 from boto.ec2.networkinterface import NetworkInterface
+from boto.ec2.attributes import AccountAttribute, VPCAttribute
 from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
@@ -65,7 +66,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2012-12-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2013-02-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -542,10 +543,11 @@ class EC2Connection(AWSQueryConnection):
 
         :type security_groups: list of strings
         :param security_groups: The names of the security groups with which to
-            associate instances
+            associate instances.
 
         :type user_data: string
-        :param user_data: The user data passed to the launched instances
+        :param user_data: The Base64-encoded MIME user data to be made
+            available to the instance(s) in this reservation.
 
         :type instance_type: string
         :param instance_type: The type of instance to run:
@@ -555,18 +557,22 @@ class EC2Connection(AWSQueryConnection):
             * m1.medium
             * m1.large
             * m1.xlarge
+            * m3.xlarge
+            * m3.2xlarge
             * c1.medium
             * c1.xlarge
             * m2.xlarge
             * m2.2xlarge
             * m2.4xlarge
+            * cr1.8xlarge
+            * hi1.4xlarge
+            * hs1.8xlarge
             * cc1.4xlarge
             * cg1.4xlarge
             * cc2.8xlarge
 
         :type placement: string
-        :param placement: The availability zone in which to launch
-            the instances.
+        :param placement: The Availability Zone to launch the instance into.
 
         :type kernel_id: string
         :param kernel_id: The ID of the kernel with which to launch the
@@ -592,7 +598,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
-            describing the EBS volumes associated  with the Image.
+            describing the EBS volumes associated with the Image.
 
         :type disable_api_termination: bool
         :param disable_api_termination: If True, the instances will be locked
@@ -612,7 +618,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type client_token: string
         :param client_token: Unique, case-sensitive identifier you provide
-            to ensure idempotency of the request.  Maximum 64 ASCII characters.
+            to ensure idempotency of the request. Maximum 64 ASCII characters.
 
         :type security_group_ids: list of strings
         :param security_group_ids: The ID of the VPC security groups with
@@ -2207,9 +2213,9 @@ class EC2Connection(AWSQueryConnection):
                                     it to AWS.
 
         :rtype: :class:`boto.ec2.keypair.KeyPair`
-        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
-                 The material attribute of the new KeyPair object
-                 will contain the the unencrypted PEM encoded RSA private key.
+        :return: A :class:`boto.ec2.keypair.KeyPair` object representing
+            the newly imported key pair.  This object will contain only
+            the key name and the fingerprint.
         """
         public_key_material = base64.b64encode(public_key_material)
         params = {'KeyName': key_name,
@@ -3403,3 +3409,49 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {}
         return self.get_list('DescribeVmTypes', params, [('euca:item', VmType)], verb='POST')
+
+    def copy_image(self, source_region, source_image_id, name,
+                   description=None, client_token=None):
+        params = {
+            'SourceRegion': source_region,
+            'SourceImageId': source_image_id,
+            'Name': name
+        }
+        if description is not None:
+            params['Description'] = description
+        if client_token is not None:
+            params['ClientToken'] = client_token
+        image = self.get_object('CopyImage', params, CopyImage,
+                                 verb='POST')
+        return image
+
+    def describe_account_attributes(self, attribute_names=None):
+        params = {}
+        if attribute_names is not None:
+            self.build_list_params(params, attribute_names, 'AttributeName')
+        return self.get_list('DescribeAccountAttributes', params,
+                             [('item', AccountAttribute)], verb='POST')
+
+    def describe_vpc_attribute(self, vpc_id, attribute=None):
+        params = {
+            'VpcId': vpc_id
+        }
+        if attribute is not None:
+            params['Attribute'] = attribute
+        attr = self.get_object('DescribeVpcAttribute', params,
+                               VPCAttribute, verb='POST')
+        return attr
+
+    def modify_vpc_attribute(self, vpc_id, enable_dns_support=None,
+                             enable_dns_hostnames=None):
+        params = {
+            'VpcId': vpc_id
+        }
+        if enable_dns_support is not None:
+            params['EnableDnsSupport.Value'] = (
+                'true' if enable_dns_support else 'false')
+        if enable_dns_hostnames is not None:
+            params['EnableDnsHostnames.Value'] = (
+                'true' if enable_dns_hostnames else 'false')
+        result = self.get_status('ModifyVpcAttribute', params, verb='POST')
+        return result

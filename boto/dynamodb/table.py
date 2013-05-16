@@ -435,6 +435,9 @@ class Table(object):
         :param count: If True, Amazon DynamoDB returns a total
             number of items for the Query operation, even if the
             operation has no matching items for the assigned filter.
+            If count is True, the actual items are not returned and
+            the count is accessible as the ``count`` attribute of
+            the returned object.
 
 
         :type item_class: Class
@@ -494,6 +497,9 @@ class Table(object):
         :param count: If True, Amazon DynamoDB returns a total
             number of items for the Scan operation, even if the
             operation has no matching items for the assigned filter.
+            If count is True, the actual items are not returned and
+            the count is accessible as the ``count`` attribute of
+            the returned object.
 
         :type exclusive_start_key: list or tuple
         :param exclusive_start_key: Primary key of the item from
