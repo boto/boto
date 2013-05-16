@@ -32,13 +32,14 @@ import boto.auth_handler
 import boto.exception
 import boto.plugin
 import boto.utils
-import hmac
-import sys
-import urllib
-import time
-import datetime
 import copy
+import datetime
 from email.utils import formatdate
+import hmac
+import os
+import sys
+import time
+import urllib
 
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
@@ -360,13 +361,21 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         Select the headers from the request that need to be included
         in the StringToSign.
         """
+        host_header_value = self.host_header(self.host, http_request)
         headers_to_sign = {}
-        headers_to_sign = {'Host': self.host}
+        headers_to_sign = {'Host': host_header_value}
         for name, value in http_request.headers.items():
             lname = name.lower()
             if lname.startswith('x-amz'):
                 headers_to_sign[name] = value
         return headers_to_sign
+
+    def host_header(self, host, http_request):
+        port = http_request.port
+        secure = http_request.protocol == 'https'
+        if ((port == 80 and not secure) or (port == 443 and secure)):
+            return host
+        return '%s:%s' % (host, port)
 
     def query_string(self, http_request):
         parameter_names = sorted(http_request.params.keys())
@@ -407,7 +416,11 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return ';'.join(l)
 
     def canonical_uri(self, http_request):
-        return http_request.auth_path
+        # Normalize the path.
+        normalized = os.path.normpath(http_request.auth_path)
+        # Then urlencode whatever's left.
+        encoded = urllib.quote(normalized)
+        return encoded
 
     def payload(self, http_request):
         body = http_request.body

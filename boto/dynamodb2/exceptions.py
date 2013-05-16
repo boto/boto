@@ -46,5 +46,29 @@ class InternalServerError(JSONResponseError):
     pass
 
 
+class ValidationException(JSONResponseError):
+    pass
+
+
 class ItemCollectionSizeLimitExceededException(JSONResponseError):
+    pass
+
+
+class DynamoDBError(Exception):
+    pass
+
+
+class UnknownSchemaFieldError(DynamoDBError):
+    pass
+
+
+class UnknownIndexFieldError(DynamoDBError):
+    pass
+
+
+class UnknownFilterTypeError(DynamoDBError):
+    pass
+
+
+class QueryError(DynamoDBError):
     pass

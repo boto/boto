@@ -34,8 +34,8 @@ Currently Supported Services
 * **Database**
 
   * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
+  * :doc:`DynamoDB2 <dynamodb2_tut>` -- (:doc:`API Reference <ref/dynamodb2>`) -- (:doc:`Migration Guide from v1 <migrations/dynamodb_v1_to_v2>`)
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
-  * DynamoDB2 -- (:doc:`API Reference <ref/dynamodb2>`)
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
   * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
   * Redshift -- (:doc:`API Reference <ref/redshift>`)
@@ -85,6 +85,7 @@ Currently Supported Services
 * **Other**
 
   * Marketplace Web Services -- (:doc:`API Reference <ref/mws>`)
+  * :doc:`Support <support_tut>` -- (:doc:`API Reference <ref/support>`)
 
 Additional Resources
 --------------------
@@ -102,6 +103,18 @@ Additional Resources
 .. _Boto Twitter: http://twitter.com/pythonboto
 .. _IRC channel: http://webchat.freenode.net/?channels=boto
 .. _Follow Mitch on Twitter: http://twitter.com/garnaat
+
+
+Release Notes
+-------------
+
+.. toctree::
+   :titlesonly:
+
+   releasenotes/v2.9.3
+   releasenotes/v2.9.2
+   releasenotes/v2.9.1
+
 
 .. toctree::
    :hidden:
@@ -153,6 +166,10 @@ Additional Resources
    ref/elastictranscoder
    ref/redshift
    ref/dynamodb2
+   support_tut
+   ref/support
+   dynamodb2_tut
+   migrations/dynamodb_v1_to_v2
 
 
 Indices and tables

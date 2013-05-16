@@ -1,0 +1,48 @@
+boto v2.9.1
+===========
+
+:date: 2013/04/30
+
+Primarily a bugfix release, this release also includes support for the new
+AWS Support API.
+
+
+Features
+--------
+
+* AWS Support API - A client was added to support the new AWS Support API. It
+  gives programmatic access to Support cases opened with AWS. A short example
+  might look like::
+
+    >>> from boto.support.layer1 import SupportConnection
+    >>> conn = SupportConnection()
+    >>> new_case = conn.create_case(
+    ...     subject='Description of the issue',
+    ...     service_code='amazon-cloudsearch',
+    ...     category_code='performance',
+    ...     communication_body="We're seeing some latency from one of our...",
+    ...     severity_code='low'
+    ... )
+    >>> new_case['caseId']
+    u'case-...'
+
+  The :ref:`Support Tutorial <support_tut>` has more information on how to use
+  the new API. (SHA: 8c0451)
+
+
+Bugfixes
+--------
+
+* The reintroduction of ``ResumableUploadHandler.get_upload_id`` that was
+  accidentally removed in a previous commit. (SHA: 758322)
+* Added ``OrdinaryCallingFormat`` to support Google Storage's certificate
+  verification. (SHA: 4ca83b)
+* Added the ``eu-west-1`` region for Redshift. (SHA: e98b95)
+* Added support for overriding the port any connection in ``boto`` uses.
+  (SHA: 08e893)
+* Added retry/checksumming support to the DynamoDB v2 client. (SHA: 969ae2)
+* Several documentation improvements/fixes:
+
+    * Incorrect docs on EC2's ``import_key_pair``. (SHA: 6ada7d)
+    * Clearer docs on the DynamoDB  ``count`` parameter. (SHA: dfa456)
+    * Fixed a typo in the ``autoscale_tut``. (SHA: 6df1ae)

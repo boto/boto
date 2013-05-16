@@ -543,10 +543,11 @@ class EC2Connection(AWSQueryConnection):
 
         :type security_groups: list of strings
         :param security_groups: The names of the security groups with which to
-            associate instances
+            associate instances.
 
         :type user_data: string
-        :param user_data: The user data passed to the launched instances
+        :param user_data: The Base64-encoded MIME user data to be made
+            available to the instance(s) in this reservation.
 
         :type instance_type: string
         :param instance_type: The type of instance to run:
@@ -556,18 +557,22 @@ class EC2Connection(AWSQueryConnection):
             * m1.medium
             * m1.large
             * m1.xlarge
+            * m3.xlarge
+            * m3.2xlarge
             * c1.medium
             * c1.xlarge
             * m2.xlarge
             * m2.2xlarge
             * m2.4xlarge
+            * cr1.8xlarge
+            * hi1.4xlarge
+            * hs1.8xlarge
             * cc1.4xlarge
             * cg1.4xlarge
             * cc2.8xlarge
 
         :type placement: string
-        :param placement: The availability zone in which to launch
-            the instances.
+        :param placement: The Availability Zone to launch the instance into.
 
         :type kernel_id: string
         :param kernel_id: The ID of the kernel with which to launch the
@@ -593,7 +598,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
-            describing the EBS volumes associated  with the Image.
+            describing the EBS volumes associated with the Image.
 
         :type disable_api_termination: bool
         :param disable_api_termination: If True, the instances will be locked
@@ -613,7 +618,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type client_token: string
         :param client_token: Unique, case-sensitive identifier you provide
-            to ensure idempotency of the request.  Maximum 64 ASCII characters.
+            to ensure idempotency of the request. Maximum 64 ASCII characters.
 
         :type security_group_ids: list of strings
         :param security_group_ids: The ID of the VPC security groups with
@@ -2208,9 +2213,9 @@ class EC2Connection(AWSQueryConnection):
                                     it to AWS.
 
         :rtype: :class:`boto.ec2.keypair.KeyPair`
-        :return: The newly created :class:`boto.ec2.keypair.KeyPair`.
-                 The material attribute of the new KeyPair object
-                 will contain the the unencrypted PEM encoded RSA private key.
+        :return: A :class:`boto.ec2.keypair.KeyPair` object representing
+            the newly imported key pair.  This object will contain only
+            the key name and the fingerprint.
         """
         public_key_material = base64.b64encode(public_key_material)
         params = {'KeyName': key_name,

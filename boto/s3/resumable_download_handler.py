@@ -31,6 +31,7 @@ from boto.connection import AWSAuthConnection
 from boto.exception import ResumableDownloadException
 from boto.exception import ResumableTransferDisposition
 from boto.s3.keyfile import KeyFile
+from boto.gs.key import Key as GSKey
 
 """
 Resumable download handler.
@@ -212,8 +213,12 @@ class ResumableDownloadHandler(object):
 
         # Disable AWSAuthConnection-level retry behavior, since that would
         # cause downloads to restart from scratch.
-        key.get_file(fp, headers, cb, num_cb, torrent, version_id,
-                     override_num_retries=0, hash_algs=hash_algs)
+        if isinstance(key, GSKey):
+          key.get_file(fp, headers, cb, num_cb, torrent, version_id,
+                       override_num_retries=0, hash_algs=hash_algs)
+        else:
+          key.get_file(fp, headers, cb, num_cb, torrent, version_id,
+                       override_num_retries=0)
         fp.flush()
 
     def get_file(self, key, fp, headers, cb=None, num_cb=10, torrent=False,
@@ -263,9 +268,9 @@ class ResumableDownloadHandler(object):
             headers = {}
 
         # Use num-retries from constructor if one was provided; else check
-        # for a value specified in the boto config file; else default to 5.
+        # for a value specified in the boto config file; else default to 6.
         if self.num_retries is None:
-            self.num_retries = config.getint('Boto', 'num_retries', 5)
+            self.num_retries = config.getint('Boto', 'num_retries', 6)
         progress_less_iterations = 0
 
         while True:  # Retry as long as we're making progress.
@@ -290,8 +295,12 @@ class ResumableDownloadHandler(object):
                     # close the socket (http://bugs.python.org/issue5542),
                     # so we need to close and reopen the key before resuming
                     # the download.
-                    key.get_file(fp, headers, cb, num_cb, torrent, version_id,
-                                 override_num_retries=0, hash_algs=hash_algs)
+                    if isinstance(key, GSKey):
+                      key.get_file(fp, headers, cb, num_cb, torrent, version_id,
+                                   override_num_retries=0, hash_algs=hash_algs)
+                    else:
+                      key.get_file(fp, headers, cb, num_cb, torrent, version_id,
+                                   override_num_retries=0)
             except ResumableDownloadException, e:
                 if (e.disposition ==
                     ResumableTransferDisposition.ABORT_CUR_PROCESS):
