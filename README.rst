@@ -1,7 +1,7 @@
 ####
 boto
 ####
-boto 2.9.4-dev
+boto 2.9.4
 
 Released: 15-May-2013
 
