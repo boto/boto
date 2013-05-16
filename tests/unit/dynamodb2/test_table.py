@@ -1,4 +1,7 @@
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 import unittest
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
@@ -13,7 +16,15 @@ from boto.dynamodb2.types import (STRING, NUMBER,
 
 FakeDynamoDBConnection = mock.create_autospec(DynamoDBConnection)
 
+# Overload ``sorted(...)`` so that comparisons between strings
+# and integers don't raise a TypeError in python3
 
+bs = sorted
+def sorted(*args, **kwargs):
+    def key(v):
+        return str(type(v)), v
+    kwargs['key'] = key
+    return bs(*args, **kwargs)
 
 class SchemaFieldsTestCase(unittest.TestCase):
     def test_hash_key(self):
@@ -222,10 +233,10 @@ class ItemTestCase(unittest.TestCase):
         self.assertFalse('whatever' in self.johndoe)
 
     def test_iter(self):
-        self.assertEqual(list(self.johndoe), [
-            'johndoe',
-            'John',
+        self.assertEqual(sorted(list(self.johndoe)), [
             12345,
+            'John',
+            'johndoe',
         ])
 
     def test_items(self):
