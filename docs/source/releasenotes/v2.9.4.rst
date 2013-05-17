@@ -1,0 +1,21 @@
+boto v2.9.4
+===========
+
+:date: 2013/xx/xx
+
+This release adds updated Elastic Transcoder support, ...
+
+
+Features
+--------
+
+* Updated Elastic Transcoder support - It now supports HLS, WebM, MPEG2-TS & a
+  host of `other features`_. (SHA: 89196a)
+
+  .. _`other features`: http://aws.typepad.com/aws/2013/05/new-features-for-the-amazon-elastic-transcoder.html
+
+
+Bugfixes
+--------
+
+* Fixed a bug in the canonicalization of URLs on Windows. (SHA: 09ef8c)
