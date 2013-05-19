@@ -25,7 +25,7 @@
 from boto.ec2.regioninfo import RegionInfo
 import boto.swf.layer1
 
-RegionData = {
+REGION_ENDPOINTS = {
     'us-east-1': 'swf.us-east-1.amazonaws.com',
     'us-west-1': 'swf.us-west-1.amazonaws.com',
     'us-west-2': 'swf.us-west-2.amazonaws.com',
@@ -37,20 +37,16 @@ RegionData = {
 }
 
 
-def regions():
+def regions(**kw_params):
     """
     Get all available regions for the Amazon Simple Workflow service.
 
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
-    for region_name in RegionData:
-        region = RegionInfo(name=region_name,
-                            endpoint=RegionData[region_name],
-                            connection_cls=boto.swf.layer1.Layer1)
-        regions.append(region)
-    return regions
-
+    return [RegionInfo(name=region_name, endpoint=REGION_ENDPOINTS[region_name],
+                       connection_cls=boto.swf.layer1.Layer1)
+            for region_name in REGION_ENDPOINTS]
 
 
 def connect_to_region(region_name, **kw_params):

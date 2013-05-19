@@ -523,9 +523,11 @@ class AWSAuthConnection(object):
         # timeouts will only be applied if Python is 2.6 or greater.
         self.http_connection_kwargs = {}
         if (sys.version_info[0], sys.version_info[1]) >= (2, 6):
-            if config.has_option('Boto', 'http_socket_timeout'):
-                timeout = config.getint('Boto', 'http_socket_timeout')
-                self.http_connection_kwargs['timeout'] = timeout
+            # If timeout isn't defined in boto config file, use 70 second
+            # default as recommended by
+            # http://docs.aws.amazon.com/amazonswf/latest/apireference/API_PollForActivityTask.html
+            self.http_connection_kwargs['timeout'] = config.getint(
+                'Boto', 'http_socket_timeout', 70)
 
         if isinstance(provider, Provider):
             # Allow overriding Provider
@@ -537,9 +539,11 @@ class AWSAuthConnection(object):
                                      aws_secret_access_key,
                                      security_token)
 
-        # allow config file to override default host
+        # Allow config file to override default host and port.
         if self.provider.host:
             self.host = self.provider.host
+        if self.provider.port:
+            self.port = self.provider.port
 
         self._pool = ConnectionPool()
         self._connection = (self.server_name(), self.is_secure)
@@ -730,6 +734,8 @@ class AWSAuthConnection(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             sock.connect((self.proxy, int(self.proxy_port)))
+            if "timeout" in self.http_connection_kwargs:
+                sock.settimeout(self.http_connection_kwargs["timeout"])
         except:
             raise
         boto.log.debug("Proxy connection: CONNECT %s HTTP/1.0\r\n", host)
@@ -811,6 +817,7 @@ class AWSAuthConnection(object):
         boto.log.debug('Data: %s' % request.body)
         boto.log.debug('Headers: %s' % request.headers)
         boto.log.debug('Host: %s' % request.host)
+        boto.log.debug('Params: %s' % request.params)
         response = None
         body = None
         e = None

@@ -14,8 +14,8 @@ Creating a Connection
 The first step in accessing EC2 is to create a connection to the service.
 The recommended way of doing this in boto is::
 
-    >>> from boto.ec2
-    >>> conn = boto.ec2.connect_to_region("us-east-1",
+    >>> import boto.ec2
+    >>> conn = boto.ec2.connect_to_region("us-west-2",
     ...    aws_access_key_id='<aws access key>',
     ...    aws_secret_access_key='<aws secret key>')
 
@@ -24,7 +24,7 @@ this example, the AWS access key and AWS secret key are passed in to the method
 explicitly.  Alternatively, you can set the boto config environment variables
 and then simply specify which region you want as follows::
 
-    >>> conn = boto.ec2.connect_to_region("us-east-1")
+    >>> conn = boto.ec2.connect_to_region("us-west-2")
 
 In either case, conn will point to an EC2Connection object which we will
 use throughout the remainder of this tutorial.
@@ -83,4 +83,96 @@ you can request instance termination. To do so you can use the call bellow::
 
 Please use with care since once you request termination for an instance there
 is no turning back.
+
+Checking What Instances Are Running
+-----------------------------------
+You can also get information on your currently running instances::
+
+    >>> reservations = conn.get_all_instances()
+    >>> reservations
+    [Reservation:r-00000000]
+
+A reservation corresponds to a command to start instances. You can see what
+instances are associated with a reservation::
+
+    >>> instances = reservations[0].instances
+    >>> instances
+    [Instance:i-00000000]
+
+An instance object allows you get more meta-data available about the instance::
+
+    >>> inst = instances[0]
+    >>> inst.instance_type
+    u'c1.xlarge'
+    >>> inst.placement
+    u'us-west-2'
+
+In this case, we can see that our instance is a c1.xlarge instance in the
+`us-west-2` availability zone.
+
+=================================
+Using Elastic Block Storage (EBS)
+=================================
+
+
+EBS Basics
+----------
+
+EBS can be used by EC2 instances for permanent storage. Note that EBS volumes
+must be in the same availability zone as the EC2 instance you wish to attach it
+to.
+
+To actually create a volume you will need to specify a few details. The
+following example will create a 50GB EBS in one of the `us-west-2` availability
+zones::
+
+   >>> vol = conn.create_volume(50, "us-west-2")
+   >>> vol
+   Volume:vol-00000000
+
+You can check that the volume is now ready and available::
+
+   >>> curr_vol = conn.get_all_volumes([vol.id])[0]
+   >>> curr_vol.status
+   u'available'
+   >>> curr_vol.zone
+   u'us-west-2'
+
+We can now attach this volume to the EC2 instance we created earlier, making it
+available as a new device::
+
+   >>> conn.attach_volume (vol.id, inst.id, "/dev/sdx")
+   u'attaching'
+
+You will now have a new volume attached to your instance. Note that with some
+Linux kernels, `/dev/sdx` may get translated to `/dev/xvdx`. This device can
+now be used as a normal block device within Linux.
+
+Working With Snapshots
+----------------------
+
+Snapshots allow you to make point-in-time snapshots of an EBS volume for future
+recovery. Snapshots allow you to create incremental backups, and can also be
+used to instantiate multiple new volumes. Snapshots can also be used to move
+EBS volumes across availability zones or making backups to S3.
+
+Creating a snapshot is easy::
+
+   >>> snapshot = conn.create_snapshot(vol.id, 'My snapshot')
+   >>> snapshot
+   Snapshot:snap-00000000
+
+Once you have a snapshot, you can create a new volume from it. Volumes are
+created lazily from snapshots, which means you can start using such a volume
+straight away::
+
+   >>> new_vol = snapshot.create_volume('us-west-2')
+   >>> conn.attach_volume (new_vol.id, inst.id, "/dev/sdy")
+   u'attaching'
+
+If you no longer need a snapshot, you can also easily delete it::
+
+   >>> conn.delete_snapshot(snapshot.id)
+   True
+
 

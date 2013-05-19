@@ -27,6 +27,8 @@ import StringIO
 from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
 from boto.s3.keyfile import KeyFile
+from boto.utils import compute_hash
+from boto.utils import get_utf8_value
 
 class Key(S3Key):
     """
@@ -47,21 +49,28 @@ class Key(S3Key):
     :ivar last_modified: The string timestamp representing the last
         time this object was modified in GS.
     :ivar owner: The ID of the owner of this object.
-    :ivar storage_class: The storage class of the object.  Currently, one of:
+    :ivar storage_class: The storage class of the object. Currently, one of:
         STANDARD | DURABLE_REDUCED_AVAILABILITY.
     :ivar md5: The MD5 hash of the contents of the object.
     :ivar size: The size, in bytes, of the object.
     :ivar generation: The generation number of the object.
-    :ivar meta_generation: The generation number of the object metadata.
+    :ivar metageneration: The generation number of the object metadata.
     :ivar encrypted: Whether the object is encrypted while at rest on
         the server.
+    :ivar cloud_hashes: Dictionary of checksums as supplied by the storage
+        provider.
     """
-    generation = None
-    meta_generation = None
+
+    def __init__(self, bucket=None, name=None, generation=None):
+        super(Key, self).__init__(bucket=bucket, name=name)
+        self.generation = generation
+        self.meta_generation = None
+        self.cloud_hashes = {}
+        self.component_count = None
 
     def __repr__(self):
-        if self.generation and self.meta_generation:
-            ver_str = '#%s.%s' % (self.generation, self.meta_generation)
+        if self.generation and self.metageneration:
+            ver_str = '#%s.%s' % (self.generation, self.metageneration)
         else:
             ver_str = ''
         if self.bucket:
@@ -92,24 +101,171 @@ class Key(S3Key):
         elif name == 'Generation':
             self.generation = value
         elif name == 'MetaGeneration':
-            self.meta_generation = value
+            self.metageneration = value
         else:
             setattr(self, name, value)
 
     def handle_version_headers(self, resp, force=False):
-        self.meta_generation = resp.getheader('x-goog-metageneration', None)
+        self.metageneration = resp.getheader('x-goog-metageneration', None)
         self.generation = resp.getheader('x-goog-generation', None)
+
+    def handle_addl_headers(self, headers):
+        for key, value in headers:
+            if key == 'x-goog-hash':
+                for hash_pair in value.split(','):
+                    alg, b64_digest = hash_pair.strip().split('=', 1)
+                    self.cloud_hashes[alg] = binascii.a2b_base64(b64_digest)
+            elif key == 'x-goog-component-count':
+                self.component_count = int(value)
+
 
     def get_file(self, fp, headers=None, cb=None, num_cb=10,
                  torrent=False, version_id=None, override_num_retries=None,
-                 response_headers=None):
+                 response_headers=None, hash_algs=None):
         query_args = None
         if self.generation:
             query_args = ['generation=%s' % self.generation]
         self._get_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
                                 override_num_retries=override_num_retries,
                                 response_headers=response_headers,
+                                hash_algs=hash_algs,
                                 query_args=query_args)
+
+    def get_contents_to_file(self, fp, headers=None,
+                             cb=None, num_cb=10,
+                             torrent=False,
+                             version_id=None,
+                             res_download_handler=None,
+                             response_headers=None,
+                             hash_algs=None):
+        """
+        Retrieve an object from GCS using the name of the Key object as the
+        key in GCS. Write the contents of the object to the file pointed
+        to by 'fp'.
+
+        :type fp: File -like object
+        :param fp:
+
+        :type headers: dict
+        :param headers: additional HTTP headers that will be sent with
+            the GET request.
+
+        :type cb: function
+        :param cb: a callback function that will be called to report
+            progress on the upload. The callback should accept two
+            integer parameters, the first representing the number of
+            bytes that have been successfully transmitted to GCS and
+            the second representing the size of the to be transmitted
+            object.
+
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the
+            cb parameter this parameter determines the granularity of
+            the callback by defining the maximum number of times the
+            callback will be called during the file transfer.
+
+        :type torrent: bool
+        :param torrent: If True, returns the contents of a torrent
+            file as a string.
+
+        :type res_upload_handler: ResumableDownloadHandler
+        :param res_download_handler: If provided, this handler will
+            perform the download.
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP
+            headers/values that will override any headers associated
+            with the stored object in the response. See
+            http://goo.gl/sMkcC for details.
+        """
+        if self.bucket != None:
+            if res_download_handler:
+                res_download_handler.get_file(self, fp, headers, cb, num_cb,
+                                              torrent=torrent,
+                                              version_id=version_id,
+                                              hash_algs=hash_algs)
+            else:
+                self.get_file(fp, headers, cb, num_cb, torrent=torrent,
+                              version_id=version_id,
+                              response_headers=response_headers,
+                              hash_algs=hash_algs)
+
+    def compute_hash(self, fp, algorithm, size=None):
+        """
+        :type fp: file
+        :param fp: File pointer to the file to hash. The file
+            pointer will be reset to the same position before the
+            method returns.
+
+        :type algorithm: zero-argument constructor for hash objects that
+            implements update() and digest() (e.g. hashlib.md5)
+
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read
+            from the file pointer (fp). This is useful when uploading
+            a file in multiple parts where the file is being split
+            in place into different parts. Less bytes may be available.
+        """
+        hex_digest, b64_digest, data_size = compute_hash(
+            fp, size=size, hash_algorithm=algorithm)
+        # The internal implementation of compute_hash() needs to return the
+        # data size, but we don't want to return that value to the external
+        # caller because it changes the class interface (i.e. it might
+        # break some code), so we consume the third tuple value here and
+        # return the remainder of the tuple to the caller, thereby preserving
+        # the existing interface.
+        self.size = data_size
+        return (hex_digest, b64_digest)
+
+    def send_file(self, fp, headers=None, cb=None, num_cb=10,
+                  query_args=None, chunked_transfer=False, size=None,
+                  hash_algs=None):
+        """
+        Upload a file to GCS.
+
+        :type fp: file
+        :param fp: The file pointer to upload. The file pointer must
+            point point at the offset from which you wish to upload.
+            ie. if uploading the full file, it should point at the
+            start of the file. Normally when a file is opened for
+            reading, the fp will point at the first byte. See the
+            bytes parameter below for more info.
+
+        :type headers: dict
+        :param headers: The headers to pass along with the PUT request
+
+        :type num_cb: int
+        :param num_cb: (optional) If a callback is specified with the
+            cb parameter this parameter determines the granularity of
+            the callback by defining the maximum number of times the
+            callback will be called during the file
+            transfer. Providing a negative integer will cause your
+            callback to be called with each buffer read.
+
+        :type query_args: string
+        :param query_args: Arguments to pass in the query string.
+
+        :type chunked_transfer: boolean
+        :param chunked_transfer: (optional) If true, we use chunked
+            Transfer-Encoding.
+
+        :type size: int
+        :param size: (optional) The Maximum number of bytes to read
+            from the file pointer (fp). This is useful when uploading
+            a file in multiple parts where you are splitting the file
+            up into different ranges to be uploaded. If not specified,
+            the default behaviour is to read all bytes from the file
+            pointer. Less bytes may be available.
+
+        :type hash_algs: dictionary
+        :param hash_algs: (optional) Dictionary of hash algorithms and
+            corresponding hashing class that implements update() and digest().
+            Defaults to {'md5': hashlib.md5}.
+        """
+        self._send_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
+                                 query_args=query_args,
+                                 chunked_transfer=chunked_transfer, size=size,
+                                 hash_algs=hash_algs)
 
     def delete(self):
         return self.bucket.delete_key(self.name, version_id=self.version_id,
@@ -289,7 +445,8 @@ class Key(S3Key):
         provider = self.bucket.connection.provider
         if res_upload_handler and size:
             # could use size instead of file_length if provided but...
-            raise BotoClientError('"size" param not supported for resumable uploads.')
+            raise BotoClientError(
+                '"size" param not supported for resumable uploads.')
         headers = headers or {}
         if policy:
             headers[provider.acl_header] = policy
@@ -431,22 +588,21 @@ class Key(S3Key):
             this value. If set to the value 0, the object will only be written
             if it doesn't already exist.
         """
-        # Clear out any previously computed md5 hashes, since we are setting the content.
-        self.md5 = None
-        self.base64md5 = None
+        # Clear out any previously computed hashes, since we are setting the
+        # content.
+        self.local_hashes = {}
 
-        fp = open(filename, 'rb')
-        self.set_contents_from_file(fp, headers, replace, cb, num_cb,
-                                    policy, md5, res_upload_handler,
-                                    if_generation=if_generation)
-        fp.close()
+        with open(filename, 'rb') as fp:
+            self.set_contents_from_file(fp, headers, replace, cb, num_cb,
+                                        policy, md5, res_upload_handler,
+                                        if_generation=if_generation)
 
     def set_contents_from_string(self, s, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None, md5=None,
                                  if_generation=None):
         """
-        Store an object in S3 using the name of the Key object as the
-        key in S3 and the string 's' as the contents.
+        Store an object in GCS using the name of the Key object as the
+        key in GCS and the string 's' as the contents.
         See set_contents_from_file method for details about the
         parameters.
 
@@ -460,10 +616,10 @@ class Key(S3Key):
 
         :type cb: function
         :param cb: a callback function that will be called to report
-                   progress on the upload.  The callback should accept
+                   progress on the upload. The callback should accept
                    two integer parameters, the first representing the
                    number of bytes that have been successfully
-                   transmitted to S3 and the second representing the
+                   transmitted to GCS and the second representing the
                    size of the to be transmitted object.
 
         :type cb: int
@@ -473,19 +629,19 @@ class Key(S3Key):
                        the maximum number of times the callback will
                        be called during the file transfer.
 
-        :type policy: :class:`boto.s3.acl.CannedACLStrings`
+        :type policy: :class:`boto.gs.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the
-                       new key in S3.
+                       new key in GCS.
 
         :type md5: A tuple containing the hexdigest version of the MD5
                    checksum of the file as the first element and the
                    Base64-encoded version of the plain checksum as the
-                   second element.  This is the same format returned by
+                   second element. This is the same format returned by
                    the compute_md5 method.
         :param md5: If you need to compute the MD5 for any reason prior
                     to upload, it's silly to have to do it twice so this
                     param, if present, will be used as the MD5 values
-                    of the file.  Otherwise, the checksum will be computed.
+                    of the file. Otherwise, the checksum will be computed.
 
         :type if_generation: int
         :param if_generation: (optional) If set to a generation number, the
@@ -498,9 +654,7 @@ class Key(S3Key):
         self.md5 = None
         self.base64md5 = None
 
-        if isinstance(s, unicode):
-            s = s.encode("utf-8")
-        fp = StringIO.StringIO(s)
+        fp = StringIO.StringIO(get_utf8_value(s))
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5,
                                         if_generation=if_generation)
@@ -549,12 +703,6 @@ class Key(S3Key):
         :type policy: :class:`boto.gs.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the new key
             in GS.
-
-        :type reduced_redundancy: bool
-        :param reduced_redundancy: If True, this will set the storage
-            class of the new Key to be REDUCED_REDUNDANCY. The Reduced
-            Redundancy Storage (RRS) feature of S3, provides lower
-            redundancy at lower storage cost.
 
         :type size: int
         :param size: (optional) The Maximum number of bytes to read from
@@ -702,3 +850,42 @@ class Key(S3Key):
                 if_generation=if_generation,
                 if_metageneration=if_metageneration
             )
+
+    def compose(self, components, content_type=None, headers=None):
+        """Create a new object from a sequence of existing objects.
+
+        The content of the object representing this Key will be the
+        concatenation of the given object sequence. For more detail, visit
+
+            https://developers.google.com/storage/docs/composite-objects
+
+        :type components list of Keys
+        :param components List of gs.Keys representing the component objects
+
+        :type content_type (optional) string
+        :param content_type Content type for the new composite object.
+        """
+        compose_req = []
+        for key in components:
+            if key.bucket.name != self.bucket.name:
+                raise BotoClientError(
+                    'GCS does not support inter-bucket composing')
+
+            generation_tag = ''
+            if key.generation:
+                generation_tag = ('<Generation>%s</Generation>'
+                                  % str(key.generation))
+            compose_req.append('<Component><Name>%s</Name>%s</Component>' %
+                               (key.name, generation_tag))
+        compose_req_xml = ('<ComposeRequest>%s</ComposeRequest>' %
+                         ''.join(compose_req))
+        headers = headers or {}
+        if content_type:
+            headers['Content-Type'] = content_type
+        resp = self.bucket.connection.make_request(
+            'PUT', get_utf8_value(self.bucket.name), get_utf8_value(self.name),
+            headers=headers, query_args='compose',
+            data=get_utf8_value(compose_req_xml))
+        if resp.status < 200 or resp.status > 299:
+            raise self.bucket.connection.provider.storage_response_error(
+                resp.status, resp.reason, resp.read())

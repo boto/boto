@@ -510,6 +510,11 @@ class RDSConnection(AWSQueryConnection):
         :type id: str
         :param id: Unique identifier for the new instance.
 
+        :type param_group: str
+        :param param_group: Name of DBParameterGroup to associate with
+                            this DBInstance.  If no groups are specified
+                            no parameter groups will be used.
+
         :type security_groups: list of str or list of DBSecurityGroup objects
         :param security_groups: List of names of DBSecurityGroup to authorize on
                                 this DBInstance.

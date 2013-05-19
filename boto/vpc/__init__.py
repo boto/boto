@@ -134,6 +134,39 @@ class VPCConnection(EC2Connection):
         params = {'VpcId': vpc_id}
         return self.get_status('DeleteVpc', params)
 
+    def modify_vpc_attribute(self, vpc_id,
+                             enable_dns_support=None,
+                             enable_dns_hostnames=None):
+        """
+        Modifies the specified attribute of the specified VPC.
+        You can only modify one attribute at a time.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the vpc to be deleted.
+
+        :type enable_dns_support: bool
+        :param enable_dns_support: Specifies whether the DNS server
+            provided by Amazon is enabled for the VPC.
+
+        :type enable_dns_hostnames: bool
+        :param enable_dns_hostnames: Specifies whether DNS hostnames are
+            provided for the instances launched in this VPC. You can only
+            set this attribute to ``true`` if EnableDnsSupport
+            is also ``true``.
+        """
+        params = {'VpcId': vpc_id}
+        if enable_dns_support is not None:
+            if enable_dns_support:
+                params['EnableDnsSupport.Value'] = 'true'
+            else:
+                params['EnableDnsSupport.Value'] = 'false'
+        if enable_dns_hostnames is not None:
+            if enable_dns_hostnames:
+                params['EnableDnsHostnames.Value'] = 'true'
+            else:
+                params['EnableDnsHostnames.Value'] = 'false'
+        return self.get_status('ModifyVpcAttribute', params)
+
     # Route Tables
 
     def get_all_route_tables(self, route_table_ids=None, filters=None):
@@ -370,7 +403,7 @@ class VPCConnection(EC2Connection):
         Attach an internet gateway to a specific VPC.
 
         :type internet_gateway_id: str
-        :param internet_gateway_id: The ID of the internet gateway to delete.
+        :param internet_gateway_id: The ID of the internet gateway to attach.
 
         :type vpc_id: str
         :param vpc_id: The ID of the VPC to attach to.
@@ -448,7 +481,7 @@ class VPCConnection(EC2Connection):
         Create a new Customer Gateway
 
         :type type: str
-        :param type: Type of VPN Connection.  Only valid valid currently is 'ipsec.1'
+        :param type: Type of VPN Connection.  Only valid value currently is 'ipsec.1'
 
         :type ip_address: str
         :param ip_address: Internet-routable IP address for customer's gateway.
@@ -518,7 +551,7 @@ class VPCConnection(EC2Connection):
         Create a new Vpn Gateway
 
         :type type: str
-        :param type: Type of VPN Connection.  Only valid valid currently is 'ipsec.1'
+        :param type: Type of VPN Connection.  Only valid value currently is 'ipsec.1'
 
         :type availability_zone: str
         :param availability_zone: The Availability Zone where you want the VPN gateway.

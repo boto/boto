@@ -1,11 +1,15 @@
 ####
 boto
 ####
-boto 2.8.0
-31-Jan-2013
+boto 2.9.4
 
-.. image:: https://secure.travis-ci.org/boto/boto.png?branch=develop
-        :target: https://secure.travis-ci.org/boto/boto
+Released: 15-May-2013
+
+.. image:: https://travis-ci.org/boto/boto.png?branch=develop
+        :target: https://travis-ci.org/boto/boto
+        
+.. image:: https://pypip.in/d/boto/badge.png
+        :target: https://crate.io/packages/boto/
 
 ************
 Introduction
@@ -30,6 +34,7 @@ At the moment, boto supports:
   * Amazon DynamoDB
   * Amazon SimpleDB
   * Amazon ElastiCache
+  * Amazon Redshift
 
 * Deployment and Management
 
@@ -49,7 +54,7 @@ At the moment, boto supports:
   * Amazon Simple Notification Server (SNS)
   * Amazon Simple Email Service (SES)
 
-* Montoring
+* Monitoring
 
   * Amazon CloudWatch
 
@@ -77,6 +82,7 @@ At the moment, boto supports:
 * Other
 
   * Marketplace Web Services
+  * AWS Support
 
 The goal of boto is to support the full breadth and depth of Amazon
 Web Services.  In addition, boto provides support for other public
@@ -137,7 +143,7 @@ Getting Started with Boto
 *************************
 
 Your credentials can be passed into the methods that create
-connections.  Alternatively, boto will check for the existance of the
+connections.  Alternatively, boto will check for the existence of the
 following environment variables to ascertain your credentials:
 
 **AWS_ACCESS_KEY_ID** - Your AWS Access Key ID

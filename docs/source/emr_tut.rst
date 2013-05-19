@@ -27,18 +27,18 @@ and then call the constructor without any arguments, like this:
 
 >>> conn = EmrConnection()
 
-There is also a shortcut function in the boto package called connect_emr
-that may provide a slightly easier means of creating a connection:
+There is also a shortcut function in boto
+that makes it easy to create EMR connections:
 
->>> import boto
->>> conn = boto.connect_emr()
+>>> import boto.emr
+>>> conn = boto.emr.connect_to_region('us-west-2')
 
 In either case, conn points to an EmrConnection object which we will use
 throughout the remainder of this tutorial.
 
 Creating Streaming JobFlow Steps
 --------------------------------
-Upon creating a connection to Elastic Mapreduce you will next 
+Upon creating a connection to Elastic Mapreduce you will next
 want to create one or more jobflow steps.  There are two types of steps, streaming
 and custom jar, both of which have a class in the boto Elastic Mapreduce implementation.
 
@@ -76,8 +76,8 @@ Creating JobFlows
 -----------------
 Once you have created one or more jobflow steps, you will next want to create and run a jobflow.  Creating a jobflow that executes either of the steps we created above can be accomplished by:
 
->>> import boto
->>> conn = boto.connect_emr()
+>>> import boto.emr
+>>> conn = boto.emr.connect_to_region('us-west-2')
 >>> jobid = conn.run_jobflow(name='My jobflow', 
 ...                          log_uri='s3://<my log uri>/jobflow_logs', 
 ...                          steps=[step])
@@ -102,7 +102,6 @@ Terminating JobFlows
 --------------------
 By default when all the steps of a jobflow have finished or failed the jobflow terminates.  However, if you set the keep_alive parameter to True or just want to halt the execution of a jobflow early you can terminate a jobflow by:
 
->>> import boto
->>> conn = boto.connect_emr()
+>>> import boto.emr
+>>> conn = boto.emr.connect_to_region('us-west-2')
 >>> conn.terminate_jobflow('<jobflow id>') 
-

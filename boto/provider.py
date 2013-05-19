@@ -117,7 +117,8 @@ class Provider(object):
                                             'metadata-directive',
             RESUMABLE_UPLOAD_HEADER_KEY: None,
             SECURITY_TOKEN_HEADER_KEY: AWS_HEADER_PREFIX + 'security-token',
-            SERVER_SIDE_ENCRYPTION_KEY: AWS_HEADER_PREFIX + 'server-side-encryption',
+            SERVER_SIDE_ENCRYPTION_KEY: AWS_HEADER_PREFIX +
+                                         'server-side-encryption',
             VERSION_ID_HEADER_KEY: AWS_HEADER_PREFIX + 'version-id',
             STORAGE_CLASS_HEADER_KEY: AWS_HEADER_PREFIX + 'storage-class',
             MFA_HEADER_KEY: AWS_HEADER_PREFIX + 'mfa',
@@ -166,6 +167,7 @@ class Provider(object):
     def __init__(self, name, access_key=None, secret_key=None,
                  security_token=None):
         self.host = None
+        self.port = None
         self.access_key = access_key
         self.secret_key = secret_key
         self.security_token = security_token
@@ -176,10 +178,13 @@ class Provider(object):
         self.get_credentials(access_key, secret_key)
         self.configure_headers()
         self.configure_errors()
-        # allow config file to override default host
+        # Allow config file to override default host and port.
         host_opt_name = '%s_host' % self.HostKeyMap[self.name]
         if config.has_option('Credentials', host_opt_name):
             self.host = config.get('Credentials', host_opt_name)
+        port_opt_name = '%s_port' % self.HostKeyMap[self.name]
+        if config.has_option('Credentials', port_opt_name):
+            self.port = config.getint('Credentials', port_opt_name)
 
     def get_access_key(self):
         if self._credentials_need_refresh():
@@ -275,10 +280,16 @@ class Provider(object):
         boto.log.debug("Retrieving credentials from metadata server.")
         from boto.utils import get_instance_metadata
         timeout = config.getfloat('Boto', 'metadata_service_timeout', 1.0)
-        metadata = get_instance_metadata(timeout=timeout, num_retries=1)
-        # I'm assuming there's only one role on the instance profile.
-        if metadata and 'iam' in metadata:
-            security = metadata['iam']['security-credentials'].values()[0]
+        attempts = config.getint('Boto', 'metadata_service_num_attempts', 1)
+        # The num_retries arg is actually the total number of attempts made,
+        # so the config options is named *_num_attempts to make this more
+        # clear to users.
+        metadata = get_instance_metadata(
+            timeout=timeout, num_retries=attempts,
+            data='meta-data/iam/security-credentials')
+        if metadata:
+            # I'm assuming there's only one role on the instance profile.
+            security = metadata.values()[0]
             self._access_key = security['AccessKeyId']
             self._secret_key = self._convert_key_to_str(security['SecretAccessKey'])
             self._security_token = security['Token']
