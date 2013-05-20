@@ -30,6 +30,7 @@ from boto.rds.event import Event
 from boto.rds.regioninfo import RDSRegionInfo
 from boto.rds.dbsubnetgroup import DBSubnetGroup
 
+
 def regions():
     """
     Get all available regions for the RDS service.
@@ -1199,6 +1200,9 @@ class RDSConnection(AWSQueryConnection):
             params['Marker'] = marker
         return self.get_list('DescribeEvents', params, [('Event', Event)])
 
+
+    # DB Subnet Groups
+
     def create_db_subnet_group(self, name, desc, subnet_ids):
         """
         Create a new Database Subnet Group.
@@ -1213,7 +1217,7 @@ class RDSConnection(AWSQueryConnection):
         :param subnets: A list of the subnet identifiers to include in the
                         db_subnet_group
 
-        :rtype: :class:`boto.rds.dbsubnetgroup.DBSubnetGroup
+        :rtype: :class:`boto.rds.dbsubnetgroup.DBSubnetGroup`
         :return: the created db_subnet_group
         """
 
