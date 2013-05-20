@@ -19,3 +19,4 @@ Bugfixes
 --------
 
 * Fixed a bug in the canonicalization of URLs on Windows. (SHA: 09ef8c)
+* Fixed glacier part size bug (issue: 1478, SHA: 9e04171)
