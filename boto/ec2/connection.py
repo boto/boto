@@ -2378,7 +2378,8 @@ class EC2Connection(AWSQueryConnection):
                                  ip_protocol=None,
                                  from_port=None, to_port=None,
                                  cidr_ip=None, group_id=None,
-                                 src_security_group_group_id=None):
+                                 src_security_group_group_id=None,
+                                 src_security_group_list=[]):
         """
         Add a new rule to an existing security group.
         You need to pass in either src_security_group_name and
@@ -2421,6 +2422,13 @@ class EC2Connection(AWSQueryConnection):
             group you are granting access to.  Can be used instead of
             src_security_group_name
 
+        :type src_security_group_list: list of dictionaries
+        :param src_security_group_list: A list of dictionaries listing
+            multiple security groups you are granting access to.
+            Keys are id, name, and owner_id.
+            Only one of id and name need be specified.
+            owner_id is optional.
+
         :rtype: bool
         :return: True if successful.
         """
@@ -2436,15 +2444,29 @@ class EC2Connection(AWSQueryConnection):
             params['GroupName'] = group_name
         if group_id:
             params['GroupId'] = group_id
+
+        src_security_group = {}
         if src_security_group_name:
-            param_name = 'IpPermissions.1.Groups.1.GroupName'
-            params[param_name] = src_security_group_name
+            src_security_group['name'] = src_security_group_name
         if src_security_group_owner_id:
-            param_name = 'IpPermissions.1.Groups.1.UserId'
-            params[param_name] = src_security_group_owner_id
+            src_security_group['owner_id'] = src_security_group_owner_id
         if src_security_group_group_id:
-            param_name = 'IpPermissions.1.Groups.1.GroupId'
-            params[param_name] = src_security_group_group_id
+            src_security_group['id'] = src_security_group_group_id
+
+        if src_security_group:
+            src_security_group_list.append(src_security_group)
+
+        for i, single_src_security_group in enumerate(src_security_group_list):
+            if 'name' in single_src_security_group:
+                param_name = 'IpPermissions.1.Groups.%d.GroupName' % (i+1)
+                params[param_name] = single_src_security_group['name']
+            if 'owner_id' in single_src_security_group:
+                param_name = 'IpPermissions.1.Groups.%d.UserId' % (i+1)
+                params[param_name] = single_src_security_group['owner_id']
+            if 'id' in single_src_security_group:
+                param_name = 'IpPermissions.1.Groups.%d.GroupId' % (i+1)
+                params[param_name] = single_src_security_group['id']
+
         if ip_protocol:
             params['IpPermissions.1.IpProtocol'] = ip_protocol
         if from_port is not None:
@@ -2557,7 +2579,8 @@ class EC2Connection(AWSQueryConnection):
                               src_security_group_owner_id=None,
                               ip_protocol=None, from_port=None, to_port=None,
                               cidr_ip=None, group_id=None,
-                              src_security_group_group_id=None):
+                              src_security_group_group_id=None,
+                              src_security_group_list=[]):
         """
         Remove an existing rule from an existing security group.
         You need to pass in either src_security_group_name and
@@ -2600,6 +2623,13 @@ class EC2Connection(AWSQueryConnection):
             for which you are revoking access.  Can be used instead
             of src_security_group_name
 
+        :type src_security_group_list: list of dictionaries
+        :param src_security_group_list: A list of dictionaries listing
+            multiple security groups for which you are revoking access.
+            Keys are id, name, and owner_id.
+            Only one of id and name need be specified.
+            owner_id is optional.
+
         :rtype: bool
         :return: True if successful.
         """
@@ -2613,15 +2643,29 @@ class EC2Connection(AWSQueryConnection):
             params['GroupName'] = group_name
         if group_id is not None:
             params['GroupId'] = group_id
+
+        src_security_group = {}
         if src_security_group_name:
-            param_name = 'IpPermissions.1.Groups.1.GroupName'
-            params[param_name] = src_security_group_name
+            src_security_group['name'] = src_security_group_name
         if src_security_group_group_id:
-            param_name = 'IpPermissions.1.Groups.1.GroupId'
-            params[param_name] = src_security_group_group_id
+            src_security_group['id'] = src_security_group_group_id
         if src_security_group_owner_id:
-            param_name = 'IpPermissions.1.Groups.1.UserId'
-            params[param_name] = src_security_group_owner_id
+            src_security_group['owner_id'] = src_security_group_owner_id
+
+        if src_security_group:
+            src_security_group_list.append(src_security_group)
+
+        for i, single_src_security_group in enumerate(src_security_group_list):
+            if 'name' in single_src_security_group:
+                param_name = 'IpPermissions.1.Groups.%d.GroupName' % (i+1)
+                params[param_name] = single_src_security_group['name']
+            if 'id' in single_src_security_group:
+                param_name = 'IpPermissions.1.Groups.%d.GroupId' % (i+1)
+                params[param_name] = single_src_security_group['id']
+            if 'owner_id' in single_src_security_group:
+                param_name = 'IpPermissions.1.Groups.%d.UserId' % (i+1)
+                params[param_name] = single_src_security_group['owner_id']
+
         if ip_protocol:
             params['IpPermissions.1.IpProtocol'] = ip_protocol
         if from_port is not None:
