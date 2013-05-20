@@ -1,9 +1,10 @@
 boto v2.9.4
 ===========
 
-:date: 2013/xx/xx
+:date: 2013/05/20
 
-This release adds updated Elastic Transcoder support, ...
+This release adds updated Elastic Transcoder support & fixes several bugs
+from recent releases & API updates.
 
 
 Features
@@ -20,3 +21,10 @@ Bugfixes
 
 * Fixed a bug in the canonicalization of URLs on Windows. (SHA: 09ef8c)
 * Fixed glacier part size bug (issue: 1478, SHA: 9e04171)
+* Fixed a bug in the bucket regex for S3 involving capital letters.
+  (SHA: 950031)
+* Fixed a bug where timestamps from Cloudformation would fail to be parsed.
+  (SHA: b40542)
+* Several documentation improvements/fixes:
+
+    * Added autodocs for many of the EC2 apis. (SHA: 79f939)
