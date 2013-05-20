@@ -36,14 +36,14 @@ import logging.config
 import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.9.3'
+__version__ = '2.9.4'
 Version = __version__  # for backware compatibility
 
 UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
 config = Config()
 
 # Regex to disallow buckets violating charset or not [3..255] chars total.
-BUCKET_NAME_RE = re.compile(r'^[a-z0-9][a-z0-9\._-]{1,253}[a-z0-9]$')
+BUCKET_NAME_RE = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9\._-]{1,253}[a-zA-Z0-9]$')
 # Regex to disallow buckets with individual DNS labels longer than 63.
 TOO_LONG_DNS_NAME_COMP = re.compile(r'[-_a-z0-9]{64}')
 GENERATION_RE = re.compile(r'(?P<versionless_uri_str>.+)'
