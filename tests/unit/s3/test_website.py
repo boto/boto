@@ -22,6 +22,7 @@
 
 from tests.unit import unittest
 import xml.dom.minidom
+import xml.sax
 
 from boto.s3.website import WebsiteConfiguration
 from boto.s3.website import RedirectLocation
@@ -30,6 +31,7 @@ from boto.s3.website import Condition
 from boto.s3.website import RoutingRules
 from boto.s3.website import RoutingRule
 from boto.s3.website import Redirect
+from boto import handler
 
 
 def pretty_print_xml(text):
@@ -74,7 +76,7 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
         xml = config.to_xml()
         self.assertIn(
             ('<RedirectAllRequestsTo><HostName>'
-             'example.com</HostName>\n<Protocol>https</Protocol>'
+             'example.com</HostName><Protocol>https</Protocol>'
              '</RedirectAllRequestsTo>'), xml)
 
     def test_routing_rules_key_prefix(self):
@@ -186,3 +188,43 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
                 hostname='example.com', replace_key_prefix='report-404/'))
         xml2 = rules2.to_xml()
         self.assertEqual(x(xml), x(xml2))
+
+    def test_parse_xml(self):
+        x = pretty_print_xml
+        xml_in = """<?xml version="1.0" encoding="UTF-8"?>
+            <WebsiteConfiguration xmlns='http://s3.amazonaws.com/doc/2006-03-01/'>
+              <IndexDocument>
+                <Suffix>index.html</Suffix>
+              </IndexDocument>
+              <ErrorDocument>
+                <Key>error.html</Key>
+              </ErrorDocument>
+              <RoutingRules>
+                <RoutingRule>
+                <Condition>
+                  <KeyPrefixEquals>docs/</KeyPrefixEquals>
+                </Condition>
+                <Redirect>
+                  <Protocol>https</Protocol>
+                  <HostName>www.example.com</HostName>
+                  <ReplaceKeyWith>documents/</ReplaceKeyWith>
+                  <HttpRedirectCode>302</HttpRedirectCode>
+                </Redirect>
+                </RoutingRule>
+                <RoutingRule>
+                <Condition>
+                  <HttpErrorCodeReturnedEquals>404</HttpErrorCodeReturnedEquals>
+                </Condition>
+                <Redirect>
+                  <HostName>example.com</HostName>
+                  <ReplaceKeyPrefixWith>report-404/</ReplaceKeyPrefixWith>
+                </Redirect>
+                </RoutingRule>
+              </RoutingRules>
+            </WebsiteConfiguration>
+        """
+        webconfig = WebsiteConfiguration()
+        h = handler.XmlHandler(webconfig, None)
+        xml.sax.parseString(xml_in, h)
+        xml_out = webconfig.to_xml()
+        self.assertEqual(x(xml_in), x(xml_out))

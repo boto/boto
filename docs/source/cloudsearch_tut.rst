@@ -16,12 +16,12 @@ The first step in accessing CloudSearch is to create a connection to the service
 The recommended method of doing this is as follows::
 
     >>> import boto.cloudsearch
-    >>> conn = boto.cloudsearch.connect_to_region("us-east-1", 
-    ...             aws_access_key_id='<aws access key'>, 
+    >>> conn = boto.cloudsearch.connect_to_region("us-west-2",
+    ...             aws_access_key_id='<aws access key'>,
     ...             aws_secret_access_key='<aws secret key>')
 
 At this point, the variable conn will point to a CloudSearch connection object
-in the us-east-1 region. Currently, this is the only region which has the
+in the us-west-2 region. Currently, this is the only region which has the
 CloudSearch service. In this example, the AWS access key and AWS secret key are
 passed in to the method explicitly. Alternatively, you can set the environment
 variables:
@@ -32,7 +32,7 @@ variables:
 and then simply call::
 
    >>> import boto.cloudsearch
-   >>> conn = boto.cloudsearch.connect_to_region("us-east-1")
+   >>> conn = boto.cloudsearch.connect_to_region("us-west-2")
 
 In either case, conn will point to the Connection object which we will use
 throughout the remainder of this tutorial.
@@ -81,15 +81,15 @@ it's a text or integer field, as well as optionaly a default value::
     >>> uname_field = domain.create_index_field('username', 'text')
 
     >>> # Epoch time of when the user last did something
-    >>> time_field = domain.create_index_field('last_activity', 
-    ...                                        'uint', 
+    >>> time_field = domain.create_index_field('last_activity',
+    ...                                        'uint',
     ...                                        default=0)
 
 It is also possible to mark an index field as a facet. Doing so allows a search
 query to return categories into which results can be grouped, or to create
 drill-down categories::
-   
-    >>> # But it would be neat to drill down into different countries    
+
+    >>> # But it would be neat to drill down into different countries
     >>> loc_field = domain.create_index_field('location', 'text', facet=True)
 
 Finally, you can also mark a snippet of text as being able to be returned
@@ -101,7 +101,7 @@ directly in your search query by using the results option::
 You can add up to 20 index fields in this manner::
 
     >>> follower_field = domain.create_index_field('follower_count',
-    ...                                            'uint', 
+    ...                                            'uint',
     ...                                            default=0)
 
 Adding Documents to the Index
@@ -170,7 +170,7 @@ do with the :py:meth:`commit
 cloudsearch will charge per 1000 batch uploads. Each batch upload must be under
 5MB::
 
-    >>> result = doc_service.commit() 
+    >>> result = doc_service.commit()
 
 The result is an instance of :py:class:`CommitResponse
 <boto.cloudsearch.document.CommitResponse>` which will make the plain
@@ -270,7 +270,7 @@ other criteria, such as showing most recently active user, or combining the
 recency score with the text_relevance::
 
     >>> domain.create_rank_expression('recently_active', 'last_activity')
-    
+
     >>> domain.create_rank_expression('activish',
     ...   'text_relevance + ((follower_count/(time() - last_activity))*1000)')
 
@@ -427,6 +427,6 @@ It is also possible to delete documents::
     >>> doc_service = domain.get_document_service()
 
     >>> # Again we'll cheat and use the current epoch time as our version number
-     
+
     >>> doc_service.delete(4, int(time.mktime(datetime.utcnow().timetuple())))
     >>> service.commit()

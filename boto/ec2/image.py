@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -31,12 +31,12 @@ class ProductCodes(list):
     def endElement(self, name, value, connection):
         if name == 'productCode':
             self.append(value)
-    
+
 class Image(TaggedEC2Object):
     """
     Represents an EC2 Image
     """
-    
+
     def __init__(self, connection=None):
         TaggedEC2Object.__init__(self, connection)
         self.id = None
@@ -94,7 +94,7 @@ class Image(TaggedEC2Object):
             else:
                 raise Exception(
                     'Unexpected value of isPublic %s for image %s'%(
-                        value, 
+                        value,
                         self.id
                     )
                 )
@@ -151,7 +151,7 @@ class Image(TaggedEC2Object):
             raise ValueError('%s is not a valid Image ID' % self.id)
         return self.state
 
-    def run(self, min_count=1, max_count=1, key_name=None, 
+    def run(self, min_count=1, max_count=1, key_name=None,
             security_groups=None, user_data=None,
             addressing_type=None, instance_type='m1.small', placement=None,
             kernel_id=None, ramdisk_id=None,
@@ -166,95 +166,119 @@ class Image(TaggedEC2Object):
 
         """
         Runs this instance.
-        
+
         :type min_count: int
         :param min_count: The minimum number of instances to start
-        
+
         :type max_count: int
         :param max_count: The maximum number of instances to start
-        
+
         :type key_name: string
-        :param key_name: The name of the keypair to run this instance with.
-        
-        :type security_groups: 
-        :param security_groups:
-        
-        :type user_data: 
-        :param user_data:
-        
-        :type addressing_type: 
-        :param daddressing_type:
-        
+        :param key_name: The name of the key pair with which to
+            launch instances.
+
+        :type security_groups: list of strings
+        :param security_groups: The names of the security groups with which to
+            associate instances.
+
+        :type user_data: string
+        :param user_data: The Base64-encoded MIME user data to be made
+            available to the instance(s) in this reservation.
+
         :type instance_type: string
-        :param instance_type: The type of instance to run.  Current choices are:
-                              m1.small | m1.large | m1.xlarge | c1.medium |
-                              c1.xlarge | m2.xlarge | m2.2xlarge |
-                              m2.4xlarge | cc1.4xlarge
-        
+        :param instance_type: The type of instance to run:
+
+            * t1.micro
+            * m1.small
+            * m1.medium
+            * m1.large
+            * m1.xlarge
+            * m3.xlarge
+            * m3.2xlarge
+            * c1.medium
+            * c1.xlarge
+            * m2.xlarge
+            * m2.2xlarge
+            * m2.4xlarge
+            * cr1.8xlarge
+            * hi1.4xlarge
+            * hs1.8xlarge
+            * cc1.4xlarge
+            * cg1.4xlarge
+            * cc2.8xlarge
+
         :type placement: string
-        :param placement: The availability zone in which to launch the instances
+        :param placement: The Availability Zone to launch the instance into.
 
         :type kernel_id: string
-        :param kernel_id: The ID of the kernel with which to launch the instances
-        
+        :param kernel_id: The ID of the kernel with which to launch the
+            instances.
+
         :type ramdisk_id: string
-        :param ramdisk_id: The ID of the RAM disk with which to launch the instances
-        
+        :param ramdisk_id: The ID of the RAM disk with which to launch the
+            instances.
+
         :type monitoring_enabled: bool
-        :param monitoring_enabled: Enable CloudWatch monitoring on the instance.
-        
-        :type subnet_id: string
-        :param subnet_id: The subnet ID within which to launch the instances for VPC.
-        
+        :param monitoring_enabled: Enable CloudWatch monitoring on
+            the instance.
+
+         :type subnet_id: string
+        :param subnet_id: The subnet ID within which to launch the instances
+            for VPC.
+
         :type private_ip_address: string
-        :param private_ip_address: If you're using VPC, you can optionally use
-                                   this parameter to assign the instance a
-                                   specific available IP address from the
-                                   subnet (e.g., 10.0.0.25).
+        :param private_ip_address: If you're using VPC, you can
+            optionally use this parameter to assign the instance a
+            specific available IP address from the subnet (e.g.,
+            10.0.0.25).
 
         :type block_device_map: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
         :param block_device_map: A BlockDeviceMapping data structure
-                                 describing the EBS volumes associated
-                                 with the Image.
+            describing the EBS volumes associated with the Image.
 
         :type disable_api_termination: bool
         :param disable_api_termination: If True, the instances will be locked
-                                        and will not be able to be terminated
-                                        via the API.
+            and will not be able to be terminated via the API.
 
         :type instance_initiated_shutdown_behavior: string
-        :param instance_initiated_shutdown_behavior: Specifies whether the instance
-                                                     stops or terminates on instance-initiated
-                                                     shutdown. Valid values are:
-                                                     stop | terminate
+        :param instance_initiated_shutdown_behavior: Specifies whether the
+            instance stops or terminates on instance-initiated shutdown.
+            Valid values are:
+
+            * stop
+            * terminate
 
         :type placement_group: string
         :param placement_group: If specified, this is the name of the placement
-                                group in which the instance(s) will be launched.
+            group in which the instance(s) will be launched.
 
         :type additional_info: string
-        :param additional_info:  Specifies additional information to make
-            available to the instance(s)
+        :param additional_info: Specifies additional information to make
+            available to the instance(s).
 
-        :type security_group_ids: 
-        :param security_group_ids:
+        :type security_group_ids: list of strings
+        :param security_group_ids: The ID of the VPC security groups with
+            which to associate instances.
 
         :type instance_profile_name: string
-        :param instance_profile_name: The name of an IAM instance profile to use.
+        :param instance_profile_name: The name of
+            the IAM Instance Profile (IIP) to associate with the instances.
 
         :type instance_profile_arn: string
-        :param instance_profile_arn: The ARN of an IAM instance profile to use.
-        
+        :param instance_profile_arn: The Amazon resource name (ARN) of
+            the IAM Instance Profile (IIP) to associate with the instances.
+
         :type tenancy: string
-        :param tenancy: The tenancy of the instance you want to launch. An
-                        instance with a tenancy of 'dedicated' runs on
-                        single-tenant hardware and can only be launched into a
-                        VPC. Valid values are: "default" or "dedicated".
-                        NOTE: To use dedicated tenancy you MUST specify a VPC
-                        subnet-ID as well.
+        :param tenancy: The tenancy of the instance you want to
+            launch. An instance with a tenancy of 'dedicated' runs on
+            single-tenant hardware and can only be launched into a
+            VPC. Valid values are:"default" or "dedicated".
+            NOTE: To use dedicated tenancy you MUST specify a VPC
+            subnet-ID as well.
 
         :rtype: Reservation
-        :return: The :class:`boto.ec2.instance.Reservation` associated with the request for machines
+        :return: The :class:`boto.ec2.instance.Reservation` associated with
+                 the request for machines
 
         """
 
@@ -266,9 +290,9 @@ class Image(TaggedEC2Object):
                                              monitoring_enabled, subnet_id,
                                              block_device_map, disable_api_termination,
                                              instance_initiated_shutdown_behavior,
-                                             private_ip_address, placement_group, 
+                                             private_ip_address, placement_group,
                                              security_group_ids=security_group_ids,
-                                             additional_info=additional_info, 
+                                             additional_info=additional_info,
                                              instance_profile_name=instance_profile_name,
                                              instance_profile_arn=instance_profile_arn,
                                              tenancy=tenancy)
@@ -348,3 +372,16 @@ class ImageAttribute:
             self.ramdisk = value
         else:
             setattr(self, name, value)
+
+
+class CopyImage(object):
+    def __init__(self, parent=None):
+        self._parent = parent
+        self.image_id = None
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'imageId':
+            self.image_id = value

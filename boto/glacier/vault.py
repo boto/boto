@@ -241,7 +241,8 @@ class Vault(object):
         return resume_file_upload(
             self, upload_id, part_size, file_obj, part_hash_map)
 
-    def concurrent_create_archive_from_file(self, filename, description):
+    def concurrent_create_archive_from_file(self, filename, description,
+                                            **kwargs):
         """
         Create a new archive from a file and upload the given
         file.
@@ -254,6 +255,12 @@ class Vault(object):
         :type filename: str
         :param filename: A filename to upload
 
+        :param kwargs: Additional kwargs to pass through to
+            :py:class:`boto.glacier.concurrent.ConcurrentUploader`.
+            You can pass any argument besides the ``api`` and
+            ``vault_name`` param (these arguments are already
+            passed to the ``ConcurrentUploader`` for you).
+
         :raises: `boto.glacier.exception.UploadArchiveError` is an error
             occurs during the upload process.
 
@@ -261,7 +268,7 @@ class Vault(object):
         :return: The archive id of the newly created archive
 
         """
-        uploader = ConcurrentUploader(self.layer1, self.name)
+        uploader = ConcurrentUploader(self.layer1, self.name, **kwargs)
         archive_id = uploader.upload(filename, description)
         return archive_id
 

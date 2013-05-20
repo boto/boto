@@ -15,7 +15,7 @@ The first step in accessing EC2 is to create a connection to the service.
 The recommended way of doing this in boto is::
 
     >>> import boto.ec2
-    >>> conn = boto.ec2.connect_to_region("us-east-1",
+    >>> conn = boto.ec2.connect_to_region("us-west-2",
     ...    aws_access_key_id='<aws access key>',
     ...    aws_secret_access_key='<aws secret key>')
 
@@ -24,7 +24,7 @@ this example, the AWS access key and AWS secret key are passed in to the method
 explicitly.  Alternatively, you can set the boto config environment variables
 and then simply specify which region you want as follows::
 
-    >>> conn = boto.ec2.connect_to_region("us-east-1")
+    >>> conn = boto.ec2.connect_to_region("us-west-2")
 
 In either case, conn will point to an EC2Connection object which we will
 use throughout the remainder of this tutorial.
@@ -105,10 +105,10 @@ An instance object allows you get more meta-data available about the instance::
     >>> inst.instance_type
     u'c1.xlarge'
     >>> inst.placement
-    u'us-east-1a'
+    u'us-west-2'
 
 In this case, we can see that our instance is a c1.xlarge instance in the
-`us-east-1a` availability zone.
+`us-west-2` availability zone.
 
 =================================
 Using Elastic Block Storage (EBS)
@@ -123,10 +123,10 @@ must be in the same availability zone as the EC2 instance you wish to attach it
 to.
 
 To actually create a volume you will need to specify a few details. The
-following example will create a 50GB EBS in one of the `us-east-1a` availability
+following example will create a 50GB EBS in one of the `us-west-2` availability
 zones::
 
-   >>> vol = conn.create_volume(50, "us-east-1a")
+   >>> vol = conn.create_volume(50, "us-west-2")
    >>> vol
    Volume:vol-00000000
 
@@ -136,7 +136,7 @@ You can check that the volume is now ready and available::
    >>> curr_vol.status
    u'available'
    >>> curr_vol.zone
-   u'us-east-1a'
+   u'us-west-2'
 
 We can now attach this volume to the EC2 instance we created earlier, making it
 available as a new device::
@@ -166,7 +166,7 @@ Once you have a snapshot, you can create a new volume from it. Volumes are
 created lazily from snapshots, which means you can start using such a volume
 straight away::
 
-   >>> new_vol = snapshot.create_volume('us-east-1a')
+   >>> new_vol = snapshot.create_volume('us-west-2')
    >>> conn.attach_volume (new_vol.id, inst.id, "/dev/sdy")
    u'attaching'
 

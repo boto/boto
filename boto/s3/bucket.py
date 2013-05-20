@@ -86,14 +86,6 @@ class Bucket(object):
          <MfaDelete>%s</MfaDelete>
        </VersioningConfiguration>"""
 
-    WebsiteBody = """<?xml version="1.0" encoding="UTF-8"?>
-      <WebsiteConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-        <IndexDocument><Suffix>%s</Suffix></IndexDocument>
-        %s
-      </WebsiteConfiguration>"""
-
-    WebsiteErrorFragment = """<ErrorDocument><Key>%s</Key></ErrorDocument>"""
-
     VersionRE = '<Status>([A-Za-z]+)</Status>'
     MFADeleteRE = '<MfaDelete>([A-Za-z]+)</MfaDelete>'
 
@@ -209,6 +201,7 @@ class Bucket(object):
             k.handle_version_headers(response)
             k.handle_encryption_headers(response)
             k.handle_restore_headers(response)
+            k.handle_addl_headers(response.getheaders())
             return k, response
         else:
             if response.status == 404:
@@ -623,6 +616,7 @@ class Bucket(object):
             k = self.key_class(self)
             k.name = key_name
             k.handle_version_headers(response)
+            k.handle_addl_headers(response.getheaders())
             return k
 
     def copy_key(self, new_key_name, src_bucket_name,
@@ -716,6 +710,7 @@ class Bucket(object):
             if hasattr(key, 'Error'):
                 raise provider.storage_copy_error(key.Code, key.Message, body)
             key.handle_version_headers(response)
+            key.handle_addl_headers(response.getheaders())
             if preserve_acl:
                 self.set_xml_acl(acl, new_key_name)
             return key
@@ -1255,8 +1250,20 @@ class Bucket(object):
         config = website.WebsiteConfiguration(
                 suffix, error_key, redirect_all_requests_to,
                 routing_rules)
-        body = config.to_xml()
-        response = self.connection.make_request('PUT', self.name, data=body,
+        return self.set_website_configuration(config, headers=headers)
+
+    def set_website_configuration(self, config, headers=None):
+        """
+        :type config: boto.s3.website.WebsiteConfiguration
+        :param config: Configuration data
+        """
+        return self.set_website_configuration_xml(config.to_xml(),
+          headers=headers)
+
+
+    def set_website_configuration_xml(self, xml, headers=None):
+        """Upload xml website configuration"""
+        response = self.connection.make_request('PUT', self.name, data=xml,
                                                 query_args='website',
                                                 headers=headers)
         body = response.read()
@@ -1286,6 +1293,16 @@ class Bucket(object):
         """
         return self.get_website_configuration_with_xml(headers)[0]
 
+    def get_website_configuration_obj(self, headers=None):
+        """Get the website configuration as a
+        :class:`boto.s3.website.WebsiteConfiguration` object.
+        """
+        config_xml = self.get_website_configuration_xml(headers=headers)
+        config = website.WebsiteConfiguration()
+        h = handler.XmlHandler(config, self)
+        xml.sax.parseString(config_xml, h)
+        return config
+
     def get_website_configuration_with_xml(self, headers=None):
         """
         Returns the current status of website configuration on the bucket as
@@ -1303,6 +1320,15 @@ class Bucket(object):
                 * Key : name of object to serve when an error occurs
         2) unparsed XML describing the bucket's website configuration.
         """
+
+        body = self.get_website_configuration_xml(headers=headers)
+        e = boto.jsonresponse.Element()
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e, body
+
+    def get_website_configuration_xml(self, headers=None):
+        """Get raw website configuration xml"""
         response = self.connection.make_request('GET', self.name,
                 query_args='website', headers=headers)
         body = response.read()
@@ -1311,11 +1337,7 @@ class Bucket(object):
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
-
-        e = boto.jsonresponse.Element()
-        h = boto.jsonresponse.XmlHandler(e, None)
-        h.parse(body)
-        return e, body
+        return body
 
     def delete_website_configuration(self, headers=None):
         """

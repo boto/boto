@@ -23,8 +23,15 @@ import unittest
 import hashlib
 import hmac
 
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
 from boto.utils import Password
 from boto.utils import pythonize_name
+from boto.utils import _build_instance_metadata_url
+from boto.utils import retry_url
 
 
 class TestPassword(unittest.TestCase):
@@ -54,7 +61,7 @@ class TestPassword(unittest.TestCase):
 
         password = SHA224Password()
         password.set('foo')
-        self.assertEquals(hashlib.sha224('foo').hexdigest(), str(password))
+        self.assertEquals(hashlib.sha224(b'foo').hexdigest(), str(password))
 
     def test_hmac(self):
         def hmac_hashfunc(cls, msg):
@@ -103,6 +110,89 @@ class TestPythonizeName(unittest.TestCase):
 
     def test_string_with_numbers(self):
         self.assertEqual(pythonize_name('HTTPStatus200Ok'), 'http_status_200_ok')
+
+
+class TestBuildInstanceMetadataURL(unittest.TestCase):
+    def test_normal(self):
+        # This is the all-defaults case.
+        self.assertEqual(_build_instance_metadata_url(
+                'http://169.254.169.254',
+                'latest',
+                'meta-data'
+            ),
+            'http://169.254.169.254/latest/meta-data/'
+        )
+
+    def test_custom_path(self):
+        self.assertEqual(_build_instance_metadata_url(
+                'http://169.254.169.254',
+                'latest',
+                'dynamic'
+            ),
+            'http://169.254.169.254/latest/dynamic/'
+        )
+
+    def test_custom_version(self):
+        self.assertEqual(_build_instance_metadata_url(
+                'http://169.254.169.254',
+                '1.0',
+                'meta-data'
+            ),
+            'http://169.254.169.254/1.0/meta-data/'
+        )
+
+    def test_custom_url(self):
+        self.assertEqual(_build_instance_metadata_url(
+                'http://10.0.1.5',
+                'latest',
+                'meta-data'
+            ),
+            'http://10.0.1.5/latest/meta-data/'
+        )
+
+    def test_all_custom(self):
+        self.assertEqual(_build_instance_metadata_url(
+                'http://10.0.1.5',
+                '2013-03-22',
+                'user-data'
+            ),
+            'http://10.0.1.5/2013-03-22/user-data/'
+        )
+
+
+class TestRetryURL(unittest.TestCase):
+    def setUp(self):
+        try:
+            self.urlopen_patch = mock.patch('urllib2.urlopen')
+            self.opener_patch = mock.patch('urllib2.build_opener')
+            self.urlopen = self.urlopen_patch.start()
+            self.opener = self.opener_patch.start()
+        except ImportError:
+            self.urlopen_patch = mock.patch('urllib.request.urlopen')
+            self.opener_patch = mock.patch('urllib.request.build_opener')
+            self.urlopen = self.urlopen_patch.start()
+            self.opener = self.opener_patch.start()
+
+    def tearDown(self):
+        self.urlopen_patch.stop()
+        self.opener_patch.stop()
+
+    def set_normal_response(self, response):
+        fake_response = mock.Mock()
+        fake_response.read.return_value = response
+        self.urlopen.return_value = fake_response
+
+    def set_no_proxy_allowed_response(self, response):
+        fake_response = mock.Mock()
+        fake_response.read.return_value = response
+        self.opener.return_value.open.return_value = fake_response
+
+    def test_retry_url_uses_proxy(self):
+        self.set_normal_response('normal response')
+        self.set_no_proxy_allowed_response('no proxy response')
+
+        response = retry_url('http://10.10.10.10/foo', num_retries=1)
+        self.assertEqual(response, 'no proxy response')
 
 
 if __name__ == '__main__':

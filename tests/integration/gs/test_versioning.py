@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""Unit tests for GS versioning support."""
+"""Integration tests for GS versioning support."""
 
 from xml import sax
 
@@ -64,8 +64,7 @@ class GSVersioningTest(GSTestCase):
 
         # Delete "current" version and make sure that version is no longer
         # visible from a basic GET call.
-        k = b.get_key("foo")
-        k.delete()
+        b.delete_key("foo", generation=None)
         self.assertIsNone(b.get_key("foo"))
 
         # Both old versions should still be there when listed using the versions

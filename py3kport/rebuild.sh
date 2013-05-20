@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Rebuild the python 3 code from the python 2 sources, and run tests.
 
 set -eu
@@ -6,7 +6,6 @@ IFS=$'\n\t'
 
 # These are items in the boto source we want to copy into the build directory, and apply with 2to3.
 items=(
-    boto
     tests
 )
 

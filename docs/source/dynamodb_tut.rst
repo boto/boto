@@ -9,6 +9,14 @@ assumes that you have boto already downloaded and installed.
 
 .. _DynamoDB: http://aws.amazon.com/dynamodb/
 
+.. warning::
+
+    This tutorial covers the **ORIGINAL** release of DynamoDB.
+    It has since been supplanted by a second major version & an
+    updated API to talk to the new version. The documentation for the
+    new version of DynamoDB (& boto's support for it) is at
+    :doc:`DynamoDB v2 <dynamodb2_tut>`.
+
 
 Creating a Connection
 ---------------------
@@ -57,7 +65,7 @@ hash key element, and the optional range key element. This is explained in
 greater detail in DynamoDB's `Data Model`_ documentation.
 
 We'll start by defining a schema that has a hash key and a range key that
-are both keys::
+are both strings::
 
     >>> message_table_schema = conn.create_schema(
             hash_key_name='forum_name',
