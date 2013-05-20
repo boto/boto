@@ -36,10 +36,10 @@ import copy
 import datetime
 from email.utils import formatdate
 import hmac
-import os
 import sys
 import time
 import urllib
+import posixpath
 
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
@@ -385,7 +385,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
 
     def canonical_uri(self, http_request):
         # Normalize the path.
-        normalized = os.path.normpath(http_request.auth_path)
+        normalized = posixpath.normpath(http_request.auth_path)
         # Then urlencode whatever's left.
         encoded = urllib.quote(normalized)
         return encoded
