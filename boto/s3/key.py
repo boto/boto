@@ -82,7 +82,7 @@ class Key(object):
       </RestoreRequest>"""
 
 
-    BufferSize = 8192
+    BufferSize = boto.config.getint('Boto', 'key_buffer_size', 8192)
 
     # The object metadata fields a user can set, other than custom metadata
     # fields (i.e., those beginning with a provider-specific prefix like
