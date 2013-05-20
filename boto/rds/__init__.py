@@ -422,7 +422,8 @@ class RDSConnection(AWSQueryConnection):
 
         # Remove any params set to None
         for k, v in params.items():
-          if not v: del(params[k])
+            if not v:
+                del(params[k])
 
         return self.get_object('CreateDBInstance', params, DBInstance)
 
@@ -1238,7 +1239,8 @@ class RDSConnection(AWSQueryConnection):
         return self.get_object('DeleteDBSubnetGroup', params, DBSubnetGroup)
 
 
-    def get_all_db_subnet_groups(self, name=None, max_records=None, marker=None):
+    def get_all_db_subnet_groups(self, name=None, max_records=None,
+                                 marker=None):
         """
         Retrieve all the DBSubnetGroups in your account.
 
@@ -1267,7 +1269,8 @@ class RDSConnection(AWSQueryConnection):
         if marker != None:
             params['Marker'] = marker
 
-        return self.get_list('DescribeDBSubnetGroups', params, [('DBSubnetGroup',DBSubnetGroup)])
+        return self.get_list('DescribeDBSubnetGroups', params, [('DBSubnetGroup', 
+                                                                 DBSubnetGroup)])
 
     def modify_db_subnet_group(self, name, description=None, subnet_ids=None):
         """
