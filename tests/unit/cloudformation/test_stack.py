@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import datetime
 import xml.sax
 import unittest
 import boto.handler
@@ -58,6 +59,18 @@ class TestStackParse(unittest.TestCase):
         xml.sax.parseString(SAMPLE_XML, h)
         tags = rs[0].tags
         self.assertEqual(tags, {u'key0': u'value0', u'key1': u'value1'})
+
+    def test_creation_time_with_millis(self):
+        millis_xml = SAMPLE_XML.replace(
+          "<CreationTime>2013-01-10T05:04:56Z</CreationTime>",
+          "<CreationTime>2013-01-10T05:04:56.102342Z</CreationTime>"
+        )
+
+        rs = boto.resultset.ResultSet([('member', boto.cloudformation.stack.Stack)])
+        h = boto.handler.XmlHandler(rs, None)
+        xml.sax.parseString(millis_xml, h)
+        creation_time = rs[0].creation_time
+        self.assertEqual(creation_time, datetime.datetime(2013, 1, 10, 5, 4, 56, 102342))
 
 if __name__ == '__main__':
     unittest.main()
