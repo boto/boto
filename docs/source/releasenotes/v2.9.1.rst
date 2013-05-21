@@ -27,22 +27,22 @@ Features
     u'case-...'
 
   The :ref:`Support Tutorial <support_tut>` has more information on how to use
-  the new API. (SHA: 8c0451)
+  the new API. (:sha:`8c0451`)
 
 
 Bugfixes
 --------
 
 * The reintroduction of ``ResumableUploadHandler.get_upload_id`` that was
-  accidentally removed in a previous commit. (SHA: 758322)
+  accidentally removed in a previous commit. (:sha:`758322`)
 * Added ``OrdinaryCallingFormat`` to support Google Storage's certificate
-  verification. (SHA: 4ca83b)
-* Added the ``eu-west-1`` region for Redshift. (SHA: e98b95)
+  verification. (:sha:`4ca83b`)
+* Added the ``eu-west-1`` region for Redshift. (:sha:`e98b95`)
 * Added support for overriding the port any connection in ``boto`` uses.
-  (SHA: 08e893)
-* Added retry/checksumming support to the DynamoDB v2 client. (SHA: 969ae2)
+  (:sha:`08e893`)
+* Added retry/checksumming support to the DynamoDB v2 client. (:sha:`969ae2`)
 * Several documentation improvements/fixes:
 
-    * Incorrect docs on EC2's ``import_key_pair``. (SHA: 6ada7d)
-    * Clearer docs on the DynamoDB  ``count`` parameter. (SHA: dfa456)
-    * Fixed a typo in the ``autoscale_tut``. (SHA: 6df1ae)
+    * Incorrect docs on EC2's ``import_key_pair``. (:sha:`6ada7d`)
+    * Clearer docs on the DynamoDB  ``count`` parameter. (:sha:`dfa456`)
+    * Fixed a typo in the ``autoscale_tut``. (:sha:`6df1ae`)
