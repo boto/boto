@@ -32,10 +32,14 @@ class DynamoDBv2Layer1UnitTest(unittest.TestCase):
     dynamodb = True
 
     def test_init_region(self):
-        dynamodb = DynamoDBConnection()
+        dynamodb = DynamoDBConnection(
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key')
         self.assertEqual(dynamodb.region.name, 'us-east-1')
-        dynamodb = DynamoDBConnection(region=RegionInfo(
-            name='us-west-2',
-            endpoint='dynamodb.us-west-2.amazonaws.com',
-        ))
+        dynamodb = DynamoDBConnection(
+            region=RegionInfo(name='us-west-2',
+                              endpoint='dynamodb.us-west-2.amazonaws.com'),
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key',
+        )
         self.assertEqual(dynamodb.region.name, 'us-west-2')
