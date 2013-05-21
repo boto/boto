@@ -15,10 +15,11 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+
 
 class TagSet(dict):
     """
@@ -27,7 +28,7 @@ class TagSet(dict):
     can, this dict object will be used to collect those values.  See
     :class:`boto.ec2.ec2object.TaggedEC2Object` for more details.
     """
-    
+
     def __init__(self, connection=None):
         self.connection = connection
         self._current_key = None
@@ -55,7 +56,7 @@ class Tag(object):
     also the ID of the resource to which the tag is attached
     as well as the type of the resource.
     """
-    
+
     def __init__(self, connection=None, res_id=None, res_type=None,
                  name=None, value=None):
         self.connection = connection
@@ -81,7 +82,3 @@ class Tag(object):
             self.value = value
         else:
             setattr(self, name, value)
-
-
-            
-

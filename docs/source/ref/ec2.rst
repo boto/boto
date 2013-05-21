@@ -23,6 +23,13 @@ boto.ec2.autoscale
 
 See the :doc:`Auto Scaling Reference <autoscale>`.
 
+boto.ec2.blockdevicemapping
+---------------------------
+
+.. automodule:: boto.ec2.blockdevicemapping
+   :members:
+   :undoc-members:
+
 boto.ec2.buyreservation
 -----------------------
 
@@ -53,6 +60,13 @@ boto.ec2.elb
 -------------------
 
 See the :doc:`ELB Reference <elb>`.
+
+boto.ec2.group
+----------------
+
+.. automodule:: boto.ec2.group
+   :members:
+   :undoc-members:
 
 boto.ec2.image
 --------------
@@ -86,6 +100,27 @@ boto.ec2.keypair
 ----------------
 
 .. automodule:: boto.ec2.keypair
+   :members:
+   :undoc-members:
+
+boto.ec2.launchspecification
+----------------
+
+.. automodule:: boto.ec2.launchspecification
+   :members:
+   :undoc-members:
+
+boto.ec2.networkinterface
+----------------
+
+.. automodule:: boto.ec2.networkinterface
+   :members:
+   :undoc-members:
+
+boto.ec2.placementgroup
+----------------
+
+.. automodule:: boto.ec2.placementgroup
    :members:
    :undoc-members:
 
@@ -124,10 +159,31 @@ boto.ec2.spotinstancerequest
    :members:
    :undoc-members:
 
+boto.ec2.tag
+----------------------------
+
+.. automodule:: boto.ec2.tag
+   :members:
+   :undoc-members:
+
+boto.ec2.vmtype
+----------------------------
+
+.. automodule:: boto.ec2.vmtype
+   :members:
+   :undoc-members:
+
 boto.ec2.volume
 ---------------
 
 .. automodule:: boto.ec2.volume
+   :members:
+   :undoc-members:
+
+boto.ec2.volumestatus
+---------------------
+
+.. automodule:: boto.ec2.volumestatus
    :members:
    :undoc-members:
 
@@ -137,4 +193,3 @@ boto.ec2.zone
 .. automodule:: boto.ec2.zone
    :members:
    :undoc-members:
-

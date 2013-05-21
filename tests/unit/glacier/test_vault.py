@@ -86,6 +86,20 @@ class TestVault(unittest.TestCase):
         self.vault.create_archive_writer.assert_called_with(
             description=mock.ANY, part_size=self.vault.DefaultPartSize)
 
+    def test_part_size_needs_to_be_adjusted(self):
+        # If we have a large file (400 GB)
+        self.getsize.return_value = 400 * 1024 * 1024 * 1024
+        self.vault.create_archive_writer = mock.Mock()
+        # When we try to upload the file.
+        with mock.patch('boto.glacier.vault.open', self.mock_open,
+                        create=True):
+            self.vault.create_archive_from_file('myfile')
+        # We should automatically bump up the part size used to
+        # 64 MB.
+        expected_part_size = 64 * 1024 * 1024
+        self.vault.create_archive_writer.assert_called_with(
+            description=mock.ANY, part_size=expected_part_size)
+
 
 class TestConcurrentUploads(unittest.TestCase):
 
