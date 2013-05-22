@@ -611,12 +611,7 @@ class Table(object):
                 'AttributeValueList': [],
                 'ComparisonOperator': op,
             }
-
-            # Fix up the value for encoding, because it was built to only work
-            # with ``set``s.
-            if isinstance(value, (list, tuple)):
-                value = set(value)
-
+ 
             # Special-case the ``NULL/NOT_NULL`` case.
             if field_bits[-1] == 'null':
                 del lookup['AttributeValueList']
@@ -625,7 +620,20 @@ class Table(object):
                     lookup['ComparisonOperator'] = 'NOT_NULL'
                 else:
                     lookup['ComparisonOperator'] = 'NULL'
+            # Special-case the ``BETWEEN`` case.
+            elif field_bits[-1] == 'between':
+                if len(value) == 2 and isinstance(value, (list, tuple)):
+                    lookup['AttributeValueList'].append(
+                        self._dynamizer.encode(value[0])
+                    )
+                    lookup['AttributeValueList'].append(
+                        self._dynamizer.encode(value[1])
+                    )
             else:
+                # Fix up the value for encoding, because it was built to only work
+                # with ``set``s.
+                if isinstance(value, (list, tuple)):
+                    value = set(value)
                 lookup['AttributeValueList'].append(
                     self._dynamizer.encode(value)
                 )

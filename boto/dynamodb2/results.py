@@ -58,7 +58,10 @@ class ResultSet(object):
 
             self.fetch_more()
 
-        return self._results[self._offset]
+        if self._offset < len(self._results):
+            return self._results[self._offset]
+        else:
+            raise StopIteration()
 
     def to_call(self, the_callable, *args, **kwargs):
         """
