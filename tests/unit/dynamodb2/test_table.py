@@ -671,6 +671,16 @@ class ResultSetTestCase(unittest.TestCase):
         self.assertRaises(StopIteration, self.results.next)
         self.assertEqual(self.results.call_kwargs['limit'], 7)
 
+    def test_iteration_noresults(self):
+        def none(limit=10):
+            return {
+                'results': [],
+            }
+
+        results = ResultSet()
+        results.to_call(none, limit=20)
+        self.assertRaises(StopIteration, results.next)
+
     def test_list(self):
         self.assertEqual(list(self.results), [
             'Hello john #0',
