@@ -1391,7 +1391,7 @@ class TableTestCase(unittest.TestCase):
                 'ComparisonOperator': 'IN',
             },
             'last_name': {
-                'AttributeValueList': [{'SS': ['only', 'danzig']}],
+                'AttributeValueList': [{'S': 'danzig'}, {'S': 'only'}],
                 'ComparisonOperator': 'BETWEEN',
             },
             'first_name': {
@@ -1433,7 +1433,7 @@ class TableTestCase(unittest.TestCase):
                 'ComparisonOperator': 'GE',
             },
             'last_name': {
-                'AttributeValueList': [{'SS': ['only', 'danzig']}],
+                'AttributeValueList': [{'S': 'danzig'}, {'S': 'only'}],
                 'ComparisonOperator': 'BETWEEN',
             },
             'gender': {
@@ -1516,18 +1516,16 @@ class TableTestCase(unittest.TestCase):
             self.assertEqual(results['last_key'], None)
 
         mock_query.assert_called_once_with('users',
-            key_conditions={
-                'username': {
-                    'AttributeValueList': [
-                        {'SS': ['mmm', 'aaa']}
-                    ],
-                    'ComparisonOperator': 'BETWEEN',
-                }
-            },
+            consistent_read=False,
             index_name=None,
             scan_index_forward=True,
             limit=4,
-            consistent_read=False
+            key_conditions={
+                'username': {
+                    'AttributeValueList': [{'S': 'aaa'}, {'S': 'mmm'}],
+                    'ComparisonOperator': 'BETWEEN',
+                }
+            }
         )
 
         # Now alter the expected.
@@ -1558,9 +1556,7 @@ class TableTestCase(unittest.TestCase):
         mock_query_2.assert_called_once_with('users',
             key_conditions={
                 'username': {
-                    'AttributeValueList': [
-                        {'SS': ['mmm', 'aaa']}
-                    ],
+                    'AttributeValueList': [{'S': 'aaa'}, {'S': 'mmm'}],
                     'ComparisonOperator': 'BETWEEN',
                 }
             },
