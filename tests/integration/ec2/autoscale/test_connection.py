@@ -165,3 +165,18 @@ class AutoscaleConnectionTest(unittest.TestCase):
         assert not found
 
         print '--- tests completed ---'
+
+    def test_ebs_optimized_regression(self):
+        c = AutoScaleConnection()
+        time_string = '%d' % int(time.time())
+        lc_name = 'lc-%s' % time_string
+        lc = LaunchConfiguration(
+            name=lc_name,
+            image_id='ami-2272864b',
+            instance_type='t1.micro',
+            ebs_optimized=True
+        )
+        # This failed due to the difference between native Python ``True/False``
+        # & the expected string variants.
+        c.create_launch_configuration(lc)
+        self.addCleanup(c.delete_launch_configuration, lc_name)

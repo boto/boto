@@ -57,12 +57,12 @@ boto.ec2.ec2object
    :undoc-members:
 
 boto.ec2.elb
--------------------
+------------
 
 See the :doc:`ELB Reference <elb>`.
 
 boto.ec2.group
-----------------
+--------------
 
 .. automodule:: boto.ec2.group
    :members:
@@ -90,7 +90,7 @@ boto.ec2.instanceinfo
    :undoc-members:
 
 boto.ec2.instancestatus
---------------------------
+-----------------------
 
 .. automodule:: boto.ec2.instancestatus
    :members:
@@ -104,21 +104,21 @@ boto.ec2.keypair
    :undoc-members:
 
 boto.ec2.launchspecification
-----------------
+----------------------------
 
 .. automodule:: boto.ec2.launchspecification
    :members:
    :undoc-members:
 
 boto.ec2.networkinterface
-----------------
+-------------------------
 
 .. automodule:: boto.ec2.networkinterface
    :members:
    :undoc-members:
 
 boto.ec2.placementgroup
-----------------
+-----------------------
 
 .. automodule:: boto.ec2.placementgroup
    :members:
@@ -160,14 +160,14 @@ boto.ec2.spotinstancerequest
    :undoc-members:
 
 boto.ec2.tag
-----------------------------
+------------
 
 .. automodule:: boto.ec2.tag
    :members:
    :undoc-members:
 
 boto.ec2.vmtype
-----------------------------
+---------------
 
 .. automodule:: boto.ec2.vmtype
    :members:
