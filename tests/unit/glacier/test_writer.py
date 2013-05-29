@@ -133,6 +133,42 @@ class TestWriter(unittest.TestCase):
         self.writer.close()
         self.assertEquals(sentinel.archive_id, self.writer.get_archive_id())
 
+    def test_current_tree_hash(self):
+        self.writer.write('1234')
+        self.writer.write('567')
+        hash_1 = self.writer.current_tree_hash
+        self.assertEqual(hash_1, '\x0e\xb0\x11Z\x1d\x1f\n\x10|\xf76\xa6\xf5\x83\xd1\xd5"bU\x0c\x95\xa8<\xf5\x81\xef\x0e\x0f\x95\n\xb7k')
+
+        # This hash will be different, since the content has changed.
+        self.writer.write('22i3uy')
+        hash_2 = self.writer.current_tree_hash
+        self.assertEqual(hash_2, '\x7f\xf4\x97\x82U]\x81R\x05#^\xe8\x1c\xd19\xe8\x1f\x9e\xe0\x1aO\xaad\xe5\x06"\xa5\xc0\xa8AdL')
+        self.writer.close()
+
+        # Check the final tree hash, post-close.
+        final_hash = self.writer.current_tree_hash
+        self.assertEqual(final_hash, ';\x1a\xb8!=\xf0\x14#\x83\x11\xd5\x0b\x0f\xc7D\xe4\x8e\xd1W\x99z\x14\x06\xb9D\xd0\xf0*\x93\xa2\x8e\xf9')
+        # Then assert we don't get a different one on a subsequent call.
+        self.assertEqual(final_hash, self.writer.current_tree_hash)
+
+    def test_current_uploaded_size(self):
+        self.writer.write('1234')
+        self.writer.write('567')
+        size_1 = self.writer.current_uploaded_size
+        self.assertEqual(size_1, 4)
+
+        # This hash will be different, since the content has changed.
+        self.writer.write('22i3uy')
+        size_2 = self.writer.current_uploaded_size
+        self.assertEqual(size_2, 12)
+        self.writer.close()
+
+        # Get the final size, post-close.
+        final_size = self.writer.current_uploaded_size
+        self.assertEqual(final_size, 13)
+        # Then assert we don't get a different one on a subsequent call.
+        self.assertEqual(final_size, self.writer.current_uploaded_size)
+
     def test_upload_id(self):
         self.assertEquals(sentinel.upload_id, self.writer.upload_id)
 
