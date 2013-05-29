@@ -72,6 +72,7 @@ class DynamoDBConnection(AWSQueryConnection):
         self.region = region
         self._validate_checksums = boto.config.getbool(
             'DynamoDB', 'validate_checksums', validate_checksums)
+        self.throughput_exceeded_events = 0
 
     def _required_auth_capability(self):
         return ['hmac-v4']
