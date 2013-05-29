@@ -28,3 +28,5 @@ Bugfixes
   (:issue:`1512`, :sha:`d109b6`)
 * Fixed an issue with ``EbsOptimized`` in EC2 Autoscale. (:issue:`1513`,
   :sha:`424c41`)
+* Fixed a missing instance variable bug in DynamoDB v2. (:issue:`1516`,
+  :sha: `6fa8bf`)
