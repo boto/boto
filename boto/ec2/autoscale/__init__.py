@@ -584,7 +584,7 @@ class AutoScaleConnection(AWSQueryConnection):
         :param end_time: The time for this action to end. When StartTime and EndTime are specified with Recurrence, they form the boundaries of when the recurring action will start and stop.
 
         :type recurrence: string
-        :param recurrence: The time when recurring future actions will start. Start time is specified by the user following the Unix cron syntax format..
+        :param recurrence: The time when recurring future actions will start. Start time is specified by the user following the Unix cron syntax format. EXAMPLE: '0 10 * * *'
         """
         params = {'AutoScalingGroupName': as_group,
                   'ScheduledActionName': name}
