@@ -598,7 +598,7 @@ class AWSAuthConnection(object):
         # https://groups.google.com/forum/#!topic/boto-dev/-ft0XPUy0y8
         # You can override that behavior with the suppress_consec_slashes param.
         if not self.suppress_consec_slashes:
-            return self.path + re.sub('^/*', "", path)
+            return self.path + re.sub('^(/*)/', "\\1", path)
         pos = path.find('?')
         if pos >= 0:
             params = path[pos:]
