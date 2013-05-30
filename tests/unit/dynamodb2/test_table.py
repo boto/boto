@@ -228,6 +228,16 @@ class ItemTestCase(unittest.TestCase):
             12345,
         ])
 
+    def test_get(self):
+        self.assertEqual(self.johndoe.get('username'), 'johndoe')
+        self.assertEqual(self.johndoe.get('first_name'), 'John')
+        self.assertEqual(self.johndoe.get('date_joined'), 12345)
+
+        # Test a missing key. No default yields ``None``.
+        self.assertEqual(self.johndoe.get('last_name'), None)
+        # This time with a default.
+        self.assertEqual(self.johndoe.get('last_name', True), True)
+
     def test_items(self):
         self.assertEqual(sorted(self.johndoe.items()), [
             ('date_joined', 12345),

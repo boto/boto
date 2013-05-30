@@ -102,6 +102,9 @@ class Item(object):
     def items(self):
         return self._data.items()
 
+    def get(self, key, default=None):
+        return self._data.get(key, default)
+
     def __iter__(self):
         for key in self._data:
             yield self._data[key]
