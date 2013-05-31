@@ -42,6 +42,8 @@ class LoadBalancerZones(object):
         if name == 'AvailabilityZones':
             return self.zones
 
+    def endElement(self, name, value, connection):
+        pass
 
 class LoadBalancer(object):
     """
