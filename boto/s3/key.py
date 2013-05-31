@@ -824,19 +824,21 @@ class Key(object):
             self.bucket.connection.debug = save_debug
             response = http_conn.getresponse()
             body = response.read()
-            if ((response.status == 500 or response.status == 503 or
-                    response.getheader('location')) and not chunked_transfer):
-                # we'll try again.
-                return response
+            if (response.status in [400, 500, 503] or
+                    response.getheader('location') and not chunked_transfer):
+                # Let it go fall through & be retried.
+                pass
             elif response.status >= 200 and response.status <= 299:
                 self.etag = response.getheader('etag')
+
                 if self.etag != '"%s"' % self.md5:
                     raise provider.storage_data_error(
                         'ETag from S3 did not match computed MD5')
-                return response
             else:
                 raise provider.storage_response_error(
                     response.status, response.reason, body)
+
+            return response
 
         if not headers:
             headers = {}
@@ -876,12 +878,32 @@ class Key(object):
             headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
-        resp = self.bucket.connection.make_request('PUT', self.bucket.name,
-                                                   self.name, headers,
-                                                   sender=sender,
-                                                   query_args=query_args)
+        resp = self.bucket.connection.make_request(
+            'PUT',
+            self.bucket.name,
+            self.name,
+            headers,
+            sender=sender,
+            query_args=query_args,
+            retry_handler=self.chunked_retry_handler
+        )
         self.handle_version_headers(resp, force=True)
         self.handle_addl_headers(resp.getheaders())
+
+    def chunked_retry_handler(self, response, i, next_sleep):
+        provider = self.bucket.connection.provider
+
+        # TODO: Maybe move the crazy above logic down here?
+        if response.status == 400:
+            # If ``RequestTimeout`` is present, we'll retry. Otherwise, bomb
+            # out.
+            body = response.read()
+
+            if not 'RequestTimeout' in body:
+                raise provider.storage_response_error(
+                    response.status, response.reason, body)
+
+        return response, i + 1, next_sleep
 
     def compute_md5(self, fp, size=None):
         """
