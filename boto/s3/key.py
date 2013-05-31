@@ -1026,7 +1026,7 @@ class Key(object):
             the second representing the size of the to be transmitted
             object.
 
-        :type cb: int
+        :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the
             cb parameter this parameter determines the granularity of
             the callback by defining the maximum number of times the
