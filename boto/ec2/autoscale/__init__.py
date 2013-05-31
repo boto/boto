@@ -552,9 +552,11 @@ class AutoScaleConnection(AWSQueryConnection):
                                    'ScalingProcesses')
         return self.get_status('ResumeProcesses', params)
 
-    def create_scheduled_group_action(self, as_group, name, time,
+    def create_scheduled_group_action(self, as_group, name, time=None,
                                       desired_capacity=None,
-                                      min_size=None, max_size=None):
+                                      min_size=None, max_size=None,
+                                      start_time=None, end_time=None,
+                                      recurrence=None):
         """
         Creates a scheduled scaling action for a Auto Scaling group. If you
         leave a parameter unspecified, the corresponding value remains
@@ -567,7 +569,7 @@ class AutoScaleConnection(AWSQueryConnection):
         :param name: Scheduled action name.
 
         :type time: datetime.datetime
-        :param time: The time for this action to start.
+        :param time: The time for this action to start. (Depracated)
 
         :type desired_capacity: int
         :param desired_capacity: The number of EC2 instances that should
@@ -578,10 +580,26 @@ class AutoScaleConnection(AWSQueryConnection):
 
         :type max_size: int
         :param max_size: The minimum size for the new auto scaling group.
+
+        :type start_time: datetime.datetime
+        :param start_time: The time for this action to start. When StartTime and EndTime are specified with Recurrence, they form the boundaries of when the recurring action will start and stop.
+
+        :type end_time: datetime.datetime
+        :param end_time: The time for this action to end. When StartTime and EndTime are specified with Recurrence, they form the boundaries of when the recurring action will start and stop.
+
+        :type recurrence: string
+        :param recurrence: The time when recurring future actions will start. Start time is specified by the user following the Unix cron syntax format. EXAMPLE: '0 10 * * *'
         """
         params = {'AutoScalingGroupName': as_group,
-                  'ScheduledActionName': name,
-                  'Time': time.isoformat()}
+                  'ScheduledActionName': name}
+        if start_time is not None:
+            params['StartTime'] = start_time.isoformat()
+        if end_time is not None:
+            params['EndTime'] = end_time.isoformat()
+        if recurrence is not None:
+            params['Recurrence'] = recurrence
+        if time:
+            params['Time'] = time.isoformat()
         if desired_capacity is not None:
             params['DesiredCapacity'] = desired_capacity
         if min_size is not None:
