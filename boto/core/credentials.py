@@ -66,8 +66,11 @@ def _search_md(url='http://169.254.169.254/latest/meta-data/iam/'):
 def search_metadata(**kwargs):
     credentials = None
     metadata = _search_md()
-    # Assuming there's only one role on the instance profile.
-    if metadata:
+    # Assuming there's only one role on the instance profile and checking
+    # if there is an 'iam' key in the dict (handle error cases like:
+    #
+    # {'info': {'Message': 'Instance Profile with Id ... cannot be found' ...}}
+    if metadata and metadata.get('iam'):
         metadata = metadata['iam']['security-credentials'].values()[0]
         credentials = Credentials(metadata['AccessKeyId'],
                                   metadata['SecretAccessKey'],
