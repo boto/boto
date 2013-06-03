@@ -824,9 +824,13 @@ class Key(object):
             self.bucket.connection.debug = save_debug
             response = http_conn.getresponse()
             body = response.read()
+
             if (response.status in [400, 500, 503] or
                     response.getheader('location') and not chunked_transfer):
                 # Let it go fall through & be retried.
+                # 500 & 503 can be plain retries.
+                # The 400 must be trapped so the retry handler can check to
+                # see if it was a timeout.
                 pass
             elif response.status >= 200 and response.status <= 299:
                 self.etag = response.getheader('etag')
@@ -893,15 +897,18 @@ class Key(object):
     def chunked_retry_handler(self, response, i, next_sleep):
         provider = self.bucket.connection.provider
 
-        # TODO: Maybe move the crazy above logic down here?
         if response.status == 400:
             # If ``RequestTimeout`` is present, we'll retry. Otherwise, bomb
             # out.
             body = response.read()
+            err = provider.storage_response_error(
+                response.status,
+                response.reason,
+                body
+            )
 
-            if not 'RequestTimeout' in body:
-                raise provider.storage_response_error(
-                    response.status, response.reason, body)
+            if err.error_code != 'RequestTimeout':
+                raise err
 
         return response, i + 1, next_sleep
 
