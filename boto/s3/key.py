@@ -824,19 +824,12 @@ class Key(object):
             self.bucket.connection.debug = save_debug
             response = http_conn.getresponse()
             body = response.read()
-            if ((response.status == 500 or response.status == 503 or
-                    response.getheader('location')) and not chunked_transfer):
-                # we'll try again.
-                return response
-            elif response.status >= 200 and response.status <= 299:
-                self.etag = response.getheader('etag')
-                if self.etag != '"%s"' % self.md5:
-                    raise provider.storage_data_error(
-                        'ETag from S3 did not match computed MD5')
-                return response
-            else:
+
+            if not self.should_retry(response, chunked_transfer):
                 raise provider.storage_response_error(
                     response.status, response.reason, body)
+
+            return response
 
         if not headers:
             headers = {}
@@ -876,12 +869,54 @@ class Key(object):
             headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
-        resp = self.bucket.connection.make_request('PUT', self.bucket.name,
-                                                   self.name, headers,
-                                                   sender=sender,
-                                                   query_args=query_args)
+        resp = self.bucket.connection.make_request(
+            'PUT',
+            self.bucket.name,
+            self.name,
+            headers,
+            sender=sender,
+            query_args=query_args
+        )
         self.handle_version_headers(resp, force=True)
         self.handle_addl_headers(resp.getheaders())
+
+    def should_retry(self, response, chunked_transfer=False):
+        provider = self.bucket.connection.provider
+
+        if not chunked_transfer:
+            if response.status in [500, 503]:
+                # 500 & 503 can be plain retries.
+                return True
+
+            if response.getheader('location'):
+                # If there's a redirect, plain retry.
+                return True
+
+        if 200 <= response.status <= 299:
+            self.etag = response.getheader('etag')
+
+            if self.etag != '"%s"' % self.md5:
+                raise provider.storage_data_error(
+                    'ETag from S3 did not match computed MD5')
+
+            return True
+
+        if response.status == 400:
+            # The 400 must be trapped so the retry handler can check to
+            # see if it was a timeout.
+            # If ``RequestTimeout`` is present, we'll retry. Otherwise, bomb
+            # out.
+            body = response.read()
+            err = provider.storage_response_error(
+                response.status,
+                response.reason,
+                body
+            )
+
+            if err.error_code in ['RequestTimeout']:
+                return True
+
+        return False
 
     def compute_md5(self, fp, size=None):
         """

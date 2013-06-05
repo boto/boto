@@ -20,10 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
+from boto.exception import BotoServerError
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
 
@@ -69,6 +74,51 @@ class TestS3Key(AWSMockServiceTestCase):
         b = Bucket(self.service_connection, 'mybucket')
         key = b.delete_key('fookey')
         self.assertIsNotNone(key)
+
+
+def counter(fn):
+    def _wrapper(*args, **kwargs):
+        _wrapper.count += 1
+        return fn(*args, **kwargs)
+    _wrapper.count = 0
+    return _wrapper
+
+
+class TestS3KeyRetries(AWSMockServiceTestCase):
+    connection_class = S3Connection
+
+    def setUp(self):
+        super(TestS3KeyRetries, self).setUp()
+
+    def test_500_retry(self):
+        self.set_http_response(status_code=500)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.new_key('test_failure')
+        fail_file = StringIO('This will attempt to retry.')
+
+        try:
+            k.send_file(fail_file)
+            self.fail("This shouldn't ever succeed.")
+        except BotoServerError:
+            pass
+
+    def test_400_timeout(self):
+        weird_timeout_body = "<Error><Code>RequestTimeout</Code></Error>"
+        self.set_http_response(status_code=400, body=weird_timeout_body)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.new_key('test_failure')
+        fail_file = StringIO('This will pretend to be chunk-able.')
+
+        # Decorate.
+        k.chunked_retry_handler = counter(k.chunked_retry_handler)
+        self.assertEqual(k.chunked_retry_handler.count, 0)
+
+        try:
+            k.send_file(fail_file)
+        except BotoServerError:
+            pass
+
+        self.assertTrue(k.chunked_retry_handler.count > 5)
 
 
 if __name__ == '__main__':
