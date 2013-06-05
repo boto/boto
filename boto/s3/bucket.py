@@ -301,24 +301,35 @@ class Bucket(object):
                                             upload_id_marker,
                                             headers)
 
+    def _get_all_query_args(self, params, initial_query_string=''):
+        pairs = []
+
+        if initial_query_string:
+            pairs.append(initial_query_string)
+
+        for key, value in params.items():
+            key = key.replace('_', '-')
+            if key == 'maxkeys':
+                key = 'max-keys'
+            if isinstance(value, unicode):
+                value = value.encode('utf-8')
+            if value is not None and value != '':
+                pairs.append('%s=%s' % (
+                    urllib.quote(key),
+                    urllib.quote(str(value)
+                )))
+
+        return '&'.join(pairs)
+
     def _get_all(self, element_map, initial_query_string='',
                  headers=None, **params):
-        l = []
-        for k, v in params.items():
-            k = k.replace('_', '-')
-            if  k == 'maxkeys':
-                k = 'max-keys'
-            if isinstance(v, unicode):
-                v = v.encode('utf-8')
-            if v is not None and v != '':
-                l.append('%s=%s' % (urllib.quote(k), urllib.quote(str(v))))
-        if len(l):
-            s = initial_query_string + '&' + '&'.join(l)
-        else:
-            s = initial_query_string
+        query_args = self._get_all_query_args(
+            params,
+            initial_query_string=initial_query_string
+        )
         response = self.connection.make_request('GET', self.name,
                                                 headers=headers,
-                                                query_args=s)
+                                                query_args=query_args)
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
