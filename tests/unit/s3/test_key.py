@@ -110,15 +110,16 @@ class TestS3KeyRetries(AWSMockServiceTestCase):
         fail_file = StringIO('This will pretend to be chunk-able.')
 
         # Decorate.
-        k.chunked_retry_handler = counter(k.chunked_retry_handler)
-        self.assertEqual(k.chunked_retry_handler.count, 0)
+        k.should_retry = counter(k.should_retry)
+        self.assertEqual(k.should_retry.count, 0)
 
         try:
             k.send_file(fail_file)
+            self.fail("This shouldn't ever succeed.")
         except BotoServerError:
             pass
 
-        self.assertTrue(k.chunked_retry_handler.count > 5)
+        self.assertTrue(k.should_retry.count, 1)
 
 
 if __name__ == '__main__':

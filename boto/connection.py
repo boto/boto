@@ -67,8 +67,10 @@ import boto.handler
 import boto.cacerts
 
 from boto import config, UserAgent
-from boto.exception import AWSConnectionError, BotoClientError
+from boto.exception import AWSConnectionError
+from boto.exception import BotoClientError
 from boto.exception import BotoServerError
+from boto.exception import PleaseRetryException
 from boto.provider import Provider
 from boto.resultset import ResultSet
 
@@ -878,6 +880,11 @@ class AWSAuthConnection(object):
                                                           scheme == 'https')
                     response = None
                     continue
+            except PleaseRetryException, e:
+                boto.log.debug('encountered a retry exception: %s' % e)
+                connection = self.new_http_connection(request.host,
+                                                      self.is_secure)
+                response = e.response
             except self.http_exceptions, e:
                 for unretryable in self.http_unretryable_exceptions:
                     if isinstance(e, unretryable):

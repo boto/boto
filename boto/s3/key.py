@@ -34,6 +34,7 @@ import urllib
 import boto.utils
 from boto.exception import BotoClientError
 from boto.exception import StorageDataError
+from boto.exception import PleaseRetryException
 from boto.provider import Provider
 from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
@@ -914,7 +915,10 @@ class Key(object):
             )
 
             if err.error_code in ['RequestTimeout']:
-                return True
+                raise PleaseRetryException(
+                    "Saw %s, retrying" % err.error_code,
+                    response=response
+                )
 
         return False
 
