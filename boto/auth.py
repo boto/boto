@@ -388,6 +388,8 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         normalized = posixpath.normpath(http_request.auth_path)
         # Then urlencode whatever's left.
         encoded = urllib.quote(normalized)
+        if http_request.auth_path.endswith('/'):
+          encoded = encoded + '/'
         return encoded
 
     def payload(self, http_request):
