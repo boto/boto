@@ -73,6 +73,16 @@ class TestSigV4Handler(unittest.TestCase):
         # This should be both normalized & urlencoded.
         self.assertEqual(canonical_uri, 'x/x%20.html')
 
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
+                                 Mock(), self.provider)
+        request = HTTPRequest(
+            'GET', 'https', 'glacier.us-east-1.amazonaws.com', 443,
+            'x/./././x/html/', None, {},
+            {'x-amz-glacier-version': '2012-06-01'}, '')
+        canonical_uri = auth.canonical_uri(request)
+        # This should be both normalized & urlencoded.
+        self.assertEqual(canonical_uri, 'x/x/html/')
+
     def test_headers_to_sign(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
                                  Mock(), self.provider)
