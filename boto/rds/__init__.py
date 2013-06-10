@@ -495,6 +495,41 @@ class RDSConnection(AWSQueryConnection):
         return self.get_object('CreateDBInstanceReadReplica',
                                params, DBInstance)
 
+    def promote_read_replica(self, id,
+                          backup_retention_period=None,
+                          preferred_backup_window=None):
+        """
+        Promote a Read Replica to a standalone DB Instance.
+
+        :type id: str
+        :param id: Unique identifier for the new instance.
+                   Must contain 1-63 alphanumeric characters.
+                   First character must be a letter.
+                   May not end with a hyphen or contain two consecutive hyphens
+
+        :type backup_retention_period: int
+        :param backup_retention_period: The number of days for which automated
+                                        backups are retained.  Setting this to
+                                        zero disables automated backups.
+
+        :type preferred_backup_window: str
+        :param preferred_backup_window: The daily time range during which
+                                        automated backups are created (if
+                                        enabled).  Must be in h24:mi-hh24:mi
+                                        format (UTC).
+
+        :rtype: :class:`boto.rds.dbinstance.DBInstance`
+        :return: The new db instance.
+        """
+        params = {'DBInstanceIdentifier': id}
+        if backup_retention_period is not None:
+            params['BackupRetentionPeriod'] = backup_retention_period
+        if preferred_backup_window:
+            params['PreferredBackupWindow'] = preferred_backup_window
+
+        return self.get_object('PromoteReadReplica', params, DBInstance)
+
+
     def modify_dbinstance(self, id, param_group=None, security_groups=None,
                           preferred_maintenance_window=None,
                           master_password=None, allocated_storage=None,
