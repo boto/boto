@@ -538,7 +538,8 @@ class RDSConnection(AWSQueryConnection):
                           preferred_backup_window=None,
                           multi_az=False,
                           apply_immediately=False,
-                          iops=None):
+                          iops=None,
+                          new_instance_id=None):
         """
         Modify an existing DBInstance.
 
@@ -614,6 +615,9 @@ class RDSConnection(AWSQueryConnection):
                       If you specify a value, it must be at least 1000 IOPS and you must
                       allocate 100 GB of storage.
 
+        :type new_instance_id: str
+        :param new_instance_id: New name to rename the DBInstance to.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
         """
@@ -646,6 +650,8 @@ class RDSConnection(AWSQueryConnection):
             params['ApplyImmediately'] = 'true'
         if iops:
             params['Iops'] = iops
+        if new_instance_id:
+            params['NewDBInstanceIdentifier'] = new_instance_id
 
         return self.get_object('ModifyDBInstance', params, DBInstance)
 
