@@ -1790,17 +1790,17 @@ class EC2Connection(AWSQueryConnection):
                              present, only the Snapshots associated with
                              these snapshot ids will be returned.
 
-        :type owner: str
-        :param owner: If present, only the snapshots owned by the specified user
+        :type owner: str or list
+        :param owner: If present, only the snapshots owned by the specified user(s)
                       will be returned.  Valid values are:
 
                       * self
                       * amazon
                       * AWS Account ID
 
-        :type restorable_by: str
+        :type restorable_by: str or list
         :param restorable_by: If present, only the snapshots that are restorable
-                              by the specified account id will be returned.
+                              by the specified account id(s) will be returned.
 
         :type filters: dict
         :param filters: Optional filters that can be used to limit
@@ -1818,10 +1818,17 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if snapshot_ids:
             self.build_list_params(params, snapshot_ids, 'SnapshotId')
+
+        # backward compatibility layer
+        if isinstance(owner, basestring):
+           owner = [owner]
+        if isinstance(restorable_by, basestring):
+           restorable_by = [restorable_by]
+
         if owner:
-            params['Owner'] = owner
+            self.build_list_params(params, owner, 'Owner')
         if restorable_by:
-            params['RestorableBy'] = restorable_by
+            self.build_list_params(params, restorable_by, 'RestorableBy')
         if filters:
             self.build_filter_params(params, filters)
         return self.get_list('DescribeSnapshots', params,
