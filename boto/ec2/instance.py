@@ -386,8 +386,7 @@ class Instance(TaggedEC2Object):
             else:
                 self.persistent = False
         elif name == 'groupName':
-            if self._in_monitoring_element:
-                self.group_name = value
+            self.group_name = value
         elif name == 'clientToken':
             self.client_token = value
         elif name == "eventsSet":
