@@ -35,7 +35,7 @@ class ResourceRecordSets(ResultSet):
     """
 
     ChangeResourceRecordSetsBody = """<?xml version="1.0" encoding="UTF-8"?>
-    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
+    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2012-12-12/">
             <ChangeBatch>
                 <Comment>%(comment)s</Comment>
                 <Changes>%(changes)s</Changes>
@@ -64,9 +64,9 @@ class ResourceRecordSets(ResultSet):
         return '<ResourceRecordSets:%s [%s]' % (self.hosted_zone_id,
                                                 record_list)
 
-    def add_change(self, action, name, type, ttl=600,
-            alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
-            weight=None, region=None):
+    def add_change(self, action, name, type, ttl=600, alias_hosted_zone_id=None,
+            alias_dns_name=None, alias_evaluate_target_health=None, identifier=None,
+            failover_type=None, weight=None, region=None, health_check_id=None):
         """
         Add a change request to the set.
 
@@ -94,35 +94,59 @@ class ResourceRecordSets(ResultSet):
         :param ttl: The resource record cache time to live (TTL), in seconds.
 
         :type alias_hosted_zone_id: str
-        :param alias_dns_name: *Alias resource record sets only* The value
+        :param alias_hosted_zone_id: *Alias resource record sets only* The value
             of the hosted zone ID, CanonicalHostedZoneNameId, for
             the LoadBalancer.
 
         :type alias_dns_name: str
-        :param alias_hosted_zone_id: *Alias resource record sets only*
+        :param alias_dns_name: *Alias resource record sets only*
             Information about the domain to which you are redirecting traffic.
+
+        :type alias_evaluate_target_health: str
+        :param alias_evaluate_target_health: *Alias resource record sets only*
+            Whether or not you want Route 53 to check the health of the alias
+            target that this alias record points to. The alias target must be
+            associated with a health check for this setting to have an effect.
+            Note that this variable defaults to "false".
+            Valid values are:
+
+            * true
+            * false
 
         :type identifier: str
         :param identifier: *Weighted and latency-based resource record sets
             only* An identifier that differentiates among multiple resource
             record sets that have the same combination of DNS name and type.
 
+        :type failover_type: str
+        :param failover_type: *Failover resource record sets only* Determines
+            whether this record set is active or passive. Note that this value
+            has no default.
+            Valid values are:
+
+            * PRIMARY
+            * SECONDARY
+
         :type weight: int
         :param weight: *Weighted resource record sets only* Among resource
             record sets that have the same combination of DNS name and type,
             a value that determines what portion of traffic for the current
-            resource record set is routed to the associated location
+            resource record set is routed to the associated location.
 
         :type region: str
         :param region: *Latency-based resource record sets only* Among resource
             record sets that have the same combination of DNS name and type,
             a value that determines which region this should be associated with
-            for the latency-based routing
+            for the latency-based routing.
+
+        :type health_check_id: str
+        :param health_check_id: The ID of the health check you wish to associate
+            with this record.
         """
         change = Record(name, type, ttl,
-                alias_hosted_zone_id=alias_hosted_zone_id,
-                alias_dns_name=alias_dns_name, identifier=identifier,
-                weight=weight, region=region)
+                alias_hosted_zone_id=alias_hosted_zone_id, alias_dns_name=alias_dns_name,
+                alias_evaluate_target_health=alias_evaluate_target_health, identifier=identifier,
+                failover_type=failover_type, weight=weight, region=region, health_check_id=health_check_id)
         self.changes.append([action, change])
         return change
 
@@ -180,6 +204,7 @@ class Record(object):
         <Type>%(type)s</Type>
         %(weight)s
         %(body)s
+        %(health_check)s
     </ResourceRecordSet>"""
 
     WRRBody = """
@@ -190,6 +215,11 @@ class Record(object):
     RRRBody = """
         <SetIdentifier>%(identifier)s</SetIdentifier>
         <Region>%(region)s</Region>
+    """
+
+    FailoverBody = """
+        <SetIdentifier>%(identifier)s</SetIdentifier>
+        <Failover>%(failover_type)s</Failover>
     """
 
     ResourceRecordsBody = """
@@ -205,13 +235,16 @@ class Record(object):
     AliasBody = """<AliasTarget>
         <HostedZoneId>%s</HostedZoneId>
         <DNSName>%s</DNSName>
+        <EvaluateTargetHealth>%s</EvaluateTargetHealth>
     </AliasTarget>"""
 
+    HealthCheckBody = """<HealthCheckId>%s</HealthCheckId>"""
 
 
     def __init__(self, name=None, type=None, ttl=600, resource_records=None,
-            alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
-            weight=None, region=None):
+            alias_hosted_zone_id=None, alias_dns_name=None,
+            alias_evaluate_target_health=None, identifier=None,
+            failover_type=None, weight=None, region=None, health_check_id=None):
         self.name = name
         self.type = type
         self.ttl = ttl
@@ -220,9 +253,14 @@ class Record(object):
         self.resource_records = resource_records
         self.alias_hosted_zone_id = alias_hosted_zone_id
         self.alias_dns_name = alias_dns_name
+        if alias_evaluate_target_health == None:
+            alias_evaluate_target_health = "false"
+        self.alias_evaluate_target_health = alias_evaluate_target_health
         self.identifier = identifier
+        self.failover_type = failover_type
         self.weight = weight
         self.region = region
+        self.health_check_id = health_check_id
 
     def __repr__(self):
         return '<Record:%s:%s:%s>' % (self.name, self.type, self.to_print())
@@ -240,7 +278,8 @@ class Record(object):
         """Spit this resource record set out as XML"""
         if self.alias_hosted_zone_id != None and self.alias_dns_name != None:
             # Use alias
-            body = self.AliasBody % (self.alias_hosted_zone_id, self.alias_dns_name)
+            body = self.AliasBody % (self.alias_hosted_zone_id,
+                  self.alias_dns_name, self.alias_evaluate_target_health)
         else:
             # Use resource record(s)
             records = ""
@@ -257,12 +296,20 @@ class Record(object):
         elif self.identifier != None and self.region != None:
             weight = self.RRRBody % {"identifier": self.identifier, "region":
                     self.region}
-        
+        elif self.identifier != None and self.failover_type != None:
+            weight = self.FailoverBody % {"identifier": self.identifier,
+                    "failover_type": self.failover_type}
+
+        health_check = ""
+        if self.health_check_id != None:
+            health_check = self.HealthCheckBody % self.health_check_id
+
         params = {
             "name": self.name,
             "type": self.type,
             "weight": weight,
             "body": body,
+            "health_check": health_check
         }
         return self.XMLBody % params
 
@@ -270,7 +317,8 @@ class Record(object):
         rr = ""
         if self.alias_hosted_zone_id != None and self.alias_dns_name != None:
             # Show alias
-            rr = 'ALIAS ' + self.alias_hosted_zone_id + ' ' + self.alias_dns_name
+            rr = 'ALIAS %s %s Check alias health: %s' % (self.alias_hosted_zone_id,
+                self.alias_dns_name, self.alias_evaluate_target_health)
         else:
             # Show resource record(s)
             rr =  ",".join(self.resource_records)
@@ -279,6 +327,13 @@ class Record(object):
             rr += ' (WRR id=%s, w=%s)' % (self.identifier, self.weight)
         elif self.identifier != None and self.region != None:
             rr += ' (LBR id=%s, region=%s)' % (self.identifier, self.region)
+        elif self.identifier != None and self.failover_type != None and self.health_check_id != "":
+            rr += ' (Failover id=%s, Failover Type=%s, Health Check id=%s)' % (self.identifier,
+                 self.failover_type, self.health_check_id)
+
+        #associated with a health check but is not a failover policy
+        if self.identifier != None and self.failover_type == None  and self.health_check_id != "":
+            rr += ' (Health Check id=%s)' % (self.health_check_id)
 
         return rr
 
@@ -295,12 +350,18 @@ class Record(object):
             self.alias_hosted_zone_id = value
         elif name == 'DNSName':
             self.alias_dns_name = value
+        elif name == 'EvaluateTargetHealth':
+            self.alias_evaluate_target_health = value
         elif name == 'SetIdentifier':
             self.identifier = value
+        elif name == 'Failover':
+            self.failover_type = value
         elif name == 'Weight':
             self.weight = value
         elif name == 'Region':
             self.region = value
+        elif name == 'HealthCheckId':
+            self.health_check_id = value
 
     def startElement(self, name, attrs, connection):
         return None
