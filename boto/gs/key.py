@@ -156,6 +156,19 @@ class Key(S3Key):
         query_args = None
         if self.generation:
             query_args = ['generation=%s' % self.generation]
+
+        headers = headers or {}
+
+        # Check for an existing Accept-Encoding header, case insensitive.
+        accept_encoding_name = None
+        for headername in headers.iterkeys():
+            if headername.lower() == 'accept-encoding':
+                accept_encoding_name = headername
+                break
+        # If Accept-Encoding is not already set, set it to enable gzip.
+        if not accept_encoding_name:
+            headers['accept-encoding'] = 'gzip'
+
         self._get_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
                                 override_num_retries=override_num_retries,
                                 response_headers=response_headers,

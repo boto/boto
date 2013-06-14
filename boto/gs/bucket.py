@@ -98,6 +98,18 @@ class Bucket(S3Bucket):
             for rk, rv in response_headers.iteritems():
                 query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
 
+        headers = headers or {}
+
+        # Check for an existing Accept-Encoding header, case insensitive.
+        accept_encoding_name = None
+        for headername in headers.iterkeys():
+            if headername.lower() == 'accept-encoding':
+                accept_encoding_name = headername
+                break
+        # If Accept-Encoding is not already set, set it to enable gzip.
+        if not accept_encoding_name:
+            headers['accept-encoding'] = 'gzip'
+
         key, resp = self._get_key_internal(key_name, headers,
                                            query_args_l=query_args_l)
         return key
