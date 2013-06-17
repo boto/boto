@@ -229,7 +229,7 @@ class STSConnection(AWSQueryConnection):
                                 FederationToken, verb='POST')
 
     def assume_role(self, role_arn, role_session_name, policy=None,
-                    duration_seconds=None, external_id=None):
+                    duration_seconds=None, external_id=None, security_token=None):
         """
         Returns a set of temporary security credentials (consisting of
         an access key ID, a secret access key, and a security token)
@@ -330,6 +330,8 @@ class STSConnection(AWSQueryConnection):
             params['DurationSeconds'] = duration_seconds
         if external_id is not None:
             params['ExternalId'] = external_id
+        if security_token is not None:
+            params['SecurityToken'] = security_token
         return self.get_object('AssumeRole', params, AssumedRole, verb='POST')
 
     def assume_role_with_web_identity(self, role_arn, role_session_name,
