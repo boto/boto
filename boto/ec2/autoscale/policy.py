@@ -115,6 +115,10 @@ class ScalingPolicy(object):
         :type scaling_adjustment: int
         :param scaling_adjustment: Value of adjustment (type specified in `adjustment_type`).
 
+        :type min_adjustment_step: int
+        :param min_adjustment_step: Value of min adjustment step required to
+            apply the scaling policy (only make sense when use `PercentChangeInCapacity` as adjustment_type.).
+
         :type cooldown: int
         :param cooldown: Time (in seconds) before Alarm related Scaling Activities can start after the previous Scaling Activity ends.
 
@@ -125,6 +129,7 @@ class ScalingPolicy(object):
         self.scaling_adjustment = kwargs.get('scaling_adjustment', None)
         self.cooldown = kwargs.get('cooldown', None)
         self.connection = connection
+        self.min_adjustment_step = kwargs.get('min_adjustment_step', None)
 
     def __repr__(self):
         return 'ScalingPolicy(%s group:%s adjustment:%s)' % (self.name,
@@ -137,6 +142,7 @@ class ScalingPolicy(object):
             return self.alarms
 
     def endElement(self, name, value, connection):
+        print name
         if name == 'PolicyName':
             self.name = value
         elif name == 'AutoScalingGroupName':
@@ -149,6 +155,8 @@ class ScalingPolicy(object):
             self.cooldown = int(value)
         elif name == 'AdjustmentType':
             self.adjustment_type = value
+        elif name == 'MinAdjustmentStep':
+            self.min_adjustment_step = int(value)
 
     def delete(self):
         return self.connection.delete_policy(self.name, self.as_name)
