@@ -384,10 +384,13 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return ';'.join(l)
 
     def canonical_uri(self, http_request):
+        path = http_request.auth_path
         # Normalize the path.
-        normalized = posixpath.normpath(http_request.auth_path)
+        normalized = posixpath.normpath(path)
         # Then urlencode whatever's left.
         encoded = urllib.quote(normalized)
+        if len(path) > 1 and path.endswith('/'):
+            encoded += '/'
         return encoded
 
     def payload(self, http_request):

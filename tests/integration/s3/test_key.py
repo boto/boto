@@ -32,7 +32,7 @@ from boto.s3.key import Key
 from boto.exception import S3ResponseError
 
 
-class S3KeyTest (unittest.TestCase):
+class S3KeyTest(unittest.TestCase):
     s3 = True
 
     def setUp(self):
@@ -373,3 +373,13 @@ class S3KeyTest (unittest.TestCase):
         with self.assertRaises(key.provider.storage_response_error):
             # Must start with a / or http
             key.set_redirect('')
+
+    def test_setting_date(self):
+        key = self.bucket.new_key('test_date')
+        # This should actually set x-amz-meta-date & not fail miserably.
+        key.set_metadata('date', '20130524T155935Z')
+        key.set_contents_from_string('Some text here.')
+
+        check = self.bucket.get_key('test_date')
+        self.assertEqual(check.get_metadata('date'), u'20130524T155935Z')
+        self.assertTrue('x-amz-meta-date' in check._get_remote_metadata())

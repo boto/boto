@@ -253,6 +253,9 @@ class MockBucket(object):
     def get_logging_config(self):
         return {"Logging": {}}
 
+    def get_versioning_status(self, headers=NOT_IMPL):
+        return False
+
     def get_acl(self, key_name='', headers=NOT_IMPL, version_id=NOT_IMPL):
         if key_name:
             # Return ACL for the key.
@@ -456,6 +459,9 @@ class MockBucketStorageUri(object):
 
     def delete_bucket(self, headers=NOT_IMPL):
         return self.connect().delete_bucket(self.bucket_name)
+
+    def get_versioning_config(self, headers=NOT_IMPL):
+        self.get_bucket().get_versioning_status(headers)
 
     def has_version(self):
         return (issubclass(type(self), MockBucketStorageUri)

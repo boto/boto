@@ -35,11 +35,12 @@ DynamoDB v1::
 DynamoDB v2::
 
     >>> from boto.dynamodb2.fields import HashKey
+    >>> from boto.dynamodb2.fields import RangeKey
     >>> from boto.dynamodb2.table import Table
 
     >>> table = Table.create('messages', schema=[
     ...     HashKey('forum_name'),
-    ...     HashKey('subject'),
+    ...     RangeKey('subject'),
     ... ], throughput={
     ...     'read': 10,
     ...     'write': 10,

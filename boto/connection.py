@@ -67,8 +67,10 @@ import boto.handler
 import boto.cacerts
 
 from boto import config, UserAgent
-from boto.exception import AWSConnectionError, BotoClientError
+from boto.exception import AWSConnectionError
+from boto.exception import BotoClientError
 from boto.exception import BotoServerError
+from boto.exception import PleaseRetryException
 from boto.provider import Provider
 from boto.resultset import ResultSet
 
@@ -598,7 +600,7 @@ class AWSAuthConnection(object):
         # https://groups.google.com/forum/#!topic/boto-dev/-ft0XPUy0y8
         # You can override that behavior with the suppress_consec_slashes param.
         if not self.suppress_consec_slashes:
-            return self.path + re.sub('^/*', "", path)
+            return self.path + re.sub('^(/*)/', "\\1", path)
         pos = path.find('?')
         if pos >= 0:
             params = path[pos:]
@@ -878,6 +880,11 @@ class AWSAuthConnection(object):
                                                           scheme == 'https')
                     response = None
                     continue
+            except PleaseRetryException, e:
+                boto.log.debug('encountered a retry exception: %s' % e)
+                connection = self.new_http_connection(request.host,
+                                                      self.is_secure)
+                response = e.response
             except self.http_exceptions, e:
                 for unretryable in self.http_unretryable_exceptions:
                     if isinstance(e, unretryable):
@@ -894,7 +901,7 @@ class AWSAuthConnection(object):
         # If we made it here, it's because we have exhausted our retries
         # and stil haven't succeeded.  So, if we have a response object,
         # use it to raise an exception.
-        # Otherwise, raise the exception that must have already h#appened.
+        # Otherwise, raise the exception that must have already happened.
         if response:
             raise BotoServerError(response.status, response.reason, body)
         elif e:
@@ -930,13 +937,14 @@ class AWSAuthConnection(object):
 
     def make_request(self, method, path, headers=None, data='', host=None,
                      auth_path=None, sender=None, override_num_retries=None,
-                     params=None):
+                     params=None, retry_handler=None):
         """Makes a request to the server, with stock multiple-retry logic."""
         if params is None:
             params = {}
         http_request = self.build_base_http_request(method, path, auth_path,
                                                     params, headers, data, host)
-        return self._mexe(http_request, sender, override_num_retries)
+        return self._mexe(http_request, sender, override_num_retries,
+                          retry_handler=retry_handler)
 
     def close(self):
         """(Optional) Close any open HTTP connections.  This is non-destructive,

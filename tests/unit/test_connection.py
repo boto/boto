@@ -23,7 +23,7 @@ import urlparse
 from tests.unit import unittest
 from httpretty import HTTPretty
 
-from boto.connection import AWSQueryConnection
+from boto.connection import AWSQueryConnection, AWSAuthConnection
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
 from boto.compat import json
@@ -89,6 +89,27 @@ class MockAWSService(AWSQueryConnection):
                                     https_connection_factory, path,
                                     security_token,
                                     validate_certs=validate_certs)
+
+class TestAWSAuthConnection(unittest.TestCase):
+    def test_get_path(self):
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False
+        )
+        # Test some sample paths for mangling.
+        self.assertEqual(conn.get_path('/'), '/')
+        self.assertEqual(conn.get_path('image.jpg'), '/image.jpg')
+        self.assertEqual(conn.get_path('folder/image.jpg'), '/folder/image.jpg')
+        self.assertEqual(conn.get_path('folder//image.jpg'), '/folder//image.jpg')
+
+        # Ensure leading slashes aren't removed.
+        # See https://github.com/boto/boto/issues/1387
+        self.assertEqual(conn.get_path('/folder//image.jpg'), '/folder//image.jpg')
+        self.assertEqual(conn.get_path('/folder////image.jpg'), '/folder////image.jpg')
+        self.assertEqual(conn.get_path('///folder////image.jpg'), '///folder////image.jpg')
+
 
 class TestAWSQueryConnection(unittest.TestCase):
     def setUp(self):
