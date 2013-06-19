@@ -246,6 +246,13 @@ class DynamoDBv2Test(unittest.TestCase):
         # Test count, but in a weak fashion. Because lag time.
         self.assertTrue(users.count() > -1)
 
+        # Test query count
+        count = users.query_count(
+            username__eq='bob',
+        )
+
+        self.assertEqual(count, 1)
+
         # Test without LSIs (describe calls shouldn't fail).
         admins = Table.create('admins', schema=[
             HashKey('username')
