@@ -120,7 +120,7 @@ class HostConnectionPool(object):
 
     Thread Safety:
 
-        This class is used only fram ConnectionPool while it's mutex
+        This class is used only from ConnectionPool while it's mutex
         is held.
     """
 
