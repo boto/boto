@@ -184,11 +184,14 @@ class DynamoDBv2Test(unittest.TestCase):
             username__eq='johndoe',
             last_name__eq='Doe',
             index='LastNameIndex',
+            attributes=('username',),
             reverse=True
         )
 
         for res in results:
             self.assertTrue(res['username'] in ['johndoe',])
+            self.assertEqual(res.keys(), ['username'])
+
 
         # Test the strongly consistent query.
         c_results = users.query(
