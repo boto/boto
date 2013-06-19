@@ -1527,15 +1527,17 @@ class TableTestCase(unittest.TestCase):
 
         mock_query.assert_called_once_with('users',
             consistent_read=False,
-            index_name=None,
             scan_index_forward=True,
+            index_name=None,
+            attributes_to_get=None,
             limit=4,
             key_conditions={
                 'username': {
                     'AttributeValueList': [{'S': 'aaa'}, {'S': 'mmm'}],
                     'ComparisonOperator': 'BETWEEN',
                 }
-            }
+            },
+            select=None
         )
 
         # Now alter the expected.
@@ -1571,6 +1573,7 @@ class TableTestCase(unittest.TestCase):
                 }
             },
             index_name=None,
+            attributes_to_get=None,
             scan_index_forward=True,
             limit=4,
             exclusive_start_key={
@@ -1578,7 +1581,8 @@ class TableTestCase(unittest.TestCase):
                     'S': 'adam',
                 },
             },
-            consistent_read=True
+            consistent_read=True,
+            select=None
         )
 
     def test_private_scan(self):
