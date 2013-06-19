@@ -91,8 +91,7 @@ class TestRDSConnection(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'DescribeDBInstances',
             'DBInstanceIdentifier': 'instance_id',
-        }, ignore_params_values=['AWSAccessKeyId', 'Timestamp', 'Version',
-                                 'SignatureVersion', 'SignatureMethod'])
+        }, ignore_params_values=['Version'])
         db = response[0]
         self.assertEqual(db.id, 'mydbinstance2')
         self.assertEqual(db.create_time, '2012-10-03T22:01:51.047Z')
