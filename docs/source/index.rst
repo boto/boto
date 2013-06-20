@@ -111,11 +111,28 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.9.6
    releasenotes/v2.9.5
    releasenotes/v2.9.4
    releasenotes/v2.9.3
    releasenotes/v2.9.2
    releasenotes/v2.9.1
+   releasenotes/v2.9.0
+   releasenotes/v2.8.0
+   releasenotes/v2.7.0
+   releasenotes/v2.6.0
+   releasenotes/v2.5.2
+   releasenotes/v2.5.1
+   releasenotes/v2.5.0
+   releasenotes/v2.4.0
+   releasenotes/v2.3.0
+   releasenotes/v2.2.2
+   releasenotes/v2.2.1
+   releasenotes/v2.2.0
+   releasenotes/v2.1.1
+   releasenotes/v2.1.0
+   releasenotes/v2.0.0
+   releasenotes/v2.0.b1
 
 
 .. toctree::
