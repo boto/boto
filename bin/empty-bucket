@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+# Author: Lee Trager
+#
+__doc__ = "empty-bucket is a simple tool for clearing out and removing S3 buckets"
+
+import sys
+import argparse
+import time
+from boto.s3.connection import S3Connection,OrdinaryCallingFormat
+from boto.exception import S3ResponseError
+
+def main():
+   parser = argparse.ArgumentParser(description = __doc__)
+   parser.add_argument("-d", "--destroy-bucket", help="Destory the bucket after emptying it", action="store_true")
+   parser.add_argument("-f", "--force", help="Destroy the bucket even if versioning or MFADelete is turned on", action="store_true")
+   parser.add_argument("bucket", help="The bucket you want to empty", nargs='+')
+   args = parser.parse_args()
+
+   # Use OrdinaryCallingFormat so emptying of buckets with captial letters works
+   conn = S3Connection(calling_format=OrdinaryCallingFormat())
+
+   for b in args.bucket:
+      bucket = conn.get_bucket(b)
+
+      versioning = bucket.get_versioning_status()
+      if args.destroy_bucket and not args.force:
+         if versioning['Versioning'] == 'Enabled':
+            print "Warning: Bucket %s has versioning turned on! Use --force to remove all versions" % (b)
+
+      if versioning.has_key('MFADelete') and version['MFADelete'] == 'Enabled':
+         sys.stderr.write("Error: Unable to delete keys due to MFADelete being enabled on the bucket! Use --force to disable MFADelete\n" % (b))
+         sys.exit(-1)
+
+      if args.force:
+         bucket.configure_versioning(versioning=False,mfa_delete=False)
+         rs = bucket.list_versions()
+      else:
+         rs = bucket.list()
+
+      for key in rs:
+         bucket.delete_key(key.name, version_id = key.version_id)
+
+      if args.destroy_bucket:
+         # Sometimes S3 doesn't realize the bucket really is empty
+         retry = 1
+         while retry:
+            try:
+               bucket.delete()
+               retry = 0
+            except S3ResponseError, err:
+               if retry >= 5:
+                  sys.stderr.write("Error: Unable to remove bucket %s!\n" % (b))
+                  sys.stderr.write("S3 returned:\n%s\n" % (err))
+                  sys.exit(-1)
+
+               retry = retry + 1
+               time.sleep(1)
+               
+
+if __name__ == '__main__':
+   main()
