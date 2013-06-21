@@ -765,8 +765,10 @@ class BucketStorageUri(StorageUri):
         for suri in components:
             component_keys.append(suri.new_key())
             component_keys[-1].generation = suri.generation
-        self.new_key().compose(
+        self.generation = self.new_key().compose(
                 component_keys, content_type=content_type, headers=headers)
+        self._build_uri_strings()
+        return self
 
     def exists(self, headers=None):
       """Returns True if the object exists or False if it doesn't"""
