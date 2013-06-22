@@ -436,7 +436,64 @@ class EC2Connection(AWSQueryConnection):
 
     def get_all_instances(self, instance_ids=None, filters=None):
         """
+        Retrieve all the instance reservations associated with your account.
+
+        .. note::
+        This method's current behavior is deprecated in favor of
+        :meth:`get_all_reservations`.  A future major release will change
+        :meth:`get_all_instances` to return a list of
+        :class:`boto.ec2.instance.Instance` objects as its name suggests.
+        To obtain that behavior today, use :meth:`get_only_instances`.
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of instance IDs
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
+
+        :rtype: list
+        :return: A list of  :class:`boto.ec2.instance.Reservation`
+
+        """
+        warnings.warn(('The current get_all_instances implementation will be '
+                       'replaced with get_all_reservations.'),
+                      PendingDeprecationWarning)
+        return self.get_all_reservations(instance_ids=instance_ids,
+                                         filters=filters)
+
+    def get_only_instances(self, instance_ids=None, filters=None):
+        # A future release should rename this method to get_all_instances
+        # and make get_only_instances an alias for that.
+        """
         Retrieve all the instances associated with your account.
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of instance IDs
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
+
+        :rtype: list
+        :return: A list of  :class:`boto.ec2.instance.Instance`
+        """
+        reservations = self.get_all_reservations(instance_ids=instance_ids,
+                                                 filters=filters)
+        return [instance for reservation in reservations
+                for instance in reservation.instances]
+
+    def get_all_reservations(self, instance_ids=None, filters=None):
+        """
+        Retrieve all the instance reservations associated with your account.
 
         :type instance_ids: list
         :param instance_ids: A list of strings of instance IDs

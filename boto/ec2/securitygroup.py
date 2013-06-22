@@ -271,7 +271,7 @@ class SecurityGroup(TaggedEC2Object):
         # It would be more efficient to do this with filters now
         # but not all services that implement EC2 API support filters.
         instances = []
-        rs = self.connection.get_all_instances()
+        rs = self.connection.get_all_reservations()
         for reservation in rs:
             uses_group = [g.name for g in reservation.groups if g.name == self.name]
             if uses_group:
