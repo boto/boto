@@ -271,9 +271,13 @@ class SecurityGroup(TaggedEC2Object):
         """
         rs = []
         if self.vpc_id:
-            rs.extend(self.connection.get_all_instances(filters={'instance.group-id': self.id}))
+            rs.extend(self.connection.get_all_reservations(
+                filters={'instance.group-id': self.id}
+            ))
         else:
-            rs.extend(self.connection.get_all_instances(filters={'group-id': self.id}))
+            rs.extend(self.connection.get_all_reservations(
+                filters={'group-id': self.id}
+            ))
         instances = [i for r in rs for i in r.instances]
         return instances
 

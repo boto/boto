@@ -51,7 +51,7 @@ def list(region, headers, order, completed):
 
     ec2 = boto.connect_ec2(region=region)
 
-    reservations = ec2.get_all_instances()
+    reservations = ec2.get_all_reservations()
 
     instanceinfo = {}
     events = {}

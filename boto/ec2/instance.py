@@ -418,7 +418,7 @@ class Instance(TaggedEC2Object):
                          raise a ValueError exception if no data is
                          returned from EC2.
         """
-        rs = self.connection.get_all_instances([self.id])
+        rs = self.connection.get_all_reservations([self.id])
         if len(rs) > 0:
             r = rs[0]
             for i in r.instances:

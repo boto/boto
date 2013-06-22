@@ -122,7 +122,7 @@ class EBSInstaller(Installer):
         while volume.update() != 'available':
             boto.log.info('Volume %s not yet available. Current status = %s.' % (volume.id, volume.status))
             time.sleep(5)
-        instance = ec2.get_all_instances([self.instance_id])[0].instances[0]
+        instance = ec2.get_only_instances([self.instance_id])[0]
         attempt_attach = True
         while attempt_attach:
             try:
