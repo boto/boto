@@ -64,17 +64,10 @@ class SNSConnection(AWSQueryConnection):
                            this method.
 
         """
-        params = {'ContentType': 'JSON'}
+        params = {}
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('ListTopics', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self._make_request('ListTopics', params)
 
     def get_topic_attributes(self, topic):
         """
@@ -84,16 +77,8 @@ class SNSConnection(AWSQueryConnection):
         :param topic: The ARN of the topic.
 
         """
-        params = {'ContentType': 'JSON',
-                  'TopicArn': topic}
-        response = self.make_request('GetTopicAttributes', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        params = {'TopicArn': topic}
+        return self._make_request('GetTopicAttributes', params)
 
     def set_topic_attributes(self, topic, attr_name, attr_value):
         """
@@ -111,18 +96,10 @@ class SNSConnection(AWSQueryConnection):
         :param attr_value: The new value for the attribute.
 
         """
-        params = {'ContentType': 'JSON',
-                  'TopicArn': topic,
+        params = {'TopicArn': topic,
                   'AttributeName': attr_name,
                   'AttributeValue': attr_value}
-        response = self.make_request('SetTopicAttributes', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self._make_request('SetTopicAttributes', params)
 
     def add_permission(self, topic, label, account_ids, actions):
         """
@@ -144,19 +121,11 @@ class SNSConnection(AWSQueryConnection):
                         specified principal(s).
 
         """
-        params = {'ContentType': 'JSON',
-                  'TopicArn': topic,
+        params = {'TopicArn': topic,
                   'Label': label}
         self.build_list_params(params, account_ids, 'AWSAccountId.member')
         self.build_list_params(params, actions, 'ActionName.member')
-        response = self.make_request('AddPermission', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self._make_request('AddPermission', params)
 
     def remove_permission(self, topic, label):
         """
@@ -170,17 +139,9 @@ class SNSConnection(AWSQueryConnection):
                       to be removed.
 
         """
-        params = {'ContentType': 'JSON',
-                  'TopicArn': topic,
+        params = {'TopicArn': topic,
                   'Label': label}
-        response = self.make_request('RemovePermission', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self._make_request('RemovePermission', params)
 
     def create_topic(self, topic):
         """
@@ -190,16 +151,8 @@ class SNSConnection(AWSQueryConnection):
         :param topic: The name of the new topic.
 
         """
-        params = {'ContentType': 'JSON',
-                  'Name': topic}
-        response = self.make_request('CreateTopic', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        params = {'Name': topic}
+        return self._make_request('CreateTopic', params)
 
     def delete_topic(self, topic):
         """
@@ -209,16 +162,8 @@ class SNSConnection(AWSQueryConnection):
         :param topic: The ARN of the topic
 
         """
-        params = {'ContentType': 'JSON',
-                  'TopicArn': topic}
-        response = self.make_request('DeleteTopic', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        params = {'TopicArn': topic}
+        return self._make_request('DeleteTopic', params, '/', 'GET')
 
     def publish(self, topic, message, subject=None):
         """
@@ -237,19 +182,11 @@ class SNSConnection(AWSQueryConnection):
                         line of the email notifications.
 
         """
-        params = {'ContentType': 'JSON',
-                  'TopicArn': topic,
+        params = {'TopicArn': topic,
                   'Message': message}
         if subject:
             params['Subject'] = subject
-        response = self.make_request('Publish', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self._make_request('Publish', params)
 
     def subscribe(self, topic, protocol, endpoint):
         """
@@ -272,18 +209,10 @@ class SNSConnection(AWSQueryConnection):
                          * For https, this would be a URL beginning with https
                          * For sqs, this would be the ARN of an SQS Queue
         """
-        params = {'ContentType': 'JSON',
-                  'TopicArn': topic,
+        params = {'TopicArn': topic,
                   'Protocol': protocol,
                   'Endpoint': endpoint}
-        response = self.make_request('Subscribe', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self._make_request('Subscribe', params)
 
     def subscribe_sqs_queue(self, topic, queue):
         """
@@ -356,19 +285,10 @@ class SNSConnection(AWSQueryConnection):
                                             of the subscription.
 
         """
-        params = {'ContentType': 'JSON',
-                  'TopicArn': topic,
-                  'Token': token}
+        params = {'TopicArn': topic, 'Token': token}
         if authenticate_on_unsubscribe:
             params['AuthenticateOnUnsubscribe'] = 'true'
-        response = self.make_request('ConfirmSubscription', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self._make_request('ConfirmSubscription', params)
 
     def unsubscribe(self, subscription):
         """
@@ -379,16 +299,8 @@ class SNSConnection(AWSQueryConnection):
         :param subscription: The ARN of the subscription to be deleted.
 
         """
-        params = {'ContentType': 'JSON',
-                  'SubscriptionArn': subscription}
-        response = self.make_request('Unsubscribe', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        params = {'SubscriptionArn': subscription}
+        return self._make_request('Unsubscribe', params)
 
     def get_all_subscriptions(self, next_token=None):
         """
@@ -399,17 +311,10 @@ class SNSConnection(AWSQueryConnection):
                            this method.
 
         """
-        params = {'ContentType': 'JSON'}
+        params = {}
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('ListSubscriptions', params, '/', 'GET')
-        body = response.read()
-        if response.status == 200:
-            return json.loads(body)
-        else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+        return self._make_request('ListSubscriptions', params)
 
     def get_all_subscriptions_by_topic(self, topic, next_token=None):
         """
@@ -424,13 +329,204 @@ class SNSConnection(AWSQueryConnection):
                            this method.
 
         """
-        params = {'ContentType': 'JSON',
-                  'TopicArn': topic}
+        params = {'TopicArn': topic}
         if next_token:
             params['NextToken'] = next_token
-        response = self.make_request('ListSubscriptionsByTopic', params,
-                                     '/', 'GET')
+        return self._make_request('ListSubscriptionsByTopic', params)
+
+    def create_platform_application(self, name=None, platform=None,
+                                    attributes=None):
+        """
+
+
+        :type name: string
+        :param name:
+
+        :type platform: string
+        :param platform:
+
+        :type attributes: map
+        :param attributes:
+
+        """
+        params = {}
+        if name is not None:
+            params['Name'] = name
+        if platform is not None:
+            params['Platform'] = platform
+        if attributes is not None:
+            params['Attributes'] = attributes
+        return self._make_request(action='CreatePlatformApplication',
+                                  params=params)
+
+    def set_platform_application_attributes(self,
+                                            platform_application_arn=None,
+                                            attributes=None):
+        """
+
+
+        :type platform_application_arn: string
+        :param platform_application_arn:
+
+        :type attributes: map
+        :param attributes:
+
+        """
+        params = {}
+        if platform_application_arn is not None:
+            params['PlatformApplicationArn'] = platform_application_arn
+        if attributes is not None:
+            params['Attributes'] = attributes
+        return self._make_request(action='SetPlatformApplicationAttributes',
+                                  params=params)
+
+    def get_platform_application_attributes(self,
+                                            platform_application_arn=None):
+        """
+
+
+        :type platform_application_arn: string
+        :param platform_application_arn:
+
+        """
+        params = {}
+        if platform_application_arn is not None:
+            params['PlatformApplicationArn'] = platform_application_arn
+        return self._make_request(action='GetPlatformApplicationAttributes',
+                                  params=params)
+
+    def list_platform_applications(self, next_token=None):
+        """
+
+
+        :type next_token: string
+        :param next_token:
+
+        """
+        params = {}
+        if next_token is not None:
+            params['NextToken'] = next_token
+        return self._make_request(action='ListPlatformApplications',
+                                  params=params)
+
+    def list_endpoints_by_platform_application(self,
+                                               platform_application_arn=None,
+                                               next_token=None):
+        """
+
+
+        :type platform_application_arn: string
+        :param platform_application_arn:
+
+        :type next_token: string
+        :param next_token:
+
+        """
+        params = {}
+        if platform_application_arn is not None:
+            params['PlatformApplicationArn'] = platform_application_arn
+        if next_token is not None:
+            params['NextToken'] = next_token
+        return self._make_request(action='ListEndpointsByPlatformApplication',
+                                  params=params)
+
+    def delete_platform_application(self, platform_application_arn=None):
+        """
+
+
+        :type platform_application_arn: string
+        :param platform_application_arn:
+
+        """
+        params = {}
+        if platform_application_arn is not None:
+            params['PlatformApplicationArn'] = platform_application_arn
+        return self._make_request(action='DeletePlatformApplication',
+                                  params=params)
+
+    def create_platform_endpoint(self, platform_application_arn=None,
+                                 token=None, custom_user_data=None,
+                                 attributes=None):
+        """
+
+
+        :type platform_application_arn: string
+        :param platform_application_arn:
+
+        :type token: string
+        :param token:
+
+        :type custom_user_data: string
+        :param custom_user_data:
+
+        :type attributes: map
+        :param attributes:
+
+        """
+        params = {}
+        if platform_application_arn is not None:
+            params['PlatformApplicationArn'] = platform_application_arn
+        if token is not None:
+            params['Token'] = token
+        if custom_user_data is not None:
+            params['CustomUserData'] = custom_user_data
+        if attributes is not None:
+            params['Attributes'] = attributes
+        return self._make_request(action='CreatePlatformEndpoint',
+                                  params=params)
+
+    def delete_endpoint(self, endpoint_arn=None):
+        """
+
+
+        :type endpoint_arn: string
+        :param endpoint_arn:
+
+        """
+        params = {}
+        if endpoint_arn is not None:
+            params['EndpointArn'] = endpoint_arn
+        return self._make_request(action='DeleteEndpoint', params=params)
+
+    def set_endpoint_attributes(self, endpoint_arn=None, attributes=None):
+        """
+
+
+        :type endpoint_arn: string
+        :param endpoint_arn:
+
+        :type attributes: map
+        :param attributes:
+
+        """
+        params = {}
+        if endpoint_arn is not None:
+            params['EndpointArn'] = endpoint_arn
+        if attributes is not None:
+            params['Attributes'] = attributes
+        return self._make_request(action='SetEndpointAttributes',
+                                  params=params)
+
+    def get_endpoint_attributes(self, endpoint_arn=None):
+        """
+
+
+        :type endpoint_arn: string
+        :param endpoint_arn:
+
+        """
+        params = {}
+        if endpoint_arn is not None:
+            params['EndpointArn'] = endpoint_arn
+        return self._make_request(action='GetEndpointAttributes',
+                                  params=params)
+
+    def _make_request(self, action, params, path='/', verb='GET'):
+        params['ContentType'] = 'JSON'
+        response = self.make_request(action=action, verb=verb,
+                                     path=path, params=params)
         body = response.read()
+        boto.log.debug(body)
         if response.status == 200:
             return json.loads(body)
         else:
