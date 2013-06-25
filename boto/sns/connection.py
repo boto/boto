@@ -165,7 +165,8 @@ class SNSConnection(AWSQueryConnection):
         params = {'TopicArn': topic}
         return self._make_request('DeleteTopic', params, '/', 'GET')
 
-    def publish(self, topic, message, subject=None):
+    def publish(self, topic=None, message=None, subject=None,
+                target_arn=None):
         """
         Get properties of a Topic
 
@@ -181,11 +182,22 @@ class SNSConnection(AWSQueryConnection):
         :param subject: Optional parameter to be used as the "Subject"
                         line of the email notifications.
 
+        :type target_arn: string
+        :param target_arn:
+
         """
-        params = {'TopicArn': topic,
-                  'Message': message}
-        if subject:
+        if message is None:
+            # To be backwards compatible when message did not have
+            # a default value and topic and message were required
+            # args.
+            raise TypeError("'message' is a required parmater")
+        params = {'Message': message}
+        if subject is not None:
             params['Subject'] = subject
+        if topic is not None:
+            params['TopicArn'] = topic
+        if target_arn is not None:
+            params['TargetArn'] = target_arn
         return self._make_request('Publish', params)
 
     def subscribe(self, topic, protocol, endpoint):
