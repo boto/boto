@@ -90,6 +90,36 @@ class TestSNSConnection(AWSMockServiceTestCase):
         # Only a single statement should be part of the policy.
         self.assertEqual(len(actual_policy['Statement']), 1)
 
+    def test_publish_with_positional_args(self):
+        self.set_http_response(status_code=200)
+
+        self.service_connection.publish('topic', 'message', 'subject')
+        self.assert_request_parameters({
+            'Action': 'Publish',
+            'TopicArn': 'topic',
+            'Subject': 'subject',
+            'Message': 'message',
+        }, ignore_params_values=['Version', 'ContentType'])
+
+    def test_publish_with_kwargs(self):
+        self.set_http_response(status_code=200)
+
+        self.service_connection.publish(topic='topic',
+                                        message='message',
+                                        subject='subject')
+        self.assert_request_parameters({
+            'Action': 'Publish',
+            'TopicArn': 'topic',
+            'Subject': 'subject',
+            'Message': 'message',
+        }, ignore_params_values=['Version', 'ContentType'])
+
+    def test_message_is_required(self):
+        self.set_http_response(status_code=200)
+
+        with self.assertRaises(TypeError):
+            self.service_connection.publish(topic='topic', subject='subject')
+
 
 if __name__ == '__main__':
     unittest.main()
