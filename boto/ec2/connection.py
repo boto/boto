@@ -3233,8 +3233,8 @@ class EC2Connection(AWSQueryConnection):
                         being performed.  Check the EC2 API guide
                         for details.
 
-        :rtype: dict
-        :return: A dictionary containing metadata tags
+        :rtype: list
+        :return: A list of :class:`boto.ec2.tag.Tag` objects
         """
         params = {}
         if filters:
