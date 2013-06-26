@@ -40,6 +40,8 @@ from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
 from boto import UserAgent
 from boto.utils import compute_md5
+from boto.utils import find_matching_headers
+from boto.utils import merge_headers_by_name
 try:
     from hashlib import md5
 except ImportError:
@@ -836,23 +838,31 @@ class Key(object):
             headers = {}
         else:
             headers = headers.copy()
+        # Overwrite user-supplied user-agent.
+        for header in find_matching_headers('User-Agent', headers):
+            del headers[header]
         headers['User-Agent'] = UserAgent
         if self.storage_class != 'STANDARD':
             headers[provider.storage_class_header] = self.storage_class
-        if 'Content-Encoding' in headers:
-            self.content_encoding = headers['Content-Encoding']
-        if 'Content-Language' in headers:
-            self.content_encoding = headers['Content-Language']
-        if 'Content-Type' in headers:
+        if find_matching_headers('Content-Encoding', headers):
+            self.content_encoding = merge_headers_by_name(
+                'Content-Encoding', headers)
+        if find_matching_headers('Content-Language', headers):
+            self.content_language = merge_headers_by_name(
+                'Content-Language', headers)
+        content_type_headers = find_matching_headers('Content-Type', headers)
+        if content_type_headers:
             # Some use cases need to suppress sending of the Content-Type
             # header and depend on the receiving server to set the content
             # type. This can be achieved by setting headers['Content-Type']
             # to None when calling this method.
-            if headers['Content-Type'] is None:
+            if (len(content_type_headers) == 1 and
+                headers[content_type_headers[0]] is None):
                 # Delete null Content-Type value to skip sending that header.
-                del headers['Content-Type']
+                del headers[content_type_headers[0]]
             else:
-                self.content_type = headers['Content-Type']
+                self.content_type = merge_headers_by_name(
+                    'Content-Type', headers)
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
             if self.content_type == None:

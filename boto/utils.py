@@ -944,3 +944,24 @@ def compute_hash(fp, buf_size=8192, size=None, hash_algorithm=md5):
     data_size = fp.tell() - spos
     fp.seek(spos)
     return (hex_digest, base64_digest, data_size)
+
+
+def find_matching_headers(name, headers):
+    """
+    Takes a specific header name and a dict of headers {"name": "value"}.
+    Returns a list of matching header names, case-insensitive.
+
+    """
+    return [h for h in headers if h.lower() == name.lower()]
+
+
+def merge_headers_by_name(name, headers):
+    """
+    Takes a specific header name and a dict of headers {"name": "value"}.
+    Returns a string of all header values, comma-separated, that match the
+    input header name, case-insensitive.
+
+    """
+    matching_headers = find_matching_headers(name, headers)
+    return ','.join(str(headers[h]) for h in matching_headers
+                    if headers[h] is not None)
