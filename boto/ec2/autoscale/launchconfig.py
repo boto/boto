@@ -66,11 +66,11 @@ class InstanceMonitoring(object):
 
 # this should use the BlockDeviceMapping from boto.ec2.blockdevicemapping
 class BlockDeviceMapping(object):
-    def __init__(self, connection=None, device_name=None, virtual_name=None):
+    def __init__(self, connection=None, device_name=None, virtual_name=None, ebs=None):
         self.connection = connection
-        self.device_name = None
-        self.virtual_name = None
-        self.ebs = None
+        self.device_name = device_name
+        self.virtual_name = virtual_name
+        self.ebs = ebs
 
     def __repr__(self):
         return 'BlockDeviceMapping(%s, %s)' % (self.device_name,
