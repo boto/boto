@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 
 from boto.resultset import ResultSet
 
@@ -41,10 +42,11 @@ class Stack(object):
 
     def endElement(self, name, value, connection):
         if name == 'CreationTime':
-            try:
-                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
-            except ValueError:
+            p = re.compile('\d{4,4}-\d{2,2}-\d{2,2}T\d{2,2}:\d{2,2}:\d{2,2}\.\d{1,6}Z')
+            if p.match(value):
                 self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            else:
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         elif name == "Description":
             self.description = value
         elif name == "DisableRollback":
@@ -126,9 +128,17 @@ class StackSummary(object):
         elif name == 'StackName':
             self.stack_name = value
         elif name == 'CreationTime':
-            self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            p = re.compile('\d{4,4}-\d{2,2}-\d{2,2}T\d{2,2}:\d{2,2}:\d{2,2}\.\d{1,6}Z')
+            if p.match(value):
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            else:
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         elif name == "DeletionTime":
-            self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            p = re.compile('\d{4,4}-\d{2,2}-\d{2,2}T\d{2,2}:\d{2,2}:\d{2,2}\.\d{1,6}Z')
+            if p.match(value):
+                self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            else:
+                self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         elif name == 'TemplateDescription':
             self.template_description = value
         elif name == "member":
@@ -354,10 +364,11 @@ class StackEvent(object):
         elif name == "StackName":
             self.stack_name = value
         elif name == "Timestamp":
-            try:
-                self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
-            except ValueError:
+            p = re.compile('\d{4,4}-\d{2,2}-\d{2,2}T\d{2,2}:\d{2,2}:\d{2,2}\.\d{1,6}Z')
+            if p.match(value):
                 self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            else:
+                self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         else:
             setattr(self, name, value)
 
