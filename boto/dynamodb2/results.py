@@ -114,12 +114,13 @@ class ResultSet(object):
         self._results.extend(results['results'])
         self._last_key_seen = results.get('last_key', None)
 
-        if self._last_key_seen is None:
-            self._results_left = False
-
         # Decrease the limit, if it's present.
         if self.call_kwargs.get('limit'):
             self.call_kwargs['limit'] -= len(results['results'])
+
+        if self._last_key_seen is None or\
+                (self.call_kwargs.has_key('limit') and self.call_kwargs['limit'] < 1):
+            self._results_left = False
 
 
 class BatchGetResultSet(ResultSet):
