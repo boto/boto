@@ -812,6 +812,14 @@ class MTurkConnection(AWSQueryConnection):
                   'IntegerValue' : value}
         return self._process_request('UpdateQualificationScore', params)
 
+    def get_file_upload_url(self, assignment_id, question_identifier):
+        """Gets the url for a file uploaded for a FileUploadAnswer
+        """
+        params = {'AssignmentId': assignment_id,
+                  'QuestionIdentifier': question_identifier}
+        return self._process_request('GetFileUploadURL', params,
+                                     [('FileUploadURL', FileUploadURL)])
+
     def _process_request(self, request_type, params, marker_elems=None):
         """
         Helper to process the xml response from AWS
@@ -1025,3 +1033,11 @@ class QuestionFormAnswer(BaseAutoResultElement):
             self.qid = value
         elif name in ['FreeText', 'SelectionIdentifier', 'OtherSelectionText'] and self.qid:
             self.fields.append(value)
+
+
+class FileUploadURL(BaseAutoResultElement):
+    """
+    Class to extract a FileUploadURL structure from a response
+    """
+
+    pass
