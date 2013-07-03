@@ -271,7 +271,10 @@ class StackResource(object):
         elif name == "StackName":
             self.stack_name = value
         elif name == "Timestamp":
-            self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
         else:
             setattr(self, name, value)
 
