@@ -598,6 +598,10 @@ def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
         if i < end_cap:
             results.append("%s %s #%s" % (greeting, name, i))
 
+    # Don't return more than limit results
+    if limit < len(results):
+        results = results[:limit]
+
     retval = {
         'results': results,
     }
@@ -680,6 +684,37 @@ class ResultSetTestCase(unittest.TestCase):
         self.assertEqual(self.results.next(), 'Hello john #12')
         self.assertRaises(StopIteration, self.results.next)
         self.assertEqual(self.results.call_kwargs['limit'], 7)
+
+    def test_limit_smaller_than_first_page(self):
+        results = ResultSet()
+        results.to_call(fake_results, 'john', greeting='Hello', limit=2)
+        self.assertEqual(results.next(), 'Hello john #0')
+        self.assertEqual(results.next(), 'Hello john #1')
+        self.assertRaises(StopIteration, results.next)
+        
+    def test_limit_equals_page(self):
+        results = ResultSet()
+        results.to_call(fake_results, 'john', greeting='Hello', limit=5)
+        # First page
+        self.assertEqual(results.next(), 'Hello john #0')
+        self.assertEqual(results.next(), 'Hello john #1')
+        self.assertEqual(results.next(), 'Hello john #2')
+        self.assertEqual(results.next(), 'Hello john #3')
+        self.assertEqual(results.next(), 'Hello john #4')
+        self.assertRaises(StopIteration, results.next)
+
+    def test_limit_greater_than_page(self):
+        results = ResultSet()
+        results.to_call(fake_results, 'john', greeting='Hello', limit=6)
+        # First page
+        self.assertEqual(results.next(), 'Hello john #0')
+        self.assertEqual(results.next(), 'Hello john #1')
+        self.assertEqual(results.next(), 'Hello john #2')
+        self.assertEqual(results.next(), 'Hello john #3')
+        self.assertEqual(results.next(), 'Hello john #4')
+        # Second page
+        self.assertEqual(results.next(), 'Hello john #5')
+        self.assertRaises(StopIteration, results.next)
 
     def test_iteration_noresults(self):
         def none(limit=10):
