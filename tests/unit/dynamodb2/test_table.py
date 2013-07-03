@@ -590,6 +590,9 @@ def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
     if exclusive_start_key is None:
         exclusive_start_key = -1
 
+    if limit == 0:
+        raise Exception("Web Service Returns '400 Bad Request'")
+
     end_cap = 13
     results = []
     start_key = exclusive_start_key + 1
