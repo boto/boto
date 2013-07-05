@@ -77,9 +77,69 @@ DESCRIBE_STACK_RESOURCE_XML = r"""
 </DescribeStackResourcesResult>
 """
 
+LIST_STACKS_XML = r"""
+<ListStacksResponse>
+ <ListStacksResult>
+  <StackSummaries>
+    <member>
+        <StackId>
+            arn:aws:cloudformation:us-east-1:1234567:stack/TestCreate1/aaaaa
+        </StackId>
+        <StackStatus>CREATE_IN_PROGRESS</StackStatus>
+        <StackName>vpc1</StackName>
+        <CreationTime>2011-05-23T15:47:44Z</CreationTime>
+        <TemplateDescription>
+            Creates one EC2 instance and a load balancer.
+        </TemplateDescription>
+    </member>
+    <member>
+        <StackId>
+            arn:aws:cloudformation:us-east-1:1234567:stack/TestDelete2/bbbbb
+        </StackId>
+        <StackStatus>DELETE_COMPLETE</StackStatus>
+        <DeletionTime>2011-03-10T16:20:51.575757Z</DeletionTime>
+        <StackName>WP1</StackName>
+        <CreationTime>2011-03-05T19:57:58.161616Z</CreationTime>
+        <TemplateDescription>
+            A simple basic Cloudformation Template.
+        </TemplateDescription>
+    </member>
+  </StackSummaries>
+ </ListStacksResult>
+</ListStacksResponse>
+"""
+
+LIST_STACK_RESOURCES_XML = r"""
+<ListStackResourcesResponse>
+  <ListStackResourcesResult>
+    <StackResourceSummaries>
+      <member>
+        <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
+        <LogicalResourceId>DBSecurityGroup</LogicalResourceId>
+        <LastUpdatedTimestamp>2011-06-21T20:15:58Z</LastUpdatedTimestamp>
+        <PhysicalResourceId>gmarcteststack-dbsecuritygroup-1s5m0ez5lkk6w</PhysicalResourceId>
+        <ResourceType>AWS::RDS::DBSecurityGroup</ResourceType>
+      </member>
+      <member>
+        <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
+        <LogicalResourceId>SampleDB</LogicalResourceId>
+        <LastUpdatedTimestamp>2011-06-21T20:25:57.875643Z</LastUpdatedTimestamp>
+        <PhysicalResourceId>MyStack-sampledb-ycwhk1v830lx</PhysicalResourceId>
+        <ResourceType>AWS::RDS::DBInstance</ResourceType>
+      </member>
+    </StackResourceSummaries>
+  </ListStackResourcesResult>
+  <ResponseMetadata>
+    <RequestId>2d06e36c-ac1d-11e0-a958-f9382b6eb86b</RequestId>
+  </ResponseMetadata>
+</ListStackResourcesResponse>
+"""
+
 class TestStackParse(unittest.TestCase):
     def test_parse_tags(self):
-        rs = boto.resultset.ResultSet([('member', boto.cloudformation.stack.Stack)])
+        rs = boto.resultset.ResultSet([
+          ('member', boto.cloudformation.stack.Stack)
+        ])
         h = boto.handler.XmlHandler(rs, None)
         xml.sax.parseString(SAMPLE_XML, h)
         tags = rs[0].tags
@@ -91,20 +151,72 @@ class TestStackParse(unittest.TestCase):
           "<CreationTime>2013-01-10T05:04:56.102342Z</CreationTime>"
         )
 
-        rs = boto.resultset.ResultSet([('member', boto.cloudformation.stack.Stack)])
+        rs = boto.resultset.ResultSet([
+          ('member', boto.cloudformation.stack.Stack)
+        ])
         h = boto.handler.XmlHandler(rs, None)
         xml.sax.parseString(millis_xml, h)
         creation_time = rs[0].creation_time
-        self.assertEqual(creation_time, datetime.datetime(2013, 1, 10, 5, 4, 56, 102342))
+        self.assertEqual(
+          creation_time,
+          datetime.datetime(2013, 1, 10, 5, 4, 56, 102342)
+        )
 
     def test_resource_time_with_millis(self):
-        rs = boto.resultset.ResultSet([('member', boto.cloudformation.stack.StackResource)])
+        rs = boto.resultset.ResultSet([
+          ('member', boto.cloudformation.stack.StackResource)
+        ])
         h = boto.handler.XmlHandler(rs, None)
         xml.sax.parseString(DESCRIBE_STACK_RESOURCE_XML, h)
-        timestamp_1= rs[0].timestamp
-        self.assertEqual(timestamp_1, datetime.datetime(2010, 7, 27, 22, 27, 28))
+        timestamp_1 = rs[0].timestamp
+        self.assertEqual(
+          timestamp_1,
+          datetime.datetime(2010, 7, 27, 22, 27, 28)
+        )
         timestamp_2 = rs[1].timestamp
-        self.assertEqual(timestamp_2, datetime.datetime(2010, 7, 27, 22, 28, 28, 123456))
+        self.assertEqual(
+          timestamp_2,
+          datetime.datetime(2010, 7, 27, 22, 28, 28, 123456)
+        )
+
+    def test_list_stacks_time_with_millis(self):
+        rs = boto.resultset.ResultSet([
+            ('member', boto.cloudformation.stack.StackSummary)
+        ])
+        h = boto.handler.XmlHandler(rs, None)
+        xml.sax.parseString(LIST_STACKS_XML, h)
+        timestamp_1 = rs[0].creation_time
+        self.assertEqual(
+            timestamp_1,
+            datetime.datetime(2011, 5, 23, 15, 47, 44)
+        )
+        timestamp_2 = rs[1].creation_time
+        self.assertEqual(
+            timestamp_2,
+            datetime.datetime(2011, 3, 5, 19, 57, 58, 161616)
+        )
+        timestamp_3 = rs[1].deletion_time
+        self.assertEqual(
+            timestamp_3,
+            datetime.datetime(2011, 3, 10, 16, 20, 51, 575757)
+        )
+
+    def test_list_stacks_time_with_millis(self):
+        rs = boto.resultset.ResultSet([
+            ('member', boto.cloudformation.stack.StackResourceSummary)
+        ])
+        h = boto.handler.XmlHandler(rs, None)
+        xml.sax.parseString(LIST_STACK_RESOURCES_XML, h)
+        timestamp_1 = rs[0].last_updated_timestamp
+        self.assertEqual(
+            timestamp_1,
+            datetime.datetime(2011, 6, 21, 20, 15, 58)
+        )
+        timestamp_2 = rs[1].last_updated_timestamp
+        self.assertEqual(
+            timestamp_2,
+            datetime.datetime(2011, 6, 21, 20, 25, 57, 875643)
+        )
 
 if __name__ == '__main__':
     unittest.main()
