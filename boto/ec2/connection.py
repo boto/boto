@@ -2144,8 +2144,8 @@ class EC2Connection(AWSQueryConnection):
         """
         Convenience method to retrieve a specific keypair (KeyPair).
 
-        :type image_id: string
-        :param image_id: the ID of the Image to retrieve
+        :type keyname: string
+        :param keyname: The name of the keypair to retrieve
 
         :rtype: :class:`boto.ec2.keypair.KeyPair`
         :return: The KeyPair specified or None if it is not found
