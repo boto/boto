@@ -52,6 +52,31 @@ SAMPLE_XML = r"""
 </DescribeStacksResponse>
 """
 
+DESCRIBE_STACK_RESOURCE_XML = r"""
+<DescribeStackResourcesResult>
+  <StackResources>
+    <member>
+      <StackId>arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83</StackId>
+      <StackName>MyStack</StackName>
+      <LogicalResourceId>MyDBInstance</LogicalResourceId>
+      <PhysicalResourceId>MyStack_DB1</PhysicalResourceId>
+      <ResourceType>AWS::DBInstance</ResourceType>
+      <Timestamp>2010-07-27T22:27:28Z</Timestamp>
+      <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
+    </member>
+    <member>
+      <StackId>arn:aws:cloudformation:us-east-1:123456789:stack/MyStack/aaf549a0-a413-11df-adb3-5081b3858e83</StackId>
+      <StackName>MyStack</StackName>
+      <LogicalResourceId>MyAutoScalingGroup</LogicalResourceId>
+      <PhysicalResourceId>MyStack_ASG1</PhysicalResourceId>
+      <ResourceType>AWS::AutoScalingGroup</ResourceType>
+      <Timestamp>2010-07-27T22:28:28.123456Z</Timestamp>
+      <ResourceStatus>CREATE_IN_PROGRESS</ResourceStatus>
+    </member>
+  </StackResources>
+</DescribeStackResourcesResult>
+"""
+
 class TestStackParse(unittest.TestCase):
     def test_parse_tags(self):
         rs = boto.resultset.ResultSet([('member', boto.cloudformation.stack.Stack)])
@@ -60,7 +85,7 @@ class TestStackParse(unittest.TestCase):
         tags = rs[0].tags
         self.assertEqual(tags, {u'key0': u'value0', u'key1': u'value1'})
 
-    def test_creation_time_with_millis(self):
+    def test_event_creation_time_with_millis(self):
         millis_xml = SAMPLE_XML.replace(
           "<CreationTime>2013-01-10T05:04:56Z</CreationTime>",
           "<CreationTime>2013-01-10T05:04:56.102342Z</CreationTime>"
@@ -71,6 +96,15 @@ class TestStackParse(unittest.TestCase):
         xml.sax.parseString(millis_xml, h)
         creation_time = rs[0].creation_time
         self.assertEqual(creation_time, datetime.datetime(2013, 1, 10, 5, 4, 56, 102342))
+
+    def test_resource_time_with_millis(self):
+        rs = boto.resultset.ResultSet([('member', boto.cloudformation.stack.StackResource)])
+        h = boto.handler.XmlHandler(rs, None)
+        xml.sax.parseString(DESCRIBE_STACK_RESOURCE_XML, h)
+        timestamp_1= rs[0].timestamp
+        self.assertEqual(timestamp_1, datetime.datetime(2010, 7, 27, 22, 27, 28))
+        timestamp_2 = rs[1].timestamp
+        self.assertEqual(timestamp_2, datetime.datetime(2010, 7, 27, 22, 28, 28, 123456))
 
 if __name__ == '__main__':
     unittest.main()
