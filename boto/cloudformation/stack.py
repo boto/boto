@@ -126,9 +126,15 @@ class StackSummary(object):
         elif name == 'StackName':
             self.stack_name = value
         elif name == 'CreationTime':
-            self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
         elif name == "DeletionTime":
-            self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
         elif name == 'TemplateDescription':
             self.template_description = value
         elif name == "member":
