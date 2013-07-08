@@ -1,3 +1,7 @@
+===========
+boto v2.1.0
+===========
+
 The 2.1.0 release of boto is now available on `PyPI`_ and `Google Code`_.
 
 .. _`PyPI`: http://pypi.python.org/pypi/boto

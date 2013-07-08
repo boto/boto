@@ -133,7 +133,7 @@ Release Notes
    releasenotes/v2.1.1
    releasenotes/v2.1.0
    releasenotes/v2.0.0
-   releasenotes/v2.0.b1
+   releasenotes/v2.0b1
 
 
 .. toctree::
