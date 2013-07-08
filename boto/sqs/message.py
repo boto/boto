@@ -199,6 +199,9 @@ class MHMessage(Message):
             s = s + '%s: %s\n' % (item[0], item[1])
         return s
 
+    def __contains__(self, key):
+        return key in self._body
+
     def __getitem__(self, key):
         if key in self._body:
             return self._body[key]
