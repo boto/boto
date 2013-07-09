@@ -30,14 +30,14 @@ from boto.ec2.elb import ELBConnection
 class ELBConnectionTest(unittest.TestCase):
     ec2 = True
 
-    def setup(self):
+    def setUp(self):
         """Creates a named load balancer that can be safely
         deleted at the end of each test"""
         self.conn = ELBConnection()
         self.name = 'elb-boto-unit-test'
         self.availability_zones = ['us-east-1a']
         self.listeners = [(80, 8000, 'HTTP')]
-        self.balancer = self.conn.create_load_balancer(name, availability_zones, listeners)
+        self.balancer = self.conn.create_load_balancer(self.name, self.availability_zones, self.listeners)
 
     def tearDown(self):
         """ Deletes the test load balancer after every test.
@@ -80,7 +80,7 @@ class ELBConnectionTest(unittest.TestCase):
 
     def test_delete_load_balancer_listeners(self):
         mod_listeners = [(80, 8000, 'HTTP'), (443, 8001, 'HTTP')]
-        mod_name = self.name + "_mod"
+        mod_name = self.name + "-mod"
         self.mod_balancer = self.conn.create_load_balancer(mod_name,\
             self.availability_zones, mod_listeners)
 
