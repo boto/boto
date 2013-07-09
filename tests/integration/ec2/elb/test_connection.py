@@ -118,5 +118,26 @@ class ELBConnectionTest(unittest.TestCase):
         # Policy names should be checked here once they are supported
         # in the Listener object.
 
+    def test_create_load_balancer_complex_listeners(self):
+        complex_listeners = [
+            (8080, 80, 'HTTP', 'HTTP'),
+            (2525, 25, 'TCP', 'TCP'),
+        ]
+
+        self.conn.create_load_balancer_listeners(
+            self.name,
+            complex_listeners=complex_listeners
+        )
+
+        balancers = self.conn.get_all_load_balancers(
+            load_balancer_names=[self.name]
+        )
+        self.assertEqual([lb.name for lb in balancers], [self.name])
+        self.assertEqual(
+            sorted(l.get_complex_tuple() for l in balancers[0].listeners),
+            # We need an extra 'HTTP' here over what ``self.listeners`` uses.
+            sorted([(80, 8000, 'HTTP', 'HTTP')] + complex_listeners)
+        )
+
 if __name__ == '__main__':
     unittest.main()

@@ -80,5 +80,6 @@ class Listener(object):
             return self.instance_port
         if key == 2:
             return self.protocol
-        # @todo: Not sure how to extend safely without breaking backward compatibility
+        if key == 4:
+            return self.instance_protocol
         raise KeyError
