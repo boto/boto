@@ -227,6 +227,9 @@ class NetworkInterfaceCollection(list):
                     if ip_addr.primary is not None:
                         params[query_param_key_prefix + '.Primary'] = \
                                 'true' if ip_addr.primary else 'false'
+            if spec.associate_public_ip_address is not None:
+                params[full_prefix + 'AssociatePublicIpAddress'] = \
+                        'true' if spec.associate_public_ip_address else 'false'
 
 
 class NetworkInterfaceSpecification(object):
@@ -234,7 +237,8 @@ class NetworkInterfaceSpecification(object):
                  subnet_id=None, description=None, private_ip_address=None,
                  groups=None, delete_on_termination=None,
                  private_ip_addresses=None,
-                 secondary_private_ip_address_count=None):
+                 secondary_private_ip_address_count=None,
+                 associate_public_ip_address=None):
         self.network_interface_id = network_interface_id
         self.device_index = device_index
         self.subnet_id = subnet_id
@@ -245,3 +249,4 @@ class NetworkInterfaceSpecification(object):
         self.private_ip_addresses = private_ip_addresses
         self.secondary_private_ip_address_count = \
                 secondary_private_ip_address_count
+        self.associate_public_ip_address = associate_public_ip_address
