@@ -664,6 +664,7 @@ class ResumableUploadHandler(object):
                 # Upload succceded, so remove the tracker file (if have one).
                 self._remove_tracker_file()
                 self._check_final_md5(key, etag)
+                key.generation = self.generation
                 if debug >= 1:
                     print 'Resumable upload complete.'
                 return
