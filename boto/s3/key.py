@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from __future__ import with_statement
 import errno
 import mimetypes
 import os
@@ -147,37 +148,37 @@ class Key(object):
             provider = self.bucket.connection.provider
         return provider
 
-    @property
-    def key(self):
+    def _get_key(self):
         return self.name
 
-    @key.setter
-    def key(self, value):
+    def _set_key(self, value):
         self.name = value
 
-    @property
-    def md5(self):
+    key = property(_get_key, _set_key);
+
+    def _get_md5(self):
         if 'md5' in self.local_hashes and self.local_hashes['md5']:
             return binascii.b2a_hex(self.local_hashes['md5'])
 
-    @md5.setter
-    def md5(self, value):
+    def _set_md5(self, value):
         if value:
             self.local_hashes['md5'] = binascii.a2b_hex(value)
         elif 'md5' in self.local_hashes:
             self.local_hashes.pop('md5', None)
 
-    @property
-    def base64md5(self):
+    md5 = property(_get_md5, _set_md5);
+
+    def _get_base64md5(self):
         if 'md5' in self.local_hashes and self.local_hashes['md5']:
             return binascii.b2a_base64(self.local_hashes['md5']).rstrip('\n')
 
-    @base64md5.setter
-    def base64md5(self, value):
+    def _set_base64md5(self, value):
         if value:
             self.local_hashes['md5'] = binascii.a2b_base64(value)
         elif 'md5' in self.local_hashes:
             del self.local_hashes['md5']
+
+    base64md5 = property(_get_base64md5, _set_base64md5);
 
     def get_md5_from_hexdigest(self, md5_hexdigest):
         """
@@ -1464,7 +1465,7 @@ class Key(object):
                     if i == cb_count or cb_count == -1:
                         cb(data_len, cb_size)
                         i = 0
-        except IOError as e:
+        except IOError, e:
             if e.errno == errno.ENOSPC:
                 raise StorageDataError('Out of space for destination file '
                                        '%s' % fp.name)
