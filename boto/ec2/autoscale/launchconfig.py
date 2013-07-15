@@ -66,15 +66,15 @@ class InstanceMonitoring(object):
 
 # this should use the BlockDeviceMapping from boto.ec2.blockdevicemapping
 class BlockDeviceMapping(object):
-    def __init__(self, connection=None, device_name=None, virtual_name=None):
+    def __init__(self, connection=None, device_name=None, virtual_name=None, ebs=None):
         self.connection = connection
-        self.device_name = None
-        self.virtual_name = None
-        self.ebs = None
+        self.device_name = device_name
+        self.virtual_name = virtual_name
+        self.ebs = ebs
 
     def __repr__(self):
         return 'BlockDeviceMapping(%s, %s)' % (self.device_name,
-                                               self.virtual_name)
+                                               self.virtual_name or self.ebs)
 
     def startElement(self, name, attrs, connection):
         if name == 'Ebs':
@@ -87,6 +87,14 @@ class BlockDeviceMapping(object):
         elif name == 'VirtualName':
             self.virtual_name = value
 
+    def build_params(self, params, i):
+        prefix = 'BlockDeviceMappings.member.%d.' % i
+        params[prefix + 'DeviceName'] = self.device_name
+        if self.virtual_name:
+            params[prefix + 'VirtualName'] = self.virtual_name
+        elif self.ebs:
+            params[prefix + 'Ebs.SnapshotId'] = self.ebs.snapshot_id
+            params[prefix + 'Ebs.VolumeSize'] = self.ebs.volume_size
 
 class LaunchConfiguration(object):
     def __init__(self, connection=None, name=None, image_id=None,
