@@ -1665,7 +1665,7 @@ class EC2Connection(AWSQueryConnection):
             params['AutoEnableIO.Value'] = new_value
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
-    def create_volume(self, size, zone, snapshot=None,
+    def create_volume(self, size, zone = None, snapshot=None,
                       volume_type=None, iops=None):
         """
         Create a new EBS Volume.
@@ -1674,7 +1674,8 @@ class EC2Connection(AWSQueryConnection):
         :param size: The size of the new volume, in GiB
 
         :type zone: string or :class:`boto.ec2.zone.Zone`
-        :param zone: The availability zone in which the Volume will be created.
+        :param zone: The availability zone in which the Volume will be created (optional).
+            If None, will be set to the default availability zone.
 
         :type snapshot: string or :class:`boto.ec2.snapshot.Snapshot`
         :param snapshot: The snapshot from which the new Volume will be
@@ -1688,9 +1689,10 @@ class EC2Connection(AWSQueryConnection):
         :param iops: The provisioned IOPs you want to associate with
             this volume. (optional)
         """
-        if isinstance(zone, Zone):
+        if zone and isinstance(zone, Zone):
             zone = zone.name
-        params = {'AvailabilityZone': zone}
+            params = {'AvailabilityZone': zone}
+        
         if size:
             params['Size'] = size
         if snapshot:
