@@ -694,7 +694,7 @@ class AWSAuthConnection(object):
         hostonly = host
         hostonly = host.split(':')[0]
 
-        for name in no_proxy.split(','):
+        for name in self.no_proxy.split(','):
             if name and (hostonly.endswith(name) or host.endswith(name)):
                 return True
 
@@ -704,13 +704,15 @@ class AWSAuthConnection(object):
         if self.use_proxy and not is_secure and \
                 not self.skip_proxy(host):
             host = '%s:%d' % (self.proxy, int(self.proxy_port))
+
+
         if host is None:
             host = self.server_name()
         if is_secure:
             boto.log.debug(
                     'establishing HTTPS connection: host=%s, kwargs=%s',
                     host, self.http_connection_kwargs)
-            if self.use_proxy:
+            if self.use_proxy and not self.skip_proxy(host):
                 connection = self.proxy_ssl(host, is_secure and 443 or 80)
             elif self.https_connection_factory:
                 connection = self.https_connection_factory(host)
