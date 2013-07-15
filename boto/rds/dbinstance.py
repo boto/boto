@@ -70,7 +70,8 @@ class DBInstance(object):
         are pending. Specific changes are identified by subelements.
     :ivar read_replica_dbinstance_identifiers: List of read replicas
         associated with this DB instance.
-    :ivar status_infos: Provides the list of Status Info messages.
+    :ivar status_infos: The status of a Read Replica. If the instance is not a
+                        for a read replica, this will be blank.
     """
 
     def __init__(self, connection=None, id=None):
@@ -121,8 +122,10 @@ class DBInstance(object):
                     ReadReplicaDBInstanceIdentifiers()
             return self.read_replica_dbinstance_identifiers
         elif name == 'StatusInfos':
-            self.status_infos = ResultSet([('StatusInfo',
-                                             StatusInfo)])
+            self.status_infos = ResultSet([
+                ('DBInstanceStatusInfo', StatusInfo)
+            ])
+            return self.status_infos
         return None
 
     def endElement(self, name, value, connection):

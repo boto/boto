@@ -78,6 +78,14 @@ class TestRDSConnection(AWSMockServiceTestCase):
                   <AllocatedStorage>200</AllocatedStorage>
                   <DBInstanceClass>db.m1.large</DBInstanceClass>
                   <MasterUsername>awsuser</MasterUsername>
+                  <StatusInfos>
+                    <DBInstanceStatusInfo>
+                      <Message></Message>
+                      <Normal>true</Normal>
+                      <Status>replicating</Status>
+                      <StatusType>read replication</StatusType>
+                    </DBInstanceStatusInfo>
+                  </StatusInfos>
                 </DBInstance>
             </DBInstances>
           </DescribeDBInstancesResult>
@@ -123,6 +131,108 @@ class TestRDSConnection(AWSMockServiceTestCase):
         self.assertEqual(db.security_group.description, None)
         self.assertEqual(db.security_group.ec2_groups, [])
         self.assertEqual(db.security_group.ip_ranges, [])
+        self.assertEqual(len(db.status_infos), 1)
+        self.assertEqual(db.status_infos[0].message, '')
+        self.assertEqual(db.status_infos[0].normal, True)
+        self.assertEqual(db.status_infos[0].status, 'replicating')
+        self.assertEqual(db.status_infos[0].status_type, 'read replication')
+
+
+class TestRDSOptionGroups(AWSMockServiceTestCase):
+    connection_class = RDSConnection
+
+    def setUp(self):
+        super(TestRDSOptionGroups, self).setUp()
+
+    def default_body(self):
+        return """
+        <DescribeOptionGroupsResponse xmlns="http://rds.amazonaws.com/doc/2013-05-15/">
+          <DescribeOptionGroupsResult>
+            <OptionGroupsList>
+              <OptionGroup>
+                <MajorEngineVersion>11.2</MajorEngineVersion>
+                <OptionGroupName>myoptiongroup</OptionGroupName>
+                <EngineName>oracle-se1</EngineName>
+                <OptionGroupDescription>Test option group</OptionGroupDescription>
+                <Options/>
+              </OptionGroup>
+              <OptionGroup>
+                <MajorEngineVersion>11.2</MajorEngineVersion>
+                <OptionGroupName>default:oracle-se1-11-2</OptionGroupName>
+                <EngineName>oracle-se1</EngineName>
+                <OptionGroupDescription>Default Option Group.</OptionGroupDescription>
+                <Options/>
+              </OptionGroup>
+            </OptionGroupsList>
+          </DescribeOptionGroupsResult>
+          <ResponseMetadata>
+            <RequestId>e4b234d9-84d5-11e1-87a6-71059839a52b</RequestId>
+          </ResponseMetadata>
+        </DescribeOptionGroupsResponse>
+        """
+
+    def test_describe_option_groups(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.describe_option_groups()
+        self.assertEqual(len(response), 2)
+        options = response[0]
+        self.assertEqual(options.name, 'myoptiongroup')
+        self.assertEqual(options.description, 'Test option group')
+        self.assertEqual(options.engine_name, 'oracle-se1')
+        self.assertEqual(options.major_engine_version, '11.2')
+        options = response[1]
+        self.assertEqual(options.name, 'default:oracle-se1-11-2')
+        self.assertEqual(options.description, 'Default Option Group.')
+        self.assertEqual(options.engine_name, 'oracle-se1')
+        self.assertEqual(options.major_engine_version, '11.2')
+
+
+class TestRDSOptionGroupOptions(AWSMockServiceTestCase):
+    connection_class = RDSConnection
+
+    def setUp(self):
+        super(TestRDSOptionGroupOptions, self).setUp()
+
+    def default_body(self):
+        return """
+        <DescribeOptionGroupOptionsResponse xmlns="http://rds.amazonaws.com/doc/2013-05-15/">
+          <DescribeOptionGroupOptionsResult>
+            <OptionGroupOptions>
+              <OptionGroupOption>
+                <MajorEngineVersion>11.2</MajorEngineVersion>
+                <PortRequired>true</PortRequired>
+                <OptionsDependedOn/>
+                <Description>Oracle Enterprise Manager</Description>
+                <DefaultPort>1158</DefaultPort>
+                <Name>OEM</Name>
+                <EngineName>oracle-se1</EngineName>
+                <MinimumRequiredMinorEngineVersion>0.2.v3</MinimumRequiredMinorEngineVersion>
+                <Persistent>false</Persistent>
+                <Permanent>false</Permanent>
+              </OptionGroupOption>
+            </OptionGroupOptions>
+          </DescribeOptionGroupOptionsResult>
+          <ResponseMetadata>
+            <RequestId>d9c8f6a1-84c7-11e1-a264-0b23c28bc344</RequestId>
+          </ResponseMetadata>
+        </DescribeOptionGroupOptionsResponse>
+        """
+
+    def test_describe_option_group_options(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.describe_option_group_options()
+        self.assertEqual(len(response), 1)
+        options = response[0]
+        self.assertEqual(options.name, 'OEM')
+        self.assertEqual(options.description, 'Oracle Enterprise Manager')
+        self.assertEqual(options.engine_name, 'oracle-se1')
+        self.assertEqual(options.major_engine_version, '11.2')
+        self.assertEqual(options.min_minor_engine_version, '0.2.v3')
+        self.assertEqual(options.port_required, True)
+        self.assertEqual(options.default_port, 1158)
+        self.assertEqual(options.permanent, False)
+        self.assertEqual(options.persistent, False)
+        self.assertEqual(options.depends_on, [])
 
 
 if __name__ == '__main__':
