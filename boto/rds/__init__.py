@@ -24,6 +24,7 @@ import urllib
 from boto.connection import AWSQueryConnection
 from boto.rds.dbinstance import DBInstance
 from boto.rds.dbsecuritygroup import DBSecurityGroup
+from boto.rds.optiongroup  import OptionGroup, OptionGroupOption
 from boto.rds.parametergroup import ParameterGroup
 from boto.rds.dbsnapshot import DBSnapshot
 from boto.rds.event import Event
@@ -82,7 +83,7 @@ class RDSConnection(AWSQueryConnection):
 
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'rds.amazonaws.com'
-    APIVersion = '2012-09-17'
+    APIVersion = '2013-05-15'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -1197,3 +1198,137 @@ class RDSConnection(AWSQueryConnection):
         if marker:
             params['Marker'] = marker
         return self.get_list('DescribeEvents', params, [('Event', Event)])
+
+    def create_option_group(self, name, engine_name, major_engine_version,
+                            description=None):
+        """
+        Create a new option group for your account.
+        This will create the option group within the region you
+        are currently connected to.
+
+        :type name: string
+        :param name: The name of the new option group
+
+        :type engine_name: string
+        :param engine_name: Specifies the name of the engine that this option
+                            group should be associated with.
+
+        :type major_engine_version: string
+        :param major_engine_version: Specifies the major version of the engine
+                                     that this option group should be
+                                     associated with.
+
+        :type description: string
+        :param description: The description of the new option group
+
+        :rtype: :class:`boto.rds.optiongroup.OptionGroup`
+        :return: The newly created OptionGroup
+        """
+        params = {
+            'OptionGroupName': name,
+            'EngineName': engine_name,
+            'MajorEngineVersion': major_engine_version,
+            'OptionGroupDescription': description,
+        }
+        group = self.get_object('CreateOptionGroup', params, OptionGroup)
+        group.name = name
+        group.engine_name = engine_name
+        group.major_engine_version = major_engine_version
+        group.description = description
+        return group
+
+    def delete_option_group(self, name):
+        """
+        Delete an OptionGroup from your account.
+
+        :type key_name: string
+        :param key_name: The name of the OptionGroup to delete
+        """
+        params = {'OptionGroupName': name}
+        return self.get_status('DeleteOptionGroup', params)
+
+    def describe_option_groups(self, name=None, engine_name=None,
+                               major_engine_version=None, max_records=100,
+                               marker=None):
+        """
+        Describes the available option groups.
+
+        :type name: str
+        :param name: The name of the option group to describe. Cannot be
+                     supplied together with engine_name or major_engine_version.
+
+        :type engine_name: str
+        :param engine_name: Filters the list of option groups to only include
+                            groups associated with a specific database engine.
+
+        :type major_engine_version: datetime
+        :param major_engine_version: Filters the list of option groups to only
+                                     include groups associated with a specific
+                                     database engine version. If specified, then
+                                     engine_name must also be specified.
+
+        :type max_records: int
+        :param max_records: The maximum number of records to be returned.
+                            If more results are available, a MoreToken will
+                            be returned in the response that can be used to
+                            retrieve additional records.  Default is 100.
+
+        :type marker: str
+        :param marker: The marker provided by a previous request.
+
+        :rtype: list
+        :return: A list of class:`boto.rds.optiongroup.OptionGroup`
+        """
+        params = {}
+        if name:
+            params['OptionGroupName'] = name
+        elif engine_name and major_engine_version:
+            params['EngineName'] = engine_name
+            params['MajorEngineVersion'] = major_engine_version
+        if max_records:
+            params['MaxRecords'] = int(max_records)
+        if marker:
+            params['Marker'] = marker
+        return self.get_list('DescribeOptionGroups', params, [
+            ('OptionGroup', OptionGroup)
+        ])
+
+    def describe_option_group_options(self, engine_name=None,
+                               major_engine_version=None, max_records=100,
+                               marker=None):
+        """
+        Describes the available option group options.
+
+        :type engine_name: str
+        :param engine_name: Filters the list of option groups to only include
+                            groups associated with a specific database engine.
+
+        :type major_engine_version: datetime
+        :param major_engine_version: Filters the list of option groups to only
+                                     include groups associated with a specific
+                                     database engine version. If specified, then
+                                     engine_name must also be specified.
+
+        :type max_records: int
+        :param max_records: The maximum number of records to be returned.
+                            If more results are available, a MoreToken will
+                            be returned in the response that can be used to
+                            retrieve additional records.  Default is 100.
+
+        :type marker: str
+        :param marker: The marker provided by a previous request.
+
+        :rtype: list
+        :return: A list of class:`boto.rds.optiongroup.Option`
+        """
+        params = {}
+        if engine_name and major_engine_version:
+            params['EngineName'] = engine_name
+            params['MajorEngineVersion'] = major_engine_version
+        if max_records:
+            params['MaxRecords'] = int(max_records)
+        if marker:
+            params['Marker'] = marker
+        return self.get_list('DescribeOptionGroupOptions', params, [
+            ('OptionGroupOptions', OptionGroupOption)
+        ])
