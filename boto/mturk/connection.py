@@ -813,7 +813,8 @@ class MTurkConnection(AWSQueryConnection):
         return self._process_request('UpdateQualificationScore', params)
 
     def get_file_upload_url(self, assignment_id, question_identifier):
-        """Gets the url for a file uploaded for a FileUploadAnswer
+        """
+        Gets the url for a file uploaded for a FileUploadAnswer
         """
         params = {'AssignmentId': assignment_id,
                   'QuestionIdentifier': question_identifier}
