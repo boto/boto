@@ -152,7 +152,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  {'par1': 'foo', 'par2': 'baz'},
                                  "/",
                                  "POST")
-
+        del os.environ['no_proxy']
         args = urlparse.parse_qs(HTTPretty.last_request.body)
         self.assertEqual(args['AWSAccessKeyId'], ['access_key'])
 
@@ -174,7 +174,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  {'par1': 'foo', 'par2': 'baz'},
                                  "/",
                                  "POST")
-
+        del os.environ['no_proxy']
         args = urlparse.parse_qs(HTTPretty.last_request.body)
         self.assertEqual(args['AWSAccessKeyId'], ['access_key'])
 
