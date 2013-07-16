@@ -23,6 +23,7 @@ At the moment, boto supports:
   * Amazon Elastic Compute Cloud (EC2)
   * Amazon Elastic Map Reduce (EMR)
   * AutoScaling
+  * Google Compute Engine (GCE)
 
 * Content Delivery
 

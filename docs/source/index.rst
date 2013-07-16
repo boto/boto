@@ -26,6 +26,7 @@ Currently Supported Services
   * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
   * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
   * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
+  * Google Compute Engine -- (:doc:`API Reference <ref/gce>`)
 
 * **Content Delivery**
 

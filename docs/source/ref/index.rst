@@ -21,6 +21,7 @@ API Reference
    fps
    glacier
    gs
+   gce
    iam
    manage
    mturk
