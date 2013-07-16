@@ -121,13 +121,18 @@ class MemberList(ElementList):
 
 
 def ResponseFactory(action):
-    result = globals().get(action + 'Result', ResponseElement)
+    response_class = globals().get(action + 'Response', None)
 
-    class MWSResponse(Response):
-        _name = action + 'Response'
+    if response_class is None:
+        result = globals().get(action + 'Result', ResponseElement)
 
-    setattr(MWSResponse, action + 'Result', Element(result))
-    return MWSResponse
+        class MWSResponse(Response):
+            _name = action + 'Response'
+
+        setattr(MWSResponse, action + 'Result', Element(result))
+        response_class = MWSResponse
+
+    return response_class
 
 
 def strip_namespace(func):
@@ -332,12 +337,10 @@ class ListInboundShipmentItemsByNextTokenResult(ListInboundShipmentItemsResult):
 
 
 class ListInventorySupplyResult(ResponseElement):
-    InventorySupplyList = MemberList(
-        EarliestAvailability=Element(),
-        SupplyDetail=MemberList(\
-            EarliestAvailabileToPick=Element(),
-            LatestAvailableToPick=Element(),
-        )
+    InventorySupplyList = ElementList(
+        SellerSKU=ComplexType,
+        TotalSupplyQuantity=ComplexType,
+        InStockSupplyQuantity=ComplexType
     )
 
 
@@ -448,17 +451,24 @@ class GetFulfillmentPreviewResult(ResponseElement):
 
 class FulfillmentOrder(ResponseElement):
     DestinationAddress = Element()
-    NotificationEmailList = MemberList(str)
+
+
+class FulfillmentShipmentPackage(ResponseElement):
+    pass
+
+
+class FulfillmentShipment(ResponseElement):
+    FulfillmentShipmentPackage = MemberList(FulfillmentShipmentPackage)
+
+
+class FulfillmentOrderItem(ResponseElement):
+    pass
 
 
 class GetFulfillmentOrderResult(ResponseElement):
     FulfillmentOrder = Element(FulfillmentOrder)
-    FulfillmentShipment = MemberList(Element(\
-            FulfillmentShipmentItem=MemberList(),
-            FulfillmentShipmentPackage=MemberList(),
-        )
-    )
-    FulfillmentOrderItem = MemberList()
+    FulfillmentShipment = MemberList(FulfillmentShipment)
+    FulfillmentOrderItem = MemberList(FulfillmentOrderItem)
 
 
 class ListAllFulfillmentOrdersResult(ResponseElement):

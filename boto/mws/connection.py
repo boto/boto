@@ -22,9 +22,13 @@ import xml.sax
 import hashlib
 import base64
 import string
+
+from functools import wraps
+
 from boto.connection import AWSQueryConnection
 from boto.mws.exception import ResponseErrorFactory
-from boto.mws.response import ResponseFactory, ResponseElement
+from boto.mws.response import Element
+from boto.mws.response import ResponseFactory
 from boto.handler import XmlHandler
 import boto.mws.response
 
@@ -58,6 +62,7 @@ def structured_lists(*fields):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(self, *args, **kw):
             for key, acc in [f.split('.') for f in fields]:
                 if key in kw:
@@ -76,6 +81,7 @@ def http_body(field):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             if filter(lambda x: not x in kw, (field, 'content_type')):
                 message = "{0} requires {1} and content_type arguments for " \
@@ -94,7 +100,7 @@ def http_body(field):
 
 
 def destructure_object(value, into={}, prefix=''):
-    if isinstance(value, ResponseElement):
+    if isinstance(value, Element):
         for name, attr in value.__dict__.items():
             if name.startswith('_'):
                 continue
@@ -113,6 +119,7 @@ def structured_objects(*fields):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             for field in filter(kw.has_key, fields):
                 destructure_object(kw.pop(field), into=kw, prefix=field)
@@ -123,22 +130,35 @@ def structured_objects(*fields):
     return decorator
 
 
-def requires(*groups):
+def requires(*params_groups):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if 1 != len(filter(hasgroup, groups)):
-                message = ' OR '.join(['+'.join(g) for g in groups])
-                message = "{0} requires {1} argument(s)" \
-                          "".format(func.action, message)
-                raise KeyError(message)
+            missing = []
+            at_least_one_group_completed = False
+            for group in params_groups:
+                group_missing = [param for param in group if not kw.has_key(param)]
+                if group_missing:
+                    missing.append(group_missing)
+                else:
+                    at_least_one_group_completed = True
+
+            if missing and not at_least_one_group_completed:
+                message = '\nOR\n'.join([
+                    ', '.join(group) for group in missing
+                ])
+                exception_msg = '{0} still requires {1}'.format(func.action, message)
+                raise TypeError(exception_msg)
+
             return func(*args, **kw)
-        message = ' OR '.join(['+'.join(g) for g in groups])
-        wrapper.__doc__ = "{0}\nRequired: {1}".format(func.__doc__,
-                                                           message)
+
+        docstring = '\nOR\n'.join([', '.join(group) for group in params_groups])
+        wrapper.__doc__ = "{0}\nRequired: {1}".format(func.__doc__, docstring)
+
         return add_attrs_from(func, to=wrapper)
+
     return decorator
 
 
@@ -146,6 +166,7 @@ def exclusive(*groups):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
             if len(filter(hasgroup, groups)) not in (0, 1):
@@ -165,6 +186,7 @@ def dependent(field, *groups):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
             if field in kw and 1 > len(filter(hasgroup, groups)):
@@ -185,6 +207,7 @@ def requires_some_of(*fields):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             if not filter(kw.has_key, fields):
                 message = "{0} requires at least one of {1} argument(s)" \
@@ -201,6 +224,7 @@ def boolean_arguments(*fields):
 
     def decorator(func):
 
+        @wraps(func)
         def wrapper(*args, **kw):
             for field in filter(lambda x: isinstance(kw.get(x), bool), fields):
                 kw[field] = str(kw[field]).lower()
@@ -216,12 +240,10 @@ def api_action(section, quota, restore, *api):
     def decorator(func, quota=int(quota), restore=float(restore)):
         version, accesskey, path = api_version_path[section]
         action = ''.join(api or map(str.capitalize, func.func_name.split('_')))
-        if hasattr(boto.mws.response, action + 'Response'):
-            response = getattr(boto.mws.response, action + 'Response')
-        else:
-            response = ResponseFactory(action)
+        response = ResponseFactory(action)
         response._action = action
 
+        @wraps(func)
         def wrapper(self, *args, **kw):
             kw.setdefault(accesskey, getattr(self, accesskey, None))
             if kw[accesskey] is None:
@@ -592,11 +614,11 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @structured_objects('DestinationAddress', 'Items')
     @requires(['SellerFulfillmentOrderId', 'DisplayableOrderId',
                'ShippingSpeedCategory',    'DisplayableOrderDateTime',
                'DestinationAddress',       'DisplayableOrderComment',
                'Items'])
+    @structured_objects('DestinationAddress', 'Items')
     @api_action('Outbound', 30, 0.5)
     def create_fulfillment_order(self, path, response, **kw):
         """Requests that Amazon ship items from the seller's inventory
