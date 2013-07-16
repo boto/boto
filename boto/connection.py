@@ -704,8 +704,6 @@ class AWSAuthConnection(object):
         if self.use_proxy and not is_secure and \
                 not self.skip_proxy(host):
             host = '%s:%d' % (self.proxy, int(self.proxy_port))
-
-
         if host is None:
             host = self.server_name()
         if is_secure:
