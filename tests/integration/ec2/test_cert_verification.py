@@ -37,4 +37,4 @@ class CertVerificationTest(unittest.TestCase):
     def test_certs(self):
         for region in boto.ec2.regions():
             c = region.connect()
-            c.get_all_instances()
+            c.get_all_reservations()
