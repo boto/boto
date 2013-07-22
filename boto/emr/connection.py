@@ -67,7 +67,7 @@ class EmrConnection(AWSQueryConnection):
                                     validate_certs=validate_certs)
 
     def _required_auth_capability(self):
-        return ['emr']
+        return ['hmac-v4']
 
     def describe_jobflow(self, jobflow_id):
         """
