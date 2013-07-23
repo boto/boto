@@ -253,7 +253,11 @@ class AutoScaleConnection(AWSQueryConnection):
         params = {'AdjustmentType': scaling_policy.adjustment_type,
                   'AutoScalingGroupName': scaling_policy.as_name,
                   'PolicyName': scaling_policy.name,
-                  'ScalingAdjustment': scaling_policy.scaling_adjustment}
+                  'ScalingAdjustment': scaling_policy.scaling_adjustment }
+
+        if scaling_policy.adjustment_type == "PercentChangeInCapacity":
+            params.update({'MinAdjustmentStep': scaling_policy.min_adjustment_step})
+
         if scaling_policy.cooldown is not None:
             params['Cooldown'] = scaling_policy.cooldown
 
