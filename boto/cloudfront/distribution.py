@@ -654,12 +654,14 @@ class Distribution:
             raise ValueError("Only specify the private_key_file or the private_key_string not both")
         if not private_key_file and not private_key_string:
             raise ValueError("You must specify one of private_key_file or private_key_string")
-        # If private_key_file is a file, read its contents. Otherwise, open it and then read it
-        if isinstance(private_key_file, file):
-            private_key_string = private_key_file.read()
-        elif private_key_file:
-            with open(private_key_file, 'r') as file_handle:
-                private_key_string = file_handle.read()
+        # If private_key_file is a file name, open it and read it
+        if private_key_string is None:
+            if isinstance(private_key_file, basestring):
+                with open(private_key_file, 'r') as file_handle:
+                    private_key_string = file_handle.read()
+            # Otherwise, treat it like a file
+            else:
+                private_key_string = private_key_file.read()
 
         # Sign it!
         private_key = rsa.PrivateKey.load_pkcs1(private_key_string)
