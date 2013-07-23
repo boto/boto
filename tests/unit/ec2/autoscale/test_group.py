@@ -219,12 +219,12 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
         bdm['/dev/sdg'] = dev_sdg
 
         lc = launchconfig.LaunchConfiguration(
-                connection=self.service_connection, 
-                name='launch_config', 
-                image_id='123456', 
-                instance_type = 'm1.large', 
-                security_groups = ['group1', 'group2'], 
-                spot_price='price', 
+                connection=self.service_connection,
+                name='launch_config',
+                image_id='123456',
+                instance_type = 'm1.large',
+                security_groups = ['group1', 'group2'],
+                spot_price='price',
                 block_device_mappings = [bdm]
                 )
 
@@ -238,6 +238,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'BlockDeviceMapping.2.DeviceName': '/dev/sdg',
             'BlockDeviceMapping.2.Ebs.DeleteOnTermination': 'false',
             'BlockDeviceMapping.2.Ebs.SnapshotId': 'snap-12346',
+            'EbsOptimized': 'false',
             'LaunchConfigurationName': 'launch_config',
             'ImageId': '123456',
             'InstanceMonitoring.Enabled': 'false',
