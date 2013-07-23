@@ -30,7 +30,7 @@ from boto.cloudfront.logging import LoggingInfo
 from boto.cloudfront.origin import S3Origin, CustomOrigin
 from boto.s3.acl import ACL
 
-class DistributionConfig:
+class DistributionConfig(object):
 
     def __init__(self, connection=None, origin=None, enabled=False,
                  caller_reference='', cnames=None, comment='',
@@ -100,7 +100,7 @@ class DistributionConfig:
             self.cnames = cnames
         self.comment = comment
         self.trusted_signers = trusted_signers
-        self.logging = None
+        self.logging = logging
         self.default_root_object = default_root_object
 
     def to_xml(self):
@@ -214,7 +214,7 @@ class StreamingDistributionConfig(DistributionConfig):
         s += '</StreamingDistributionConfig>\n'
         return s
 
-class DistributionSummary:
+class DistributionSummary(object):
 
     def __init__(self, connection=None, domain_name='', id='',
                  last_modified_time=None, status='', origin=None,
@@ -279,7 +279,7 @@ class StreamingDistributionSummary(DistributionSummary):
     def get_distribution(self):
         return self.connection.get_streaming_distribution_info(self.id)
 
-class Distribution:
+class Distribution(object):
 
     def __init__(self, connection=None, config=None, domain_name='',
                  id='', last_modified_time=None, status=''):
