@@ -34,7 +34,8 @@ class TestSESIdentity(AWSMockServiceTestCase):
         super(TestSESIdentity, self).setUp()
 
     def default_body(self):
-        return """<GetIdentityDkimAttributesResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+        return """<GetIdentityDkimAttributesResponse \
+xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
   <GetIdentityDkimAttributesResult>
     <DkimAttributes>
       <entry>
@@ -59,18 +60,22 @@ class TestSESIdentity(AWSMockServiceTestCase):
     def test_ses_get_identity_dkim_list(self):
         self.set_http_response(status_code=200)
 
-        response = self.service_connection.get_identity_dkim_attributes(['test@amazon.com'])
+        response = self.service_connection\
+                       .get_identity_dkim_attributes(['test@amazon.com'])
 
-        tokens = response['GetIdentityDkimAttributesResponse']\
-                         ['GetIdentityDkimAttributesResult']\
-                         ['DkimAttributes']['entry']['value']\
-                         ['DkimTokens']
+        response = response['GetIdentityDkimAttributesResponse']
+        result = response['GetIdentityDkimAttributesResult']
+        attributes = result['DkimAttributes']['entry']['value']
+        tokens = attributes['DkimTokens']
 
         self.assertEqual(ListElement, type(tokens))
         self.assertEqual(3, len(tokens))
-        self.assertEqual('vvjuipp74whm76gqoni7qmwwn4w4qusjiainivf6f', tokens[0])
-        self.assertEqual('3frqe7jn4obpuxjpwpolz6ipb3k5nvt2nhjpik2oy', tokens[1])
-        self.assertEqual('wrqplteh7oodxnad7hsl4mixg2uavzneazxv5sxi2', tokens[2])
+        self.assertEqual('vvjuipp74whm76gqoni7qmwwn4w4qusjiainivf6f',
+                         tokens[0])
+        self.assertEqual('3frqe7jn4obpuxjpwpolz6ipb3k5nvt2nhjpik2oy',
+                         tokens[1])
+        self.assertEqual('wrqplteh7oodxnad7hsl4mixg2uavzneazxv5sxi2',
+                         tokens[2])
 
 
 if __name__ == '__main__':
