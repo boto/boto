@@ -385,8 +385,9 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
 
     def canonical_uri(self, http_request):
         path = http_request.auth_path
-        # Normalize the path.
-        normalized = posixpath.normpath(path)
+        # Normalize the path
+        # in windows normpath('/') will be '\\' so we chane it back to '/'
+        normalized = posixpath.normpath(path).replace('\\','/')
         # Then urlencode whatever's left.
         encoded = urllib.quote(normalized)
         if len(path) > 1 and path.endswith('/'):
