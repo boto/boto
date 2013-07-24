@@ -1909,7 +1909,7 @@ class EC2Connection(AWSQueryConnection):
         snapshots taken in each of the last seven days, the first snapshots
         taken in the last 4 weeks (counting Midnight Sunday morning as
         the start of the week), and the first snapshot from the first
-        Sunday of each month forever.
+        day of each month forever.
 
         :type hourly_backups: int
         :param hourly_backups: How many recent hourly backups should be saved.
