@@ -142,7 +142,6 @@ class ScalingPolicy(object):
             return self.alarms
 
     def endElement(self, name, value, connection):
-        print name
         if name == 'PolicyName':
             self.name = value
         elif name == 'AutoScalingGroupName':
