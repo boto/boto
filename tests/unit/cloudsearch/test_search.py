@@ -6,7 +6,7 @@ from httpretty import HTTPretty
 import urlparse
 import json
 
-from boto.cloudsearch.search import SearchConnection
+from boto.cloudsearch.search import SearchConnection, SearchServiceException
 
 HOSTNAME = "search-demo-userdomain.us-east-1.cloudsearch.amazonaws.com"
 FULL_URL = 'http://%s/2011-02-01/search' % HOSTNAME
@@ -45,6 +45,8 @@ class CloudSearchSearchBaseTest(unittest.TestCase):
         },
     ]
 
+    content_type = "text/xml"
+    response_status = 200
 
     def get_args(self, requestline):
         (_, request, _) = requestline.split(" ")
@@ -54,9 +56,15 @@ class CloudSearchSearchBaseTest(unittest.TestCase):
 
     def setUp(self):
         HTTPretty.enable()
+        body = self.response
+
+        if not isinstance(body, basestring):
+            body = json.dumps(body)
+
         HTTPretty.register_uri(HTTPretty.GET, FULL_URL,
-                               body=json.dumps(self.response),
-                               content_type="text/xml")
+                               body=body,
+                               content_type=self.content_type,
+                               status=self.response_status)
 
     def tearDown(self):
         HTTPretty.disable()
@@ -355,3 +363,27 @@ class CloudSearchSearchFacetTest(CloudSearchSearchBaseTest):
 
         self.assertTrue('tags' not in results.facets)
         self.assertEqual(results.facets['animals'], {u'lions': u'1', u'fish': u'2'})
+
+
+class CloudSearchNonJsonTest(CloudSearchSearchBaseTest):
+    response = '<html><body><h1>500 Internal Server Error</h1></body></html>'
+    response_status = 500
+    content_type = 'text/xml'
+
+    def test_response(self):
+        search = SearchConnection(endpoint=HOSTNAME)
+
+        with self.assertRaises(SearchServiceException):
+            search.search(q='Test')
+
+
+class CloudSearchUnauthorizedTest(CloudSearchSearchBaseTest):
+    response = '<html><body><h1>403 Forbidden</h1>foo bar baz</body></html>'
+    response_status = 403
+    content_type = 'text/html'
+
+    def test_response(self):
+        search = SearchConnection(endpoint=HOSTNAME)
+
+        with self.assertRaisesRegexp(SearchServiceException, 'foo bar baz'):
+            search.search(q='Test')
