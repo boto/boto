@@ -673,6 +673,8 @@ class AWSAuthConnection(object):
             print "http_proxy environment variable does not specify " \
                 "a port, using default"
             self.proxy_port = self.port
+
+        self.no_proxy = os.environ.get('no_proxy', '') or os.environ.get('NO_PROXY', '')
         self.use_proxy = (self.proxy != None)
 
     def get_http_connection(self, host, is_secure):
@@ -682,8 +684,25 @@ class AWSAuthConnection(object):
         else:
             return self.new_http_connection(host, is_secure)
 
+    def skip_proxy(self, host):
+        if not self.no_proxy:
+            return False
+
+        if self.no_proxy == "*":
+            return True
+
+        hostonly = host
+        hostonly = host.split(':')[0]
+
+        for name in self.no_proxy.split(','):
+            if name and (hostonly.endswith(name) or host.endswith(name)):
+                return True
+
+        return False
+
     def new_http_connection(self, host, is_secure):
-        if self.use_proxy and not is_secure:
+        if self.use_proxy and not is_secure and \
+                not self.skip_proxy(host):
             host = '%s:%d' % (self.proxy, int(self.proxy_port))
         if host is None:
             host = self.server_name()
@@ -691,7 +710,7 @@ class AWSAuthConnection(object):
             boto.log.debug(
                     'establishing HTTPS connection: host=%s, kwargs=%s',
                     host, self.http_connection_kwargs)
-            if self.use_proxy:
+            if self.use_proxy and not self.skip_proxy(host):
                 connection = self.proxy_ssl(host, is_secure and 443 or 80)
             elif self.https_connection_factory:
                 connection = self.https_connection_factory(host)

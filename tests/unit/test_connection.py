@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import os
 import urlparse
 from tests.unit import unittest
 from httpretty import HTTPretty
@@ -133,6 +134,49 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                    aws_secret_access_key='secret')
 
         self.assertEqual(conn.host, 'mockservice.cc-zone-1.amazonaws.com')
+
+    def test_query_connection_noproxy(self):
+        HTTPretty.register_uri(HTTPretty.POST,
+                               'https://%s/' % self.region.endpoint,
+                               json.dumps({'test': 'secure'}),
+                               content_type='application/json')
+
+        os.environ['no_proxy'] = self.region.endpoint
+
+        conn = self.region.connect(aws_access_key_id='access_key',
+                                   aws_secret_access_key='secret',
+                                   proxy="NON_EXISTENT_HOSTNAME",
+                                   proxy_port="3128")
+
+        resp = conn.make_request('myCmd',
+                                 {'par1': 'foo', 'par2': 'baz'},
+                                 "/",
+                                 "POST")
+        del os.environ['no_proxy']
+        args = urlparse.parse_qs(HTTPretty.last_request.body)
+        self.assertEqual(args['AWSAccessKeyId'], ['access_key'])
+
+    def test_query_connection_noproxy_nosecure(self):
+        HTTPretty.register_uri(HTTPretty.POST,
+                               'https://%s/' % self.region.endpoint,
+                               json.dumps({'test': 'insecure'}),
+                               content_type='application/json')
+
+        os.environ['no_proxy'] = self.region.endpoint
+
+        conn = self.region.connect(aws_access_key_id='access_key',
+                                   aws_secret_access_key='secret',
+                                   proxy="NON_EXISTENT_HOSTNAME",
+                                   proxy_port="3128",
+                                   is_secure = False)
+
+        resp = conn.make_request('myCmd',
+                                 {'par1': 'foo', 'par2': 'baz'},
+                                 "/",
+                                 "POST")
+        del os.environ['no_proxy']
+        args = urlparse.parse_qs(HTTPretty.last_request.body)
+        self.assertEqual(args['AWSAccessKeyId'], ['access_key'])
 
     def test_single_command(self):
         HTTPretty.register_uri(HTTPretty.POST,

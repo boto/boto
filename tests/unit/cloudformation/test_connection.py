@@ -421,7 +421,7 @@ class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
         self.assertEqual(stack.creation_time,
                          datetime(2012, 5, 16, 22, 55, 31))
         self.assertEqual(stack.description, 'My Description')
-        self.assertEqual(stack.disable_rollback, True)
+        self.assertEqual(stack.disable_rollback, False)
         self.assertEqual(stack.stack_id, 'arn:aws:cfn:us-east-1:1:stack')
         self.assertEqual(stack.stack_status, 'CREATE_COMPLETE')
         self.assertEqual(stack.stack_name, 'MyStack')

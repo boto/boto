@@ -1,3 +1,4 @@
+# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -17,27 +18,18 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+#
+from tests.unit import unittest
+
+from boto.sqs.message import MHMessage
 
 
-class InstanceGroup(object):
-    def __init__(self, num_instances, role, type, market, name, bidprice=None):
-        self.num_instances = num_instances
-        self.role = role
-        self.type = type
-        self.market = market
-        self.name = name
-        if market == 'SPOT':
-            if not bidprice:
-                raise ValueError('bidprice must be specified if market == SPOT')
-            self.bidprice = str(bidprice)
+class TestMHMessage(unittest.TestCase):
+    def test_contains(self):
+        msg = MHMessage()
+        msg.update({'hello': 'world'})
+        self.assertTrue('hello' in msg)
 
-    def __repr__(self):
-        if self.market == 'SPOT':
-            return '%s.%s(name=%r, num_instances=%r, role=%r, type=%r, market = %r, bidprice = %r)' % (
-                self.__class__.__module__, self.__class__.__name__,
-                self.name, self.num_instances, self.role, self.type, self.market,
-                self.bidprice)
-        else:
-            return '%s.%s(name=%r, num_instances=%r, role=%r, type=%r, market = %r)' % (
-                self.__class__.__module__, self.__class__.__name__,
-                self.name, self.num_instances, self.role, self.type, self.market)
+
+if __name__ == '__main__':
+    unittest.main()
