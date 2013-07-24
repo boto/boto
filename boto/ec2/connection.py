@@ -1957,7 +1957,7 @@ class EC2Connection(AWSQueryConnection):
         return snapshot.id
 
     def trim_snapshots(self, hourly_backups=8, daily_backups=7,
-                       weekly_backups=4):
+                       weekly_backups=4, monthly_backups=True):
         """
         Trim excess snapshots, based on when they were taken. More current
         snapshots are retained, with the number retained decreasing as you
@@ -1985,6 +1985,9 @@ class EC2Connection(AWSQueryConnection):
 
         :type weekly_backups: int
         :param weekly_backups: How many recent weekly backups should be saved.
+
+        :type monthly_backups: int
+        :param monthly_backups: How many monthly backups should be saved. Use True for no limit.
         """
 
         # This function first builds up an ordered list of target times
@@ -2019,10 +2022,14 @@ class EC2Connection(AWSQueryConnection):
             target_backup_times.append(last_sunday - timedelta(weeks = week))
 
         one_day = timedelta(days = 1)
-        while start_of_month > oldest_snapshot_date:
+        monthly_snapshots_added = 0
+        while (start_of_month > oldest_snapshot_date and
+               (monthly_backups is True or
+                monthly_snapshots_added < monthly_backups)):
             # append the start of the month to the list of
             # snapshot dates to save:
             target_backup_times.append(start_of_month)
+            monthly_snapshots_added += 1
             # there's no timedelta setting for one month, so instead:
             # decrement the day by one, so we go to the final day of
             # the previous month...
