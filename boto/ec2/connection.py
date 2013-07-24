@@ -847,6 +847,66 @@ class EC2Connection(AWSQueryConnection):
         return self.get_object('DescribeInstanceAttribute', params,
                                InstanceAttribute, verb='POST')
 
+    def modify_network_interface_attribute(self, interface_id, attr, value, attachment_id=None):
+        """Changes an attribute of a network interface.
+
+        :type interface_id: string
+        :param interface_id: The interface id. Looks like 'eni-xxxxxxxx'
+
+        :type attr: string
+        :param attr: The attribute you wish to change.
+
+            Learn more at http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-ModifyNetworkInterfaceAttribute.html
+
+            * description - Textual description of interface
+            * groupset - List of security group ids or group objects
+            * sourcedestcheck - Boolean
+            * deleteontermination - Boolean. Must also specify attachment_id
+
+        :type value: string
+        :param value: The new value for the attribute
+
+        :rtype: bool
+        :return: Whether the operation succeeded or not
+
+        :type attachment_id: string
+        :param attachment_id: If you're modifying DeleteOnTermination you must
+            specify the attachment_id.
+        """
+        bool_reqs = (
+            'deleteontermination',
+            'sourcedestcheck',
+        )
+        if attr.lower() in bool_reqs:
+            if isinstance(value, bool):
+                if value:
+                    value = 'true'
+                else:
+                    value = 'false'
+
+        params = {'NetworkInterfaceId': interface_id}
+
+        # groupSet is handled differently from other arguments
+        if attr.lower() == 'groupset':
+            for idx, sg in enumerate(value):
+                if isinstance(sg, SecurityGroup):
+                    sg = sg.id
+                params['SecurityGroupId.%s' % (idx + 1)] = sg
+        elif attr.lower() == 'description':
+            params['Description.Value'] = value
+        elif attr.lower() == 'sourcedestcheck':
+            params['SourceDestCheck.Value'] = value
+        elif attr.lower() == 'deleteontermination':
+            params['Attachment.DeleteOnTermination'] = value
+            if not attachment_id:
+                raise ValueError('You must also specify an attachment_id')
+            params['Attachment.AttachmentId'] = attachment_id
+        else:
+            raise ValueError('Unknown attribute "%s"' % (attr,))
+
+        return self.get_status(
+            'ModifyNetworkInterfaceAttribute', params, verb='POST')
+
     def modify_instance_attribute(self, instance_id, attribute, value):
         """
         Changes an attribute of an instance
