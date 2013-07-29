@@ -269,6 +269,22 @@ class ItemTestCase(unittest.TestCase):
         self.johndoe['last_name'] = 'Doe'
         self.assertTrue(self.johndoe.needs_save())
 
+    def test_needs_save_set_changed(self):
+        import pdb; pdb.set_trace()
+        # First, ensure we're clean.
+        self.johndoe.mark_clean()
+        self.assertFalse(self.johndoe.needs_save())
+        # Add a friends collection.
+        self.johndoe['friends'] = set(['jane', 'alice'])
+        self.assertTrue(self.johndoe.needs_save())
+        # Now mark it clean, then change the collection.
+        # This does NOT call ``__setitem__``, so the item used to be
+        # incorrectly appearing to be clean, when it had in fact been changed.
+        self.johndoe.mark_clean()
+        self.assertFalse(self.johndoe.needs_save())
+        self.johndoe['friends'].add('bob')
+        self.assertTrue(self.johndoe.needs_save())
+
     def test_mark_clean(self):
         self.johndoe['last_name'] = 'Doe'
         self.assertTrue(self.johndoe.needs_save())
@@ -694,7 +710,7 @@ class ResultSetTestCase(unittest.TestCase):
         self.assertEqual(results.next(), 'Hello john #0')
         self.assertEqual(results.next(), 'Hello john #1')
         self.assertRaises(StopIteration, results.next)
-        
+
     def test_limit_equals_page(self):
         results = ResultSet()
         results.to_call(fake_results, 'john', greeting='Hello', limit=5)
