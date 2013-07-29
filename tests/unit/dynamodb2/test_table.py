@@ -270,7 +270,6 @@ class ItemTestCase(unittest.TestCase):
         self.assertTrue(self.johndoe.needs_save())
 
     def test_needs_save_set_changed(self):
-        import pdb; pdb.set_trace()
         # First, ensure we're clean.
         self.johndoe.mark_clean()
         self.assertFalse(self.johndoe.needs_save())
@@ -441,7 +440,8 @@ class ItemTestCase(unittest.TestCase):
         # Delete some data.
         del self.johndoe['date_joined']
 
-        self.assertEqual(self.johndoe.prepare_partial(), {
+        final_data, fields = self.johndoe.prepare_partial()
+        self.assertEqual(final_data, {
             'date_joined': {
                 'Action': 'DELETE',
             },
@@ -454,6 +454,11 @@ class ItemTestCase(unittest.TestCase):
                 'Value': {'S': 'Doe'},
             },
         })
+        self.assertEqual(fields, set([
+            'first_name',
+            'last_name',
+            'date_joined'
+        ]))
 
     def test_save_no_changes(self):
         # Unchanged, no save.

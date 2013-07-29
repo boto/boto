@@ -146,7 +146,10 @@ class DynamoDBv2Test(unittest.TestCase):
         self.assertEqual(check_name_again['first_name'], 'Joan')
 
         # Reset it.
-        jane.mark_dirty()
+        jane['username'] = 'jane'
+        jane['first_name'] = 'Jane'
+        jane['last_name'] = 'Doe'
+        jane['friend_count'] = 3
         self.assertTrue(jane.save(overwrite=True))
 
         # Test the partial update behavior.
@@ -176,7 +179,10 @@ class DynamoDBv2Test(unittest.TestCase):
         self.assertEqual(partial_jane['first_name'], 'Jacqueline')
 
         # Reset it.
-        jane.mark_dirty()
+        jane['username'] = 'jane'
+        jane['first_name'] = 'Jane'
+        jane['last_name'] = 'Doe'
+        jane['friend_count'] = 3
         self.assertTrue(jane.save(overwrite=True))
 
         # Test the eventually consistent query.
