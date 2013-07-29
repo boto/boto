@@ -54,7 +54,8 @@ class SearchResults(object):
         self.facets = {}
         if 'facets' in attrs:
             for (facet, values) in attrs['facets'].iteritems():
-                self.facets[facet] = dict((k, v) for (k, v) in map(lambda x: (x['value'], x['count']), values['constraints']))
+                if 'constraints' in values:
+                    self.facets[facet] = dict((k, v) for (k, v) in map(lambda x: (x['value'], x['count']), values['constraints']))
 
         self.num_pages_needed = ceil(self.hits / self.query.real_size)
 
@@ -289,7 +290,19 @@ class SearchConnection(object):
 
         r = requests.get(url, params=params)
         content = r.content.decode('utf-8')
-        data = json.loads(content)
+        try:
+            data = json.loads(r.content)
+        except json.JSONDecodeError,e:
+            if r.status_code == 403:
+                msg = ''
+                import re
+                g = re.search('<html><body><h1>403 Forbidden</h1>([^<]+)<', r.content)
+                try:
+                    msg = ': %s' % (g.groups()[0].strip())
+                except AttributeError:
+                    pass
+                raise SearchServiceException('Authentication error from Amazon%s' % msg)
+            raise SearchServiceException("Got non-json response from Amazon")
         data['query'] = query
         data['search_service'] = self
 

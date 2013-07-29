@@ -11,7 +11,7 @@ Features
 --------
 
 * Updated Elastic Transcoder support - It now supports HLS, WebM, MPEG2-TS & a
-  host of `other features`_. (SHA: 89196a)
+  host of `other features`_. (:sha:`89196a`)
 
   .. _`other features`: http://aws.typepad.com/aws/2013/05/new-features-for-the-amazon-elastic-transcoder.html
 
@@ -19,12 +19,12 @@ Features
 Bugfixes
 --------
 
-* Fixed a bug in the canonicalization of URLs on Windows. (SHA: 09ef8c)
-* Fixed glacier part size bug (issue: 1478, SHA: 9e04171)
+* Fixed a bug in the canonicalization of URLs on Windows. (:sha:`09ef8c`)
+* Fixed glacier part size bug (:issue:`1478`, :sha:`9e04171`)
 * Fixed a bug in the bucket regex for S3 involving capital letters.
-  (SHA: 950031)
+  (:sha:`950031`)
 * Fixed a bug where timestamps from Cloudformation would fail to be parsed.
-  (SHA: b40542)
+  (:sha:`b40542`)
 * Several documentation improvements/fixes:
 
-    * Added autodocs for many of the EC2 apis. (SHA: 79f939)
+    * Added autodocs for many of the EC2 apis. (:sha:`79f939`)

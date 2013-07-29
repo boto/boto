@@ -184,11 +184,14 @@ class DynamoDBv2Test(unittest.TestCase):
             username__eq='johndoe',
             last_name__eq='Doe',
             index='LastNameIndex',
+            attributes=('username',),
             reverse=True
         )
 
         for res in results:
             self.assertTrue(res['username'] in ['johndoe',])
+            self.assertEqual(res.keys(), ['username'])
+
 
         # Test the strongly consistent query.
         c_results = users.query(
@@ -245,6 +248,13 @@ class DynamoDBv2Test(unittest.TestCase):
 
         # Test count, but in a weak fashion. Because lag time.
         self.assertTrue(users.count() > -1)
+
+        # Test query count
+        count = users.query_count(
+            username__eq='bob',
+        )
+
+        self.assertEqual(count, 1)
 
         # Test without LSIs (describe calls shouldn't fail).
         admins = Table.create('admins', schema=[

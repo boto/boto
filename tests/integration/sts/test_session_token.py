@@ -27,9 +27,11 @@ Tests for Session Tokens
 import unittest
 import time
 import os
+from boto.exception import BotoServerError
 from boto.sts.connection import STSConnection
 from boto.sts.credentials import Credentials
 from boto.s3.connection import S3Connection
+
 
 class SessionTokenTest (unittest.TestCase):
     sts = True
@@ -63,3 +65,26 @@ class SessionTokenTest (unittest.TestCase):
         buckets = s3.get_all_buckets()
 
         print '--- tests completed ---'
+
+    def test_assume_role_with_web_identity(self):
+        c = STSConnection()
+
+        try:
+            creds = c.assume_role_with_web_identity(
+                'arn:aws:s3:::my_corporate_bucket/*',
+                'guestuser',
+                'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9',
+                provider_id='www.amazon.com',
+            )
+        except BotoServerError as err:
+            self.assertEqual(err.status, 403)
+            self.assertTrue('Not authorized' in err.body)
+
+    def test_decode_authorization_message(self):
+        c = STSConnection()
+
+        try:
+            creds = c.decode_authorization_message('b94d27b9934')
+        except BotoServerError as err:
+            self.assertEqual(err.status, 400)
+            self.assertTrue('Invalid token' in err.body)

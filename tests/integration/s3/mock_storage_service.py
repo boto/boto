@@ -31,7 +31,10 @@ import boto
 import base64
 import re
 
-from boto.utils import compute_md5, ensure_bytes
+from boto.utils import compute_md5
+from boto.utils import find_matching_headers
+from boto.utils import merge_headers_by_name
+from boto.utils import ensure_bytes
 from boto.s3.prefix import Prefix
 
 try:
@@ -99,12 +102,14 @@ class MockKey(object):
     def _handle_headers(self, headers):
         if not headers:
             return
-        if 'Content-Encoding' in headers:
-            self.content_encoding = headers['Content-Encoding']
-        if 'Content-Type' in headers:
-            self.content_type = headers['Content-Type']
-        if 'Content-Language' in headers:
-            self.content_language = headers['Content-Language']
+        if find_matching_headers('Content-Encoding', headers):
+            self.content_encoding = merge_headers_by_name('Content-Encoding',
+                                                          headers)
+        if find_matching_headers('Content-Type', headers):
+            self.content_type = merge_headers_by_name('Content-Type', headers)
+        if find_matching_headers('Content-Language', headers):
+            self.content_language = merge_headers_by_name('Content-Language',
+                                                          headers)
 
     # Simplistic partial implementation for headers: Just supports range GETs
     # of flavor 'Range: bytes=xyz-'.
@@ -252,6 +257,9 @@ class MockBucket(object):
 
     def get_logging_config(self):
         return {"Logging": {}}
+
+    def get_versioning_status(self, headers=NOT_IMPL):
+        return False
 
     def get_acl(self, key_name='', headers=NOT_IMPL, version_id=NOT_IMPL):
         if key_name:
@@ -456,6 +464,9 @@ class MockBucketStorageUri(object):
 
     def delete_bucket(self, headers=NOT_IMPL):
         return self.connect().delete_bucket(self.bucket_name)
+
+    def get_versioning_config(self, headers=NOT_IMPL):
+        self.get_bucket().get_versioning_status(headers)
 
     def has_version(self):
         return (issubclass(type(self), MockBucketStorageUri)

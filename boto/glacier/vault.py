@@ -319,8 +319,8 @@ class Vault(object):
             sends notification when the job is completed and the output
             is ready for you to download.
 
-        :rtype: :class:`boto.glacier.job.Job`
-        :return: A Job object representing the retrieval job.
+        :rtype: str
+        :return: The ID of the job
         """
         job_data = {'Type': 'inventory-retrieval'}
         if sns_topic is not None:
@@ -330,6 +330,25 @@ class Vault(object):
 
         response = self.layer1.initiate_job(self.name, job_data)
         return response['JobId']
+
+    def retrieve_inventory_job(self, **kwargs):
+        """
+        Identical to ``retrieve_inventory``, but returns a ``Job`` instance
+        instead of just the job ID.
+
+        :type description: str
+        :param description: An optional description for the job.
+
+        :type sns_topic: str
+        :param sns_topic: The Amazon SNS topic ARN where Amazon Glacier
+            sends notification when the job is completed and the output
+            is ready for you to download.
+
+        :rtype: :class:`boto.glacier.job.Job`
+        :return: A Job object representing the retrieval job.
+        """
+        job_id = self.retrieve_inventory(**kwargs)
+        return self.get_job(job_id)
 
     def delete_archive(self, archive_id):
         """

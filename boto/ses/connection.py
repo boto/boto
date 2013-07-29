@@ -104,7 +104,8 @@ class SESConnection(AWSAuthConnection):
         body = response.read()
         if response.status == 200:
             list_markers = ('VerifiedEmailAddresses', 'Identities',
-                            'VerificationAttributes', 'SendDataPoints')
+                            'DkimTokens', 'VerificationAttributes',
+                            'SendDataPoints')
             item_markers = ('member', 'item', 'entry')
 
             e = boto.jsonresponse.Element(list_marker=list_markers,

@@ -117,7 +117,40 @@ class Key(S3Key):
                     self.cloud_hashes[alg] = binascii.a2b_base64(b64_digest)
             elif key == 'x-goog-component-count':
                 self.component_count = int(value)
+            elif key == 'x-goog-generation':
+                self.generation = value
 
+    def open_read(self, headers=None, query_args='',
+                  override_num_retries=None, response_headers=None):
+        """
+        Open this key for reading
+
+        :type headers: dict
+        :param headers: Headers to pass in the web request
+
+        :type query_args: string
+        :param query_args: Arguments to pass in the query string
+            (ie, 'torrent')
+
+        :type override_num_retries: int
+        :param override_num_retries: If not None will override configured
+            num_retries parameter for underlying GET.
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP
+            headers/values that will override any headers associated
+            with the stored object in the response.  See
+            http://goo.gl/EWOPb for details.
+        """
+        # For GCS we need to include the object generation in the query args.
+        # The rest of the processing is handled in the parent class.
+        if self.generation:
+            if query_args:
+                query_args += '&'
+            query_args += 'generation=%s' % self.generation
+        super(Key, self).open_read(headers=headers, query_args=query_args,
+                                   override_num_retries=override_num_retries,
+                                   response_headers=response_headers)
 
     def get_file(self, fp, headers=None, cb=None, num_cb=10,
                  torrent=False, version_id=None, override_num_retries=None,
@@ -889,3 +922,7 @@ class Key(S3Key):
         if resp.status < 200 or resp.status > 299:
             raise self.bucket.connection.provider.storage_response_error(
                 resp.status, resp.reason, resp.read())
+
+        # Return the generation so that the result URI can be built with this
+        # for automatic parallel uploads.
+        return resp.getheader('x-goog-generation')

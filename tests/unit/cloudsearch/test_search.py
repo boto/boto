@@ -6,13 +6,13 @@ from httpretty import HTTPretty
 import urlparse
 import json
 
-from boto.cloudsearch.search import SearchConnection
+from boto.cloudsearch.search import SearchConnection, SearchServiceException
 
 HOSTNAME = "search-demo-userdomain.us-east-1.cloudsearch.amazonaws.com"
 FULL_URL = 'http://%s/2011-02-01/search' % HOSTNAME
 
 
-class CloudSearchSearchTest(unittest.TestCase):
+class CloudSearchSearchBaseTest(unittest.TestCase):
 
     hits = [
         {
@@ -45,21 +45,8 @@ class CloudSearchSearchTest(unittest.TestCase):
         },
     ]
 
-    response = {
-        'rank': '-text_relevance',
-        'match-expr':"Test",
-        'hits': {
-            'found': 30,
-            'start': 0,
-            'hit':hits
-            },
-        'info': {
-            'rid':'b7c167f6c2da6d93531b9a7b314ad030b3a74803b4b7797edb905ba5a6a08',
-            'time-ms': 2,
-            'cpu-time-ms': 0
-        }
-
-    }
+    content_type = "text/xml"
+    response_status = 200
 
     def get_args(self, requestline):
         (_, request, _) = requestline.decode('utf-8').split(" ")
@@ -75,6 +62,23 @@ class CloudSearchSearchTest(unittest.TestCase):
 
     def tearDown(self):
         HTTPretty.disable()
+
+class CloudSearchSearchTest(CloudSearchSearchBaseTest):
+    response = {
+        'rank': '-text_relevance',
+        'match-expr':"Test",
+        'hits': {
+            'found': 30,
+            'start': 0,
+            'hit':CloudSearchSearchBaseTest.hits
+            },
+        'info': {
+            'rid':'b7c167f6c2da6d93531b9a7b314ad030b3a74803b4b7797edb905ba5a6a08',
+            'time-ms': 2,
+            'cpu-time-ms': 0
+        }
+
+    }
 
     def test_cloudsearch_qsearch(self):
         search = SearchConnection(endpoint=HOSTNAME)
@@ -323,3 +327,57 @@ class CloudSearchSearchTest(unittest.TestCase):
         self.assertEqual(results.next_page().query.start,
                          query1.start + query1.size)
         self.assertEqual(query1.q, query2.q)
+
+class CloudSearchSearchFacetTest(CloudSearchSearchBaseTest):
+    response = {
+        'rank': '-text_relevance',
+        'match-expr':"Test",
+        'hits': {
+            'found': 30,
+            'start': 0,
+            'hit':CloudSearchSearchBaseTest.hits
+            },
+        'info': {
+            'rid':'b7c167f6c2da6d93531b9a7b314ad030b3a74803b4b7797edb905ba5a6a08',
+            'time-ms': 2,
+            'cpu-time-ms': 0
+        },
+        'facets': {
+            'tags': {},
+            'animals': {'constraints': [{'count': '2', 'value': 'fish'}, {'count': '1', 'value':'lions'}]},
+        }
+    }
+
+    def test_cloudsearch_search_facets(self):
+        #self.response['facets'] = {'tags': {}}
+
+        search = SearchConnection(endpoint=HOSTNAME)
+
+        results = search.search(q='Test', facet=['tags'])
+
+        self.assertTrue('tags' not in results.facets)
+        self.assertEqual(results.facets['animals'], {u'lions': u'1', u'fish': u'2'})
+
+
+class CloudSearchNonJsonTest(CloudSearchSearchBaseTest):
+    response = '<html><body><h1>500 Internal Server Error</h1></body></html>'
+    response_status = 500
+    content_type = 'text/xml'
+
+    def test_response(self):
+        search = SearchConnection(endpoint=HOSTNAME)
+
+        with self.assertRaises(SearchServiceException):
+            search.search(q='Test')
+
+
+class CloudSearchUnauthorizedTest(CloudSearchSearchBaseTest):
+    response = '<html><body><h1>403 Forbidden</h1>foo bar baz</body></html>'
+    response_status = 403
+    content_type = 'text/html'
+
+    def test_response(self):
+        search = SearchConnection(endpoint=HOSTNAME)
+
+        with self.assertRaisesRegexp(SearchServiceException, 'foo bar baz'):
+            search.search(q='Test')

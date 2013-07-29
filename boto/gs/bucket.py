@@ -30,6 +30,7 @@ from boto.gs.acl import ACL, CannedACLStrings
 from boto.gs.acl import SupportedPermissions as GSPermissions
 from boto.gs.bucketlistresultset import VersionedBucketListResultSet
 from boto.gs.cors import Cors
+from boto.gs.lifecycle import LifecycleConfig
 from boto.gs.key import Key as GSKey
 from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
@@ -39,6 +40,7 @@ from boto.utils import get_utf8_value
 DEF_OBJ_ACL = 'defaultObjectAcl'
 STANDARD_ACL = 'acl'
 CORS_ARG = 'cors'
+LIFECYCLE_ARG = 'lifecycle'
 
 class Bucket(S3Bucket):
     """Represents a Google Cloud Storage bucket."""
@@ -918,3 +920,43 @@ class Bucket(S3Bucket):
         else:
             req_body = self.VersioningBody % ('Suspended')
         self.set_subresource('versioning', req_body, headers=headers)
+
+    def get_lifecycle_config(self, headers=None):
+        """
+        Returns the current lifecycle configuration on the bucket.
+
+        :rtype: :class:`boto.gs.lifecycle.LifecycleConfig`
+        :returns: A LifecycleConfig object that describes all current
+            lifecycle rules in effect for the bucket.
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args=LIFECYCLE_ARG, headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            lifecycle_config = LifecycleConfig()
+            h = handler.XmlHandler(lifecycle_config, self)
+            xml.sax.parseString(body, h)
+            return lifecycle_config
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def configure_lifecycle(self, lifecycle_config, headers=None):
+        """
+        Configure lifecycle for this bucket.
+
+        :type lifecycle_config: :class:`boto.gs.lifecycle.LifecycleConfig`
+        :param lifecycle_config: The lifecycle configuration you want
+            to configure for this bucket.
+        """
+        xml = lifecycle_config.to_xml()
+        response = self.connection.make_request(
+            'PUT', get_utf8_value(self.name), data=get_utf8_value(xml),
+            query_args=LIFECYCLE_ARG, headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

@@ -87,7 +87,7 @@ class ELBConnection(AWSQueryConnection):
                                             'elasticloadbalancing.us-east-1.amazonaws.com')
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=False, port=None, proxy=None, proxy_port=None,
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  security_token=None, validate_certs=True):
@@ -137,8 +137,8 @@ class ELBConnection(AWSQueryConnection):
         return self.get_list('DescribeLoadBalancers', params,
                              [('member', LoadBalancer)])
 
-    def create_load_balancer(self, name, zones, listeners, subnets=None,
-        security_groups=None, scheme='internet-facing'):
+    def create_load_balancer(self, name, zones, listeners=None, subnets=None,
+        security_groups=None, scheme='internet-facing', complex_listeners=None):
         """
         Create a new load balancer for your account. By default the load
         balancer will be created in EC2. To create a load balancer inside a
@@ -157,7 +157,7 @@ class ELBConnection(AWSQueryConnection):
             (LoadBalancerPortNumber, InstancePortNumber, Protocol,
             [SSLCertificateId]) where LoadBalancerPortNumber and
             InstancePortNumber are integer values between 1 and 65535,
-            Protocol is a string containing either 'TCP', 'HTTP' or
+            Protocol is a string containing either 'TCP', 'SSL', HTTP', or
             'HTTPS'; SSLCertificateID is the ARN of a AWS AIM
             certificate, and must be specified when doing HTTPS.
 
@@ -182,20 +182,54 @@ class ELBConnection(AWSQueryConnection):
             This option is only available for LoadBalancers attached
             to an Amazon VPC.
 
+        :type complex_listeners: List of tuples
+        :param complex_listeners: Each tuple contains four or five values,
+            (LoadBalancerPortNumber, InstancePortNumber, Protocol, InstanceProtocol,
+            SSLCertificateId).
+
+            Where;
+            - LoadBalancerPortNumber and InstancePortNumber are integer
+              values between 1 and 65535.
+            - Protocol and InstanceProtocol is a string containing either 'TCP',
+              'SSL', 'HTTP', or 'HTTPS'
+            - SSLCertificateId is the ARN of an SSL certificate loaded into
+              AWS IAM
+
         :rtype: :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         :return: The newly created
             :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         """
+        if not listeners and not complex_listeners:
+            # Must specify one of the two options
+            return None
+
         params = {'LoadBalancerName': name,
                   'Scheme': scheme}
-        for index, listener in enumerate(listeners):
-            i = index + 1
-            protocol = listener[2].upper()
-            params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
-            params['Listeners.member.%d.InstancePort' % i] = listener[1]
-            params['Listeners.member.%d.Protocol' % i] = listener[2]
-            if protocol == 'HTTPS' or protocol == 'SSL':
-                params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
+
+        # Handle legacy listeners
+        if listeners:
+            for index, listener in enumerate(listeners):
+                i = index + 1
+                protocol = listener[2].upper()
+                params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
+                params['Listeners.member.%d.InstancePort' % i] = listener[1]
+                params['Listeners.member.%d.Protocol' % i] = listener[2]
+                if protocol == 'HTTPS' or protocol == 'SSL':
+                    params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
+
+        # Handle the full listeners
+        if complex_listeners:
+            for index, listener in enumerate(complex_listeners):
+                i = index + 1
+                protocol = listener[2].upper()
+                InstanceProtocol = listener[3].upper()
+                params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
+                params['Listeners.member.%d.InstancePort' % i] = listener[1]
+                params['Listeners.member.%d.Protocol' % i] = listener[2]
+                params['Listeners.member.%d.InstanceProtocol' % i] = listener[3]
+                if protocol == 'HTTPS' or protocol == 'SSL':
+                    params['Listeners.member.%d.SSLCertificateId' % i] = listener[4]
+
         if zones:
             self.build_list_params(params, zones, 'AvailabilityZones.member.%d')
 
@@ -215,7 +249,7 @@ class ELBConnection(AWSQueryConnection):
         load_balancer.security_groups = security_groups
         return load_balancer
 
-    def create_load_balancer_listeners(self, name, listeners):
+    def create_load_balancer_listeners(self, name, listeners=None, complex_listeners=None):
         """
         Creates a Listener (or group of listeners) for an existing
         Load Balancer
@@ -224,26 +258,59 @@ class ELBConnection(AWSQueryConnection):
         :param name: The name of the load balancer to create the listeners for
 
         :type listeners: List of tuples
-        :param listeners: Each tuple contains three values,
+        :param listeners: Each tuple contains three or four values,
             (LoadBalancerPortNumber, InstancePortNumber, Protocol,
             [SSLCertificateId]) where LoadBalancerPortNumber and
             InstancePortNumber are integer values between 1 and 65535,
-            Protocol is a string containing either 'TCP', 'HTTP',
-            'HTTPS', or 'SSL'; SSLCertificateID is the ARN of a AWS
-            AIM certificate, and must be specified when doing HTTPS or
-            SSL.
+            Protocol is a string containing either 'TCP', 'SSL', HTTP', or
+            'HTTPS'; SSLCertificateID is the ARN of a AWS AIM
+            certificate, and must be specified when doing HTTPS.
+
+        :type complex_listeners: List of tuples
+        :param complex_listeners: Each tuple contains four or five values,
+            (LoadBalancerPortNumber, InstancePortNumber, Protocol, InstanceProtocol,
+            SSLCertificateId).
+
+            Where;
+            - LoadBalancerPortNumber and InstancePortNumber are integer 
+              values between 1 and 65535.
+            - Protocol and InstanceProtocol is a string containing either 'TCP',
+              'SSL', 'HTTP', or 'HTTPS'
+            - SSLCertificateId is the ARN of an SSL certificate loaded into
+              AWS IAM
 
         :return: The status of the request
         """
+        if not listeners and not complex_listeners:
+            # Must specify one of the two options
+            return None
+
         params = {'LoadBalancerName': name}
-        for index, listener in enumerate(listeners):
-            i = index + 1
-            protocol = listener[2].upper()
-            params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
-            params['Listeners.member.%d.InstancePort' % i] = listener[1]
-            params['Listeners.member.%d.Protocol' % i] = listener[2]
-            if protocol == 'HTTPS' or protocol == 'SSL':
-                params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
+
+        # Handle the simple listeners
+        if listeners:
+            for index, listener in enumerate(listeners):
+                i = index + 1
+                protocol = listener[2].upper()
+                params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
+                params['Listeners.member.%d.InstancePort' % i] = listener[1]
+                params['Listeners.member.%d.Protocol' % i] = listener[2]
+                if protocol == 'HTTPS' or protocol == 'SSL':
+                    params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
+
+        # Handle the full listeners
+        if complex_listeners:
+            for index, listener in enumerate(complex_listeners):
+                i = index + 1
+                protocol = listener[2].upper()
+                InstanceProtocol = listener[3].upper()
+                params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
+                params['Listeners.member.%d.InstancePort' % i] = listener[1]
+                params['Listeners.member.%d.Protocol' % i] = listener[2]
+                params['Listeners.member.%d.InstanceProtocol' % i] = listener[3]
+                if protocol == 'HTTPS' or protocol == 'SSL':
+                    params['Listeners.member.%d.SSLCertificateId' % i] = listener[4]
+
         return self.get_status('CreateLoadBalancerListeners', params)
 
     def delete_load_balancer(self, name):
@@ -549,5 +616,5 @@ class ELBConnection(AWSQueryConnection):
         params = {'LoadBalancerName': name}
         self.build_list_params(params, subnets,
                                'Subnets.member.%d')
-        return self.get_list('DettachLoadBalancerFromSubnets',
+        return self.get_list('DetachLoadBalancerFromSubnets',
                              params, None)

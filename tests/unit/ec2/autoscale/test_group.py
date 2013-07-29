@@ -21,12 +21,17 @@
 # IN THE SOFTWARE.
 #
 
+from datetime import datetime
+
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.ec2.autoscale import AutoScaleConnection
 from boto.ec2.autoscale.group import AutoScalingGroup
 
+from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
+
+from boto.ec2.autoscale import launchconfig
 
 class TestAutoScaleGroup(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
@@ -60,6 +65,42 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
             'TerminationPolicies.member.2': 'OldestLaunchConfiguration',
         }, ignore_params_values=['Version'])
 
+class TestScheduledGroup(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def setUp(self):
+        super(TestScheduledGroup, self).setUp()
+
+    def default_body(self):
+        return """
+            <PutScheduledUpdateGroupActionResponse>
+                <ResponseMetadata>
+                  <RequestId>requestid</RequestId>
+                </ResponseMetadata>
+            </PutScheduledUpdateGroupActionResponse>
+        """
+
+    def test_scheduled_group_creation(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.create_scheduled_group_action('foo',
+                                                              'scheduled-foo',
+                                                              desired_capacity=1,
+                                                              start_time=datetime(2013, 1, 1, 22, 55, 31),
+                                                              end_time=datetime(2013, 2, 1, 22, 55, 31),
+                                                              min_size=1,
+                                                              max_size=2,
+                                                              recurrence='0 10 * * *')
+        self.assert_request_parameters({
+            'Action': 'PutScheduledUpdateGroupAction',
+            'AutoScalingGroupName': 'foo',
+            'ScheduledActionName': 'scheduled-foo',
+            'MaxSize': 2,
+            'MinSize': 1,
+            'DesiredCapacity': 1,
+            'EndTime': '2013-02-01T22:55:31',
+            'StartTime': '2013-01-01T22:55:31',
+            'Recurrence': '0 10 * * *',
+        }, ignore_params_values=['Version'])
 
 class TestParseAutoScaleGroupResponse(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
@@ -156,6 +197,56 @@ class TestDescribeTerminationPolicies(AWSMockServiceTestCase):
             response,
             ['ClosestToNextInstanceHour', 'Default',
              'NewestInstance', 'OldestInstance', 'OldestLaunchConfiguration'])
+
+class TestLaunchConfiguration(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def default_body(self):
+        # This is a dummy response
+        return """
+        <DescribeLaunchConfigurationsResponse>
+        </DescribeLaunchConfigurationsResponse>
+        """
+
+    def test_launch_config(self):
+        # This unit test is based on #753 and #1343
+        self.set_http_response(status_code=200)
+        dev_sdf = EBSBlockDeviceType(snapshot_id='snap-12345')
+        dev_sdg = EBSBlockDeviceType(snapshot_id='snap-12346')
+
+        bdm = BlockDeviceMapping()
+        bdm['/dev/sdf'] = dev_sdf
+        bdm['/dev/sdg'] = dev_sdg
+
+        lc = launchconfig.LaunchConfiguration(
+                connection=self.service_connection,
+                name='launch_config',
+                image_id='123456',
+                instance_type = 'm1.large',
+                security_groups = ['group1', 'group2'],
+                spot_price='price',
+                block_device_mappings = [bdm]
+                )
+
+        response = self.service_connection.create_launch_configuration(lc)
+
+        self.assert_request_parameters({
+            'Action': 'CreateLaunchConfiguration',
+            'BlockDeviceMapping.1.DeviceName': '/dev/sdf',
+            'BlockDeviceMapping.1.Ebs.DeleteOnTermination': 'false',
+            'BlockDeviceMapping.1.Ebs.SnapshotId': 'snap-12345',
+            'BlockDeviceMapping.2.DeviceName': '/dev/sdg',
+            'BlockDeviceMapping.2.Ebs.DeleteOnTermination': 'false',
+            'BlockDeviceMapping.2.Ebs.SnapshotId': 'snap-12346',
+            'EbsOptimized': 'false',
+            'LaunchConfigurationName': 'launch_config',
+            'ImageId': '123456',
+            'InstanceMonitoring.Enabled': 'false',
+            'InstanceType': 'm1.large',
+            'SecurityGroups.member.1': 'group1',
+            'SecurityGroups.member.2': 'group2',
+            'SpotPrice': 'price',
+        }, ignore_params_values=['Version'])
 
 
 if __name__ == '__main__':

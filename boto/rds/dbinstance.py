@@ -21,6 +21,7 @@
 
 from boto.rds.dbsecuritygroup import DBSecurityGroup
 from boto.rds.parametergroup import ParameterGroup
+from boto.rds.statusinfo import StatusInfo
 from boto.resultset import ResultSet
 
 
@@ -69,6 +70,8 @@ class DBInstance(object):
         are pending. Specific changes are identified by subelements.
     :ivar read_replica_dbinstance_identifiers: List of read replicas
         associated with this DB instance.
+    :ivar status_infos: The status of a Read Replica. If the instance is not a
+                        for a read replica, this will be blank.
     """
 
     def __init__(self, connection=None, id=None):
@@ -95,6 +98,7 @@ class DBInstance(object):
         self._in_endpoint = False
         self._port = None
         self._address = None
+        self.status_infos = None
 
     def __repr__(self):
         return 'DBInstance:%s' % self.id
@@ -117,6 +121,11 @@ class DBInstance(object):
             self.read_replica_dbinstance_identifiers = \
                     ReadReplicaDBInstanceIdentifiers()
             return self.read_replica_dbinstance_identifiers
+        elif name == 'StatusInfos':
+            self.status_infos = ResultSet([
+                ('DBInstanceStatusInfo', StatusInfo)
+            ])
+            return self.status_infos
         return None
 
     def endElement(self, name, value, connection):
