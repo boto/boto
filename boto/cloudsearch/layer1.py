@@ -51,14 +51,22 @@ class Layer1(AWSQueryConnection):
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id,
-                                    aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port,
-                                    proxy_user, proxy_pass,
-                                    self.region.endpoint, debug,
-                                    https_connection_factory, path,
-                                    security_token,
-                                    validate_certs=validate_certs)
+        AWSQueryConnection.__init__(
+            self,
+            host=self.region.endpoint,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            is_secure=is_secure,
+            port=port,
+            proxy=proxy,
+            proxy_port=proxy_port,
+            proxy_user=proxy_user,
+            proxy_pass=proxy_pass,
+            debug=debug,
+            https_connection_factory=https_connection_factory,
+            path=path,
+            security_token=security_token,
+            validate_certs=validate_certs)
 
     def _required_auth_capability(self):
         return ['sign-v2']
