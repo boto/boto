@@ -3,7 +3,10 @@
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from boto.ec2.elb import ELBConnection
 
