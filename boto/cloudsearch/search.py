@@ -25,6 +25,7 @@ from math import ceil
 import time
 import boto
 from boto.compat import json
+from boto.utils import ensure_string
 import requests
 
 
@@ -289,14 +290,14 @@ class SearchConnection(object):
         params = query.to_params()
 
         r = requests.get(url, params=params)
-        content = r.content.decode('utf-8')
+        content = ensure_string(r.content)
         try:
-            data = json.loads(r.content)
+            data = json.loads(content)
         except json.JSONDecodeError,e:
             if r.status_code == 403:
                 msg = ''
                 import re
-                g = re.search('<html><body><h1>403 Forbidden</h1>([^<]+)<', r.content)
+                g = re.search('<html><body><h1>403 Forbidden</h1>([^<]+)<', content)
                 try:
                     msg = ': %s' % (g.groups()[0].strip())
                 except AttributeError:
