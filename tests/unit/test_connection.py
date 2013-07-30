@@ -28,7 +28,7 @@ from boto.connection import AWSQueryConnection, AWSAuthConnection
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
 from boto.compat import json
-from boto.utils import ensure_bytes
+from boto.utils import ensure_bytes, ensure_string
 
 
 class TestListParamsSerialization(unittest.TestCase):
@@ -154,7 +154,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  "/",
                                  "POST")
         del os.environ['no_proxy']
-        args = urlparse.parse_qs(HTTPretty.last_request.body)
+        args = urllib.parse.parse_qs(ensure_string(HTTPretty.last_request.body))
         self.assertEqual(args['AWSAccessKeyId'], ['access_key'])
 
     def test_query_connection_noproxy_nosecure(self):
@@ -176,7 +176,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  "/",
                                  "POST")
         del os.environ['no_proxy']
-        args = urlparse.parse_qs(HTTPretty.last_request.body)
+        args = urllib.parse.parse_qs(ensure_string(HTTPretty.last_request.body))
         self.assertEqual(args['AWSAccessKeyId'], ['access_key'])
 
     def test_single_command(self):
