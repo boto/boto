@@ -313,11 +313,12 @@ class Bucket(object):
                 key = 'max-keys'
             if isinstance(value, unicode):
                 value = value.encode('utf-8')
-            if value is not None and value != '':
+            if value is not None and value != b'':
+                value = boto.utils.ensure_string(value)
                 pairs.append('%s=%s' % (
                     urllib.quote(key),
-                    urllib.quote(str(value)
-                )))
+                    urllib.quote(str(value))
+                ))
 
         return '&'.join(pairs)
 
