@@ -56,9 +56,15 @@ class CloudSearchSearchBaseTest(unittest.TestCase):
 
     def setUp(self):
         HTTPretty.enable()
+        body = self.response
+
+        if not isinstance(body, basestring):
+            body = json.dumps(body)
+
         HTTPretty.register_uri(HTTPretty.GET, FULL_URL,
-                               body=json.dumps(self.response),
-                               content_type="text/xml")
+                               body=body,
+                               content_type="text/xml",
+                               status=self.response_status)
 
     def tearDown(self):
         HTTPretty.disable()
