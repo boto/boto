@@ -90,11 +90,15 @@ class RDSConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True):
+                 security_token=None, validate_certs=True, api_version=None):
         if not region:
             region = RDSRegionInfo(self, self.DefaultRegionName,
                                    self.DefaultRegionEndpoint)
         self.region = region
+
+        if api_version:
+            self.APIVersion = api_version
+
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
@@ -505,7 +509,8 @@ class RDSConnection(AWSQueryConnection):
                           preferred_backup_window=None,
                           multi_az=False,
                           apply_immediately=False,
-                          iops=None):
+                          iops=None,
+                          new_id=None):
         """
         Modify an existing DBInstance.
 
@@ -581,6 +586,10 @@ class RDSConnection(AWSQueryConnection):
                       If you specify a value, it must be at least 1000 IOPS and you must
                       allocate 100 GB of storage.
 
+        :type new_id: str
+        :param new_id:  The new instance identifier / name for renaming a DB Instance.
+                        Implemented in 2013-01-14 by AWS.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
         """
@@ -613,6 +622,8 @@ class RDSConnection(AWSQueryConnection):
             params['ApplyImmediately'] = 'true'
         if iops:
             params['Iops'] = iops
+        if new_id:
+            params['NewDBInstanceIdentifier'] = new_id
 
         return self.get_object('ModifyDBInstance', params, DBInstance)
 
