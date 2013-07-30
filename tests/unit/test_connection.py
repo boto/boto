@@ -154,7 +154,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  "/",
                                  "POST")
         del os.environ['no_proxy']
-        args = urllib.parse.parse_qs(ensure_string(HTTPretty.last_request.body))
+        args = urlparse.parse_qs(ensure_string(HTTPretty.last_request.body))
         self.assertEqual(args['AWSAccessKeyId'], ['access_key'])
 
     def test_query_connection_noproxy_nosecure(self):
@@ -176,7 +176,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  "/",
                                  "POST")
         del os.environ['no_proxy']
-        args = urllib.parse.parse_qs(ensure_string(HTTPretty.last_request.body))
+        args = urlparse.parse_qs(ensure_string(HTTPretty.last_request.body))
         self.assertEqual(args['AWSAccessKeyId'], ['access_key'])
 
     def test_single_command(self):
