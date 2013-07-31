@@ -350,9 +350,10 @@ def main():
         key_name = get_key_name(fullpath, prefix, key_prefix)
 
         if no_overwrite and key_name in existing_keys_to_check_against:
-            if not quiet:
-                print 'Skipping %s as it exists in s3' % fullpath
-            continue
+            if b.get_key(key_name):
+                if not quiet:
+                    print 'Skipping %s as it exists in s3' % fullpath
+                continue
 
         if not quiet:
             print 'Copying %s to %s/%s' % (fullpath, bucket_name, key_name)
