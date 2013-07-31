@@ -268,8 +268,7 @@ class TestCreateAutoScalePolicy(AWSMockServiceTestCase):
             'PolicyName': 'foo',
             'AutoScalingGroupName': 'bar',
             'AdjustmentType': 'PercentChangeInCapacity',
-            'ScalingAdjustment': 50,
-            'MinAdjustmentStep': None
+            'ScalingAdjustment': 50
         }, ignore_params_values=['Version'])
 
 
