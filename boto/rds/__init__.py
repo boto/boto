@@ -1096,7 +1096,8 @@ class RDSConnection(AWSQueryConnection):
                                               restore_time=None,
                                               dbinstance_class=None,
                                               port=None,
-                                              availability_zone=None):
+                                              availability_zone=None,
+                                              db_subnet_group_name=None):
 
         """
         Create a new DBInstance from a point in time.
@@ -1129,6 +1130,11 @@ class RDSConnection(AWSQueryConnection):
         :param availability_zone: Name of the availability zone to place
                                   DBInstance into.
 
+        :type db_subnet_group_name: str
+        :param db_subnet_group_name: A DB Subnet Group to associate with this DB Instance.
+                                     If there is no DB Subnet Group, then it is a non-VPC DB
+                                     instance.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The newly created DBInstance
         """
@@ -1144,6 +1150,8 @@ class RDSConnection(AWSQueryConnection):
             params['Port'] = port
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
+        if db_subnet_group_name is not None:
+            params['DBSubnetGroupName'] = db_subnet_group_name
         return self.get_object('RestoreDBInstanceToPointInTime',
                                params, DBInstance)
 
