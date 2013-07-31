@@ -112,9 +112,9 @@ SYNOPSIS
 """
 
 
-def usage():
+def usage(status=1):
     print usage_string
-    sys.exit()
+    sys.exit(status)
 
 
 def submit_cb(bytes_so_far, total_bytes):
@@ -251,12 +251,12 @@ def main():
              'secret_key=', 'no_overwrite', 'reduced', 'header=', 'multipart',
              'host='])
     except:
-        usage()
+        usage(1)
 
     # parse opts
     for o, a in opts:
         if o in ('-h', '--help'):
-            usage()
+            usage(0)
         if o in ('-a', '--access_key'):
             aws_access_key_id = a
         if o in ('-b', '--bucket'):
@@ -297,14 +297,14 @@ def main():
                 multipart_requested = True
             else:
                 print "multipart upload requested but not capable"
-                sys.exit()
+                sys.exit(4)
 
     if len(args) < 1:
-        usage()
+        usage(2)
 
     if not bucket_name:
         print "bucket name is required!"
-        usage()
+        usage(3)
 
     if host:
         c = boto.connect_s3(host=host, aws_access_key_id=aws_access_key_id,
