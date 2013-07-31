@@ -431,6 +431,22 @@ class ItemTestCase(unittest.TestCase):
             'date_joined': {'N': '12345'}
         })
 
+        self.johndoe['friends'] = set(['jane', 'alice'])
+        self.assertEqual(self.johndoe.prepare_full(), {
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'John'},
+            'date_joined': {'N': '12345'},
+            'friends': {'SS': ['jane', 'alice']},
+        })
+
+    def test_prepare_full_empty_set(self):
+        self.johndoe['friends'] = set()
+        self.assertEqual(self.johndoe.prepare_full(), {
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'John'},
+            'date_joined': {'N': '12345'}
+        })
+
     def test_prepare_partial(self):
         self.johndoe.mark_clean()
         # Change some data.
@@ -439,6 +455,37 @@ class ItemTestCase(unittest.TestCase):
         self.johndoe['last_name'] = 'Doe'
         # Delete some data.
         del self.johndoe['date_joined']
+
+        final_data, fields = self.johndoe.prepare_partial()
+        self.assertEqual(final_data, {
+            'date_joined': {
+                'Action': 'DELETE',
+            },
+            'first_name': {
+                'Action': 'PUT',
+                'Value': {'S': 'Johann'},
+            },
+            'last_name': {
+                'Action': 'PUT',
+                'Value': {'S': 'Doe'},
+            },
+        })
+        self.assertEqual(fields, set([
+            'first_name',
+            'last_name',
+            'date_joined'
+        ]))
+
+    def test_prepare_partial(self):
+        self.johndoe.mark_clean()
+        # Change some data.
+        self.johndoe['first_name'] = 'Johann'
+        # Add some data.
+        self.johndoe['last_name'] = 'Doe'
+        # Delete some data.
+        del self.johndoe['date_joined']
+        # Put an empty set on the ``Item``.
+        self.johndoe['friends'] = set()
 
         final_data, fields = self.johndoe.prepare_partial()
         self.assertEqual(final_data, {

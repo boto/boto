@@ -125,11 +125,15 @@ class Item(object):
         # Run through keys we know are in both for changes.
         for key in orig_keys.intersection(data_keys):
             if self._data[key] != self._orig_data[key]:
-                alterations['changes'][key] = self._data[key]
+                if self._is_storable(self._data[key]):
+                    alterations['changes'][key] = self._data[key]
+                else:
+                    alterations['deletes'].append(key)
 
         # Run through additions.
         for key in data_keys.difference(orig_keys):
-            alterations['adds'][key] = self._data[key]
+            if self._is_storable(self._data[key]):
+                alterations['adds'][key] = self._data[key]
 
         # Run through deletions.
         for key in orig_keys.difference(data_keys):
@@ -293,6 +297,15 @@ class Item(object):
 
         return expects
 
+    def _is_storable(self, value):
+        # We need to prevent ``None``, empty string & empty set from
+        # heading to DDB, but allow false-y values like 0 & False make it.
+        if not value:
+            if not value in (0, 0.0, False):
+                return False
+
+        return True
+
     def prepare_full(self):
         """
         Runs through all fields & encodes them to be handed off to DynamoDB
@@ -305,6 +318,9 @@ class Item(object):
         final_data = {}
 
         for key, value in self._data.items():
+            if not self._is_storable(value):
+                continue
+
             final_data[key] = self._dynamizer.encode(value)
 
         return final_data

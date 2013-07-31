@@ -280,3 +280,21 @@ class DynamoDBv2Test(unittest.TestCase):
         )
         # But it shouldn't break on more complex tables.
         res = users.query(username__eq='johndoe')
+
+        # Test putting with/without sets.
+        mau5_created = users.put_item(data={
+            'username': 'mau5',
+            'first_name': 'dead',
+            'last_name': 'mau5',
+            'friend_count': 2,
+            'friends': set(['skrill', 'penny']),
+        })
+        self.assertTrue(mau5_created)
+
+        penny_created = users.put_item(data={
+            'username': 'penny',
+            'first_name': 'Penny',
+            'friend_count': 0,
+            'friends': set([]),
+        })
+        self.assertTrue(penny_created)
