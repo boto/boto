@@ -25,6 +25,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+import mock
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
@@ -87,37 +88,29 @@ def counter(fn):
 class TestS3KeyRetries(AWSMockServiceTestCase):
     connection_class = S3Connection
 
-    def setUp(self):
-        super(TestS3KeyRetries, self).setUp()
-
-    def test_500_retry(self):
+    @mock.patch('time.sleep')
+    def test_500_retry(self, sleep_mock):
         self.set_http_response(status_code=500)
         b = Bucket(self.service_connection, 'mybucket')
         k = b.new_key('test_failure')
         fail_file = StringIO('This will attempt to retry.')
 
-        try:
+        with self.assertRaises(BotoServerError):
             k.send_file(fail_file)
-            self.fail("This shouldn't ever succeed.")
-        except BotoServerError:
-            pass
 
-    def test_400_timeout(self):
+    @mock.patch('time.sleep')
+    def test_400_timeout(self, sleep_mock):
         weird_timeout_body = "<Error><Code>RequestTimeout</Code></Error>"
         self.set_http_response(status_code=400, body=weird_timeout_body)
         b = Bucket(self.service_connection, 'mybucket')
         k = b.new_key('test_failure')
         fail_file = StringIO('This will pretend to be chunk-able.')
 
-        # Decorate.
         k.should_retry = counter(k.should_retry)
         self.assertEqual(k.should_retry.count, 0)
 
-        try:
+        with self.assertRaises(BotoServerError):
             k.send_file(fail_file)
-            self.fail("This shouldn't ever succeed.")
-        except BotoServerError:
-            pass
 
         self.assertTrue(k.should_retry.count, 1)
 
