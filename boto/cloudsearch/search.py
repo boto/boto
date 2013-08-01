@@ -36,15 +36,6 @@ class CommitMismatchError(Exception):
     pass
 
 
-try:
-    from simplejson import JSONDecodeError
-except ImportError:
-    class FakeJSONDecodeError(Exception):
-        pass
-
-    JSONDecodeError = FakeJSONDecodeError
-
-
 class SearchResults(object):
     def __init__(self, **attrs):
         self.rid = attrs['info']['rid']
@@ -299,7 +290,7 @@ class SearchConnection(object):
         r = requests.get(url, params=params)
         try:
             data = json.loads(r.content)
-        except (JSONDecodeError, ValueError), e:
+        except ValueError, e:
             if r.status_code == 403:
                 msg = ''
                 import re
