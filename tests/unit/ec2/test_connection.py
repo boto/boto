@@ -564,7 +564,9 @@ class TestDescribeVPCAttribute(TestEC2ConnectionBase):
 
 class TestGetAllNetworkInterfaces(TestEC2ConnectionBase):
     def default_body(self):
-        return """<DescribeNetworkInterfacesResponse xmlns="http://ec2.amazonaws.com/doc/2013-06-15/">
+        return """
+<DescribeNetworkInterfacesResponse xmlns="http://ec2.amazonaws.com/\
+    doc/2013-06-15/">
     <requestId>fc45294c-006b-457b-bab9-012f5b3b0e40</requestId>
      <networkInterfaceSet>
        <item>
