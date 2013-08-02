@@ -562,5 +562,63 @@ class TestDescribeVPCAttribute(TestEC2ConnectionBase):
                                    'Version'])
 
 
+class TestGetAllNetworkInterfaces(TestEC2ConnectionBase):
+    def default_body(self):
+        return """<DescribeNetworkInterfacesResponse xmlns="http://ec2.amazonaws.com/doc/2013-06-15/">
+    <requestId>fc45294c-006b-457b-bab9-012f5b3b0e40</requestId>
+     <networkInterfaceSet>
+       <item>
+         <networkInterfaceId>eni-0f62d866</networkInterfaceId>
+         <subnetId>subnet-c53c87ac</subnetId>
+         <vpcId>vpc-cc3c87a5</vpcId>
+         <availabilityZone>ap-southeast-1b</availabilityZone>
+         <description/>
+         <ownerId>053230519467</ownerId>
+         <requesterManaged>false</requesterManaged>
+         <status>in-use</status>
+         <macAddress>02:81:60:cb:27:37</macAddress>
+         <privateIpAddress>10.0.0.146</privateIpAddress>
+         <sourceDestCheck>true</sourceDestCheck>
+         <groupSet>
+           <item>
+             <groupId>sg-3f4b5653</groupId>
+             <groupName>default</groupName>
+           </item>
+         </groupSet>
+         <attachment>
+           <attachmentId>eni-attach-6537fc0c</attachmentId>
+           <instanceId>i-22197876</instanceId>
+           <instanceOwnerId>053230519467</instanceOwnerId>
+           <deviceIndex>5</deviceIndex>
+           <status>attached</status>
+           <attachTime>2012-07-01T21:45:27.000Z</attachTime>
+           <deleteOnTermination>true</deleteOnTermination>
+         </attachment>
+         <tagSet/>
+         <privateIpAddressesSet>
+           <item>
+             <privateIpAddress>10.0.0.146</privateIpAddress>
+             <primary>true</primary>
+           </item>
+           <item>
+             <privateIpAddress>10.0.0.148</privateIpAddress>
+             <primary>false</primary>
+           </item>
+           <item>
+             <privateIpAddress>10.0.0.150</privateIpAddress>
+             <primary>false</primary>
+           </item>
+         </privateIpAddressesSet>
+       </item>
+    </networkInterfaceSet>
+</DescribeNetworkInterfacesResponse>"""
+
+    def test_attachment_has_device_index(self):
+        self.set_http_response(status_code=200)
+        parsed = self.ec2.get_all_network_interfaces()
+
+        self.assertEqual(5, parsed[0].attachment.device_index)
+
+
 if __name__ == '__main__':
     unittest.main()
