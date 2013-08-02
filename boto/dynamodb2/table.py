@@ -611,7 +611,7 @@ class Table(object):
                 'AttributeValueList': [],
                 'ComparisonOperator': op,
             }
- 
+
             # Special-case the ``NULL/NOT_NULL`` case.
             if field_bits[-1] == 'null':
                 del lookup['AttributeValueList']

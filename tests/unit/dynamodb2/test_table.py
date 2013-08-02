@@ -269,6 +269,21 @@ class ItemTestCase(unittest.TestCase):
         self.johndoe['last_name'] = 'Doe'
         self.assertTrue(self.johndoe.needs_save())
 
+    def test_needs_save_set_changed(self):
+        # First, ensure we're clean.
+        self.johndoe.mark_clean()
+        self.assertFalse(self.johndoe.needs_save())
+        # Add a friends collection.
+        self.johndoe['friends'] = set(['jane', 'alice'])
+        self.assertTrue(self.johndoe.needs_save())
+        # Now mark it clean, then change the collection.
+        # This does NOT call ``__setitem__``, so the item used to be
+        # incorrectly appearing to be clean, when it had in fact been changed.
+        self.johndoe.mark_clean()
+        self.assertFalse(self.johndoe.needs_save())
+        self.johndoe['friends'].add('bob')
+        self.assertTrue(self.johndoe.needs_save())
+
     def test_mark_clean(self):
         self.johndoe['last_name'] = 'Doe'
         self.assertTrue(self.johndoe.needs_save())
@@ -416,6 +431,22 @@ class ItemTestCase(unittest.TestCase):
             'date_joined': {'N': '12345'}
         })
 
+        self.johndoe['friends'] = set(['jane', 'alice'])
+        self.assertEqual(self.johndoe.prepare_full(), {
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'John'},
+            'date_joined': {'N': '12345'},
+            'friends': {'SS': ['jane', 'alice']},
+        })
+
+    def test_prepare_full_empty_set(self):
+        self.johndoe['friends'] = set()
+        self.assertEqual(self.johndoe.prepare_full(), {
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'John'},
+            'date_joined': {'N': '12345'}
+        })
+
     def test_prepare_partial(self):
         self.johndoe.mark_clean()
         # Change some data.
@@ -425,7 +456,8 @@ class ItemTestCase(unittest.TestCase):
         # Delete some data.
         del self.johndoe['date_joined']
 
-        self.assertEqual(self.johndoe.prepare_partial(), {
+        final_data, fields = self.johndoe.prepare_partial()
+        self.assertEqual(final_data, {
             'date_joined': {
                 'Action': 'DELETE',
             },
@@ -438,6 +470,42 @@ class ItemTestCase(unittest.TestCase):
                 'Value': {'S': 'Doe'},
             },
         })
+        self.assertEqual(fields, set([
+            'first_name',
+            'last_name',
+            'date_joined'
+        ]))
+
+    def test_prepare_partial(self):
+        self.johndoe.mark_clean()
+        # Change some data.
+        self.johndoe['first_name'] = 'Johann'
+        # Add some data.
+        self.johndoe['last_name'] = 'Doe'
+        # Delete some data.
+        del self.johndoe['date_joined']
+        # Put an empty set on the ``Item``.
+        self.johndoe['friends'] = set()
+
+        final_data, fields = self.johndoe.prepare_partial()
+        self.assertEqual(final_data, {
+            'date_joined': {
+                'Action': 'DELETE',
+            },
+            'first_name': {
+                'Action': 'PUT',
+                'Value': {'S': 'Johann'},
+            },
+            'last_name': {
+                'Action': 'PUT',
+                'Value': {'S': 'Doe'},
+            },
+        })
+        self.assertEqual(fields, set([
+            'first_name',
+            'last_name',
+            'date_joined'
+        ]))
 
     def test_save_no_changes(self):
         # Unchanged, no save.
@@ -694,7 +762,7 @@ class ResultSetTestCase(unittest.TestCase):
         self.assertEqual(results.next(), 'Hello john #0')
         self.assertEqual(results.next(), 'Hello john #1')
         self.assertRaises(StopIteration, results.next)
-        
+
     def test_limit_equals_page(self):
         results = ResultSet()
         results.to_call(fake_results, 'john', greeting='Hello', limit=5)
