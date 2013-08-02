@@ -163,14 +163,10 @@ class Item(object):
 
         needs_save = False
 
-        if len(data['adds']):
-            needs_save = True
-
-        if len(data['changes']):
-            needs_save = True
-
-        if len(data['deletes']):
-            needs_save = True
+        for kind in ['adds', 'changes', 'deletes']:
+            if len(data[kind]):
+                needs_save = True
+                break
 
         return needs_save
 
