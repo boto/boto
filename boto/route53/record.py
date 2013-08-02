@@ -161,6 +161,7 @@ class ResourceRecordSets(ResultSet):
     def __iter__(self):
         """Override the next function to support paging"""
         results = ResultSet.__iter__(self)
+        truncated = self.is_truncated
         while results:
             for obj in results:
                 yield obj
@@ -169,6 +170,8 @@ class ResourceRecordSets(ResultSet):
                 results = self.connection.get_all_rrsets(self.hosted_zone_id, name=self.next_record_name, type=self.next_record_type)
             else:
                 results = None
+                self.is_truncated = truncated
+
 
 
 
