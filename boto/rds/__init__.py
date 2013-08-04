@@ -41,6 +41,8 @@ def regions():
     """
     return [RDSRegionInfo(name='us-east-1',
                           endpoint='rds.amazonaws.com'),
+            RDSRegionInfo(name='us-gov-west-1',
+                          endpoint='rds.us-gov-west-1.amazonaws.com'),
             RDSRegionInfo(name='eu-west-1',
                           endpoint='rds.eu-west-1.amazonaws.com'),
             RDSRegionInfo(name='us-west-1',

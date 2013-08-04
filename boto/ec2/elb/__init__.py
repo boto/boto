@@ -36,6 +36,7 @@ import boto
 
 RegionData = {
     'us-east-1': 'elasticloadbalancing.us-east-1.amazonaws.com',
+    'us-gov-west-1': 'elasticloadbalancing.us-gov-west-1.amazonaws.com',
     'us-west-1': 'elasticloadbalancing.us-west-1.amazonaws.com',
     'us-west-2': 'elasticloadbalancing.us-west-2.amazonaws.com',
     'sa-east-1': 'elasticloadbalancing.sa-east-1.amazonaws.com',

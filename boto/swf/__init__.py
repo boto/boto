@@ -27,6 +27,7 @@ import boto.swf.layer1
 
 REGION_ENDPOINTS = {
     'us-east-1': 'swf.us-east-1.amazonaws.com',
+    'us-gov-west-1': 'swf.us-gov-west-1.amazonaws.com',
     'us-west-1': 'swf.us-west-1.amazonaws.com',
     'us-west-2': 'swf.us-west-2.amazonaws.com',
     'sa-east-1': 'swf.sa-east-1.amazonaws.com',
