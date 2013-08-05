@@ -72,10 +72,10 @@ def connect_to_region(region_name, **kw_params):
     :return: A connection to the given region, or None if an invalid region
              name is given
     """
-    
+
     if kw_params['region'] and region_name == kw_params['region'].name:
         return EC2Connection(**kw_params)
-    
+
     for region in regions(**kw_params):
         if region.name == region_name:
             return region.connect(**kw_params)
