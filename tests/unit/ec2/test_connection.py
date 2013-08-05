@@ -1,7 +1,13 @@
 #!/usr/bin/env python
+import httplib
+
+from mock import Mock
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
+import boto.ec2
+
+from boto.regioninfo import RegionInfo
 from boto.ec2.connection import EC2Connection
 
 
@@ -620,6 +626,39 @@ class TestGetAllNetworkInterfaces(TestEC2ConnectionBase):
         parsed = self.ec2.get_all_network_interfaces()
 
         self.assertEqual(5, parsed[0].attachment.device_index)
+
+
+class TestConnectToRegion(unittest.TestCase):
+    def setUp(self):
+        self.https_connection = Mock(spec=httplib.HTTPSConnection)
+        self.https_connection_factory = (
+            Mock(return_value=self.https_connection), ())
+
+    def test_aws_region(self):
+        region = boto.ec2.RegionData.keys()[0]
+        self.ec2 = boto.ec2.connect_to_region(region,
+            https_connection_factory=self.https_connection_factory,
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key'
+        )
+        self.assertEqual(boto.ec2.RegionData[region], self.ec2.host)
+
+    def test_non_aws_region(self):
+        self.ec2 = boto.ec2.connect_to_region('foo',
+            https_connection_factory=self.https_connection_factory,
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key',
+            region = RegionInfo(name='foo', endpoint='https://foo.com/bar')
+        )
+        self.assertEqual('https://foo.com/bar', self.ec2.host)
+
+    def test_missing_region(self):
+        self.ec2 = boto.ec2.connect_to_region('foo',
+            https_connection_factory=self.https_connection_factory,
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key'
+        )
+        self.assertEqual(None, self.ec2)
 
 
 if __name__ == '__main__':
