@@ -652,7 +652,8 @@ class TestModifyInterfaceAttribute(TestEC2ConnectionBase):
 
     def test_modify_source_dest_check_bool(self):
         self.set_http_response(status_code=200)
-        self.ec2.modify_network_interface_attribute('id', 'sourceDestCheck', True)
+        self.ec2.modify_network_interface_attribute('id', 'sourceDestCheck',
+                                                    True)
 
         self.assert_request_parameters({
             'Action': 'ModifyNetworkInterfaceAttribute',
@@ -679,11 +680,14 @@ class TestModifyInterfaceAttribute(TestEC2ConnectionBase):
         self.set_http_response(status_code=200)
 
         with self.assertRaises(ValueError):
-            self.ec2.modify_network_interface_attribute('id', 'sourceDestCheck', 123)
+            self.ec2.modify_network_interface_attribute('id',
+                                                        'sourceDestCheck',
+                                                        123)
 
     def test_modify_delete_on_termination_str(self):
         self.set_http_response(status_code=200)
-        self.ec2.modify_network_interface_attribute('id', 'deleteOnTermination',
+        self.ec2.modify_network_interface_attribute('id',
+                                                    'deleteOnTermination',
                                                     True, attachment_id='bar')
 
         self.assert_request_parameters({
@@ -697,8 +701,10 @@ class TestModifyInterfaceAttribute(TestEC2ConnectionBase):
 
     def test_modify_delete_on_termination_bool(self):
         self.set_http_response(status_code=200)
-        self.ec2.modify_network_interface_attribute('id', 'deleteOnTermination',
-                                                    'false', attachment_id='bar')
+        self.ec2.modify_network_interface_attribute('id',
+                                                    'deleteOnTermination',
+                                                    'false',
+                                                    attachment_id='bar')
 
         self.assert_request_parameters({
             'Action': 'ModifyNetworkInterfaceAttribute',
@@ -713,8 +719,10 @@ class TestModifyInterfaceAttribute(TestEC2ConnectionBase):
         self.set_http_response(status_code=200)
 
         with self.assertRaises(ValueError):
-            self.ec2.modify_network_interface_attribute('id', 'deleteOnTermination',
-                                                    123, attachment_id='bar')
+            self.ec2.modify_network_interface_attribute('id',
+                                                        'deleteOnTermination',
+                                                        123,
+                                                        attachment_id='bar')
 
     def test_modify_group_set_list(self):
         self.set_http_response(status_code=200)
