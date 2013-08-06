@@ -362,14 +362,14 @@ class Distribution(object):
 
     def enable(self):
         """
-        Deactivate the Distribution.  A convenience wrapper around
+        Activate the Distribution.  A convenience wrapper around
         the update method.
         """
         self.update(enabled=True)
 
     def disable(self):
         """
-        Activate the Distribution.  A convenience wrapper around
+        Deactivate the Distribution.  A convenience wrapper around
         the update method.
         """
         self.update(enabled=False)
