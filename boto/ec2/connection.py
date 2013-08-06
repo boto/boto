@@ -847,8 +847,10 @@ class EC2Connection(AWSQueryConnection):
         return self.get_object('DescribeInstanceAttribute', params,
                                InstanceAttribute, verb='POST')
 
-    def modify_network_interface_attribute(self, interface_id, attr, value, attachment_id=None):
-        """Changes an attribute of a network interface.
+    def modify_network_interface_attribute(self, interface_id, attr, value,
+                                           attachment_id=None):
+        """
+        Changes an attribute of a network interface.
 
         :type interface_id: string
         :param interface_id: The interface id. Looks like 'eni-xxxxxxxx'
@@ -856,12 +858,13 @@ class EC2Connection(AWSQueryConnection):
         :type attr: string
         :param attr: The attribute you wish to change.
 
-            Learn more at http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-ModifyNetworkInterfaceAttribute.html
+            Learn more at http://docs.aws.amazon.com/AWSEC2/latest/API\
+            Reference/ApiReference-query-ModifyNetworkInterfaceAttribute.html
 
             * description - Textual description of interface
-            * groupset - List of security group ids or group objects
-            * sourcedestcheck - Boolean
-            * deleteontermination - Boolean. Must also specify attachment_id
+            * groupSet - List of security group ids or group objects
+            * sourceDestCheck - Boolean
+            * deleteOnTermination - Boolean. Must also specify attachment_id
 
         :type value: string
         :param value: The new value for the attribute
