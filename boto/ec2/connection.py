@@ -886,6 +886,9 @@ class EC2Connection(AWSQueryConnection):
                     value = 'true'
                 else:
                     value = 'false'
+            elif value not in ['true', 'false']:
+                raise ValueError('%s must be a boolean, "true", or "false"!'
+                                 % attr)
 
         params = {'NetworkInterfaceId': interface_id}
 
