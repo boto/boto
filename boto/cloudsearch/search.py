@@ -27,6 +27,8 @@ import boto
 from boto.compat import json
 import requests
 
+import logging
+logger = logging.getLogger(__name__)
 
 class SearchServiceException(Exception):
     pass
@@ -149,6 +151,7 @@ class Query(object):
         if self.t:
             for k, v in self.t.iteritems():
                 params['t-%s' % k] = v
+        logger.debug('Search params %s'%params)
         return params
 
 
