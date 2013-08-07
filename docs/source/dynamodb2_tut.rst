@@ -73,10 +73,10 @@ Simple example::
 
 A full example::
 
-    >>> from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex
+    >>> from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex, AllIndex
     >>> from boto.dynamodb2.layer1 import DynamoDBConnection
     >>> from boto.dynamodb2.table import Table
-    >>> from boto.dynamodb2.types import Number
+    >>> from boto.dynamodb2.types import NUMBER
 
     >>> users = Table.create('users', schema=[
     ...     HashKey('account_type', data_type=NUMBER),
@@ -112,7 +112,9 @@ Lazy example::
 
 Efficient example::
 
+    >>> from boto.dynamodb2.fields import HashKey, RangeKey, AllIndex
     >>> from boto.dynamodb2.table import Table
+    >>> from boto.dynamodb2.types import NUMBER
     >>> users = Table('users', schema=[
     ...     HashKey('account_type', data_type=NUMBER),
     ...     RangeKey('last_name'),

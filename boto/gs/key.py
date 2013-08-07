@@ -117,6 +117,8 @@ class Key(S3Key):
                     self.cloud_hashes[alg] = binascii.a2b_base64(b64_digest)
             elif key == 'x-goog-component-count':
                 self.component_count = int(value)
+            elif key == 'x-goog-generation':
+                self.generation = value
 
     def open_read(self, headers=None, query_args='',
                   override_num_retries=None, response_headers=None):
@@ -920,3 +922,7 @@ class Key(S3Key):
         if resp.status < 200 or resp.status > 299:
             raise self.bucket.connection.provider.storage_response_error(
                 resp.status, resp.reason, resp.read())
+
+        # Return the generation so that the result URI can be built with this
+        # for automatic parallel uploads.
+        return resp.getheader('x-goog-generation')

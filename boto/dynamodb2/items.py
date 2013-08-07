@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from boto.dynamodb2.types import Dynamizer
 
 
@@ -18,7 +20,7 @@ class Item(object):
     data. It also tries to intelligently track how data has changed throughout
     the life of the instance, to be as efficient as possible about updates.
     """
-    def __init__(self, table, data=None):
+    def __init__(self, table, data=None, loaded=False):
         """
         Constructs an (unsaved) ``Item`` instance.
 
@@ -31,6 +33,10 @@ class Item(object):
 
         Optionally accepts a ``data`` parameter, which should be a dictionary
         of the fields & values of the item.
+
+        Optionally accepts a ``loaded`` parameter, which should be a boolean.
+        ``True`` if it was preexisting data loaded from DynamoDB, ``False`` if
+        it's new data from the user. Default is ``False``.
 
         Example::
 
@@ -57,41 +63,28 @@ class Item(object):
 
         """
         self.table = table
-        self._data = {}
+        self._loaded = loaded
         self._orig_data = {}
-        self._is_dirty = False
+        self._data = data
         self._dynamizer = Dynamizer()
 
-        if data:
-            self._data = data
-            self._is_dirty = True
+        if self._data is None:
+            self._data = {}
 
-            for key in data.keys():
-                self._orig_data[key] = NEWVALUE
+        if self._loaded:
+            self._orig_data = deepcopy(self._data)
 
     def __getitem__(self, key):
         return self._data.get(key, None)
 
     def __setitem__(self, key, value):
-        # Stow the original value if present, so we can track what's changed.
-        if key in self._data:
-            self._orig_data[key] = self._data[key]
-        else:
-            # Use a marker to indicate we've never seen a value for this key.
-            self._orig_data[key] = NEWVALUE
-
         self._data[key] = value
-        self._is_dirty = True
 
     def __delitem__(self, key):
         if not key in self._data:
             return
 
-        # Stow the original value, so we can track what's changed.
-        value = self._data[key]
         del self._data[key]
-        self._orig_data[key] = value
-        self._is_dirty = True
 
     def keys(self):
         return self._data.keys()
@@ -112,9 +105,49 @@ class Item(object):
     def __contains__(self, key):
         return key in self._data
 
-    def needs_save(self):
+    def _determine_alterations(self):
+        """
+        Checks the ``-orig_data`` against the ``_data`` to determine what
+        changes to the data are present.
+
+        Returns a dictionary containing the keys ``adds``, ``changes`` &
+        ``deletes``, containing the updated data.
+        """
+        alterations = {
+            'adds': {},
+            'changes': {},
+            'deletes': [],
+        }
+
+        orig_keys = set(self._orig_data.keys())
+        data_keys = set(self._data.keys())
+
+        # Run through keys we know are in both for changes.
+        for key in orig_keys.intersection(data_keys):
+            if self._data[key] != self._orig_data[key]:
+                if self._is_storable(self._data[key]):
+                    alterations['changes'][key] = self._data[key]
+                else:
+                    alterations['deletes'].append(key)
+
+        # Run through additions.
+        for key in data_keys.difference(orig_keys):
+            if self._is_storable(self._data[key]):
+                alterations['adds'][key] = self._data[key]
+
+        # Run through deletions.
+        for key in orig_keys.difference(data_keys):
+            alterations['deletes'].append(key)
+
+        return alterations
+
+    def needs_save(self, data=None):
         """
         Returns whether or not the data has changed on the ``Item``.
+
+        Optionally accepts a ``data`` argument, which accepts the output from
+        ``self._determine_alterations()`` if you've already called it. Typically
+        unnecessary to do. Default is ``None``.
 
         Example:
 
@@ -125,7 +158,17 @@ class Item(object):
             True
 
         """
-        return self._is_dirty
+        if data is None:
+            data = self._determine_alterations()
+
+        needs_save = False
+
+        for kind in ['adds', 'changes', 'deletes']:
+            if len(data[kind]):
+                needs_save = True
+                break
+
+        return needs_save
 
     def mark_clean(self):
         """
@@ -143,23 +186,16 @@ class Item(object):
             False
 
         """
-        self._orig_data = {}
-        self._is_dirty = False
+        self._orig_data = deepcopy(self._data)
 
     def mark_dirty(self):
         """
-        Marks an ``Item`` instance as needing to be saved.
+        DEPRECATED: Marks an ``Item`` instance as needing to be saved.
 
-        Example:
-
-            >>> user.needs_save()
-            False
-            >>> user.mark_dirty()
-            >>> user.needs_save()
-            True
-
+        This method is no longer necessary, as the state tracking on ``Item``
+        has been improved to automatically detect proper state.
         """
-        self._is_dirty = True
+        return
 
     def load(self, data):
         """
@@ -175,7 +211,8 @@ class Item(object):
         for field_name, field_value in data.get('Item', {}).items():
             self[field_name] = self._dynamizer.decode(field_value)
 
-        self.mark_clean()
+        self._loaded = True
+        self._orig_data = deepcopy(self._data)
 
     def get_keys(self):
         """
@@ -229,29 +266,41 @@ class Item(object):
                 raise ValueError("Unknown key %s provided." % key)
 
             # States:
-            # * New field (_data & _orig_data w/ marker)
-            # * Unchanged field (only _data)
-            # * Modified field (_data & _orig_data)
-            # * Deleted field (only _orig_data)
-            if not key in self._orig_data:
+            # * New field (only in _data)
+            # * Unchanged field (in both _data & _orig_data, same data)
+            # * Modified field (in both _data & _orig_data, different data)
+            # * Deleted field (only in _orig_data)
+            orig_value = self._orig_data.get(key, NEWVALUE)
+            current_value = self._data.get(key, NEWVALUE)
+
+            if orig_value == current_value:
                 # Existing field unchanged.
-                value = self._data[key]
+                value = current_value
             else:
                 if key in self._data:
-                    if self._orig_data[key] is NEWVALUE:
+                    if not key in self._orig_data:
                         # New field.
                         expects[key]['Exists'] = False
                     else:
                         # Existing field modified.
-                        value = self._orig_data[key]
+                        value = orig_value
                 else:
                    # Existing field deleted.
-                    value = self._orig_data[key]
+                    value = orig_value
 
             if value is not None:
                 expects[key]['Value'] = self._dynamizer.encode(value)
 
         return expects
+
+    def _is_storable(self, value):
+        # We need to prevent ``None``, empty string & empty set from
+        # heading to DDB, but allow false-y values like 0 & False make it.
+        if not value:
+            if not value in (0, 0.0, False):
+                return False
+
+        return True
 
     def prepare_full(self):
         """
@@ -265,6 +314,9 @@ class Item(object):
         final_data = {}
 
         for key, value in self._data.items():
+            if not self._is_storable(value):
+                continue
+
             final_data[key] = self._dynamizer.encode(value)
 
         return final_data
@@ -280,22 +332,30 @@ class Item(object):
         # This doesn't save on it's own. Rather, we prepare the datastructure
         # and hand-off to the table to handle creation/update.
         final_data = {}
+        fields = set()
+        alterations = self._determine_alterations()
 
-        # Loop over ``_orig_data`` so that we only build up data that's changed.
-        for key, value in self._orig_data.items():
-            if key in self._data:
-                # It changed.
-                final_data[key] = {
-                    'Action': 'PUT',
-                    'Value': self._dynamizer.encode(self._data[key])
-                }
-            else:
-                # It was deleted.
-                final_data[key] = {
-                    'Action': 'DELETE',
-                }
+        for key, value in alterations['adds'].items():
+            final_data[key] = {
+                'Action': 'PUT',
+                'Value': self._dynamizer.encode(self._data[key])
+            }
+            fields.add(key)
 
-        return final_data
+        for key, value in alterations['changes'].items():
+            final_data[key] = {
+                'Action': 'PUT',
+                'Value': self._dynamizer.encode(self._data[key])
+            }
+            fields.add(key)
+
+        for key in alterations['deletes']:
+            final_data[key] = {
+                'Action': 'DELETE',
+            }
+            fields.add(key)
+
+        return final_data, fields
 
     def partial_save(self):
         """
@@ -316,14 +376,15 @@ class Item(object):
             >>> user.partial_save()
 
         """
-        if not self.needs_save():
-            return False
-
         key = self.get_keys()
         # Build a new dict of only the data we're changing.
-        final_data = self.prepare_partial()
+        final_data, fields = self.prepare_partial()
+
+        if not final_data:
+            return False
+
         # Build expectations of only the fields we're planning to update.
-        expects = self.build_expects(fields=self._orig_data.keys())
+        expects = self.build_expects(fields=fields)
         returned = self.table._update_item(key, final_data, expects=expects)
         # Mark the object as clean.
         self.mark_clean()
@@ -359,7 +420,7 @@ class Item(object):
             >>> user.save(overwrite=True)
 
         """
-        if not self.needs_save():
+        if not self.needs_save() and not overwrite:
             return False
 
         final_data = self.prepare_full()

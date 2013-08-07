@@ -269,6 +269,21 @@ class ItemTestCase(unittest.TestCase):
         self.johndoe['last_name'] = 'Doe'
         self.assertTrue(self.johndoe.needs_save())
 
+    def test_needs_save_set_changed(self):
+        # First, ensure we're clean.
+        self.johndoe.mark_clean()
+        self.assertFalse(self.johndoe.needs_save())
+        # Add a friends collection.
+        self.johndoe['friends'] = set(['jane', 'alice'])
+        self.assertTrue(self.johndoe.needs_save())
+        # Now mark it clean, then change the collection.
+        # This does NOT call ``__setitem__``, so the item used to be
+        # incorrectly appearing to be clean, when it had in fact been changed.
+        self.johndoe.mark_clean()
+        self.assertFalse(self.johndoe.needs_save())
+        self.johndoe['friends'].add('bob')
+        self.assertTrue(self.johndoe.needs_save())
+
     def test_mark_clean(self):
         self.johndoe['last_name'] = 'Doe'
         self.assertTrue(self.johndoe.needs_save())
@@ -416,6 +431,22 @@ class ItemTestCase(unittest.TestCase):
             'date_joined': {'N': '12345'}
         })
 
+        self.johndoe['friends'] = set(['jane', 'alice'])
+        self.assertEqual(self.johndoe.prepare_full(), {
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'John'},
+            'date_joined': {'N': '12345'},
+            'friends': {'SS': ['jane', 'alice']},
+        })
+
+    def test_prepare_full_empty_set(self):
+        self.johndoe['friends'] = set()
+        self.assertEqual(self.johndoe.prepare_full(), {
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'John'},
+            'date_joined': {'N': '12345'}
+        })
+
     def test_prepare_partial(self):
         self.johndoe.mark_clean()
         # Change some data.
@@ -425,7 +456,8 @@ class ItemTestCase(unittest.TestCase):
         # Delete some data.
         del self.johndoe['date_joined']
 
-        self.assertEqual(self.johndoe.prepare_partial(), {
+        final_data, fields = self.johndoe.prepare_partial()
+        self.assertEqual(final_data, {
             'date_joined': {
                 'Action': 'DELETE',
             },
@@ -438,6 +470,42 @@ class ItemTestCase(unittest.TestCase):
                 'Value': {'S': 'Doe'},
             },
         })
+        self.assertEqual(fields, set([
+            'first_name',
+            'last_name',
+            'date_joined'
+        ]))
+
+    def test_prepare_partial(self):
+        self.johndoe.mark_clean()
+        # Change some data.
+        self.johndoe['first_name'] = 'Johann'
+        # Add some data.
+        self.johndoe['last_name'] = 'Doe'
+        # Delete some data.
+        del self.johndoe['date_joined']
+        # Put an empty set on the ``Item``.
+        self.johndoe['friends'] = set()
+
+        final_data, fields = self.johndoe.prepare_partial()
+        self.assertEqual(final_data, {
+            'date_joined': {
+                'Action': 'DELETE',
+            },
+            'first_name': {
+                'Action': 'PUT',
+                'Value': {'S': 'Johann'},
+            },
+            'last_name': {
+                'Action': 'PUT',
+                'Value': {'S': 'Doe'},
+            },
+        })
+        self.assertEqual(fields, set([
+            'first_name',
+            'last_name',
+            'date_joined'
+        ]))
 
     def test_save_no_changes(self):
         # Unchanged, no save.
@@ -590,6 +658,9 @@ def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
     if exclusive_start_key is None:
         exclusive_start_key = -1
 
+    if limit == 0:
+        raise Exception("Web Service Returns '400 Bad Request'")
+
     end_cap = 13
     results = []
     start_key = exclusive_start_key + 1
@@ -597,6 +668,10 @@ def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
     for i in range(start_key, start_key + 5):
         if i < end_cap:
             results.append("%s %s #%s" % (greeting, name, i))
+
+    # Don't return more than limit results
+    if limit < len(results):
+        results = results[:limit]
 
     retval = {
         'results': results,
@@ -680,6 +755,37 @@ class ResultSetTestCase(unittest.TestCase):
         self.assertEqual(self.results.next(), 'Hello john #12')
         self.assertRaises(StopIteration, self.results.next)
         self.assertEqual(self.results.call_kwargs['limit'], 7)
+
+    def test_limit_smaller_than_first_page(self):
+        results = ResultSet()
+        results.to_call(fake_results, 'john', greeting='Hello', limit=2)
+        self.assertEqual(results.next(), 'Hello john #0')
+        self.assertEqual(results.next(), 'Hello john #1')
+        self.assertRaises(StopIteration, results.next)
+
+    def test_limit_equals_page(self):
+        results = ResultSet()
+        results.to_call(fake_results, 'john', greeting='Hello', limit=5)
+        # First page
+        self.assertEqual(results.next(), 'Hello john #0')
+        self.assertEqual(results.next(), 'Hello john #1')
+        self.assertEqual(results.next(), 'Hello john #2')
+        self.assertEqual(results.next(), 'Hello john #3')
+        self.assertEqual(results.next(), 'Hello john #4')
+        self.assertRaises(StopIteration, results.next)
+
+    def test_limit_greater_than_page(self):
+        results = ResultSet()
+        results.to_call(fake_results, 'john', greeting='Hello', limit=6)
+        # First page
+        self.assertEqual(results.next(), 'Hello john #0')
+        self.assertEqual(results.next(), 'Hello john #1')
+        self.assertEqual(results.next(), 'Hello john #2')
+        self.assertEqual(results.next(), 'Hello john #3')
+        self.assertEqual(results.next(), 'Hello john #4')
+        # Second page
+        self.assertEqual(results.next(), 'Hello john #5')
+        self.assertRaises(StopIteration, results.next)
 
     def test_iteration_noresults(self):
         def none(limit=10):
@@ -1527,15 +1633,17 @@ class TableTestCase(unittest.TestCase):
 
         mock_query.assert_called_once_with('users',
             consistent_read=False,
-            index_name=None,
             scan_index_forward=True,
+            index_name=None,
+            attributes_to_get=None,
             limit=4,
             key_conditions={
                 'username': {
                     'AttributeValueList': [{'S': 'aaa'}, {'S': 'mmm'}],
                     'ComparisonOperator': 'BETWEEN',
                 }
-            }
+            },
+            select=None
         )
 
         # Now alter the expected.
@@ -1571,6 +1679,7 @@ class TableTestCase(unittest.TestCase):
                 }
             },
             index_name=None,
+            attributes_to_get=None,
             scan_index_forward=True,
             limit=4,
             exclusive_start_key={
@@ -1578,7 +1687,8 @@ class TableTestCase(unittest.TestCase):
                     'S': 'adam',
                 },
             },
-            consistent_read=True
+            consistent_read=True,
+            select=None
         )
 
     def test_private_scan(self):
@@ -1741,6 +1851,39 @@ class TableTestCase(unittest.TestCase):
             self.assertRaises(StopIteration, results.next)
 
         self.assertEqual(mock_query_2.call_count, 1)
+
+    def test_query_with_specific_attributes(self):
+        items_1 = {
+            'results': [
+                Item(self.users, data={
+                    'username': 'johndoe',
+                }),
+                Item(self.users, data={
+                    'username': 'jane',
+                }),
+            ],
+            'last_key': 'jane',
+        }
+
+        results = self.users.query(last_name__eq='Doe',
+                                   attributes=['username'])
+        self.assertTrue(isinstance(results, ResultSet))
+        self.assertEqual(len(results._results), 0)
+        self.assertEqual(results.the_callable, self.users._query)
+
+        with mock.patch.object(
+                results,
+                'the_callable',
+                return_value=items_1) as mock_query:
+            res_1 = results.next()
+            # Now it should be populated.
+            self.assertEqual(len(results._results), 2)
+            self.assertEqual(res_1['username'], 'johndoe')
+            self.assertEqual(res_1.keys(), ['username'])
+            res_2 = results.next()
+            self.assertEqual(res_2['username'], 'jane')
+
+        self.assertEqual(mock_query.call_count, 1)
 
     def test_scan(self):
         items_1 = {

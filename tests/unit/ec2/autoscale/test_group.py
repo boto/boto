@@ -28,7 +28,11 @@ from tests.unit import AWSMockServiceTestCase
 
 from boto.ec2.autoscale import AutoScaleConnection
 from boto.ec2.autoscale.group import AutoScalingGroup
+from boto.ec2.autoscale.policy import ScalingPolicy
 
+from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
+
+from boto.ec2.autoscale import launchconfig
 
 class TestAutoScaleGroup(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
@@ -194,6 +198,131 @@ class TestDescribeTerminationPolicies(AWSMockServiceTestCase):
             response,
             ['ClosestToNextInstanceHour', 'Default',
              'NewestInstance', 'OldestInstance', 'OldestLaunchConfiguration'])
+
+class TestLaunchConfiguration(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def default_body(self):
+        # This is a dummy response
+        return """
+        <DescribeLaunchConfigurationsResponse>
+        </DescribeLaunchConfigurationsResponse>
+        """
+
+    def test_launch_config(self):
+        # This unit test is based on #753 and #1343
+        self.set_http_response(status_code=200)
+        dev_sdf = EBSBlockDeviceType(snapshot_id='snap-12345')
+        dev_sdg = EBSBlockDeviceType(snapshot_id='snap-12346')
+
+        bdm = BlockDeviceMapping()
+        bdm['/dev/sdf'] = dev_sdf
+        bdm['/dev/sdg'] = dev_sdg
+
+        lc = launchconfig.LaunchConfiguration(
+                connection=self.service_connection,
+                name='launch_config',
+                image_id='123456',
+                instance_type = 'm1.large',
+                security_groups = ['group1', 'group2'],
+                spot_price='price',
+                block_device_mappings = [bdm]
+                )
+
+        response = self.service_connection.create_launch_configuration(lc)
+
+        self.assert_request_parameters({
+            'Action': 'CreateLaunchConfiguration',
+            'BlockDeviceMapping.1.DeviceName': '/dev/sdf',
+            'BlockDeviceMapping.1.Ebs.DeleteOnTermination': 'false',
+            'BlockDeviceMapping.1.Ebs.SnapshotId': 'snap-12345',
+            'BlockDeviceMapping.2.DeviceName': '/dev/sdg',
+            'BlockDeviceMapping.2.Ebs.DeleteOnTermination': 'false',
+            'BlockDeviceMapping.2.Ebs.SnapshotId': 'snap-12346',
+            'EbsOptimized': 'false',
+            'LaunchConfigurationName': 'launch_config',
+            'ImageId': '123456',
+            'InstanceMonitoring.Enabled': 'false',
+            'InstanceType': 'm1.large',
+            'SecurityGroups.member.1': 'group1',
+            'SecurityGroups.member.2': 'group2',
+            'SpotPrice': 'price',
+        }, ignore_params_values=['Version'])
+
+
+class TestCreateAutoScalePolicy(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def setUp(self):
+        super(TestCreateAutoScalePolicy, self).setUp()
+
+    def default_body(self):
+        return """
+            <PutScalingPolicyResponse xmlns="http://autoscaling.amazonaws.com\
+            /doc/2011-01-01/">
+              <PutScalingPolicyResult>
+                <PolicyARN>arn:aws:autoscaling:us-east-1:803981987763:scaling\
+                Policy:b0dcf5e8
+            -02e6-4e31-9719-0675d0dc31ae:autoScalingGroupName/my-test-asg:\
+            policyName/my-scal
+            eout-policy</PolicyARN>
+              </PutScalingPolicyResult>
+              <ResponseMetadata>
+                <RequestId>3cfc6fef-c08b-11e2-a697-2922EXAMPLE</RequestId>
+              </ResponseMetadata>
+            </PutScalingPolicyResponse>
+        """
+
+    def test_scaling_policy_with_min_adjustment_step(self):
+        self.set_http_response(status_code=200)
+
+        policy = ScalingPolicy(
+            name='foo', as_name='bar',
+            adjustment_type='PercentChangeInCapacity', scaling_adjustment=50,
+            min_adjustment_step=30)
+        self.service_connection.create_scaling_policy(policy)
+
+        self.assert_request_parameters({
+            'Action': 'PutScalingPolicy',
+            'PolicyName': 'foo',
+            'AutoScalingGroupName': 'bar',
+            'AdjustmentType': 'PercentChangeInCapacity',
+            'ScalingAdjustment': 50,
+            'MinAdjustmentStep': 30
+        }, ignore_params_values=['Version'])
+
+    def test_scaling_policy_with_wrong_adjustment_type(self):
+        self.set_http_response(status_code=200)
+
+        policy = ScalingPolicy(
+            name='foo', as_name='bar',
+            adjustment_type='ChangeInCapacity', scaling_adjustment=50,
+            min_adjustment_step=30)
+        self.service_connection.create_scaling_policy(policy)
+
+        self.assert_request_parameters({
+            'Action': 'PutScalingPolicy',
+            'PolicyName': 'foo',
+            'AutoScalingGroupName': 'bar',
+            'AdjustmentType': 'ChangeInCapacity',
+            'ScalingAdjustment': 50
+        }, ignore_params_values=['Version'])
+
+    def test_scaling_policy_without_min_adjustment_step(self):
+        self.set_http_response(status_code=200)
+
+        policy = ScalingPolicy(
+            name='foo', as_name='bar',
+            adjustment_type='PercentChangeInCapacity', scaling_adjustment=50)
+        self.service_connection.create_scaling_policy(policy)
+
+        self.assert_request_parameters({
+            'Action': 'PutScalingPolicy',
+            'PolicyName': 'foo',
+            'AutoScalingGroupName': 'bar',
+            'AdjustmentType': 'PercentChangeInCapacity',
+            'ScalingAdjustment': 50
+        }, ignore_params_values=['Version'])
 
 
 if __name__ == '__main__':

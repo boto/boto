@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from boto.ec2.regioninfo import RegionInfo
+from boto.regioninfo import RegionInfo
 
 
 def regions():

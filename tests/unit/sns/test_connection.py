@@ -58,11 +58,9 @@ class TestSNSConnection(AWSMockServiceTestCase):
                'ContentType': 'JSON',
                'Endpoint': 'arn:aws:sqs:us-east-1:idnum:queuename',
                'Protocol': 'sqs',
-               'SignatureMethod': 'HmacSHA256',
-               'SignatureVersion': 2,
                'TopicArn': 'topic_arn',
                'Version': '2010-03-31',
-        }, ignore_params_values=['AWSAccessKeyId', 'Timestamp'])
+        }, ignore_params_values=[])
 
         # Verify that the queue policy was properly updated.
         actual_policy = json.loads(queue.set_attribute.call_args[0][1])
@@ -85,11 +83,9 @@ class TestSNSConnection(AWSMockServiceTestCase):
                'ContentType': 'JSON',
                'Endpoint': 'arn:aws:sqs:us-east-1:idnum:queuename',
                'Protocol': 'sqs',
-               'SignatureMethod': 'HmacSHA256',
-               'SignatureVersion': 2,
                'TopicArn': 'topic_arn',
                'Version': '2010-03-31',
-        }, ignore_params_values=['AWSAccessKeyId', 'Timestamp'])
+        }, ignore_params_values=[])
         actual_policy = json.loads(queue.set_attribute.call_args[0][1])
         # Only a single statement should be part of the policy.
         self.assertEqual(len(actual_policy['Statement']), 1)

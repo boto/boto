@@ -117,7 +117,7 @@ this worked, quit out of the interpreter and start it up again.  Then::
 
     >>> import boto
     >>> c = boto.connect_s3()
-    >>> b = c.create_bucket('mybucket') # substitute your bucket name here
+    >>> b = c.get_bucket('mybucket') # substitute your bucket name here
     >>> from boto.s3.key import Key
     >>> k = Key(b)
     >>> k.key = 'foobar'

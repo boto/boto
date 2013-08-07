@@ -31,7 +31,8 @@ Working with CloudFront Distributions
 -------------------------------------
 Create a new :class:`boto.cloudfront.distribution.Distribution`::
 
-    >>> distro = c.create_distribution(origin='mybucket.s3.amazonaws.com', enabled=False, comment='My new Distribution')
+    >>> origin = boto.cloudfront.origin.S3Origin('mybucket.s3.amazonaws.com')
+    >>> distro = c.create_distribution(origin=origin, enabled=False, comment='My new Distribution')
     >>> d.domain_name
     u'd2oxf3980lnb8l.cloudfront.net'
     >>> d.id

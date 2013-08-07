@@ -79,3 +79,12 @@ class SessionTokenTest (unittest.TestCase):
         except BotoServerError as err:
             self.assertEqual(err.status, 403)
             self.assertTrue('Not authorized' in err.body)
+
+    def test_decode_authorization_message(self):
+        c = STSConnection()
+
+        try:
+            creds = c.decode_authorization_message('b94d27b9934')
+        except BotoServerError as err:
+            self.assertEqual(err.status, 400)
+            self.assertTrue('Invalid token' in err.body)

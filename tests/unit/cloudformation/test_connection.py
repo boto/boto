@@ -421,7 +421,7 @@ class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
         self.assertEqual(stack.creation_time,
                          datetime(2012, 5, 16, 22, 55, 31))
         self.assertEqual(stack.description, 'My Description')
-        self.assertEqual(stack.disable_rollback, True)
+        self.assertEqual(stack.disable_rollback, False)
         self.assertEqual(stack.stack_id, 'arn:aws:cfn:us-east-1:1:stack')
         self.assertEqual(stack.stack_status, 'CREATE_COMPLETE')
         self.assertEqual(stack.stack_name, 'MyStack')
@@ -597,6 +597,21 @@ class TestCloudFormationValidateTemplate(CloudFormationConnectionBase):
             'Action': 'ValidateTemplate',
             'TemplateBody': SAMPLE_TEMPLATE,
             'TemplateURL': 'http://url',
+            'Version': '2010-05-15',
+        })
+
+
+class TestCloudFormationCancelUpdateStack(CloudFormationConnectionBase):
+    def default_body(self):
+        return """<CancelUpdateStackResult/>"""
+
+    def test_cancel_update_stack(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.cancel_update_stack('stack_name')
+        self.assertEqual(api_response, True)
+        self.assert_request_parameters({
+            'Action': 'CancelUpdateStack',
+            'StackName': 'stack_name',
             'Version': '2010-05-15',
         })
 
