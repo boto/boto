@@ -953,6 +953,8 @@ class AWSAuthConnection(object):
         boto.log.debug('closing all HTTP connections')
         self._connection = None  # compat field
 
+import logging
+logger = logging.getLogger(__name__)
 
 class AWSQueryConnection(AWSAuthConnection):
 
@@ -964,6 +966,7 @@ class AWSQueryConnection(AWSAuthConnection):
                  proxy_user=None, proxy_pass=None, host=None, debug=0,
                  https_connection_factory=None, path='/', security_token=None,
                  validate_certs=True):
+        logger.debug('making new AWSQueryConnection to host=%s',host)
         AWSAuthConnection.__init__(self, host, aws_access_key_id,
                                    aws_secret_access_key,
                                    is_secure, port, proxy,
