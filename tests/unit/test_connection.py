@@ -91,6 +91,7 @@ class MockAWSService(AWSQueryConnection):
                                     security_token,
                                     validate_certs=validate_certs)
 
+
 class TestAWSAuthConnection(unittest.TestCase):
     def test_get_path(self):
         conn = AWSAuthConnection(
@@ -122,6 +123,7 @@ class TestAWSQueryConnection(unittest.TestCase):
 
     def tearDown(self):
         HTTPretty.disable()
+
 
 class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
     def test_query_connection_basis(self):
@@ -284,6 +286,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  'POST')
         self.assertEqual(resp.read(), "{'test': 'success'}")
 
+
 class TestAWSQueryStatus(TestAWSQueryConnection):
 
     def test_get_status(self):
@@ -326,6 +329,7 @@ class TestAWSQueryStatus(TestAWSQueryConnection):
             resp = conn.get_status('getStatus',
                                    {'par1': 'foo', 'par2': 'baz'},
                                    'status')
+
 
 if __name__ == '__main__':
     unittest.main()
