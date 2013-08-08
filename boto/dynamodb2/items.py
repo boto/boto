@@ -383,7 +383,9 @@ class Item(object):
         if not final_data:
             return False
 
-        # Remove the key(s) if present.
+        # Remove the key(s) from the ``final_data`` if present.
+        # They should only be present if this is a new item, in which
+        # case we shouldn't be sending as part of the data to update.
         for fieldname, value in key.items():
             if fieldname in final_data:
                 del final_data[fieldname]
