@@ -21,11 +21,14 @@
 #
 import os
 import urlparse
+from mock import patch
 from tests.unit import unittest
 from httpretty import HTTPretty
 
+from boto import auth
 from boto.connection import AWSQueryConnection, AWSAuthConnection
 from boto.exception import BotoServerError
+import boto.iam.connection
 from boto.regioninfo import RegionInfo
 from boto.compat import json
 
@@ -92,6 +95,10 @@ class MockAWSService(AWSQueryConnection):
                                     validate_certs=validate_certs)
 
 
+def _raise(exc):
+    raise exc
+
+
 class TestAWSAuthConnection(unittest.TestCase):
     def test_get_path(self):
         conn = AWSAuthConnection(
@@ -111,6 +118,41 @@ class TestAWSAuthConnection(unittest.TestCase):
         self.assertEqual(conn.get_path('/folder//image.jpg'), '/folder//image.jpg')
         self.assertEqual(conn.get_path('/folder////image.jpg'), '/folder////image.jpg')
         self.assertEqual(conn.get_path('///folder////image.jpg'), '///folder////image.jpg')
+
+    @patch('boto.auth.get_auth_handler', lambda *a, **kw: [auth.AnonAuthHandler(None, None, None)])
+    @patch.object(boto.iam.connection.IAMConnection, 'get_user', lambda *a, **k: {
+        'get_user_response': {
+            'get_user_result': {
+                'user': {
+                    'arn': 'arn:aws:iam::652499722327:user/someusername'}}}})
+    def test_aws_user_arn_from_iam(self):
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret'
+        )
+        self.assertEqual(conn.aws_user_arn, 'arn:aws:iam::652499722327:user/someusername')
+
+    @patch('boto.auth.get_auth_handler', lambda *a, **kw: auth.AnonAuthHandler(None, None, None))
+    @patch.object(boto.iam.connection.IAMConnection, 'get_user', lambda *a, **kw: _raise(
+        BotoServerError('', '')))
+    @patch('os.environ', {'AWS_USER': 'arn:aws:iam::652499722327:user/someusername'})
+    def test_aws_user_arn_from_environ(self):
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret'
+        )
+        self.assertEqual(conn.aws_user_arn, 'arn:aws:iam::652499722327:user/someusername')
+
+    @patch.object(AWSAuthConnection, 'aws_user_arn', 'arn:aws:iam::652499722327:user/someusername')
+    def test_account_id(self):
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret'
+        )
+        self.assertEqual(conn.account_id, '652499722327')
 
 
 class TestAWSQueryConnection(unittest.TestCase):
