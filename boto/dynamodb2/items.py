@@ -383,6 +383,19 @@ class Item(object):
         if not final_data:
             return False
 
+        # Remove the key(s) from the ``final_data`` if present.
+        # They should only be present if this is a new item, in which
+        # case we shouldn't be sending as part of the data to update.
+        for fieldname, value in key.items():
+            if fieldname in final_data:
+                del final_data[fieldname]
+
+                try:
+                    # It's likely also in ``fields``, so remove it there too.
+                    fields.remove(fieldname)
+                except KeyError:
+                    pass
+
         # Build expectations of only the fields we're planning to update.
         expects = self.build_expects(fields=fields)
         returned = self.table._update_item(key, final_data, expects=expects)
