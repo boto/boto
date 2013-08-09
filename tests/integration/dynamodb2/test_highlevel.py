@@ -28,6 +28,7 @@ import time
 from tests.unit import unittest
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex
+from boto.dynamodb2.items import Item
 from boto.dynamodb2.table import Table
 from boto.dynamodb2.types import NUMBER
 
@@ -184,6 +185,21 @@ class DynamoDBv2Test(unittest.TestCase):
         jane['last_name'] = 'Doe'
         jane['friend_count'] = 3
         self.assertTrue(jane.save(overwrite=True))
+
+        # Ensure that partial saves of a brand-new object work.
+        sadie = Item(users, data={
+            'username': 'sadie',
+            'first_name': 'Sadie',
+            'favorite_band': 'Zedd',
+            'friend_count': 7
+        })
+        self.assertTrue(sadie.partial_save())
+        serverside_sadie = users.get_item(
+            username='sadie',
+            friend_count=7,
+            consistent=True
+        )
+        self.assertEqual(serverside_sadie['first_name'], 'Sadie')
 
         # Test the eventually consistent query.
         results = users.query(
