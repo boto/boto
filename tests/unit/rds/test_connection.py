@@ -25,6 +25,7 @@ from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.rds import RDSConnection
+from boto.rds.parametergroup import ParameterGroup
 
 
 class TestRDSConnection(AWSMockServiceTestCase):
@@ -136,6 +137,166 @@ class TestRDSConnection(AWSMockServiceTestCase):
         self.assertEqual(db.status_infos[0].normal, True)
         self.assertEqual(db.status_infos[0].status, 'replicating')
         self.assertEqual(db.status_infos[0].status_type, 'read replication')
+
+
+class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
+    connection_class = RDSConnection
+
+    def setUp(self):
+        super(TestRDSCCreateDBInstance, self).setUp()
+
+    def default_body(self):
+        return """
+        <CreateDBInstanceResponse xmlns="http://rds.amazonaws.com/doc/2013-05-15/">
+            <CreateDBInstanceResult>
+                <DBInstance>
+                    <ReadReplicaDBInstanceIdentifiers/>
+                    <Engine>mysql</Engine>
+                    <PendingModifiedValues>
+                        <MasterUserPassword>****</MasterUserPassword>
+                    </PendingModifiedValues>
+                    <BackupRetentionPeriod>1</BackupRetentionPeriod>
+                    <MultiAZ>false</MultiAZ>
+                    <LicenseModel>general-public-license</LicenseModel>
+                    <DBSubnetGroup>
+                        <VpcId>990524496922</VpcId>
+                        <SubnetGroupStatus>Complete</SubnetGroupStatus>
+                        <DBSubnetGroupDescription>description</DBSubnetGroupDescription>
+                        <DBSubnetGroupName>subnet_grp1</DBSubnetGroupName>
+                        <Subnets>
+                            <Subnet>
+                                <SubnetStatus>Active</SubnetStatus>
+                                <SubnetIdentifier>subnet-7c5b4115</SubnetIdentifier>
+                                <SubnetAvailabilityZone>
+                                    <Name>us-east-1c</Name>
+                                </SubnetAvailabilityZone>
+                            </Subnet>
+                            <Subnet>
+                                <SubnetStatus>Active</SubnetStatus>
+                                <SubnetIdentifier>subnet-7b5b4112</SubnetIdentifier>
+                                <SubnetAvailabilityZone>
+                                    <Name>us-east-1b</Name>
+                                </SubnetAvailabilityZone>
+                            </Subnet>
+                            <Subnet>
+                                <SubnetStatus>Active</SubnetStatus>
+                                <SubnetIdentifier>subnet-3ea6bd57</SubnetIdentifier>
+                                <SubnetAvailabilityZone>
+                                    <Name>us-east-1d</Name>
+                                </SubnetAvailabilityZone>
+                            </Subnet>
+                        </Subnets>
+                    </DBSubnetGroup>
+                    <DBInstanceStatus>creating</DBInstanceStatus>
+                    <EngineVersion>5.1.50</EngineVersion>
+                    <DBInstanceIdentifier>simcoprod01</DBInstanceIdentifier>
+                    <DBParameterGroups>
+                        <DBParameterGroup>
+                            <ParameterApplyStatus>in-sync</ParameterApplyStatus>
+                            <DBParameterGroupName>default.mysql5.1</DBParameterGroupName>
+                        </DBParameterGroup>
+                    </DBParameterGroups>
+                    <DBSecurityGroups>
+                        <DBSecurityGroup>
+                            <Status>active</Status>
+                            <DBSecurityGroupName>default</DBSecurityGroupName>
+                        </DBSecurityGroup>
+                    </DBSecurityGroups>
+                    <PreferredBackupWindow>00:00-00:30</PreferredBackupWindow>
+                    <AutoMinorVersionUpgrade>true</AutoMinorVersionUpgrade>
+                    <PreferredMaintenanceWindow>sat:07:30-sat:08:00</PreferredMaintenanceWindow>
+                        <AllocatedStorage>10</AllocatedStorage>
+                        <DBInstanceClass>db.m1.large</DBInstanceClass>
+                        <MasterUsername>master</MasterUsername>
+                </DBInstance>
+            </CreateDBInstanceResult>
+            <ResponseMetadata>
+                <RequestId>2e5d4270-8501-11e0-bd9b-a7b1ece36d51</RequestId>
+            </ResponseMetadata>
+        </CreateDBInstanceResponse>
+        """
+
+    def test_create_db_instance_param_group_name(self):
+        self.set_http_response(status_code=200)
+        db = self.service_connection.create_dbinstance(
+            'SimCoProd01',
+            10,
+            'db.m1.large',
+            'master',
+            'Password01',
+            param_group='default.mysql5.1',
+            db_subnet_group_name='dbSubnetgroup01')
+
+        self.assert_request_parameters({
+            'Action': 'CreateDBInstance',
+            'AllocatedStorage': 10,
+            'AutoMinorVersionUpgrade': 'true',
+            'DBInstanceClass': 'db.m1.large',
+            'DBInstanceIdentifier': 'SimCoProd01',
+            'DBParameterGroupName': 'default.mysql5.1',
+            'DBSubnetGroupName': 'dbSubnetgroup01',
+            'Engine': 'MySQL5.1',
+            'MasterUsername': 'master',
+            'MasterUserPassword': 'Password01',
+            'Port': 3306,
+        }, ignore_params_values=['Version'])
+
+        self.assertEqual(db.id, 'simcoprod01')
+        self.assertEqual(db.engine, 'mysql')
+        self.assertEqual(db.status, 'creating')
+        self.assertEqual(db.allocated_storage, 10)
+        self.assertEqual(db.instance_class, 'db.m1.large')
+        self.assertEqual(db.master_username, 'master')
+        self.assertEqual(db.multi_az, False)
+        self.assertEqual(db.pending_modified_values,
+            {'MasterUserPassword': '****'})
+
+        self.assertEqual(db.parameter_group.name,
+                         'default.mysql5.1')
+        self.assertEqual(db.parameter_group.description, None)
+        self.assertEqual(db.parameter_group.engine, None)
+
+    def test_create_db_instance_param_group_instance(self):
+        self.set_http_response(status_code=200)
+        param_group = ParameterGroup()
+        param_group.name = 'default.mysql5.1'
+        db = self.service_connection.create_dbinstance(
+            'SimCoProd01',
+            10,
+            'db.m1.large',
+            'master',
+            'Password01',
+            param_group=param_group,
+            db_subnet_group_name='dbSubnetgroup01')
+
+        self.assert_request_parameters({
+            'Action': 'CreateDBInstance',
+            'AllocatedStorage': 10,
+            'AutoMinorVersionUpgrade': 'true',
+            'DBInstanceClass': 'db.m1.large',
+            'DBInstanceIdentifier': 'SimCoProd01',
+            'DBParameterGroupName': 'default.mysql5.1',
+            'DBSubnetGroupName': 'dbSubnetgroup01',
+            'Engine': 'MySQL5.1',
+            'MasterUsername': 'master',
+            'MasterUserPassword': 'Password01',
+            'Port': 3306,
+        }, ignore_params_values=['Version'])
+
+        self.assertEqual(db.id, 'simcoprod01')
+        self.assertEqual(db.engine, 'mysql')
+        self.assertEqual(db.status, 'creating')
+        self.assertEqual(db.allocated_storage, 10)
+        self.assertEqual(db.instance_class, 'db.m1.large')
+        self.assertEqual(db.master_username, 'master')
+        self.assertEqual(db.multi_az, False)
+        self.assertEqual(db.pending_modified_values,
+            {'MasterUserPassword': '****'})
+
+        self.assertEqual(db.parameter_group.name,
+                         'default.mysql5.1')
+        self.assertEqual(db.parameter_group.description, None)
+        self.assertEqual(db.parameter_group.engine, None)
 
 
 class TestRDSOptionGroups(AWSMockServiceTestCase):
