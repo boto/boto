@@ -26,6 +26,7 @@ Represents an EC2 Security Group
 from boto.ec2.ec2object import TaggedEC2Object
 from boto.exception import BotoClientError
 
+
 class SecurityGroup(TaggedEC2Object):
 
     def __init__(self, connection=None, owner_id=None,
@@ -73,7 +74,7 @@ class SecurityGroup(TaggedEC2Object):
                 self.status = True
             else:
                 raise Exception(
-                    'Unexpected value of status %s for group %s'%(
+                    'Unexpected value of status %s for group %s' % (
                         value,
                         self.name
                     )
@@ -276,6 +277,7 @@ class SecurityGroup(TaggedEC2Object):
         instances = [i for r in rs for i in r.instances]
         return instances
 
+
 class IPPermissionsList(list):
 
     def startElement(self, name, attrs, connection):
@@ -286,6 +288,7 @@ class IPPermissionsList(list):
 
     def endElement(self, name, value, connection):
         pass
+
 
 class IPPermissions(object):
 
@@ -324,6 +327,7 @@ class IPPermissions(object):
         grant.cidr_ip = cidr_ip
         self.grants.append(grant)
         return grant
+
 
 class GroupOrCIDR(object):
 
