@@ -268,14 +268,12 @@ class SecurityGroup(TaggedEC2Object):
         :rtype: list of :class:`boto.ec2.instance.Instance`
         :return: A list of Instance objects
         """
-        # It would be more efficient to do this with filters now
-        # but not all services that implement EC2 API support filters.
-        instances = []
-        rs = self.connection.get_all_instances()
-        for reservation in rs:
-            uses_group = [g.name for g in reservation.groups if g.name == self.name]
-            if uses_group:
-                instances.extend(reservation.instances)
+        rs = []
+        if self.vpc_id:
+            rs.extend(self.connection.get_all_instances(filters={'instance.group-id': self.id}))
+        else:
+            rs.extend(self.connection.get_all_instances(filters={'group-id': self.id}))
+        instances = [i for r in rs for i in r.instances]
         return instances
 
 class IPPermissionsList(list):
