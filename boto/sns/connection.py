@@ -30,7 +30,24 @@ import boto
 
 
 class SNSConnection(AWSQueryConnection):
+    """
+    Amazon Simple Notification Service
+    Amazon Simple Notification Service (Amazon SNS) is a web service
+    that enables you to build distributed web-enabled applications.
+    Applications can use Amazon SNS to easily push real-time
+    notification messages to interested subscribers over multiple
+    delivery protocols. For more information about this product see
+    `http://aws.amazon.com/sns`_. For detailed information about
+    Amazon SNS features and their associated API calls, see the
+    `Amazon SNS Developer Guide`_.
 
+    We also provide SDKs that enable you to access Amazon SNS from
+    your preferred programming language. The SDKs contain
+    functionality that automatically takes care of tasks such as:
+    cryptographically signing your service requests, retrying
+    requests, and handling error responses. For a list of available
+    SDKs, go to `Tools for Amazon Web Services`_.
+    """
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'sns.us-east-1.amazonaws.com'
     APIVersion = '2010-03-31'
@@ -190,7 +207,7 @@ class SNSConnection(AWSQueryConnection):
             # To be backwards compatible when message did not have
             # a default value and topic and message were required
             # args.
-            raise TypeError("'message' is a required parmater")
+            raise TypeError("'message' is a required parameter")
         params = {'Message': message}
         if subject is not None:
             params['Subject'] = subject
@@ -349,16 +366,38 @@ class SNSConnection(AWSQueryConnection):
     def create_platform_application(self, name=None, platform=None,
                                     attributes=None):
         """
-
+        The `CreatePlatformApplication` action creates a platform
+        application object for one of the supported push notification
+        services, such as APNS and GCM, to which devices and mobile
+        apps may register. You must specify PlatformPrincipal and
+        PlatformCredential attributes when using the
+        `CreatePlatformApplication` action. The PlatformPrincipal is
+        received from the notification service. For APNS/APNS_SANDBOX,
+        PlatformPrincipal is "SSL certificate". For GCM,
+        PlatformPrincipal is not applicable. For ADM,
+        PlatformPrincipal is "client id". The PlatformCredential is
+        also received from the notification service. For
+        APNS/APNS_SANDBOX, PlatformCredential is "private key". For
+        GCM, PlatformCredential is "API key". For ADM,
+        PlatformCredential is "client secret". The
+        PlatformApplicationArn that is returned when using
+        `CreatePlatformApplication` is then used as an attribute for
+        the `CreatePlatformEndpoint` action. For more information, see
+        `Using Amazon SNS Mobile Push Notifications`_.
 
         :type name: string
-        :param name:
+        :param name: Application names must be made up of only uppercase and
+            lowercase ASCII letters, numbers, underscores, hyphens, and
+            periods, and must be between 1 and 256 characters long.
 
         :type platform: string
-        :param platform:
+        :param platform: The following platforms are supported: ADM (Amazon
+            Device Messaging), APNS (Apple Push Notification Service),
+            APNS_SANDBOX, and GCM (Google Cloud Messaging).
 
         :type attributes: map
-        :param attributes:
+        :param attributes: For a list of attributes, see
+            `SetPlatformApplicationAttributes`_
 
         """
         params = {}
@@ -375,13 +414,39 @@ class SNSConnection(AWSQueryConnection):
                                             platform_application_arn=None,
                                             attributes=None):
         """
-
+        The `SetPlatformApplicationAttributes` action sets the
+        attributes of the platform application object for the
+        supported push notification services, such as APNS and GCM.
+        For more information, see `Using Amazon SNS Mobile Push
+        Notifications`_.
 
         :type platform_application_arn: string
-        :param platform_application_arn:
+        :param platform_application_arn: PlatformApplicationArn for
+            SetPlatformApplicationAttributes action.
 
         :type attributes: map
         :param attributes:
+        A map of the platform application attributes. Attributes in this map
+            include the following:
+
+
+        + `PlatformCredential` -- The credential received from the notification
+              service. For APNS/APNS_SANDBOX, PlatformCredential is "private
+              key". For GCM, PlatformCredential is "API key". For ADM,
+              PlatformCredential is "client secret".
+        + `PlatformPrincipal` -- The principal received from the notification
+              service. For APNS/APNS_SANDBOX, PlatformPrincipal is "SSL
+              certificate". For GCM, PlatformPrincipal is not applicable. For
+              ADM, PlatformPrincipal is "client id".
+        + `EventEndpointCreated` -- Topic ARN to which EndpointCreated event
+              notifications should be sent.
+        + `EventEndpointDeleted` -- Topic ARN to which EndpointDeleted event
+              notifications should be sent.
+        + `EventEndpointUpdated` -- Topic ARN to which EndpointUpdate event
+              notifications should be sent.
+        + `EventDeliveryFailure` -- Topic ARN to which DeliveryFailure event
+              notifications should be sent upon Direct Publish delivery failure
+              (permanent) to one of the application's endpoints.
 
         """
         params = {}
@@ -395,10 +460,15 @@ class SNSConnection(AWSQueryConnection):
     def get_platform_application_attributes(self,
                                             platform_application_arn=None):
         """
-
+        The `GetPlatformApplicationAttributes` action retrieves the
+        attributes of the platform application object for the
+        supported push notification services, such as APNS and GCM.
+        For more information, see `Using Amazon SNS Mobile Push
+        Notifications`_.
 
         :type platform_application_arn: string
-        :param platform_application_arn:
+        :param platform_application_arn: PlatformApplicationArn for
+            GetPlatformApplicationAttributesInput.
 
         """
         params = {}
@@ -409,10 +479,22 @@ class SNSConnection(AWSQueryConnection):
 
     def list_platform_applications(self, next_token=None):
         """
-
+        The `ListPlatformApplications` action lists the platform
+        application objects for the supported push notification
+        services, such as APNS and GCM. The results for
+        `ListPlatformApplications` are paginated and return a limited
+        list of applications, up to 100. If additional records are
+        available after the first page results, then a NextToken
+        string will be returned. To receive the next page, you call
+        `ListPlatformApplications` using the NextToken string received
+        from the previous call. When there are no more records to
+        return, NextToken will be null. For more information, see
+        `Using Amazon SNS Mobile Push Notifications`_.
 
         :type next_token: string
-        :param next_token:
+        :param next_token: NextToken string is used when calling
+            ListPlatformApplications action to retrieve additional records that
+            are available after the first page results.
 
         """
         params = {}
@@ -425,13 +507,27 @@ class SNSConnection(AWSQueryConnection):
                                                platform_application_arn=None,
                                                next_token=None):
         """
-
+        The `ListEndpointsByPlatformApplication` action lists the
+        endpoints and endpoint attributes for devices in a supported
+        push notification service, such as GCM and APNS. The results
+        for `ListEndpointsByPlatformApplication` are paginated and
+        return a limited list of endpoints, up to 100. If additional
+        records are available after the first page results, then a
+        NextToken string will be returned. To receive the next page,
+        you call `ListEndpointsByPlatformApplication` again using the
+        NextToken string received from the previous call. When there
+        are no more records to return, NextToken will be null. For
+        more information, see `Using Amazon SNS Mobile Push
+        Notifications`_.
 
         :type platform_application_arn: string
-        :param platform_application_arn:
+        :param platform_application_arn: PlatformApplicationArn for
+            ListEndpointsByPlatformApplicationInput action.
 
         :type next_token: string
-        :param next_token:
+        :param next_token: NextToken string is used when calling
+            ListEndpointsByPlatformApplication action to retrieve additional
+            records that are available after the first page results.
 
         """
         params = {}
@@ -444,10 +540,14 @@ class SNSConnection(AWSQueryConnection):
 
     def delete_platform_application(self, platform_application_arn=None):
         """
-
+        The `DeletePlatformApplication` action deletes a platform
+        application object for one of the supported push notification
+        services, such as APNS and GCM. For more information, see
+        `Using Amazon SNS Mobile Push Notifications`_.
 
         :type platform_application_arn: string
-        :param platform_application_arn:
+        :param platform_application_arn: PlatformApplicationArn of platform
+            application object to delete.
 
         """
         params = {}
@@ -460,19 +560,37 @@ class SNSConnection(AWSQueryConnection):
                                  token=None, custom_user_data=None,
                                  attributes=None):
         """
-
+        The `CreatePlatformEndpoint` creates an endpoint for a device
+        and mobile app on one of the supported push notification
+        services, such as GCM and APNS. `CreatePlatformEndpoint`
+        requires the PlatformApplicationArn that is returned from
+        `CreatePlatformApplication`. The EndpointArn that is returned
+        when using `CreatePlatformEndpoint` can then be used by the
+        `Publish` action to send a message to a mobile app or by the
+        `Subscribe` action for subscription to a topic. For more
+        information, see `Using Amazon SNS Mobile Push
+        Notifications`_.
 
         :type platform_application_arn: string
-        :param platform_application_arn:
+        :param platform_application_arn: PlatformApplicationArn returned from
+            CreatePlatformApplication is used to create a an endpoint.
 
         :type token: string
-        :param token:
+        :param token: Unique identifier created by the notification service for
+            an app on a device. The specific name for Token will vary,
+            depending on which notification service is being used. For example,
+            when using APNS as the notification service, you need the device
+            token. Alternatively, when using GCM or ADM, the device token
+            equivalent is called the registration ID.
 
         :type custom_user_data: string
-        :param custom_user_data:
+        :param custom_user_data: Arbitrary user data to associate with the
+            endpoint. SNS does not use this data. The data must be in UTF-8
+            format and less than 2KB.
 
         :type attributes: map
-        :param attributes:
+        :param attributes: For a list of attributes, see
+            `SetEndpointAttributes`_.
 
         """
         params = {}
@@ -489,10 +607,12 @@ class SNSConnection(AWSQueryConnection):
 
     def delete_endpoint(self, endpoint_arn=None):
         """
-
+        The `DeleteEndpoint` action, which is idempotent, deletes the
+        endpoint from SNS. For more information, see `Using Amazon SNS
+        Mobile Push Notifications`_.
 
         :type endpoint_arn: string
-        :param endpoint_arn:
+        :param endpoint_arn: EndpointArn of endpoint to delete.
 
         """
         params = {}
@@ -502,13 +622,32 @@ class SNSConnection(AWSQueryConnection):
 
     def set_endpoint_attributes(self, endpoint_arn=None, attributes=None):
         """
-
+        The `SetEndpointAttributes` action sets the attributes for an
+        endpoint for a device on one of the supported push
+        notification services, such as GCM and APNS. For more
+        information, see `Using Amazon SNS Mobile Push
+        Notifications`_.
 
         :type endpoint_arn: string
-        :param endpoint_arn:
+        :param endpoint_arn: EndpointArn used for SetEndpointAttributes action.
 
         :type attributes: map
         :param attributes:
+        A map of the endpoint attributes. Attributes in this map include the
+            following:
+
+
+        + `CustomUserData` -- arbitrary user data to associate with the
+              endpoint. SNS does not use this data. The data must be in UTF-8
+              format and less than 2KB.
+        + `Enabled` -- flag that enables/disables delivery to the endpoint.
+              Message Processor will set this to false when a notification
+              service indicates to SNS that the endpoint is invalid. Users can
+              set it back to true, typically after updating Token.
+        + `Token` -- device token, also referred to as a registration id, for
+              an app and mobile device. This is returned from the notification
+              service when an app and mobile device are registered with the
+              notification service.
 
         """
         params = {}
@@ -521,10 +660,13 @@ class SNSConnection(AWSQueryConnection):
 
     def get_endpoint_attributes(self, endpoint_arn=None):
         """
-
+        The `GetEndpointAttributes` retrieves the endpoint attributes
+        for a device on one of the supported push notification
+        services, such as GCM and APNS. For more information, see
+        `Using Amazon SNS Mobile Push Notifications`_.
 
         :type endpoint_arn: string
-        :param endpoint_arn:
+        :param endpoint_arn: EndpointArn for GetEndpointAttributes input.
 
         """
         params = {}
