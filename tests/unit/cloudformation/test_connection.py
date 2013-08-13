@@ -462,14 +462,14 @@ class TestCloudFormationListStackResources(CloudFormationConnectionBase):
                   <member>
                     <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
                     <LogicalResourceId>SampleDB</LogicalResourceId>
-                    <LastUpdatedTimestamp>2011-06-21T20:25:57Z</LastUpdatedTimestamp>
+                    <LastUpdatedTime>2011-06-21T20:25:57Z</LastUpdatedTime>
                     <PhysicalResourceId>My-db-ycx</PhysicalResourceId>
                     <ResourceType>AWS::RDS::DBInstance</ResourceType>
                   </member>
                   <member>
                     <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
                     <LogicalResourceId>CPUAlarmHigh</LogicalResourceId>
-                    <LastUpdatedTimestamp>2011-06-21T20:29:23Z</LastUpdatedTimestamp>
+                    <LastUpdatedTime>2011-06-21T20:29:23Z</LastUpdatedTime>
                     <PhysicalResourceId>MyStack-CPUH-PF</PhysicalResourceId>
                     <ResourceType>AWS::CloudWatch::Alarm</ResourceType>
                   </member>
@@ -486,7 +486,7 @@ class TestCloudFormationListStackResources(CloudFormationConnectionBase):
         resources = self.service_connection.list_stack_resources('MyStack',
                                                               next_token='next_token')
         self.assertEqual(len(resources), 2)
-        self.assertEqual(resources[0].last_updated_timestamp,
+        self.assertEqual(resources[0].last_updated_time,
                          datetime(2011, 6, 21, 20, 25, 57))
         self.assertEqual(resources[0].logical_resource_id, 'SampleDB')
         self.assertEqual(resources[0].physical_resource_id, 'My-db-ycx')
@@ -494,7 +494,7 @@ class TestCloudFormationListStackResources(CloudFormationConnectionBase):
         self.assertEqual(resources[0].resource_status_reason, None)
         self.assertEqual(resources[0].resource_type, 'AWS::RDS::DBInstance')
 
-        self.assertEqual(resources[1].last_updated_timestamp,
+        self.assertEqual(resources[1].last_updated_time,
                          datetime(2011, 6, 21, 20, 29, 23))
         self.assertEqual(resources[1].logical_resource_id, 'CPUAlarmHigh')
         self.assertEqual(resources[1].physical_resource_id, 'MyStack-CPUH-PF')
