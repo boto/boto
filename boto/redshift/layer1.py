@@ -89,44 +89,47 @@ class RedshiftConnection(AWSQueryConnection):
 
     _faults = {
         "ClusterNotFound": exceptions.ClusterNotFoundFault,
-        "InvalidClusterSnapshotState": exceptions.InvalidClusterSnapshotStateFault,
-        "ClusterSnapshotNotFound": exceptions.ClusterSnapshotNotFoundFault,
-        "ClusterSecurityGroupQuotaExceeded": exceptions.ClusterSecurityGroupQuotaExceededFault,
-        "ReservedNodeOfferingNotFound": exceptions.ReservedNodeOfferingNotFoundFault,
-        "InvalidSubnet": exceptions.InvalidSubnet,
-        "ClusterSubnetGroupQuotaExceeded": exceptions.ClusterSubnetGroupQuotaExceededFault,
-        "InvalidClusterState": exceptions.InvalidClusterStateFault,
+        "InvalidClusterSubnetState": exceptions.InvalidClusterSubnetStateFault,
         "InvalidClusterParameterGroupState": exceptions.InvalidClusterParameterGroupStateFault,
-        "ClusterParameterGroupAlreadyExists": exceptions.ClusterParameterGroupAlreadyExistsFault,
-        "InvalidClusterSecurityGroupState": exceptions.InvalidClusterSecurityGroupStateFault,
-        "InvalidRestore": exceptions.InvalidRestoreFault,
-        "AuthorizationNotFound": exceptions.AuthorizationNotFoundFault,
-        "ResizeNotFound": exceptions.ResizeNotFoundFault,
-        "NumberOfNodesQuotaExceeded": exceptions.NumberOfNodesQuotaExceededFault,
-        "ClusterSnapshotAlreadyExists": exceptions.ClusterSnapshotAlreadyExistsFault,
-        "AuthorizationQuotaExceeded": exceptions.AuthorizationQuotaExceededFault,
-        "AuthorizationAlreadyExists": exceptions.AuthorizationAlreadyExistsFault,
-        "ClusterSnapshotQuotaExceeded": exceptions.ClusterSnapshotQuotaExceededFault,
-        "ReservedNodeNotFound": exceptions.ReservedNodeNotFoundFault,
-        "ReservedNodeAlreadyExists": exceptions.ReservedNodeAlreadyExistsFault,
-        "ClusterSecurityGroupAlreadyExists": exceptions.ClusterSecurityGroupAlreadyExistsFault,
-        "ClusterParameterGroupNotFound": exceptions.ClusterParameterGroupNotFoundFault,
         "ReservedNodeQuotaExceeded": exceptions.ReservedNodeQuotaExceededFault,
+        "InvalidClusterState": exceptions.InvalidClusterStateFault,
+        "InvalidRestore": exceptions.InvalidRestoreFault,
+        "ClusterSecurityGroupAlreadyExists": exceptions.ClusterSecurityGroupAlreadyExistsFault,
+        "NumberOfNodesQuotaExceeded": exceptions.NumberOfNodesQuotaExceededFault,
+        "ReservedNodeOfferingNotFound": exceptions.ReservedNodeOfferingNotFoundFault,
+        "InsufficientClusterCapacity": exceptions.InsufficientClusterCapacityFault,
+        "UnauthorizedOperation": exceptions.UnauthorizedOperationFault,
         "ClusterQuotaExceeded": exceptions.ClusterQuotaExceededFault,
+        "InvalidVPCNetworkState": exceptions.InvalidVPCNetworkStateFault,
+        "ClusterSnapshotNotFound": exceptions.ClusterSnapshotNotFoundFault,
+        "AuthorizationQuotaExceeded": exceptions.AuthorizationQuotaExceededFault,
+        "InvalidSubne": exceptions.InvalidSubnet,
+        "ResizeNotFound": exceptions.ResizeNotFoundFault,
+        "ClusterSubnetGroupNotFound": exceptions.ClusterSubnetGroupNotFoundFault,
+        "ClusterSnapshotQuotaExceeded": exceptions.ClusterSnapshotQuotaExceededFault,
+        "AccessToSnapshotDenied": exceptions.AccessToSnapshotDeniedFault,
+        "InvalidClusterSecurityGroupState": exceptions.InvalidClusterSecurityGroupStateFault,
+        "NumberOfNodesPerClusterLimitExceeded": exceptions.NumberOfNodesPerClusterLimitExceededFault,
         "ClusterSubnetQuotaExceeded": exceptions.ClusterSubnetQuotaExceededFault,
         "UnsupportedOption": exceptions.UnsupportedOptionFault,
-        "InvalidVPCNetworkState": exceptions.InvalidVPCNetworkStateFault,
         "ClusterSecurityGroupNotFound": exceptions.ClusterSecurityGroupNotFoundFault,
-        "InvalidClusterSubnetGroupState": exceptions.InvalidClusterSubnetGroupStateFault,
-        "ClusterSubnetGroupAlreadyExists": exceptions.ClusterSubnetGroupAlreadyExistsFault,
-        "NumberOfNodesPerClusterLimitExceeded": exceptions.NumberOfNodesPerClusterLimitExceededFault,
-        "ClusterSubnetGroupNotFound": exceptions.ClusterSubnetGroupNotFoundFault,
-        "ClusterParameterGroupQuotaExceeded": exceptions.ClusterParameterGroupQuotaExceededFault,
         "ClusterAlreadyExists": exceptions.ClusterAlreadyExistsFault,
-        "InsufficientClusterCapacity": exceptions.InsufficientClusterCapacityFault,
-        "InvalidClusterSubnetState": exceptions.InvalidClusterSubnetStateFault,
+        "ClusterSnapshotAlreadyExists": exceptions.ClusterSnapshotAlreadyExistsFault,
+        "ReservedNodeAlreadyExists": exceptions.ReservedNodeAlreadyExistsFault,
+        "ClusterSubnetGroupQuotaExceeded": exceptions.ClusterSubnetGroupQuotaExceededFault,
+        "ClusterParameterGroupNotFound": exceptions.ClusterParameterGroupNotFoundFault,
+        "AuthorizationNotFound": exceptions.AuthorizationNotFoundFault,
+        "ClusterSecurityGroupQuotaExceeded": exceptions.ClusterSecurityGroupQuotaExceededFault,
+        "AuthorizationAlreadyExists": exceptions.AuthorizationAlreadyExistsFault,
+        "InvalidClusterSnapshotState": exceptions.InvalidClusterSnapshotStateFault,
+        "ClusterParameterGroupQuotaExceeded": exceptions.ClusterParameterGroupQuotaExceededFault,
+        "ClusterSubnetGroupAlreadyExists": exceptions.ClusterSubnetGroupAlreadyExistsFault,
+        "ReservedNodeNotFound": exceptions.ReservedNodeNotFoundFault,
+        "InvalidClusterSubnetGroupState": exceptions.InvalidClusterSubnetGroupStateFault,
+        "ClusterParameterGroupAlreadyExists": exceptions.ClusterParameterGroupAlreadyExistsFault,
         "SubnetAlreadyInUse": exceptions.SubnetAlreadyInUse,
-        "InvalidParameterCombination": exceptions.InvalidParameterCombinationFault,
+        "AccessToSnapshotDenied": exceptions.AccessToSnapshotDeniedFault,
+        "UnauthorizedOperation": exceptions.UnauthorizedOperationFault,
     }
 
 
@@ -199,8 +202,43 @@ class RedshiftConnection(AWSQueryConnection):
             verb='POST',
             path='/', params=params)
 
+    def authorize_snapshot_access(self, snapshot_identifier,
+                                  account_with_restore_access,
+                                  snapshot_cluster_identifier=None):
+        """
+        Authorizes the specified AWS customer account to restore the
+        specified snapshot.
+
+        For more information about working with snapshots, go to
+        `Amazon Redshift Snapshots`_ in the Amazon Redshift Management
+        Guide .
+
+        :type snapshot_identifier: string
+        :param snapshot_identifier: The identifier of the snapshot the account
+            is authorized to restore.
+
+        :type snapshot_cluster_identifier: string
+        :param snapshot_cluster_identifier:
+
+        :type account_with_restore_access: string
+        :param account_with_restore_access: The identifier of the AWS customer
+            account authorized to restore the specified snapshot.
+
+        """
+        params = {
+            'SnapshotIdentifier': snapshot_identifier,
+            'AccountWithRestoreAccess': account_with_restore_access,
+        }
+        if snapshot_cluster_identifier is not None:
+            params['SnapshotClusterIdentifier'] = snapshot_cluster_identifier
+        return self._make_request(
+            action='AuthorizeSnapshotAccess',
+            verb='POST',
+            path='/', params=params)
+
     def copy_cluster_snapshot(self, source_snapshot_identifier,
-                              target_snapshot_identifier):
+                              target_snapshot_identifier,
+                              source_snapshot_cluster_identifier=None):
         """
         Copies the specified automated cluster snapshot to a new
         manual cluster snapshot. The source must be an automated
@@ -227,6 +265,9 @@ class RedshiftConnection(AWSQueryConnection):
         + Must be the identifier for a valid automated snapshot whose state is
               "available".
 
+        :type source_snapshot_cluster_identifier: string
+        :param source_snapshot_cluster_identifier:
+
         :type target_snapshot_identifier: string
         :param target_snapshot_identifier:
         The identifier given to the new manual snapshot.
@@ -245,6 +286,8 @@ class RedshiftConnection(AWSQueryConnection):
             'SourceSnapshotIdentifier': source_snapshot_identifier,
             'TargetSnapshotIdentifier': target_snapshot_identifier,
         }
+        if source_snapshot_cluster_identifier is not None:
+            params['SourceSnapshotClusterIdentifier'] = source_snapshot_cluster_identifier
         return self._make_request(
             action='CopyClusterSnapshot',
             verb='POST',
@@ -353,6 +396,8 @@ class RedshiftConnection(AWSQueryConnection):
         + Must contain at least one uppercase letter.
         + Must contain at least one lowercase letter.
         + Must contain one number.
+        + Can be any printable ASCII character (ASCII code 33 to 126) except '
+              (single quote), " (double quote), \, /, @, or space.
 
         :type cluster_security_groups: list
         :param cluster_security_groups: A list of security groups to be
@@ -396,10 +441,7 @@ class RedshiftConnection(AWSQueryConnection):
 
 
         + **US-East (Northern Virginia) Region:** 03:00-11:00 UTC
-        + **US-West (Northern California) Region:** 06:00-14:00 UTC
-        + **EU (Ireland) Region:** 22:00-06:00 UTC
-        + **Asia Pacific (Singapore) Region:** 14:00-22:00 UTC
-        + **Asia Pacific (Tokyo) Region: ** 17:00-03:00 UTC
+        + **US-West (Oregon) Region** 06:00-14:00 UTC
 
 
         Valid Days: Mon | Tue | Wed | Thu | Fri | Sat | Sun
@@ -822,15 +864,19 @@ class RedshiftConnection(AWSQueryConnection):
             verb='POST',
             path='/', params=params)
 
-    def delete_cluster_snapshot(self, snapshot_identifier):
+    def delete_cluster_snapshot(self, snapshot_identifier,
+                                snapshot_cluster_identifier=None):
         """
         Deletes the specified manual snapshot. The snapshot must be in
-        the "available" state.
+        the "available" state, with no other users authorized to
+        access the snapshot.
 
         Unlike automated snapshots, manual snapshots are retained even
         after you delete your cluster. Amazon Redshift does not delete
         your manual snapshots. You must delete manual snapshot
-        explicitly to avoid getting charged.
+        explicitly to avoid getting charged. If other accounts are
+        authorized to access the snapshot, you must revoke all of the
+        authorizations before you can delete the snapshot.
 
         :type snapshot_identifier: string
         :param snapshot_identifier: The unique identifier of the manual
@@ -838,8 +884,13 @@ class RedshiftConnection(AWSQueryConnection):
         Constraints: Must be the name of an existing snapshot that is in the
             `available` state.
 
+        :type snapshot_cluster_identifier: string
+        :param snapshot_cluster_identifier:
+
         """
         params = {'SnapshotIdentifier': snapshot_identifier, }
+        if snapshot_cluster_identifier is not None:
+            params['SnapshotClusterIdentifier'] = snapshot_cluster_identifier
         return self._make_request(
             action='DeleteClusterSnapshot',
             verb='POST',
@@ -1021,12 +1072,14 @@ class RedshiftConnection(AWSQueryConnection):
                                    snapshot_identifier=None,
                                    snapshot_type=None, start_time=None,
                                    end_time=None, max_records=None,
-                                   marker=None):
+                                   marker=None, owner_account=None):
         """
         Returns one or more snapshot objects, which contain metadata
         about your cluster snapshots. By default, this operation
         returns information about all snapshots of all clusters that
-        are owned by the AWS account.
+        are owned by you AWS customer account. No information is
+        returned for snapshots owned by inactive AWS customer
+        accounts.
 
         :type cluster_identifier: string
         :param cluster_identifier: The identifier of the cluster for which
@@ -1071,6 +1124,13 @@ class RedshiftConnection(AWSQueryConnection):
             DescribeClusterSnapshots request to indicate the first snapshot
             that the request will return.
 
+        :type owner_account: string
+        :param owner_account: The AWS customer account used to create or copy
+            the snapshot. Use this field to filter the results to snapshots
+            owned by a particular account. To describe snapshots you own,
+            either specify your AWS customer account, or do not specify the
+            parameter.
+
         """
         params = {}
         if cluster_identifier is not None:
@@ -1087,6 +1147,8 @@ class RedshiftConnection(AWSQueryConnection):
             params['MaxRecords'] = max_records
         if marker is not None:
             params['Marker'] = marker
+        if owner_account is not None:
+            params['OwnerAccount'] = owner_account
         return self._make_request(
             action='DescribeClusterSnapshots',
             verb='POST',
@@ -1658,6 +1720,8 @@ class RedshiftConnection(AWSQueryConnection):
         + Must contain at least one uppercase letter.
         + Must contain at least one lowercase letter.
         + Must contain one number.
+        + Can be any printable ASCII character (ASCII code 33 to 126) except '
+              (single quote), " (double quote), \, /, @, or space.
 
         :type cluster_parameter_group_name: string
         :param cluster_parameter_group_name: The name of the cluster parameter
@@ -1913,11 +1977,13 @@ class RedshiftConnection(AWSQueryConnection):
             path='/', params=params)
 
     def restore_from_cluster_snapshot(self, cluster_identifier,
-                                      snapshot_identifier, port=None,
-                                      availability_zone=None,
+                                      snapshot_identifier,
+                                      snapshot_cluster_identifier=None,
+                                      port=None, availability_zone=None,
                                       allow_version_upgrade=None,
                                       cluster_subnet_group_name=None,
-                                      publicly_accessible=None):
+                                      publicly_accessible=None,
+                                      owner_account=None):
         """
         Creates a new cluster from a snapshot. Amazon Redshift creates
         the resulting cluster with the same configuration as the
@@ -1956,6 +2022,9 @@ class RedshiftConnection(AWSQueryConnection):
             create the new cluster. This parameter isn't case sensitive.
         Example: `my-snapshot-id`
 
+        :type snapshot_cluster_identifier: string
+        :param snapshot_cluster_identifier:
+
         :type port: integer
         :param port: The port number on which the cluster accepts connections.
         Default: The same port as the original cluster.
@@ -1986,11 +2055,18 @@ class RedshiftConnection(AWSQueryConnection):
         :param publicly_accessible: If `True`, the cluster can be accessed from
             a public network.
 
+        :type owner_account: string
+        :param owner_account: The AWS customer account used to create or copy
+            the snapshot. Required if you are restoring a snapshot you do not
+            own, optional if you own the snapshot.
+
         """
         params = {
             'ClusterIdentifier': cluster_identifier,
             'SnapshotIdentifier': snapshot_identifier,
         }
+        if snapshot_cluster_identifier is not None:
+            params['SnapshotClusterIdentifier'] = snapshot_cluster_identifier
         if port is not None:
             params['Port'] = port
         if availability_zone is not None:
@@ -2003,6 +2079,8 @@ class RedshiftConnection(AWSQueryConnection):
         if publicly_accessible is not None:
             params['PubliclyAccessible'] = str(
                 publicly_accessible).lower()
+        if owner_account is not None:
+            params['OwnerAccount'] = owner_account
         return self._make_request(
             action='RestoreFromClusterSnapshot',
             verb='POST',
@@ -2057,6 +2135,41 @@ class RedshiftConnection(AWSQueryConnection):
             params['EC2SecurityGroupOwnerId'] = ec2_security_group_owner_id
         return self._make_request(
             action='RevokeClusterSecurityGroupIngress',
+            verb='POST',
+            path='/', params=params)
+
+    def revoke_snapshot_access(self, snapshot_identifier,
+                               account_with_restore_access,
+                               snapshot_cluster_identifier=None):
+        """
+        Removes the ability of the specified AWS customer account to
+        restore the specified snapshot. If the account is currently
+        restoring the snapshot, the restore will run to completion.
+
+        For more information about working with snapshots, go to
+        `Amazon Redshift Snapshots`_ in the Amazon Redshift Management
+        Guide .
+
+        :type snapshot_identifier: string
+        :param snapshot_identifier: The identifier of the snapshot that the
+            account can no longer access.
+
+        :type snapshot_cluster_identifier: string
+        :param snapshot_cluster_identifier:
+
+        :type account_with_restore_access: string
+        :param account_with_restore_access: The identifier of the AWS customer
+            account that can no longer restore the specified snapshot.
+
+        """
+        params = {
+            'SnapshotIdentifier': snapshot_identifier,
+            'AccountWithRestoreAccess': account_with_restore_access,
+        }
+        if snapshot_cluster_identifier is not None:
+            params['SnapshotClusterIdentifier'] = snapshot_cluster_identifier
+        return self._make_request(
+            action='RevokeSnapshotAccess',
             verb='POST',
             path='/', params=params)
 

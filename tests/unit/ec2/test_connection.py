@@ -1,7 +1,13 @@
 #!/usr/bin/env python
+import httplib
+
+from mock import Mock
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
+import boto.ec2
+
+from boto.regioninfo import RegionInfo
 from boto.ec2.connection import EC2Connection
 
 
@@ -560,6 +566,223 @@ class TestDescribeVPCAttribute(TestEC2ConnectionBase):
              ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                    'SignatureVersion', 'Timestamp',
                                    'Version'])
+
+
+class TestGetAllNetworkInterfaces(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+<DescribeNetworkInterfacesResponse xmlns="http://ec2.amazonaws.com/\
+    doc/2013-06-15/">
+    <requestId>fc45294c-006b-457b-bab9-012f5b3b0e40</requestId>
+     <networkInterfaceSet>
+       <item>
+         <networkInterfaceId>eni-0f62d866</networkInterfaceId>
+         <subnetId>subnet-c53c87ac</subnetId>
+         <vpcId>vpc-cc3c87a5</vpcId>
+         <availabilityZone>ap-southeast-1b</availabilityZone>
+         <description/>
+         <ownerId>053230519467</ownerId>
+         <requesterManaged>false</requesterManaged>
+         <status>in-use</status>
+         <macAddress>02:81:60:cb:27:37</macAddress>
+         <privateIpAddress>10.0.0.146</privateIpAddress>
+         <sourceDestCheck>true</sourceDestCheck>
+         <groupSet>
+           <item>
+             <groupId>sg-3f4b5653</groupId>
+             <groupName>default</groupName>
+           </item>
+         </groupSet>
+         <attachment>
+           <attachmentId>eni-attach-6537fc0c</attachmentId>
+           <instanceId>i-22197876</instanceId>
+           <instanceOwnerId>053230519467</instanceOwnerId>
+           <deviceIndex>5</deviceIndex>
+           <status>attached</status>
+           <attachTime>2012-07-01T21:45:27.000Z</attachTime>
+           <deleteOnTermination>true</deleteOnTermination>
+         </attachment>
+         <tagSet/>
+         <privateIpAddressesSet>
+           <item>
+             <privateIpAddress>10.0.0.146</privateIpAddress>
+             <primary>true</primary>
+           </item>
+           <item>
+             <privateIpAddress>10.0.0.148</privateIpAddress>
+             <primary>false</primary>
+           </item>
+           <item>
+             <privateIpAddress>10.0.0.150</privateIpAddress>
+             <primary>false</primary>
+           </item>
+         </privateIpAddressesSet>
+       </item>
+    </networkInterfaceSet>
+</DescribeNetworkInterfacesResponse>"""
+
+    def test_attachment_has_device_index(self):
+        self.set_http_response(status_code=200)
+        parsed = self.ec2.get_all_network_interfaces()
+
+        self.assertEqual(5, parsed[0].attachment.device_index)
+
+
+class TestModifyInterfaceAttribute(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+<ModifyNetworkInterfaceAttributeResponse \
+    xmlns="http://ec2.amazonaws.com/doc/2013-06-15/">
+    <requestId>657a4623-5620-4232-b03b-427e852d71cf</requestId>
+    <return>true</return>
+</ModifyNetworkInterfaceAttributeResponse>
+"""
+
+    def test_modify_description(self):
+        self.set_http_response(status_code=200)
+        self.ec2.modify_network_interface_attribute('id', 'description', 'foo')
+
+        self.assert_request_parameters({
+            'Action': 'ModifyNetworkInterfaceAttribute',
+            'NetworkInterfaceId': 'id',
+            'Description.Value': 'foo'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+
+    def test_modify_source_dest_check_bool(self):
+        self.set_http_response(status_code=200)
+        self.ec2.modify_network_interface_attribute('id', 'sourceDestCheck',
+                                                    True)
+
+        self.assert_request_parameters({
+            'Action': 'ModifyNetworkInterfaceAttribute',
+            'NetworkInterfaceId': 'id',
+            'SourceDestCheck.Value': 'true'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+
+    def test_modify_source_dest_check_str(self):
+        self.set_http_response(status_code=200)
+        self.ec2.modify_network_interface_attribute('id', 'sourceDestCheck',
+                                                    'true')
+
+        self.assert_request_parameters({
+            'Action': 'ModifyNetworkInterfaceAttribute',
+            'NetworkInterfaceId': 'id',
+            'SourceDestCheck.Value': 'true'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+
+    def test_modify_source_dest_check_invalid(self):
+        self.set_http_response(status_code=200)
+
+        with self.assertRaises(ValueError):
+            self.ec2.modify_network_interface_attribute('id',
+                                                        'sourceDestCheck',
+                                                        123)
+
+    def test_modify_delete_on_termination_str(self):
+        self.set_http_response(status_code=200)
+        self.ec2.modify_network_interface_attribute('id',
+                                                    'deleteOnTermination',
+                                                    True, attachment_id='bar')
+
+        self.assert_request_parameters({
+            'Action': 'ModifyNetworkInterfaceAttribute',
+            'NetworkInterfaceId': 'id',
+            'Attachment.AttachmentId': 'bar',
+            'Attachment.DeleteOnTermination': 'true'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+
+    def test_modify_delete_on_termination_bool(self):
+        self.set_http_response(status_code=200)
+        self.ec2.modify_network_interface_attribute('id',
+                                                    'deleteOnTermination',
+                                                    'false',
+                                                    attachment_id='bar')
+
+        self.assert_request_parameters({
+            'Action': 'ModifyNetworkInterfaceAttribute',
+            'NetworkInterfaceId': 'id',
+            'Attachment.AttachmentId': 'bar',
+            'Attachment.DeleteOnTermination': 'false'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+
+    def test_modify_delete_on_termination_invalid(self):
+        self.set_http_response(status_code=200)
+
+        with self.assertRaises(ValueError):
+            self.ec2.modify_network_interface_attribute('id',
+                                                        'deleteOnTermination',
+                                                        123,
+                                                        attachment_id='bar')
+
+    def test_modify_group_set_list(self):
+        self.set_http_response(status_code=200)
+        self.ec2.modify_network_interface_attribute('id', 'groupSet',
+                                                    ['sg-1', 'sg-2'])
+
+        self.assert_request_parameters({
+            'Action': 'ModifyNetworkInterfaceAttribute',
+            'NetworkInterfaceId': 'id',
+            'SecurityGroupId.1': 'sg-1',
+            'SecurityGroupId.2': 'sg-2'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+
+    def test_modify_group_set_invalid(self):
+        self.set_http_response(status_code=200)
+
+        with self.assertRaisesRegexp(TypeError, 'iterable'):
+            self.ec2.modify_network_interface_attribute('id', 'groupSet',
+                                                        False)
+
+    def test_modify_attr_invalid(self):
+        self.set_http_response(status_code=200)
+
+        with self.assertRaisesRegexp(ValueError, 'Unknown attribute'):
+            self.ec2.modify_network_interface_attribute('id', 'invalid', 0)
+
+
+class TestConnectToRegion(unittest.TestCase):
+    def setUp(self):
+        self.https_connection = Mock(spec=httplib.HTTPSConnection)
+        self.https_connection_factory = (
+            Mock(return_value=self.https_connection), ())
+
+    def test_aws_region(self):
+        region = boto.ec2.RegionData.keys()[0]
+        self.ec2 = boto.ec2.connect_to_region(region,
+            https_connection_factory=self.https_connection_factory,
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key'
+        )
+        self.assertEqual(boto.ec2.RegionData[region], self.ec2.host)
+
+    def test_non_aws_region(self):
+        self.ec2 = boto.ec2.connect_to_region('foo',
+            https_connection_factory=self.https_connection_factory,
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key',
+            region = RegionInfo(name='foo', endpoint='https://foo.com/bar')
+        )
+        self.assertEqual('https://foo.com/bar', self.ec2.host)
+
+    def test_missing_region(self):
+        self.ec2 = boto.ec2.connect_to_region('foo',
+            https_connection_factory=self.https_connection_factory,
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key'
+        )
+        self.assertEqual(None, self.ec2)
 
 
 if __name__ == '__main__':

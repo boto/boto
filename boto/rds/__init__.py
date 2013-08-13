@@ -277,10 +277,10 @@ class RDSConnection(AWSQueryConnection):
                         * SQL Server:
                           Not applicable and must be None.
 
-        :type param_group: str
-        :param param_group: Name of DBParameterGroup to associate with
-                            this DBInstance.  If no groups are specified
-                            no parameter groups will be used.
+        :type param_group: str or ParameterGroup object
+        :param param_group: Name of DBParameterGroup or ParameterGroup instance
+                            to associate with this DBInstance.  If no groups are
+                            specified no parameter groups will be used.
 
         :type security_groups: list of str or list of DBSecurityGroup objects
         :param security_groups: List of names of DBSecurityGroup to
@@ -399,7 +399,9 @@ class RDSConnection(AWSQueryConnection):
                   'DBInstanceClass': instance_class,
                   'DBInstanceIdentifier': id,
                   'DBName': db_name,
-                  'DBParameterGroupName': param_group,
+                  'DBParameterGroupName': (param_group.name
+                                           if isinstance(param_group, ParameterGroup)
+                                           else param_group),
                   'DBSubnetGroupName': db_subnet_group_name,
                   'Engine': engine,
                   'EngineVersion': engine_version,
@@ -512,10 +514,10 @@ class RDSConnection(AWSQueryConnection):
         :type id: str
         :param id: Unique identifier for the new instance.
 
-        :type param_group: str
-        :param param_group: Name of DBParameterGroup to associate with
-                            this DBInstance.  If no groups are specified
-                            no parameter groups will be used.
+        :type param_group: str or ParameterGroup object
+        :param param_group: Name of DBParameterGroup or ParameterGroup instance
+                            to associate with this DBInstance.  If no groups are
+                            specified no parameter groups will be used.
 
         :type security_groups: list of str or list of DBSecurityGroup objects
         :param security_groups: List of names of DBSecurityGroup to authorize on
@@ -586,7 +588,9 @@ class RDSConnection(AWSQueryConnection):
         """
         params = {'DBInstanceIdentifier': id}
         if param_group:
-            params['DBParameterGroupName'] = param_group
+            params['DBParameterGroupName'] = (param_group.name
+                                              if isinstance(param_group, ParameterGroup)
+                                              else param_group)
         if security_groups:
             l = []
             for group in security_groups:

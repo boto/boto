@@ -1,5 +1,4 @@
-# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,20 +20,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""
-Check that all of the certs on all service endpoints validate.
-"""
-
-import unittest
-import boto.cloudsearch
+from tests.unit import unittest
+from boto.sns import connect_to_region
 
 
-class CertVerificationTest(unittest.TestCase):
+class TestSNSConnection(unittest.TestCase):
 
-    cloudsearch = True
-    ssl = True
+    sns = True
 
-    def test_certs(self):
-        for region in boto.cloudsearch.regions():
-            c = region.connect()
-            c.describe_domains()
+    def setUp(self):
+        self.connection = connect_to_region('us-west-2')
+
+    def test_list_platform_applications(self):
+        response = self.connection.list_platform_applications()
