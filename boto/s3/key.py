@@ -493,7 +493,10 @@ class Key(object):
         elif name == 'LastModified':
             self.last_modified = value
         elif name == 'Size':
-            self.size = int(value)
+            try:
+                self.size = int(value)
+            except:
+                self.size = 0
         elif name == 'StorageClass':
             self.storage_class = value
         elif name == 'Owner':
@@ -907,7 +910,9 @@ class Key(object):
         if 200 <= response.status <= 299:
             self.etag = response.getheader('etag')
 
-            if self.etag != '"%s"' % self.md5:
+            if self.etag != '"%s"' % self.md5 and \
+                str(self.etag).strip('"') != str(self.md5).strip('"'):
+
                 raise provider.storage_data_error(
                     'ETag from S3 did not match computed MD5')
 
