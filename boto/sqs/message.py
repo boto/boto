@@ -145,7 +145,7 @@ class Message(RawMessage):
     encodes/decodes the message body using Base64 encoding to avoid any
     illegal characters in the message body.  See:
 
-    http://developer.amazonwebservices.com/connect/thread.jspa?messageID=49680%EC%88%90
+    https://forums.aws.amazon.com/thread.jspa?threadID=13067
 
     for details on why this is a good idea.  The encode/decode is meant to
     be transparent to the end-user.
@@ -199,6 +199,9 @@ class MHMessage(Message):
         for item in value.items():
             s = s + '%s: %s\n' % (item[0], item[1])
         return s
+
+    def __contains__(self, key):
+        return key in self._body
 
     def __getitem__(self, key):
         if key in self._body:

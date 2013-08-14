@@ -76,6 +76,32 @@ class TestSigV4Handler(unittest.TestCase):
         # This should be both normalized & urlencoded.
         self.assertEqual(canonical_uri, 'x/x%20.html')
 
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
+                                 Mock(), self.provider)
+        request = HTTPRequest(
+            'GET', 'https', 'glacier.us-east-1.amazonaws.com', 443,
+            'x/./././x/html/', None, {},
+            {'x-amz-glacier-version': '2012-06-01'}, '')
+        canonical_uri = auth.canonical_uri(request)
+        # Trailing slashes should be preserved.
+        self.assertEqual(canonical_uri, 'x/x/html/')
+
+        request = HTTPRequest(
+            'GET', 'https', 'glacier.us-east-1.amazonaws.com', 443,
+            '/', None, {},
+            {'x-amz-glacier-version': '2012-06-01'}, '')
+        canonical_uri = auth.canonical_uri(request)
+        # There should not be two-slashes.
+        self.assertEqual(canonical_uri, '/')
+
+        # Make sure Windows-style slashes are converted properly
+        request = HTTPRequest(
+            'GET', 'https', 'glacier.us-east-1.amazonaws.com', 443,
+            '\\x\\x.html', None, {},
+            {'x-amz-glacier-version': '2012-06-01'}, '')
+        canonical_uri = auth.canonical_uri(request)
+        self.assertEqual(canonical_uri, '/x/x.html')
+
     def test_headers_to_sign(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
                                  Mock(), self.provider)

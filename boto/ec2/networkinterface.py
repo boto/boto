@@ -193,8 +193,8 @@ class NetworkInterfaceCollection(list):
         self.extend(interfaces)
 
     def build_list_params(self, params, prefix=''):
-        for i, spec in enumerate(self, 1):
-            full_prefix = '%sNetworkInterface.%s.' % (prefix, i)
+        for i, spec in enumerate(self):
+            full_prefix = '%sNetworkInterface.%s.' % (prefix, i+1)
             if spec.network_interface_id is not None:
                 params[full_prefix + 'NetworkInterfaceId'] = \
                         str(spec.network_interface_id)
@@ -215,13 +215,13 @@ class NetworkInterfaceCollection(list):
                 params[full_prefix + 'PrivateIpAddress'] = \
                         str(spec.private_ip_address)
             if spec.groups is not None:
-                for j, group_id in enumerate(spec.groups, 1):
-                    query_param_key = '%sSecurityGroupId.%s' % (full_prefix, j)
+                for j, group_id in enumerate(spec.groups):
+                    query_param_key = '%sSecurityGroupId.%s' % (full_prefix, j+1)
                     params[query_param_key] = str(group_id)
             if spec.private_ip_addresses is not None:
-                for k, ip_addr in enumerate(spec.private_ip_addresses, 1):
+                for k, ip_addr in enumerate(spec.private_ip_addresses):
                     query_param_key_prefix = (
-                        '%sPrivateIpAddresses.%s' % (full_prefix, k))
+                        '%sPrivateIpAddresses.%s' % (full_prefix, k+1))
                     params[query_param_key_prefix + '.PrivateIpAddress'] = \
                             str(ip_addr.private_ip_address)
                     if ip_addr.primary is not None:

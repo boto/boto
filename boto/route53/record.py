@@ -244,20 +244,24 @@ class Record(object):
         else:
             # Use resource record(s)
             records = ""
+
             for r in self.resource_records:
                 records += self.ResourceRecordBody % r
+
             body = self.ResourceRecordsBody % {
                 "ttl": self.ttl,
                 "records": records,
             }
+
         weight = ""
+
         if self.identifier != None and self.weight != None:
             weight = self.WRRBody % {"identifier": self.identifier, "weight":
                     self.weight}
         elif self.identifier != None and self.region != None:
             weight = self.RRRBody % {"identifier": self.identifier, "region":
                     self.region}
-        
+
         params = {
             "name": self.name,
             "type": self.type,

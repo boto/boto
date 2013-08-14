@@ -611,12 +611,7 @@ class Table(object):
                 'AttributeValueList': [],
                 'ComparisonOperator': op,
             }
-
-            # Fix up the value for encoding, because it was built to only work
-            # with ``set``s.
-            if isinstance(value, (list, tuple)):
-                value = set(value)
-
+ 
             # Special-case the ``NULL/NOT_NULL`` case.
             if field_bits[-1] == 'null':
                 del lookup['AttributeValueList']
@@ -625,7 +620,20 @@ class Table(object):
                     lookup['ComparisonOperator'] = 'NOT_NULL'
                 else:
                     lookup['ComparisonOperator'] = 'NULL'
+            # Special-case the ``BETWEEN`` case.
+            elif field_bits[-1] == 'between':
+                if len(value) == 2 and isinstance(value, (list, tuple)):
+                    lookup['AttributeValueList'].append(
+                        self._dynamizer.encode(value[0])
+                    )
+                    lookup['AttributeValueList'].append(
+                        self._dynamizer.encode(value[1])
+                    )
             else:
+                # Fix up the value for encoding, because it was built to only work
+                # with ``set``s.
+                if isinstance(value, (list, tuple)):
+                    value = set(value)
                 lookup['AttributeValueList'].append(
                     self._dynamizer.encode(value)
                 )
@@ -636,7 +644,7 @@ class Table(object):
         return filters
 
     def query(self, limit=None, index=None, reverse=False, consistent=False,
-              **filter_kwargs):
+              attributes=None, **filter_kwargs):
         """
         Queries for a set of matching items in a DynamoDB table.
 
@@ -665,6 +673,11 @@ class Table(object):
         boolean. If you provide ``True``, it will force a consistent read of
         the data (more expensive). (Default: ``False`` - use eventually
         consistent reads)
+
+        Optionally accepts a ``attributes`` parameter, which should be a
+        tuple. If you provide any attributes only these will be fetched
+        from DynamoDB. This uses the ``AttributesToGet`` and set's
+        ``Select`` to ``SPECIFIC_ATTRIBUTES`` API.
 
         Returns a ``ResultSet``, which transparently handles the pagination of
         results you get back.
@@ -711,6 +724,11 @@ class Table(object):
                     "You must specify more than one key to filter on."
                 )
 
+        if attributes is not None:
+            select = 'SPECIFIC_ATTRIBUTES'
+        else:
+            select = None
+
         results = ResultSet()
         kwargs = filter_kwargs.copy()
         kwargs.update({
@@ -718,12 +736,68 @@ class Table(object):
             'index': index,
             'reverse': reverse,
             'consistent': consistent,
+            'select': select,
+            'attributes_to_get': attributes
         })
         results.to_call(self._query, **kwargs)
         return results
 
+    def query_count(self, index=None, consistent=False, **filter_kwargs):
+        """
+        Queries the exact count of matching items in a DynamoDB table.
+
+        Queries can be performed against a hash key, a hash+range key or
+        against any data stored in your local secondary indexes.
+
+        To specify the filters of the items you'd like to get, you can specify
+        the filters as kwargs. Each filter kwarg should follow the pattern
+        ``<fieldname>__<filter_operation>=<value_to_look_for>``.
+
+        Optionally accepts an ``index`` parameter, which should be a string of
+        name of the local secondary index you want to query against.
+        (Default: ``None``)
+
+        Optionally accepts a ``consistent`` parameter, which should be a
+        boolean. If you provide ``True``, it will force a consistent read of
+        the data (more expensive). (Default: ``False`` - use eventually
+        consistent reads)
+
+        Returns an integer which represents the exact amount of matched
+        items.
+
+        Example::
+
+            # Look for last names equal to "Doe".
+            >>> users.query_count(last_name__eq='Doe')
+            5
+
+            # Use an LSI & a consistent read.
+            >>> users.query_count(
+            ...     date_joined__gte=1236451000,
+            ...     owner__eq=1,
+            ...     index='DateJoinedIndex',
+            ...     consistent=True
+            ... )
+            2
+
+        """
+        key_conditions = self._build_filters(
+            filter_kwargs,
+            using=QUERY_OPERATORS
+        )
+
+        raw_results = self.connection.query(
+            self.table_name,
+            index_name=index,
+            consistent_read=consistent,
+            select='COUNT',
+            key_conditions=key_conditions,
+        )
+        return int(raw_results.get('Count', 0))
+
     def _query(self, limit=None, index=None, reverse=False, consistent=False,
-               exclusive_start_key=None, **filter_kwargs):
+               exclusive_start_key=None, select=None, attributes_to_get=None,
+               **filter_kwargs):
         """
         The internal method that performs the actual queries. Used extensively
         by ``ResultSet`` to perform each (paginated) request.
@@ -733,6 +807,8 @@ class Table(object):
             'index_name': index,
             'scan_index_forward': reverse,
             'consistent_read': consistent,
+            'select': select,
+            'attributes_to_get': attributes_to_get
         }
 
         if exclusive_start_key:

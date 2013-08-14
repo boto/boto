@@ -362,3 +362,9 @@ class CloudFormationConnection(AWSQueryConnection):
                 " specified, only TemplateBody will be honored by the API")
         return self.get_object('ValidateTemplate', params, Template,
                 verb="POST")
+
+    def cancel_update_stack(self, stack_name_or_id=None):
+        params = {}
+        if stack_name_or_id:
+            params['StackName'] = stack_name_or_id
+        return self.get_status('CancelUpdateStack', params)
