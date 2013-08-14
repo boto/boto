@@ -52,6 +52,10 @@ def regions(**kw_params):
                             endpoint=RegionData[region_name],
                             connection_cls=VPCConnection)
         regions.append(region)
+    regions.append(RegionInfo(name='us-gov-west-1',
+                            endpoint=RegionData[region_name],
+                            connection_cls=VPCConnection)
+    )
     return regions
 
 

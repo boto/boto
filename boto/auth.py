@@ -431,6 +431,8 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         parts = http_request.host.split('.')
         if self.region_name is not None:
             region_name = self.region_name
+        elif parts[1] == 'us-gov':
+            region_name = 'us-gov-west-1'
         else:
             if len(parts) == 3:
                 region_name = 'us-east-1'

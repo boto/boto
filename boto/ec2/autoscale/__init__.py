@@ -47,6 +47,7 @@ from boto.ec2.autoscale.tag import Tag
 
 RegionData = {
     'us-east-1': 'autoscaling.us-east-1.amazonaws.com',
+    'us-gov-west-1': 'autoscaling.us-gov-west-1.amazonaws.com',
     'us-west-1': 'autoscaling.us-west-1.amazonaws.com',
     'us-west-2': 'autoscaling.us-west-2.amazonaws.com',
     'sa-east-1': 'autoscaling.sa-east-1.amazonaws.com',

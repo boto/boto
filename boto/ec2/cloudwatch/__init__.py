@@ -33,6 +33,7 @@ import boto
 
 RegionData = {
     'us-east-1': 'monitoring.us-east-1.amazonaws.com',
+    'us-gov-west-1': 'monitoring.us-gov-west-1.amazonaws.com',
     'us-west-1': 'monitoring.us-west-1.amazonaws.com',
     'us-west-2': 'monitoring.us-west-2.amazonaws.com',
     'sa-east-1': 'monitoring.sa-east-1.amazonaws.com',

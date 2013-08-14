@@ -52,6 +52,9 @@ def regions():
     """
     return [IAMRegionInfo(name='universal',
                           endpoint='iam.amazonaws.com',
+                          connection_cls=IAMConnection),
+            IAMRegionInfo(name='us-gov-west-1',
+                          endpoint='iam.us-gov.amazonaws.com',
                           connection_cls=IAMConnection)
             ]
 
