@@ -108,13 +108,14 @@ class OpsWorksConnection(AWSQueryConnection):
                                  body=json.dumps(params))
 
     def clone_stack(self, source_stack_id, service_role_arn, name=None,
-                    region=None, attributes=None,
+                    region=None, vpc_id=None, attributes=None,
                     default_instance_profile_arn=None, default_os=None,
                     hostname_theme=None, default_availability_zone=None,
-                    custom_json=None, configuration_manager=None,
-                    use_custom_cookbooks=None, custom_cookbooks_source=None,
-                    default_ssh_key_name=None, clone_permissions=None,
-                    clone_app_ids=None, default_root_device_type=None):
+                    default_subnet_id=None, custom_json=None,
+                    configuration_manager=None, use_custom_cookbooks=None,
+                    custom_cookbooks_source=None, default_ssh_key_name=None,
+                    clone_permissions=None, clone_app_ids=None,
+                    default_root_device_type=None):
         """
         Creates a clone of a specified stack. For more information,
         see `Clone a Stack`_.
@@ -128,6 +129,9 @@ class OpsWorksConnection(AWSQueryConnection):
         :type region: string
         :param region: The cloned stack AWS region, such as "us-east-1". For
             more information about AWS regions, see `Regions and Endpoints`_.
+
+        :type vpc_id: string
+        :param vpc_id:
 
         :type attributes: map
         :param attributes: A list of stack attributes and values as key/value
@@ -195,6 +199,9 @@ class OpsWorksConnection(AWSQueryConnection):
         :param default_availability_zone: The cloned stack's Availability Zone.
             For more information, see `Regions and Endpoints`_.
 
+        :type default_subnet_id: string
+        :param default_subnet_id:
+
         :type custom_json: string
         :param custom_json: A string that contains user-defined, custom JSON.
             It is used to override the corresponding default stack
@@ -247,6 +254,8 @@ class OpsWorksConnection(AWSQueryConnection):
             params['Name'] = name
         if region is not None:
             params['Region'] = region
+        if vpc_id is not None:
+            params['VpcId'] = vpc_id
         if attributes is not None:
             params['Attributes'] = attributes
         if default_instance_profile_arn is not None:
@@ -257,6 +266,8 @@ class OpsWorksConnection(AWSQueryConnection):
             params['HostnameTheme'] = hostname_theme
         if default_availability_zone is not None:
             params['DefaultAvailabilityZone'] = default_availability_zone
+        if default_subnet_id is not None:
+            params['DefaultSubnetId'] = default_subnet_id
         if custom_json is not None:
             params['CustomJson'] = custom_json
         if configuration_manager is not None:
@@ -396,8 +407,9 @@ class OpsWorksConnection(AWSQueryConnection):
     def create_instance(self, stack_id, layer_ids, instance_type,
                         auto_scaling_type=None, hostname=None, os=None,
                         ami_id=None, ssh_key_name=None,
-                        availability_zone=None, architecture=None,
-                        root_device_type=None, install_updates_on_boot=None):
+                        availability_zone=None, subnet_id=None,
+                        architecture=None, root_device_type=None,
+                        install_updates_on_boot=None):
         """
         Creates an instance in a specified stack. For more
         information, see `Adding an Instance to a Layer`_.
@@ -434,8 +446,19 @@ class OpsWorksConnection(AWSQueryConnection):
         :param hostname: The instance host name.
 
         :type os: string
-        :param os: The instance's operating system, which must be either
-            `Amazon Linux` or `Ubuntu 12.04 LTS`.
+        :param os: The instance operating system, which must be set to one of
+            the following.
+
+        + Standard operating systems: `Amazon Linux` or `Ubuntu 12.04 LTS`
+        + Custom AMIs: `Custom`
+
+
+        The default option is `Amazon Linux`. If you set this parameter to
+            `Custom`, you must use the CreateInstance action's AmiId parameter
+            to specify the custom AMI that you want to use. For more
+            information on the standard operating systems, see `Operating
+            Systems`_For more information on how to use custom AMIs with
+            OpsWorks, see `Using Custom AMIs`_.
 
         :type ami_id: string
         :param ami_id: A custom AMI ID to be used to create the instance. The
@@ -449,6 +472,9 @@ class OpsWorksConnection(AWSQueryConnection):
         :type availability_zone: string
         :param availability_zone: The instance Availability Zone. For more
             information, see `Regions and Endpoints`_.
+
+        :type subnet_id: string
+        :param subnet_id:
 
         :type architecture: string
         :param architecture: The instance architecture. Instance types do not
@@ -490,6 +516,8 @@ class OpsWorksConnection(AWSQueryConnection):
             params['SshKeyName'] = ssh_key_name
         if availability_zone is not None:
             params['AvailabilityZone'] = availability_zone
+        if subnet_id is not None:
+            params['SubnetId'] = subnet_id
         if architecture is not None:
             params['Architecture'] = architecture
         if root_device_type is not None:
@@ -620,11 +648,12 @@ class OpsWorksConnection(AWSQueryConnection):
                                  body=json.dumps(params))
 
     def create_stack(self, name, region, service_role_arn,
-                     default_instance_profile_arn, attributes=None,
-                     default_os=None, hostname_theme=None,
-                     default_availability_zone=None, custom_json=None,
-                     configuration_manager=None, use_custom_cookbooks=None,
-                     custom_cookbooks_source=None, default_ssh_key_name=None,
+                     default_instance_profile_arn, vpc_id=None,
+                     attributes=None, default_os=None, hostname_theme=None,
+                     default_availability_zone=None, default_subnet_id=None,
+                     custom_json=None, configuration_manager=None,
+                     use_custom_cookbooks=None, custom_cookbooks_source=None,
+                     default_ssh_key_name=None,
                      default_root_device_type=None):
         """
         Creates a new stack. For more information, see `Create a New
@@ -636,6 +665,9 @@ class OpsWorksConnection(AWSQueryConnection):
         :type region: string
         :param region: The stack AWS region, such as "us-east-1". For more
             information about Amazon regions, see `Regions and Endpoints`_.
+
+        :type vpc_id: string
+        :param vpc_id:
 
         :type attributes: map
         :param attributes: One or more user-defined key/value pairs to be added
@@ -695,6 +727,9 @@ class OpsWorksConnection(AWSQueryConnection):
         :param default_availability_zone: The stack default Availability Zone.
             For more information, see `Regions and Endpoints`_.
 
+        :type default_subnet_id: string
+        :param default_subnet_id:
+
         :type custom_json: string
         :param custom_json: A string that contains user-defined, custom JSON.
             It is used to override the corresponding default stack
@@ -737,6 +772,8 @@ class OpsWorksConnection(AWSQueryConnection):
             'ServiceRoleArn': service_role_arn,
             'DefaultInstanceProfileArn': default_instance_profile_arn,
         }
+        if vpc_id is not None:
+            params['VpcId'] = vpc_id
         if attributes is not None:
             params['Attributes'] = attributes
         if default_os is not None:
@@ -745,6 +782,8 @@ class OpsWorksConnection(AWSQueryConnection):
             params['HostnameTheme'] = hostname_theme
         if default_availability_zone is not None:
             params['DefaultAvailabilityZone'] = default_availability_zone
+        if default_subnet_id is not None:
+            params['DefaultSubnetId'] = default_subnet_id
         if custom_json is not None:
             params['CustomJson'] = custom_json
         if configuration_manager is not None:
@@ -866,6 +905,8 @@ class OpsWorksConnection(AWSQueryConnection):
         """
         Requests a description of a specified set of apps.
 
+        You must specify at least one of the parameters.
+
         :type stack_id: string
         :param stack_id: The app stack ID. If you use this parameter,
             `DescribeApps` returns a description of the apps in the specified
@@ -889,6 +930,8 @@ class OpsWorksConnection(AWSQueryConnection):
                           command_ids=None):
         """
         Describes the results of specified commands.
+
+        You must specify at least one of the parameters.
 
         :type deployment_id: string
         :param deployment_id: The deployment ID. If you include this parameter,
@@ -922,6 +965,8 @@ class OpsWorksConnection(AWSQueryConnection):
         """
         Requests a description of a specified set of deployments.
 
+        You must specify at least one of the parameters.
+
         :type stack_id: string
         :param stack_id: The stack ID. If you include this parameter,
             `DescribeDeployments` returns a description of the commands
@@ -951,7 +996,9 @@ class OpsWorksConnection(AWSQueryConnection):
 
     def describe_elastic_ips(self, instance_id=None, ips=None):
         """
-        Describes an instance's `Elastic IP addresses`_.
+        Describes `Elastic IP addresses`_.
+
+        You must specify at least one of the parameters.
 
         :type instance_id: string
         :param instance_id: The instance ID. If you include this parameter,
@@ -977,6 +1024,8 @@ class OpsWorksConnection(AWSQueryConnection):
         """
         Describes a stack's Elastic Load Balancing instances.
 
+        You must specify at least one of the parameters.
+
         :type stack_id: string
         :param stack_id: A stack ID. The action describes the Elastic Load
             Balancing instances for the stack.
@@ -997,8 +1046,9 @@ class OpsWorksConnection(AWSQueryConnection):
     def describe_instances(self, stack_id=None, layer_id=None,
                            instance_ids=None):
         """
-        Requests a description of a set of instances associated with a
-        specified ID or IDs.
+        Requests a description of a set of instances.
+
+        You must specify at least one of the parameters.
 
         :type stack_id: string
         :param stack_id: A stack ID. If you use this parameter,
@@ -1032,6 +1082,8 @@ class OpsWorksConnection(AWSQueryConnection):
         Requests a description of one or more layers in a specified
         stack.
 
+        You must specify at least one of the parameters.
+
         :type stack_id: string
         :param stack_id: The stack ID.
 
@@ -1051,6 +1103,8 @@ class OpsWorksConnection(AWSQueryConnection):
         """
         Describes load-based auto scaling configurations for specified
         layers.
+
+        You must specify at least one of the parameters.
 
         :type layer_ids: list
         :param layer_ids: An array of layer IDs.
@@ -1079,6 +1133,8 @@ class OpsWorksConnection(AWSQueryConnection):
     def describe_raid_arrays(self, instance_id=None, raid_array_ids=None):
         """
         Describe an instance's RAID arrays.
+
+        You must specify at least one of the parameters.
 
         :type instance_id: string
         :param instance_id: The instance ID. If you use this parameter,
@@ -1153,6 +1209,8 @@ class OpsWorksConnection(AWSQueryConnection):
         Describes time-based auto scaling configurations for specified
         instances.
 
+        You must specify at least one of the parameters.
+
         :type instance_ids: list
         :param instance_ids: An array of instance IDs.
 
@@ -1178,6 +1236,8 @@ class OpsWorksConnection(AWSQueryConnection):
                          volume_ids=None):
         """
         Describes an instance's Amazon EBS volumes.
+
+        You must specify at least one of the parameters.
 
         :type instance_id: string
         :param instance_id: The instance ID. If you use this parameter,
@@ -1492,7 +1552,19 @@ class OpsWorksConnection(AWSQueryConnection):
         :param hostname: The instance host name.
 
         :type os: string
-        :param os: The instance operating system.
+        :param os: The instance operating system, which must be set to one of
+            the following.
+
+        + Standard operating systems: `Amazon Linux` or `Ubuntu 12.04 LTS`
+        + Custom AMIs: `Custom`
+
+
+        The default option is `Amazon Linux`. If you set this parameter to
+            `Custom`, you must use the CreateInstance action's AmiId parameter
+            to specify the custom AMI that you want to use. For more
+            information on the standard operating systems, see `Operating
+            Systems`_For more information on how to use custom AMIs with
+            OpsWorks, see `Using Custom AMIs`_.
 
         :type ami_id: string
         :param ami_id: A custom AMI ID to be used to create the instance. The
@@ -1642,9 +1714,9 @@ class OpsWorksConnection(AWSQueryConnection):
                      service_role_arn=None,
                      default_instance_profile_arn=None, default_os=None,
                      hostname_theme=None, default_availability_zone=None,
-                     custom_json=None, configuration_manager=None,
-                     use_custom_cookbooks=None, custom_cookbooks_source=None,
-                     default_ssh_key_name=None,
+                     default_subnet_id=None, custom_json=None,
+                     configuration_manager=None, use_custom_cookbooks=None,
+                     custom_cookbooks_source=None, default_ssh_key_name=None,
                      default_root_device_type=None):
         """
         Updates a specified stack.
@@ -1719,6 +1791,9 @@ class OpsWorksConnection(AWSQueryConnection):
         :param default_availability_zone: The stack new default Availability
             Zone. For more information, see `Regions and Endpoints`_.
 
+        :type default_subnet_id: string
+        :param default_subnet_id:
+
         :type custom_json: string
         :param custom_json: A string that contains user-defined, custom JSON.
             It is used to override the corresponding default stack
@@ -1769,6 +1844,8 @@ class OpsWorksConnection(AWSQueryConnection):
             params['HostnameTheme'] = hostname_theme
         if default_availability_zone is not None:
             params['DefaultAvailabilityZone'] = default_availability_zone
+        if default_subnet_id is not None:
+            params['DefaultSubnetId'] = default_subnet_id
         if custom_json is not None:
             params['CustomJson'] = custom_json
         if configuration_manager is not None:
