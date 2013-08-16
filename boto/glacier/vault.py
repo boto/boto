@@ -159,6 +159,7 @@ class Vault(object):
         """
         part_size = self.DefaultPartSize
         if not file_obj:
+            file_obj_needs_close = True
             file_size = os.path.getsize(filename)
             try:
                 part_size = minimum_part_size(file_size, part_size)
@@ -166,6 +167,8 @@ class Vault(object):
                 raise UploadArchiveError("File size of %s bytes exceeds "
                                          "40,000 GB archive limit of Glacier.")
             file_obj = open(filename, "rb")
+        else:
+            file_obj_needs_close = False
         writer = self.create_archive_writer(
             description=description,
             part_size=part_size)
@@ -177,6 +180,8 @@ class Vault(object):
                 break
             writer.write(data)
         writer.close()
+        if file_obj_needs_close:
+            file_obj.close()
         return writer.get_archive_id()
 
     @staticmethod
@@ -231,10 +236,16 @@ class Vault(object):
             part_hash_map[part_index] = part_tree_hash
 
         if not file_obj:
+            file_obj_needs_close = True
             file_obj = open(filename, "rb")
+        else:
+            file_obj_needs_close = False
 
-        return resume_file_upload(
+        archive_id = resume_file_upload(
             self, upload_id, part_size, file_obj, part_hash_map)
+        if file_obj_needs_close:
+            file_obj.close()
+        return archive_id
 
     def concurrent_create_archive_from_file(self, filename, description,
                                             **kwargs):
