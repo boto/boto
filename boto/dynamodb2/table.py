@@ -133,7 +133,7 @@ class Table(object):
 
         Example::
 
-            >>> users = Table.create_table('users', schema=[
+            >>> users = Table.create('users', schema=[
             ...     HashKey('username'),
             ...     RangeKey('date_joined', data_type=NUMBER)
             ... ], throughput={
