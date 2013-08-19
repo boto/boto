@@ -87,7 +87,7 @@ class STSConnection(AWSQueryConnection):
 
     def _required_auth_capability(self):
         if self.anon:
-            return ['sign-v0']
+            return ['pure-query']
         else:
             return ['sign-v2']
 
@@ -441,7 +441,7 @@ class STSConnection(AWSQueryConnection):
             'AssumeRoleWithWebIdentity',
             params,
             AssumedRole,
-            verb='POST'
+            verb='GET'
         )
 
     def decode_authorization_message(self, encoded_message):
