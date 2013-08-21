@@ -49,8 +49,8 @@ class TestRoute53ResourceRecordSets(unittest.TestCase):
 
     def test_record_count(self):
         rrs = ResourceRecordSets(self.conn, self.zone.id)
-        hosts = 230
-        hosts = 2
+        hosts = 101
+
         for hostid in range(hosts):
             rec = "test" + str(hostid) + ".example.com"
             created = rrs.add_change("CREATE", rec, "A")
