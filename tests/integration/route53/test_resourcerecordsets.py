@@ -23,7 +23,6 @@
 import unittest
 from boto.route53.connection import Route53Connection
 from boto.route53.record import ResourceRecordSets
-from boto.exception import TooManyRecordsException
 
 
 class TestRoute53ResourceRecordSets(unittest.TestCase):
@@ -54,7 +53,7 @@ class TestRoute53ResourceRecordSets(unittest.TestCase):
         hosts = 2
         for hostid in range(hosts):
             rec = "test" + str(hostid) + ".example.com"
-            created = rrs.add_change("CREATE", rec , "A")
+            created = rrs.add_change("CREATE", rec, "A")
             ip = '192.168.0.' + str(hostid)
             created.add_value(ip)
 
@@ -62,29 +61,29 @@ class TestRoute53ResourceRecordSets(unittest.TestCase):
 
         all_records = self.conn.get_all_rrsets(self.zone.id)
 
-        #first time around was always fine
+        # First time around was always fine
         i = 0
         for rset in all_records:
             i += 1
 
-        #second time was a failure
+        # Second time was a failure
         i = 0
         for rset in all_records:
             i += 1
 
-        #cleanup indivual records
+        # Cleanup indivual records
         rrs = ResourceRecordSets(self.conn, self.zone.id)
         for hostid in range(hosts):
             rec = "test" + str(hostid) + ".example.com"
-            deleted = rrs.add_change("DELETE", rec , "A")
+            deleted = rrs.add_change("DELETE", rec, "A")
             ip = '192.168.0.' + str(hostid)
             deleted.add_value(ip)
 
         rrs.commit()
-        
-        #2nd count should match the number of hosts plus NS/SOA records
+
+        # 2nd count should match the number of hosts plus NS/SOA records
         records = hosts + 2
-        self.assertEqual(i,records)
+        self.assertEqual(i, records)
 
 if __name__ == '__main__':
     unittest.main()
