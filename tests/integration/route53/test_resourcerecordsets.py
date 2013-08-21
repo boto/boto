@@ -57,6 +57,11 @@ class TestRoute53ResourceRecordSets(unittest.TestCase):
             ip = '192.168.0.' + str(hostid)
             created.add_value(ip)
 
+            # Max 100 changes per commit
+            if (hostid + 1) % 100 == 0:
+                rrs.commit()
+                rrs = ResourceRecordSets(self.conn, self.zone.id)
+
         rrs.commit()
 
         all_records = self.conn.get_all_rrsets(self.zone.id)
@@ -78,6 +83,11 @@ class TestRoute53ResourceRecordSets(unittest.TestCase):
             deleted = rrs.add_change("DELETE", rec, "A")
             ip = '192.168.0.' + str(hostid)
             deleted.add_value(ip)
+
+            # Max 100 changes per commit
+            if (hostid + 1) % 100 == 0:
+                rrs.commit()
+                rrs = ResourceRecordSets(self.conn, self.zone.id)
 
         rrs.commit()
 
