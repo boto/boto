@@ -485,6 +485,105 @@ class TestRDSOptionGroupOptions(AWSMockServiceTestCase):
         self.assertEqual(options.depends_on, [])
 
 
+class TestRDSAddTagsToResource(AWSMockServiceTestCase):
+    connection_class = RDSConnection
+
+    def setUp(self):
+        super(TestRDSAddTagsToResource, self).setUp()
+
+    def default_body(self):
+        return """
+        <AddTagsToResourceResponse xmlns="http://rds.amazonaws.com/doc/2012-09-17/">
+          <ResponseMetadata>
+            <RequestId>ecb24baa-0078-11e3-beb6-359de664aec1</RequestId>
+          </ResponseMetadata>
+        </AddTagsToResourceResponse>
+        """
+
+    def test_add_tags_to_resource(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.add_tags_to_resource('arn:dbinstance',
+            {'key1': 'value1', 'key2': 'value2'})
+        self.assertTrue(response)
+        self.assert_request_parameters({
+            'Action': 'AddTagsToResource',
+            'ResourceName': 'arn:dbinstance',
+            'Tags.member.1.Key': 'key1',
+            'Tags.member.1.Value': 'value1',
+            'Tags.member.2.Key': 'key2',
+            'Tags.member.2.Value': 'value2',
+        }, ignore_params_values=['Version'])
+
+
+class TestRDSRemoveTagsFromResource(AWSMockServiceTestCase):
+    connection_class = RDSConnection
+
+    def setUp(self):
+        super(TestRDSRemoveTagsFromResource, self).setUp()
+
+    def default_body(self):
+        return """
+        <RemoveTagsFromResourceResponse xmlns="http://rds.amazonaws.com/doc/2012-09-17/">
+          <ResponseMetadata>
+            <RequestId>b551e528-007a-11e3-a97a-6b9f172d256a</RequestId>
+          </ResponseMetadata>
+        </RemoveTagsFromResourceResponse>
+        """
+
+    def test_remove_tags_from_resource(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.remove_tags_from_resource('arn:dbinstance',
+            ['key1', 'key2'])
+        self.assertTrue(response)
+        self.assert_request_parameters({
+            'Action': 'RemoveTagsFromResource',
+            'ResourceName': 'arn:dbinstance',
+            'TagKeys.member.1': 'key1',
+            'TagKeys.member.2': 'key2',
+        }, ignore_params_values=['Version'])
+
+
+class TestRDSListTagsForResource(AWSMockServiceTestCase):
+    connection_class = RDSConnection
+
+    def setUp(self):
+        super(TestRDSListTagsForResource, self).setUp()
+
+    def default_body(self):
+        return """
+        <ListTagsForResourceResponse xmlns="http://rds.amazonaws.com/doc/2012-09-17/">
+          <ListTagsForResourceResult>
+            <TagList>
+              <Tag>
+                <Value>value1</Value>
+                <Key>key1</Key>
+              </Tag>
+              <Tag>
+                <Value>value2</Value>
+                <Key>key2</Key>
+              </Tag>
+            </TagList>
+          </ListTagsForResourceResult>
+          <ResponseMetadata>
+            <RequestId>58de55b0-007b-11e3-829f-f3097299cddf</RequestId>
+          </ResponseMetadata>
+        </ListTagsForResourceResponse>
+        """
+
+    def test_remove_tags_from_resource(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.list_tags_for_resource('arn:dbinstance')
+        self.assert_request_parameters({
+            'Action': 'ListTagsForResource',
+            'ResourceName': 'arn:dbinstance',
+        }, ignore_params_values=['Version'])
+        self.assertEqual(len(response), 2)
+        self.assertTrue('key1' in response)
+        self.assertTrue('key2' in response)
+        self.assertEqual(response['key1'], 'value1')
+        self.assertEqual(response['key2'], 'value2')
+
+
 if __name__ == '__main__':
     unittest.main()
 
