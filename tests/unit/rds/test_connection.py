@@ -292,11 +292,100 @@ class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
         self.assertEqual(db.multi_az, False)
         self.assertEqual(db.pending_modified_values,
             {'MasterUserPassword': '****'})
+        self.assertEqual(db.parameter_group.name,
+                         'default.mysql5.1')
+        self.assertEqual(db.parameter_group.description, None)
+        self.assertEqual(db.parameter_group.engine, None)
+
+
+class TestRDSConnectionRestoreDBInstanceFromPointInTime(AWSMockServiceTestCase):
+    connection_class = RDSConnection
+
+    def setUp(self):
+        super(TestRDSConnectionRestoreDBInstanceFromPointInTime, self).setUp()
+
+    def default_body(self):
+        return """
+        <RestoreDBInstanceToPointInTimeResponse xmlns="http://rds.amazonaws.com/doc/2013-05-15/">
+          <RestoreDBInstanceToPointInTimeResult>
+            <DBInstance>
+              <ReadReplicaDBInstanceIdentifiers/>
+              <Engine>mysql</Engine>
+              <PendingModifiedValues/>
+              <BackupRetentionPeriod>1</BackupRetentionPeriod>
+              <MultiAZ>false</MultiAZ>
+              <LicenseModel>general-public-license</LicenseModel>
+              <DBInstanceStatus>creating</DBInstanceStatus>
+              <EngineVersion>5.1.50</EngineVersion>
+              <DBInstanceIdentifier>restored-db</DBInstanceIdentifier>
+              <DBParameterGroups>
+                <DBParameterGroup>
+                  <ParameterApplyStatus>in-sync</ParameterApplyStatus>
+                  <DBParameterGroupName>default.mysql5.1</DBParameterGroupName>
+                </DBParameterGroup>
+              </DBParameterGroups>
+              <DBSecurityGroups>
+                <DBSecurityGroup>
+                  <Status>active</Status>
+                  <DBSecurityGroupName>default</DBSecurityGroupName>
+                </DBSecurityGroup>
+              </DBSecurityGroups>
+              <PreferredBackupWindow>00:00-00:30</PreferredBackupWindow>
+              <AutoMinorVersionUpgrade>true</AutoMinorVersionUpgrade>
+              <PreferredMaintenanceWindow>sat:07:30-sat:08:00</PreferredMaintenanceWindow>
+              <AllocatedStorage>10</AllocatedStorage>
+              <DBInstanceClass>db.m1.large</DBInstanceClass>
+              <MasterUsername>master</MasterUsername>
+            </DBInstance>
+          </RestoreDBInstanceToPointInTimeResult>
+          <ResponseMetadata>
+            <RequestId>1ef546bc-850b-11e0-90aa-eb648410240d</RequestId>
+          </ResponseMetadata>
+        </RestoreDBInstanceToPointInTimeResponse>
+        """
+
+    def test_restore_dbinstance_from_point_in_time(self):
+        self.set_http_response(status_code=200)
+        db = self.service_connection.restore_dbinstance_from_point_in_time(
+            'simcoprod01',
+            'restored-db',
+            True)
+
+        self.assert_request_parameters({
+            'Action': 'RestoreDBInstanceToPointInTime',
+            'SourceDBInstanceIdentifier': 'simcoprod01',
+            'TargetDBInstanceIdentifier': 'restored-db',
+            'UseLatestRestorableTime': 'true',
+        }, ignore_params_values=['Version'])
+
+        self.assertEqual(db.id, 'restored-db')
+        self.assertEqual(db.engine, 'mysql')
+        self.assertEqual(db.status, 'creating')
+        self.assertEqual(db.allocated_storage, 10)
+        self.assertEqual(db.instance_class, 'db.m1.large')
+        self.assertEqual(db.master_username, 'master')
+        self.assertEqual(db.multi_az, False)
 
         self.assertEqual(db.parameter_group.name,
                          'default.mysql5.1')
         self.assertEqual(db.parameter_group.description, None)
         self.assertEqual(db.parameter_group.engine, None)
+
+    def test_restore_dbinstance_from_point_in_time__db_subnet_group_name(self):
+        self.set_http_response(status_code=200)
+        db = self.service_connection.restore_dbinstance_from_point_in_time(
+            'simcoprod01',
+            'restored-db',
+            True,
+            db_subnet_group_name='dbsubnetgroup')
+
+        self.assert_request_parameters({
+            'Action': 'RestoreDBInstanceToPointInTime',
+            'SourceDBInstanceIdentifier': 'simcoprod01',
+            'TargetDBInstanceIdentifier': 'restored-db',
+            'UseLatestRestorableTime': 'true',
+            'DBSubnetGroupName': 'dbsubnetgroup',
+        }, ignore_params_values=['Version'])
 
 
 class TestRDSOptionGroups(AWSMockServiceTestCase):
