@@ -745,10 +745,10 @@ class RDSConnection(AWSQueryConnection):
         :param engine: Name of database engine.
 
         :type description: string
-        :param description: The description of the new security group
+        :param description: The description of the new dbparameter group
 
-        :rtype: :class:`boto.rds.dbsecuritygroup.DBSecurityGroup`
-        :return: The newly created DBSecurityGroup
+        :rtype: :class:`boto.rds.parametergroup.ParameterGroup`
+        :return: The newly created ParameterGroup
         """
         params = {'DBParameterGroupName': name,
                   'DBParameterGroupFamily': engine,
@@ -757,10 +757,10 @@ class RDSConnection(AWSQueryConnection):
 
     def modify_parameter_group(self, name, parameters=None):
         """
-        Modify a parameter group for your account.
+        Modify a ParameterGroup for your account.
 
         :type name: string
-        :param name: The name of the new parameter group
+        :param name: The name of the new ParameterGroup
 
         :type parameters: list of :class:`boto.rds.parametergroup.Parameter`
         :param parameters: The new parameters
@@ -800,10 +800,10 @@ class RDSConnection(AWSQueryConnection):
 
     def delete_parameter_group(self, name):
         """
-        Delete a DBSecurityGroup from your account.
+        Delete a ParameterGroup from your account.
 
         :type key_name: string
-        :param key_name: The name of the DBSecurityGroup to delete
+        :param key_name: The name of the ParameterGroup to delete
         """
         params = {'DBParameterGroupName': name}
         return self.get_status('DeleteDBParameterGroup', params)
