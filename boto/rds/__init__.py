@@ -366,8 +366,8 @@ class RDSConnection(AWSQueryConnection):
                       If you specify a value, it must be at least 1000 IOPS and you must
                       allocate 100 GB of storage.
 
-        :type vpc_security_groups: list of str or list of VPCSecurityGroup ids
-        :param vpc_security_groups: List of ids of VPCSecurityGroup to
+        :type vpc_security_groups: list of str or list of SecurityGroups
+        :param vpc_security_groups: List of ids or SecurityGroups to
             authorize on this DBInstance.
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
@@ -605,8 +605,8 @@ class RDSConnection(AWSQueryConnection):
                       If you specify a value, it must be at least 1000 IOPS and you must
                       allocate 100 GB of storage.
 
-        :type vpc_security_groups: list of str or list of VPCSecurityGroup ids
-        :param vpc_security_groups: List of ids of VPCSecurityGroup to
+        :type vpc_security_groups: list of str or list of SecurityGroups
+        :param vpc_security_groups: List of ids or SecurityGroups to
             authorize on this DBInstance.
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
