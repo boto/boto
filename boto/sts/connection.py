@@ -441,7 +441,7 @@ class STSConnection(AWSQueryConnection):
             'AssumeRoleWithWebIdentity',
             params,
             AssumedRole,
-            verb='GET'
+            verb='POST'
         )
 
     def decode_authorization_message(self, encoded_message):
