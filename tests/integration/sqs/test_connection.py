@@ -239,3 +239,44 @@ class SQSConnectionTest(unittest.TestCase):
         # Wait long enough for SQS to finally remove the queues.
         time.sleep(90)
         self.assertEqual(len(conn.get_all_queues()), initial_count)
+
+    def test_get_messages_attributes(self):
+        conn = SQSConnection()
+        current_timestamp = int(time.time())
+        queue_name = 'test%d' % int(time.time())
+        test = conn.create_queue(queue_name)
+        self.addCleanup(conn.delete_queue, test)
+        time.sleep(65)
+
+        # Put a message in the queue.
+        m1 = Message()
+        m1.set_body('This is a test message.')
+        test.write(m1)
+        self.assertEqual(test.count(), 1)
+
+        # Check all attributes.
+        msgs = test.get_messages(
+            num_messages=1,
+            attributes='All'
+        )
+        for msg in msgs:
+            self.assertEqual(msg.attributes['ApproximateReceiveCount'], '1')
+            first_rec = msg.attributes['ApproximateFirstReceiveTimestamp']
+            first_rec = int(first_rec) / 1000
+            self.assertTrue(first_rec >= current_timestamp)
+
+        # Put another message in the queue.
+        m2 = Message()
+        m2.set_body('This is another test message.')
+        test.write(m2)
+        self.assertEqual(test.count(), 1)
+
+        # Check a specific attribute.
+        msgs = test.get_messages(
+            num_messages=1,
+            attributes='ApproximateReceiveCount'
+        )
+        for msg in msgs:
+            self.assertEqual(msg.attributes['ApproximateReceiveCount'], '1')
+            with self.assertRaises(KeyError):
+                msg.attributes['ApproximateFirstReceiveTimestamp']
