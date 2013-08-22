@@ -167,6 +167,7 @@ class RDSConnection(AWSQueryConnection):
                           license_model = None,
                           option_group_name = None,
                           iops=None,
+                          vpc_security_groups_ids=None,
                           ):
         # API version: 2012-09-17
         # Parameter notes:
@@ -365,6 +366,10 @@ class RDSConnection(AWSQueryConnection):
                       If you specify a value, it must be at least 1000 IOPS and you must
                       allocate 100 GB of storage.
 
+        :type vpc_security_groups_ids: list of str or list of VPCSecurityGroup ids
+        :param vpc_security_groups_ids: List of ids of VPCSecurityGroup to
+            authorize on this DBInstance.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
         """
@@ -425,6 +430,9 @@ class RDSConnection(AWSQueryConnection):
                 else:
                     l.append(group)
             self.build_list_params(params, l, 'DBSecurityGroups.member')
+
+        if vpc_security_groups_ids:
+            self.build_list_params(params, vpc_security_groups_ids, 'VpcSecurityGroupIds.member')
 
         # Remove any params set to None
         for k, v in params.items():
@@ -509,7 +517,8 @@ class RDSConnection(AWSQueryConnection):
                           preferred_backup_window=None,
                           multi_az=False,
                           apply_immediately=False,
-                          iops=None):
+                          iops=None,
+                          vpc_security_groups_ids=None):
         """
         Modify an existing DBInstance.
 
@@ -585,6 +594,10 @@ class RDSConnection(AWSQueryConnection):
                       If you specify a value, it must be at least 1000 IOPS and you must
                       allocate 100 GB of storage.
 
+        :type vpc_security_groups_ids: list of str or list of VPCSecurityGroup ids
+        :param vpc_security_groups_ids: List of ids of VPCSecurityGroup to
+            authorize on this DBInstance.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
         """
@@ -601,6 +614,8 @@ class RDSConnection(AWSQueryConnection):
                 else:
                     l.append(group)
             self.build_list_params(params, l, 'DBSecurityGroups.member')
+        if vpc_security_groups_ids:
+            self.build_list_params(params, vpc_security_groups_ids, 'VpcSecurityGroupIds.member')
         if preferred_maintenance_window:
             params['PreferredMaintenanceWindow'] = preferred_maintenance_window
         if master_password:
