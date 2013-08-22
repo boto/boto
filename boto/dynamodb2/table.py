@@ -57,7 +57,7 @@ class Table(object):
             >>> conn = Table('users')
 
             # The full, minimum-extra-calls case.
-            >>> from boto.dynamodb2.layer1 import DynamoDBConnection
+            >>> from boto import dynamodb2
             >>> users = Table('users', schema=[
             ...     HashKey('username'),
             ...     RangeKey('date_joined', data_type=NUMBER)
@@ -69,11 +69,10 @@ class Table(object):
             ...         RangeKey('date_joined')
             ...     ]),
             ... ],
-            ... connection=DynamoDBConnection(
-            ...     aws_access_key_id='key',
-            ...     aws_secret_access_key='key',
-            ...     region='us-west-2'
-            ... ))
+            ... connection=dynamodb2.connect_to_region('us-west-2',
+		    ...     aws_access_key_id='key',
+		    ...     aws_secret_access_key='key',
+	        ... ))
 
         """
         self.table_name = table_name
