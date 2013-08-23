@@ -119,6 +119,14 @@ class Key(S3Key):
                 self.component_count = int(value)
             elif key == 'x-goog-generation':
                 self.generation = value
+            # Use x-goog-stored-content-encoding and
+            # x-goog-stored-content-length to indicate original content length
+            # and encoding, which are transcoding-invariant (so are preferable
+            # over using content-encoding and size headers).
+            elif key == 'x-goog-stored-content-encoding':
+                self.content_encoding = value
+            elif key == 'x-goog-stored-content-length':
+                self.size = int(value)
 
     def open_read(self, headers=None, query_args='',
                   override_num_retries=None, response_headers=None):
