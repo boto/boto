@@ -26,6 +26,7 @@ from tests.unit import AWSMockServiceTestCase
 
 from boto.ec2.securitygroup import SecurityGroup
 from boto.rds import RDSConnection
+from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
 from boto.rds.parametergroup import ParameterGroup
 
 
@@ -74,6 +75,12 @@ class TestRDSConnection(AWSMockServiceTestCase):
                       <DBSecurityGroupName>default</DBSecurityGroupName>
                     </DBSecurityGroup>
                   </DBSecurityGroups>
+                  <VpcSecurityGroups>
+                    <VpcSecurityGroupMembership>
+                      <VpcSecurityGroupId>sg-1</VpcSecurityGroupId>
+                      <Status>active</Status>
+                    </VpcSecurityGroupMembership>
+                  </VpcSecurityGroups>
                   <DBName>mydb2</DBName>
                   <AutoMinorVersionUpgrade>true</AutoMinorVersionUpgrade>
                   <InstanceCreateTime>2012-10-03T22:01:51.047Z</InstanceCreateTime>
@@ -138,6 +145,8 @@ class TestRDSConnection(AWSMockServiceTestCase):
         self.assertEqual(db.status_infos[0].normal, True)
         self.assertEqual(db.status_infos[0].status, 'replicating')
         self.assertEqual(db.status_infos[0].status_type, 'read replication')
+        self.assertEqual(db.vpc_security_groups[0].status, 'active')
+        self.assertEqual(db.vpc_security_groups[0].vpc_group, 'sg-1')
 
 
 class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
@@ -390,6 +399,10 @@ class TestRDSConnectionRestoreDBInstanceFromPointInTime(AWSMockServiceTestCase):
 
     def test_create_db_instance_vpc_sg_str(self):
         self.set_http_response(status_code=200)
+        vpc_security_groups = [
+            VPCSecurityGroupMembership(self.service_connection, 'active', 'sg-1'),
+            VPCSecurityGroupMembership(self.service_connection, None, 'sg-2')]
+
         db = self.service_connection.create_dbinstance(
             'SimCoProd01',
             10,
@@ -398,7 +411,7 @@ class TestRDSConnectionRestoreDBInstanceFromPointInTime(AWSMockServiceTestCase):
             'Password01',
             param_group='default.mysql5.1',
             db_subnet_group_name='dbSubnetgroup01',
-            vpc_security_groups=['sg-1', 'sg-2'])
+            vpc_security_groups=vpc_security_groups)
 
         self.assert_request_parameters({
             'Action': 'CreateDBInstance',
@@ -422,6 +435,10 @@ class TestRDSConnectionRestoreDBInstanceFromPointInTime(AWSMockServiceTestCase):
         sg1 = SecurityGroup(name='sg-1')
         sg2 = SecurityGroup(name='sg-2')
 
+        vpc_security_groups = [
+            VPCSecurityGroupMembership(self.service_connection, 'active', sg1.name),
+            VPCSecurityGroupMembership(self.service_connection, None, sg2.name)]
+
         db = self.service_connection.create_dbinstance(
             'SimCoProd01',
             10,
@@ -430,7 +447,7 @@ class TestRDSConnectionRestoreDBInstanceFromPointInTime(AWSMockServiceTestCase):
             'Password01',
             param_group='default.mysql5.1',
             db_subnet_group_name='dbSubnetgroup01',
-            vpc_security_groups=[sg1, sg2])
+            vpc_security_groups=vpc_security_groups)
 
         self.assert_request_parameters({
             'Action': 'CreateDBInstance',
