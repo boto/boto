@@ -30,7 +30,7 @@ from boto.rds.dbsnapshot import DBSnapshot
 from boto.rds.event import Event
 from boto.rds.regioninfo import RDSRegionInfo
 from boto.rds.dbsubnetgroup import DBSubnetGroup
-
+from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
 
 def regions():
     """
@@ -366,9 +366,9 @@ class RDSConnection(AWSQueryConnection):
                       If you specify a value, it must be at least 1000 IOPS and you must
                       allocate 100 GB of storage.
 
-        :type vpc_security_groups: list of str or list of SecurityGroups
-        :param vpc_security_groups: List of ids or SecurityGroups to
-            authorize on this DBInstance.
+        :type vpc_security_groups: list of str or a VPCSecurityGroupMembership object
+        :param vpc_security_groups: List of VPC security group ids or a list of
+            VPCSecurityGroupMembership objects this DBInstance should be a member of
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The new db instance.
@@ -397,11 +397,7 @@ class RDSConnection(AWSQueryConnection):
         # port => Port
         # preferred_backup_window => PreferredBackupWindow
         # preferred_maintenance_window => PreferredMaintenanceWindow
-
-        # Importing here rather than at the top of the file to prevent
-        # circular imports.
-        from boto.ec2.securitygroup import SecurityGroup
-
+        # vpc_security_groups => VpcSecurityGroupIds.member.N
         params = {
                   'AllocatedStorage': allocated_storage,
                   'AutoMinorVersionUpgrade': str(auto_minor_version_upgrade).lower() if auto_minor_version_upgrade else None,
@@ -438,11 +434,11 @@ class RDSConnection(AWSQueryConnection):
 
         if vpc_security_groups:
             l = []
-            for group in vpc_security_groups:
-                if isinstance(group, SecurityGroup):
-                    l.append(group.name)
+            for vpc_grp in vpc_security_groups:
+                if isinstance(vpc_grp, VPCSecurityGroupMembership):
+                    l.append(vpc_grp.vpc_group)
                 else:
-                    l.append(group)
+                    l.append(vpc_grp)
             self.build_list_params(params, l, 'VpcSecurityGroupIds.member')
 
         # Remove any params set to None
@@ -529,7 +525,8 @@ class RDSConnection(AWSQueryConnection):
                           multi_az=False,
                           apply_immediately=False,
                           iops=None,
-                          vpc_security_groups=None):
+                          vpc_security_groups=None,
+                          ):
         """
         Modify an existing DBInstance.
 
@@ -605,17 +602,13 @@ class RDSConnection(AWSQueryConnection):
                       If you specify a value, it must be at least 1000 IOPS and you must
                       allocate 100 GB of storage.
 
-        :type vpc_security_groups: list of str or list of SecurityGroups
-        :param vpc_security_groups: List of ids or SecurityGroups to
-            authorize on this DBInstance.
+        :type vpc_security_groups: list of str or a VPCSecurityGroupMembership object
+        :param vpc_security_groups: List of VPC security group ids or a
+            VPCSecurityGroupMembership object this DBInstance should be a member of
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
         """
-        # Importing here rather than at the top of the file to prevent
-        # circular imports.
-        from boto.ec2.securitygroup import SecurityGroup
-
         params = {'DBInstanceIdentifier': id}
         if param_group:
             params['DBParameterGroupName'] = (param_group.name
@@ -631,11 +624,11 @@ class RDSConnection(AWSQueryConnection):
             self.build_list_params(params, l, 'DBSecurityGroups.member')
         if vpc_security_groups:
             l = []
-            for group in vpc_security_groups:
-                if isinstance(group, SecurityGroup):
-                    l.append(group.name)
+            for vpc_grp in vpc_security_groups:
+                if isinstance(vpc_grp, VPCSecurityGroupMembership):
+                    l.append(vpc_grp.vpc_group)
                 else:
-                    l.append(group)
+                    l.append(vpc_grp)
             self.build_list_params(params, l, 'VpcSecurityGroupIds.member')
         if preferred_maintenance_window:
             params['PreferredMaintenanceWindow'] = preferred_maintenance_window
