@@ -37,7 +37,9 @@ try:
     multipart_capable = True
     usage_flag_multipart_capable = """ [--multipart]"""
     usage_string_multipart_capable = """
-        multipart - Upload files as multiple parts. This needs filechunkio."""
+        multipart - Upload files as multiple parts. This needs filechunkio.
+                    Requires ListBucket, ListMultipartUploadParts,
+                    ListBucketMultipartUploads and PutObject permissions."""
 except ImportError as err:
     multipart_capable = False
     usage_flag_multipart_capable = ""
@@ -313,7 +315,7 @@ def main():
         c = boto.connect_s3(aws_access_key_id=aws_access_key_id,
                         aws_secret_access_key=aws_secret_access_key)
     c.debug = debug
-    b = c.get_bucket(bucket_name)
+    b = c.get_bucket(bucket_name, validate=False)
     existing_keys_to_check_against = []
     files_to_check_for_upload = []
 
