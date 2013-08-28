@@ -29,38 +29,41 @@ class VPCSecurityGroupMembership(object):
     Represents VPC Security Group that this RDS database is a member of
 
     Properties reference available from the AWS documentation at
-    http://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_VpcSecurityGroupMembership.html
+    http://docs.aws.amazon.com/AmazonRDS/latest/APIReference/\
+    API_VpcSecurityGroupMembership.html
 
-    Example:
-    pri = "sg-abcdefgh"
-    sec = "sg-hgfedcba"
+    Example::
+        pri = "sg-abcdefgh"
+        sec = "sg-hgfedcba"
 
-    # create with list of str
-    d = c.create_dbinstance(... vpc_security_groups=[pri], ... )
+        # Create with list of str
+        db = c.create_dbinstance(... vpc_security_groups=[pri], ... )
 
-    # modify with list of str
-    d.modify(... vpc_security_groups=[pri,sec], ... )
+        # Modify with list of str
+        db.modify(... vpc_security_groups=[pri,sec], ... )
 
-    # create with objects
-    w = []
-    x = VPCSecurityGroupMembership()
-    x.vpc_group=pri
-    w.append(x)
+        # Create with objects
+        memberships = []
+        membership = VPCSecurityGroupMembership()
+        membership.vpc_group = pri
+        memberships.append(membership)
 
-    d = c.create_dbinstance(... vpc_security_groups=w, ... )
+        db = c.create_dbinstance(... vpc_security_groups=memberships, ... )
 
-    # modify with objects
-    y = d.vpc_security_groups
-    z = VPCSecurityGroupMembership()
-    z.vpc_group=sec
-    y.append(z)
+        # Modify with objects
+        memberships = d.vpc_security_groups
+        membership = VPCSecurityGroupMembership()
+        membership.vpc_group = sec
+        memberships.append(membership)
 
-    d.modify(...  vpc_security_groups=y, ... )
+        db.modify(...  vpc_security_groups=memberships, ... )
 
-    :ivar connection: :py:class:`boto.rds.RDSConnection` associated with the current object
+    :ivar connection: :py:class:`boto.rds.RDSConnection` associated with the
+        current object
     :ivar vpc_group: This id of the VPC security group
     :ivar status: Status of the VPC security group membership
-        <boto.ec2.securitygroup.SecurityGroup>` objects that this RDS Instance is a member of
+        <boto.ec2.securitygroup.SecurityGroup>` objects that this RDS Instance
+        is a member of
     """
     def __init__(self, connection=None, status=None, vpc_group=None):
         self.connection = connection
