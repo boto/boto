@@ -91,7 +91,8 @@ class SNSConnection(AWSQueryConnection):
       :param dictionary: dict - value of the serialized parameter
       :param name: name of the serialized parameter
       """
-      for kv, index in zip(dictionary.items(), range(1, len(dictionary.items())+1)):
+      items = sorted(dictionary.items(), key=lambda x:x[0])
+      for kv, index in zip(items, range(1, len(items)+1)):
         key, value = kv
         prefix = '%s.entry.%s' % (name, index)
         params['%s.key' % prefix] = key
