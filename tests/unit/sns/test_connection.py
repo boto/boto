@@ -130,10 +130,14 @@ class TestSNSConnection(AWSMockServiceTestCase):
     def test_create_platform_application(self):
         self.set_http_response(status_code=200)
 
-        self.service_connection.create_platform_application(name='MyApp',
-                                                            platform='APNS',
-                                                            attributes={'PlatformPrincipal': 'a ssl certificate',
-                                                                        'PlatformCredential': 'a private key'})
+        self.service_connection.create_platform_application(
+            name='MyApp',
+            platform='APNS',
+            attributes={
+                'PlatformPrincipal': 'a ssl certificate',
+                'PlatformCredential': 'a private key'
+            }
+        )
         self.assert_request_parameters({
             'Action': 'CreatePlatformApplication',
             'Name': 'MyApp',
@@ -198,6 +202,28 @@ class TestSNSConnection(AWSMockServiceTestCase):
 
         with self.assertRaises(TypeError):
             self.service_connection.publish(topic='topic', subject='subject')
+
+    def test_publish_with_json(self):
+        self.set_http_response(status_code=200)
+
+        self.service_connection.publish(
+            message=json.dumps({
+                'default': 'Ignored.',
+                'GCM': {
+                    'data': 'goes here',
+                }
+            }),
+            message_structure='json',
+            subject='subject',
+            target_arn='target_arn'
+        )
+        self.assert_request_parameters({
+            'Action': 'Publish',
+            'TargetArn': 'target_arn',
+            'Subject': 'subject',
+            'Message': '{"default": "Ignored.", "GCM": {"data": "goes here"}}',
+            'MessageStructure': 'json',
+        }, ignore_params_values=['Version', 'ContentType'])
 
 
 if __name__ == '__main__':

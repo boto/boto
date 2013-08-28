@@ -209,8 +209,8 @@ class SNSConnection(AWSQueryConnection):
         params = {'TopicArn': topic}
         return self._make_request('DeleteTopic', params, '/', 'GET')
 
-    def publish(self, topic=None, message=None, subject=None,
-                target_arn=None):
+    def publish(self, topic=None, message=None, subject=None, target_arn=None,
+                message_structure=None):
         """
         Get properties of a Topic
 
@@ -222,12 +222,20 @@ class SNSConnection(AWSQueryConnection):
                         Messages must be UTF-8 encoded strings and
                         be at most 4KB in size.
 
+        :type message_structure: string
+        :param message_structure: Optional parameter. If left as ``None``,
+                                  plain text will be sent. If set to ``json``,
+                                  your message should be a JSON string that
+                                  matches the structure described at
+                                  http://docs.aws.amazon.com/sns/latest/dg/PublishTopic.html#sns-message-formatting-by-protocol
+
         :type subject: string
         :param subject: Optional parameter to be used as the "Subject"
                         line of the email notifications.
 
         :type target_arn: string
-        :param target_arn:
+        :param target_arn: Optional parameter for either TopicArn or
+                           EndpointArn, but not both.
 
         """
         if message is None:
@@ -242,6 +250,8 @@ class SNSConnection(AWSQueryConnection):
             params['TopicArn'] = topic
         if target_arn is not None:
             params['TargetArn'] = target_arn
+        if message_structure is not None:
+            params['MessageStructure'] = message_structure
         return self._make_request('Publish', params)
 
     def subscribe(self, topic, protocol, endpoint):
