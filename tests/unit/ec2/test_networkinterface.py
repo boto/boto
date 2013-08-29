@@ -54,7 +54,8 @@ class TestNetworkInterfaceCollection(unittest.TestCase):
             groups=['group_id1', 'group_id2'],
             private_ip_address='10.0.1.54', delete_on_termination=False,
             private_ip_addresses=[self.private_ip_address3,
-                                  self.private_ip_address4])
+                                  self.private_ip_address4],
+            associate_public_ip_address=True)
 
     def test_param_serialization(self):
         collection = NetworkInterfaceCollection(self.network_interfaces_spec1,
@@ -78,6 +79,7 @@ class TestNetworkInterfaceCollection(unittest.TestCase):
             'NetworkInterface.2.DeleteOnTermination': 'false',
             'NetworkInterface.2.PrivateIpAddress': '10.0.1.54',
             'NetworkInterface.2.SubnetId': 'subnet_id2',
+            'NetworkInterface.2.AssociatePublicIpAddress': 'true',
             'NetworkInterface.2.SecurityGroupId.1': 'group_id1',
             'NetworkInterface.2.SecurityGroupId.2': 'group_id2',
             'NetworkInterface.2.PrivateIpAddresses.1.Primary': 'false',
@@ -89,7 +91,6 @@ class TestNetworkInterfaceCollection(unittest.TestCase):
         })
 
     def test_add_prefix_to_serialization(self):
-        return
         collection = NetworkInterfaceCollection(self.network_interfaces_spec1,
                                                 self.network_interfaces_spec2)
         params = {}
@@ -121,6 +122,7 @@ class TestNetworkInterfaceCollection(unittest.TestCase):
             'LaunchSpecification.NetworkInterface.2.PrivateIpAddress':
                 '10.0.1.54',
             'LaunchSpecification.NetworkInterface.2.SubnetId': 'subnet_id2',
+            'LaunchSpecification.NetworkInterface.2.AssociatePublicIpAddress': 'true',
             'LaunchSpecification.NetworkInterface.2.SecurityGroupId.1':
                 'group_id1',
             'LaunchSpecification.NetworkInterface.2.SecurityGroupId.2':

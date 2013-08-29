@@ -76,7 +76,7 @@ def main():
         print format_string % headers
         print "-" * len(format_string % headers)
 
-    for r in ec2.get_all_instances(filters=filters):
+    for r in ec2.get_all_reservations(filters=filters):
         groups = [g.name for g in r.groups]
         for i in r.instances:
             i.groups = ','.join(groups)

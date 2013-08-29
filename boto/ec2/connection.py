@@ -436,7 +436,64 @@ class EC2Connection(AWSQueryConnection):
 
     def get_all_instances(self, instance_ids=None, filters=None):
         """
+        Retrieve all the instance reservations associated with your account.
+
+        .. note::
+        This method's current behavior is deprecated in favor of
+        :meth:`get_all_reservations`.  A future major release will change
+        :meth:`get_all_instances` to return a list of
+        :class:`boto.ec2.instance.Instance` objects as its name suggests.
+        To obtain that behavior today, use :meth:`get_only_instances`.
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of instance IDs
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
+
+        :rtype: list
+        :return: A list of  :class:`boto.ec2.instance.Reservation`
+
+        """
+        warnings.warn(('The current get_all_instances implementation will be '
+                       'replaced with get_all_reservations.'),
+                      PendingDeprecationWarning)
+        return self.get_all_reservations(instance_ids=instance_ids,
+                                         filters=filters)
+
+    def get_only_instances(self, instance_ids=None, filters=None):
+        # A future release should rename this method to get_all_instances
+        # and make get_only_instances an alias for that.
+        """
         Retrieve all the instances associated with your account.
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of instance IDs
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
+
+        :rtype: list
+        :return: A list of  :class:`boto.ec2.instance.Instance`
+        """
+        reservations = self.get_all_reservations(instance_ids=instance_ids,
+                                                 filters=filters)
+        return [instance for reservation in reservations
+                for instance in reservation.instances]
+
+    def get_all_reservations(self, instance_ids=None, filters=None):
+        """
+        Retrieve all the instance reservations associated with your account.
 
         :type instance_ids: list
         :param instance_ids: A list of strings of instance IDs
@@ -1957,7 +2014,7 @@ class EC2Connection(AWSQueryConnection):
         return snapshot.id
 
     def trim_snapshots(self, hourly_backups=8, daily_backups=7,
-                       weekly_backups=4):
+                       weekly_backups=4, monthly_backups=True):
         """
         Trim excess snapshots, based on when they were taken. More current
         snapshots are retained, with the number retained decreasing as you
@@ -1975,7 +2032,7 @@ class EC2Connection(AWSQueryConnection):
         snapshots taken in each of the last seven days, the first snapshots
         taken in the last 4 weeks (counting Midnight Sunday morning as
         the start of the week), and the first snapshot from the first
-        Sunday of each month forever.
+        day of each month forever.
 
         :type hourly_backups: int
         :param hourly_backups: How many recent hourly backups should be saved.
@@ -1985,6 +2042,9 @@ class EC2Connection(AWSQueryConnection):
 
         :type weekly_backups: int
         :param weekly_backups: How many recent weekly backups should be saved.
+
+        :type monthly_backups: int
+        :param monthly_backups: How many monthly backups should be saved. Use True for no limit.
         """
 
         # This function first builds up an ordered list of target times
@@ -2019,10 +2079,14 @@ class EC2Connection(AWSQueryConnection):
             target_backup_times.append(last_sunday - timedelta(weeks = week))
 
         one_day = timedelta(days = 1)
-        while start_of_month > oldest_snapshot_date:
+        monthly_snapshots_added = 0
+        while (start_of_month > oldest_snapshot_date and
+               (monthly_backups is True or
+                monthly_snapshots_added < monthly_backups)):
             # append the start of the month to the list of
             # snapshot dates to save:
             target_backup_times.append(start_of_month)
+            monthly_snapshots_added += 1
             # there's no timedelta setting for one month, so instead:
             # decrement the day by one, so we go to the final day of
             # the previous month...

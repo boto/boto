@@ -42,6 +42,7 @@ class Credentials(object):
         self.secret_key = None
         self.session_token = None
         self.expiration = None
+        self.request_id = None
 
     @classmethod
     def from_json(cls, json_doc):
@@ -138,6 +139,7 @@ class Credentials(object):
         delta = ts - now
         return delta.total_seconds() <= 0
 
+
 class FederationToken(object):
     """
     :ivar credentials: A Credentials object containing the credentials.
@@ -153,6 +155,7 @@ class FederationToken(object):
         self.federated_user_arn = None
         self.federated_user_id = None
         self.packed_policy_size = None
+        self.request_id = None
 
     def startElement(self, name, attrs, connection):
         if name == 'Credentials':

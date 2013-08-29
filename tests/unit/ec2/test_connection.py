@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 import httplib
 
-from mock import Mock
+from datetime import datetime, timedelta
+from mock import MagicMock, Mock, patch
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
@@ -9,6 +10,7 @@ import boto.ec2
 
 from boto.regioninfo import RegionInfo
 from boto.ec2.connection import EC2Connection
+from boto.ec2.snapshot import Snapshot
 
 
 class TestEC2ConnectionBase(AWSMockServiceTestCase):
@@ -783,6 +785,97 @@ class TestConnectToRegion(unittest.TestCase):
             aws_secret_access_key='aws_secret_access_key'
         )
         self.assertEqual(None, self.ec2)
+
+
+class TestTrimSnapshots(TestEC2ConnectionBase):
+    """
+    Test snapshot trimming functionality by ensuring that expected calls
+    are made when given a known set of volume snapshots.
+    """
+    def _get_snapshots(self):
+        """
+        Generate a list of fake snapshots with names and dates.
+        """
+        snaps = []
+
+        # Generate some dates offset by days, weeks, months
+        now = datetime.now()
+        dates = [
+            now,
+            now - timedelta(days=1),
+            now - timedelta(days=2),
+            now - timedelta(days=7),
+            now - timedelta(days=14),
+            datetime(now.year, now.month, 1) - timedelta(days=30),
+            datetime(now.year, now.month, 1) - timedelta(days=60),
+            datetime(now.year, now.month, 1) - timedelta(days=90)
+        ]
+
+        for date in dates:
+            # Create a fake snapshot for each date
+            snap = Snapshot(self.ec2)
+            snap.tags['Name'] = 'foo'
+            # Times are expected to be ISO8601 strings
+            snap.start_time = date.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+            snaps.append(snap)
+
+        return snaps
+
+    def test_trim_defaults(self):
+        """
+        Test trimming snapshots with the default arguments, which should
+        keep all monthly backups forever. The result of this test should
+        be that nothing is deleted.
+        """
+        # Setup mocks
+        orig = {
+            'get_all_snapshots': self.ec2.get_all_snapshots,
+            'delete_snapshot': self.ec2.delete_snapshot
+        }
+
+        snaps = self._get_snapshots()
+
+        self.ec2.get_all_snapshots = MagicMock(return_value=snaps)
+        self.ec2.delete_snapshot = MagicMock()
+
+        # Call the tested method
+        self.ec2.trim_snapshots()
+
+        # Assertions
+        self.assertEqual(True, self.ec2.get_all_snapshots.called)
+        self.assertEqual(False, self.ec2.delete_snapshot.called)
+
+        # Restore
+        self.ec2.get_all_snapshots = orig['get_all_snapshots']
+        self.ec2.delete_snapshot = orig['delete_snapshot']
+
+    def test_trim_months(self):
+        """
+        Test trimming monthly snapshots and ensure that older months
+        get deleted properly. The result of this test should be that
+        the two oldest snapshots get deleted.
+        """
+        # Setup mocks
+        orig = {
+            'get_all_snapshots': self.ec2.get_all_snapshots,
+            'delete_snapshot': self.ec2.delete_snapshot
+        }
+
+        snaps = self._get_snapshots()
+
+        self.ec2.get_all_snapshots = MagicMock(return_value=snaps)
+        self.ec2.delete_snapshot = MagicMock()
+
+        # Call the tested method
+        self.ec2.trim_snapshots(monthly_backups=1)
+
+        # Assertions
+        self.assertEqual(True, self.ec2.get_all_snapshots.called)
+        self.assertEqual(2, self.ec2.delete_snapshot.call_count)
+
+        # Restore
+        self.ec2.get_all_snapshots = orig['get_all_snapshots']
+        self.ec2.delete_snapshot = orig['delete_snapshot']
 
 
 if __name__ == '__main__':

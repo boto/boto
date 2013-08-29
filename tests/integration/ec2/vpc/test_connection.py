@@ -69,7 +69,7 @@ class TestVPCConnection(unittest.TestCase):
         time.sleep(10)
         instance = reservation.instances[0]
         self.addCleanup(self.terminate_instance, instance)
-        retrieved = self.api.get_all_instances(instance_ids=[instance.id])
+        retrieved = self.api.get_all_reservations(instance_ids=[instance.id])
         self.assertEqual(len(retrieved), 1)
         retrieved_instances = retrieved[0].instances
         self.assertEqual(len(retrieved_instances), 1)

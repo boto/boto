@@ -7,7 +7,57 @@ import mock
 
 from boto.ec2.connection import EC2Connection
 
-DESCRIBE_INSTANCE_VPC = r"""<?xml version="1.0" encoding="UTF-8"?>
+DESCRIBE_SECURITY_GROUP = r"""<?xml version="1.0" encoding="UTF-8"?>
+<DescribeSecurityGroupsResponse xmlns="http://ec2.amazonaws.com/doc/2013-06-15/">
+   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+   <securityGroupInfo>
+      <item>
+         <ownerId>111122223333</ownerId>
+         <groupId>sg-1a2b3c4d</groupId>
+         <groupName>WebServers</groupName>
+         <groupDescription>Web Servers</groupDescription>
+         <vpcId/>
+         <ipPermissions>
+            <item>
+               <ipProtocol>tcp</ipProtocol>
+               <fromPort>80</fromPort>
+               <toPort>80</toPort>
+               <groups/>
+               <ipRanges>
+                  <item>
+                     <cidrIp>0.0.0.0/0</cidrIp>
+                  </item>
+               </ipRanges>
+            </item>
+         </ipPermissions>
+         <ipPermissionsEgress/>
+      </item>
+      <item>
+         <ownerId>111122223333</ownerId>
+         <groupId>sg-2a2b3c4d</groupId>
+         <groupName>RangedPortsBySource</groupName>
+         <groupDescription>Group A</groupDescription>
+         <ipPermissions>
+            <item>
+               <ipProtocol>tcp</ipProtocol>
+               <fromPort>6000</fromPort>
+               <toPort>7000</toPort>
+               <groups>
+                  <item>
+                     <userId>111122223333</userId>
+                     <groupId>sg-3a2b3c4d</groupId>
+                     <groupName>Group B</groupName>
+                  </item>
+               </groups>
+               <ipRanges/>
+            </item>
+         </ipPermissions>
+         <ipPermissionsEgress/>
+      </item>
+   </securityGroupInfo>
+</DescribeSecurityGroupsResponse>"""
+
+DESCRIBE_INSTANCES = r"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2012-10-01/">
     <requestId>c6132c74-b524-4884-87f5-0f4bde4a9760</requestId>
     <reservationSet>
@@ -46,7 +96,7 @@ DESCRIBE_INSTANCE_VPC = r"""<?xml version="1.0" encoding="UTF-8"?>
                     <sourceDestCheck>true</sourceDestCheck>
                     <groupSet>
                         <item>
-                            <groupId>sg-id</groupId>
+                            <groupId>sg-1a2b3c4d</groupId>
                             <groupName>WebServerSG</groupName>
                         </item>
                     </groupSet>
@@ -120,124 +170,15 @@ DESCRIBE_INSTANCE_VPC = r"""<?xml version="1.0" encoding="UTF-8"?>
 </DescribeInstancesResponse>
 """
 
-RUN_INSTANCE_RESPONSE = r"""
-<RunInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2012-06-01/">
-    <requestId>ad4b83c2-f606-4c39-90c6-5dcc5be823e1</requestId>
-    <reservationId>r-c5cef7a7</reservationId>
-    <ownerId>ownerid</ownerId>
-    <groupSet>
-        <item>
-            <groupId>sg-id</groupId>
-            <groupName>SSH</groupName>
-        </item>
-    </groupSet>
-    <instancesSet>
-        <item>
-            <instanceId>i-ff0f1299</instanceId>
-            <imageId>ami-ed65ba84</imageId>
-            <instanceState>
-                <code>0</code>
-                <name>pending</name>
-            </instanceState>
-            <privateDnsName/>
-            <dnsName/>
-            <reason/>
-            <keyName>awskeypair</keyName>
-            <amiLaunchIndex>0</amiLaunchIndex>
-            <productCodes/>
-            <instanceType>t1.micro</instanceType>
-            <launchTime>2012-05-30T19:21:18.000Z</launchTime>
-            <placement>
-                <availabilityZone>us-east-1a</availabilityZone>
-                <groupName/>
-                <tenancy>default</tenancy>
-            </placement>
-            <kernelId>aki-b6aa75df</kernelId>
-            <monitoring>
-                <state>disabled</state>
-            </monitoring>
-            <groupSet>
-                <item>
-                    <groupId>sg-99a710f1</groupId>
-                    <groupName>SSH</groupName>
-                </item>
-            </groupSet>
-            <stateReason>
-                <code>pending</code>
-                <message>pending</message>
-            </stateReason>
-            <architecture>i386</architecture>
-            <rootDeviceType>ebs</rootDeviceType>
-            <rootDeviceName>/dev/sda1</rootDeviceName>
-            <blockDeviceMapping/>
-            <virtualizationType>paravirtual</virtualizationType>
-            <clientToken/>
-            <hypervisor>xen</hypervisor>
-            <networkInterfaceSet/>
-            <iamInstanceProfile>
-                <arn>arn:aws:iam::ownerid:instance-profile/myinstanceprofile</arn>
-                <id>iamid</id>
-            </iamInstanceProfile>
-        </item>
-    </instancesSet>
-</RunInstancesResponse>
-"""
-
-
-class TestRunInstanceResponseParsing(unittest.TestCase):
-    def testIAMInstanceProfileParsedCorrectly(self):
-        ec2 = EC2Connection(aws_access_key_id='aws_access_key_id',
-                            aws_secret_access_key='aws_secret_access_key')
-        mock_response = mock.Mock()
-        mock_response.read.return_value = RUN_INSTANCE_RESPONSE
-        mock_response.status = 200
-        ec2.make_request = mock.Mock(return_value=mock_response)
-        reservation = ec2.run_instances(image_id='ami-12345')
-        self.assertEqual(len(reservation.instances), 1)
-        instance = reservation.instances[0]
-        self.assertEqual(instance.image_id, 'ami-ed65ba84')
-        # iamInstanceProfile has an ID element, so we want to make sure
-        # that this does not map to instance.id (which should be the
-        # id of the ec2 instance).
-        self.assertEqual(instance.id, 'i-ff0f1299')
-        self.assertDictEqual(
-            instance.instance_profile,
-            {'arn': ('arn:aws:iam::ownerid:'
-                     'instance-profile/myinstanceprofile'),
-             'id': 'iamid'})
-
-
-class TestDescribeInstances(AWSMockServiceTestCase):
+class TestDescribeSecurityGroups(AWSMockServiceTestCase):
     connection_class = EC2Connection
 
-    def default_body(self):
-        return DESCRIBE_INSTANCE_VPC
+    def test_get_instances(self):
+        self.set_http_response(status_code=200, body=DESCRIBE_SECURITY_GROUP)
+        groups = self.service_connection.get_all_security_groups()
 
-    def test_multiple_private_ip_addresses(self):
-        self.set_http_response(status_code=200)
+        self.set_http_response(status_code=200, body=DESCRIBE_INSTANCES)
+        instances = groups[0].instances()
 
-        api_response = self.service_connection.get_all_reservations()
-        self.assertEqual(len(api_response), 1)
-
-        instances = api_response[0].instances
-        self.assertEqual(len(instances), 1)
-
-        instance = instances[0]
-        self.assertEqual(len(instance.interfaces), 1)
-
-        interface = instance.interfaces[0]
-        self.assertEqual(len(interface.private_ip_addresses), 3)
-
-        addresses = interface.private_ip_addresses
-        self.assertEqual(addresses[0].private_ip_address, '10.0.0.67')
-        self.assertTrue(addresses[0].primary)
-
-        self.assertEqual(addresses[1].private_ip_address, '10.0.0.54')
-        self.assertFalse(addresses[1].primary)
-
-        self.assertEqual(addresses[2].private_ip_address, '10.0.0.55')
-        self.assertFalse(addresses[2].primary)
-
-
-if __name__ == '__main__':
-    unittest.main()
+        self.assertEqual(1, len(instances))
+        self.assertEqual(groups[0].id, instances[0].groups[0].id)

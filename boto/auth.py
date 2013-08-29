@@ -431,6 +431,8 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         parts = http_request.host.split('.')
         if self.region_name is not None:
             region_name = self.region_name
+        elif parts[1] == 'us-gov':
+            region_name = 'us-gov-west-1'
         else:
             if len(parts) == 3:
                 region_name = 'us-east-1'
@@ -508,6 +510,45 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         l.append('SignedHeaders=%s' % self.signed_headers(headers_to_sign))
         l.append('Signature=%s' % signature)
         req.headers['Authorization'] = ','.join(l)
+
+
+class QueryAuthHandler(AuthHandler):
+    """
+    Provides pure query construction (no actual signing).
+
+    Mostly useful for STS' ``assume_role_with_web_identity``.
+
+    Does **NOT** escape query string values!
+    """
+
+    capability = ['pure-query']
+
+    def _escape_value(self, value):
+        # Would normally be ``return urllib.quote(value)``.
+        return value
+
+    def _build_query_string(self, params):
+        keys = params.keys()
+        keys.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
+        pairs = []
+        for key in keys:
+            val = boto.utils.get_utf8_value(params[key])
+            pairs.append(key + '=' + self._escape_value(val))
+        return '&'.join(pairs)
+
+    def add_auth(self, http_request, **kwargs):
+        headers = http_request.headers
+        params = http_request.params
+        qs = self._build_query_string(
+            http_request.params
+        )
+        boto.log.debug('query_string: %s' % qs)
+        headers['Content-Type'] = 'application/json; charset=UTF-8'
+        http_request.body = ''
+        # if this is a retried request, the qs from the previous try will
+        # already be there, we need to get rid of that and rebuild it
+        http_request.path = http_request.path.split('?')[0]
+        http_request.path = http_request.path + '?' + qs
 
 
 class QuerySignatureHelper(HmacKeys):

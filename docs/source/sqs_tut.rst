@@ -229,7 +229,7 @@ to count the number of messages in a queue:
 >>> q.count()
 10
 
-This can be handy but is command as well as the other two utility methods
+This can be handy but this command as well as the other two utility methods
 I'll describe in a minute are inefficient and should be used with caution
 on queues with lots of messages (e.g. many hundreds or more).  Similarly,
 you can clear (delete) all messages in a queue with:
