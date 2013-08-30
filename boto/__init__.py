@@ -39,7 +39,12 @@ from boto.exception import InvalidUriError
 __version__ = '2.11.0'
 Version = __version__  # for backware compatibility
 
-UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
+UserAgent = 'Boto/%s Python/%s %s/%s' % (
+    __version__,
+    platform.python_version(),
+    platform.system(),
+    platform.release()
+)
 config = Config()
 
 # Regex to disallow buckets violating charset or not [3..255] chars total.
