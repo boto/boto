@@ -218,7 +218,7 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.key_name:
             params['KeyName'] = launch_config.key_name
         if launch_config.user_data:
-            params['UserData'] = base64.b64encode(launch_config.user_data)
+            params['UserData'] = base64.b64encode(launch_config.user_data).decode('utf-8')
         if launch_config.kernel_id:
             params['KernelId'] = launch_config.kernel_id
         if launch_config.ramdisk_id:
@@ -238,9 +238,9 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.instance_profile_name is not None:
             params['IamInstanceProfile'] = launch_config.instance_profile_name
         if launch_config.ebs_optimized:
-            params['EbsOptimized'] = True
+            params['EbsOptimized'] = 'true'
         else:
-            params['EbsOptimized'] = False
+            params['EbsOptimized'] = 'false'
         return self.get_object('CreateLaunchConfiguration', params,
                                Request, verb='POST')
 
