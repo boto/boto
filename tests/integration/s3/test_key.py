@@ -383,3 +383,14 @@ class S3KeyTest(unittest.TestCase):
         check = self.bucket.get_key('test_date')
         self.assertEqual(check.get_metadata('date'), u'20130524T155935Z')
         self.assertTrue('x-amz-meta-date' in check._get_remote_metadata())
+
+    def test_header_casing(self):
+        key = self.bucket.new_key('test_header_case')
+        # Using anything but CamelCase on ``Content-Type`` or ``Content-MD5``
+        # used to cause a signature error (when using ``s3`` for signing).
+        key.set_metadata('Content-type', 'application/json')
+        key.set_metadata('Content-md5', 'XmUKnus7svY1frWsVskxXg==')
+        key.set_contents_from_string('{"abc": 123}')
+
+        check = self.bucket.get_key('test_header_case')
+        self.assertEqual(check.content_type, 'application/json')
