@@ -235,6 +235,9 @@ class MultiPartUpload(object):
 
         The other parameters are exactly as defined for the
         :class:`boto.s3.key.Key` set_contents_from_file method.
+
+        :rtype: :class:`boto.s3.key.Key` or subclass
+        :returns: The uploaded part containing the etag.
         """
         if part_num < 1:
             raise ValueError('Part numbers must be greater than zero')
@@ -244,6 +247,7 @@ class MultiPartUpload(object):
                                    cb=cb, num_cb=num_cb, md5=md5,
                                    reduced_redundancy=False,
                                    query_args=query_args, size=size)
+        return key
 
     def copy_part_from_key(self, src_bucket_name, src_key_name, part_num,
                            start=None, end=None, src_version_id=None,
