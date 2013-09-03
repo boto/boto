@@ -23,10 +23,32 @@
 from boto.ec2.elb.healthcheck import HealthCheck
 from boto.ec2.elb.listener import Listener
 from boto.ec2.elb.listelement import ListElement
-from boto.ec2.elb.policies import Policies
+from boto.ec2.elb.policies import Policies, OtherPolicy
 from boto.ec2.elb.securitygroup import SecurityGroup
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.resultset import ResultSet
+
+
+class Backend(object):
+    """Backend server description"""
+
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.instance_port = None
+        self.policies = None
+
+    def __repr__(self):
+        return 'Backend(%r:%r)' % (self.instance_port, self.policies)
+
+    def startElement(self, name, attrs, connection):
+        if name == 'PolicyNames':
+            self.policies = ResultSet([('member', OtherPolicy)])
+            return self.policies
+
+    def endElement(self, name, value, connection):
+        if name == 'InstancePort':
+            self.instance_port = int(value)
+        return
 
 
 class LoadBalancerZones(object):
@@ -80,6 +102,8 @@ class LoadBalancer(object):
         :ivar list security_groups: A list of additional security groups that
             have been applied.
         :ivar str vpc_id: The ID of the VPC that this ELB resides within.
+        :ivar list backends: A list of :py:class:`boto.ec2.elb.loadbalancer.Backend
+            back-end server descriptions.
         """
         self.connection = connection
         self.name = name
@@ -97,6 +121,7 @@ class LoadBalancer(object):
         self.security_groups = ListElement()
         self.vpc_id = None
         self.scheme = None
+        self.backends = None
 
     def __repr__(self):
         return 'LoadBalancer:%s' % self.name
@@ -125,6 +150,9 @@ class LoadBalancer(object):
             return self.security_groups
         elif name == 'VPCId':
             pass
+        elif name == "BackendServerDescriptions":
+            self.backends = ResultSet([('member', Backend)])
+            return self.backends
         else:
             return None
 
@@ -266,6 +294,12 @@ class LoadBalancer(object):
                                                            lb_port,
                                                            policies)
 
+    def set_policies_of_backend_server(self, instance_port, policies):
+        return self.connection.set_lb_policies_of_backend_server(self.name,
+                                                           instance_port,
+                                                           policies)
+
+
     def create_cookie_stickiness_policy(self, cookie_expiration_period,
                                         policy_name):
         return self.connection.create_lb_cookie_stickiness_policy(cookie_expiration_period, self.name, policy_name)
@@ -279,6 +313,9 @@ class LoadBalancer(object):
         return self.connection.set_lb_listener_SSL_certificate(self.name,
                                                                lb_port,
                                                                ssl_certificate_id)
+
+    def create_lb_policy(self, policy_name, policy_type, policy_attribute):
+        return self.connection.create_lb_policy(self.name, policy_name, policy_type, policy_attribute)
 
     def attach_subnets(self, subnets):
         """
