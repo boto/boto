@@ -19,6 +19,7 @@ class AWSMockServiceTestCase(unittest.TestCase):
 
     def setUp(self):
         self.https_connection = Mock(spec=httplib.HTTPSConnection)
+        self.https_connection.debuglevel = 0
         self.https_connection_factory = (
             Mock(return_value=self.https_connection), ())
         self.service_connection = self.create_service_connection(

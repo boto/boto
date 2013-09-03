@@ -22,6 +22,7 @@
 
 from boto.ec2.ec2object import EC2Object
 
+
 class VmType(EC2Object):
     """
     Represents an EC2 VM Type
@@ -32,7 +33,8 @@ class VmType(EC2Object):
     :ivar disk: The amount of disk space in gigabytes for this vm type
     """
 
-    def __init__(self, connection=None, name=None, cores=None, memory=None, disk=None):
+    def __init__(self, connection=None, name=None, cores=None,
+                 memory=None, disk=None):
         EC2Object.__init__(self, connection)
         self.connection = connection
         self.name = name
@@ -41,7 +43,8 @@ class VmType(EC2Object):
         self.disk = disk
 
     def __repr__(self):
-        return 'VmType:%s-%s,%s,%s' % (self.name, self.cores, self.memory, self.disk)
+        return 'VmType:%s-%s,%s,%s' % (self.name, self.cores,
+                                       self.memory, self.disk)
 
     def endElement(self, name, value, connection):
         if name == 'euca:name':
@@ -54,5 +57,3 @@ class VmType(EC2Object):
             self.memory = value
         else:
             setattr(self, name, value)
-
-

@@ -765,8 +765,25 @@ class BucketStorageUri(StorageUri):
         for suri in components:
             component_keys.append(suri.new_key())
             component_keys[-1].generation = suri.generation
-        self.new_key().compose(
+        self.generation = self.new_key().compose(
                 component_keys, content_type=content_type, headers=headers)
+        self._build_uri_strings()
+        return self
+
+    def get_lifecycle_config(self, validate=False, headers=None):
+        """Returns a bucket's lifecycle configuration."""
+        self._check_bucket_uri('get_lifecycle_config')
+        bucket = self.get_bucket(validate, headers)
+        lifecycle_config = bucket.get_lifecycle_config(headers)
+        self.check_response(lifecycle_config, 'lifecycle', self.uri)
+        return lifecycle_config
+
+    def configure_lifecycle(self, lifecycle_config, validate=False,
+                            headers=None):
+        """Sets or updates a bucket's lifecycle configuration."""
+        self._check_bucket_uri('configure_lifecycle')
+        bucket = self.get_bucket(validate, headers)
+        bucket.configure_lifecycle(lifecycle_config, headers)
 
     def exists(self, headers=None):
       """Returns True if the object exists or False if it doesn't"""

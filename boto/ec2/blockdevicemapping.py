@@ -81,8 +81,12 @@ class BlockDeviceType(object):
 # for backwards compatibility
 EBSBlockDeviceType = BlockDeviceType
 
+try:
+    from collections import OrdereDict as bdm_dict
+except ImportError:
+    bdm_dict = dict
 
-class BlockDeviceMapping(dict):
+class BlockDeviceMapping(bdm_dict):
     """
     Represents a collection of BlockDeviceTypes when creating ec2 instances.
 

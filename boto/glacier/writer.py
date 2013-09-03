@@ -234,6 +234,26 @@ class Writer(object):
         return self.uploader.archive_id
 
     @property
+    def current_tree_hash(self):
+        """
+        Returns the current tree hash for the data that's been written
+        **so far**.
+
+        Only once the writing is complete is the final tree hash returned.
+        """
+        return tree_hash(self.uploader._tree_hashes)
+
+    @property
+    def current_uploaded_size(self):
+        """
+        Returns the current uploaded size for the data that's been written
+        **so far**.
+
+        Only once the writing is complete is the final uploaded size returned.
+        """
+        return self.uploader._uploaded_size
+
+    @property
     def upload_id(self):
         return self.uploader.upload_id
 

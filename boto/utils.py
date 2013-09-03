@@ -178,7 +178,7 @@ def merge_meta(headers, metadata, provider=None):
     for k in metadata.keys():
         if k.lower() in ['cache-control', 'content-md5', 'content-type',
                          'content-encoding', 'content-disposition',
-                         'date', 'expires']:
+                         'expires']:
             final_headers[k] = metadata[k]
         else:
             final_headers[metadata_prefix + k] = metadata[k]
@@ -995,3 +995,23 @@ def wrap_hash_function(hf):
     obj = FakeHashObj(hf(*args, **kwargs))
     return obj
   return get_hash
+
+def find_matching_headers(name, headers):
+    """
+    Takes a specific header name and a dict of headers {"name": "value"}.
+    Returns a list of matching header names, case-insensitive.
+
+    """
+    return [h for h in headers if h.lower() == name.lower()]
+
+
+def merge_headers_by_name(name, headers):
+    """
+    Takes a specific header name and a dict of headers {"name": "value"}.
+    Returns a string of all header values, comma-separated, that match the
+    input header name, case-insensitive.
+
+    """
+    matching_headers = find_matching_headers(name, headers)
+    return ','.join(str(headers[h]) for h in matching_headers
+                    if headers[h] is not None)

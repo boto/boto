@@ -31,6 +31,8 @@ except ImportError:
     from mock import ANY
 
 from boto.glacier import vault
+from boto.glacier.job import Job
+from boto.glacier.response import GlacierResponse
 
 
 class TestVault(unittest.TestCase):
@@ -85,6 +87,69 @@ class TestVault(unittest.TestCase):
         # instance (8 MB).
         self.vault.create_archive_writer.assert_called_with(
             description=mock.ANY, part_size=self.vault.DefaultPartSize)
+
+    def test_part_size_needs_to_be_adjusted(self):
+        # If we have a large file (400 GB)
+        self.getsize.return_value = 400 * 1024 * 1024 * 1024
+        self.vault.create_archive_writer = mock.Mock()
+        # When we try to upload the file.
+        with mock.patch('boto.glacier.vault.open', self.mock_open,
+                        create=True):
+            self.vault.create_archive_from_file('myfile')
+        # We should automatically bump up the part size used to
+        # 64 MB.
+        expected_part_size = 64 * 1024 * 1024
+        self.vault.create_archive_writer.assert_called_with(
+            description=mock.ANY, part_size=expected_part_size)
+
+    def test_retrieve_inventory(self):
+        class FakeResponse(object):
+            status = 202
+
+            def getheader(self, key, default=None):
+                if key == 'x-amz-job-id':
+                    return 'HkF9p6'
+                elif key == 'Content-Type':
+                    return 'application/json'
+
+                return 'something'
+
+            def read(self, amt=None):
+                return """{
+  "Action": "ArchiveRetrieval",
+  "ArchiveId": "NkbByEejwEggmBz2fTHgJrg0XBoDfjP4q6iu87-EXAMPLEArchiveId",
+  "ArchiveSizeInBytes": 16777216,
+  "ArchiveSHA256TreeHash": "beb0fe31a1c7ca8c6c04d574ea906e3f97",
+  "Completed": false,
+  "CreationDate": "2012-05-15T17:21:39.339Z",
+  "CompletionDate": "2012-05-15T17:21:43.561Z",
+  "InventorySizeInBytes": null,
+  "JobDescription": "My ArchiveRetrieval Job",
+  "JobId": "HkF9p6",
+  "RetrievalByteRange": "0-16777215",
+  "SHA256TreeHash": "beb0fe31a1c7ca8c6c04d574ea906e3f97b31fd",
+  "SNSTopic": "arn:aws:sns:us-east-1:012345678901:mytopic",
+  "StatusCode": "InProgress",
+  "StatusMessage": "Operation in progress.",
+  "VaultARN": "arn:aws:glacier:us-east-1:012345678901:vaults/examplevault"
+}"""
+
+        raw_resp = FakeResponse()
+        init_resp = GlacierResponse(raw_resp, [('x-amz-job-id', 'JobId')])
+        raw_resp_2 = FakeResponse()
+        desc_resp = GlacierResponse(raw_resp_2, [])
+
+        with mock.patch.object(self.vault.layer1, 'initiate_job',
+                               return_value=init_resp):
+            with mock.patch.object(self.vault.layer1, 'describe_job',
+                                   return_value=desc_resp):
+                # The old/back-compat variant of the call.
+                self.assertEqual(self.vault.retrieve_inventory(), 'HkF9p6')
+
+                # The variant the returns a full ``Job`` object.
+                job = self.vault.retrieve_inventory_job()
+                self.assertTrue(isinstance(job, Job))
+                self.assertEqual(job.id, 'HkF9p6')
 
 
 class TestConcurrentUploads(unittest.TestCase):

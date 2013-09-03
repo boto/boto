@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from __future__ import with_statement
 import errno
 import mimetypes
 import os
@@ -37,11 +38,15 @@ import urllib
 import boto.utils
 from boto.exception import BotoClientError
 from boto.exception import StorageDataError
+from boto.exception import PleaseRetryException
 from boto.provider import Provider
 from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
 from boto import UserAgent
-from boto.utils import compute_md5, wrap_hash_function
+from boto.utils import compute_md5
+from boto.utils import find_matching_headers
+from boto.utils import merge_headers_by_name
+from boto.utils import wrap_hash_function
 try:
     from hashlib import md5
 except ImportError:
@@ -85,7 +90,7 @@ class Key(object):
       </RestoreRequest>"""
 
 
-    BufferSize = 8192
+    BufferSize = boto.config.getint('Boto', 'key_buffer_size', 8192)
 
     # The object metadata fields a user can set, other than custom metadata
     # fields (i.e., those beginning with a provider-specific prefix like
@@ -147,37 +152,37 @@ class Key(object):
             provider = self.bucket.connection.provider
         return provider
 
-    @property
-    def key(self):
+    def _get_key(self):
         return self.name
 
-    @key.setter
-    def key(self, value):
+    def _set_key(self, value):
         self.name = value
 
-    @property
-    def md5(self):
+    key = property(_get_key, _set_key);
+
+    def _get_md5(self):
         if 'md5' in self.local_hashes and self.local_hashes['md5']:
             return binascii.b2a_hex(self.local_hashes['md5'])
 
-    @md5.setter
-    def md5(self, value):
+    def _set_md5(self, value):
         if value:
             self.local_hashes['md5'] = binascii.a2b_hex(value)
         elif 'md5' in self.local_hashes:
             self.local_hashes.pop('md5', None)
 
-    @property
-    def base64md5(self):
+    md5 = property(_get_md5, _set_md5);
+
+    def _get_base64md5(self):
         if 'md5' in self.local_hashes and self.local_hashes['md5']:
             return binascii.b2a_base64(self.local_hashes['md5']).rstrip('\n')
 
-    @base64md5.setter
-    def base64md5(self, value):
+    def _set_base64md5(self, value):
         if value:
             self.local_hashes['md5'] = binascii.a2b_base64(value)
         elif 'md5' in self.local_hashes:
             del self.local_hashes['md5']
+
+    base64md5 = property(_get_base64md5, _set_base64md5);
 
     def get_md5_from_hexdigest(self, md5_hexdigest):
         """
@@ -827,41 +832,42 @@ class Key(object):
             self.bucket.connection.debug = save_debug
             response = http_conn.getresponse()
             body = response.read()
-            if ((response.status == 500 or response.status == 503 or
-                    response.getheader('location')) and not chunked_transfer):
-                # we'll try again.
-                return response
-            elif response.status >= 200 and response.status <= 299:
-                self.etag = response.getheader('etag')
-                if self.etag != '"%s"' % self.md5:
-                    raise provider.storage_data_error(
-                        'ETag from S3 did not match computed MD5')
-                return response
-            else:
+
+            if not self.should_retry(response, chunked_transfer):
                 raise provider.storage_response_error(
                     response.status, response.reason, body)
+
+            return response
 
         if not headers:
             headers = {}
         else:
             headers = headers.copy()
+        # Overwrite user-supplied user-agent.
+        for header in find_matching_headers('User-Agent', headers):
+            del headers[header]
         headers['User-Agent'] = UserAgent
         if self.storage_class != 'STANDARD':
             headers[provider.storage_class_header] = self.storage_class
-        if 'Content-Encoding' in headers:
-            self.content_encoding = headers['Content-Encoding']
-        if 'Content-Language' in headers:
-            self.content_encoding = headers['Content-Language']
-        if 'Content-Type' in headers:
+        if find_matching_headers('Content-Encoding', headers):
+            self.content_encoding = merge_headers_by_name(
+                'Content-Encoding', headers)
+        if find_matching_headers('Content-Language', headers):
+            self.content_language = merge_headers_by_name(
+                'Content-Language', headers)
+        content_type_headers = find_matching_headers('Content-Type', headers)
+        if content_type_headers:
             # Some use cases need to suppress sending of the Content-Type
             # header and depend on the receiving server to set the content
             # type. This can be achieved by setting headers['Content-Type']
             # to None when calling this method.
-            if headers['Content-Type'] is None:
+            if (len(content_type_headers) == 1 and
+                headers[content_type_headers[0]] is None):
                 # Delete null Content-Type value to skip sending that header.
-                del headers['Content-Type']
+                del headers[content_type_headers[0]]
             else:
-                self.content_type = headers['Content-Type']
+                self.content_type = merge_headers_by_name(
+                    'Content-Type', headers)
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
             if self.content_type == None:
@@ -879,12 +885,57 @@ class Key(object):
             headers['Content-Length'] = str(self.size)
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
-        resp = self.bucket.connection.make_request('PUT', self.bucket.name,
-                                                   self.name, headers,
-                                                   sender=sender,
-                                                   query_args=query_args)
+        resp = self.bucket.connection.make_request(
+            'PUT',
+            self.bucket.name,
+            self.name,
+            headers,
+            sender=sender,
+            query_args=query_args
+        )
         self.handle_version_headers(resp, force=True)
         self.handle_addl_headers(resp.getheaders())
+
+    def should_retry(self, response, chunked_transfer=False):
+        provider = self.bucket.connection.provider
+
+        if not chunked_transfer:
+            if response.status in [500, 503]:
+                # 500 & 503 can be plain retries.
+                return True
+
+            if response.getheader('location'):
+                # If there's a redirect, plain retry.
+                return True
+
+        if 200 <= response.status <= 299:
+            self.etag = response.getheader('etag')
+
+            if self.etag != '"%s"' % self.md5:
+                raise provider.storage_data_error(
+                    'ETag from S3 did not match computed MD5')
+
+            return True
+
+        if response.status == 400:
+            # The 400 must be trapped so the retry handler can check to
+            # see if it was a timeout.
+            # If ``RequestTimeout`` is present, we'll retry. Otherwise, bomb
+            # out.
+            body = response.read()
+            err = provider.storage_response_error(
+                response.status,
+                response.reason,
+                body
+            )
+
+            if err.error_code in ['RequestTimeout']:
+                raise PleaseRetryException(
+                    "Saw %s, retrying" % err.error_code,
+                    response=response
+                )
+
+        return False
 
     def compute_md5(self, fp, size=None):
         """
@@ -1029,7 +1080,7 @@ class Key(object):
             the second representing the size of the to be transmitted
             object.
 
-        :type cb: int
+        :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the
             cb parameter this parameter determines the granularity of
             the callback by defining the maximum number of times the
@@ -1423,7 +1474,7 @@ class Key(object):
                     if i == cb_count or cb_count == -1:
                         cb(data_len, cb_size)
                         i = 0
-        except IOError as e:
+        except IOError, e:
             if e.errno == errno.ENOSPC:
                 raise StorageDataError('Out of space for destination file '
                                        '%s' % fp.name)

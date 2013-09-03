@@ -239,6 +239,16 @@ class ItemTestCase(unittest.TestCase):
             'johndoe',
         ])
 
+    def test_get(self):
+        self.assertEqual(self.johndoe.get('username'), 'johndoe')
+        self.assertEqual(self.johndoe.get('first_name'), 'John')
+        self.assertEqual(self.johndoe.get('date_joined'), 12345)
+
+        # Test a missing key. No default yields ``None``.
+        self.assertEqual(self.johndoe.get('last_name'), None)
+        # This time with a default.
+        self.assertEqual(self.johndoe.get('last_name', True), True)
+
     def test_items(self):
         self.assertEqual(sorted(self.johndoe.items()), [
             ('date_joined', 12345),
@@ -591,6 +601,9 @@ def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
     if exclusive_start_key is None:
         exclusive_start_key = -1
 
+    if limit == 0:
+        raise Exception("Web Service Returns '400 Bad Request'")
+
     end_cap = 13
     results = []
     start_key = exclusive_start_key + 1
@@ -598,6 +611,10 @@ def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
     for i in range(start_key, start_key + 5):
         if i < end_cap:
             results.append("%s %s #%s" % (greeting, name, i))
+
+    # Don't return more than limit results
+    if limit < len(results):
+        results = results[:limit]
 
     retval = {
         'results': results,
@@ -681,6 +698,47 @@ class ResultSetTestCase(unittest.TestCase):
         self.assertEqual(self.results.next(), 'Hello john #12')
         self.assertRaises(StopIteration, self.results.next)
         self.assertEqual(self.results.call_kwargs['limit'], 7)
+
+    def test_limit_smaller_than_first_page(self):
+        results = ResultSet()
+        results.to_call(fake_results, 'john', greeting='Hello', limit=2)
+        self.assertEqual(results.next(), 'Hello john #0')
+        self.assertEqual(results.next(), 'Hello john #1')
+        self.assertRaises(StopIteration, results.next)
+        
+    def test_limit_equals_page(self):
+        results = ResultSet()
+        results.to_call(fake_results, 'john', greeting='Hello', limit=5)
+        # First page
+        self.assertEqual(results.next(), 'Hello john #0')
+        self.assertEqual(results.next(), 'Hello john #1')
+        self.assertEqual(results.next(), 'Hello john #2')
+        self.assertEqual(results.next(), 'Hello john #3')
+        self.assertEqual(results.next(), 'Hello john #4')
+        self.assertRaises(StopIteration, results.next)
+
+    def test_limit_greater_than_page(self):
+        results = ResultSet()
+        results.to_call(fake_results, 'john', greeting='Hello', limit=6)
+        # First page
+        self.assertEqual(results.next(), 'Hello john #0')
+        self.assertEqual(results.next(), 'Hello john #1')
+        self.assertEqual(results.next(), 'Hello john #2')
+        self.assertEqual(results.next(), 'Hello john #3')
+        self.assertEqual(results.next(), 'Hello john #4')
+        # Second page
+        self.assertEqual(results.next(), 'Hello john #5')
+        self.assertRaises(StopIteration, results.next)
+
+    def test_iteration_noresults(self):
+        def none(limit=10):
+            return {
+                'results': [],
+            }
+
+        results = ResultSet()
+        results.to_call(none, limit=20)
+        self.assertRaises(StopIteration, results.next)
 
     def test_list(self):
         self.assertEqual(list(self.results), [
@@ -1392,7 +1450,7 @@ class TableTestCase(unittest.TestCase):
                 'ComparisonOperator': 'IN',
             },
             'last_name': {
-                'AttributeValueList': [{'SS': ['only', 'danzig']}],
+                'AttributeValueList': [{'S': 'danzig'}, {'S': 'only'}],
                 'ComparisonOperator': 'BETWEEN',
             },
             'first_name': {
@@ -1434,7 +1492,7 @@ class TableTestCase(unittest.TestCase):
                 'ComparisonOperator': 'GE',
             },
             'last_name': {
-                'AttributeValueList': [{'SS': ['only', 'danzig']}],
+                'AttributeValueList': [{'S': 'danzig'}, {'S': 'only'}],
                 'ComparisonOperator': 'BETWEEN',
             },
             'gender': {
@@ -1517,18 +1575,18 @@ class TableTestCase(unittest.TestCase):
             self.assertEqual(results['last_key'], None)
 
         mock_query.assert_called_once_with('users',
+            consistent_read=False,
+            scan_index_forward=True,
+            index_name=None,
+            attributes_to_get=None,
+            limit=4,
             key_conditions={
                 'username': {
-                    'AttributeValueList': [
-                        {'SS': ['mmm', 'aaa']}
-                    ],
+                    'AttributeValueList': [{'S': 'aaa'}, {'S': 'mmm'}],
                     'ComparisonOperator': 'BETWEEN',
                 }
             },
-            index_name=None,
-            scan_index_forward=True,
-            limit=4,
-            consistent_read=False
+            select=None
         )
 
         # Now alter the expected.
@@ -1559,13 +1617,12 @@ class TableTestCase(unittest.TestCase):
         mock_query_2.assert_called_once_with('users',
             key_conditions={
                 'username': {
-                    'AttributeValueList': [
-                        {'SS': ['mmm', 'aaa']}
-                    ],
+                    'AttributeValueList': [{'S': 'aaa'}, {'S': 'mmm'}],
                     'ComparisonOperator': 'BETWEEN',
                 }
             },
             index_name=None,
+            attributes_to_get=None,
             scan_index_forward=True,
             limit=4,
             exclusive_start_key={
@@ -1573,7 +1630,8 @@ class TableTestCase(unittest.TestCase):
                     'S': 'adam',
                 },
             },
-            consistent_read=True
+            consistent_read=True,
+            select=None
         )
 
     def test_private_scan(self):
@@ -1736,6 +1794,39 @@ class TableTestCase(unittest.TestCase):
             self.assertRaises(StopIteration, results.next)
 
         self.assertEqual(mock_query_2.call_count, 1)
+
+    def test_query_with_specific_attributes(self):
+        items_1 = {
+            'results': [
+                Item(self.users, data={
+                    'username': 'johndoe',
+                }),
+                Item(self.users, data={
+                    'username': 'jane',
+                }),
+            ],
+            'last_key': 'jane',
+        }
+
+        results = self.users.query(last_name__eq='Doe',
+                                   attributes=['username'])
+        self.assertTrue(isinstance(results, ResultSet))
+        self.assertEqual(len(results._results), 0)
+        self.assertEqual(results.the_callable, self.users._query)
+
+        with mock.patch.object(
+                results,
+                'the_callable',
+                return_value=items_1) as mock_query:
+            res_1 = results.next()
+            # Now it should be populated.
+            self.assertEqual(len(results._results), 2)
+            self.assertEqual(res_1['username'], 'johndoe')
+            self.assertEqual(res_1.keys(), ['username'])
+            res_2 = results.next()
+            self.assertEqual(res_2['username'], 'jane')
+
+        self.assertEqual(mock_query.call_count, 1)
 
     def test_scan(self):
         items_1 = {

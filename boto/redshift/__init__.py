@@ -42,6 +42,9 @@ def regions():
         RegionInfo(name='eu-west-1',
                    endpoint='redshift.eu-west-1.amazonaws.com',
                    connection_cls=cls),
+        RegionInfo(name='ap-northeast-1',
+                   endpoint='redshift.ap-northeast-1.amazonaws.com',
+                   connection_cls=cls),
     ]
 
 
