@@ -89,5 +89,13 @@ class Layer2(object):
         :rtype: List of :class:`boto.glacier.vault.Vault`
         :return: A list of Vault objects.
         """
-        response_data = self.layer1.list_vaults()
-        return [Vault(self.layer1, rd) for rd in response_data['VaultList']]
+        vaults = []
+        marker = None
+        while True:
+            response_data = self.layer1.list_vaults(marker=marker, limit=1000)
+            vaults.extend([Vault(self.layer1, rd) for rd in response_data['VaultList']])
+            marker = response_data.get('Marker')
+            if not marker:
+                break
+
+        return vaults
