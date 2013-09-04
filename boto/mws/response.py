@@ -110,7 +110,7 @@ class MemberList(ElementList):
 
     def start(self, attrs={}, **kw):
         Class = self._this or self._parent._type_for(self._name, attrs)
-        if isinstance(self._hint, ResponseElement):
+        if issubclass(self._hint, ResponseElement):
             ListClass = ElementList
         else:
             ListClass = SimpleList
@@ -452,6 +452,11 @@ class GetFulfillmentPreviewResult(ResponseElement):
 class FulfillmentOrder(ResponseElement):
     DestinationAddress = Element()
     NotificationEmailList = MemberList(str)
+
+
+class FulfillmentShipment(ResponseElement):
+    FulfillmentShipmentItem = MemberList()
+    FulfillmentShipmentPackage = MemberList()
 
 
 class GetFulfillmentOrderResult(ResponseElement):
