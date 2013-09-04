@@ -43,6 +43,40 @@ FIXTURE_VAULT = {
   "VaultName" : "examplevault"
 }
 
+FIXTURE_VAULTS = {
+        'RequestId': 'vuXO7SHTw-luynJ0Zu31AYjR3TcCn7X25r7ykpuulxY2lv8',
+        'VaultList': [{'SizeInBytes': 0, 'LastInventoryDate': None,
+                       'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault0',
+                       'VaultName': 'vault0', 'NumberOfArchives': 0,
+                       'CreationDate': '2013-05-17T02:38:39.049Z'},
+                      {'SizeInBytes': 0, 'LastInventoryDate': None,
+                       'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault3',
+                       'VaultName': 'vault3', 'NumberOfArchives': 0,
+                       'CreationDate': '2013-05-17T02:31:18.659Z'}]}
+
+FIXTURE_PAGINATED_VAULTS = {
+        'Marker': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault2',
+        'RequestId': 'vuXO7SHTw-luynJ0Zu31AYjR3TcCn7X25r7ykpuulxY2lv8',
+        'VaultList': [{'SizeInBytes': 0, 'LastInventoryDate': None,
+                       'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault0',
+                       'VaultName': 'vault0', 'NumberOfArchives': 0,
+                       'CreationDate': '2013-05-17T02:38:39.049Z'},
+                      {'SizeInBytes': 0, 'LastInventoryDate': None,
+                       'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault1',
+                       'VaultName': 'vault1', 'NumberOfArchives': 0,
+                       'CreationDate': '2013-05-17T02:31:18.659Z'}]}
+FIXTURE_PAGINATED_VAULTS_CONT = {
+        'Marker': None,
+        'RequestId': 'vuXO7SHTw-luynJ0Zu31AYjR3TcCn7X25r7ykpuulxY2lv8',
+        'VaultList': [{'SizeInBytes': 0, 'LastInventoryDate': None,
+                       'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault2',
+                       'VaultName': 'vault2', 'NumberOfArchives': 0,
+                       'CreationDate': '2013-05-17T02:38:39.049Z'},
+                      {'SizeInBytes': 0, 'LastInventoryDate': None,
+                       'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault3',
+                       'VaultName': 'vault3', 'NumberOfArchives': 0,
+                       'CreationDate': '2013-05-17T02:31:18.659Z'}]}
+
 FIXTURE_ARCHIVE_JOB = {
   "Action": "ArchiveRetrieval",
   "ArchiveId": ("NkbByEejwEggmBz2fTHgJrg0XBoDfjP4q6iu87-TjhqG6eGoOY9Z8i1_AUyUs"
@@ -135,10 +169,22 @@ class TestGlacierLayer2Connection(GlacierLayer2Base):
         self.assertEqual(vault.size, 78088912)
         self.assertEqual(vault.number_of_archives, 192)
 
-    def list_vaults(self):
-        self.mock_layer1.list_vaults.return_value = [FIXTURE_VAULT]
+    def test_list_vaults(self):
+        self.mock_layer1.list_vaults.return_value = FIXTURE_VAULTS
         vaults = self.layer2.list_vaults()
-        self.assertEqual(vaults[0].name, "examplevault")
+        self.assertEqual(vaults[0].name, "vault0")
+        self.assertEqual(len(vaults), 2)
+
+    def test_list_vaults_paginated(self):
+        resps = [FIXTURE_PAGINATED_VAULTS, FIXTURE_PAGINATED_VAULTS_CONT]
+        def return_paginated_vaults_resp(marker=None, limit=None):
+            return resps.pop(0)
+
+        self.mock_layer1.list_vaults = Mock(side_effect = return_paginated_vaults_resp)
+        vaults = self.layer2.list_vaults()
+        self.assertEqual(vaults[0].name, "vault0")
+        self.assertEqual(vaults[3].name, "vault3")
+        self.assertEqual(len(vaults), 4)
 
 
 class TestVault(GlacierLayer2Base):

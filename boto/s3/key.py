@@ -522,7 +522,14 @@ class Key(object):
         return self.metadata.get(name)
 
     def set_metadata(self, name, value):
-        self.metadata[name] = value
+        # Ensure that metadata that is vital to signing is in the correct
+        # case. Applies to ``Content-Type`` & ``Content-MD5``.
+        if name.lower() == 'content-type':
+            self.metadata['Content-Type'] = value
+        elif name.lower() == 'content-md5':
+            self.metadata['Content-MD5'] = value
+        else:
+            self.metadata[name] = value
 
     def update_metadata(self, d):
         self.metadata.update(d)

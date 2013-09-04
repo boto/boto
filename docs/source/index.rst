@@ -90,6 +90,7 @@ Currently Supported Services
 Additional Resources
 --------------------
 
+* :doc:`Command Line Utilities <commandline>`
 * :doc:`Boto Config Tutorial <boto_config_tut>`
 * :doc:`Contributing to Boto <contributing>`
 * `Boto Source Repository`_
@@ -111,6 +112,8 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.12.0
+   releasenotes/v2.11.0
    releasenotes/v2.10.0
    releasenotes/v2.9.9
    releasenotes/v2.9.8
