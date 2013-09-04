@@ -32,6 +32,15 @@ class ProductCodes(list):
         if name == 'productCode':
             self.append(value)
 
+class BillingProducts(list):
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'billingProduct':
+            self.append(value)
+
 class Image(TaggedEC2Object):
     """
     Represents an EC2 Image
@@ -54,6 +63,7 @@ class Image(TaggedEC2Object):
         self.name = None
         self.description = None
         self.product_codes = ProductCodes()
+        self.billing_products = BillingProducts()
         self.block_device_mapping = None
         self.root_device_type = None
         self.root_device_name = None
@@ -73,6 +83,8 @@ class Image(TaggedEC2Object):
             return self.block_device_mapping
         elif name == 'productCodes':
             return self.product_codes
+        elif name == 'billingProducts':
+            return self.billing_products
         else:
             return None
 
