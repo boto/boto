@@ -90,6 +90,7 @@ Currently Supported Services
 Additional Resources
 --------------------
 
+* :doc:`Command Line Utilities <commandline>`
 * :doc:`Boto Config Tutorial <boto_config_tut>`
 * :doc:`Contributing to Boto <contributing>`
 * `Boto Source Repository`_
