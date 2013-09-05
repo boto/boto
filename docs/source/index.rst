@@ -24,8 +24,6 @@ Currently Supported Services
   * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
   * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
   * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
-  * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
-  * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
 
 * **Content Delivery**
 
@@ -44,6 +42,8 @@ Currently Supported Services
 
   * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`)
   * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
+  * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
+  * Opsworks -- (:doc:`API Reference <ref/opsworks>`)
 
 * **Identity & Access**
 
@@ -52,11 +52,12 @@ Currently Supported Services
 
 * **Application Services**
 
+  * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
+  * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
   * Simple Workflow Service (SWF) -- (:doc:`API Reference <ref/swf>`)
   * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`)
   * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`)
   * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`)
-  * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
 
 * **Monitoring**
 
@@ -144,58 +145,33 @@ Release Notes
 
 .. toctree::
    :hidden:
+   :glob:
 
    getting_started
    ec2_tut
    security_groups
-   ref/ec2
    emr_tut
-   ref/emr
    autoscale_tut
-   ref/autoscale
    cloudfront_tut
-   ref/cloudfront
    simpledb_tut
-   ref/sdb
-   ref/sdb_db
    dynamodb_tut
-   ref/dynamodb
    rds_tut
-   ref/rds
-   ref/cloudformation
-   ref/iam
-   ref/mws
    sqs_tut
-   ref/sqs
-   ref/sns
    ses_tut
-   ref/ses
    cloudsearch_tut
-   ref/cloudsearch
    cloudwatch_tut
-   ref/cloudwatch
-   ref/route53
    vpc_tut
-   ref/vpc
    elb_tut
-   ref/elb
-   ref/fps
    s3_tut
-   ref/s3
-   ref/mturk
    boto_config_tut
-   ref/index
    documentation
    contributing
-   ref/datapipeline
-   ref/elasticache
-   ref/elastictranscoder
-   ref/redshift
-   ref/dynamodb2
+   commandline
    support_tut
-   ref/support
    dynamodb2_tut
    migrations/dynamodb_v1_to_v2
+   ref/*
+   releasenotes/*
 
 
 Indices and tables

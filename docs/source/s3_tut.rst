@@ -384,7 +384,7 @@ under ``logs/*`` to transition to Glacier 30 days after the object is created.
 We can now configure the bucket with this lifecycle policy::
 
     >>> bucket.configure_lifecycle(lifecycle)
-True
+    True
 
 You can also retrieve the current lifecycle policy for the bucket::
 
