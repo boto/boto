@@ -252,7 +252,7 @@ class SNSConnection(AWSQueryConnection):
             params['TargetArn'] = target_arn
         if message_structure is not None:
             params['MessageStructure'] = message_structure
-        return self._make_request('Publish', params)
+        return self._make_request('Publish', params, '/', 'POST')
 
     def subscribe(self, topic, protocol, endpoint):
         """
