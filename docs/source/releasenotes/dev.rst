@@ -15,7 +15,7 @@ Features
 Bugfixes
 --------
 
-* (:issue:``, :sha:``)
+* Fixed EC2's ``associate_public_ip`` to work correctly. (:sha:`9db6101`)
 * Several documentation improvements/fixes:
 
-    * (:issue:``, :sha:``)
+    * Added Opsworks docs to the index. (:sha:`5d48763`)
