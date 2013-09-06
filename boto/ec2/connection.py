@@ -141,7 +141,10 @@ class EC2Connection(AWSQueryConnection):
         :param image_ids: A list of strings with the image IDs wanted
 
         :type owners: list
-        :param owners: A list of owner IDs
+        :param owners: A list of owner IDs, the special strings 'self',
+            'amazon', and 'aws-marketplace', may be used to describe
+            images owned by Amazon, AWS Marketplace or you,
+            respectively
 
         :type executable_by: list
         :param executable_by: Returns AMIs for which the specified
