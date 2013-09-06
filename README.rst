@@ -155,11 +155,6 @@ following environment variables to ascertain your credentials:
 Credentials and other boto-related settings can also be stored in a
 boto config file.  See `this`_ for details.
 
-Copyright (c) 2006-2012 Mitch Garnaat <mitch@garnaat.com>
-Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
-Copyright (c) 2012-2013 Amazon.com, Inc. or its affiliates.
-All rights reserved.
-
 .. _pip: http://www.pip-installer.org/
 .. _release notes: https://github.com/boto/boto/wiki
 .. _github.com: http://github.com/boto/boto
