@@ -3543,13 +3543,14 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         return self.get_list('DescribeVmTypes', params, [('euca:item', VmType)], verb='POST')
 
-    def copy_image(self, source_region, source_image_id, name,
+    def copy_image(self, source_region, source_image_id, name=None,
                    description=None, client_token=None):
         params = {
             'SourceRegion': source_region,
             'SourceImageId': source_image_id,
-            'Name': name
         }
+        if name is not None:
+            params['Name'] = name
         if description is not None:
             params['Description'] = description
         if client_token is not None:

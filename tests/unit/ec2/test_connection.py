@@ -483,6 +483,47 @@ class TestCopySnapshot(TestEC2ConnectionBase):
                                    'SignatureVersion', 'Timestamp',
                                    'Version'])
 
+class TestCopyImage(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+        <CopyImageResponse xmlns="http://ec2.amazonaws.com/doc/2013-07-15/">
+           <requestId>request_id</requestId>
+           <imageId>ami-copied-id</imageId>
+        </CopyImageResponse>
+        """
+
+    def test_copy_image(self):
+        self.set_http_response(status_code=200)
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id',
+                                     'name', 'description', 'client-token')
+        self.assertEqual(copied_ami.image_id, 'ami-copied-id')
+
+        self.assert_request_parameters({
+            'Action': 'CopyImage',
+            'Description': 'description',
+            'Name': 'name',
+            'SourceRegion': 'us-west-2',
+            'SourceImageId': 'ami-id',
+            'ClientToken': 'client-token'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+    def test_copy_image_without_name(self):
+        self.set_http_response(status_code=200)
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id',
+                                         description='description',
+                                         client_token='client-token')
+        self.assertEqual(copied_ami.image_id, 'ami-copied-id')
+
+        self.assert_request_parameters({
+            'Action': 'CopyImage',
+            'Description': 'description',
+            'SourceRegion': 'us-west-2',
+            'SourceImageId': 'ami-id',
+            'ClientToken': 'client-token'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
 
 class TestAccountAttributes(TestEC2ConnectionBase):
     def default_body(self):
