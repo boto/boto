@@ -101,7 +101,7 @@ class ElastiCacheConnection(AWSQueryConnection):
 
     def create_cache_cluster(self, cache_cluster_id, num_cache_nodes,
                              cache_node_type, engine,
-                             replication_group_id=None, engine_version=None,
+                             engine_version=None,
                              cache_parameter_group_name=None,
                              cache_subnet_group_name=None,
                              cache_security_group_names=None,
@@ -126,13 +126,6 @@ class ElastiCacheConnection(AWSQueryConnection):
         + Must contain from 1 to 20 alphanumeric characters or hyphens.
         + First character must be a letter.
         + Cannot end with a hyphen or contain two consecutive hyphens.
-
-        :type replication_group_id: string
-        :param replication_group_id: The replication group to which this cache
-            cluster should belong. If this parameter is specified, the cache
-            cluster will be added to the specified replication group as a read
-            replica; otherwise, the cache cluster will be a standalone primary
-            that is not part of any replication group.
 
         :type num_cache_nodes: integer
         :param num_cache_nodes: The initial number of cache nodes that the
@@ -248,8 +241,6 @@ class ElastiCacheConnection(AWSQueryConnection):
             'CacheNodeType': cache_node_type,
             'Engine': engine,
         }
-        if replication_group_id is not None:
-            params['ReplicationGroupId'] = replication_group_id
         if engine_version is not None:
             params['EngineVersion'] = engine_version
         if cache_parameter_group_name is not None:
@@ -279,6 +270,51 @@ class ElastiCacheConnection(AWSQueryConnection):
         if auto_minor_version_upgrade is not None:
             params['AutoMinorVersionUpgrade'] = str(
                 auto_minor_version_upgrade).lower()
+        return self._make_request(
+            action='CreateCacheCluster',
+            verb='POST',
+            path='/', params=params)
+
+    def create_replica_cluster(self, cache_cluster_id, replication_group_id,
+                               preferred_availability_zone=None):
+        """
+        This creates a new Redis Cache Cluster that it attached to a specific
+        Replication Group.
+
+        :type cache_cluster_id: string
+        :param cache_cluster_id:
+        The cache cluster identifier. This parameter is stored as a lowercase
+            string.
+
+        Constraints:
+
+
+        + Must contain from 1 to 20 alphanumeric characters or hyphens.
+        + First character must be a letter.
+        + Cannot end with a hyphen or contain two consecutive hyphens.
+
+        :type replication_group_id: string
+        :param replication_group_id: The replication group to which this cache
+            cluster should belong. If this parameter is specified, the cache
+            cluster will be added to the specified replication group as a read
+            replica; otherwise, the cache cluster will be a standalone primary
+            that is not part of any replication group.
+
+        :type preferred_availability_zone: string
+        :param preferred_availability_zone: The EC2 Availability Zone in which
+            the cache cluster will be created.
+        All cache nodes belonging to a cache cluster are placed in the
+            preferred availability zone.
+
+        Default: System chosen availability zone.
+
+        """
+        params = {
+            'CacheClusterId': cache_cluster_id,
+            'ReplicationGroupId': replication_group_id,
+        }
+        if preferred_availability_zone is not None:
+            params['PreferredAvailabilityZone'] = preferred_availability_zone
         return self._make_request(
             action='CreateCacheCluster',
             verb='POST',
