@@ -1491,6 +1491,7 @@ class DynamoDBConnection(AWSQueryConnection):
 
     def _retry_handler(self, response, i, next_sleep):
         status = None
+        boto.log.debug("Saw HTTP status: %s" % response.status)
         if response.status == 400:
             response_body = response.read()
             boto.log.debug(response_body)
