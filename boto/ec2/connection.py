@@ -48,6 +48,9 @@ from boto.ec2.instanceinfo import InstanceInfo
 from boto.ec2.reservedinstance import ReservedInstancesOffering
 from boto.ec2.reservedinstance import ReservedInstance
 from boto.ec2.reservedinstance import ReservedInstanceListing
+from boto.ec2.reservedinstance import ReservedInstancesConfiguration
+from boto.ec2.reservedinstance import ModifyReservedInstancesResult
+from boto.ec2.reservedinstance import ReservedInstancesModification
 from boto.ec2.spotinstancerequest import SpotInstanceRequest
 from boto.ec2.spotpricehistory import SpotPriceHistory
 from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
@@ -3123,6 +3126,90 @@ class EC2Connection(AWSQueryConnection):
                                    'ReservedInstancesListingId')
         return self.get_list('CancelReservedInstancesListing',
                              params, [('item', ReservedInstanceListing)], verb='POST')
+
+    def build_configurations_param_list(self, params, target_configurations):
+        for offset, tc in enumerate(target_configurations):
+            prefix = 'ReservedInstancesConfigurationSetItemType.%d.' % offset
+            if tc.availability_zone is not None:
+                params[prefix + 'AvailabilityZone'] = tc.availability_zone
+            if tc.platform is not None:
+                params[prefix + 'Platform'] = tc.platform
+            if tc.instance_count is not None:
+                params[prefix + 'InstanceCount'] = tc.instance_count
+
+    def modify_reserved_instances(self, client_token, reserved_instance_ids,
+                                  target_configurations):
+        """
+        Modifies the specified Reserved Instances.
+
+        :type client_token: string
+        :param client_token: A unique, case-sensitive, token you provide to
+                             ensure idempotency of your modification request.
+
+        :type reserved_instance_ids: List of strings
+        :param reserved_instance_ids: The IDs of the Reserved Instances to
+                                      modify.
+
+        :type target_configurations: List of :class:`boto.ec2.reservedinstance.ReservedInstancesConfiguration`
+        :param target_configurations: The configuration settings for the
+                                      modified Reserved Instances.
+
+        :rtype: string
+        :return: The unique ID for the submitted modification request.
+        """
+        params = {
+            'ClientToken': client_token,
+        }
+        if reserved_instance_ids is not None:
+            self.build_list_params(params, reserved_instance_ids,
+                                   'ReservedInstancesId')
+        if target_configurations is not None:
+            self.build_configurations_param_list(params, target_configurations)
+        mrir = self.get_object(
+            'ModifyReservedInstances',
+            params,
+            ModifyReservedInstancesResult,
+            verb='POST'
+        )
+        return mrir.modification_id
+
+    def describe_reserved_instances_modifications(self,
+            reserved_instances_modification_ids=None, next_token=None,
+            filters=None):
+        """
+        A request to describe the modifications made to Reserved Instances in
+        your account.
+
+        :type reserved_instances_modification_ids: list
+        :param reserved_instances_modification_ids: An optional list of
+            Reserved Instances modification IDs to describe.
+
+        :type next_token: str
+        :param next_token: A string specifying the next paginated set
+            of results to return.
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
+
+        :rtype: list
+        :return: A list of :class:`boto.ec2.reservedinstance.ReservedInstance`
+        """
+        params = {}
+        if reserved_instances_modification_ids:
+            self.build_list_params(params, reserved_instances_modification_ids,
+                                   'ReservedInstancesModificationId')
+        if next_token:
+            params['NextToken'] = next_token
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeReservedInstancesModifications',
+                             params, [('item', ReservedInstancesModification)],
+                             verb='POST')
 
     #
     # Monitoring
