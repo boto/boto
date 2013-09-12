@@ -1476,6 +1476,89 @@ class TableTestCase(unittest.TestCase):
 
         self.assertEqual(mock_batch.call_count, 2)
 
+    def test_batch_write_unprocessed_items(self):
+        unprocessed = {
+            'UnprocessedItems': {
+                'users': [
+                    {
+                        'PutRequest': {
+                            'username': {
+                                'S': 'jane',
+                            },
+                            'date_joined': {
+                                'N': 12342547
+                            }
+                        },
+                    },
+                ],
+            },
+        }
+
+        # Test enqueuing the unprocessed bits.
+        with mock.patch.object(
+                self.users.connection,
+                'batch_write_item',
+                return_value=unprocessed) as mock_batch:
+            with self.users.batch_write() as batch:
+                self.assertEqual(len(batch._unprocessed), 0)
+
+                # Trash the ``resend_unprocessed`` method so that we don't
+                # infinite loop forever here.
+                batch.resend_unprocessed = lambda: True
+
+                batch.put_item(data={
+                    'username': 'jane',
+                    'date_joined': 12342547
+                })
+                batch.delete_item(username='johndoe')
+                batch.put_item(data={
+                    'username': 'alice',
+                    'date_joined': 12342888
+                })
+
+            self.assertEqual(len(batch._unprocessed), 1)
+
+        # Now test resending those unprocessed items.
+        with mock.patch.object(
+                self.users.connection,
+                'batch_write_item',
+                return_value={}) as mock_batch:
+            with self.users.batch_write() as batch:
+                self.assertEqual(len(batch._unprocessed), 0)
+
+                # Toss in faked unprocessed items, as though a previous batch
+                # had failed.
+                batch._unprocessed = [
+                    {
+                        'PutRequest': {
+                            'username': {
+                                'S': 'jane',
+                            },
+                            'date_joined': {
+                                'N': 12342547
+                            }
+                        },
+                    },
+                ]
+
+                batch.put_item(data={
+                    'username': 'jane',
+                    'date_joined': 12342547
+                })
+                batch.delete_item(username='johndoe')
+                batch.put_item(data={
+                    'username': 'alice',
+                    'date_joined': 12342888
+                })
+
+                # Flush, to make sure everything has been processed.
+                # Unprocessed items should still be hanging around.
+                batch.flush()
+                self.assertEqual(len(batch._unprocessed), 1)
+
+            # Post-exit, this should be emptied.
+            self.assertEqual(len(batch._unprocessed), 0)
+
     def test__build_filters(self):
         filters = self.users._build_filters({
             'username__eq': 'johndoe',

@@ -314,3 +314,30 @@ class DynamoDBv2Test(unittest.TestCase):
             'friends': set([]),
         })
         self.assertTrue(penny_created)
+
+    def test_unprocessed_batch_writes(self):
+        # Create a very limited table w/ low throughput.
+        users = Table.create('slow_users', schema=[
+            HashKey('user_id'),
+        ], throughput={
+            'read': 1,
+            'write': 1,
+        })
+        self.addCleanup(users.delete)
+
+        # Wait for it.
+        time.sleep(60)
+
+        with users.batch_write() as batch:
+            for i in range(500):
+                batch.put_item(data={
+                    'user_id': str(i),
+                    'name': 'Droid #{0}'.format(i),
+                })
+
+            # Before ``__exit__`` runs, we should have a bunch of unprocessed
+            # items.
+            self.assertTrue(len(batch._unprocessed) > 0)
+
+        # Post-__exit__, they should all be gone.
+        self.assertEqual(len(batch._unprocessed), 0)
