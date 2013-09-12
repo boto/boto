@@ -35,8 +35,13 @@ class TestVPCConnection(unittest.TestCase):
         vpc = self.api.create_vpc('10.0.0.0/16')
         self.addCleanup(self.api.delete_vpc, vpc.id)
 
+        # Need time for the VPC to be in place. :/
+        time.sleep(5)
         self.subnet = self.api.create_subnet(vpc.id, '10.0.0.0/24')
         self.addCleanup(self.api.delete_subnet, self.subnet.id)
+
+        # Need time for the subnet to be in place.
+        time.sleep(10)
 
     def terminate_instance(self, instance):
         instance.terminate()
@@ -77,7 +82,7 @@ class TestVPCConnection(unittest.TestCase):
 
         self.assertEqual(len(retrieved_instance.interfaces), 1)
         interface = retrieved_instance.interfaces[0]
-        
+
         private_ip_addresses = interface.private_ip_addresses
         self.assertEqual(len(private_ip_addresses), 4)
         self.assertEqual(private_ip_addresses[0].private_ip_address,
@@ -89,6 +94,46 @@ class TestVPCConnection(unittest.TestCase):
                          '10.0.0.23')
         self.assertEqual(private_ip_addresses[3].private_ip_address,
                          '10.0.0.24')
+
+    def test_associate_public_ip(self):
+        # Supplying basically nothing ought to work.
+        interface = NetworkInterfaceSpecification(
+            associate_public_ip_address=True,
+            subnet_id=self.subnet.id,
+            # Just for testing.
+            delete_on_termination=True
+        )
+        interfaces = NetworkInterfaceCollection(interface)
+
+        reservation = self.api.run_instances(
+            image_id='ami-a0cd60c9',
+            instance_type='m1.small',
+            network_interfaces=interfaces
+        )
+        instance = reservation.instances[0]
+        self.addCleanup(self.terminate_instance, instance)
+
+        # Give it a **LONG** time to start up.
+        # Because the public IP won't be there right away.
+        time.sleep(60)
+
+        retrieved = self.api.get_all_reservations(
+            instance_ids=[
+                instance.id
+            ]
+        )
+        self.assertEqual(len(retrieved), 1)
+        retrieved_instances = retrieved[0].instances
+        self.assertEqual(len(retrieved_instances), 1)
+        retrieved_instance = retrieved_instances[0]
+
+        self.assertEqual(len(retrieved_instance.interfaces), 1)
+        interface = retrieved_instance.interfaces[0]
+
+        # There ought to be a public IP there.
+        # We can't reason about the IP itself, so just make sure it vaguely
+        # resembles an IP (& isn't empty/``None``)...
+        self.assertTrue(interface.publicIp.count('.') >= 3)
 
 
 if __name__ == '__main__':

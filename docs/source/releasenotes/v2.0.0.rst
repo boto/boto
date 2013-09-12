@@ -10,7 +10,7 @@ There have been many, many changes since the 2.0b4 release. This overview highli
 * Fix connection pooling bug: don't close before reading.
 * Added AddInstanceGroup and ModifyInstanceGroup to boto.emr
 * Merge pull request #246 from chetan/multipart_s3put
-AddInstanceGroupsResponse class to boto.emr.emrobject.
+* AddInstanceGroupsResponse class to boto.emr.emrobject.
 * Removed extra print statement
 * Merge pull request #244 from ryansb/master
 * Added add_instance_groups function to boto.emr.connection. Built some helper methods for it, and added AddInstanceGroupsResponse class to boto.emr.emrobject.

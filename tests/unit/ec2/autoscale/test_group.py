@@ -233,12 +233,12 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
 
         self.assert_request_parameters({
             'Action': 'CreateLaunchConfiguration',
-            'BlockDeviceMapping.1.DeviceName': '/dev/sdf',
-            'BlockDeviceMapping.1.Ebs.DeleteOnTermination': 'false',
-            'BlockDeviceMapping.1.Ebs.SnapshotId': 'snap-12345',
-            'BlockDeviceMapping.2.DeviceName': '/dev/sdg',
-            'BlockDeviceMapping.2.Ebs.DeleteOnTermination': 'false',
-            'BlockDeviceMapping.2.Ebs.SnapshotId': 'snap-12346',
+            'BlockDeviceMappings.member.1.DeviceName': '/dev/sdf',
+            'BlockDeviceMappings.member.1.Ebs.DeleteOnTermination': 'false',
+            'BlockDeviceMappings.member.1.Ebs.SnapshotId': 'snap-12345',
+            'BlockDeviceMappings.member.2.DeviceName': '/dev/sdg',
+            'BlockDeviceMappings.member.2.Ebs.DeleteOnTermination': 'false',
+            'BlockDeviceMappings.member.2.Ebs.SnapshotId': 'snap-12346',
             'EbsOptimized': 'false',
             'LaunchConfigurationName': 'launch_config',
             'ImageId': '123456',

@@ -197,5 +197,8 @@ class VpnConnection(TaggedEC2Object):
         else:
             setattr(self, name, value)
 
-    def delete(self):
-        return self.connection.delete_vpn_connection(self.id)
+    def delete(self, dry_run=False):
+        return self.connection.delete_vpn_connection(
+            self.id,
+            dry_run=dry_run
+        )
