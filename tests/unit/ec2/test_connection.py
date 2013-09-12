@@ -11,6 +11,7 @@ import boto.ec2
 from boto.regioninfo import RegionInfo
 from boto.ec2.connection import EC2Connection
 from boto.ec2.snapshot import Snapshot
+from boto.ec2.reservedinstance import ReservedInstancesConfiguration
 
 
 class TestEC2ConnectionBase(AWSMockServiceTestCase):
@@ -876,6 +877,144 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
         # Restore
         self.ec2.get_all_snapshots = orig['get_all_snapshots']
         self.ec2.delete_snapshot = orig['delete_snapshot']
+
+
+class TestModifyReservedInstances(TestEC2ConnectionBase):
+    def default_body(self):
+        return """<ModifyReservedInstancesResponse xmlns='http://ec2.amazonaws.com/doc/2013-08-15/'>
+    <requestId>bef729b6-0731-4489-8881-2258746ae163</requestId>
+    <reservedInstancesModificationId>rimod-3aae219d-3d63-47a9-a7e9-e764example</reservedInstancesModificationId>
+</ModifyReservedInstancesResponse>"""
+
+    def test_serialized_api_args(self):
+        self.set_http_response(status_code=200)
+        response = self.ec2.modify_reserved_instances(
+            'a-token-goes-here',
+            reserved_instance_ids=[
+                '2567o137-8a55-48d6-82fb-7258506bb497',
+            ],
+            target_configurations=[
+                ReservedInstancesConfiguration(
+                    availability_zone='us-west-2c',
+                    platform='EC2-VPC',
+                    instance_count=3
+                ),
+            ]
+        )
+        self.assert_request_parameters({
+            'Action': 'ModifyReservedInstances',
+            'ClientToken': 'a-token-goes-here',
+            'ReservedInstancesConfigurationSetItemType.0.AvailabilityZone': 'us-west-2c',
+            'ReservedInstancesConfigurationSetItemType.0.InstanceCount': 3,
+            'ReservedInstancesConfigurationSetItemType.0.Platform': 'EC2-VPC',
+            'ReservedInstancesId.1': '2567o137-8a55-48d6-82fb-7258506bb497'
+        }, ignore_params_values=[
+            'AWSAccessKeyId', 'SignatureMethod',
+            'SignatureVersion', 'Timestamp',
+            'Version'
+        ])
+
+        self.assertEqual(response, 'rimod-3aae219d-3d63-47a9-a7e9-e764example')
+
+
+class TestDescribeReservedInstancesModifications(TestEC2ConnectionBase):
+    def default_body(self):
+        return """<DescribeReservedInstancesModificationsResponse xmlns='http://ec2.amazonaws.com/doc/2013-08-15/'>
+    <requestId>eb4a6e3c-3689-445c-b536-19e38df35898</requestId>
+    <reservedInstancesModificationsSet>
+        <item>
+            <reservedInstancesModificationId>rimod-49b9433e-fdc7-464a-a6e5-9dabcexample</reservedInstancesModificationId>
+            <reservedInstancesSet>
+                <item>
+                    <reservedInstancesId>2567o137-8a55-48d6-82fb-7258506bb497</reservedInstancesId>
+                </item>
+            </reservedInstancesSet>
+            <modificationResultSet>
+                <item>
+                    <reservedInstancesId>9d5cb137-5d65-4479-b4ac-8c337example</reservedInstancesId>
+                    <targetConfiguration>
+                        <availabilityZone>us-east-1b</availabilityZone>
+                        <platform>EC2-VPC</platform>
+                        <instanceCount>1</instanceCount>
+                    </targetConfiguration>
+                </item>
+            </modificationResultSet>
+            <createDate>2013-09-02T21:20:19.637Z</createDate>
+            <updateDate>2013-09-02T21:38:24.143Z</updateDate>
+            <effectiveDate>2013-09-02T21:00:00.000Z</effectiveDate>
+            <status>fulfilled</status>
+            <clientToken>token-f5b56c05-09b0-4d17-8d8c-c75d8a67b806</clientToken>
+        </item>
+    </reservedInstancesModificationsSet>
+</DescribeReservedInstancesModificationsResponse>"""
+
+    def test_serialized_api_args(self):
+        self.set_http_response(status_code=200)
+        response = self.ec2.describe_reserved_instances_modifications(
+            reserved_instances_modification_ids=[
+                '2567o137-8a55-48d6-82fb-7258506bb497'
+            ],
+            filters={
+                'status': 'processing',
+            }
+        )
+        self.assert_request_parameters({
+            'Action': 'DescribeReservedInstancesModifications',
+            'Filter.1.Name': 'status',
+            'Filter.1.Value.1': 'processing',
+            'ReservedInstancesModificationId.1': '2567o137-8a55-48d6-82fb-7258506bb497'
+        }, ignore_params_values=[
+            'AWSAccessKeyId', 'SignatureMethod',
+            'SignatureVersion', 'Timestamp',
+            'Version'
+        ])
+
+        # Make sure the response was parsed correctly.
+        self.assertEqual(
+            response[0].modification_id,
+            'rimod-49b9433e-fdc7-464a-a6e5-9dabcexample'
+        )
+        self.assertEqual(
+            response[0].create_date,
+            datetime(2013, 9, 2, 21, 20, 19, 637000)
+        )
+        self.assertEqual(
+            response[0].update_date,
+            datetime(2013, 9, 2, 21, 38, 24, 143000)
+        )
+        self.assertEqual(
+            response[0].effective_date,
+            datetime(2013, 9, 2, 21, 0, 0, 0)
+        )
+        self.assertEqual(
+            response[0].status,
+            'fulfilled'
+        )
+        self.assertEqual(
+            response[0].status_message,
+            None
+        )
+        self.assertEqual(
+            response[0].client_token,
+            'token-f5b56c05-09b0-4d17-8d8c-c75d8a67b806'
+        )
+        self.assertEqual(
+            response[0].reserved_instances[0].id,
+            '2567o137-8a55-48d6-82fb-7258506bb497'
+        )
+        self.assertEqual(
+            response[0].modification_results[0].availability_zone,
+            'us-east-1b'
+        )
+        self.assertEqual(
+            response[0].modification_results[0].platform,
+            'EC2-VPC'
+        )
+        self.assertEqual(
+            response[0].modification_results[0].instance_count,
+            1
+        )
+        self.assertEqual(len(response), 1)
 
 
 if __name__ == '__main__':
