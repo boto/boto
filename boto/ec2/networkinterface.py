@@ -166,8 +166,11 @@ class NetworkInterface(TaggedEC2Object):
         else:
             setattr(self, name, value)
 
-    def delete(self):
-        return self.connection.delete_network_interface(self.id)
+    def delete(self, dry_run=False):
+        return self.connection.delete_network_interface(
+            self.id,
+            dry_run=dry_run
+        )
 
 
 class PrivateIPAddress(object):

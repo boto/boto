@@ -98,7 +98,7 @@ class Volume(TaggedEC2Object):
     def _update(self, updated):
         self.__dict__.update(updated.__dict__)
 
-    def update(self, validate=False):
+    def update(self, validate=False, dry_run=False):
         """
         Update the data associated with this volume by querying EC2.
 
@@ -110,7 +110,10 @@ class Volume(TaggedEC2Object):
                          returned from EC2.
         """
         # Check the resultset since Eucalyptus ignores the volumeId param
-        unfiltered_rs = self.connection.get_all_volumes([self.id])
+        unfiltered_rs = self.connection.get_all_volumes(
+            [self.id],
+            dry_run=dry_run
+        )
         rs = [x for x in unfiltered_rs if x.id == self.id]
         if len(rs) > 0:
             self._update(rs[0])
@@ -118,16 +121,16 @@ class Volume(TaggedEC2Object):
             raise ValueError('%s is not a valid Volume ID' % self.id)
         return self.status
 
-    def delete(self):
+    def delete(self, dry_run=False):
         """
         Delete this EBS volume.
 
         :rtype: bool
         :return: True if successful
         """
-        return self.connection.delete_volume(self.id)
+        return self.connection.delete_volume(self.id, dry_run=dry_run)
 
-    def attach(self, instance_id, device):
+    def attach(self, instance_id, device, dry_run=False):
         """
         Attach this EBS volume to an EC2 instance.
 
@@ -142,9 +145,14 @@ class Volume(TaggedEC2Object):
         :rtype: bool
         :return: True if successful
         """
-        return self.connection.attach_volume(self.id, instance_id, device)
+        return self.connection.attach_volume(
+            self.id,
+            instance_id,
+            device,
+            dry_run=dry_run
+        )
 
-    def detach(self, force=False):
+    def detach(self, force=False, dry_run=False):
         """
         Detach this EBS volume from an EC2 instance.
 
@@ -167,10 +175,15 @@ class Volume(TaggedEC2Object):
         device = None
         if self.attach_data:
             device = self.attach_data.device
-        return self.connection.detach_volume(self.id, instance_id,
-                                             device, force)
+        return self.connection.detach_volume(
+            self.id,
+            instance_id,
+            device,
+            force,
+            dry_run=dry_run
+        )
 
-    def create_snapshot(self, description=None):
+    def create_snapshot(self, description=None, dry_run=False):
         """
         Create a snapshot of this EBS Volume.
 
@@ -181,7 +194,11 @@ class Volume(TaggedEC2Object):
         :rtype: :class:`boto.ec2.snapshot.Snapshot`
         :return: The created Snapshot object
         """
-        return self.connection.create_snapshot(self.id, description)
+        return self.connection.create_snapshot(
+            self.id,
+            description,
+            dry_run=dry_run
+        )
 
     def volume_state(self):
         """
@@ -198,7 +215,7 @@ class Volume(TaggedEC2Object):
             state = self.attach_data.status
         return state
 
-    def snapshots(self, owner=None, restorable_by=None):
+    def snapshots(self, owner=None, restorable_by=None, dry_run=False):
         """
         Get all snapshots related to this volume.  Note that this requires
         that all available snapshots for the account be retrieved from EC2
@@ -221,8 +238,11 @@ class Volume(TaggedEC2Object):
         :return: The requested Snapshot objects
 
         """
-        rs = self.connection.get_all_snapshots(owner=owner,
-                                               restorable_by=restorable_by)
+        rs = self.connection.get_all_snapshots(
+            owner=owner,
+            restorable_by=restorable_by,
+            dry_run=dry_run
+        )
         mine = []
         for snap in rs:
             if snap.volume_id == self.id:

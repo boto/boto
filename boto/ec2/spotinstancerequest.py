@@ -184,5 +184,8 @@ class SpotInstanceRequest(TaggedEC2Object):
         else:
             setattr(self, name, value)
 
-    def cancel(self):
-        self.connection.cancel_spot_instance_requests([self.id])
+    def cancel(self, dry_run=False):
+        self.connection.cancel_spot_instance_requests(
+            [self.id],
+            dry_run=dry_run
+        )
