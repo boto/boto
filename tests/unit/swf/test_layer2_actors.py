@@ -47,5 +47,27 @@ class TestActors(unittest.TestCase):
         self.decider._swf.respond_decision_task_completed.assert_called_with('my_specific_task_token', None)
         self.assertEqual('my_specific_task_token', self.decider.last_tasktoken)
 
+    def test_worker_pass_tasktoken(self):
+        task_token = 'worker_task_token'
+        self.worker._swf.poll_for_activity_task.return_value = {
+            'activityId': 'SomeActivity-1379020713',
+            'activityType': {'name': 'SomeActivity', 'version': '1.0'},
+            'startedEventId': 6,
+            'taskToken': task_token,
+            'workflowExecution': {'runId': '12T026NzGK5c4eMti06N9O3GHFuTDaNyA+8LFtoDkAwfE=',
+               'workflowId': 'MyWorkflow-1.0-1379020705'}}
+
+        self.worker.poll()
+
+        self.worker.cancel(details='Cancelling!')
+        self.worker.complete(result='Done!')
+        self.worker.fail(reason='Failure!')
+        self.worker.heartbeat() 
+
+        self.worker._swf.respond_activity_task_canceled.assert_called_with(task_token, 'Cancelling!')
+        self.worker._swf.respond_activity_task_completed.assert_called_with(task_token, 'Done!')
+        self.worker._swf.respond_activity_task_failed.assert_called_with(task_token, None, 'Failure!')
+        self.worker._swf.record_activity_task_heartbeat.assert_called_with(task_token, None)
+
 if __name__ == '__main__':
     unittest.main()
