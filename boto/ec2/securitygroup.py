@@ -82,14 +82,21 @@ class SecurityGroup(TaggedEC2Object):
         else:
             setattr(self, name, value)
 
-    def delete(self):
+    def delete(self, dry_run=False):
         if self.vpc_id:
-            return self.connection.delete_security_group(group_id=self.id)
+            return self.connection.delete_security_group(
+                group_id=self.id,
+                dry_run=dry_run
+            )
         else:
-            return self.connection.delete_security_group(self.name)
+            return self.connection.delete_security_group(
+                self.name,
+                dry_run=dry_run
+            )
 
     def add_rule(self, ip_protocol, from_port, to_port,
-                 src_group_name, src_group_owner_id, cidr_ip, src_group_group_id):
+                 src_group_name, src_group_owner_id, cidr_ip,
+                 src_group_group_id, dry_run=False):
         """
         Add a rule to the SecurityGroup object.  Note that this method
         only changes the local version of the object.  No information
@@ -100,10 +107,17 @@ class SecurityGroup(TaggedEC2Object):
         rule.from_port = from_port
         rule.to_port = to_port
         self.rules.append(rule)
-        rule.add_grant(src_group_name, src_group_owner_id, cidr_ip, src_group_group_id)
+        rule.add_grant(
+            src_group_name,
+            src_group_owner_id,
+            cidr_ip,
+            src_group_group_id,
+            dry_run=dry_run
+        )
 
     def remove_rule(self, ip_protocol, from_port, to_port,
-                    src_group_name, src_group_owner_id, cidr_ip, src_group_group_id):
+                    src_group_name, src_group_owner_id, cidr_ip,
+                    src_group_group_id, dry_run=False):
         """
         Remove a rule to the SecurityGroup object.  Note that this method
         only changes the local version of the object.  No information
@@ -122,12 +136,12 @@ class SecurityGroup(TaggedEC2Object):
                                     if grant.cidr_ip == cidr_ip:
                                         target_grant = grant
                         if target_grant:
-                            rule.grants.remove(target_grant)
+                            rule.grants.remove(target_grant, dry_run=dry_run)
         if len(rule.grants) == 0:
-            self.rules.remove(target_rule)
+            self.rules.remove(target_rule, dry_run=dry_run)
 
     def authorize(self, ip_protocol=None, from_port=None, to_port=None,
-                  cidr_ip=None, src_group=None):
+                  cidr_ip=None, src_group=None, dry_run=False):
         """
         Add a new rule to this security group.
         You need to pass in either src_group_name
@@ -182,17 +196,19 @@ class SecurityGroup(TaggedEC2Object):
                                                           to_port,
                                                           cidr_ip,
                                                           group_id,
-                                                          src_group_group_id)
+                                                          src_group_group_id,
+                                                          dry_run=dry_run)
         if status:
             if not isinstance(cidr_ip, list):
                 cidr_ip = [cidr_ip]
             for single_cidr_ip in cidr_ip:
                 self.add_rule(ip_protocol, from_port, to_port, src_group_name,
-                              src_group_owner_id, single_cidr_ip, src_group_group_id)
+                              src_group_owner_id, single_cidr_ip,
+                              src_group_group_id, dry_run=dry_run)
         return status
 
     def revoke(self, ip_protocol=None, from_port=None, to_port=None,
-               cidr_ip=None, src_group=None):
+               cidr_ip=None, src_group=None, dry_run=False):
         group_name = None
         if not self.vpc_id:
             group_name = self.name
@@ -220,13 +236,15 @@ class SecurityGroup(TaggedEC2Object):
                                                        to_port,
                                                        cidr_ip,
                                                        group_id,
-                                                       src_group_group_id)
+                                                       src_group_group_id,
+                                                       dry_run=dry_run)
         if status:
             self.remove_rule(ip_protocol, from_port, to_port, src_group_name,
-                             src_group_owner_id, cidr_ip, src_group_group_id)
+                             src_group_owner_id, cidr_ip, src_group_group_id,
+                             dry_run=dry_run)
         return status
 
-    def copy_to_region(self, region, name=None):
+    def copy_to_region(self, region, name=None, dry_run=False):
         """
         Create a copy of this security group in another region.
         Note that the new security group will be a separate entity
@@ -247,7 +265,11 @@ class SecurityGroup(TaggedEC2Object):
             raise BotoClientError('Unable to copy to the same Region')
         conn_params = self.connection.get_params()
         rconn = region.connect(**conn_params)
-        sg = rconn.create_security_group(name or self.name, self.description)
+        sg = rconn.create_security_group(
+            name or self.name,
+            self.description,
+            dry_run=dry_run
+        )
         source_groups = []
         for rule in self.rules:
             for grant in rule.grants:
@@ -255,13 +277,14 @@ class SecurityGroup(TaggedEC2Object):
                 if grant_nom:
                     if grant_nom not in source_groups:
                         source_groups.append(grant_nom)
-                        sg.authorize(None, None, None, None, grant)
+                        sg.authorize(None, None, None, None, grant,
+                                     dry_run=dry_run)
                 else:
                     sg.authorize(rule.ip_protocol, rule.from_port, rule.to_port,
-                                 grant.cidr_ip)
+                                 grant.cidr_ip, dry_run=dry_run)
         return sg
 
-    def instances(self):
+    def instances(self, dry_run=False):
         """
         Find all of the current instances that are running within this
         security group.
@@ -272,11 +295,13 @@ class SecurityGroup(TaggedEC2Object):
         rs = []
         if self.vpc_id:
             rs.extend(self.connection.get_all_reservations(
-                filters={'instance.group-id': self.id}
+                filters={'instance.group-id': self.id},
+                dry_run=dry_run
             ))
         else:
             rs.extend(self.connection.get_all_reservations(
-                filters={'group-id': self.id}
+                filters={'group-id': self.id},
+                dry_run=dry_run
             ))
         instances = [i for r in rs for i in r.instances]
         return instances

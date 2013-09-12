@@ -89,8 +89,12 @@ class ReservedInstancesOffering(EC2Object):
         print '\tUsage Price=%s' % self.usage_price
         print '\tDescription=%s' % self.description
 
-    def purchase(self, instance_count=1):
-        return self.connection.purchase_reserved_instance_offering(self.id, instance_count)
+    def purchase(self, instance_count=1, dry_run=False):
+        return self.connection.purchase_reserved_instance_offering(
+            self.id,
+            instance_count,
+            dry_run=dry_run
+        )
 
 
 class RecurringCharge(object):
