@@ -118,7 +118,7 @@ class BlockDeviceMapping(dict):
     def build_list_params(self, params, prefix=''):
         i = 1
         for dev_name in self:
-            pre = '%sBlockDeviceMappings.member.%d' % (prefix, i)
+            pre = '%sBlockDeviceMapping.%d' % (prefix, i)
             params['%s.DeviceName' % pre] = dev_name
             block_dev = self[dev_name]
             if block_dev.ephemeral_name:
