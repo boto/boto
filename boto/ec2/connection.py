@@ -312,7 +312,7 @@ class EC2Connection(AWSQueryConnection):
         if root_device_name:
             params['RootDeviceName'] = root_device_name
         if block_device_map:
-            block_device_map.build_list_params(params)
+            block_device_map.ec2_build_list_params(params)
         if dry_run:
             params['DryRun'] = 'true'
         rs = self.get_object('RegisterImage', params, ResultSet, verb='POST')
@@ -843,7 +843,7 @@ class EC2Connection(AWSQueryConnection):
         if private_ip_address:
             params['PrivateIpAddress'] = private_ip_address
         if block_device_map:
-            block_device_map.build_list_params(params)
+            block_device_map.ec2_build_list_params(params)
         if disable_api_termination:
             params['DisableApiTermination'] = 'true'
         if instance_initiated_shutdown_behavior:
@@ -1466,7 +1466,7 @@ class EC2Connection(AWSQueryConnection):
         if placement_group:
             params['%s.Placement.GroupName' % ls] = placement_group
         if block_device_map:
-            block_device_map.build_list_params(params, '%s.' % ls)
+            block_device_map.ec2_build_list_params(params, '%s.' % ls)
         if instance_profile_name:
             params['%s.IamInstanceProfile.Name' % ls] = instance_profile_name
         if instance_profile_arn:
