@@ -6,6 +6,8 @@ from tests.unit import AWSMockServiceTestCase
 import mock
 
 from boto.ec2.connection import EC2Connection
+from boto.ec2.securitygroup import SecurityGroup
+
 
 DESCRIBE_SECURITY_GROUP = r"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeSecurityGroupsResponse xmlns="http://ec2.amazonaws.com/doc/2013-06-15/">
@@ -182,3 +184,23 @@ class TestDescribeSecurityGroups(AWSMockServiceTestCase):
 
         self.assertEqual(1, len(instances))
         self.assertEqual(groups[0].id, instances[0].groups[0].id)
+
+
+class SecurityGroupTest(unittest.TestCase):
+    def test_add_rule(self):
+        sg = SecurityGroup()
+        self.assertEqual(len(sg.rules), 0)
+
+        # Regression: ``dry_run`` was being passed (but unhandled) before.
+        sg.add_rule(
+            ip_protocol='http',
+            from_port='80',
+            to_port='8080',
+            src_group_name='groupy',
+            src_group_owner_id='12345',
+            cidr_ip='10.0.0.1',
+            src_group_group_id='54321',
+            dry_run=False
+        )
+        self.assertEqual(len(sg.rules), 1)
+
