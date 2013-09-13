@@ -91,6 +91,7 @@ Currently Supported Services
 Additional Resources
 --------------------
 
+* :doc:`Applications Built On Boto <apps_built_on_boto>`
 * :doc:`Command Line Utilities <commandline>`
 * :doc:`Boto Config Tutorial <boto_config_tut>`
 * :doc:`Contributing to Boto <contributing>`
