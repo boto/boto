@@ -171,6 +171,7 @@ Release Notes
    support_tut
    dynamodb2_tut
    migrations/dynamodb_v1_to_v2
+   apps_built_on_boto
    ref/*
    releasenotes/*
 
