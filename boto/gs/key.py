@@ -308,9 +308,10 @@ class Key(S3Key):
                                  chunked_transfer=chunked_transfer, size=size,
                                  hash_algs=hash_algs)
 
-    def delete(self):
+    def delete(self, headers=None):
         return self.bucket.delete_key(self.name, version_id=self.version_id,
-                                      generation=self.generation)
+                                      generation=self.generation,
+                                      headers=headers)
 
     def add_email_grant(self, permission, email_address):
         """
