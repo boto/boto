@@ -308,7 +308,7 @@ class ResumableUploadTests(GSTestCase):
         Tests that resumable upload correctly sets passed metadata
         """
         res_upload_handler = ResumableUploadHandler()
-        headers = {'Content-Type' : 'text/plain', 'Content-Encoding' : 'gzip',
+        headers = {'Content-Type' : 'text/plain', 'Content-Encoding' : 'utf8',
                    'x-goog-meta-abc' : 'my meta', 'x-goog-acl' : 'public-read'}
         small_src_file_as_string, small_src_file = self.make_small_file()
         small_src_file.seek(0)
@@ -321,7 +321,7 @@ class ResumableUploadTests(GSTestCase):
                          dst_key.get_contents_as_string())
         dst_key.open_read()
         self.assertEqual('text/plain', dst_key.content_type)
-        self.assertEqual('gzip', dst_key.content_encoding)
+        self.assertEqual('utf8', dst_key.content_encoding)
         self.assertTrue('abc' in dst_key.metadata)
         self.assertEqual('my meta', str(dst_key.metadata['abc']))
         acl = dst_key.get_acl()
