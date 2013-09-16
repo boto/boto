@@ -115,10 +115,18 @@ class BlockDeviceMapping(dict):
         elif name == 'item':
             self[self.current_name] = self.current_value
 
-    def build_list_params(self, params, prefix=''):
+    def ec2_build_list_params(self, params, prefix=''):
+        pre = '%sBlockDeviceMapping' % prefix
+        return self._build_list_params(params, prefix=pre)
+
+    def autoscale_build_list_params(self, params, prefix=''):
+        pre = '%sBlockDeviceMappings.member' % prefix
+        return self._build_list_params(params, prefix=pre)
+
+    def _build_list_params(self, params, prefix=''):
         i = 1
         for dev_name in self:
-            pre = '%sBlockDeviceMappings.member.%d' % (prefix, i)
+            pre = '%s.%d' % (prefix, i)
             params['%s.DeviceName' % pre] = dev_name
             block_dev = self[dev_name]
             if block_dev.ephemeral_name:

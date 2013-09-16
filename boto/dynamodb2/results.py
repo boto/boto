@@ -58,6 +58,12 @@ class ResultSet(object):
 
             self.fetch_more()
 
+            # It's possible that previous call to ``fetch_more`` may not return
+            # anything useful but there may be more results. Loop until we get
+            # something back, making sure we guard for no results left.
+            while not len(self._results) and self._results_left:
+                self.fetch_more()
+
         if self._offset < len(self._results):
             return self._results[self._offset]
         else:
@@ -106,16 +112,11 @@ class ResultSet(object):
             kwargs[self.first_key] = self._last_key_seen
 
         results = self.the_callable(*args, **kwargs)
-
-        if not len(results.get('results', [])):
-            self._results_left = False
-            return
-
-        self._results.extend(results['results'])
+        new_results = results.get('results', [])
         self._last_key_seen = results.get('last_key', None)
 
-        if self._last_key_seen is None:
-            self._results_left = False
+        if len(new_results):
+            self._results.extend(results['results'])
 
         # Decrease the limit, if it's present.
         if self.call_kwargs.get('limit'):
@@ -124,7 +125,10 @@ class ResultSet(object):
             # results to look for
             if 0 == self.call_kwargs['limit']:
                 self._results_left = False
-                                            
+
+        if self._last_key_seen is None:
+            self._results_left = False
+
 
 class BatchGetResultSet(ResultSet):
     def __init__(self, *args, **kwargs):

@@ -797,6 +797,60 @@ class ResultSetTestCase(unittest.TestCase):
         results.to_call(none, limit=20)
         self.assertRaises(StopIteration, results.next)
 
+    def test_iteration_sporadic_pages(self):
+        # Some pages have no/incomplete results but have a ``LastEvaluatedKey``
+        # (for instance, scans with filters), so we need to accommodate that.
+        def sporadic():
+            # A dict, because Python closures have read-only access to the
+            # reference itself.
+            count = {'value': -1}
+
+            def _wrapper(limit=10, exclusive_start_key=None):
+                count['value'] = count['value'] + 1
+
+                if count['value'] == 0:
+                    # Full page.
+                    return {
+                        'results': [
+                            'Result #0',
+                            'Result #1',
+                            'Result #2',
+                            'Result #3',
+                        ],
+                        'last_key': 'page-1'
+                    }
+                elif count['value'] == 1:
+                    # Empty page but continue.
+                    return {
+                        'results': [],
+                        'last_key': 'page-2'
+                    }
+                elif count['value'] == 2:
+                    # Final page.
+                    return {
+                        'results': [
+                            'Result #4',
+                            'Result #5',
+                            'Result #6',
+                        ],
+                    }
+
+            return _wrapper
+
+        results = ResultSet()
+        results.to_call(sporadic(), limit=20)
+        # First page
+        self.assertEqual(results.next(), 'Result #0')
+        self.assertEqual(results.next(), 'Result #1')
+        self.assertEqual(results.next(), 'Result #2')
+        self.assertEqual(results.next(), 'Result #3')
+        # Second page (misses!)
+        # Moves on to the third page
+        self.assertEqual(results.next(), 'Result #4')
+        self.assertEqual(results.next(), 'Result #5')
+        self.assertEqual(results.next(), 'Result #6')
+        self.assertRaises(StopIteration, results.next)
+
     def test_list(self):
         self.assertEqual(list(self.results), [
             'Hello john #0',
