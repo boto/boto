@@ -168,6 +168,7 @@ class Provider(object):
                  security_token=None):
         self.host = None
         self.port = None
+        self.host_header = None
         self.access_key = access_key
         self.secret_key = secret_key
         self.security_token = security_token
@@ -185,6 +186,9 @@ class Provider(object):
         port_opt_name = '%s_port' % self.HostKeyMap[self.name]
         if config.has_option('Credentials', port_opt_name):
             self.port = config.getint('Credentials', port_opt_name)
+        host_header_opt_name = '%s_host_header' % self.HostKeyMap[self.name]
+        if config.has_option('Credentials', host_header_opt_name):
+            self.host_header = config.get('Credentials', host_header_opt_name)
 
     def get_access_key(self):
         if self._credentials_need_refresh():
