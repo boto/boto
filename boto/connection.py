@@ -422,7 +422,7 @@ class AWSAuthConnection(object):
                  https_connection_factory=None, path='/',
                  provider='aws', security_token=None,
                  suppress_consec_slashes=True,
-                 validate_certs=True):
+                 validate_certs=True, socket_buffering=False):
         """
         :type host: str
         :param host: The host to make the connection to
@@ -463,6 +463,10 @@ class AWSAuthConnection(object):
         :type validate_certs: bool
         :param validate_certs: Controls whether SSL certificates
             will be validated or not.  Defaults to True.
+
+        :type socket_buffering: bool
+        :param socket_buffering: Controls whether socket buffering
+            is enabled for HTTP requests. Defaults to False.
         """
         self.suppress_consec_slashes = suppress_consec_slashes
         self.num_retries = 6
@@ -518,6 +522,7 @@ class AWSAuthConnection(object):
         else:
             self.port = PORTS_BY_SECURITY[is_secure]
         self.host_header = None
+        self.socket_buffering = socket_buffering
 
         # Timeout used to tell httplib how long to wait for socket timeouts.
         # Default is to leave timeout unchanged, which will in turn result in
@@ -864,7 +869,7 @@ class AWSAuthConnection(object):
                 else:
                     connection.request(request.method, request.path,
                                        request.body, request.headers)
-                    response = connection.getresponse()
+                    response = connection.getresponse(buffering=self.socket_buffering)
                 location = response.getheader('location')
                 # -- gross hack --
                 # httplib gets confused with chunked responses to HEAD requests
