@@ -290,7 +290,7 @@ def main():
         if o in ('-r', '--reduced'):
             reduced = True
         if o in ('--header'):
-            (k, v) = a.split("=")
+            (k, v) = a.split("=", 1)
             headers[k] = v
         if o in ('--host'):
             host = a
