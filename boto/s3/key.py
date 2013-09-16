@@ -752,11 +752,10 @@ class Key(object):
 
             # If the caller explicitly specified host header, tell putrequest
             # not to add a second host header. Similarly for accept-encoding.
-            header_names = dict.fromkeys([k.lower() for k in headers])
             skips = {}
-            if 'host' in header_names:
+            if boto.utils.find_matching_headers('host', headers):
               skips['skip_host'] = 1
-            if 'accept-encoding' in header_names:
+            if boto.utils.find_matching_headers('accept-encoding', headers):
               skips['skip_accept_encoding'] = 1
             http_conn.putrequest(method, path, **skips)
             for key in headers:

@@ -945,7 +945,8 @@ class AWSAuthConnection(object):
             headers = {}
         else:
             headers = headers.copy()
-        if not 'host' in headers and self.host_header:
+        if (self.host_header and
+            not boto.utils.find_matching_headers('host', headers)):
             headers['host'] = self.host_header
         host = host or self.host
         if self.use_proxy:
