@@ -517,6 +517,7 @@ class AWSAuthConnection(object):
             self.port = port
         else:
             self.port = PORTS_BY_SECURITY[is_secure]
+        self.host_header = None
 
         # Timeout used to tell httplib how long to wait for socket timeouts.
         # Default is to leave timeout unchanged, which will in turn result in
@@ -541,11 +542,13 @@ class AWSAuthConnection(object):
                                      aws_secret_access_key,
                                      security_token)
 
-        # Allow config file to override default host and port.
+        # Allow config file to override default host, port, and host header.
         if self.provider.host:
             self.host = self.provider.host
         if self.provider.port:
             self.port = self.provider.port
+        if self.provider.host_header:
+            self.host_header = self.provider.host_header
 
         self._pool = ConnectionPool()
         self._connection = (self.server_name(), self.is_secure)
@@ -942,6 +945,8 @@ class AWSAuthConnection(object):
             headers = {}
         else:
             headers = headers.copy()
+        if not 'host' in headers and self.host_header:
+            headers['host'] = self.host_header
         host = host or self.host
         if self.use_proxy:
             if not auth_path:
