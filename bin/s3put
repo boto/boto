@@ -48,6 +48,8 @@ except ImportError as err:
         '" is missing for multipart support '
 
 
+DEFAULT_REGION = 'us-east-1'
+
 usage_string = """
 SYNOPSIS
     s3put [-a/--access_key <access_key>] [-s/--secret_key <secret_key>]
@@ -174,11 +176,13 @@ def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
 
 def multipart_upload(bucketname, aws_key, aws_secret, source_path, keyname,
                      reduced, debug, cb, num_cb, acl='private', headers={},
-                     guess_mimetype=True, parallel_processes=4):
+                     guess_mimetype=True, parallel_processes=4,
+                     region=DEFAULT_REGION):
     """
     Parallel multipart upload.
     """
-    conn = S3Connection(aws_key, aws_secret)
+    conn = boto.s3.connect_to_region(region, aws_access_key_id=aws_key,
+                                     aws_secret_access_key=aws_secret)
     conn.debug = debug
     bucket = conn.get_bucket(bucketname)
 
@@ -248,9 +252,7 @@ def main():
     headers = {}
     host = None
     multipart_requested = False
-
-    # Default to 'classic' style region
-    region = 'us-east-1'
+    region = None
 
     try:
         opts, args = getopt.getopt(
@@ -331,9 +333,37 @@ def main():
     if host:
         connect_args['host'] = host
 
-    c = boto.s3.connect_to_region(region, **connect_args)
+    c = boto.s3.connect_to_region(region or DEFAULT_REGION, **connect_args)
     c.debug = debug
     b = c.get_bucket(bucket_name, validate=False)
+
+    # Attempt to determine location and warn if no --host or --region
+    # arguments were passed. Then try to automagically figure out
+    # what should have been passed and fix it.
+    if host is None and region is None:
+        try:
+            location = b.get_location()
+
+            # Classic region will be '', any other will have a name
+            if location:
+                print 'Bucket exists in {0} but no host or region given!'.format(location)
+
+                # Override for EU, which is really Ireland according to the docs
+                if location == 'EU':
+                    location = 'eu-west-1'
+
+                print 'Automatically setting region to {0}'.format(location)
+
+                # Here we create a new connection, and then take the existing
+                # bucket and set it to use the new connection
+                c = boto.s3.connect_to_region(location, **connect_args)
+                c.debug = debug
+                b.connection = c
+        except Exception as e:
+            if debug > 0:
+                print e
+            print 'Could not get bucket region info, skipping...'
+
     existing_keys_to_check_against = []
     files_to_check_for_upload = []
 
@@ -385,7 +415,8 @@ def main():
                 multipart_upload(bucket_name, aws_access_key_id,
                                  aws_secret_access_key, fullpath, key_name,
                                  reduced, debug, cb, num_cb,
-                                 grant or 'private', headers)
+                                 grant or 'private', headers,
+                                 region=region or DEFAULT_REGION)
             else:
                 singlepart_upload(b, key_name, fullpath, cb=cb, num_cb=num_cb,
                                   policy=grant, reduced_redundancy=reduced,
