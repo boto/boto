@@ -316,7 +316,7 @@ def main():
                     region = a
                     break
             else:
-                raise ValueError('Invalid region {0} specified'.format(a))
+                raise ValueError('Invalid region %s specified' % a)
 
     if len(args) < 1:
         usage(2)
@@ -346,20 +346,20 @@ def main():
 
             # Classic region will be '', any other will have a name
             if location:
-                print 'Bucket exists in {0} but no host or region given!'.format(location)
+                print 'Bucket exists in %s but no host or region given!' % location
 
                 # Override for EU, which is really Ireland according to the docs
                 if location == 'EU':
                     location = 'eu-west-1'
 
-                print 'Automatically setting region to {0}'.format(location)
+                print 'Automatically setting region to %s' % location
 
                 # Here we create a new connection, and then take the existing
                 # bucket and set it to use the new connection
                 c = boto.s3.connect_to_region(location, **connect_args)
                 c.debug = debug
                 b.connection = c
-        except Exception as e:
+        except Exception, e:
             if debug > 0:
                 print e
             print 'Could not get bucket region info, skipping...'
