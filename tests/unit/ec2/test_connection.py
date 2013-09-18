@@ -1149,5 +1149,48 @@ class TestDescribeReservedInstancesModifications(TestEC2ConnectionBase):
         self.assertEqual(len(response), 1)
 
 
+class TestRegisterImage(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+            <RegisterImageResponse xmlns="http://ec2.amazonaws.com/doc/2013-08-15/">
+              <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+              <imageId>ami-1a2b3c4d</imageId>
+            </RegisterImageResponse>
+        """
+
+    def test_vm_type_default(self):
+        self.set_http_response(status_code=200)
+        self.ec2.register_image('name', 'description',
+                                image_location='s3://foo')
+
+        self.assert_request_parameters({
+            'Action': 'RegisterImage',
+            'ImageLocation': 's3://foo',
+            'Name': 'name',
+            'Description': 'description',
+        }, ignore_params_values=[
+            'AWSAccessKeyId', 'SignatureMethod',
+            'SignatureVersion', 'Timestamp',
+            'Version'
+        ])
+
+    def test_vm_type_hvm(self):
+        self.set_http_response(status_code=200)
+        self.ec2.register_image('name', 'description',
+                                image_location='s3://foo',
+                                virtualization_type='hvm')
+
+        self.assert_request_parameters({
+            'Action': 'RegisterImage',
+            'ImageLocation': 's3://foo',
+            'Name': 'name',
+            'Description': 'description',
+            'VirtualizationType': 'hvm'
+        }, ignore_params_values=[
+            'AWSAccessKeyId', 'SignatureMethod',
+            'SignatureVersion', 'Timestamp',
+            'Version'
+        ])
+
 if __name__ == '__main__':
     unittest.main()
