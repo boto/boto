@@ -260,7 +260,7 @@ class EC2Connection(AWSQueryConnection):
     def register_image(self, name=None, description=None, image_location=None,
                        architecture=None, kernel_id=None, ramdisk_id=None,
                        root_device_name=None, block_device_map=None,
-                       dry_run=False, virtualization_type = None):
+                       dry_run=False, virtualization_type=None):
         """
         Register an image.
 
@@ -294,7 +294,8 @@ class EC2Connection(AWSQueryConnection):
         :param dry_run: Set to True if the operation should not actually run.
 
         :type virtualization_type: string
-        :param virtualization_type: The virutalization_type of the image. Valid choices are:
+        :param virtualization_type: The virutalization_type of the image.
+            Valid choices are:
             * paravirtual
             * hvm
 
