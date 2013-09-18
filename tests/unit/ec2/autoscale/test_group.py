@@ -325,5 +325,64 @@ class TestCreateAutoScalePolicy(AWSMockServiceTestCase):
         }, ignore_params_values=['Version'])
 
 
+class TestPutNotificationConfiguration(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def setUp(self):
+        super(TestPutNotificationConfiguration, self).setUp()
+
+    def default_body(self):
+        return """
+            <PutNotificationConfigurationResponse>
+              <ResponseMetadata>
+                <RequestId>requestid</RequestId>
+              </ResponseMetadata>
+            </PutNotificationConfigurationResponse>
+        """
+
+    def test_autoscaling_group_put_notification_configuration(self):
+        self.set_http_response(status_code=200)
+        autoscale = AutoScalingGroup(
+            name='ana', launch_config='lauch_config',
+            min_size=1, max_size=2,
+            termination_policies=['OldestInstance', 'OldestLaunchConfiguration'])
+        self.service_connection.put_notification_configuration(autoscale, 'arn:aws:sns:us-east-1:19890506:AutoScaling-Up', ['autoscaling:EC2_INSTANCE_LAUNCH'])
+        self.assert_request_parameters({
+            'Action': 'PutNotificationConfiguration',
+            'AutoScalingGroupName': 'ana',
+            'NotificationTypes.member.1': 'autoscaling:EC2_INSTANCE_LAUNCH',
+            'TopicARN': 'arn:aws:sns:us-east-1:19890506:AutoScaling-Up',
+        }, ignore_params_values=['Version'])
+
+
+class TestDeleteNotificationConfiguration(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def setUp(self):
+        super(TestDeleteNotificationConfiguration, self).setUp()
+
+    def default_body(self):
+        return """
+            <DeleteNotificationConfigurationResponse>
+              <ResponseMetadata>
+                <RequestId>requestid</RequestId>
+              </ResponseMetadata>
+            </DeleteNotificationConfigurationResponse>
+        """
+
+    def test_autoscaling_group_put_notification_configuration(self):
+        self.set_http_response(status_code=200)
+        autoscale = AutoScalingGroup(
+            name='ana', launch_config='lauch_config',
+            min_size=1, max_size=2,
+            termination_policies=['OldestInstance', 'OldestLaunchConfiguration'])
+        self.service_connection.delete_notification_configuration(autoscale, 'arn:aws:sns:us-east-1:19890506:AutoScaling-Up')
+        self.assert_request_parameters({
+            'Action': 'DeleteNotificationConfiguration',
+            'AutoScalingGroupName': 'ana',
+            'TopicARN': 'arn:aws:sns:us-east-1:19890506:AutoScaling-Up',
+        }, ignore_params_values=['Version'])
+
+
 if __name__ == '__main__':
     unittest.main()
