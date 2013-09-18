@@ -67,7 +67,11 @@ class DynamoDBConnection(AWSQueryConnection):
                 if reg.name == region_name:
                     region = reg
                     break
-        kwargs['host'] = region.endpoint
+
+        # Only set host if it isn't manually overwritten
+        if 'host' not in kwargs:
+            kwargs['host'] = region.endpoint
+
         AWSQueryConnection.__init__(self, **kwargs)
         self.region = region
         self._validate_checksums = boto.config.getbool(
