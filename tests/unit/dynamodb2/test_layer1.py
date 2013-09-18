@@ -43,3 +43,11 @@ class DynamoDBv2Layer1UnitTest(unittest.TestCase):
             aws_secret_access_key='aws_secret_access_key',
         )
         self.assertEqual(dynamodb.region.name, 'us-west-2')
+
+    def test_init_host_override(self):
+        dynamodb = DynamoDBConnection(
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key',
+            host='localhost', port=8000)
+        self.assertEqual(dynamodb.host, 'localhost')
+        self.assertEqual(dynamodb.port, 8000)
