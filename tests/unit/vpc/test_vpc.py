@@ -72,6 +72,26 @@ class TestVPCConnection(unittest.TestCase):
             internet_gateway_id, vpc_id)
         self.assertEquals(True, status)
 
+    def test_replace_route_table_association(self):
+        """
+        Tests replace_route_table_assocation with all valid parameters
+        """
+        association_id = 'mock_association_id'
+        route_table_id = 'mock_route_table_id'
+
+        def get_status(status, params):
+            if status == "ReplaceRouteTableAssociation" and \
+                params["AssociationId"] == association_id and \
+                    params["RouteTableId"] == route_table_id:
+                return True
+            else:
+                return False
+
+        self.vpc_connection.get_status = get_status
+        status = self.vpc_connection.replace_route_table_assocation(
+            association_id, route_table_id)
+        self.assertEquals(True, status)
+
 
 if __name__ == '__main__':
     unittest.main()

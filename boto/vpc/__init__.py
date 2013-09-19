@@ -307,8 +307,39 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteRouteTable', params)
 
+    def replace_route_table_assocation(self, association_id, 
+                                       route_table_id, dry_run=False):
+        """
+        Replaces a route association with a new route table.  This can be
+        used to replace the 'main' route table by using the main route
+        table assocation instead of the more common subnet type
+        association.
+        
+        :type association_id: str
+        :param association_id: The ID of the existing assocation to replace.
+
+        :type route_table_id: str
+        :param route_table_id: The route table to ID to be used in the
+            association.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+
+        params = {
+            'AssociationId': association_id,
+            'RouteTableId': route_table_id
+        }
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('ReplaceRouteTableAssociation', params)
+
     def create_route(self, route_table_id, destination_cidr_block,
                      gateway_id=None, instance_id=None, dry_run=False):
+
         """
         Creates a new route in the route table within a VPC. The route's target
         can be either a gateway attached to the VPC or a NAT instance in the
