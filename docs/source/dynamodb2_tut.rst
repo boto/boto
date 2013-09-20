@@ -273,7 +273,7 @@ both speed up the process & reduce the number of write requests made to the
 service.
 
 Batch writing involves wrapping the calls you want batched in a context manager.
-The context manager immitates the ``Table.put_item`` & ``Table.delete_item``
+The context manager imitates the ``Table.put_item`` & ``Table.delete_item``
 APIs. Getting & using the context manager looks like::
 
     >>> from boto.dynamodb2.table import Table
