@@ -123,6 +123,9 @@ class SecurityGroup(TaggedEC2Object):
         only changes the local version of the object.  No information
         is sent to EC2.
         """
+        if not self.rules:
+            raise ValueError("The security group has no rules")
+
         target_rule = None
         for rule in self.rules:
             if rule.ip_protocol == ip_protocol:
@@ -137,8 +140,8 @@ class SecurityGroup(TaggedEC2Object):
                                         target_grant = grant
                         if target_grant:
                             rule.grants.remove(target_grant)
-        if len(rule.grants) == 0:
-            self.rules.remove(target_rule)
+            if len(rule.grants) == 0:
+                self.rules.remove(target_rule, dry_run=dry_run)
 
     def authorize(self, ip_protocol=None, from_port=None, to_port=None,
                   cidr_ip=None, src_group=None, dry_run=False):

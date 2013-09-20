@@ -204,3 +204,9 @@ class SecurityGroupTest(unittest.TestCase):
         )
         self.assertEqual(len(sg.rules), 1)
 
+    def test_remove_rule_on_empty_group(self):
+        # Remove a rule from a group with no rules
+        sg = SecurityGroup()
+
+        with self.assertRaises(ValueError):
+            sg.remove_rule('ip', 80, 80, None, None, None, None)
