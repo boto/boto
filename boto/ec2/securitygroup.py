@@ -141,7 +141,7 @@ class SecurityGroup(TaggedEC2Object):
                         if target_grant:
                             rule.grants.remove(target_grant)
             if len(rule.grants) == 0:
-                self.rules.remove(target_rule, dry_run=dry_run)
+                self.rules.remove(target_rule)
 
     def authorize(self, ip_protocol=None, from_port=None, to_port=None,
                   cidr_ip=None, src_group=None, dry_run=False):
