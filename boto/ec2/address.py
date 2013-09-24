@@ -71,33 +71,50 @@ class Address(EC2Object):
         else:
             setattr(self, name, value)
 
-    def release(self):
+    def release(self, dry_run=False):
         """
         Free up this Elastic IP address.
         :see: :meth:`boto.ec2.connection.EC2Connection.release_address`
         """
         if self.allocation_id:
-            return self.connection.release_address(None, self.allocation_id)
+            return self.connection.release_address(
+                None,
+                self.allocation_id,
+                dry_run=dry_run)
         else:
-            return self.connection.release_address(self.public_ip)
+            return self.connection.release_address(
+                self.public_ip,
+                dry_run=dry_run
+            )
 
     delete = release
 
-    def associate(self, instance_id):
+    def associate(self, instance_id, dry_run=False):
         """
         Associate this Elastic IP address with a currently running instance.
         :see: :meth:`boto.ec2.connection.EC2Connection.associate_address`
         """
-        return self.connection.associate_address(instance_id, self.public_ip)
+        return self.connection.associate_address(
+            instance_id,
+            self.public_ip,
+            dry_run=dry_run
+        )
 
-    def disassociate(self):
+    def disassociate(self, dry_run=False):
         """
         Disassociate this Elastic IP address from a currently running instance.
         :see: :meth:`boto.ec2.connection.EC2Connection.disassociate_address`
         """
         if self.association_id:
-            return self.connection.disassociate_address(None, self.association_id)
+            return self.connection.disassociate_address(
+                None,
+                self.association_id,
+                dry_run=dry_run
+            )
         else:
-            return self.connection.disassociate_address(self.public_ip)
+            return self.connection.disassociate_address(
+                self.public_ip,
+                dry_run=dry_run
+            )
 
 

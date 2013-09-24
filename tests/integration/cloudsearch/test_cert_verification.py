@@ -31,7 +31,7 @@ import boto.cloudsearch
 
 class CertVerificationTest(unittest.TestCase):
 
-    rds = True
+    cloudsearch = True
     ssl = True
 
     def test_certs(self):

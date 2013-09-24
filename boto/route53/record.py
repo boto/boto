@@ -161,6 +161,7 @@ class ResourceRecordSets(ResultSet):
     def __iter__(self):
         """Override the next function to support paging"""
         results = ResultSet.__iter__(self)
+        truncated = self.is_truncated
         while results:
             for obj in results:
                 yield obj
@@ -169,6 +170,8 @@ class ResourceRecordSets(ResultSet):
                 results = self.connection.get_all_rrsets(self.hosted_zone_id, name=self.next_record_name, type=self.next_record_type)
             else:
                 results = None
+                self.is_truncated = truncated
+
 
 
 
@@ -244,20 +247,24 @@ class Record(object):
         else:
             # Use resource record(s)
             records = ""
+
             for r in self.resource_records:
                 records += self.ResourceRecordBody % r
+
             body = self.ResourceRecordsBody % {
                 "ttl": self.ttl,
                 "records": records,
             }
+
         weight = ""
+
         if self.identifier != None and self.weight != None:
             weight = self.WRRBody % {"identifier": self.identifier, "weight":
                     self.weight}
         elif self.identifier != None and self.region != None:
             weight = self.RRRBody % {"identifier": self.identifier, "region":
                     self.region}
-        
+
         params = {
             "name": self.name,
             "type": self.type,

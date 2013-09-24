@@ -120,7 +120,7 @@ class HostConnectionPool(object):
 
     Thread Safety:
 
-        This class is used only fram ConnectionPool while it's mutex
+        This class is used only from ConnectionPool while it's mutex
         is held.
     """
 
@@ -517,6 +517,7 @@ class AWSAuthConnection(object):
             self.port = port
         else:
             self.port = PORTS_BY_SECURITY[is_secure]
+        self.host_header = None
 
         # Timeout used to tell httplib how long to wait for socket timeouts.
         # Default is to leave timeout unchanged, which will in turn result in
@@ -541,11 +542,13 @@ class AWSAuthConnection(object):
                                      aws_secret_access_key,
                                      security_token)
 
-        # Allow config file to override default host and port.
+        # Allow config file to override default host, port, and host header.
         if self.provider.host:
             self.host = self.provider.host
         if self.provider.port:
             self.port = self.provider.port
+        if self.provider.host_header:
+            self.host_header = self.provider.host_header
 
         self._pool = ConnectionPool()
         self._connection = (self.server_name(), self.is_secure)
@@ -673,6 +676,8 @@ class AWSAuthConnection(object):
             print "http_proxy environment variable does not specify " \
                 "a port, using default"
             self.proxy_port = self.port
+
+        self.no_proxy = os.environ.get('no_proxy', '') or os.environ.get('NO_PROXY', '')
         self.use_proxy = (self.proxy != None)
 
     def get_http_connection(self, host, is_secure):
@@ -682,8 +687,25 @@ class AWSAuthConnection(object):
         else:
             return self.new_http_connection(host, is_secure)
 
+    def skip_proxy(self, host):
+        if not self.no_proxy:
+            return False
+
+        if self.no_proxy == "*":
+            return True
+
+        hostonly = host
+        hostonly = host.split(':')[0]
+
+        for name in self.no_proxy.split(','):
+            if name and (hostonly.endswith(name) or host.endswith(name)):
+                return True
+
+        return False
+
     def new_http_connection(self, host, is_secure):
-        if self.use_proxy and not is_secure:
+        if self.use_proxy and not is_secure and \
+                not self.skip_proxy(host):
             host = '%s:%d' % (self.proxy, int(self.proxy_port))
         if host is None:
             host = self.server_name()
@@ -691,7 +713,7 @@ class AWSAuthConnection(object):
             boto.log.debug(
                     'establishing HTTPS connection: host=%s, kwargs=%s',
                     host, self.http_connection_kwargs)
-            if self.use_proxy:
+            if self.use_proxy and not self.skip_proxy(host):
                 connection = self.proxy_ssl(host, is_secure and 443 or 80)
             elif self.https_connection_factory:
                 connection = self.https_connection_factory(host)
@@ -923,6 +945,9 @@ class AWSAuthConnection(object):
             headers = {}
         else:
             headers = headers.copy()
+        if (self.host_header and
+            not boto.utils.find_matching_headers('host', headers)):
+            headers['host'] = self.host_header
         host = host or self.host
         if self.use_proxy:
             if not auth_path:

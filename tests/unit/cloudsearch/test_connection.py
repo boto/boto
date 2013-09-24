@@ -47,11 +47,8 @@ class TestCloudSearchCreateDomain(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'CreateDomain',
             'DomainName': 'demo',
-            'AWSAccessKeyId': 'aws_access_key_id',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'Version': '2011-02-01',
-        }, ignore_params_values=['Timestamp'])
+        })
 
     def test_cloudsearch_connect_result_endpoints(self):
         """Check that endpoints & ARNs are correctly returned from AWS"""
@@ -158,11 +155,8 @@ class CloudSearchConnectionDeletionTest(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'DeleteDomain',
             'DomainName': 'demo',
-            'AWSAccessKeyId': 'aws_access_key_id',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'Version': '2011-02-01',
-        }, ignore_params_values=['Timestamp'])
+        })
 
 
 class CloudSearchConnectionIndexDocumentTest(AWSMockServiceTestCase):
@@ -215,11 +209,8 @@ class CloudSearchConnectionIndexDocumentTest(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'IndexDocuments',
             'DomainName': 'demo',
-            'AWSAccessKeyId': 'aws_access_key_id',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'Version': '2011-02-01',
-        }, ignore_params_values=['Timestamp'])
+        })
 
     def test_cloudsearch_index_documents_resp(self):
         """

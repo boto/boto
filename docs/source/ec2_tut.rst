@@ -88,7 +88,7 @@ Checking What Instances Are Running
 -----------------------------------
 You can also get information on your currently running instances::
 
-    >>> reservations = conn.get_all_instances()
+    >>> reservations = conn.get_all_reservations()
     >>> reservations
     [Reservation:r-00000000]
 

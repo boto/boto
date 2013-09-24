@@ -28,6 +28,7 @@ import time
 from tests.unit import unittest
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex
+from boto.dynamodb2.items import Item
 from boto.dynamodb2.table import Table
 from boto.dynamodb2.types import NUMBER
 
@@ -146,7 +147,10 @@ class DynamoDBv2Test(unittest.TestCase):
         self.assertEqual(check_name_again['first_name'], 'Joan')
 
         # Reset it.
-        jane.mark_dirty()
+        jane['username'] = 'jane'
+        jane['first_name'] = 'Jane'
+        jane['last_name'] = 'Doe'
+        jane['friend_count'] = 3
         self.assertTrue(jane.save(overwrite=True))
 
         # Test the partial update behavior.
@@ -176,19 +180,40 @@ class DynamoDBv2Test(unittest.TestCase):
         self.assertEqual(partial_jane['first_name'], 'Jacqueline')
 
         # Reset it.
-        jane.mark_dirty()
+        jane['username'] = 'jane'
+        jane['first_name'] = 'Jane'
+        jane['last_name'] = 'Doe'
+        jane['friend_count'] = 3
         self.assertTrue(jane.save(overwrite=True))
+
+        # Ensure that partial saves of a brand-new object work.
+        sadie = Item(users, data={
+            'username': 'sadie',
+            'first_name': 'Sadie',
+            'favorite_band': 'Zedd',
+            'friend_count': 7
+        })
+        self.assertTrue(sadie.partial_save())
+        serverside_sadie = users.get_item(
+            username='sadie',
+            friend_count=7,
+            consistent=True
+        )
+        self.assertEqual(serverside_sadie['first_name'], 'Sadie')
 
         # Test the eventually consistent query.
         results = users.query(
             username__eq='johndoe',
             last_name__eq='Doe',
             index='LastNameIndex',
+            attributes=('username',),
             reverse=True
         )
 
         for res in results:
             self.assertTrue(res['username'] in ['johndoe',])
+            self.assertEqual(res.keys(), ['username'])
+
 
         # Test the strongly consistent query.
         c_results = users.query(
@@ -246,6 +271,13 @@ class DynamoDBv2Test(unittest.TestCase):
         # Test count, but in a weak fashion. Because lag time.
         self.assertTrue(users.count() > -1)
 
+        # Test query count
+        count = users.query_count(
+            username__eq='bob',
+        )
+
+        self.assertEqual(count, 1)
+
         # Test without LSIs (describe calls shouldn't fail).
         admins = Table.create('admins', schema=[
             HashKey('username')
@@ -264,3 +296,48 @@ class DynamoDBv2Test(unittest.TestCase):
         )
         # But it shouldn't break on more complex tables.
         res = users.query(username__eq='johndoe')
+
+        # Test putting with/without sets.
+        mau5_created = users.put_item(data={
+            'username': 'mau5',
+            'first_name': 'dead',
+            'last_name': 'mau5',
+            'friend_count': 2,
+            'friends': set(['skrill', 'penny']),
+        })
+        self.assertTrue(mau5_created)
+
+        penny_created = users.put_item(data={
+            'username': 'penny',
+            'first_name': 'Penny',
+            'friend_count': 0,
+            'friends': set([]),
+        })
+        self.assertTrue(penny_created)
+
+    def test_unprocessed_batch_writes(self):
+        # Create a very limited table w/ low throughput.
+        users = Table.create('slow_users', schema=[
+            HashKey('user_id'),
+        ], throughput={
+            'read': 1,
+            'write': 1,
+        })
+        self.addCleanup(users.delete)
+
+        # Wait for it.
+        time.sleep(60)
+
+        with users.batch_write() as batch:
+            for i in range(500):
+                batch.put_item(data={
+                    'user_id': str(i),
+                    'name': 'Droid #{0}'.format(i),
+                })
+
+            # Before ``__exit__`` runs, we should have a bunch of unprocessed
+            # items.
+            self.assertTrue(len(batch._unprocessed) > 0)
+
+        # Post-__exit__, they should all be gone.
+        self.assertEqual(len(batch._unprocessed), 0)

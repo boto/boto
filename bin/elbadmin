@@ -108,15 +108,18 @@ def get(elb, name):
         print
 
         # Make map of all instance Id's to Name tags
-        ec2 = boto.connect_ec2()
+        if not options.region:
+            ec2 = boto.connect_ec2()
+        else:
+            import boto.ec2.elb
+            ec2 = boto.ec2.connect_to_region(options.region)
 
         instance_health = b.get_instance_health()
         instances = [state.instance_id for state in instance_health]
 
         names = {}
-        for r in ec2.get_all_instances(instances):
-            for i in r.instances:
-                names[i.id] = i.tags.get('Name', '')
+        for i in ec2.get_only_instances(instances):
+            names[i.id] = i.tags.get('Name', '')
 
         name_column_width = max([4] + [len(v) for k,v in names.iteritems()]) + 2
 
@@ -236,6 +239,9 @@ if __name__ == "__main__":
     parser.add_option("-l", "--listener",
                       help="Specify Listener in,out,proto",
                       action="append", default=[], dest="listeners")
+    parser.add_option("-r", "--region",
+                      help="Region to connect to",
+                      action="store", dest="region")
 
     (options, args) = parser.parse_args()
 
@@ -243,7 +249,11 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
 
-    elb = boto.connect_elb()
+    if not options.region:
+        elb = boto.connect_elb()
+    else:
+        import boto.ec2.elb
+        elb = boto.ec2.elb.connect_to_region(options.region)
 
     print "%s" % (elb.region.endpoint)
 

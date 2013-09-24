@@ -269,6 +269,21 @@ class ItemTestCase(unittest.TestCase):
         self.johndoe['last_name'] = 'Doe'
         self.assertTrue(self.johndoe.needs_save())
 
+    def test_needs_save_set_changed(self):
+        # First, ensure we're clean.
+        self.johndoe.mark_clean()
+        self.assertFalse(self.johndoe.needs_save())
+        # Add a friends collection.
+        self.johndoe['friends'] = set(['jane', 'alice'])
+        self.assertTrue(self.johndoe.needs_save())
+        # Now mark it clean, then change the collection.
+        # This does NOT call ``__setitem__``, so the item used to be
+        # incorrectly appearing to be clean, when it had in fact been changed.
+        self.johndoe.mark_clean()
+        self.assertFalse(self.johndoe.needs_save())
+        self.johndoe['friends'].add('bob')
+        self.assertTrue(self.johndoe.needs_save())
+
     def test_mark_clean(self):
         self.johndoe['last_name'] = 'Doe'
         self.assertTrue(self.johndoe.needs_save())
@@ -416,6 +431,22 @@ class ItemTestCase(unittest.TestCase):
             'date_joined': {'N': '12345'}
         })
 
+        self.johndoe['friends'] = set(['jane', 'alice'])
+        self.assertEqual(self.johndoe.prepare_full(), {
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'John'},
+            'date_joined': {'N': '12345'},
+            'friends': {'SS': ['jane', 'alice']},
+        })
+
+    def test_prepare_full_empty_set(self):
+        self.johndoe['friends'] = set()
+        self.assertEqual(self.johndoe.prepare_full(), {
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'John'},
+            'date_joined': {'N': '12345'}
+        })
+
     def test_prepare_partial(self):
         self.johndoe.mark_clean()
         # Change some data.
@@ -425,7 +456,8 @@ class ItemTestCase(unittest.TestCase):
         # Delete some data.
         del self.johndoe['date_joined']
 
-        self.assertEqual(self.johndoe.prepare_partial(), {
+        final_data, fields = self.johndoe.prepare_partial()
+        self.assertEqual(final_data, {
             'date_joined': {
                 'Action': 'DELETE',
             },
@@ -438,6 +470,42 @@ class ItemTestCase(unittest.TestCase):
                 'Value': {'S': 'Doe'},
             },
         })
+        self.assertEqual(fields, set([
+            'first_name',
+            'last_name',
+            'date_joined'
+        ]))
+
+    def test_prepare_partial(self):
+        self.johndoe.mark_clean()
+        # Change some data.
+        self.johndoe['first_name'] = 'Johann'
+        # Add some data.
+        self.johndoe['last_name'] = 'Doe'
+        # Delete some data.
+        del self.johndoe['date_joined']
+        # Put an empty set on the ``Item``.
+        self.johndoe['friends'] = set()
+
+        final_data, fields = self.johndoe.prepare_partial()
+        self.assertEqual(final_data, {
+            'date_joined': {
+                'Action': 'DELETE',
+            },
+            'first_name': {
+                'Action': 'PUT',
+                'Value': {'S': 'Johann'},
+            },
+            'last_name': {
+                'Action': 'PUT',
+                'Value': {'S': 'Doe'},
+            },
+        })
+        self.assertEqual(fields, set([
+            'first_name',
+            'last_name',
+            'date_joined'
+        ]))
 
     def test_save_no_changes(self):
         # Unchanged, no save.
@@ -590,6 +658,9 @@ def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
     if exclusive_start_key is None:
         exclusive_start_key = -1
 
+    if limit == 0:
+        raise Exception("Web Service Returns '400 Bad Request'")
+
     end_cap = 13
     results = []
     start_key = exclusive_start_key + 1
@@ -597,6 +668,10 @@ def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
     for i in range(start_key, start_key + 5):
         if i < end_cap:
             results.append("%s %s #%s" % (greeting, name, i))
+
+    # Don't return more than limit results
+    if limit < len(results):
+        results = results[:limit]
 
     retval = {
         'results': results,
@@ -681,6 +756,37 @@ class ResultSetTestCase(unittest.TestCase):
         self.assertRaises(StopIteration, self.results.next)
         self.assertEqual(self.results.call_kwargs['limit'], 7)
 
+    def test_limit_smaller_than_first_page(self):
+        results = ResultSet()
+        results.to_call(fake_results, 'john', greeting='Hello', limit=2)
+        self.assertEqual(results.next(), 'Hello john #0')
+        self.assertEqual(results.next(), 'Hello john #1')
+        self.assertRaises(StopIteration, results.next)
+
+    def test_limit_equals_page(self):
+        results = ResultSet()
+        results.to_call(fake_results, 'john', greeting='Hello', limit=5)
+        # First page
+        self.assertEqual(results.next(), 'Hello john #0')
+        self.assertEqual(results.next(), 'Hello john #1')
+        self.assertEqual(results.next(), 'Hello john #2')
+        self.assertEqual(results.next(), 'Hello john #3')
+        self.assertEqual(results.next(), 'Hello john #4')
+        self.assertRaises(StopIteration, results.next)
+
+    def test_limit_greater_than_page(self):
+        results = ResultSet()
+        results.to_call(fake_results, 'john', greeting='Hello', limit=6)
+        # First page
+        self.assertEqual(results.next(), 'Hello john #0')
+        self.assertEqual(results.next(), 'Hello john #1')
+        self.assertEqual(results.next(), 'Hello john #2')
+        self.assertEqual(results.next(), 'Hello john #3')
+        self.assertEqual(results.next(), 'Hello john #4')
+        # Second page
+        self.assertEqual(results.next(), 'Hello john #5')
+        self.assertRaises(StopIteration, results.next)
+
     def test_iteration_noresults(self):
         def none(limit=10):
             return {
@@ -689,6 +795,60 @@ class ResultSetTestCase(unittest.TestCase):
 
         results = ResultSet()
         results.to_call(none, limit=20)
+        self.assertRaises(StopIteration, results.next)
+
+    def test_iteration_sporadic_pages(self):
+        # Some pages have no/incomplete results but have a ``LastEvaluatedKey``
+        # (for instance, scans with filters), so we need to accommodate that.
+        def sporadic():
+            # A dict, because Python closures have read-only access to the
+            # reference itself.
+            count = {'value': -1}
+
+            def _wrapper(limit=10, exclusive_start_key=None):
+                count['value'] = count['value'] + 1
+
+                if count['value'] == 0:
+                    # Full page.
+                    return {
+                        'results': [
+                            'Result #0',
+                            'Result #1',
+                            'Result #2',
+                            'Result #3',
+                        ],
+                        'last_key': 'page-1'
+                    }
+                elif count['value'] == 1:
+                    # Empty page but continue.
+                    return {
+                        'results': [],
+                        'last_key': 'page-2'
+                    }
+                elif count['value'] == 2:
+                    # Final page.
+                    return {
+                        'results': [
+                            'Result #4',
+                            'Result #5',
+                            'Result #6',
+                        ],
+                    }
+
+            return _wrapper
+
+        results = ResultSet()
+        results.to_call(sporadic(), limit=20)
+        # First page
+        self.assertEqual(results.next(), 'Result #0')
+        self.assertEqual(results.next(), 'Result #1')
+        self.assertEqual(results.next(), 'Result #2')
+        self.assertEqual(results.next(), 'Result #3')
+        # Second page (misses!)
+        # Moves on to the third page
+        self.assertEqual(results.next(), 'Result #4')
+        self.assertEqual(results.next(), 'Result #5')
+        self.assertEqual(results.next(), 'Result #6')
         self.assertRaises(StopIteration, results.next)
 
     def test_list(self):
@@ -1370,6 +1530,89 @@ class TableTestCase(unittest.TestCase):
 
         self.assertEqual(mock_batch.call_count, 2)
 
+    def test_batch_write_unprocessed_items(self):
+        unprocessed = {
+            'UnprocessedItems': {
+                'users': [
+                    {
+                        'PutRequest': {
+                            'username': {
+                                'S': 'jane',
+                            },
+                            'date_joined': {
+                                'N': 12342547
+                            }
+                        },
+                    },
+                ],
+            },
+        }
+
+        # Test enqueuing the unprocessed bits.
+        with mock.patch.object(
+                self.users.connection,
+                'batch_write_item',
+                return_value=unprocessed) as mock_batch:
+            with self.users.batch_write() as batch:
+                self.assertEqual(len(batch._unprocessed), 0)
+
+                # Trash the ``resend_unprocessed`` method so that we don't
+                # infinite loop forever here.
+                batch.resend_unprocessed = lambda: True
+
+                batch.put_item(data={
+                    'username': 'jane',
+                    'date_joined': 12342547
+                })
+                batch.delete_item(username='johndoe')
+                batch.put_item(data={
+                    'username': 'alice',
+                    'date_joined': 12342888
+                })
+
+            self.assertEqual(len(batch._unprocessed), 1)
+
+        # Now test resending those unprocessed items.
+        with mock.patch.object(
+                self.users.connection,
+                'batch_write_item',
+                return_value={}) as mock_batch:
+            with self.users.batch_write() as batch:
+                self.assertEqual(len(batch._unprocessed), 0)
+
+                # Toss in faked unprocessed items, as though a previous batch
+                # had failed.
+                batch._unprocessed = [
+                    {
+                        'PutRequest': {
+                            'username': {
+                                'S': 'jane',
+                            },
+                            'date_joined': {
+                                'N': 12342547
+                            }
+                        },
+                    },
+                ]
+
+                batch.put_item(data={
+                    'username': 'jane',
+                    'date_joined': 12342547
+                })
+                batch.delete_item(username='johndoe')
+                batch.put_item(data={
+                    'username': 'alice',
+                    'date_joined': 12342888
+                })
+
+                # Flush, to make sure everything has been processed.
+                # Unprocessed items should still be hanging around.
+                batch.flush()
+                self.assertEqual(len(batch._unprocessed), 1)
+
+            # Post-exit, this should be emptied.
+            self.assertEqual(len(batch._unprocessed), 0)
+
     def test__build_filters(self):
         filters = self.users._build_filters({
             'username__eq': 'johndoe',
@@ -1527,15 +1770,17 @@ class TableTestCase(unittest.TestCase):
 
         mock_query.assert_called_once_with('users',
             consistent_read=False,
-            index_name=None,
             scan_index_forward=True,
+            index_name=None,
+            attributes_to_get=None,
             limit=4,
             key_conditions={
                 'username': {
                     'AttributeValueList': [{'S': 'aaa'}, {'S': 'mmm'}],
                     'ComparisonOperator': 'BETWEEN',
                 }
-            }
+            },
+            select=None
         )
 
         # Now alter the expected.
@@ -1571,6 +1816,7 @@ class TableTestCase(unittest.TestCase):
                 }
             },
             index_name=None,
+            attributes_to_get=None,
             scan_index_forward=True,
             limit=4,
             exclusive_start_key={
@@ -1578,7 +1824,8 @@ class TableTestCase(unittest.TestCase):
                     'S': 'adam',
                 },
             },
-            consistent_read=True
+            consistent_read=True,
+            select=None
         )
 
     def test_private_scan(self):
@@ -1741,6 +1988,39 @@ class TableTestCase(unittest.TestCase):
             self.assertRaises(StopIteration, results.next)
 
         self.assertEqual(mock_query_2.call_count, 1)
+
+    def test_query_with_specific_attributes(self):
+        items_1 = {
+            'results': [
+                Item(self.users, data={
+                    'username': 'johndoe',
+                }),
+                Item(self.users, data={
+                    'username': 'jane',
+                }),
+            ],
+            'last_key': 'jane',
+        }
+
+        results = self.users.query(last_name__eq='Doe',
+                                   attributes=['username'])
+        self.assertTrue(isinstance(results, ResultSet))
+        self.assertEqual(len(results._results), 0)
+        self.assertEqual(results.the_callable, self.users._query)
+
+        with mock.patch.object(
+                results,
+                'the_callable',
+                return_value=items_1) as mock_query:
+            res_1 = results.next()
+            # Now it should be populated.
+            self.assertEqual(len(results._results), 2)
+            self.assertEqual(res_1['username'], 'johndoe')
+            self.assertEqual(res_1.keys(), ['username'])
+            res_2 = results.next()
+            self.assertEqual(res_2['username'], 'jane')
+
+        self.assertEqual(mock_query.call_count, 1)
 
     def test_scan(self):
         items_1 = {

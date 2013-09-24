@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from __future__ import with_statement
 import errno
 import mimetypes
 import os
@@ -40,6 +41,8 @@ from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
 from boto import UserAgent
 from boto.utils import compute_md5
+from boto.utils import find_matching_headers
+from boto.utils import merge_headers_by_name
 try:
     from hashlib import md5
 except ImportError:
@@ -145,37 +148,37 @@ class Key(object):
             provider = self.bucket.connection.provider
         return provider
 
-    @property
-    def key(self):
+    def _get_key(self):
         return self.name
 
-    @key.setter
-    def key(self, value):
+    def _set_key(self, value):
         self.name = value
 
-    @property
-    def md5(self):
+    key = property(_get_key, _set_key);
+
+    def _get_md5(self):
         if 'md5' in self.local_hashes and self.local_hashes['md5']:
             return binascii.b2a_hex(self.local_hashes['md5'])
 
-    @md5.setter
-    def md5(self, value):
+    def _set_md5(self, value):
         if value:
             self.local_hashes['md5'] = binascii.a2b_hex(value)
         elif 'md5' in self.local_hashes:
             self.local_hashes.pop('md5', None)
 
-    @property
-    def base64md5(self):
+    md5 = property(_get_md5, _set_md5);
+
+    def _get_base64md5(self):
         if 'md5' in self.local_hashes and self.local_hashes['md5']:
             return binascii.b2a_base64(self.local_hashes['md5']).rstrip('\n')
 
-    @base64md5.setter
-    def base64md5(self, value):
+    def _set_base64md5(self, value):
         if value:
             self.local_hashes['md5'] = binascii.a2b_base64(value)
         elif 'md5' in self.local_hashes:
             del self.local_hashes['md5']
+
+    base64md5 = property(_get_base64md5, _set_base64md5);
 
     def get_md5_from_hexdigest(self, md5_hexdigest):
         """
@@ -500,26 +503,34 @@ class Key(object):
         else:
             setattr(self, name, value)
 
-    def exists(self):
+    def exists(self, headers=None):
         """
         Returns True if the key exists
 
         :rtype: bool
         :return: Whether the key exists on S3
         """
-        return bool(self.bucket.lookup(self.name))
+        return bool(self.bucket.lookup(self.name, headers=headers))
 
-    def delete(self):
+    def delete(self, headers=None):
         """
         Delete this key from S3
         """
-        return self.bucket.delete_key(self.name, version_id=self.version_id)
+        return self.bucket.delete_key(self.name, version_id=self.version_id,
+                                      headers=headers)
 
     def get_metadata(self, name):
         return self.metadata.get(name)
 
     def set_metadata(self, name, value):
-        self.metadata[name] = value
+        # Ensure that metadata that is vital to signing is in the correct
+        # case. Applies to ``Content-Type`` & ``Content-MD5``.
+        if name.lower() == 'content-type':
+            self.metadata['Content-Type'] = value
+        elif name.lower() == 'content-md5':
+            self.metadata['Content-MD5'] = value
+        else:
+            self.metadata[name] = value
 
     def update_metadata(self, d):
         self.metadata.update(d)
@@ -739,7 +750,14 @@ class Key(object):
                 raise provider.storage_data_error(
                     'Cannot retry failed request. fp does not support seeking.')
 
-            http_conn.putrequest(method, path)
+            # If the caller explicitly specified host header, tell putrequest
+            # not to add a second host header. Similarly for accept-encoding.
+            skips = {}
+            if boto.utils.find_matching_headers('host', headers):
+              skips['skip_host'] = 1
+            if boto.utils.find_matching_headers('accept-encoding', headers):
+              skips['skip_accept_encoding'] = 1
+            http_conn.putrequest(method, path, **skips)
             for key in headers:
                 http_conn.putheader(key, headers[key])
             http_conn.endheaders()
@@ -836,23 +854,31 @@ class Key(object):
             headers = {}
         else:
             headers = headers.copy()
+        # Overwrite user-supplied user-agent.
+        for header in find_matching_headers('User-Agent', headers):
+            del headers[header]
         headers['User-Agent'] = UserAgent
         if self.storage_class != 'STANDARD':
             headers[provider.storage_class_header] = self.storage_class
-        if 'Content-Encoding' in headers:
-            self.content_encoding = headers['Content-Encoding']
-        if 'Content-Language' in headers:
-            self.content_encoding = headers['Content-Language']
-        if 'Content-Type' in headers:
+        if find_matching_headers('Content-Encoding', headers):
+            self.content_encoding = merge_headers_by_name(
+                'Content-Encoding', headers)
+        if find_matching_headers('Content-Language', headers):
+            self.content_language = merge_headers_by_name(
+                'Content-Language', headers)
+        content_type_headers = find_matching_headers('Content-Type', headers)
+        if content_type_headers:
             # Some use cases need to suppress sending of the Content-Type
             # header and depend on the receiving server to set the content
             # type. This can be achieved by setting headers['Content-Type']
             # to None when calling this method.
-            if headers['Content-Type'] is None:
+            if (len(content_type_headers) == 1 and
+                headers[content_type_headers[0]] is None):
                 # Delete null Content-Type value to skip sending that header.
-                del headers['Content-Type']
+                del headers[content_type_headers[0]]
             else:
-                self.content_type = headers['Content-Type']
+                self.content_type = merge_headers_by_name(
+                    'Content-Type', headers)
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
             if self.content_type == None:
@@ -1454,7 +1480,7 @@ class Key(object):
                     if i == cb_count or cb_count == -1:
                         cb(data_len, cb_size)
                         i = 0
-        except IOError as e:
+        except IOError, e:
             if e.errno == errno.ENOSPC:
                 raise StorageDataError('Out of space for destination file '
                                        '%s' % fp.name)

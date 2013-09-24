@@ -216,7 +216,7 @@ class TestDescribeInstances(AWSMockServiceTestCase):
     def test_multiple_private_ip_addresses(self):
         self.set_http_response(status_code=200)
 
-        api_response = self.service_connection.get_all_instances()
+        api_response = self.service_connection.get_all_reservations()
         self.assertEqual(len(api_response), 1)
 
         instances = api_response[0].instances

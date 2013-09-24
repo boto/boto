@@ -72,8 +72,11 @@ class VPC(TaggedEC2Object):
     def _update(self, updated):
         self.__dict__.update(updated.__dict__)
 
-    def update(self, validate=False):
-        vpc_list = self.connection.get_all_vpcs([self.id])
+    def update(self, validate=False, dry_run=False):
+        vpc_list = self.connection.get_all_vpcs(
+            [self.id],
+            dry_run=dry_run
+        )
         if len(vpc_list):
             updated_vpc = vpc_list[0]
             self._update(updated_vpc)

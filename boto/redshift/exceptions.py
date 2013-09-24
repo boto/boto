@@ -180,3 +180,11 @@ class SubnetAlreadyInUse(JSONResponseError):
 
 class InvalidParameterCombinationFault(JSONResponseError):
     pass
+
+
+class AccessToSnapshotDeniedFault(JSONResponseError):
+    pass
+
+
+class UnauthorizedOperationFault(JSONResponseError):
+    pass

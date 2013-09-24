@@ -302,6 +302,12 @@ class AutoScalingGroup(object):
                                                               topic,
                                                               notification_types)
 
+    def delete_notification_configuration(self, topic):
+        """
+        Deletes notifications created by put_notification_configuration.
+        """
+        return self.connection.delete_notification_configuration(self, topic)
+
     def suspend_processes(self, scaling_processes=None):
         """
         Suspends Auto Scaling processes for an Auto Scaling group.

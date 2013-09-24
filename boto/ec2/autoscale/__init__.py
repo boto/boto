@@ -47,6 +47,7 @@ from boto.ec2.autoscale.tag import Tag
 
 RegionData = {
     'us-east-1': 'autoscaling.us-east-1.amazonaws.com',
+    'us-gov-west-1': 'autoscaling.us-gov-west-1.amazonaws.com',
     'us-west-1': 'autoscaling.us-west-1.amazonaws.com',
     'us-west-2': 'autoscaling.us-west-2.amazonaws.com',
     'sa-east-1': 'autoscaling.sa-east-1.amazonaws.com',
@@ -224,8 +225,7 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.ramdisk_id:
             params['RamdiskId'] = launch_config.ramdisk_id
         if launch_config.block_device_mappings:
-            self.build_list_params(params, launch_config.block_device_mappings,
-                                   'BlockDeviceMappings')
+            [x.autoscale_build_list_params(params) for x in launch_config.block_device_mappings]
         if launch_config.security_groups:
             self.build_list_params(params, launch_config.security_groups,
                                    'SecurityGroups')
@@ -255,6 +255,11 @@ class AutoScaleConnection(AWSQueryConnection):
                   'AutoScalingGroupName': scaling_policy.as_name,
                   'PolicyName': scaling_policy.name,
                   'ScalingAdjustment': scaling_policy.scaling_adjustment}
+
+        if scaling_policy.adjustment_type == "PercentChangeInCapacity" and \
+           scaling_policy.min_adjustment_step is not None:
+            params['MinAdjustmentStep'] = scaling_policy.min_adjustment_step
+
         if scaling_policy.cooldown is not None:
             params['Cooldown'] = scaling_policy.cooldown
 
@@ -676,9 +681,9 @@ class AutoScaleConnection(AWSQueryConnection):
         Configures an Auto Scaling group to send notifications when
         specified events take place.
 
-        :type as_group: str or
+        :type autoscale_group: str or
             :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
-        :param as_group: The Auto Scaling group to put notification
+        :param autoscale_group: The Auto Scaling group to put notification
             configuration on.
 
         :type topic: str
@@ -698,6 +703,29 @@ class AutoScaleConnection(AWSQueryConnection):
                   'TopicARN': topic}
         self.build_list_params(params, notification_types, 'NotificationTypes')
         return self.get_status('PutNotificationConfiguration', params)
+
+    def delete_notification_configuration(self, autoscale_group, topic):
+        """
+        Deletes notifications created by put_notification_configuration.
+
+        :type autoscale_group: str or
+            :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param autoscale_group: The Auto Scaling group to put notification
+            configuration on.
+
+        :type topic: str
+        :param topic: The Amazon Resource Name (ARN) of the Amazon Simple
+            Notification Service (SNS) topic.
+        """
+
+        name = autoscale_group
+        if isinstance(autoscale_group, AutoScalingGroup):
+            name = autoscale_group.name
+
+        params = {'AutoScalingGroupName': name,
+                  'TopicARN': topic}
+
+        return self.get_status('DeleteNotificationConfiguration', params)
 
     def set_instance_health(self, instance_id, health_status,
                             should_respect_grace_period=True):

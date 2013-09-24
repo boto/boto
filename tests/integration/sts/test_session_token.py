@@ -67,15 +67,26 @@ class SessionTokenTest (unittest.TestCase):
         print '--- tests completed ---'
 
     def test_assume_role_with_web_identity(self):
-        c = STSConnection()
+        c = STSConnection(anon=True)
+        arn = 'arn:aws:iam::000240903217:role/FederatedWebIdentityRole'
+        wit = 'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9'
 
         try:
             creds = c.assume_role_with_web_identity(
-                'arn:aws:s3:::my_corporate_bucket/*',
-                'guestuser',
-                'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9',
+                role_arn=arn,
+                role_session_name='guestuser',
+                web_identity_token=wit,
                 provider_id='www.amazon.com',
             )
         except BotoServerError as err:
             self.assertEqual(err.status, 403)
             self.assertTrue('Not authorized' in err.body)
+
+    def test_decode_authorization_message(self):
+        c = STSConnection()
+
+        try:
+            creds = c.decode_authorization_message('b94d27b9934')
+        except BotoServerError as err:
+            self.assertEqual(err.status, 400)
+            self.assertTrue('Invalid token' in err.body)
