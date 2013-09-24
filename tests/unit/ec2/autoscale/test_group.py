@@ -647,6 +647,40 @@ class TestGetAccountLimits(AWSMockServiceTestCase):
         self.assertEqual(limits.max_autoscaling_groups, 6)
         self.assertEqual(limits.max_launch_configurations, 3)
 
+class TestGetAdjustmentTypes(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def setUp(self):
+        super(TestGetAdjustmentTypes, self).setUp()
+
+    def default_body(self):
+        return """
+            <DescribeAdjustmentTypesResponse xmlns="http://autoscaling.amazonaws.com/doc/201-01-01/">
+              <DescribeAdjustmentTypesResult>
+                <AdjustmentTypes>
+                  <member>
+                    <AdjustmentType>ChangeInCapacity</AdjustmentType>
+                  </member>
+                  <member>
+                    <AdjustmentType>ExactCapacity</AdjustmentType>
+                  </member>
+                  <member>
+                    <AdjustmentType>PercentChangeInCapacity</AdjustmentType>
+                  </member>
+                </AdjustmentTypes>
+              </DescribeAdjustmentTypesResult>
+              <ResponseMetadata>
+                <RequestId>requestId</RequestId>
+              </ResponseMetadata>
+            </DescribeAdjustmentTypesResponse>
+        """
+    def test_autoscaling_adjustment_types(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.get_all_adjustment_types()
+        self.assert_request_parameters({
+            'Action': 'DescribeAdjustmentTypes'
+        }, ignore_params_values=['Version'])
+
 
 if __name__ == '__main__':
     unittest.main()
