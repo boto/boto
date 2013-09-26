@@ -85,6 +85,17 @@ class MWSTestCase(unittest.TestCase):
             ASINList=[asin,])
         product = response._result[0].Product
 
+    @unittest.skipUnless(simple and isolator, "skipping simple test")
+    def test_get_matching_product_for_id(self):
+        asins = ['B001UDRNHO', '144930544X']
+        response = self.mws.get_matching_product_for_id(\
+            MarketplaceId=self.marketplace_id,
+            IdType='ASIN',
+            IdList=asins)
+        self.assertEqual(len(response._result), 2)
+        for result in response._result:
+            print len(result.Products.Product)
+            self.assertEqual(len(result.Products.Product), 1)
 
     @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_get_lowest_offer_listings_for_asin(self):
