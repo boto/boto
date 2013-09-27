@@ -94,7 +94,6 @@ class MWSTestCase(unittest.TestCase):
             IdList=asins)
         self.assertEqual(len(response._result), 2)
         for result in response._result:
-            print len(result.Products.Product)
             self.assertEqual(len(result.Products.Product), 1)
 
     @unittest.skipUnless(simple and isolator, "skipping simple test")
