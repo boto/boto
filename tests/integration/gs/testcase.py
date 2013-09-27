@@ -29,11 +29,11 @@ import time
 
 from boto.exception import GSResponseError
 from boto.gs.connection import GSConnection
-from tests.integration.gs.util import has_google_credentials
+from tests.integration.gs import util
 from tests.integration.gs.util import retry
 from tests.unit import unittest
 
-@unittest.skipUnless(has_google_credentials(),
+@unittest.skipUnless(util.has_google_credentials(),
                      "Google credentials are required to run the Google "
                      "Cloud Storage tests.  Update your boto.cfg to run "
                      "these tests.")
