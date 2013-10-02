@@ -95,7 +95,7 @@ class MetricAlarm(object):
                        statistic is applied.
 
         :type evaluation_periods: int
-        :param evaluation_period: The number of periods over which data is
+        :param evaluation_periods: The number of periods over which data is
                                   compared to the specified threshold.
 
         :type unit: str
@@ -113,7 +113,7 @@ class MetricAlarm(object):
         :param description: Description of MetricAlarm
 
         :type dimensions: list of dicts
-        :param description: Dimensions of alarm, such as:
+        :param dimensions: Dimensions of alarm, such as:
                             [{'InstanceId':['i-0123456,i-0123457']}]
         
         :type alarm_actions: list of strs

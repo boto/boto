@@ -492,15 +492,19 @@ class AutoScaleConnection(AWSQueryConnection):
         If no group name or list of policy names are provided, all
         available policies are returned.
 
-        :type as_name: str
-        :param as_name: The name of the
+        :type as_group: str
+        :param as_group: The name of the
             :class:`boto.ec2.autoscale.group.AutoScalingGroup` to filter for.
 
-        :type names: list
-        :param names: List of policy names which should be searched for.
+        :type policy_names: list
+        :param policy_names: List of policy names which should be searched for.
 
         :type max_records: int
         :param max_records: Maximum amount of groups to return.
+
+        :type next_token: str
+        :param next_token: If you have more results than can be returned
+            at once, pass in this  parameter to page through all results.
         """
         params = {}
         if as_group:
