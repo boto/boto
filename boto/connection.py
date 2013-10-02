@@ -101,7 +101,7 @@ DEFAULT_CA_CERTS_FILE = os.path.join(os.path.dirname(os.path.abspath(boto.cacert
 class HostConnectionPool(object):
 
     """
-    A pool of connections for one remote (host,is_secure).
+    A pool of connections for one remote (host,port,is_secure).
 
     When connections are added to the pool, they are put into a
     pending queue.  The _mexe method returns connections to the pool
@@ -145,7 +145,7 @@ class HostConnectionPool(object):
     def get(self):
         """
         Returns the next connection in this pool that is ready to be
-        reused.  Returns None of there aren't any.
+        reused.  Returns None if there aren't any.
         """
         # Discard ready connections that are too old.
         self.clean()
@@ -234,7 +234,7 @@ class ConnectionPool(object):
     STALE_DURATION = 60.0
 
     def __init__(self):
-        # Mapping from (host,is_secure) to HostConnectionPool.
+        # Mapping from (host,port,is_secure) to HostConnectionPool.
         # If a pool becomes empty, it is removed.
         self.host_to_pool = {}
         # The last time the pool was cleaned.
@@ -259,7 +259,7 @@ class ConnectionPool(object):
         """
         return sum(pool.size() for pool in self.host_to_pool.values())
 
-    def get_http_connection(self, host, is_secure):
+    def get_http_connection(self, host, port, is_secure):
         """
         Gets a connection from the pool for the named host.  Returns
         None if there is no connection that can be reused. It's the caller's
@@ -268,18 +268,18 @@ class ConnectionPool(object):
         """
         self.clean()
         with self.mutex:
-            key = (host, is_secure)
+            key = (host, port, is_secure)
             if key not in self.host_to_pool:
                 return None
             return self.host_to_pool[key].get()
 
-    def put_http_connection(self, host, is_secure, conn):
+    def put_http_connection(self, host, port, is_secure, conn):
         """
         Adds a connection to the pool of connections that can be
         reused for the named host.
         """
         with self.mutex:
-            key = (host, is_secure)
+            key = (host, port, is_secure)
             if key not in self.host_to_pool:
                 self.host_to_pool[key] = HostConnectionPool()
             self.host_to_pool[key].put(conn)
@@ -551,7 +551,7 @@ class AWSAuthConnection(object):
             self.host_header = self.provider.host_header
 
         self._pool = ConnectionPool()
-        self._connection = (self.server_name(), self.is_secure)
+        self._connection = (self.server_name(), self.port, self.is_secure)
         self._last_rs = None
         self._auth_handler = auth.get_auth_handler(
               host, config, self.provider, self._required_auth_capability())
@@ -680,12 +680,12 @@ class AWSAuthConnection(object):
         self.no_proxy = os.environ.get('no_proxy', '') or os.environ.get('NO_PROXY', '')
         self.use_proxy = (self.proxy != None)
 
-    def get_http_connection(self, host, is_secure):
-        conn = self._pool.get_http_connection(host, is_secure)
+    def get_http_connection(self, host, port, is_secure):
+        conn = self._pool.get_http_connection(host, port, is_secure)
         if conn is not None:
             return conn
         else:
-            return self.new_http_connection(host, is_secure)
+            return self.new_http_connection(host, port, is_secure)
 
     def skip_proxy(self, host):
         if not self.no_proxy:
@@ -703,12 +703,18 @@ class AWSAuthConnection(object):
 
         return False
 
-    def new_http_connection(self, host, is_secure):
+    def new_http_connection(self, host, port, is_secure):
+        if host is None:
+            host = self.server_name()
+
+        # Connection factories below expect a 'host:port' string
+        host = host + ':' + str(port)
+
+        # Override host with proxy settings if needed
         if self.use_proxy and not is_secure and \
                 not self.skip_proxy(host):
             host = '%s:%d' % (self.proxy, int(self.proxy_port))
-        if host is None:
-            host = self.server_name()
+
         if is_secure:
             boto.log.debug(
                     'establishing HTTPS connection: host=%s, kwargs=%s',
@@ -741,14 +747,14 @@ class AWSAuthConnection(object):
         # however, it must be dynamically pulled from the connection pool
         # set a private variable which will enable that
         if host.split(':')[0] == self.host and is_secure == self.is_secure:
-            self._connection = (host, is_secure)
+            self._connection = (host, port, is_secure)
         # Set the response class of the http connection to use our custom
         # class.
         connection.response_class = HTTPResponse
         return connection
 
-    def put_http_connection(self, host, is_secure, connection):
-        self._pool.put_http_connection(host, is_secure, connection)
+    def put_http_connection(self, host, port, is_secure, connection):
+        self._pool.put_http_connection(host, port, is_secure, connection)
 
     def proxy_ssl(self, host=None, port=None):
         if host and port:
@@ -841,6 +847,7 @@ class AWSAuthConnection(object):
         boto.log.debug('Data: %s' % request.body)
         boto.log.debug('Headers: %s' % request.headers)
         boto.log.debug('Host: %s' % request.host)
+        boto.log.debug('Port: %s' % request.port)
         boto.log.debug('Params: %s' % request.params)
         response = None
         body = None
@@ -850,7 +857,8 @@ class AWSAuthConnection(object):
         else:
             num_retries = override_num_retries
         i = 0
-        connection = self.get_http_connection(request.host, self.is_secure)
+        connection = self.get_http_connection(request.host, request.port,
+                                              self.is_secure)
         while i <= num_retries:
             # Use binary exponential backoff to desynchronize client requests.
             next_sleep = random.random() * (2 ** i)
@@ -902,18 +910,23 @@ class AWSAuthConnection(object):
                     if conn_header_value == 'close':
                         connection.close()
                     else:
-                        self.put_http_connection(request.host, self.is_secure,
-                                                 connection)
+                        self.put_http_connection(request.host, request.port,
+                                                 self.is_secure, connection)
                     return response
                 else:
                     scheme, request.host, request.path, \
                         params, query, fragment = urlparse.urlparse(location)
                     if query:
                         request.path += '?' + query
+                    # urlparse can return both host and port in netloc, so if
+                    # that's the case we need to split them up properly
+                    if ':' in request.host:
+                        request.host, request.port = request.host.split(':', 1)
                     msg = 'Redirecting: %s' % scheme + '://'
                     msg += request.host + request.path
                     boto.log.debug(msg)
                     connection = self.get_http_connection(request.host,
+                                                          request.port,
                                                           scheme == 'https')
                     response = None
                     continue
