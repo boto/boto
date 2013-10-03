@@ -551,7 +551,7 @@ class AWSAuthConnection(object):
             self.host_header = self.provider.host_header
 
         self._pool = ConnectionPool()
-        self._connection = (self.server_name(), self.port, self.is_secure)
+        self._connection = (self.host, self.port, self.is_secure)
         self._last_rs = None
         self._auth_handler = auth.get_auth_handler(
               host, config, self.provider, self._required_auth_capability())
@@ -707,18 +707,25 @@ class AWSAuthConnection(object):
         if host is None:
             host = self.server_name()
 
-        # Connection factories below expect a 'host:port' string
-        host = host + ':' + str(port)
+        # Make sure the host is really just the host, not including
+        # the port number
+        host = host.split(':', 1)[0]
+
+        http_connection_kwargs = self.http_connection_kwargs.copy()
+
+        # Connection factories below expect a port keyword argument
+        http_connection_kwargs['port'] = port
 
         # Override host with proxy settings if needed
         if self.use_proxy and not is_secure and \
                 not self.skip_proxy(host):
-            host = '%s:%d' % (self.proxy, int(self.proxy_port))
+            host = self.proxy
+            http_connection_kwargs['port'] = int(self.proxy_port)
 
         if is_secure:
             boto.log.debug(
                     'establishing HTTPS connection: host=%s, kwargs=%s',
-                    host, self.http_connection_kwargs)
+                    host, http_connection_kwargs)
             if self.use_proxy and not self.skip_proxy(host):
                 connection = self.proxy_ssl(host, is_secure and 443 or 80)
             elif self.https_connection_factory:
@@ -726,21 +733,21 @@ class AWSAuthConnection(object):
             elif self.https_validate_certificates and HAVE_HTTPS_CONNECTION:
                 connection = https_connection.CertValidatingHTTPSConnection(
                         host, ca_certs=self.ca_certificates_file,
-                        **self.http_connection_kwargs)
+                        **http_connection_kwargs)
             else:
                 connection = httplib.HTTPSConnection(host,
-                        **self.http_connection_kwargs)
+                        **http_connection_kwargs)
         else:
             boto.log.debug('establishing HTTP connection: kwargs=%s' %
-                    self.http_connection_kwargs)
+                    http_connection_kwargs)
             if self.https_connection_factory:
                 # even though the factory says https, this is too handy
                 # to not be able to allow overriding for http also.
                 connection = self.https_connection_factory(host,
-                    **self.http_connection_kwargs)
+                    **http_connection_kwargs)
             else:
                 connection = httplib.HTTPConnection(host,
-                    **self.http_connection_kwargs)
+                    **http_connection_kwargs)
         if self.debug > 1:
             connection.set_debuglevel(self.debug)
         # self.connection must be maintained for backwards-compatibility
@@ -932,7 +939,7 @@ class AWSAuthConnection(object):
                     continue
             except PleaseRetryException, e:
                 boto.log.debug('encountered a retry exception: %s' % e)
-                connection = self.new_http_connection(request.host,
+                connection = self.new_http_connection(request.host, request.port,
                                                       self.is_secure)
                 response = e.response
             except self.http_exceptions, e:
@@ -944,7 +951,7 @@ class AWSAuthConnection(object):
                         raise e
                 boto.log.debug('encountered %s exception, reconnecting' % \
                                   e.__class__.__name__)
-                connection = self.new_http_connection(request.host,
+                connection = self.new_http_connection(request.host, request.port,
                                                       self.is_secure)
             time.sleep(next_sleep)
             i += 1
@@ -1034,7 +1041,7 @@ class AWSQueryConnection(AWSAuthConnection):
     def make_request(self, action, params=None, path='/', verb='GET'):
         http_request = self.build_base_http_request(verb, path, None,
                                                     params, {}, '',
-                                                    self.server_name())
+                                                    self.host)
         if action:
             http_request.params['Action'] = action
         if self.APIVersion:
