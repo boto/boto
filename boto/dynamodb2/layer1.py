@@ -21,7 +21,11 @@
 #
 from binascii import crc32
 
-import json
+try:
+    import json
+except ImportError:
+    import simplejson as json
+
 import boto
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
