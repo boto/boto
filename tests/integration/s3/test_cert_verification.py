@@ -24,17 +24,16 @@
 """
 Check that all of the certs on SQS endpoints validate.
 """
-
 import unittest
+
+from tests.integration import ServiceCertVerificationTest
+
 import boto.s3
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class S3CertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     s3 = True
-    ssl = True
+    regions = boto.s3.regions()
 
-    def test_certs(self):
-        for region in boto.s3.regions():
-            c = region.connect()
-            c.get_all_buckets()
+    def sample_service_call(self, conn):
+        conn.get_all_buckets()

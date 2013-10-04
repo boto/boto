@@ -24,17 +24,16 @@
 """
 Check that all of the certs on all service endpoints validate.
 """
-
 import unittest
+
+from tests.integration import ServiceCertVerificationTest
+
 import boto.cloudsearch
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class CloudSearchCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     cloudsearch = True
-    ssl = True
+    regions = boto.cloudsearch.regions()
 
-    def test_certs(self):
-        for region in boto.cloudsearch.regions():
-            c = region.connect()
-            c.describe_domains()
+    def sample_service_call(self, conn):
+        conn.describe_domains()
