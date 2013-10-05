@@ -29,6 +29,7 @@ from tests.unit import AWSMockServiceTestCase
 from boto.ec2.autoscale import AutoScaleConnection
 from boto.ec2.autoscale.group import AutoScalingGroup
 from boto.ec2.autoscale.policy import ScalingPolicy
+from boto.ec2.autoscale.tag import Tag
 
 from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 
@@ -383,6 +384,73 @@ class TestDeleteNotificationConfiguration(AWSMockServiceTestCase):
             'TopicARN': 'arn:aws:sns:us-east-1:19890506:AutoScaling-Up',
         }, ignore_params_values=['Version'])
 
+class TestAutoScalingTag(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def default_body(self):
+        return """
+        <CreateOrUpdateTagsResponse>
+            <ResponseMetadata>
+                <RequestId>requestId</RequestId>
+            </ResponseMetadata>
+        </CreateOrUpdateTagsResponse>
+        """
+
+    def test_create_or_update_tags(self):
+        self.set_http_response(status_code=200)
+
+        tags = [
+            Tag(
+                connection=self.service_connection,
+                key='alpha',
+                value='tango',
+                resource_id='sg-00000000',
+                resource_type='auto-scaling-group',
+                propagate_at_launch=True
+                ),
+            Tag(
+                connection=self.service_connection,
+                key='bravo',
+                value='sierra',
+                resource_id='sg-00000000',
+                resource_type='auto-scaling-group',
+                propagate_at_launch=False
+                )]
+               
+
+        response = self.service_connection.create_or_update_tags(tags)
+
+        self.assert_request_parameters({
+            'Action': 'CreateOrUpdateTags',
+            'Tags.member.1.ResourceType': 'auto-scaling-group',
+            'Tags.member.1.ResourceId': 'sg-00000000',
+            'Tags.member.1.Key': 'alpha',
+            'Tags.member.1.Value': 'tango',
+            'Tags.member.1.PropagateAtLaunch': 'true',
+            'Tags.member.2.ResourceType': 'auto-scaling-group',
+            'Tags.member.2.ResourceId': 'sg-00000000',
+            'Tags.member.2.Key': 'bravo',
+            'Tags.member.2.Value': 'sierra',
+            'Tags.member.2.PropagateAtLaunch': 'false'
+        }, ignore_params_values=['Version'])
+
+    def test_endElement(self):
+        for i in [
+            ('Key', 'mykey', 'key'),
+            ('Value', 'myvalue', 'value'),
+            ('ResourceType', 'auto-scaling-group', 'resource_type'),
+            ('ResourceId', 'sg-01234567', 'resource_id'),
+            ('PropagateAtLaunch', 'true', 'propagate_at_launch')]:
+                self.check_tag_attributes_set(i[0], i[1], i[2])
+            
+             
+    def check_tag_attributes_set(self, name, value, attr):
+        tag = Tag()
+        tag.endElement(name, value, None)
+        if value == 'true':
+            self.assertEqual(getattr(tag, attr), True)
+        else:
+            self.assertEqual(getattr(tag, attr), value)
 
 if __name__ == '__main__':
     unittest.main()
