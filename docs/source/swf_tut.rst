@@ -1,12 +1,11 @@
 .. swf_tut:
-:Authors: Slawek "oozie" Ligus <root@ooz.ie>
+ :Authors: Slawek "oozie" Ligus <root@ooz.ie>
 
 ===============================
 Amazon Simple Workflow Tutorial
 ===============================
 
-This tutorial focuses on boto's interface to AWS SimpleWorkflow service. It is based on a series of blog articles and questions submitted to StackOverflow under amazon-swf tag.
-
+This tutorial focuses on boto's interface to AWS SimpleWorkflow service.
 .. _SimpleWorkflow: http://aws.amazon.com/swf/
 
 What is a workflow?
@@ -38,22 +37,197 @@ Amazon SWF applications involve communcation between the following entities:
 The Workflow Executor contacts SWF Service and requests instantiation of a workflow. A new workflow is created and its state is stored in the service. 
 The next time a decider contacts SWF service to ask for a decision task, it will be informed about a new workflow execution is taking place and it will be asked to advise SWF service on what the next steps should be. The decider then instructs the service to dispatch specific tasks to activity workers. At the next activity worker poll, the task is dispatched, then executed and the results reported back to the SWF, which then passes them onto the deciders. This exchange keeps happening repeatedly until the decider is satisfied and instructs the service to complete the execution.
 
+Prerequisites
+-------------
+
+You need a valid access and secret key. The examples below assume that you have exported them to your environment, as follows:
+
+.. code-block:: bash
+
+    bash$ export AWS_ACCESS_KEY_ID=<your access key>
+    bash$ export AWS_SECRET_ACCESS_KEY=<your secret key>
+
+Before workflows and activities can be used, they have to be registered with SWF service:
+
+.. code-block:: python
+
+    # register.py
+    import boto.swf.layer2 as swf
+    DOMAIN = 'boto_tutorial'
+    VERSION = '1.0'
+
+    swf.Domain(name=DOMAIN).register()
+    swf.ActivityType(domain=DOMAIN, name='HelloWorld', version=VERSION, task_list='default').register()
+    swf.WorkflowType(domain=DOMAIN, name='HelloWorkflow', version=VERSION, task_list='default').register()
+
+Execution of the above should produce no errors.
+
+.. code-block:: bash
+
+   bash$ python -i register.py
+   >>> 
 
 HelloWorld
 ----------
 
-In this example, we'll create and run a minimal workflow. It's a boto reimplementation of HelloWorld workflow initially created in Java:
+This example is an implementation of a minimal Hello World workflow: 
 
-https://github.com/aws/aws-sdk-java/tree/master/src/samples/AwsFlowFramework/src/com/amazonaws/services/simpleworkflow/flow/examples/helloworld
+#. [misc] A workflow execution is started, 
+#. [decider] HelloWorld activity is scheduled,
+#. [activity worker] HelloWorld activity is completed
+#. [decider] The workflow execution is completed.
 
+Workflow logic is encoded in the decider:
 
-Here is what I mean::
+.. code-block:: python
 
+    # hello_decider.py
+    import boto.swf.layer2 as swf
+    
+    DOMAIN = 'boto_tutorial'
+    ACTIVITY = 'HelloWorld'
+    VERSION = '1.0'
+    TASKLIST = 'default'
+    
+    class HelloDecider(swf.Decider):
+    
+        domain = DOMAIN
+        task_list = TASKLIST
+        version = VERSION
+    
+        def run(self):
+            history = self.poll()
+            if 'events' in history:
+                # Find workflow events not related to decision scheduling.
+                workflow_events = [e for e in history['events']
+                    if not e['eventType'].startswith('Decision')]
+                last_event = workflow_events[-1]
+    
+                decisions = swf.Layer1Decisions()
+                if last_event['eventType'] == 'WorkflowExecutionStarted':
+                    decisions.schedule_activity_task('saying_hi', ACTIVITY, VERSION, task_list=TASKLIST)
+                elif last_event['eventType'] == 'ActivityTaskCompleted':
+                    decisions.complete_workflow_execution()
+                self.complete(decisions=decisions)
+                return True   
+    
+The activity worker is responsible for printing the greeting message when the activity task is dispatched to it by the service:
+
+.. code-block:: python
+
+    import boto.swf.layer2 as swf
+    
+    DOMAIN = 'boto_tutorial'
+    VERSION = '1.0'
+    TASKLIST = 'default'
+    
+    class HelloWorker(swf.ActivityWorker):
+    
+        domain = DOMAIN
+        version = VERSION
+        task_list = TASKLIST
+    
+        def run(self):
+            activity_task = self.poll()
+            if 'activityId' in activity_task:
+                print 'Hello, World!'
+                self.complete()
+                return True
+
+With actors implemented we can spin up a workflow execution:
+
+.. code-block:: bash
+
+    $ python
     >>> import boto.swf.layer2 as swf
+    >>> execution = swf.WorkflowType(name='HelloWorkflow', domain='boto_tutorial', version='1.0', task_list='default').start()
+    >>> 
+    
+From separate terminals run an instance of a worker and a decider to carry out a workflow execution (the worker and decider may run from two independent machines).
 
+.. code-block:: bash
 
+   $ python -i hello_decider.py
+   >>> while HelloDecider().run(): pass
+   ... 
 
+.. code-block:: bash
 
+   $ python -i hello_worker.py
+   >>> while HelloWorker().run(): pass
+   ... 
+   Hello, World!
+
+Great. Now, to see what just happened, go back to the original terminal from which the execution was started, and read its history.
+
+.. code-block:: bash
+
+    >>> execution.history()
+    [{'eventId': 1,
+      'eventTimestamp': 1381095173.2539999,
+      'eventType': 'WorkflowExecutionStarted',
+      'workflowExecutionStartedEventAttributes': {'childPolicy': 'TERMINATE',
+                                                  'executionStartToCloseTimeout': '3600',
+                                                  'parentInitiatedEventId': 0,
+                                                  'taskList': {'name': 'default'},
+                                                  'taskStartToCloseTimeout': '300',
+                                                  'workflowType': {'name': 'HelloWorkflow',
+                                                                   'version': '1.0'}}},
+     {'decisionTaskScheduledEventAttributes': {'startToCloseTimeout': '300',
+                                               'taskList': {'name': 'default'}},
+      'eventId': 2,
+      'eventTimestamp': 1381095173.2539999,
+      'eventType': 'DecisionTaskScheduled'},
+     {'decisionTaskStartedEventAttributes': {'scheduledEventId': 2},
+      'eventId': 3,
+      'eventTimestamp': 1381095177.5439999,
+      'eventType': 'DecisionTaskStarted'},
+     {'decisionTaskCompletedEventAttributes': {'scheduledEventId': 2,
+                                               'startedEventId': 3},
+      'eventId': 4,
+      'eventTimestamp': 1381095177.855,
+      'eventType': 'DecisionTaskCompleted'},
+     {'activityTaskScheduledEventAttributes': {'activityId': 'saying_hi',
+                                               'activityType': {'name': 'HelloWorld',
+                                                                'version': '1.0'},
+                                               'decisionTaskCompletedEventId': 4,
+                                               'heartbeatTimeout': '600',
+                                               'scheduleToCloseTimeout': '3900',
+                                               'scheduleToStartTimeout': '300',
+                                               'startToCloseTimeout': '3600',
+                                               'taskList': {'name': 'default'}},
+      'eventId': 5,
+      'eventTimestamp': 1381095177.855,
+      'eventType': 'ActivityTaskScheduled'},
+     {'activityTaskStartedEventAttributes': {'scheduledEventId': 5},
+      'eventId': 6,
+      'eventTimestamp': 1381095179.427,
+      'eventType': 'ActivityTaskStarted'},
+     {'activityTaskCompletedEventAttributes': {'scheduledEventId': 5,
+                                               'startedEventId': 6},
+      'eventId': 7,
+      'eventTimestamp': 1381095179.6989999,
+      'eventType': 'ActivityTaskCompleted'},
+     {'decisionTaskScheduledEventAttributes': {'startToCloseTimeout': '300',
+                                               'taskList': {'name': 'default'}},
+      'eventId': 8,
+      'eventTimestamp': 1381095179.6989999,
+      'eventType': 'DecisionTaskScheduled'},
+     {'decisionTaskStartedEventAttributes': {'scheduledEventId': 8},
+      'eventId': 9,
+      'eventTimestamp': 1381095179.7420001,
+      'eventType': 'DecisionTaskStarted'},
+     {'decisionTaskCompletedEventAttributes': {'scheduledEventId': 8,
+                                               'startedEventId': 9},
+      'eventId': 10,
+      'eventTimestamp': 1381095180.026,
+      'eventType': 'DecisionTaskCompleted'},
+     {'eventId': 11,
+      'eventTimestamp': 1381095180.026,
+      'eventType': 'WorkflowExecutionCompleted',
+      'workflowExecutionCompletedEventAttributes': {'decisionTaskCompletedEventId': 10}}]
+    
+    
 .. _Amazon SWF API Reference: http://docs.aws.amazon.com/amazonswf/latest/apireference/Welcome.html
 .. _StackOverflow questions: http://stackoverflow.com/questions/tagged/amazon-swf
 .. _Miscellaneous Blog Articles: http://log.ooz.ie/search/label/SimpleWorkflow
