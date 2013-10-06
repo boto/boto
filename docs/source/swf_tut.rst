@@ -70,12 +70,19 @@ Execution of the above should produce no errors.
 HelloWorld
 ----------
 
-This example is an implementation of a minimal Hello World workflow: 
+This example is an implementation of a minimal Hello World workflow. Its execution should unfold as follows:
 
-#. [misc] A workflow execution is started, 
-#. [decider] HelloWorld activity is scheduled,
-#. [activity worker] HelloWorld activity is completed
-#. [decider] The workflow execution is completed.
+#. A workflow execution is started.
+#. The SWF service schedules the initial decision task.
+#. A decider polls for decision tasks and receives one.
+#. The decider requests scheduling of an activity task.
+#. The SWF service schedules the greeting activity task.
+#. An activity worker polls for activity task and receives one.
+#. The worker completes the greeting activity.
+#. The SWF service schedules a decision task to inform about work outcome.
+#. The decider polls and receives a new decision task.
+#. The decider schedules workflow completion.
+#. The workflow execution finishes.
 
 Workflow logic is encoded in the decider:
 
