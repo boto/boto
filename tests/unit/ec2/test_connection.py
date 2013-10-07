@@ -1192,5 +1192,32 @@ class TestRegisterImage(TestEC2ConnectionBase):
             'Version'
         ])
 
+
+class TestTerminateInstances(TestEC2ConnectionBase):
+    def default_body(self):
+        return """<?xml version="1.0" ?>
+            <TerminateInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2013-07-15/">
+                <requestId>req-59a9ad52-0434-470c-ad48-4f89ded3a03e</requestId>
+                <instancesSet>
+                    <item>
+                        <instanceId>i-000043a2</instanceId>
+                        <shutdownState>
+                            <code>16</code>
+                            <name>running</name>
+                        </shutdownState>
+                        <previousState>
+                            <code>16</code>
+                            <name>running</name>
+                        </previousState>
+                    </item>
+                </instancesSet>
+            </TerminateInstancesResponse>
+        """
+
+    def test_terminate_bad_response(self):
+        self.set_http_response(status_code=200)
+        self.ec2.terminate_instances('foo')
+
+
 if __name__ == '__main__':
     unittest.main()
