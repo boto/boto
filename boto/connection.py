@@ -858,6 +858,7 @@ class AWSAuthConnection(object):
                 # we now re-sign each request before it is retried
                 boto.log.debug('Token: %s' % self.provider.security_token)
                 request.authorize(connection=self)
+                request.headers['Host'] = self.host.split(':', 1)[0]
                 if callable(sender):
                     response = sender(connection, request.method, request.path,
                                       request.body, request.headers)
