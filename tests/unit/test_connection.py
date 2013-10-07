@@ -284,6 +284,33 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  'POST')
         self.assertEqual(resp.read(), "{'test': 'success'}")
 
+    def test_connection_close(self):
+        """Check connection re-use after close header is received"""
+        HTTPretty.register_uri(HTTPretty.POST,
+                               'https://%s/' % self.region.endpoint,
+                               json.dumps({'test': 'secure'}),
+                               content_type='application/json',
+                               connection='close')
+
+        conn = self.region.connect(aws_access_key_id='access_key',
+                                   aws_secret_access_key='secret')
+
+        def mock_put_conn(*args, **kwargs):
+            raise Exception('put_http_connection should not be called!')
+
+        conn.put_http_connection = mock_put_conn
+
+        resp1 = conn.make_request('myCmd1',
+                                  {'par1': 'foo', 'par2': 'baz'},
+                                  "/",
+                                  "POST")
+
+        # If we've gotten this far then no exception was raised
+        # by attempting to put the connection back into the pool
+        # Now let's just confirm the close header was actually
+        # set or we have another problem.
+        self.assertEqual(resp1.getheader('connection'), 'close')
+
 class TestAWSQueryStatus(TestAWSQueryConnection):
 
     def test_get_status(self):

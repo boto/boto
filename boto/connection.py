@@ -893,8 +893,17 @@ class AWSAuthConnection(object):
                     body = response.read()
                 elif response.status < 300 or response.status >= 400 or \
                         not location:
-                    self.put_http_connection(request.host, self.is_secure,
-                                             connection)
+                    # don't return connection to the pool if response contains
+                    # Connection:close header, because the connection has been
+                    # closed and default reconnect behavior may do something
+                    # different than new_http_connection. Also, it's probably
+                    # less efficient to try to reuse a closed connection.
+                    conn_header_value = response.getheader('connection')
+                    if conn_header_value == 'close':
+                        connection.close()
+                    else:
+                        self.put_http_connection(request.host, self.is_secure,
+                                                 connection)
                     return response
                 else:
                     scheme, request.host, request.path, \
