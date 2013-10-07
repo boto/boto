@@ -1300,6 +1300,7 @@ class Bucket(object):
             * ErrorDocument
 
               * Key : name of object to serve when an error occurs
+
         """
         return self.get_website_configuration_with_xml(headers)[0]
 
@@ -1320,15 +1321,24 @@ class Bucket(object):
 
         :rtype: 2-Tuple
         :returns: 2-tuple containing:
-        1) A dictionary containing a Python representation
-                  of the XML response. The overall structure is:
-          * WebsiteConfiguration
-            * IndexDocument
-              * Suffix : suffix that is appended to request that
-                is for a "directory" on the website endpoint
-              * ErrorDocument
-                * Key : name of object to serve when an error occurs
-        2) unparsed XML describing the bucket's website configuration.
+
+            1) A dictionary containing a Python representation \
+                of the XML response. The overall structure is:
+
+              * WebsiteConfiguration
+
+                * IndexDocument
+
+                  * Suffix : suffix that is appended to request that \
+                    is for a "directory" on the website endpoint
+
+                  * ErrorDocument
+
+                    * Key : name of object to serve when an error occurs
+
+
+            2) unparsed XML describing the bucket's website configuration
+
         """
 
         body = self.get_website_configuration_xml(headers=headers)
