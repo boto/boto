@@ -858,7 +858,12 @@ class AWSAuthConnection(object):
                 # we now re-sign each request before it is retried
                 boto.log.debug('Token: %s' % self.provider.security_token)
                 request.authorize(connection=self)
-                request.headers['Host'] = self.host.split(':', 1)[0]
+                # Only force header for non-s3 connections, because s3 uses
+                # an older signing method + bucket resource URLs that include
+                # the port info. All others should be now be up to date and
+                # not include the port.
+                if 's3' not in self._required_auth_capability():
+                    request.headers['Host'] = self.host.split(':', 1)[0]
                 if callable(sender):
                     response = sender(connection, request.method, request.path,
                                       request.body, request.headers)
