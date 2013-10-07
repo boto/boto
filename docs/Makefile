@@ -52,10 +52,10 @@ json:
 	@echo "Build finished; now you can process the JSON files."
 
 epub:
-        $(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
-        @echo
-        @echo "Build finished. The e-Pub pages are in $(BUILDDIR)/epub."
-        
+		$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
+		@echo
+		@echo "Build finished. The e-Pub pages are in $(BUILDDIR)/epub."
+
 htmlhelp:
 	$(SPHINXBUILD) -b htmlhelp $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
 	@echo

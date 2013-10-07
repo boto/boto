@@ -25,3 +25,10 @@ boto.ec2.cloudwatch.metric
    :members:   
    :undoc-members:
 
+boto.ec2.cloudwatch.alarm
+--------------------------
+
+.. automodule:: boto.ec2.cloudwatch.alarm
+   :members:   
+   :undoc-members:
+
