@@ -63,6 +63,7 @@ class S3WebsiteEndpointTranslate:
     trans_region['sa-east-1'] = 's3-website-sa-east-1'
     trans_region['ap-northeast-1'] = 's3-website-ap-northeast-1'
     trans_region['ap-southeast-1'] = 's3-website-ap-southeast-1'
+    trans_region['ap-southeast-2'] = 's3-website-ap-southeast-2'
 
     @classmethod
     def translate_region(self, reg):
