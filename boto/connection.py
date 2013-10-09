@@ -486,6 +486,11 @@ class AWSAuthConnection(object):
                     "2.6 or later.")
         self.ca_certificates_file = config.get_value(
                 'Boto', 'ca_certificates_file', DEFAULT_CA_CERTS_FILE)
+        if port:
+            self.port = port
+        else:
+            self.port = PORTS_BY_SECURITY[is_secure]
+
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
         # define exceptions from httplib that we want to catch and retry
         self.http_exceptions = (httplib.HTTPException, socket.error,
@@ -513,10 +518,6 @@ class AWSAuthConnection(object):
         if not isinstance(debug, (int, long)):
             debug = 0
         self.debug = config.getint('Boto', 'debug', debug)
-        if port:
-            self.port = port
-        else:
-            self.port = PORTS_BY_SECURITY[is_secure]
         self.host_header = None
 
         # Timeout used to tell httplib how long to wait for socket timeouts.
