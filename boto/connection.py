@@ -652,7 +652,7 @@ class AWSAuthConnection(object):
         if 'http_proxy' in os.environ and not self.proxy:
             pattern = re.compile(
                 '(?:http://)?' \
-                '(?:(?P<user>\w+):(?P<pass>.*)@)?' \
+                '(?:(?P<user>[\w\-\.]+):(?P<pass>.*)@)?' \
                 '(?P<host>[\w\-\.]+)' \
                 '(?::(?P<port>\d+))?'
             )
