@@ -114,7 +114,7 @@ class Server(Model):
         if not self._instance:
             if self.instance_id:
                 try:
-                    rs = self.ec2.get_all_instances([self.instance_id])
+                    rs = self.ec2.get_all_reservations([self.instance_id])
                 except:
                     return None
                 if len(rs) > 0:

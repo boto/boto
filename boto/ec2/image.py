@@ -32,6 +32,15 @@ class ProductCodes(list):
         if name == 'productCode':
             self.append(value)
 
+class BillingProducts(list):
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'billingProduct':
+            self.append(value)
+
 class Image(TaggedEC2Object):
     """
     Represents an EC2 Image
@@ -54,6 +63,7 @@ class Image(TaggedEC2Object):
         self.name = None
         self.description = None
         self.product_codes = ProductCodes()
+        self.billing_products = BillingProducts()
         self.block_device_mapping = None
         self.root_device_type = None
         self.root_device_name = None
@@ -73,6 +83,8 @@ class Image(TaggedEC2Object):
             return self.block_device_mapping
         elif name == 'productCodes':
             return self.product_codes
+        elif name == 'billingProducts':
+            return self.billing_products
         else:
             return None
 
@@ -130,7 +142,7 @@ class Image(TaggedEC2Object):
     def _update(self, updated):
         self.__dict__.update(updated.__dict__)
 
-    def update(self, validate=False):
+    def update(self, validate=False, dry_run=False):
         """
         Update the image's state information by making a call to fetch
         the current image attributes from the service.
@@ -142,7 +154,7 @@ class Image(TaggedEC2Object):
                          raise a ValueError exception if no data is
                          returned from EC2.
         """
-        rs = self.connection.get_all_images([self.id])
+        rs = self.connection.get_all_images([self.id], dry_run=dry_run)
         if len(rs) > 0:
             img = rs[0]
             if img.id == self.id:
@@ -162,7 +174,7 @@ class Image(TaggedEC2Object):
             private_ip_address=None,
             placement_group=None, security_group_ids=None,
             additional_info=None, instance_profile_name=None,
-            instance_profile_arn=None, tenancy=None):
+            instance_profile_arn=None, tenancy=None, dry_run=False):
 
         """
         Runs this instance.
@@ -295,40 +307,62 @@ class Image(TaggedEC2Object):
                                              additional_info=additional_info,
                                              instance_profile_name=instance_profile_name,
                                              instance_profile_arn=instance_profile_arn,
-                                             tenancy=tenancy)
+                                             tenancy=tenancy, dry_run=dry_run)
 
-    def deregister(self, delete_snapshot=False):
-        return self.connection.deregister_image(self.id, delete_snapshot)
+    def deregister(self, delete_snapshot=False, dry_run=False):
+        return self.connection.deregister_image(
+            self.id,
+            delete_snapshot,
+            dry_run=dry_run
+        )
 
-    def get_launch_permissions(self):
-        img_attrs = self.connection.get_image_attribute(self.id,
-                                                        'launchPermission')
+    def get_launch_permissions(self, dry_run=False):
+        img_attrs = self.connection.get_image_attribute(
+            self.id,
+            'launchPermission',
+            dry_run=dry_run
+        )
         return img_attrs.attrs
 
-    def set_launch_permissions(self, user_ids=None, group_names=None):
+    def set_launch_permissions(self, user_ids=None, group_names=None,
+                               dry_run=False):
         return self.connection.modify_image_attribute(self.id,
                                                       'launchPermission',
                                                       'add',
                                                       user_ids,
-                                                      group_names)
+                                                      group_names,
+                                                      dry_run=dry_run)
 
-    def remove_launch_permissions(self, user_ids=None, group_names=None):
+    def remove_launch_permissions(self, user_ids=None, group_names=None,
+                                  dry_run=False):
         return self.connection.modify_image_attribute(self.id,
                                                       'launchPermission',
                                                       'remove',
                                                       user_ids,
-                                                      group_names)
+                                                      group_names,
+                                                      dry_run=dry_run)
 
-    def reset_launch_attributes(self):
-        return self.connection.reset_image_attribute(self.id,
-                                                     'launchPermission')
+    def reset_launch_attributes(self, dry_run=False):
+        return self.connection.reset_image_attribute(
+            self.id,
+            'launchPermission',
+            dry_run=dry_run
+        )
 
-    def get_kernel(self):
-        img_attrs =self.connection.get_image_attribute(self.id, 'kernel')
+    def get_kernel(self, dry_run=False):
+        img_attrs =self.connection.get_image_attribute(
+            self.id,
+            'kernel',
+            dry_run=dry_run
+        )
         return img_attrs.kernel
 
-    def get_ramdisk(self):
-        img_attrs = self.connection.get_image_attribute(self.id, 'ramdisk')
+    def get_ramdisk(self, dry_run=False):
+        img_attrs = self.connection.get_image_attribute(
+            self.id,
+            'ramdisk',
+            dry_run=dry_run
+        )
         return img_attrs.ramdisk
 
 class ImageAttribute:

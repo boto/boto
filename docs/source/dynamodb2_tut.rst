@@ -73,8 +73,8 @@ Simple example::
 
 A full example::
 
+    >>> import boto.dynamodb2
     >>> from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex, AllIndex
-    >>> from boto.dynamodb2.layer1 import DynamoDBConnection
     >>> from boto.dynamodb2.table import Table
     >>> from boto.dynamodb2.types import NUMBER
 
@@ -90,11 +90,7 @@ A full example::
     ...     ])
     ... ],
     ... # If you need to specify custom parameters like keys or region info...
-    ... connection=DynamoDBConnection(
-    ...     aws_access_key_id='key',
-    ...     aws_secret_access_key='key',
-    ...     region='us-west-2'
-    ... ))
+    ... connection= boto.dynamodb2.connect_to_region('us-east-1'))
 
 
 Using an Existing Table

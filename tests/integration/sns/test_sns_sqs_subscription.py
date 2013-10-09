@@ -27,15 +27,15 @@ Unit tests for subscribing SQS queues to SNS topics.
 
 import hashlib
 import time
-import json
 
 from tests.unit import unittest
 
+from boto.compat import json
 from boto.sqs.connection import SQSConnection
 from boto.sns.connection import SNSConnection
 
 class SNSSubcribeSQSTest(unittest.TestCase):
-    
+
     sqs = True
     sns = True
 
@@ -64,7 +64,7 @@ class SNSSubcribeSQSTest(unittest.TestCase):
 
         expected_sid = hashlib.md5(topic_arn + queue_arn).hexdigest()
         resp = self.snsc.subscribe_sqs_queue(topic_arn, queue)
-        
+
         found_expected_sid = False
         statements = self.get_policy_statements(queue)
         for statement in statements:

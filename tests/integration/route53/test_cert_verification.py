@@ -24,17 +24,16 @@
 """
 Check that all of the certs on all service endpoints validate.
 """
-
 import unittest
+
+from tests.integration import ServiceCertVerificationTest
+
 import boto.route53
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class Route53CertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     route53 = True
-    ssl = True
+    regions = boto.route53.regions()
 
-    def test_certs(self):
-        for region in boto.route53.regions():
-            c = region.connect()
-            c.get_all_hosted_zones()
+    def sample_service_call(self, conn):
+        conn.get_all_hosted_zones()

@@ -24,7 +24,10 @@
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
+from boto.ec2.securitygroup import SecurityGroup
 from boto.rds import RDSConnection
+from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
+from boto.rds.parametergroup import ParameterGroup
 
 
 class TestRDSConnection(AWSMockServiceTestCase):
@@ -72,6 +75,12 @@ class TestRDSConnection(AWSMockServiceTestCase):
                       <DBSecurityGroupName>default</DBSecurityGroupName>
                     </DBSecurityGroup>
                   </DBSecurityGroups>
+                  <VpcSecurityGroups>
+                    <VpcSecurityGroupMembership>
+                      <VpcSecurityGroupId>sg-1</VpcSecurityGroupId>
+                      <Status>active</Status>
+                    </VpcSecurityGroupMembership>
+                  </VpcSecurityGroups>
                   <DBName>mydb2</DBName>
                   <AutoMinorVersionUpgrade>true</AutoMinorVersionUpgrade>
                   <InstanceCreateTime>2012-10-03T22:01:51.047Z</InstanceCreateTime>
@@ -136,6 +145,325 @@ class TestRDSConnection(AWSMockServiceTestCase):
         self.assertEqual(db.status_infos[0].normal, True)
         self.assertEqual(db.status_infos[0].status, 'replicating')
         self.assertEqual(db.status_infos[0].status_type, 'read replication')
+        self.assertEqual(db.vpc_security_groups[0].status, 'active')
+        self.assertEqual(db.vpc_security_groups[0].vpc_group, 'sg-1')
+
+
+class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
+    connection_class = RDSConnection
+
+    def setUp(self):
+        super(TestRDSCCreateDBInstance, self).setUp()
+
+    def default_body(self):
+        return """
+        <CreateDBInstanceResponse xmlns="http://rds.amazonaws.com/doc/2013-05-15/">
+            <CreateDBInstanceResult>
+                <DBInstance>
+                    <ReadReplicaDBInstanceIdentifiers/>
+                    <Engine>mysql</Engine>
+                    <PendingModifiedValues>
+                        <MasterUserPassword>****</MasterUserPassword>
+                    </PendingModifiedValues>
+                    <BackupRetentionPeriod>1</BackupRetentionPeriod>
+                    <MultiAZ>false</MultiAZ>
+                    <LicenseModel>general-public-license</LicenseModel>
+                    <DBSubnetGroup>
+                        <VpcId>990524496922</VpcId>
+                        <SubnetGroupStatus>Complete</SubnetGroupStatus>
+                        <DBSubnetGroupDescription>description</DBSubnetGroupDescription>
+                        <DBSubnetGroupName>subnet_grp1</DBSubnetGroupName>
+                        <Subnets>
+                            <Subnet>
+                                <SubnetStatus>Active</SubnetStatus>
+                                <SubnetIdentifier>subnet-7c5b4115</SubnetIdentifier>
+                                <SubnetAvailabilityZone>
+                                    <Name>us-east-1c</Name>
+                                </SubnetAvailabilityZone>
+                            </Subnet>
+                            <Subnet>
+                                <SubnetStatus>Active</SubnetStatus>
+                                <SubnetIdentifier>subnet-7b5b4112</SubnetIdentifier>
+                                <SubnetAvailabilityZone>
+                                    <Name>us-east-1b</Name>
+                                </SubnetAvailabilityZone>
+                            </Subnet>
+                            <Subnet>
+                                <SubnetStatus>Active</SubnetStatus>
+                                <SubnetIdentifier>subnet-3ea6bd57</SubnetIdentifier>
+                                <SubnetAvailabilityZone>
+                                    <Name>us-east-1d</Name>
+                                </SubnetAvailabilityZone>
+                            </Subnet>
+                        </Subnets>
+                    </DBSubnetGroup>
+                    <DBInstanceStatus>creating</DBInstanceStatus>
+                    <EngineVersion>5.1.50</EngineVersion>
+                    <DBInstanceIdentifier>simcoprod01</DBInstanceIdentifier>
+                    <DBParameterGroups>
+                        <DBParameterGroup>
+                            <ParameterApplyStatus>in-sync</ParameterApplyStatus>
+                            <DBParameterGroupName>default.mysql5.1</DBParameterGroupName>
+                        </DBParameterGroup>
+                    </DBParameterGroups>
+                    <DBSecurityGroups>
+                        <DBSecurityGroup>
+                            <Status>active</Status>
+                            <DBSecurityGroupName>default</DBSecurityGroupName>
+                        </DBSecurityGroup>
+                    </DBSecurityGroups>
+                    <PreferredBackupWindow>00:00-00:30</PreferredBackupWindow>
+                    <AutoMinorVersionUpgrade>true</AutoMinorVersionUpgrade>
+                    <PreferredMaintenanceWindow>sat:07:30-sat:08:00</PreferredMaintenanceWindow>
+                        <AllocatedStorage>10</AllocatedStorage>
+                        <DBInstanceClass>db.m1.large</DBInstanceClass>
+                        <MasterUsername>master</MasterUsername>
+                </DBInstance>
+            </CreateDBInstanceResult>
+            <ResponseMetadata>
+                <RequestId>2e5d4270-8501-11e0-bd9b-a7b1ece36d51</RequestId>
+            </ResponseMetadata>
+        </CreateDBInstanceResponse>
+        """
+
+    def test_create_db_instance_param_group_name(self):
+        self.set_http_response(status_code=200)
+        db = self.service_connection.create_dbinstance(
+            'SimCoProd01',
+            10,
+            'db.m1.large',
+            'master',
+            'Password01',
+            param_group='default.mysql5.1',
+            db_subnet_group_name='dbSubnetgroup01')
+
+        self.assert_request_parameters({
+            'Action': 'CreateDBInstance',
+            'AllocatedStorage': 10,
+            'AutoMinorVersionUpgrade': 'true',
+            'DBInstanceClass': 'db.m1.large',
+            'DBInstanceIdentifier': 'SimCoProd01',
+            'DBParameterGroupName': 'default.mysql5.1',
+            'DBSubnetGroupName': 'dbSubnetgroup01',
+            'Engine': 'MySQL5.1',
+            'MasterUsername': 'master',
+            'MasterUserPassword': 'Password01',
+            'Port': 3306,
+        }, ignore_params_values=['Version'])
+
+        self.assertEqual(db.id, 'simcoprod01')
+        self.assertEqual(db.engine, 'mysql')
+        self.assertEqual(db.status, 'creating')
+        self.assertEqual(db.allocated_storage, 10)
+        self.assertEqual(db.instance_class, 'db.m1.large')
+        self.assertEqual(db.master_username, 'master')
+        self.assertEqual(db.multi_az, False)
+        self.assertEqual(db.pending_modified_values,
+            {'MasterUserPassword': '****'})
+
+        self.assertEqual(db.parameter_group.name,
+                         'default.mysql5.1')
+        self.assertEqual(db.parameter_group.description, None)
+        self.assertEqual(db.parameter_group.engine, None)
+
+    def test_create_db_instance_param_group_instance(self):
+        self.set_http_response(status_code=200)
+        param_group = ParameterGroup()
+        param_group.name = 'default.mysql5.1'
+        db = self.service_connection.create_dbinstance(
+            'SimCoProd01',
+            10,
+            'db.m1.large',
+            'master',
+            'Password01',
+            param_group=param_group,
+            db_subnet_group_name='dbSubnetgroup01')
+
+        self.assert_request_parameters({
+            'Action': 'CreateDBInstance',
+            'AllocatedStorage': 10,
+            'AutoMinorVersionUpgrade': 'true',
+            'DBInstanceClass': 'db.m1.large',
+            'DBInstanceIdentifier': 'SimCoProd01',
+            'DBParameterGroupName': 'default.mysql5.1',
+            'DBSubnetGroupName': 'dbSubnetgroup01',
+            'Engine': 'MySQL5.1',
+            'MasterUsername': 'master',
+            'MasterUserPassword': 'Password01',
+            'Port': 3306,
+        }, ignore_params_values=['Version'])
+
+        self.assertEqual(db.id, 'simcoprod01')
+        self.assertEqual(db.engine, 'mysql')
+        self.assertEqual(db.status, 'creating')
+        self.assertEqual(db.allocated_storage, 10)
+        self.assertEqual(db.instance_class, 'db.m1.large')
+        self.assertEqual(db.master_username, 'master')
+        self.assertEqual(db.multi_az, False)
+        self.assertEqual(db.pending_modified_values,
+            {'MasterUserPassword': '****'})
+        self.assertEqual(db.parameter_group.name,
+                         'default.mysql5.1')
+        self.assertEqual(db.parameter_group.description, None)
+        self.assertEqual(db.parameter_group.engine, None)
+
+
+class TestRDSConnectionRestoreDBInstanceFromPointInTime(AWSMockServiceTestCase):
+    connection_class = RDSConnection
+
+    def setUp(self):
+        super(TestRDSConnectionRestoreDBInstanceFromPointInTime, self).setUp()
+
+    def default_body(self):
+        return """
+        <RestoreDBInstanceToPointInTimeResponse xmlns="http://rds.amazonaws.com/doc/2013-05-15/">
+          <RestoreDBInstanceToPointInTimeResult>
+            <DBInstance>
+              <ReadReplicaDBInstanceIdentifiers/>
+              <Engine>mysql</Engine>
+              <PendingModifiedValues/>
+              <BackupRetentionPeriod>1</BackupRetentionPeriod>
+              <MultiAZ>false</MultiAZ>
+              <LicenseModel>general-public-license</LicenseModel>
+              <DBInstanceStatus>creating</DBInstanceStatus>
+              <EngineVersion>5.1.50</EngineVersion>
+              <DBInstanceIdentifier>restored-db</DBInstanceIdentifier>
+              <DBParameterGroups>
+                <DBParameterGroup>
+                  <ParameterApplyStatus>in-sync</ParameterApplyStatus>
+                  <DBParameterGroupName>default.mysql5.1</DBParameterGroupName>
+                </DBParameterGroup>
+              </DBParameterGroups>
+              <DBSecurityGroups>
+                <DBSecurityGroup>
+                  <Status>active</Status>
+                  <DBSecurityGroupName>default</DBSecurityGroupName>
+                </DBSecurityGroup>
+              </DBSecurityGroups>
+              <PreferredBackupWindow>00:00-00:30</PreferredBackupWindow>
+              <AutoMinorVersionUpgrade>true</AutoMinorVersionUpgrade>
+              <PreferredMaintenanceWindow>sat:07:30-sat:08:00</PreferredMaintenanceWindow>
+              <AllocatedStorage>10</AllocatedStorage>
+              <DBInstanceClass>db.m1.large</DBInstanceClass>
+              <MasterUsername>master</MasterUsername>
+            </DBInstance>
+          </RestoreDBInstanceToPointInTimeResult>
+          <ResponseMetadata>
+            <RequestId>1ef546bc-850b-11e0-90aa-eb648410240d</RequestId>
+          </ResponseMetadata>
+        </RestoreDBInstanceToPointInTimeResponse>
+        """
+
+    def test_restore_dbinstance_from_point_in_time(self):
+        self.set_http_response(status_code=200)
+        db = self.service_connection.restore_dbinstance_from_point_in_time(
+            'simcoprod01',
+            'restored-db',
+            True)
+
+        self.assert_request_parameters({
+            'Action': 'RestoreDBInstanceToPointInTime',
+            'SourceDBInstanceIdentifier': 'simcoprod01',
+            'TargetDBInstanceIdentifier': 'restored-db',
+            'UseLatestRestorableTime': 'true',
+        }, ignore_params_values=['Version'])
+
+        self.assertEqual(db.id, 'restored-db')
+        self.assertEqual(db.engine, 'mysql')
+        self.assertEqual(db.status, 'creating')
+        self.assertEqual(db.allocated_storage, 10)
+        self.assertEqual(db.instance_class, 'db.m1.large')
+        self.assertEqual(db.master_username, 'master')
+        self.assertEqual(db.multi_az, False)
+
+        self.assertEqual(db.parameter_group.name,
+                         'default.mysql5.1')
+        self.assertEqual(db.parameter_group.description, None)
+        self.assertEqual(db.parameter_group.engine, None)
+
+    def test_restore_dbinstance_from_point_in_time__db_subnet_group_name(self):
+        self.set_http_response(status_code=200)
+        db = self.service_connection.restore_dbinstance_from_point_in_time(
+            'simcoprod01',
+            'restored-db',
+            True,
+            db_subnet_group_name='dbsubnetgroup')
+
+        self.assert_request_parameters({
+            'Action': 'RestoreDBInstanceToPointInTime',
+            'SourceDBInstanceIdentifier': 'simcoprod01',
+            'TargetDBInstanceIdentifier': 'restored-db',
+            'UseLatestRestorableTime': 'true',
+            'DBSubnetGroupName': 'dbsubnetgroup',
+        }, ignore_params_values=['Version'])
+
+    def test_create_db_instance_vpc_sg_str(self):
+        self.set_http_response(status_code=200)
+        vpc_security_groups = [
+            VPCSecurityGroupMembership(self.service_connection, 'active', 'sg-1'),
+            VPCSecurityGroupMembership(self.service_connection, None, 'sg-2')]
+
+        db = self.service_connection.create_dbinstance(
+            'SimCoProd01',
+            10,
+            'db.m1.large',
+            'master',
+            'Password01',
+            param_group='default.mysql5.1',
+            db_subnet_group_name='dbSubnetgroup01',
+            vpc_security_groups=vpc_security_groups)
+
+        self.assert_request_parameters({
+            'Action': 'CreateDBInstance',
+            'AllocatedStorage': 10,
+            'AutoMinorVersionUpgrade': 'true',
+            'DBInstanceClass': 'db.m1.large',
+            'DBInstanceIdentifier': 'SimCoProd01',
+            'DBParameterGroupName': 'default.mysql5.1',
+            'DBSubnetGroupName': 'dbSubnetgroup01',
+            'Engine': 'MySQL5.1',
+            'MasterUsername': 'master',
+            'MasterUserPassword': 'Password01',
+            'Port': 3306,
+            'VpcSecurityGroupIds.member.1': 'sg-1',
+            'VpcSecurityGroupIds.member.2': 'sg-2'
+        }, ignore_params_values=['Version'])
+
+    def test_create_db_instance_vpc_sg_obj(self):
+        self.set_http_response(status_code=200)
+
+        sg1 = SecurityGroup(name='sg-1')
+        sg2 = SecurityGroup(name='sg-2')
+
+        vpc_security_groups = [
+            VPCSecurityGroupMembership(self.service_connection, 'active', sg1.name),
+            VPCSecurityGroupMembership(self.service_connection, None, sg2.name)]
+
+        db = self.service_connection.create_dbinstance(
+            'SimCoProd01',
+            10,
+            'db.m1.large',
+            'master',
+            'Password01',
+            param_group='default.mysql5.1',
+            db_subnet_group_name='dbSubnetgroup01',
+            vpc_security_groups=vpc_security_groups)
+
+        self.assert_request_parameters({
+            'Action': 'CreateDBInstance',
+            'AllocatedStorage': 10,
+            'AutoMinorVersionUpgrade': 'true',
+            'DBInstanceClass': 'db.m1.large',
+            'DBInstanceIdentifier': 'SimCoProd01',
+            'DBParameterGroupName': 'default.mysql5.1',
+            'DBSubnetGroupName': 'dbSubnetgroup01',
+            'Engine': 'MySQL5.1',
+            'MasterUsername': 'master',
+            'MasterUserPassword': 'Password01',
+            'Port': 3306,
+            'VpcSecurityGroupIds.member.1': 'sg-1',
+            'VpcSecurityGroupIds.member.2': 'sg-2'
+        }, ignore_params_values=['Version'])
 
 
 class TestRDSOptionGroups(AWSMockServiceTestCase):

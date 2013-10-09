@@ -36,6 +36,7 @@ import boto
 
 RegionData = {
     'us-east-1': 'elasticloadbalancing.us-east-1.amazonaws.com',
+    'us-gov-west-1': 'elasticloadbalancing.us-gov-west-1.amazonaws.com',
     'us-west-1': 'elasticloadbalancing.us-west-1.amazonaws.com',
     'us-west-2': 'elasticloadbalancing.us-west-2.amazonaws.com',
     'sa-east-1': 'elasticloadbalancing.sa-east-1.amazonaws.com',
@@ -87,7 +88,7 @@ class ELBConnection(AWSQueryConnection):
                                             'elasticloadbalancing.us-east-1.amazonaws.com')
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=False, port=None, proxy=None, proxy_port=None,
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  security_token=None, validate_certs=True):
@@ -535,6 +536,23 @@ class ELBConnection(AWSQueryConnection):
             params['CookieExpirationPeriod'] = cookie_expiration_period
         return self.get_status('CreateLBCookieStickinessPolicy', params)
 
+    def create_lb_policy(self, lb_name, policy_name, policy_type, policy_attributes):
+        """
+        Creates a new policy that contais the necessary attributes depending on
+        the policy type. Policies are settings that are saved for your load
+        balancer and that can be applied to the front-end listener, or
+        the back-end application server.
+        """
+        params = {'LoadBalancerName': lb_name,
+                  'PolicyName': policy_name,
+                  'PolicyTypeName': policy_type}
+        for index, (name, value) in enumerate(policy_attributes.iteritems(), 1):
+            params['PolicyAttributes.member.%d.AttributeName' % index] = name
+            params['PolicyAttributes.member.%d.AttributeValue' % index] = value
+        else:
+            params['PolicyAttributes'] = ''
+        return self.get_status('CreateLoadBalancerPolicy', params)
+
     def delete_lb_policy(self, lb_name, policy_name):
         """
         Deletes a policy from the LoadBalancer. The specified policy must not
@@ -554,6 +572,19 @@ class ELBConnection(AWSQueryConnection):
                   'LoadBalancerPort': lb_port}
         self.build_list_params(params, policies, 'PolicyNames.member.%d')
         return self.get_status('SetLoadBalancerPoliciesOfListener', params)
+
+    def set_lb_policies_of_backend_server(self, lb_name, instance_port, policies):
+        """
+        Replaces the current set of policies associated with a port on which
+        the back-end server is listening with a new set of policies.
+        """
+        params = {'LoadBalancerName': lb_name,
+                  'InstancePort': instance_port}
+        if policies:
+            self.build_list_params(params, policies, 'PolicyNames.member.%d')
+        else:
+            params['PolicyNames'] = ''
+        return self.get_status('SetLoadBalancerPoliciesForBackendServer', params)
 
     def apply_security_groups_to_lb(self, name, security_groups):
         """
@@ -616,5 +647,5 @@ class ELBConnection(AWSQueryConnection):
         params = {'LoadBalancerName': name}
         self.build_list_params(params, subnets,
                                'Subnets.member.%d')
-        return self.get_list('DettachLoadBalancerFromSubnets',
+        return self.get_list('DetachLoadBalancerFromSubnets',
                              params, None)
