@@ -183,7 +183,8 @@ class MTurkConnection(AWSQueryConnection):
                    reward=None, duration=datetime.timedelta(days=7),
                    approval_delay=None, annotation=None,
                    questions=None, qualifications=None,
-                   layout_params=None, response_groups=None):
+                   layout_params=None, response_groups=None,
+                   unique_request_token=None):
         """
         Creates a new HIT.
         Returns a ResultSet
@@ -250,6 +251,10 @@ class MTurkConnection(AWSQueryConnection):
         # add the annotation if specified
         if annotation is not None:
             params['RequesterAnnotation'] = annotation
+
+        # add the unique request token if specified
+        if unique_request_token is not None:
+            params['UniqueRequestToken'] = unique_request_token
 
         # Add the Qualifications if specified
         if qualifications is not None:

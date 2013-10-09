@@ -37,6 +37,7 @@ class MTurkCommon(unittest.TestCase):
                         duration=datetime.timedelta(minutes=6),
                         approval_delay=60*60,
                         annotation='An annotation from boto create_hit test',
+                        unique_requst_token='A unique token',
                         response_groups=['Minimal',
                                 'HITDetail',
                                 'HITQuestion',
