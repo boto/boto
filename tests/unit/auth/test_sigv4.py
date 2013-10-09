@@ -153,6 +153,25 @@ class TestSigV4Handler(unittest.TestCase):
         region_name = credential_scope.split('/')[1]
         self.assertEqual(region_name, 'us-west-1')
 
+        # Test connections to custom locations, e.g. localhost:8080
+        auth = HmacAuthV4Handler('localhost', Mock(), self.provider,
+                                 service_name='iam')
+
+        request = HTTPRequest(
+            'POST', 'http', 'localhost', 8080,
+            '/', '/',
+            {'Action': 'ListAccountAliases', 'Version': '2010-05-08'},
+            {
+                'Content-Length': '44',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Amz-Date': '20130808T013210Z'
+            },
+            'Action=ListAccountAliases&Version=2010-05-08')
+        credential_scope = auth.credential_scope(request)
+        timestamp, region, service, v = credential_scope.split('/')
+        self.assertEqual(region, 'localhost')
+        self.assertEqual(service, 'iam')
+
     def test_headers_to_sign(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
                                  Mock(), self.provider)

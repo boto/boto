@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+from __future__ import with_statement
+
 import os
 import urlparse
 from tests.unit import unittest
@@ -82,11 +84,13 @@ class MockAWSService(AWSQueryConnection):
                  api_version=None, security_token=None,
                  validate_certs=True):
         self.region = region
+        if host is None:
+            host = self.region.endpoint
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
-                                    self.region.endpoint, debug,
+                                    host, debug,
                                     https_connection_factory, path,
                                     security_token,
                                     validate_certs=validate_certs)
@@ -310,6 +314,30 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
         # Now let's just confirm the close header was actually
         # set or we have another problem.
         self.assertEqual(resp1.getheader('connection'), 'close')
+
+    def test_port_pooling(self):
+        conn = self.region.connect(aws_access_key_id='access_key',
+                                   aws_secret_access_key='secret',
+                                   port=8080)
+
+        # Pick a connection, then put it back
+        con1 = conn.get_http_connection(conn.host, conn.port, conn.is_secure)
+        conn.put_http_connection(conn.host, conn.port, conn.is_secure, con1)
+
+        # Pick another connection, which hopefully is the same yet again
+        con2 = conn.get_http_connection(conn.host, conn.port, conn.is_secure)
+        conn.put_http_connection(conn.host, conn.port, conn.is_secure, con2)
+
+        self.assertEqual(con1, con2)
+
+        # Change the port and make sure a new connection is made
+        conn.port = 8081
+
+        con3 = conn.get_http_connection(conn.host, conn.port, conn.is_secure)
+        conn.put_http_connection(conn.host, conn.port, conn.is_secure, con3)
+
+        self.assertNotEqual(con1, con3)
+
 
 class TestAWSQueryStatus(TestAWSQueryConnection):
 
