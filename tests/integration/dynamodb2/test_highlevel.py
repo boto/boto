@@ -23,6 +23,8 @@
 """
 Tests for DynamoDB v2 high-level abstractions.
 """
+from __future__ import with_statement
+
 import time
 
 from tests.unit import unittest
@@ -44,12 +46,12 @@ class DynamoDBv2Test(unittest.TestCase):
         ], throughput={
             'read': 5,
             'write': 5,
-        }, indexes={
+        }, indexes=[
             KeysOnlyIndex('LastNameIndex', parts=[
                 HashKey('username'),
                 RangeKey('last_name')
             ]),
-        })
+        ])
         self.addCleanup(users.delete)
 
         self.assertEqual(len(users.schema), 2)

@@ -24,17 +24,16 @@
 """
 Check that all of the certs on all service endpoints validate.
 """
-
 import unittest
+
+from tests.integration import ServiceCertVerificationTest
+
 import boto.glacier
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class GlacierCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     glacier = True
-    ssl = True
+    regions = boto.glacier.regions()
 
-    def test_certs(self):
-        for region in boto.glacier.regions():
-            c = region.connect()
-            c.list_vaults()
+    def sample_service_call(self, conn):
+        conn.list_vaults()

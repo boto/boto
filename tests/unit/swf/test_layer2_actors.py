@@ -69,5 +69,19 @@ class TestActors(unittest.TestCase):
         self.worker._swf.respond_activity_task_failed.assert_called_with(task_token, None, 'Failure!')
         self.worker._swf.record_activity_task_heartbeat.assert_called_with(task_token, None)
 
+    def test_actor_poll_without_tasklist_override(self):
+        self.worker.poll()
+        self.decider.poll()
+        self.worker._swf.poll_for_activity_task.assert_called_with('test', 'test_list')
+        self.decider._swf.poll_for_decision_task.assert_called_with('test', 'test_list')
+
+    def test_worker_override_tasklist(self):
+        self.worker.poll(task_list='some_other_tasklist')
+        self.worker._swf.poll_for_activity_task.assert_called_with('test', 'some_other_tasklist')
+
+    def test_decider_override_tasklist(self):
+        self.decider.poll(task_list='some_other_tasklist')
+        self.decider._swf.poll_for_decision_task.assert_called_with('test', 'some_other_tasklist')
+
 if __name__ == '__main__':
     unittest.main()
