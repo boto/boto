@@ -316,11 +316,6 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
         self.assertEqual(resp1.getheader('connection'), 'close')
 
     def test_port_pooling(self):
-        HTTPretty.register_uri(HTTPretty.POST,
-                               'http://%s:8080/' % self.region.endpoint,
-                               json.dumps({'test': 'normal'}),
-                               content_type='application/json')
-
         conn = self.region.connect(aws_access_key_id='access_key',
                                    aws_secret_access_key='secret',
                                    port=8080)
@@ -328,12 +323,6 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
         # Pick a connection, then put it back
         con1 = conn.get_http_connection(conn.host, conn.port, conn.is_secure)
         conn.put_http_connection(conn.host, conn.port, conn.is_secure, con1)
-
-        # Do a request - this should use the same connection
-        resp = conn.make_request('myCmd1',
-                                 {'par1': 'foo', 'par2': 'baz'},
-                                 '/',
-                                 'POST')
 
         # Pick another connection, which hopefully is the same yet again
         con2 = conn.get_http_connection(conn.host, conn.port, conn.is_secure)
