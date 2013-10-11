@@ -14,12 +14,15 @@ def list_bucket(b, prefix=None, marker=None):
     from boto.s3.prefix import Prefix
     from boto.s3.key import Key
     total = 0
-    query = b
+
     if prefix:
         if not prefix.endswith("/"):
             prefix = prefix + "/"
         query = b.list(prefix=prefix, delimiter="/", marker=marker)
         print "%s" % prefix
+    else:
+        query = b.list(delimiter="/", marker=marker)
+
     num = 0
     for k in query:
         num += 1
