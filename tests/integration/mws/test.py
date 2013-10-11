@@ -6,6 +6,7 @@ except ImportError:
 import sys
 import os
 import os.path
+from datetime import datetime, timedelta
 
 
 simple = os.environ.get('MWS_MERCHANT', None)
@@ -19,7 +20,7 @@ if not simple:
 advanced = False
 isolator = True
 if __name__ == "__main__":
-    devpath = os.path.relpath(os.path.join('..', '..'),
+    devpath = os.path.relpath(os.path.join('..', '..', '..'),
                               start=os.path.dirname(__file__))
     sys.path = [devpath] + sys.path
     advanced = simple and True or False
@@ -63,7 +64,7 @@ class MWSTestCase(unittest.TestCase):
     @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_get_product_categories_for_asin(self):
         asin = '144930544X'
-        response = self.mws.get_product_categories_for_asin(\
+        response = self.mws.get_product_categories_for_asin(
             MarketplaceId=self.marketplace_id,
             ASIN=asin)
         result = response._result
@@ -71,7 +72,7 @@ class MWSTestCase(unittest.TestCase):
 
     @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_list_matching_products(self):
-        response = self.mws.list_matching_products(\
+        response = self.mws.list_matching_products(
             MarketplaceId=self.marketplace_id,
             Query='boto')
         products = response._result.Products
@@ -80,15 +81,16 @@ class MWSTestCase(unittest.TestCase):
     @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_get_matching_product(self):
         asin = 'B001UDRNHO'
-        response = self.mws.get_matching_product(\
+        response = self.mws.get_matching_product(
             MarketplaceId=self.marketplace_id,
-            ASINList=[asin,])
-        product = response._result[0].Product
+            ASINList=[asin])
+        attributes = response._result[0].Product.AttributeSets.ItemAttributes
+        self.assertEqual(attributes[0].Label, 'Serengeti')
 
     @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_get_matching_product_for_id(self):
         asins = ['B001UDRNHO', '144930544X']
-        response = self.mws.get_matching_product_for_id(\
+        response = self.mws.get_matching_product_for_id(
             MarketplaceId=self.marketplace_id,
             IdType='ASIN',
             IdList=asins)
@@ -99,12 +101,19 @@ class MWSTestCase(unittest.TestCase):
     @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_get_lowest_offer_listings_for_asin(self):
         asin = '144930544X'
-        response = self.mws.get_lowest_offer_listings_for_asin(\
+        response = self.mws.get_lowest_offer_listings_for_asin(
             MarketplaceId=self.marketplace_id,
             ItemCondition='New',
-            ASINList=[asin,])
-        product = response._result[0].Product
-        self.assertTrue(product.LowestOfferListings)
+            ASINList=[asin])
+        listings = response._result[0].Product.LowestOfferListings
+        self.assertTrue(len(listings.LowestOfferListing))
+
+    @unittest.skipUnless(simple and isolator, "skipping simple test")
+    def test_list_inventory_supply(self):
+        asof = (datetime.today() - timedelta(days=30)).isoformat()
+        response = self.mws.list_inventory_supply(QueryStartDateTime=asof,
+                                                  ResponseGroup='Basic')
+        self.assertTrue(hasattr(response._result, 'InventorySupplyList'))
 
 if __name__ == "__main__":
     unittest.main()
