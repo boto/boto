@@ -55,6 +55,10 @@ def list_buckets(s3):
 if __name__ == "__main__":
     import sys
 
+    if len(sys.argv) < 2:
+        list_buckets(boto.connect_s3())
+        sys.exit(0)
+
     pairs = []
     mixedCase = False
     for name in sys.argv[1:]:
@@ -70,8 +74,5 @@ if __name__ == "__main__":
     else:
         s3 = boto.connect_s3()
 
-    if len(sys.argv) < 2:
-        list_buckets(s3)
-    else:
-        for name, prefix in pairs:
-            list_bucket(s3.get_bucket(name), prefix)
+    for name, prefix in pairs:
+        list_bucket(s3.get_bucket(name), prefix)
