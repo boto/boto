@@ -59,7 +59,10 @@ class DeclarativeType(object):
 
     def teardown(self, *args, **kw):
         if self._value is None:
-            delattr(self._parent, self._name)
+            try:
+                delattr(self._parent, self._name)
+            except AttributeError:  # eg. member(s) of empty MemberList(s)
+                pass
         else:
             setattr(self._parent, self._name, self._value)
 
@@ -192,7 +195,7 @@ class ResponseElement(dict):
         attribute = getattr(self, name, None)
         if isinstance(attribute, DeclarativeType):
             return attribute.start(name=name, attrs=attrs,
-                                              connection=connection)
+                                   connection=connection)
         elif attrs.getLength():
             setattr(self, name, ComplexType(attrs.copy()))
         else:
@@ -334,8 +337,8 @@ class ListInboundShipmentItemsByNextTokenResult(ListInboundShipmentItemsResult):
 class ListInventorySupplyResult(ResponseElement):
     InventorySupplyList = MemberList(
         EarliestAvailability=Element(),
-        SupplyDetail=MemberList(\
-            EarliestAvailabileToPick=Element(),
+        SupplyDetail=MemberList(
+            EarliestAvailableToPick=Element(),
             LatestAvailableToPick=Element(),
         )
     )
@@ -431,13 +434,13 @@ class FulfillmentPreviewItem(ResponseElement):
 
 class FulfillmentPreview(ResponseElement):
     EstimatedShippingWeight = Element(ComplexWeight)
-    EstimatedFees = MemberList(\
-        Element(\
+    EstimatedFees = MemberList(
+        Element(
             Amount=Element(ComplexAmount),
         ),
     )
     UnfulfillablePreviewItems = MemberList(FulfillmentPreviewItem)
-    FulfillmentPreviewShipments = MemberList(\
+    FulfillmentPreviewShipments = MemberList(
         FulfillmentPreviewItems=MemberList(FulfillmentPreviewItem),
     )
 
@@ -453,7 +456,8 @@ class FulfillmentOrder(ResponseElement):
 
 class GetFulfillmentOrderResult(ResponseElement):
     FulfillmentOrder = Element(FulfillmentOrder)
-    FulfillmentShipment = MemberList(Element(\
+    FulfillmentShipment = MemberList(
+        Element(
             FulfillmentShipmentItem=MemberList(),
             FulfillmentShipmentPackage=MemberList(),
         )
@@ -533,17 +537,17 @@ class Product(ResponseElement):
     _namespace = 'ns2'
     Identifiers = Element(MarketplaceASIN=Element(),
                           SKUIdentifier=Element())
-    AttributeSets = Element(\
+    AttributeSets = Element(
         ItemAttributes=ElementList(ItemAttributes),
     )
-    Relationships = Element(\
+    Relationships = Element(
         VariationParent=ElementList(VariationRelationship),
     )
     CompetitivePricing = ElementList(CompetitivePricing)
-    SalesRankings = Element(\
+    SalesRankings = Element(
         SalesRank=ElementList(SalesRank),
     )
-    LowestOfferListings = Element(\
+    LowestOfferListings = Element(
         LowestOfferListing=ElementList(LowestOfferListing),
     )
 
@@ -611,9 +615,9 @@ class GetProductCategoriesForASINResult(GetProductCategoriesResult):
 class Order(ResponseElement):
     OrderTotal = Element(ComplexMoney)
     ShippingAddress = Element()
-    PaymentExecutionDetail = Element(\
-        PaymentExecutionDetailItem=ElementList(\
-            PaymentExecutionDetailItem=Element(\
+    PaymentExecutionDetail = Element(
+        PaymentExecutionDetailItem=ElementList(
+            PaymentExecutionDetailItem=Element(
                 Payment=Element(ComplexMoney)
             )
         )
