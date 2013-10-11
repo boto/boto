@@ -343,6 +343,7 @@ class SQSConnection(AWSQueryConnection):
         was found.
 
         :param str queue_name: The name of the queue to retrieve.
+        :param str owner_acct_id: Optionally, the AWS account ID of the account that created the queue.
         :rtype: :py:class:`boto.sqs.queue.Queue` or ``None``
         :returns: The requested queue, or ``None`` if no match was found.
         """
