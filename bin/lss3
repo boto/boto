@@ -9,7 +9,7 @@ def sizeof_fmt(num):
         num /= 1024.0
     return "%3.1f %s" % (num, x)
 
-def list_bucket(b, prefix=None):
+def list_bucket(b, prefix=None, marker=None):
     """List everything in a bucket"""
     from boto.s3.prefix import Prefix
     from boto.s3.key import Key
@@ -18,7 +18,7 @@ def list_bucket(b, prefix=None):
     if prefix:
         if not prefix.endswith("/"):
             prefix = prefix + "/"
-        query = b.list(prefix=prefix, delimiter="/")
+        query = b.list(prefix=prefix, delimiter="/", marker=marker)
         print "%s" % prefix
     num = 0
     for k in query:
@@ -59,20 +59,39 @@ if __name__ == "__main__":
         list_buckets(boto.connect_s3())
         sys.exit(0)
 
+    marker_doc = 'The S3 key where the listing starts after it.'
+    try:
+        import argparse  # Python 2.7+
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument('buckets', nargs='+')
+        parser.add_argument('-m', '--marker', help=marker_doc)
+        args = parser.parse_args()
+        buckets = args.buckets
+        marker = args.marker
+
+    except:
+        import optparse  # legacy
+
+        parser = optparse.OptionParser()
+        parser.add_option('-m', '--marker', help=marker_doc)
+        options, buckets = parser.parse_args()
+        marker = options.marker
+
     pairs = []
     mixedCase = False
-    for name in sys.argv[1:]:
+    for name in buckets:
             if "/" in name:
                 pairs.append(name.split("/",1))
             else:
                 pairs.append([name, None])
             if pairs[-1][0].lower() != pairs[-1][0]:
                 mixedCase = True
-    
+
     if mixedCase:
         s3 = boto.connect_s3(calling_format=OrdinaryCallingFormat())
     else:
         s3 = boto.connect_s3()
 
     for name, prefix in pairs:
-        list_bucket(s3.get_bucket(name), prefix)
+        list_bucket(s3.get_bucket(name), prefix, marker=marker)
