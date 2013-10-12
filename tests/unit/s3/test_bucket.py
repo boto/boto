@@ -113,7 +113,8 @@ class TestS3Bucket(AWSMockServiceTestCase):
         mock_get_all_keys.reset_mock()
         self.assertFalse(mock_get_all_keys.called)
         try:
-	    bucket.copy_key('newkey', 'srcbucket', 'srckey', preserve_acl=True)
+            bucket.copy_key('newkey', 'srcbucket', 'srckey', preserve_acl=True)
         except:
+            # Will throw because of empty response.
             pass
         self.assertFalse(mock_get_all_keys.called)
