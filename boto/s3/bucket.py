@@ -694,7 +694,8 @@ class Bucket(object):
             if self.name == src_bucket_name:
                 src_bucket = self
             else:
-                src_bucket = self.connection.get_bucket(src_bucket_name)
+                src_bucket = self.connection.get_bucket(
+                    src_bucket_name, validate=False)
             acl = src_bucket.get_xml_acl(src_key_name)
         if encrypt_key:
             headers[provider.server_side_encryption_header] = 'AES256'
