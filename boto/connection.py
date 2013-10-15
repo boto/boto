@@ -559,7 +559,9 @@ class AWSAuthConnection(object):
             self.auth_service_name = self.AuthServiceName
 
     def __repr__(self):
-        return '%s:%s' % (self.__class__.__name__, self.host)
+        if(hasattr(self, 'host')):
+            return '%s:%s' % (self.__class__.__name__, self.host)
+        return '%s:' % (self.__class__.__name__)
 
     def _required_auth_capability(self):
         return []

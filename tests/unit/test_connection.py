@@ -21,12 +21,16 @@
 #
 from __future__ import with_statement
 
+import inspect
 import os
+import sys
 import urlparse
+
 from tests.unit import unittest
 from httpretty import HTTPretty
 
 from boto.connection import AWSQueryConnection, AWSAuthConnection
+from boto.s3.connection import S3Connection
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
 from boto.compat import json
@@ -64,6 +68,27 @@ class TestListParamsSerialization(unittest.TestCase):
             'ParamName.member.3': 'baz',
         }, params)
 
+class TestPrintRepresentationOfConnectionObject():
+    """
+    Make sure connection objects have print representation during all phases of existence.
+    A bad __repr__ on a connection object that doesn't check for existence of attributes
+    will cause this to throw an AttributeError exception and break tracing.
+    """
+
+    @staticmethod
+    def trace_calls(frame, event, arg):
+        if event != 'call':
+            return
+        if(frame.f_code.co_name != '__init__'):
+            return
+        frame_args = inspect.getargvalues(frame)
+        connection_representation = "%s" % (frame_args.locals['self'])
+        return
+
+    def test_print_connection_object(self):
+        sys.settrace(TestPrintRepresentationOfConnectionObject.trace_calls)
+        self.connection = S3Connection('access_key', 'secret_key')
+        print_representation = "Test representation:{0}".format(self.connection)
 
 class MockAWSService(AWSQueryConnection):
     """
