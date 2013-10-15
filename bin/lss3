@@ -56,30 +56,18 @@ def list_buckets(s3):
         print b.name
 
 if __name__ == "__main__":
+    import optparse
     import sys
 
     if len(sys.argv) < 2:
         list_buckets(boto.connect_s3())
         sys.exit(0)
 
-    marker_doc = 'The S3 key where the listing starts after it.'
-    try:
-        import argparse  # Python 2.7+
-
-        parser = argparse.ArgumentParser()
-        parser.add_argument('buckets', nargs='+')
-        parser.add_argument('-m', '--marker', help=marker_doc)
-        args = parser.parse_args()
-        buckets = args.buckets
-        marker = args.marker
-
-    except:
-        import optparse  # legacy
-
-        parser = optparse.OptionParser()
-        parser.add_option('-m', '--marker', help=marker_doc)
-        options, buckets = parser.parse_args()
-        marker = options.marker
+    parser = optparse.OptionParser()
+    parser.add_option('-m', '--marker',
+                      help='The S3 key where the listing starts after it.')
+    options, buckets = parser.parse_args()
+    marker = options.marker
 
     pairs = []
     mixedCase = False
