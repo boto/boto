@@ -174,7 +174,7 @@ class Key(object):
 
     def _get_base64md5(self):
         if 'md5' in self.local_hashes and self.local_hashes['md5']:
-            return binascii.b2a_base64(self.local_hashes['md5'])decode().rstrip('\n')
+            return binascii.b2a_base64(self.local_hashes['md5']).decode().rstrip('\n')
 
     def _set_base64md5(self, value):
         if value:
