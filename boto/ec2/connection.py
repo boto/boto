@@ -364,7 +364,8 @@ class EC2Connection(AWSQueryConnection):
         return result
 
     def create_image(self, instance_id, name,
-                     description=None, no_reboot=False, dry_run=False):
+                     description=None, no_reboot=False,
+                     block_device_mapping=None, dry_run=False):
         """
         Will create an AMI from the instance in the running or stopped
         state.
@@ -386,6 +387,10 @@ class EC2Connection(AWSQueryConnection):
             responsibility of maintaining file system integrity is
             left to the owner of the instance.
 
+        :type block_device_mapping: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
+        :param block_device_mapping: A BlockDeviceMapping data structure
+            describing the EBS volumes associated with the Image.
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -398,6 +403,8 @@ class EC2Connection(AWSQueryConnection):
             params['Description'] = description
         if no_reboot:
             params['NoReboot'] = 'true'
+        if block_device_mapping:
+            block_device_mapping.ec2_build_list_params(params)
         if dry_run:
             params['DryRun'] = 'true'
         img = self.get_object('CreateImage', params, Image, verb='POST')
