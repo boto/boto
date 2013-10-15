@@ -174,7 +174,7 @@ class Key(object):
 
     def _get_base64md5(self):
         if 'md5' in self.local_hashes and self.local_hashes['md5']:
-            return binascii.b2a_base64(self.local_hashes['md5']).rstrip('\n')
+            return binascii.b2a_base64(self.local_hashes['md5'])decode().rstrip('\n')
 
     def _set_base64md5(self, value):
         if value:
@@ -911,6 +911,7 @@ class Key(object):
         if 200 <= response.status <= 299:
             self.etag = response.getheader('etag')
 
+            # FIXME: this throws an error even though there shouldn't be an error
             if self.etag != '"%s"' % self.md5:
                 raise provider.storage_data_error(
                     'ETag from S3 did not match computed MD5')
