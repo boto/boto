@@ -418,7 +418,7 @@ class Table(object):
         item.load(item_data)
         return item
 
-    def lookup(self, hash_key=None, range_key=None, consistent=False, **kwargs):
+    def lookup(self, *args, **kwargs):
         """
         Look up an entry in DynamoDB. This is mostly backwards compatible
         with boto.dynamodb. Unlike get_item, it takes hash_key and range_key first,
@@ -436,16 +436,14 @@ class Table(object):
         """
         if not self.schema:
             self.describe()
-        if hash_key:
-            kwargs[self.schema[0].name] = hash_key
-        if range_key and len(self.schema) > 1:
-            kwargs[self.schema[1].name] = range_key
-        ret = self.get_item(consistent, **kwargs)
+        for x, arg in enumerate(args):
+            kwargs[self.schema[x].name] = arg
+        ret = self.get_item(**kwargs)
         if not ret.keys():
             return None
         return ret
 
-    def new_item(self, hash_key, range_key=None):
+    def new_item(self, *args):
         """
         Returns a new, blank item
 
@@ -454,9 +452,8 @@ class Table(object):
         if not self.schema:
             self.describe()
         data = {}
-        data[self.schema[0].name] = hash_key
-        if range_key and len(self.schema) > 1:
-            data[self.schema[1].name] = range_key
+        for x, arg in enumerate(args):
+            data[self.schema[x].name] = arg
         return Item(self, data=data)
 
 
