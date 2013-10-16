@@ -1286,6 +1286,64 @@ class TableTestCase(unittest.TestCase):
             'username': {'S': 'johndoe'}
         }, consistent_read=False)
 
+    def test_lookup_hash(self):
+        """Tests the "lookup" function with just a hash key"""
+        expected = {
+            'Item': {
+                'username': {'S': 'johndoe'},
+                'first_name': {'S': 'John'},
+                'last_name': {'S': 'Doe'},
+                'date_joined': {'N': '1366056668'},
+                'friend_count': {'N': '3'},
+                'friends': {'SS': ['alice', 'bob', 'jane']},
+            }
+        }
+
+        # Set the Schema
+        self.users.schema = [
+            HashKey('username'),
+            RangeKey('date_joined', data_type=NUMBER),
+        ]
+
+        with mock.patch.object(
+                self.users,
+                'get_item',
+                return_value=expected) as mock_get_item:
+            self.users.lookup('johndoe')
+
+        mock_get_item.assert_called_once_with(
+            username= 'johndoe')
+
+    def test_lookup_hash_and_range(self):
+        """Test the "lookup" function with a hash and range key"""
+        expected = {
+            'Item': {
+                'username': {'S': 'johndoe'},
+                'first_name': {'S': 'John'},
+                'last_name': {'S': 'Doe'},
+                'date_joined': {'N': '1366056668'},
+                'friend_count': {'N': '3'},
+                'friends': {'SS': ['alice', 'bob', 'jane']},
+            }
+        }
+
+        # Set the Schema
+        self.users.schema = [
+            HashKey('username'),
+            RangeKey('date_joined', data_type=NUMBER),
+        ]
+
+        with mock.patch.object(
+                self.users,
+                'get_item',
+                return_value=expected) as mock_get_item:
+            self.users.lookup('johndoe', 1366056668)
+
+        mock_get_item.assert_called_once_with(
+            username= 'johndoe',
+            date_joined= 1366056668)
+
+
     def test_put_item(self):
         with mock.patch.object(
                 self.users.connection,
