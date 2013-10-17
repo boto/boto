@@ -6,6 +6,7 @@ Amazon Simple Workflow Tutorial
 ===============================
 
 This tutorial focuses on boto's interface to AWS SimpleWorkflow service.
+
 .. _SimpleWorkflow: http://aws.amazon.com/swf/
 
 What is a workflow?
@@ -15,7 +16,7 @@ A workflow is a sequence of multiple activities aimed at accomplishing a well-de
 
 Except for the start and completion of a workflow, each step has a well-defined predecessor and successor. With that
   - on successful completion of an activity the workflow can progress with its execution,
-  - when one of its activities fails it can be retried,
+  - when one of workflow's activities fails it can be retried,
   - and when it keeps failing repeatedly the workflow may regress to the previous step to gather alternative inputs or it may simply fail at that stage.
 
 Why use workflows?
@@ -28,8 +29,8 @@ How does Amazon SWF help you accomplish this?
 
 Amazon SimpleWorkflow service defines an interface for workflow orchestration and provides state persistence for workflow executions.
 
-Amazon SWF applications involve communcation between the following entities:
-  - The Amazon Simple Workflow Service - providing centralized orcherstration and workflow state persistence,
+Amazon SWF applications involve communication between the following entities:
+  - The Amazon Simple Workflow Service - providing centralized orchestration and workflow state persistence,
   - Workflow Executors - some entity starting workflow executions, typically through an action taken by a user or from a cronjob.
   - Deciders - a program codifying the business logic, i.e. a set of instructions and decisions. Deciders take decisions based on initial set of conditions and outcomes from activities.
   - Activity Workers - their objective is very straightforward: to take inputs, execute the tasks and return a result to the Service.
@@ -53,19 +54,39 @@ Before workflows and activities can be used, they have to be registered with SWF
 
     # register.py
     import boto.swf.layer2 as swf
+    from boto.swf.exceptions import SWFTypeAlreadyExistsError, SWFDomainAlreadyExistsError
     DOMAIN = 'boto_tutorial'
     VERSION = '1.0'
-
-    swf.Domain(name=DOMAIN).register()
-    swf.ActivityType(domain=DOMAIN, name='HelloWorld', version=VERSION, task_list='default').register()
-    swf.WorkflowType(domain=DOMAIN, name='HelloWorkflow', version=VERSION, task_list='default').register()
-
+    
+    registerables = []
+    registerables.append(swf.Domain(name=DOMAIN))
+    registerables.append(swf.WorkflowType(domain=DOMAIN, name='HelloWorkflow', version=VERSION, task_list='default'))
+    registerables.append(swf.WorkflowType(domain=DOMAIN, name='SerialWorkflow', version=VERSION, task_list='default'))
+    
+    for activity_type in ('HelloWorld', 'ActivityA', 'ActivityB', 'ActivityC'):
+        registerables.append(swf.ActivityType(domain=DOMAIN, name=activity_type, version=VERSION, task_list='default'))
+    
+    for swf_entity in registerables:
+        try:
+            swf_entity.register()
+            print swf_entity.name, 'registered successfully'
+        except (SWFDomainAlreadyExistsError, SWFTypeAlreadyExistsError):
+            print swf_entity.__class__.__name__, swf_entity.name, 'already exists'
+            
+    
 Execution of the above should produce no errors.
 
 .. code-block:: bash
 
-   bash$ python -i register.py
-   >>> 
+    bash$ python -i register.py
+    Domain boto_tutorial already exists
+    WorkflowType HelloWorkflow already exists
+    SerialWorkflow registered successfully
+    ActivityType HelloWorld already exists
+    ActivityA registered successfully
+    ActivityB registered successfully
+    ActivityC registered successfully
+    >>> 
 
 HelloWorld
 ----------
@@ -234,7 +255,179 @@ Great. Now, to see what just happened, go back to the original terminal from whi
       'eventType': 'WorkflowExecutionCompleted',
       'workflowExecutionCompletedEventAttributes': {'decisionTaskCompletedEventId': 10}}]
     
+
+Serial Activity Execution
+-------------------------
+
+The following example implements a basic workflow with activities executed one after another.
+
+The business logic, i.e. the serial execution of activities, is encoded in the decider:
+
+.. code-block:: python
+
+    # serial_decider.py
+    import time
+    import boto.swf.layer2 as swf
     
+    class SerialDecider(swf.Decider):
+    
+        domain = 'boto_tutorial'
+        task_list = 'default_tasks'
+        version = '1.0'
+    
+        def run(self):
+            history = self.poll()
+            if 'events' in history:
+                # Get a list of non-decision events to see what event came in last.
+                workflow_events = [e for e in history['events']
+                                   if not e['eventType'].startswith('Decision')]
+                decisions = swf.Layer1Decisions()
+                # Record latest non-decision event.
+                last_event = workflow_events[-1]
+                last_event_type = last_event['eventType']
+                if last_event_type == 'WorkflowExecutionStarted':
+                    # Schedule the first activity.
+                    decisions.schedule_activity_task('%s-%i' % ('ActivityA', time.time()),
+                       'ActivityA', self.version, task_list='a_tasks')
+                elif last_event_type == 'ActivityTaskCompleted':
+                    # Take decision based on the name of activity that has just completed.
+                    # 1) Get activity's event id.
+                    last_event_attrs = last_event['activityTaskCompletedEventAttributes']
+                    completed_activity_id = last_event_attrs['scheduledEventId'] - 1
+                    # 2) Extract its name.
+                    activity_data = history['events'][completed_activity_id]
+                    activity_attrs = activity_data['activityTaskScheduledEventAttributes']
+                    activity_name = activity_attrs['activityType']['name']
+                    # 3) Optionally, get the result from the activity.
+                    result = last_event['activityTaskCompletedEventAttributes'].get('result')
+    
+                    # Take the decision.
+                    if activity_name == 'ActivityA':
+                        decisions.schedule_activity_task('%s-%i' % ('ActivityB', time.time()),
+                            'ActivityB', self.version, task_list='b_tasks', input=result)
+                    if activity_name == 'ActivityB':
+                        decisions.schedule_activity_task('%s-%i' % ('ActivityC', time.time()),
+                            'ActivityC', self.version, task_list='c_tasks', input=result)
+                    elif activity_name == 'ActivityC':
+                        # Final activity completed. We're done.
+                        decisions.complete_workflow_execution()
+    
+                self.complete(decisions=decisions)
+                return True
+
+The workers only need to know which task lists to poll.
+
+.. code-block:: python
+
+    # serial_worker.py
+    import time
+    import boto.swf.layer2 as swf
+    
+    class MyBaseWorker(swf.ActivityWorker):
+    
+        domain = 'boto_tutorial'
+        version = '1.0'
+        task_list = None
+    
+        def run(self):
+            activity_task = self.poll()
+            if 'activityId' in activity_task:
+                # Get input.
+                # Get the method for the requested activity.
+                try:
+                    print 'working on activity from tasklist %s at %i' % (self.task_list, time.time())
+                    self.activity(activity_task.get('input'))
+                except Exception, error:
+                    self.fail(reason=str(error))
+                    raise error
+    
+                return True
+    
+        def activity(self, activity_input):
+            raise NotImplementedError
+    
+    class WorkerA(MyBaseWorker):
+        task_list = 'a_tasks'
+        def activity(self, activity_input):
+            self.complete(result="Now don't be givin him sambuca!")
+    
+    class WorkerB(MyBaseWorker):
+        task_list = 'b_tasks'
+        def activity(self, activity_input):
+            self.complete()
+    
+    class WorkerC(MyBaseWorker):
+        task_list = 'c_tasks'
+        def activity(self, activity_input):
+            self.complete()
+
+
+
+Spin up a workflow execution and run the decider:
+
+.. code-block:: bash
+
+    $ python
+    >>> import boto.swf.layer2 as swf
+    >>> execution = swf.WorkflowType(name='SerialWorkflow', domain='boto_tutorial', version='1.0', task_list='default_tasks').start()
+    >>> 
+    
+.. code-block:: bash
+
+   $ python -i serial_decider.py
+   >>> while SerialDecider().run(): pass
+   ... 
+
+
+Run the workers. The activities will be executed in order:
+
+.. code-block:: bash
+
+   $ python -i serial_worker.py
+   >>> while WorkerA().run(): pass
+   ... 
+   working on activity from tasklist a_tasks at 1382046291
+
+.. code-block:: bash
+
+   $ python -i serial_worker.py
+   >>> while WorkerB().run(): pass
+   ... 
+   working on activity from tasklist b_tasks at 1382046541
+
+.. code-block:: bash
+
+   $ python -i serial_worker.py
+   >>> while WorkerC().run(): pass
+   ... 
+   working on activity from tasklist c_tasks at 1382046560
+
+
+Looks good. Now, do the following to inspect the state and history of the execution:
+
+.. code-block:: python
+
+    >>> execution.describe()
+    {'executionConfiguration': {'childPolicy': 'TERMINATE',
+      'executionStartToCloseTimeout': '3600',
+      'taskList': {'name': 'default_tasks'},
+      'taskStartToCloseTimeout': '300'},
+     'executionInfo': {'cancelRequested': False,
+      'closeStatus': 'COMPLETED',
+      'closeTimestamp': 1382046560.901,
+      'execution': {'runId': '12fQ1zSaLmI5+lLXB8ux+8U+hLOnnXNZCY9Zy+ZvXgzhE=',
+       'workflowId': 'SerialWorkflow-1.0-1382046514'},
+      'executionStatus': 'CLOSED',
+      'startTimestamp': 1382046514.994,
+      'workflowType': {'name': 'SerialWorkflow', 'version': '1.0'}},
+     'latestActivityTaskTimestamp': 1382046560.632,
+     'openCounts': {'openActivityTasks': 0,
+      'openChildWorkflowExecutions': 0,
+      'openDecisionTasks': 0,
+      'openTimers': 0}}
+    >>> execution.history()
+    ...
+
 .. _Amazon SWF API Reference: http://docs.aws.amazon.com/amazonswf/latest/apireference/Welcome.html
 .. _StackOverflow questions: http://stackoverflow.com/questions/tagged/amazon-swf
 .. _Miscellaneous Blog Articles: http://log.ooz.ie/search/label/SimpleWorkflow
