@@ -6,6 +6,7 @@ Amazon Simple Workflow Tutorial
 ===============================
 
 This tutorial focuses on boto's interface to AWS SimpleWorkflow service.
+
 .. _SimpleWorkflow: http://aws.amazon.com/swf/
 
 What is a workflow?
@@ -15,7 +16,7 @@ A workflow is a sequence of multiple activities aimed at accomplishing a well-de
 
 Except for the start and completion of a workflow, each step has a well-defined predecessor and successor. With that
   - on successful completion of an activity the workflow can progress with its execution,
-  - when one of its activities fails it can be retried,
+  - when one of workflow's activities fails it can be retried,
   - and when it keeps failing repeatedly the workflow may regress to the previous step to gather alternative inputs or it may simply fail at that stage.
 
 Why use workflows?
@@ -28,8 +29,8 @@ How does Amazon SWF help you accomplish this?
 
 Amazon SimpleWorkflow service defines an interface for workflow orchestration and provides state persistence for workflow executions.
 
-Amazon SWF applications involve communcation between the following entities:
-  - The Amazon Simple Workflow Service - providing centralized orcherstration and workflow state persistence,
+Amazon SWF applications involve communication between the following entities:
+  - The Amazon Simple Workflow Service - providing centralized orchestration and workflow state persistence,
   - Workflow Executors - some entity starting workflow executions, typically through an action taken by a user or from a cronjob.
   - Deciders - a program codifying the business logic, i.e. a set of instructions and decisions. Deciders take decisions based on initial set of conditions and outcomes from activities.
   - Activity Workers - their objective is very straightforward: to take inputs, execute the tasks and return a result to the Service.
