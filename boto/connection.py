@@ -948,7 +948,7 @@ class AWSAuthConnection(object):
                         boto.log.debug(
                             'encountered unretryable %s exception, re-raising' %
                             e.__class__.__name__)
-                        raise e
+                        raise
                 boto.log.debug('encountered %s exception, reconnecting' % \
                                   e.__class__.__name__)
                 connection = self.new_http_connection(request.host, request.port,
@@ -962,7 +962,7 @@ class AWSAuthConnection(object):
         if response:
             raise BotoServerError(response.status, response.reason, body)
         elif e:
-            raise e
+            raise
         else:
             msg = 'Please report this exception as a Boto Issue!'
             raise BotoClientError(msg)
