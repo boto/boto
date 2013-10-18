@@ -849,7 +849,7 @@ class VPCConnection(EC2Connection):
 
     # DHCP Options
 
-    def get_all_dhcp_options(self, dhcp_options_ids=None, dry_run=False):
+    def get_all_dhcp_options(self, dhcp_options_ids=None, filters=None, dry_run=False):
         """
         Retrieve information about your DhcpOptions.
 
@@ -859,12 +859,18 @@ class VPCConnection(EC2Connection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type filters: list of tuples
+        :param filters: A list of tuples containing filters.  Each tuple
+            consists of a filter key and a filter value.
+
         :rtype: list
         :return: A list of :class:`boto.vpc.dhcpoptions.DhcpOptions`
         """
         params = {}
         if dhcp_options_ids:
             self.build_list_params(params, dhcp_options_ids, 'DhcpOptionsId')
+        if filters:
+            self.build_filter_params(params, dict(filters))
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeDhcpOptions', params,
