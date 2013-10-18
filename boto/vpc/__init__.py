@@ -117,12 +117,16 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_list('DescribeVpcs', params, [('item', VPC)])
 
-    def create_vpc(self, cidr_block, dry_run=False):
+    def create_vpc(self, cidr_block, instance_tenancy=None, dry_run=False):
         """
         Create a new Virtual Private Cloud.
 
         :type cidr_block: str
         :param cidr_block: A valid CIDR block
+
+        :type instance_tenancy: str
+        :param instance_tenancy: The supported tenancy options for instances
+            launched into the VPC. Valid values are 'default' and 'dedicated'.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -131,6 +135,8 @@ class VPCConnection(EC2Connection):
         :return: A :class:`boto.vpc.vpc.VPC` object
         """
         params = {'CidrBlock' : cidr_block}
+        if instance_tenancy:
+            params['InstanceTenancy'] = instance_tenancy
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateVpc', params, VPC)
