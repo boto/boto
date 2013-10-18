@@ -160,7 +160,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
                                     consistent_read=True)
         assert item1_copy.hash_key == item1.hash_key
         assert item1_copy.range_key == item1.range_key
-        for attr_name in item1_copy:
+        for attr_name in item1_attrs:
             val = item1_copy[attr_name]
             if isinstance(val, (int, long, float, basestring)):
                 assert val == item1[attr_name]

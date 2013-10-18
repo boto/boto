@@ -901,7 +901,7 @@ class AWSAuthConnection(object):
                             boto.log.debug(msg)
                         time.sleep(next_sleep)
                         continue
-                if response.status == 500 or response.status == 503:
+                if response.status in [500, 502, 503, 504]:
                     msg = 'Received %d response.  ' % response.status
                     msg += 'Retrying in %3.1f seconds' % next_sleep
                     boto.log.debug(msg)

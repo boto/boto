@@ -63,6 +63,7 @@ class S3WebsiteEndpointTranslate:
     trans_region['sa-east-1'] = 's3-website-sa-east-1'
     trans_region['ap-northeast-1'] = 's3-website-ap-northeast-1'
     trans_region['ap-southeast-1'] = 's3-website-ap-southeast-1'
+    trans_region['ap-southeast-2'] = 's3-website-ap-southeast-2'
 
     @classmethod
     def translate_region(self, reg):
@@ -693,7 +694,8 @@ class Bucket(object):
             if self.name == src_bucket_name:
                 src_bucket = self
             else:
-                src_bucket = self.connection.get_bucket(src_bucket_name)
+                src_bucket = self.connection.get_bucket(
+                    src_bucket_name, validate=False)
             acl = src_bucket.get_xml_acl(src_key_name)
         if encrypt_key:
             headers[provider.server_side_encryption_header] = 'AES256'
@@ -1300,6 +1302,7 @@ class Bucket(object):
             * ErrorDocument
 
               * Key : name of object to serve when an error occurs
+
         """
         return self.get_website_configuration_with_xml(headers)[0]
 
@@ -1320,15 +1323,24 @@ class Bucket(object):
 
         :rtype: 2-Tuple
         :returns: 2-tuple containing:
-        1) A dictionary containing a Python representation
-                  of the XML response. The overall structure is:
-          * WebsiteConfiguration
-            * IndexDocument
-              * Suffix : suffix that is appended to request that
-                is for a "directory" on the website endpoint
-              * ErrorDocument
-                * Key : name of object to serve when an error occurs
-        2) unparsed XML describing the bucket's website configuration.
+
+            1) A dictionary containing a Python representation \
+                of the XML response. The overall structure is:
+
+              * WebsiteConfiguration
+
+                * IndexDocument
+
+                  * Suffix : suffix that is appended to request that \
+                    is for a "directory" on the website endpoint
+
+                  * ErrorDocument
+
+                    * Key : name of object to serve when an error occurs
+
+
+            2) unparsed XML describing the bucket's website configuration
+
         """
 
         body = self.get_website_configuration_xml(headers=headers)
