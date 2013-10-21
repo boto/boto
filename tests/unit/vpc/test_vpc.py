@@ -20,7 +20,8 @@ DESCRIBE_VPCS = r'''<?xml version="1.0" encoding="UTF-8"?>
     </vpcSet>
 </DescribeVpcsResponse>'''
 
-class TestDescriveVPCs(AWSMockServiceTestCase):
+
+class TestDescribeVPCs(AWSMockServiceTestCase):
 
     connection_class = VPCConnection
 
@@ -35,62 +36,55 @@ class TestDescriveVPCs(AWSMockServiceTestCase):
 
         vpc = api_response[0]
         self.assertFalse(vpc.is_default)
-        self.assertEqual(vpc.instance_tenancy,'default')
+        self.assertEqual(vpc.instance_tenancy, 'default')
 
 
-class TestVPCConnection(unittest.TestCase):
-    """
-    Test class for `boto.vpc.VPCConnection`
-    """
+class TestDetachInternetGateway(AWSMockServiceTestCase):
 
-    def setUp(self):
+    connection_class = VPCConnection
+
+    def default_body(self):
+        return """
+             <DetachInternetGatewayResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
+               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+               <return>true</return>
+            </DetachInternetGatewayResponse>
         """
-        Setup method to initialize vpc_connection objectq
-        """
-        super(TestVPCConnection, self).setUp()
-        self.vpc_connection = VPCConnection(
-            aws_access_key_id='aws_access_key_id',
-            aws_secret_access_key='aws_secret_access_key')
 
     def test_detach_internet_gateway(self):
-        """
-        Tests detach_internet_gateway with all valid parameters
-        """
-        internet_gateway_id = 'mock_gateway_id'
-        vpc_id = 'mock_vpc_id'
+        self.set_http_response(status_code=200)
+        self.service_connection.detach_internet_gateway('igw-eaad4883', 'vpc-11ad4878')
+        self.assert_request_parameters({
+            'Action': 'DetachInternetGateway',
+            'InternetGatewayId': 'igw-eaad4883',
+            'VpcId': 'vpc-11ad4878'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
-        def get_status(status, params):
-            if status == "DetachInternetGateway" and \
-                params["InternetGatewayId"] == internet_gateway_id and \
-                    params["VpcId"] == vpc_id:
-                return True
-            else:
-                return False
 
-        self.vpc_connection.get_status = get_status
-        status = self.vpc_connection.detach_internet_gateway(
-            internet_gateway_id, vpc_id)
-        self.assertEquals(True, status)
+class TestReplaceRouteTableAssociation(AWSMockServiceTestCase):
+
+    connection_class = VPCConnection
+
+    def default_body(self):
+        return """
+            <ReplaceRouteTableAssociationResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
+               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+               <newAssociationId>rtbassoc-faad4893</newAssociationId>
+            </ReplaceRouteTableAssociationResponse>
+        """
 
     def test_replace_route_table_association(self):
-        """
-        Tests replace_route_table_assocation with all valid parameters
-        """
-        association_id = 'mock_association_id'
-        route_table_id = 'mock_route_table_id'
-
-        def get_status(status, params):
-            if status == "ReplaceRouteTableAssociation" and \
-                params["AssociationId"] == association_id and \
-                    params["RouteTableId"] == route_table_id:
-                return True
-            else:
-                return False
-
-        self.vpc_connection.get_status = get_status
-        status = self.vpc_connection.replace_route_table_assocation(
-            association_id, route_table_id)
-        self.assertEquals(True, status)
+        self.set_http_response(status_code=200)
+        self.service_connection.replace_route_table_assocation('rtbassoc-faad4893', 'rtb-f9ad4890')
+        self.assert_request_parameters({
+            'Action': 'ReplaceRouteTableAssociation',
+            'AssociationId': 'rtbassoc-faad4893',
+            'RouteTableId': 'rtb-f9ad4890'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
 
 class TestCreateVPCs(AWSMockServiceTestCase):
