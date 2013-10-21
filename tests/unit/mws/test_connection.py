@@ -25,7 +25,7 @@ from boto.mws.connection import MWSConnection, api_call_map
 from tests.unit import AWSMockServiceTestCase
 
 
-class TestMWSSomethingSomething(AWSMockServiceTestCase):
+class TestMWSConnection(AWSMockServiceTestCase):
     connection_class = MWSConnection
     mws = True
 
