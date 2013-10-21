@@ -846,7 +846,6 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteSubnet', params)
 
-
     # DHCP Options
 
     def get_all_dhcp_options(self, dhcp_options_ids=None, filters=None, dry_run=False):
@@ -856,12 +855,12 @@ class VPCConnection(EC2Connection):
         :type dhcp_options_ids: list
         :param dhcp_options_ids: A list of strings with the desired DhcpOption ID's
 
-        :type dry_run: bool
-        :param dry_run: Set to True if the operation should not actually run.
-
         :type filters: list of tuples
         :param filters: A list of tuples containing filters.  Each tuple
             consists of a filter key and a filter value.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
 
         :rtype: list
         :return: A list of :class:`boto.vpc.dhcpoptions.DhcpOptions`
