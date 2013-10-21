@@ -93,5 +93,93 @@ class TestVPCConnection(unittest.TestCase):
         self.assertEquals(True, status)
 
 
+class TestCreateVPCs(AWSMockServiceTestCase):
+
+    connection_class = VPCConnection
+
+    def default_body(self):
+        return """
+            <CreateVpcResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
+               <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
+               <vpc>
+                  <vpcId>vpc-1a2b3c4d</vpcId>
+                  <state>pending</state>
+                  <cidrBlock>10.0.0.0/16</cidrBlock>
+                  <dhcpOptionsId>dopt-1a2b3c4d2</dhcpOptionsId>
+                  <instanceTenancy>default</instanceTenancy>
+                  <tagSet/>
+               </vpc>
+            </CreateVpcResponse>
+        """
+
+    def test_create_vpc(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.create_vpc('10.0.0.0/16', 'default')
+        self.assert_request_parameters({
+            'Action': 'CreateVpc',
+            'InstanceTenancy': 'default',
+            'CidrBlock': '10.0.0.0/16'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
+
+class TestDescribeDhcpOptions(AWSMockServiceTestCase):
+
+    connection_class = VPCConnection
+
+    def default_body(self):
+        return """
+            <DescribeDhcpOptionsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
+              <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
+              <dhcpOptionsSet>
+                <item>
+                  <dhcpOptionsId>dopt-7a8b9c2d</dhcpOptionsId>
+                  <dhcpConfigurationSet>
+                    <item>
+                      <key>domain-name</key>
+                      <valueSet>
+                        <item>
+                          <value>example.com</value>
+                        </item>
+                      </valueSet>
+                    </item>
+                    <item>
+                      <key>domain-name-servers</key>
+                      <valueSet>
+                        <item>
+                          <value>10.2.5.1</value>
+                      </item>
+                      </valueSet>
+                    </item>
+                    <item>
+                      <key>domain-name-servers</key>
+                      <valueSet>
+                        <item>
+                          <value>10.2.5.2</value>
+                          </item>
+                      </valueSet>
+                    </item>
+                  </dhcpConfigurationSet>
+                  <tagSet/>
+                </item>
+              </dhcpOptionsSet>
+            </DescribeDhcpOptionsResponse>
+        """
+
+    def test_get_all_dhcp_options(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.get_all_dhcp_options(['dopt-7a8b9c2d'],
+                                                     [('key', 'domain-name')])
+        self.assert_request_parameters({
+            'Action': 'DescribeDhcpOptions',
+            'DhcpOptionsId.1': 'dopt-7a8b9c2d',
+            'Filter.1.Name': 'key',
+            'Filter.1.Value.1': 'domain-name'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
+
 if __name__ == '__main__':
     unittest.main()
