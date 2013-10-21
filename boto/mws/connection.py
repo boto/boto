@@ -261,6 +261,11 @@ class MWSConnection(AWSQueryConnection):
            and return the response, optionally as raw text.
            Modelled off of the inherited get_object/make_request flow.
         """
+        # TODO: This is using ``self.server_name()``, which is a deprecated
+        #       call post-SHA: 789ace9. It likely should be ``self.host``,
+        #       but I lack MWS credentials to verify.
+        #       If you have them, you're here & you know what you're doing,
+        #       please update this & test that fix.
         request = self.build_base_http_request('POST', path, None, data=body,
                                                params=params, headers=headers,
                                                host=self.server_name())
