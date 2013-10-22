@@ -227,7 +227,8 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
                 instance_type = 'm1.large',
                 security_groups = ['group1', 'group2'],
                 spot_price='price',
-                block_device_mappings = [bdm]
+                block_device_mappings = [bdm],
+                associate_public_ip_address = True
                 )
 
         response = self.service_connection.create_launch_configuration(lc)
@@ -248,6 +249,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'SecurityGroups.member.1': 'group1',
             'SecurityGroups.member.2': 'group2',
             'SpotPrice': 'price',
+            'AssociatePublicIpAddress' : 'true'
         }, ignore_params_values=['Version'])
 
 

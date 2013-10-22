@@ -94,7 +94,8 @@ class LaunchConfiguration(object):
                  instance_type='m1.small', kernel_id=None,
                  ramdisk_id=None, block_device_mappings=None,
                  instance_monitoring=False, spot_price=None,
-                 instance_profile_name=None, ebs_optimized=False):
+                 instance_profile_name=None, ebs_optimized=False,
+                 associate_public_ip_address=None):
         """
         A launch configuration.
 
@@ -144,6 +145,10 @@ class LaunchConfiguration(object):
         :type ebs_optimized: bool
         :param ebs_optimized: Specifies whether the instance is optimized
             for EBS I/O (true) or not (false).
+
+        :type associate_public_ip_address: bool
+        :param associate_public_ip_address: Used for Auto Scaling groups that launch instances into an Amazon Virtual Private Cloud. 
+            Specifies whether to assign a public IP address to each instance launched in a Amazon VPC.
         """
         self.connection = connection
         self.name = name
@@ -163,6 +168,7 @@ class LaunchConfiguration(object):
         self.instance_profile_name = instance_profile_name
         self.launch_configuration_arn = None
         self.ebs_optimized = ebs_optimized
+        self.associate_public_ip_address = associate_public_ip_address
 
     def __repr__(self):
         return 'LaunchConfiguration:%s' % self.name
