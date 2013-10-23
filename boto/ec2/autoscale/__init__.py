@@ -700,7 +700,12 @@ class AutoScaleConnection(AWSQueryConnection):
 
         :type notification_types: list
         :param notification_types: The type of events that will trigger
-            the notification.
+            the notification. Valid types are:
+            'autoscaling:EC2_INSTANCE_LAUNCH',
+            'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
+            'autoscaling:EC2_INSTANCE_TERMINATE',
+            'autoscaling:EC2_INSTANCE_TERMINATE_ERROR',
+            'autoscaling:TEST_NOTIFICATION'
         """
 
         name = autoscale_group
