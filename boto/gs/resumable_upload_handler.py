@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import cgi
 import errno
 import httplib
 import os
@@ -28,12 +27,12 @@ import re
 import socket
 import time
 import urlparse
-import boto
-from boto import config
+from boto import config, UserAgent
 from boto.connection import AWSAuthConnection
 from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
+from boto.s3.keyfile import KeyFile
 try:
     from hashlib import md5
 except ImportError:
@@ -161,6 +160,22 @@ class ResumableUploadHandler(object):
         Returns upload tracker URI, or None if the upload has not yet started.
         """
         return self.tracker_uri
+
+    def get_upload_id(self):
+        """
+        Returns the upload ID for the resumable upload, or None if the upload
+        has not yet started.
+        """
+        # We extract the upload_id from the tracker uri. We could retrieve the
+        # upload_id from the headers in the response but this only works for
+        # the case where we get the tracker uri from the service. In the case
+        # where we get the tracker from the tracking file we need to do this
+        # logic anyway.
+        delim = '?upload_id='
+        if self.tracker_uri and delim in self.tracker_uri:
+          return self.tracker_uri[self.tracker_uri.index(delim) + len(delim):]
+        else:
+          return None
 
     def _remove_tracker_file(self):
         if (self.tracker_file_name and
@@ -305,12 +320,12 @@ class ResumableUploadHandler(object):
         self._save_tracker_uri_to_file()
 
     def _upload_file_bytes(self, conn, http_conn, fp, file_length,
-                           total_bytes_uploaded, cb, num_cb, md5sum):
+                           total_bytes_uploaded, cb, num_cb, headers):
         """
         Makes one attempt to upload file bytes, using an existing resumable
         upload connection.
 
-        Returns etag from server upon success.
+        Returns (etag, generation, metageneration) from server upon success.
 
         Raises ResumableUploadException if any problems occur.
         """
@@ -331,7 +346,10 @@ class ResumableUploadHandler(object):
         # Content-Range header if the file is 0 bytes long, because the
         # resumable upload protocol uses an *inclusive* end-range (so, sending
         # 'bytes 0-0/1' would actually mean you're sending a 1-byte file).
-        put_headers = {}
+        if not headers:
+          put_headers = {}
+        else:
+          put_headers = headers.copy()
         if file_length:
             if total_bytes_uploaded == file_length:
                 range_header = self._build_content_range_header(
@@ -356,7 +374,8 @@ class ResumableUploadHandler(object):
         http_conn.set_debuglevel(0)
         while buf:
             http_conn.send(buf)
-            md5sum.update(buf)
+            for alg in self.digesters:
+                self.digesters[alg].update(buf)
             total_bytes_uploaded += len(buf)
             if cb:
                 i += 1
@@ -364,6 +383,7 @@ class ResumableUploadHandler(object):
                     cb(total_bytes_uploaded, file_length)
                     i = 0
             buf = fp.read(self.BUFFER_SIZE)
+        http_conn.set_debuglevel(conn.debug)
         if cb:
             cb(total_bytes_uploaded, file_length)
         if total_bytes_uploaded != file_length:
@@ -375,12 +395,14 @@ class ResumableUploadHandler(object):
                 (total_bytes_uploaded, file_length),
                 ResumableTransferDisposition.ABORT)
         resp = http_conn.getresponse()
-        body = resp.read()
         # Restore http connection debug level.
         http_conn.set_debuglevel(conn.debug)
 
         if resp.status == 200:
-            return resp.getheader('etag')  # Success
+            # Success.
+            return (resp.getheader('etag'),
+                    resp.getheader('x-goog-generation'),
+                    resp.getheader('x-goog-metageneration'))
         # Retry timeout (408) and status 500 and 503 errors after a delay.
         elif resp.status in [408, 500, 503]:
             disposition = ResumableTransferDisposition.WAIT_BEFORE_RETRY
@@ -392,11 +414,11 @@ class ResumableUploadHandler(object):
                                        (resp.status, resp.reason), disposition)
 
     def _attempt_resumable_upload(self, key, fp, file_length, headers, cb,
-                                  num_cb, md5sum):
+                                  num_cb):
         """
         Attempts a resumable upload.
 
-        Returns etag from server upon success.
+        Returns (etag, generation, metageneration) from server upon success.
 
         Raises ResumableUploadException if any problems occur.
         """
@@ -411,9 +433,9 @@ class ResumableUploadHandler(object):
 
                 if server_end:
                   # If the server already has some of the content, we need to
-                  # update the md5 with the bytes that have already been
+                  # update the digesters with the bytes that have already been
                   # uploaded to ensure we get a complete hash in the end.
-                  print 'Catching up md5 for resumed upload'
+                  print 'Catching up hash digest(s) for resumed upload'
                   fp.seek(0)
                   # Read local file's bytes through position server has. For
                   # example, if server has (0, 3) we want to read 3-0+1=4 bytes.
@@ -422,13 +444,14 @@ class ResumableUploadHandler(object):
                       chunk = fp.read(min(key.BufferSize, bytes_to_go))
                       if not chunk:
                           raise ResumableUploadException(
-                              'Hit end of file during resumable upload md5 '
+                              'Hit end of file during resumable upload hash '
                               'catchup. This should not happen under\n'
                               'normal circumstances, as it indicates the '
                               'server has more bytes of this transfer\nthan'
                               ' the current file size. Restarting upload.',
                               ResumableTransferDisposition.START_OVER)
-                      md5sum.update(chunk)
+                      for alg in self.digesters:
+                          self.digesters[alg].update(chunk)
                       bytes_to_go -= len(chunk)
 
                 if conn.debug >= 1:
@@ -447,7 +470,12 @@ class ResumableUploadHandler(object):
             self.upload_start_point = server_end
 
         total_bytes_uploaded = server_end + 1
-        fp.seek(total_bytes_uploaded)
+        # Corner case: Don't attempt to seek if we've already uploaded the
+        # entire file, because if the file is a stream (e.g., the KeyFile
+        # wrapper around input key when copying between providers), attempting
+        # to seek to the end of file would result in an InvalidRange error.
+        if file_length < total_bytes_uploaded:
+          fp.seek(total_bytes_uploaded)
         conn = key.bucket.connection
 
         # Get a new HTTP connection (vs conn.get_http_connection(), which reuses
@@ -463,7 +491,8 @@ class ResumableUploadHandler(object):
         # and can report that progress on next attempt.
         try:
             return self._upload_file_bytes(conn, http_conn, fp, file_length,
-                                           total_bytes_uploaded, cb, num_cb, md5sum)
+                                           total_bytes_uploaded, cb, num_cb,
+                                           headers)
         except (ResumableUploadException, socket.error):
             resp = self._query_server_state(conn, file_length)
             if resp.status == 400:
@@ -526,9 +555,9 @@ class ResumableUploadHandler(object):
         else:
             self.progress_less_iterations += 1
             if roll_back_md5:
-                # Rollback any potential md5sum updates, as we did not
+                # Rollback any potential hash updates, as we did not
                 # make any progress in this iteration.
-                self.md5sum = self.md5sum_before_attempt
+                self.digesters = self.digesters_before_attempt
 
         if self.progress_less_iterations > self.num_retries:
             # Don't retry any longer in the current process.
@@ -537,7 +566,7 @@ class ResumableUploadHandler(object):
                     'progress. You might try this upload again later',
                     ResumableTransferDisposition.ABORT_CUR_PROCESS)
 
-        # Use binary exponential backoff to desynchronize client requests
+        # Use binary exponential backoff to desynchronize client requests.
         sleep_time_secs = random.random() * (2**self.progress_less_iterations)
         if debug >= 1:
             print ('Got retryable failure (%d progress-less in a row).\n'
@@ -545,7 +574,7 @@ class ResumableUploadHandler(object):
                    (self.progress_less_iterations, sleep_time_secs))
         time.sleep(sleep_time_secs)
 
-    def send_file(self, key, fp, headers, cb=None, num_cb=10):
+    def send_file(self, key, fp, headers, cb=None, num_cb=10, hash_algs=None):
         """
         Upload a file to a key into a bucket on GS, using GS resumable upload
         protocol.
@@ -573,6 +602,12 @@ class ResumableUploadHandler(object):
             during the file transfer. Providing a negative integer will cause
             your callback to be called with each buffer read.
 
+        :type hash_algs: dictionary
+        :param hash_algs: (optional) Dictionary mapping hash algorithm
+            descriptions to corresponding state-ful hashing objects that
+            implement update(), digest(), and copy() (e.g. hashlib.md5()).
+            Defaults to {'md5': md5()}.
+
         Raises ResumableUploadException if a problem occurs during the transfer.
         """
 
@@ -583,37 +618,53 @@ class ResumableUploadHandler(object):
         # that header.
         CT = 'Content-Type'
         if CT in headers and headers[CT] is None:
-          del headers[CT]
+            del headers[CT]
 
-        fp.seek(0, os.SEEK_END)
-        file_length = fp.tell()
-        fp.seek(0)
+        headers['User-Agent'] = UserAgent
+
+        # Determine file size different ways for case where fp is actually a
+        # wrapper around a Key vs an actual file.
+        if isinstance(fp, KeyFile):
+            file_length = fp.getkey().size
+        else:
+            fp.seek(0, os.SEEK_END)
+            file_length = fp.tell()
+            fp.seek(0)
         debug = key.bucket.connection.debug
 
         # Compute the MD5 checksum on the fly.
-        self.md5sum = md5()
+        if hash_algs is None:
+            hash_algs = {'md5': md5}
+        self.digesters = dict(
+            (alg, hash_algs[alg]()) for alg in hash_algs or {})
 
         # Use num-retries from constructor if one was provided; else check
         # for a value specified in the boto config file; else default to 5.
         if self.num_retries is None:
-            self.num_retries = config.getint('Boto', 'num_retries', 5)
+            self.num_retries = config.getint('Boto', 'num_retries', 6)
         self.progress_less_iterations = 0
 
         while True:  # Retry as long as we're making progress.
             server_had_bytes_before_attempt = self.server_has_bytes
-            self.md5sum_before_attempt = self.md5sum.copy()
+            self.digesters_before_attempt = dict(
+                (alg, self.digesters[alg].copy())
+                for alg in self.digesters)
             try:
-                etag = self._attempt_resumable_upload(key, fp, file_length,
-                                                      headers, cb, num_cb,
-                                                      self.md5sum)
+                # Save generation and metageneration in class state so caller
+                # can find these values, for use in preconditions of future
+                # operations on the uploaded object.
+                (etag, self.generation, self.metageneration) = (
+                    self._attempt_resumable_upload(key, fp, file_length,
+                                                   headers, cb, num_cb))
 
-                # Get the final md5 for the uploaded content.
-                hd = self.md5sum.hexdigest()
-                key.md5, key.base64md5 = key.get_md5_from_hexdigest(hd)
+                # Get the final digests for the uploaded content.
+                for alg in self.digesters:
+                    key.local_hashes[alg] = self.digesters[alg].digest()
 
                 # Upload succceded, so remove the tracker file (if have one).
                 self._remove_tracker_file()
                 self._check_final_md5(key, etag)
+                key.generation = self.generation
                 if debug >= 1:
                     print 'Resumable upload complete.'
                 return

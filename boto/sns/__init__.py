@@ -39,6 +39,9 @@ def regions():
             RegionInfo(name='eu-west-1',
                        endpoint='sns.eu-west-1.amazonaws.com',
                        connection_cls=SNSConnection),
+            RegionInfo(name='us-gov-west-1',
+                       endpoint='sns.us-gov-west-1.amazonaws.com',
+                       connection_cls=SNSConnection),
             RegionInfo(name='us-west-1',
                        endpoint='sns.us-west-1.amazonaws.com',
                        connection_cls=SNSConnection),
@@ -53,6 +56,9 @@ def regions():
                        connection_cls=SNSConnection),
             RegionInfo(name='ap-southeast-1',
                        endpoint='sns.ap-southeast-1.amazonaws.com',
+                       connection_cls=SNSConnection),
+            RegionInfo(name='ap-southeast-2',
+                       endpoint='sns.ap-southeast-2.amazonaws.com',
                        connection_cls=SNSConnection),
             ]
 

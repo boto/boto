@@ -24,17 +24,16 @@
 """
 Check that all of the certs on all service endpoints validate.
 """
-
 import unittest
+
+from tests.integration import ServiceCertVerificationTest
+
 import boto.sts
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class STSCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     sts = True
-    ssl = True
+    regions = boto.sts.regions()
 
-    def test_certs(self):
-        for region in boto.sts.regions():
-            c = region.connect()
-            c.get_session_token()
+    def sample_service_call(self, conn):
+        conn.get_session_token()

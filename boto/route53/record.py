@@ -57,7 +57,12 @@ class ResourceRecordSets(ResultSet):
         ResultSet.__init__(self, [('ResourceRecordSet', Record)])
 
     def __repr__(self):
-        return '<ResourceRecordSets: %s>' % self.hosted_zone_id
+        if self.changes:
+            record_list = ','.join([c.__repr__() for c in self.changes])
+        else:
+            record_list = ','.join([record.__repr__() for record in self])
+        return '<ResourceRecordSets:%s [%s]' % (self.hosted_zone_id,
+                                                record_list)
 
     def add_change(self, action, name, type, ttl=600,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
@@ -121,6 +126,11 @@ class ResourceRecordSets(ResultSet):
         self.changes.append([action, change])
         return change
 
+    def add_change_record(self, action, change):
+        """Add an existing record to a change set with the specified action"""
+        self.changes.append([action, change])
+        return
+
     def to_xml(self):
         """Convert this ResourceRecordSet into XML
         to be saved via the ChangeResourceRecordSetsRequest"""
@@ -151,6 +161,7 @@ class ResourceRecordSets(ResultSet):
     def __iter__(self):
         """Override the next function to support paging"""
         results = ResultSet.__iter__(self)
+        truncated = self.is_truncated
         while results:
             for obj in results:
                 yield obj
@@ -159,6 +170,8 @@ class ResourceRecordSets(ResultSet):
                 results = self.connection.get_all_rrsets(self.hosted_zone_id, name=self.next_record_name, type=self.next_record_type)
             else:
                 results = None
+                self.is_truncated = truncated
+
 
 
 
@@ -214,6 +227,9 @@ class Record(object):
         self.weight = weight
         self.region = region
 
+    def __repr__(self):
+        return '<Record:%s:%s:%s>' % (self.name, self.type, self.to_print())
+
     def add_value(self, value):
         """Add a resource record value"""
         self.resource_records.append(value)
@@ -231,20 +247,24 @@ class Record(object):
         else:
             # Use resource record(s)
             records = ""
+
             for r in self.resource_records:
                 records += self.ResourceRecordBody % r
+
             body = self.ResourceRecordsBody % {
                 "ttl": self.ttl,
                 "records": records,
             }
+
         weight = ""
+
         if self.identifier != None and self.weight != None:
             weight = self.WRRBody % {"identifier": self.identifier, "weight":
                     self.weight}
         elif self.identifier != None and self.region != None:
             weight = self.RRRBody % {"identifier": self.identifier, "region":
                     self.region}
-        
+
         params = {
             "name": self.name,
             "type": self.type,
@@ -264,6 +284,8 @@ class Record(object):
 
         if self.identifier != None and self.weight != None:
             rr += ' (WRR id=%s, w=%s)' % (self.identifier, self.weight)
+        elif self.identifier != None and self.region != None:
+            rr += ' (LBR id=%s, region=%s)' % (self.identifier, self.region)
 
         return rr
 

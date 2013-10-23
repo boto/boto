@@ -21,10 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import json
 
 import boto
 import boto.jsonresponse
+from boto.compat import json
 from boto.regioninfo import RegionInfo
 from boto.connection import AWSQueryConnection
 
@@ -54,7 +54,7 @@ class Layer1(AWSQueryConnection):
                                     security_token)
 
     def _required_auth_capability(self):
-        return ['sign-v2']
+        return ['hmac-v4']
 
     def _encode_bool(self, v):
         v = bool(v)
@@ -75,7 +75,7 @@ class Layer1(AWSQueryConnection):
 
         :type cname_prefix: string
         :param cname_prefix: The prefix used when this CNAME is
-        reserved.
+            reserved.
         """
         params = {'CNAMEPrefix': cname_prefix}
         return self._get_response('CheckDNSAvailability', params)
@@ -87,9 +87,9 @@ class Layer1(AWSQueryConnection):
 
         :type application_name: string
         :param application_name: The name of the application.
-        Constraint: This name must be unique within your account. If the
-        specified name already exists, the action returns an
-        InvalidParameterValue error.
+            Constraint: This name must be unique within your account. If the
+            specified name already exists, the action returns an
+            InvalidParameterValue error.
 
         :type description: string
         :param description: Describes the application.
@@ -108,37 +108,34 @@ class Layer1(AWSQueryConnection):
 
         :type application_name: string
         :param application_name: The name of the application. If no
-        application is found with this name, and AutoCreateApplication
-        is false, returns an InvalidParameterValue error.
+            application is found with this name, and AutoCreateApplication is
+            false, returns an InvalidParameterValue error.
 
         :type version_label: string
-        :param version_label: A label identifying this
-        version.Constraint: Must be unique per application. If an
-        application version already exists with this label for the
-        specified application, AWS Elastic Beanstalk returns an
-        InvalidParameterValue error.
+        :param version_label: A label identifying this version. Constraint:
+            Must be unique per application. If an application version already
+            exists with this label for the specified application, AWS Elastic
+            Beanstalk returns an InvalidParameterValue error.
 
         :type description: string
         :param description: Describes this version.
 
         :type s3_bucket: string
-        :param s3_bucket: The Amazon S3 bucket where the data is
-        located.
+        :param s3_bucket: The Amazon S3 bucket where the data is located.
 
         :type s3_key: string
-        :param s3_key: The Amazon S3 key where the data is located.
-        Both s3_bucket and s3_key must be specified in order to use
-        a specific source bundle.  If both of these values are not specified
-        the sample application will be used.
+        :param s3_key: The Amazon S3 key where the data is located.  Both
+            s3_bucket and s3_key must be specified in order to use a specific
+            source bundle.  If both of these values are not specified the
+            sample application will be used.
 
         :type auto_create_application: boolean
-        :param auto_create_application: Determines how the system
-        behaves if the specified application for this version does not
-        already exist:  true: Automatically creates the specified
-        application for this version if it does not already exist.
-        false: Returns an InvalidParameterValue if the specified
-        application for this version does not already exist.  Default:
-        false  Valid Values: true | false
+        :param auto_create_application: Determines how the system behaves if
+            the specified application for this version does not already exist:
+            true: Automatically creates the specified application for this
+            version if it does not already exist.  false: Returns an
+            InvalidParameterValue if the specified application for this version
+            does not already exist.  Default: false  Valid Values: true | false
 
         :raises: TooManyApplicationsException,
                  TooManyApplicationVersionsException,
@@ -171,52 +168,49 @@ class Layer1(AWSQueryConnection):
         configuration settings.
 
         :type application_name: string
-        :param application_name: The name of the application to
-        associate with this configuration template. If no application is
-        found with this name, AWS Elastic Beanstalk returns an
-        InvalidParameterValue error.
+        :param application_name: The name of the application to associate with
+            this configuration template. If no application is found with this
+            name, AWS Elastic Beanstalk returns an InvalidParameterValue error.
 
         :type template_name: string
-        :param template_name: The name of the configuration
-        template.Constraint: This name must be unique per application.
-        Default: If a configuration template already exists with this
-        name, AWS Elastic Beanstalk returns an InvalidParameterValue
-        error.
+        :param template_name: The name of the configuration template.
+            Constraint: This name must be unique per application.  Default: If
+            a configuration template already exists with this name, AWS Elastic
+            Beanstalk returns an InvalidParameterValue error.
 
         :type solution_stack_name: string
-        :param solution_stack_name: The name of the solution stack used
-        by this configuration. The solution stack specifies the
-        operating system, architecture, and application server for a
-        configuration template. It determines the set of configuration
-        options as well as the possible and default values.  Use
-        ListAvailableSolutionStacks to obtain a list of available
-        solution stacks.  Default: If the SolutionStackName is not
-        specified and the source configuration parameter is blank, AWS
-        Elastic Beanstalk uses the default solution stack. If not
-        specified and the source configuration parameter is specified,
-        AWS Elastic Beanstalk uses the same solution stack as the source
-        configuration template.
+        :param solution_stack_name: The name of the solution stack used by this
+            configuration. The solution stack specifies the operating system,
+            architecture, and application server for a configuration template.
+            It determines the set of configuration options as well as the
+            possible and default values.  Use ListAvailableSolutionStacks to
+            obtain a list of available solution stacks.  Default: If the
+            SolutionStackName is not specified and the source configuration
+            parameter is blank, AWS Elastic Beanstalk uses the default solution
+            stack. If not specified and the source configuration parameter is
+            specified, AWS Elastic Beanstalk uses the same solution stack as
+            the source configuration template.
 
         :type source_configuration_application_name: string
         :param source_configuration_application_name: The name of the
-        application associated with the configuration.
+            application associated with the configuration.
 
         :type source_configuration_template_name: string
         :param source_configuration_template_name: The name of the
-        configuration template.
+            configuration template.
 
         :type environment_id: string
         :param environment_id: The ID of the environment used with this
-        configuration template.
+            configuration template.
 
         :type description: string
         :param description: Describes this configuration.
 
         :type option_settings: list
-        :param option_settings: If specified, AWS Elastic Beanstalk sets
-        the specified configuration option to the requested value. The
-        new value overrides the value obtained from the solution stack
-        or the source configuration template.
+        :param option_settings: If specified, AWS Elastic Beanstalk sets the
+            specified configuration option to the requested value. The new
+            value overrides the value obtained from the solution stack or the
+            source configuration template.
 
         :raises: InsufficientPrivilegesException,
                  TooManyConfigurationTemplatesException
@@ -226,9 +220,9 @@ class Layer1(AWSQueryConnection):
         if solution_stack_name:
             params['SolutionStackName'] = solution_stack_name
         if source_configuration_application_name:
-            params['ApplicationName'] = source_configuration_application_name
+            params['SourceConfiguration.ApplicationName'] = source_configuration_application_name
         if source_configuration_template_name:
-            params['TemplateName'] = source_configuration_template_name
+            params['SourceConfiguration.TemplateName'] = source_configuration_template_name
         if environment_id:
             params['EnvironmentId'] = environment_id
         if description:
@@ -247,73 +241,72 @@ class Layer1(AWSQueryConnection):
         """Launches an environment for the application using a configuration.
 
         :type application_name: string
-        :param application_name: The name of the application that
-        contains the version to be deployed.  If no application is found
-        with this name, CreateEnvironment returns an
-        InvalidParameterValue error.
+        :param application_name: The name of the application that contains the
+            version to be deployed.  If no application is found with this name,
+            CreateEnvironment returns an InvalidParameterValue error.
 
         :type version_label: string
-        :param version_label: The name of the application version to
-        deploy. If the specified application has no associated
-        application versions, AWS Elastic Beanstalk UpdateEnvironment
-        returns an InvalidParameterValue error.  Default: If not
-        specified, AWS Elastic Beanstalk attempts to launch the most
-        recently created application version.
+        :param version_label: The name of the application version to deploy. If
+            the specified application has no associated application versions,
+            AWS Elastic Beanstalk UpdateEnvironment returns an
+            InvalidParameterValue error.  Default: If not specified, AWS
+            Elastic Beanstalk attempts to launch the most recently created
+            application version.
 
         :type environment_name: string
-        :param environment_name: A unique name for the deployment
-        environment. Used in the application URL. Constraint: Must be
-        from 4 to 23 characters in length. The name can contain only
-        letters, numbers, and hyphens. It cannot start or end with a
-        hyphen. This name must be unique in your account. If the
-        specified name already exists, AWS Elastic Beanstalk returns an
-        InvalidParameterValue error. Default: If the CNAME parameter is
-        not specified, the environment name becomes part of the CNAME,
-        and therefore part of the visible URL for your application.
+        :param environment_name: A unique name for the deployment environment.
+            Used in the application URL. Constraint: Must be from 4 to 23
+            characters in length. The name can contain only letters, numbers,
+            and hyphens. It cannot start or end with a hyphen. This name must
+            be unique in your account. If the specified name already exists,
+            AWS Elastic Beanstalk returns an InvalidParameterValue error.
+            Default: If the CNAME parameter is not specified, the environment
+            name becomes part of the CNAME, and therefore part of the visible
+            URL for your application.
 
         :type template_name: string
         :param template_name: The name of the configuration template to
-        use in deployment. If no configuration template is found with
-        this name, AWS Elastic Beanstalk returns an
-        InvalidParameterValue error.  Condition: You must specify either
-        this parameter or a SolutionStackName, but not both. If you
-        specify both, AWS Elastic Beanstalk returns an
-        InvalidParameterCombination error. If you do not specify either,
-        AWS Elastic Beanstalk returns a MissingRequiredParameter error.
+            use in deployment. If no configuration template is found with this
+            name, AWS Elastic Beanstalk returns an InvalidParameterValue error.
+            Condition: You must specify either this parameter or a
+            SolutionStackName, but not both. If you specify both, AWS Elastic
+            Beanstalk returns an InvalidParameterCombination error. If you do
+            not specify either, AWS Elastic Beanstalk returns a
+            MissingRequiredParameter error.
 
         :type solution_stack_name: string
-        :param solution_stack_name: This is an alternative to specifying
-        a configuration name. If specified, AWS Elastic Beanstalk sets
-        the configuration values to the default values associated with
-        the specified solution stack.  Condition: You must specify
-        either this or a TemplateName, but not both. If you specify
-        both, AWS Elastic Beanstalk returns an
-        InvalidParameterCombination error. If you do not specify either,
-        AWS Elastic Beanstalk returns a MissingRequiredParameter error.
+        :param solution_stack_name: This is an alternative to specifying a
+            configuration name. If specified, AWS Elastic Beanstalk sets the
+            configuration values to the default values associated with the
+            specified solution stack.  Condition: You must specify either this
+            or a TemplateName, but not both. If you specify both, AWS Elastic
+            Beanstalk returns an InvalidParameterCombination error. If you do
+            not specify either, AWS Elastic Beanstalk returns a
+            MissingRequiredParameter error.
 
         :type cname_prefix: string
-        :param cname_prefix: If specified, the environment attempts to
-        use this value as the prefix for the CNAME. If not specified,
-        the environment uses the environment name.
+        :param cname_prefix: If specified, the environment attempts to use this
+            value as the prefix for the CNAME. If not specified, the
+            environment uses the environment name.
 
         :type description: string
         :param description: Describes this environment.
 
         :type option_settings: list
-        :param option_settings: If specified, AWS Elastic Beanstalk sets
-        the specified configuration options to the requested value in
-        the configuration set for the new environment. These override
-        the values obtained from the solution stack or the configuration
-        template.  Each element in the list is a tuple of (Namespace,
-        OptionName, Value), for example::
+        :param option_settings: If specified, AWS Elastic Beanstalk sets the
+            specified configuration options to the requested value in the
+            configuration set for the new environment. These override the
+            values obtained from the solution stack or the configuration
+            template.  Each element in the list is a tuple of (Namespace,
+            OptionName, Value), for example::
 
-            [('aws:autoscaling:launchconfiguration',
-              'Ec2KeyName', 'mykeypair')]
+                [('aws:autoscaling:launchconfiguration',
+                    'Ec2KeyName', 'mykeypair')]
 
         :type options_to_remove: list
-        :param options_to_remove: A list of custom user-defined
-        configuration options to remove from the configuration set for
-        this new environment.
+        :param options_to_remove: A list of custom user-defined configuration
+            options to remove from the configuration set for this new
+            environment.
 
         :raises: TooManyEnvironmentsException, InsufficientPrivilegesException
 
@@ -363,7 +356,7 @@ class Layer1(AWSQueryConnection):
 
         :type terminate_env_by_force: boolean
         :param terminate_env_by_force: When set to true, running
-        environments will be terminated before deleting the application.
+            environments will be terminated before deleting the application.
 
         :raises: OperationInProgressException
 
@@ -380,14 +373,15 @@ class Layer1(AWSQueryConnection):
 
         :type application_name: string
         :param application_name: The name of the application to delete
-        releases from.
+            releases from.
 
         :type version_label: string
         :param version_label: The label of the version to delete.
 
         :type delete_source_bundle: boolean
         :param delete_source_bundle: Indicates whether to delete the
-        associated source bundle from Amazon S3.  Valid Values: true | false
+            associated source bundle from Amazon S3.  Valid Values: true |
+            false
 
         :raises: SourceBundleDeletionException,
                  InsufficientPrivilegesException,
@@ -406,11 +400,11 @@ class Layer1(AWSQueryConnection):
 
         :type application_name: string
         :param application_name: The name of the application to delete
-        the configuration template from.
+            the configuration template from.
 
         :type template_name: string
         :param template_name: The name of the configuration template to
-        delete.
+            delete.
 
         :raises: OperationInProgressException
 
@@ -434,11 +428,11 @@ class Layer1(AWSQueryConnection):
 
         :type application_name: string
         :param application_name: The name of the application the
-        environment is associated with.
+            environment is associated with.
 
         :type environment_name: string
         :param environment_name: The name of the environment to delete
-        the draft configuration from.
+            the draft configuration from.
 
         """
         params = {'ApplicationName': application_name,
@@ -450,14 +444,14 @@ class Layer1(AWSQueryConnection):
         """Returns descriptions for existing application versions.
 
         :type application_name: string
-        :param application_name: If specified, AWS Elastic Beanstalk
-        restricts the returned descriptions to only include ones that
-        are associated with the specified application.
+        :param application_name: If specified, AWS Elastic Beanstalk restricts
+            the returned descriptions to only include ones that are associated
+            with the specified application.
 
         :type version_labels: list
         :param version_labels: If specified, restricts the returned
-        descriptions to only include ones that have the specified
-        version labels.
+            descriptions to only include ones that have the specified version
+            labels.
 
         """
         params = {}
@@ -472,9 +466,9 @@ class Layer1(AWSQueryConnection):
         """Returns the descriptions of existing applications.
 
         :type application_names: list
-        :param application_names: If specified, AWS Elastic Beanstalk
-        restricts the returned descriptions to only include those with
-        the specified names.
+        :param application_names: If specified, AWS Elastic Beanstalk restricts
+            the returned descriptions to only include those with the specified
+            names.
 
         """
         params = {}
@@ -497,26 +491,26 @@ class Layer1(AWSQueryConnection):
         is changed.
 
         :type application_name: string
-        :param application_name: The name of the application associated
-        with the configuration template or environment. Only needed if
-        you want to describe the configuration options associated with
-        either the configuration template or environment.
+        :param application_name: The name of the application associated with
+            the configuration template or environment. Only needed if you want
+            to describe the configuration options associated with either the
+            configuration template or environment.
 
         :type template_name: string
-        :param template_name: The name of the configuration template
-        whose configuration options you want to describe.
+        :param template_name: The name of the configuration template whose
+            configuration options you want to describe.
 
         :type environment_name: string
         :param environment_name: The name of the environment whose
-        configuration options you want to describe.
+            configuration options you want to describe.
 
         :type solution_stack_name: string
         :param solution_stack_name: The name of the solution stack whose
-        configuration options you want to describe.
+            configuration options you want to describe.
 
         :type options: list
         :param options: If specified, restricts the descriptions to only
-        the specified options.
+            the specified options.
         """
         params = {}
         if application_name:
@@ -547,23 +541,22 @@ class Layer1(AWSQueryConnection):
 
         :type application_name: string
         :param application_name: The application for the environment or
-        configuration template.
+            configuration template.
 
         :type template_name: string
         :param template_name: The name of the configuration template to
-        describe.  Conditional: You must specify either this parameter
-        or an EnvironmentName, but not both. If you specify both, AWS
-        Elastic Beanstalk returns an InvalidParameterCombination error.
-        If you do not specify either, AWS Elastic Beanstalk returns a
-        MissingRequiredParameter error.
+            describe.  Conditional: You must specify either this parameter or
+            an EnvironmentName, but not both. If you specify both, AWS Elastic
+            Beanstalk returns an InvalidParameterCombination error.  If you do
+            not specify either, AWS Elastic Beanstalk returns a
+            MissingRequiredParameter error.
 
         :type environment_name: string
-        :param environment_name: The name of the environment to
-        describe.  Condition: You must specify either this or a
-        TemplateName, but not both. If you specify both, AWS Elastic
-        Beanstalk returns an InvalidParameterCombination error. If you
-        do not specify either, AWS Elastic Beanstalk returns
-        MissingRequiredParameter error.
+        :param environment_name: The name of the environment to describe.
+            Condition: You must specify either this or a TemplateName, but not
+            both. If you specify both, AWS Elastic Beanstalk returns an
+            InvalidParameterCombination error. If you do not specify either,
+            AWS Elastic Beanstalk returns MissingRequiredParameter error.
         """
         params = {'ApplicationName': application_name}
         if template_name:
@@ -578,15 +571,15 @@ class Layer1(AWSQueryConnection):
 
         :type environment_id: string
         :param environment_id: The ID of the environment to retrieve AWS
-        resource usage data.  Condition: You must specify either this or
-        an EnvironmentName, or both. If you do not specify either, AWS
-        Elastic Beanstalk returns MissingRequiredParameter error.
+            resource usage data.  Condition: You must specify either this or an
+            EnvironmentName, or both. If you do not specify either, AWS Elastic
+            Beanstalk returns MissingRequiredParameter error.
 
         :type environment_name: string
         :param environment_name: The name of the environment to retrieve
-        AWS resource usage data.  Condition: You must specify either
-        this or an EnvironmentId, or both. If you do not specify either,
-        AWS Elastic Beanstalk returns MissingRequiredParameter error.
+            AWS resource usage data.  Condition: You must specify either this
+            or an EnvironmentId, or both. If you do not specify either, AWS
+            Elastic Beanstalk returns MissingRequiredParameter error.
 
         :raises: InsufficientPrivilegesException
         """
@@ -604,35 +597,35 @@ class Layer1(AWSQueryConnection):
         """Returns descriptions for existing environments.
 
         :type application_name: string
-        :param application_name: If specified, AWS Elastic Beanstalk
-        restricts the returned descriptions to include only those that
-        are associated with this application.
+        :param application_name: If specified, AWS Elastic Beanstalk restricts
+            the returned descriptions to include only those that are associated
+            with this application.
 
         :type version_label: string
-        :param version_label: If specified, AWS Elastic Beanstalk
-        restricts the returned descriptions to include only those that
-        are associated with this application version.
+        :param version_label: If specified, AWS Elastic Beanstalk restricts the
+            returned descriptions to include only those that are associated
+            with this application version.
 
         :type environment_ids: list
-        :param environment_ids: If specified, AWS Elastic Beanstalk
-        restricts the returned descriptions to include only those that
-        have the specified IDs.
+        :param environment_ids: If specified, AWS Elastic Beanstalk restricts
+            the returned descriptions to include only those that have the
+            specified IDs.
 
         :type environment_names: list
-        :param environment_names: If specified, AWS Elastic Beanstalk
-        restricts the returned descriptions to include only those that
-        have the specified names.
+        :param environment_names: If specified, AWS Elastic Beanstalk restricts
+            the returned descriptions to include only those that have the
+            specified names.
 
         :type include_deleted: boolean
         :param include_deleted: Indicates whether to include deleted
-        environments:  true: Environments that have been deleted after
-        IncludedDeletedBackTo are displayed.  false: Do not include
-        deleted environments.
+            environments:  true: Environments that have been deleted after
+            IncludedDeletedBackTo are displayed.  false: Do not include deleted
+            environments.
 
         :type included_deleted_back_to: timestamp
-        :param included_deleted_back_to: If specified when
-        IncludeDeleted is set to true, then environments deleted after
-        this date are displayed.
+        :param included_deleted_back_to: If specified when IncludeDeleted is
+            set to true, then environments deleted after this date are
+            displayed.
         """
         params = {}
         if application_name:
@@ -659,57 +652,55 @@ class Layer1(AWSQueryConnection):
         """Returns event descriptions matching criteria up to the last 6 weeks.
 
         :type application_name: string
-        :param application_name: If specified, AWS Elastic Beanstalk
-        restricts the returned descriptions to include only those
-        associated with this application.
+        :param application_name: If specified, AWS Elastic Beanstalk restricts
+            the returned descriptions to include only those associated with
+            this application.
 
         :type version_label: string
-        :param version_label: If specified, AWS Elastic Beanstalk
-        restricts the returned descriptions to those associated with
-        this application version.
+        :param version_label: If specified, AWS Elastic Beanstalk restricts the
+            returned descriptions to those associated with this application
+            version.
 
         :type template_name: string
-        :param template_name: If specified, AWS Elastic Beanstalk
-        restricts the returned descriptions to those that are associated
-        with this environment configuration.
+        :param template_name: If specified, AWS Elastic Beanstalk restricts the
+            returned descriptions to those that are associated with this
+            environment configuration.
 
         :type environment_id: string
-        :param environment_id: If specified, AWS Elastic Beanstalk
-        restricts the returned descriptions to those associated with
-        this environment.
+        :param environment_id: If specified, AWS Elastic Beanstalk restricts
+            the returned descriptions to those associated with this
+            environment.
 
         :type environment_name: string
-        :param environment_name: If specified, AWS Elastic Beanstalk
-        restricts the returned descriptions to those associated with
-        this environment.
+        :param environment_name: If specified, AWS Elastic Beanstalk restricts
+            the returned descriptions to those associated with this
+            environment.
 
         :type request_id: string
-        :param request_id: If specified, AWS Elastic Beanstalk restricts
-        the described events to include only those associated with this
-        request ID.
+        :param request_id: If specified, AWS Elastic Beanstalk restricts the
+            described events to include only those associated with this request
+            ID.
 
         :type severity: string
-        :param severity: If specified, limits the events returned from
-        this call to include only those with the specified severity or
-        higher.
+        :param severity: If specified, limits the events returned from this
+            call to include only those with the specified severity or higher.
 
         :type start_time: timestamp
-        :param start_time: If specified, AWS Elastic Beanstalk restricts
-        the returned descriptions to those that occur on or after this
-        time.
+        :param start_time: If specified, AWS Elastic Beanstalk restricts the
+            returned descriptions to those that occur on or after this time.
 
         :type end_time: timestamp
-        :param end_time: If specified, AWS Elastic Beanstalk restricts
-        the returned descriptions to those that occur up to, but not
-        including, the EndTime.
+        :param end_time: If specified, AWS Elastic Beanstalk restricts the
+            returned descriptions to those that occur up to, but not including,
+            the EndTime.
 
         :type max_records: integer
-        :param max_records: Specifies the maximum number of events that
-        can be returned, beginning with the most recent event.
+        :param max_records: Specifies the maximum number of events that can be
+            returned, beginning with the most recent event.
 
         :type next_token: string
-        :param next_token: Pagination token. If specified, the events
-        return the next batch of results.
+        :param next_token: Pagination token. If specified, the events return
+            the next batch of results.
         """
         params = {}
         if application_name:
@@ -748,15 +739,15 @@ class Layer1(AWSQueryConnection):
 
         :type environment_id: string
         :param environment_id: The ID of the environment to rebuild.
-        Condition: You must specify either this or an EnvironmentName,
-        or both. If you do not specify either, AWS Elastic Beanstalk
-        returns MissingRequiredParameter error.
+            Condition: You must specify either this or an EnvironmentName, or
+            both.  If you do not specify either, AWS Elastic Beanstalk returns
+            MissingRequiredParameter error.
 
         :type environment_name: string
         :param environment_name: The name of the environment to rebuild.
-        Condition: You must specify either this or an EnvironmentId, or
-        both. If you do not specify either, AWS Elastic Beanstalk
-        returns MissingRequiredParameter error.
+            Condition: You must specify either this or an EnvironmentId, or
+            both.  If you do not specify either, AWS Elastic Beanstalk returns
+            MissingRequiredParameter error.
 
         :raises: InsufficientPrivilegesException
         """
@@ -781,19 +772,19 @@ class Layer1(AWSQueryConnection):
 
         :type environment_id: string
         :param environment_id: The ID of the environment of the
-        requested data. If no such environment is found,
-        RequestEnvironmentInfo returns an InvalidParameterValue error.
-        Condition: You must specify either this or an EnvironmentName,
-        or both. If you do not specify either, AWS Elastic Beanstalk
-        returns MissingRequiredParameter error.
+            requested data. If no such environment is found,
+            RequestEnvironmentInfo returns an InvalidParameterValue error.
+            Condition: You must specify either this or an EnvironmentName, or
+            both. If you do not specify either, AWS Elastic Beanstalk returns
+            MissingRequiredParameter error.
 
         :type environment_name: string
         :param environment_name: The name of the environment of the
-        requested data. If no such environment is found,
-        RequestEnvironmentInfo returns an InvalidParameterValue error.
-        Condition: You must specify either this or an EnvironmentId, or
-        both. If you do not specify either, AWS Elastic Beanstalk
-        returns MissingRequiredParameter error.
+            requested data. If no such environment is found,
+            RequestEnvironmentInfo returns an InvalidParameterValue error.
+            Condition: You must specify either this or an EnvironmentId, or
+            both. If you do not specify either, AWS Elastic Beanstalk returns
+            MissingRequiredParameter error.
         """
         params = {'InfoType': info_type}
         if environment_id:
@@ -808,16 +799,16 @@ class Layer1(AWSQueryConnection):
         server running on each Amazon EC2 instance.
 
         :type environment_id: string
-        :param environment_id: The ID of the environment to restart the
-        server for.  Condition: You must specify either this or an
-        EnvironmentName, or both. If you do not specify either, AWS
-        Elastic Beanstalk returns MissingRequiredParameter error.
+        :param environment_id: The ID of the environment to restart the server
+            for.  Condition: You must specify either this or an
+            EnvironmentName, or both. If you do not specify either, AWS Elastic
+            Beanstalk returns MissingRequiredParameter error.
 
         :type environment_name: string
-        :param environment_name: The name of the environment to restart
-        the server for.  Condition: You must specify either this or an
-        EnvironmentId, or both. If you do not specify either, AWS
-        Elastic Beanstalk returns MissingRequiredParameter error.
+        :param environment_name: The name of the environment to restart the
+            server for.  Condition: You must specify either this or an
+            EnvironmentId, or both. If you do not specify either, AWS Elastic
+            Beanstalk returns MissingRequiredParameter error.
         """
         params = {}
         if environment_id:
@@ -836,18 +827,18 @@ class Layer1(AWSQueryConnection):
         :param info_type: The type of information to retrieve.
 
         :type environment_id: string
-        :param environment_id: The ID of the data's environment. If no
-        such environment is found, returns an InvalidParameterValue
-        error.  Condition: You must specify either this or an
-        EnvironmentName, or both. If you do not specify either, AWS
-        Elastic Beanstalk returns MissingRequiredParameter error.
+        :param environment_id: The ID of the data's environment. If no such
+            environment is found, returns an InvalidParameterValue error.
+            Condition: You must specify either this or an EnvironmentName, or
+            both.  If you do not specify either, AWS Elastic Beanstalk returns
+            MissingRequiredParameter error.
 
         :type environment_name: string
-        :param environment_name: The name of the data's environment. If
-        no such environment is found, returns an InvalidParameterValue
-        error.  Condition: You must specify either this or an
-        EnvironmentId, or both. If you do not specify either, AWS
-        Elastic Beanstalk returns MissingRequiredParameter error.
+        :param environment_name: The name of the data's environment. If no such
+            environment is found, returns an InvalidParameterValue error.
+            Condition: You must specify either this or an EnvironmentId, or
+            both.  If you do not specify either, AWS Elastic Beanstalk returns
+            MissingRequiredParameter error.
         """
         params = {'InfoType': info_type}
         if environment_id:
@@ -864,31 +855,31 @@ class Layer1(AWSQueryConnection):
 
         :type source_environment_id: string
         :param source_environment_id: The ID of the source environment.
-        Condition: You must specify at least the SourceEnvironmentID or
-        the SourceEnvironmentName. You may also specify both. If you
-        specify the SourceEnvironmentId, you must specify the
-        DestinationEnvironmentId.
+            Condition: You must specify at least the SourceEnvironmentID or the
+            SourceEnvironmentName. You may also specify both. If you specify
+            the SourceEnvironmentId, you must specify the
+            DestinationEnvironmentId.
 
         :type source_environment_name: string
-        :param source_environment_name: The name of the source
-        environment.  Condition: You must specify at least the
-        SourceEnvironmentID or the SourceEnvironmentName. You may also
-        specify both. If you specify the SourceEnvironmentName, you must
-        specify the DestinationEnvironmentName.
+        :param source_environment_name: The name of the source environment.
+            Condition: You must specify at least the SourceEnvironmentID or the
+            SourceEnvironmentName. You may also specify both. If you specify
+            the SourceEnvironmentName, you must specify the
+            DestinationEnvironmentName.
 
         :type destination_environment_id: string
         :param destination_environment_id: The ID of the destination
-        environment.  Condition: You must specify at least the
-        DestinationEnvironmentID or the DestinationEnvironmentName. You
-        may also specify both. You must specify the SourceEnvironmentId
-        with the DestinationEnvironmentId.
+            environment.  Condition: You must specify at least the
+            DestinationEnvironmentID or the DestinationEnvironmentName. You may
+            also specify both. You must specify the SourceEnvironmentId with
+            the DestinationEnvironmentId.
 
         :type destination_environment_name: string
         :param destination_environment_name: The name of the destination
-        environment.  Condition: You must specify at least the
-        DestinationEnvironmentID or the DestinationEnvironmentName. You
-        may also specify both. You must specify the
-        SourceEnvironmentName with the DestinationEnvironmentName.
+            environment.  Condition: You must specify at least the
+            DestinationEnvironmentID or the DestinationEnvironmentName. You may
+            also specify both. You must specify the SourceEnvironmentName with
+            the DestinationEnvironmentName.
         """
         params = {}
         if source_environment_id:
@@ -907,25 +898,25 @@ class Layer1(AWSQueryConnection):
 
         :type environment_id: string
         :param environment_id: The ID of the environment to terminate.
-        Condition: You must specify either this or an EnvironmentName,
-        or both. If you do not specify either, AWS Elastic Beanstalk
-        returns MissingRequiredParameter error.
+            Condition: You must specify either this or an EnvironmentName, or
+            both.  If you do not specify either, AWS Elastic Beanstalk returns
+            MissingRequiredParameter error.
 
         :type environment_name: string
-        :param environment_name: The name of the environment to
-        terminate. Condition: You must specify either this or an
-        EnvironmentId, or both. If you do not specify either, AWS
-        Elastic Beanstalk returns MissingRequiredParameter error.
+        :param environment_name: The name of the environment to terminate.
+            Condition: You must specify either this or an EnvironmentId, or
+            both.  If you do not specify either, AWS Elastic Beanstalk returns
+            MissingRequiredParameter error.
 
         :type terminate_resources: boolean
         :param terminate_resources: Indicates whether the associated AWS
-        resources should shut down when the environment is terminated:
-        true: (default) The user AWS resources (for example, the Auto
-        Scaling group, LoadBalancer, etc.) are terminated along with the
-        environment.  false: The environment is removed from the AWS
-        Elastic Beanstalk but the AWS resources continue to operate.
-        For more information, see the  AWS Elastic Beanstalk User Guide.
-        Default: true  Valid Values: true | false
+            resources should shut down when the environment is terminated:
+            true: (default) The user AWS resources (for example, the Auto
+            Scaling group, LoadBalancer, etc.) are terminated along with the
+            environment.  false: The environment is removed from the AWS
+            Elastic Beanstalk but the AWS resources continue to operate.  For
+            more information, see the  AWS Elastic Beanstalk User Guide.
+            Default: true  Valid Values: true | false
 
         :raises: InsufficientPrivilegesException
         """
@@ -946,13 +937,13 @@ class Layer1(AWSQueryConnection):
 
         :type application_name: string
         :param application_name: The name of the application to update.
-        If no such application is found, UpdateApplication returns an
-        InvalidParameterValue error.
+            If no such application is found, UpdateApplication returns an
+            InvalidParameterValue error.
 
         :type description: string
-        :param description: A new description for the application.
-        Default: If not specified, AWS Elastic Beanstalk does not update
-        the description.
+        :param description: A new description for the application.  Default: If
+            not specified, AWS Elastic Beanstalk does not update the
+            description.
         """
         params = {'ApplicationName': application_name}
         if description:
@@ -964,14 +955,14 @@ class Layer1(AWSQueryConnection):
         """Updates the application version to have the properties.
 
         :type application_name: string
-        :param application_name: The name of the application associated
-        with this version.  If no application is found with this name,
-        UpdateApplication returns an InvalidParameterValue error.
+        :param application_name: The name of the application associated with
+            this version.  If no application is found with this name,
+            UpdateApplication returns an InvalidParameterValue error.
 
         :type version_label: string
         :param version_label: The name of the version to update. If no
-        application version is found with this label, UpdateApplication
-        returns an InvalidParameterValue error.
+            application version is found with this label, UpdateApplication
+            returns an InvalidParameterValue error.
 
         :type description: string
         :param description: A new description for this release.
@@ -990,28 +981,27 @@ class Layer1(AWSQueryConnection):
         specified properties or configuration option values.
 
         :type application_name: string
-        :param application_name: The name of the application associated
-        with the configuration template to update. If no application is
-        found with this name, UpdateConfigurationTemplate returns an
-        InvalidParameterValue error.
+        :param application_name: The name of the application associated with
+            the configuration template to update. If no application is found
+            with this name, UpdateConfigurationTemplate returns an
+            InvalidParameterValue error.
 
         :type template_name: string
-        :param template_name: The name of the configuration template to
-        update. If no configuration template is found with this name,
-        UpdateConfigurationTemplate returns an InvalidParameterValue
-        error.
+        :param template_name: The name of the configuration template to update.
+            If no configuration template is found with this name,
+            UpdateConfigurationTemplate returns an InvalidParameterValue error.
 
         :type description: string
         :param description: A new description for the configuration.
 
         :type option_settings: list
-        :param option_settings: A list of configuration option settings
-        to update with the new specified option value.
+        :param option_settings: A list of configuration option settings to
+            update with the new specified option value.
 
         :type options_to_remove: list
-        :param options_to_remove: A list of configuration options to
-        remove from the configuration set.  Constraint: You can remove
-        only UserDefined configuration options.
+        :param options_to_remove: A list of configuration options to remove
+            from the configuration set.  Constraint: You can remove only
+            UserDefined configuration options.
 
         :raises: InsufficientPrivilegesException
         """
@@ -1045,47 +1035,43 @@ class Layer1(AWSQueryConnection):
         setting descriptions with different DeploymentStatus values.
 
         :type environment_id: string
-        :param environment_id: The ID of the environment to update. If
-        no environment with this ID exists, AWS Elastic Beanstalk
-        returns an InvalidParameterValue error.  Condition: You must
-        specify either this or an EnvironmentName, or both. If you do
-        not specify either, AWS Elastic Beanstalk returns
-        MissingRequiredParameter error.
+        :param environment_id: The ID of the environment to update. If no
+            environment with this ID exists, AWS Elastic Beanstalk returns an
+            InvalidParameterValue error.  Condition: You must specify either
+            this or an EnvironmentName, or both. If you do not specify either,
+            AWS Elastic Beanstalk returns MissingRequiredParameter error.
 
         :type environment_name: string
-        :param environment_name: The name of the environment to update.
-        If no environment with this name exists, AWS Elastic Beanstalk
-        returns an InvalidParameterValue error.  Condition: You must
-        specify either this or an EnvironmentId, or both. If you do not
-        specify either, AWS Elastic Beanstalk returns
-        MissingRequiredParameter error.
+        :param environment_name: The name of the environment to update.  If no
+            environment with this name exists, AWS Elastic Beanstalk returns an
+            InvalidParameterValue error.  Condition: You must specify either
+            this or an EnvironmentId, or both. If you do not specify either,
+            AWS Elastic Beanstalk returns MissingRequiredParameter error.
 
         :type version_label: string
-        :param version_label: If this parameter is specified, AWS
-        Elastic Beanstalk deploys the named application version to the
-        environment. If no such application version is found, returns an
-        InvalidParameterValue error.
+        :param version_label: If this parameter is specified, AWS Elastic
+            Beanstalk deploys the named application version to the environment.
+            If no such application version is found, returns an
+            InvalidParameterValue error.
 
         :type template_name: string
-        :param template_name: If this parameter is specified, AWS
-        Elastic Beanstalk deploys this configuration template to the
-        environment. If no such configuration template is found, AWS
-        Elastic Beanstalk returns an InvalidParameterValue error.
+        :param template_name: If this parameter is specified, AWS Elastic
+            Beanstalk deploys this configuration template to the environment.
+            If no such configuration template is found, AWS Elastic Beanstalk
+            returns an InvalidParameterValue error.
 
         :type description: string
         :param description: If this parameter is specified, AWS Elastic
-        Beanstalk updates the description of this environment.
+            Beanstalk updates the description of this environment.
 
         :type option_settings: list
-        :param option_settings: If specified, AWS Elastic Beanstalk
-        updates the configuration set associated with the running
-        environment and sets the specified configuration options to the
-        requested value.
+        :param option_settings: If specified, AWS Elastic Beanstalk updates the
+            configuration set associated with the running environment and sets
+            the specified configuration options to the requested value.
 
         :type options_to_remove: list
-        :param options_to_remove: A list of custom user-defined
-        configuration options to remove from the configuration set for
-        this environment.
+        :param options_to_remove: A list of custom user-defined configuration
+            options to remove from the configuration set for this environment.
 
         :raises: InsufficientPrivilegesException
         """
@@ -1121,21 +1107,21 @@ class Layer1(AWSQueryConnection):
 
         :type application_name: string
         :param application_name: The name of the application that the
-        configuration template or environment belongs to.
+            configuration template or environment belongs to.
 
         :type template_name: string
         :param template_name: The name of the configuration template to
-        validate the settings against.  Condition: You cannot specify
-        both this and an environment name.
+            validate the settings against.  Condition: You cannot specify both
+            this and an environment name.
 
         :type environment_name: string
-        :param environment_name: The name of the environment to validate
-        the settings against.  Condition: You cannot specify both this
-        and a configuration template name.
+        :param environment_name: The name of the environment to validate the
+            settings against.  Condition: You cannot specify both this and a
+            configuration template name.
 
         :type option_settings: list
-        :param option_settings: A list of the options and desired values
-        to evaluate.
+        :param option_settings: A list of the options and desired values to
+            evaluate.
 
         :raises: InsufficientPrivilegesException
         """

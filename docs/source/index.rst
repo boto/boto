@@ -9,6 +9,13 @@ offered by `Amazon Web Services`_.
 
 .. _Amazon Web Services: http://aws.amazon.com/
 
+Getting Started
+---------------
+
+If you've never used ``boto`` before, you should read the
+:doc:`Getting Started with Boto <getting_started>` guide to get familiar
+with ``boto`` & its usage.
+
 Currently Supported Services
 ----------------------------
 
@@ -24,26 +31,33 @@ Currently Supported Services
 
 * **Database**
 
-  * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
+  * :doc:`DynamoDB2 <dynamodb2_tut>` -- (:doc:`API Reference <ref/dynamodb2>`) -- (:doc:`Migration Guide from v1 <migrations/dynamodb_v1_to_v2>`)
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
-  * Relational Data Services (RDS) -- (:doc:`API Reference <ref/rds>`)
+  * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
+  * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
+  * Redshift -- (:doc:`API Reference <ref/redshift>`)
+  * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
 
 * **Deployment and Management**
 
   * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`)
   * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
+  * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
+  * Opsworks -- (:doc:`API Reference <ref/opsworks>`)
 
 * **Identity & Access**
 
   * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`)
+  * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`)
 
 * **Application Services**
 
-  * Simple Workflow Service (SWF) -- (:doc:`API Reference <ref/swf>`)
+  * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
+  * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
+  * :doc:`Simple Workflow Service (SWF) <swf_tut>` -- (:doc:`API Reference <ref/swf>`)
   * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`)
   * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`)
   * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`)
-  * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
 
 * **Monitoring**
 
@@ -69,9 +83,16 @@ Currently Supported Services
 
   * Mechanical Turk -- (:doc:`API Reference <ref/mturk>`)
 
+* **Other**
+
+  * Marketplace Web Services -- (:doc:`API Reference <ref/mws>`)
+  * :doc:`Support <support_tut>` -- (:doc:`API Reference <ref/support>`)
+
 Additional Resources
 --------------------
 
+* :doc:`Applications Built On Boto <apps_built_on_boto>`
+* :doc:`Command Line Utilities <commandline>`
 * :doc:`Boto Config Tutorial <boto_config_tut>`
 * :doc:`Contributing to Boto <contributing>`
 * `Boto Source Repository`_
@@ -86,47 +107,79 @@ Additional Resources
 .. _IRC channel: http://webchat.freenode.net/?channels=boto
 .. _Follow Mitch on Twitter: http://twitter.com/garnaat
 
+
+Release Notes
+-------------
+
+.. toctree::
+   :titlesonly:
+
+   releasenotes/v2.15.0
+   releasenotes/v2.14.0
+   releasenotes/v2.13.3
+   releasenotes/v2.13.2
+   releasenotes/v2.13.0
+   releasenotes/v2.12.0
+   releasenotes/v2.11.0
+   releasenotes/v2.10.0
+   releasenotes/v2.9.9
+   releasenotes/v2.9.8
+   releasenotes/v2.9.7
+   releasenotes/v2.9.6
+   releasenotes/v2.9.5
+   releasenotes/v2.9.4
+   releasenotes/v2.9.3
+   releasenotes/v2.9.2
+   releasenotes/v2.9.1
+   releasenotes/v2.9.0
+   releasenotes/v2.8.0
+   releasenotes/v2.7.0
+   releasenotes/v2.6.0
+   releasenotes/v2.5.2
+   releasenotes/v2.5.1
+   releasenotes/v2.5.0
+   releasenotes/v2.4.0
+   releasenotes/v2.3.0
+   releasenotes/v2.2.2
+   releasenotes/v2.2.1
+   releasenotes/v2.2.0
+   releasenotes/v2.1.1
+   releasenotes/v2.1.0
+   releasenotes/v2.0.0
+   releasenotes/v2.0b1
+
+
 .. toctree::
    :hidden:
+   :glob:
 
+   getting_started
    ec2_tut
    security_groups
-   ref/ec2
    emr_tut
-   ref/emr
    autoscale_tut
-   ref/autoscale
    cloudfront_tut
-   ref/cloudfront
    simpledb_tut
-   ref/sdb
-   ref/sdb_db
    dynamodb_tut
-   ref/dynamodb
-   ref/rds
-   ref/cloudformation
-   ref/iam
+   rds_tut
    sqs_tut
-   ref/sqs
-   ref/sns
    ses_tut
-   ref/ses
+   swf_tut
    cloudsearch_tut
-   ref/cloudsearch
    cloudwatch_tut
-   ref/cloudwatch
-   ref/route53
    vpc_tut
-   ref/vpc
    elb_tut
-   ref/elb
-   ref/fps
    s3_tut
-   ref/s3
-   ref/mturk
    boto_config_tut
-   ref/index
    documentation
+   contributing
+   commandline
+   support_tut
+   dynamodb2_tut
+   migrations/dynamodb_v1_to_v2
+   apps_built_on_boto
+   ref/*
+   releasenotes/*
 
 
 Indices and tables

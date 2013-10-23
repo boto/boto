@@ -11,8 +11,8 @@ There is a growing list of configuration options for the boto library. Many of
 these options can be passed into the constructors for top-level objects such as
 connections. Some options, such as credentials, can also be read from
 environment variables (e.g. ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``).
-But there is no central place to manage these options. So, the development
-version of boto has now introduced the notion of boto config files.
+It is also possible to manage these options in a central place through the use
+of boto config files.
 
 Details
 -------
@@ -33,6 +33,13 @@ methods of that object. In addition, the boto
 :py:class:`Config <boto.pyami.config.Config>` class defines additional
 methods that are described on the PyamiConfigMethods page.
 
+An example ``~/.boto`` file should look like::
+
+    [Credentials]
+    aws_access_key_id = <your_access_key_here>
+    aws_secret_access_key = <your_secret_key_here>
+
+
 Sections
 --------
 
@@ -50,7 +57,7 @@ boto requests. The order of precedence for authentication credentials is:
 * Credentials specified as options in the config file.
 
 This section defines the following options: ``aws_access_key_id`` and
-``aws_secret_access_key``. The former being your aws key id and the latter
+``aws_secret_access_key``. The former being your AWS key id and the latter
 being the secret key.
 
 For example::
@@ -60,12 +67,38 @@ For example::
     aws_secret_access_key = <your secret key>
 
 Please notice that quote characters are not used to either side of the '='
-operator even when both your aws access key id and secret key are strings.
+operator even when both your AWS access key id and secret key are strings.
+
+For greater security, the secret key can be stored in a keyring and
+retrieved via the keyring package.  To use a keyring, use ``keyring``,
+rather than ``aws_secret_access_key``::
+
+    [Credentials]
+    aws_access_key_id = <your access key>
+    keyring = <keyring name>
+
+To use a keyring, you must have the Python `keyring
+<http://pypi.python.org/pypi/keyring>`_ package installed and in the
+Python path. To learn about setting up keyrings, see the `keyring
+documentation
+<http://pypi.python.org/pypi/keyring#installing-and-using-python-keyring-lib>`_
+
+Credentials can also be supplied for a Eucalyptus service::
+
+    [Credentials]
+    euca_access_key_id = <your access key>
+    euca_secret_access_key = <your secret key>
+
+Finally, this section is also be used to provide credentials for the Internet Archive API::
+
+    [Credentials]
+    ia_access_key_id = <your access key>
+    ia_secret_access_key = <your secret key>
 
 Boto
 ^^^^
 
-The Boto section is used to specify options that control the operaton of
+The Boto section is used to specify options that control the operation of
 boto itself. This section defines the following options:
 
 :debug: Controls the level of debug messages that will be printed by the boto library.
@@ -84,7 +117,7 @@ boto itself. This section defines the following options:
   request. The default number of retries is 5 but you can change the default
   with this option.
 
-As an example::
+For example::
 
     [Boto]
     debug = 0
@@ -95,6 +128,152 @@ As an example::
     proxy_user = foo
     proxy_pass = bar
 
+
+:connection_stale_duration: Amount of time to wait in seconds before a
+  connection will stop getting reused. AWS will disconnect connections which
+  have been idle for 180 seconds.
+:is_secure: Is the connection over SSL. This setting will overide passed in
+  values.
+:https_validate_certificates: Validate HTTPS certificates. This is on by default
+:ca_certificates_file: Location of CA certificates
+:http_socket_timeout: Timeout used to overwrite the system default socket
+  timeout for httplib .
+:send_crlf_after_proxy_auth_headers: Change line ending behaviour with proxies.
+  For more details see this `discussion <https://groups.google.com/forum/?fromgroups=#!topic/boto-dev/teenFvOq2Cc>`_
+
+These settings will default to::
+
+    [Boto]
+    connection_stale_duration = 180
+    is_secure = True
+    https_validate_certificates = True
+    ca_certificates_file = cacerts.txt
+    http_socket_timeout = 60
+    send_crlf_after_proxy_auth_headers = False
+
+You can control the timeouts and number of retries used when retrieving
+information from the Metadata Service (this is used for retrieving credentials
+for IAM roles on EC2 instances):
+
+:metadata_service_timeout: Number of seconds until requests to the metadata
+  service will timeout (float).
+:metadata_service_num_attempts: Number of times to attempt to retrieve
+  information from the metadata service before giving up (int).
+
+These settings will default to::
+
+    [Boto]
+    metadata_service_timeout = 1.0
+    metadata_service_num_attempts = 1
+
+
+This section is also used for specifying endpoints for non-AWS services such as
+Eucalyptus and Walrus.
+
+:eucalyptus_host: Select a default endpoint host for eucalyptus
+:walrus_host: Select a default host for Walrus
+
+For example::
+
+    [Boto]
+    eucalyptus_host = somehost.example.com
+    walrus_host = somehost.example.com
+
+
+Finally, the Boto section is used to set defaults versions for many AWS services
+
+AutoScale settings:
+
+options:
+:autoscale_version: Set the API version
+:autoscale_endpoint: Endpoint to use
+:autoscale_region_name: Default region to use
+
+For example::
+
+    [Boto]
+    autoscale_version = 2011-01-01
+    autoscale_endpoint = autoscaling.us-west-2.amazonaws.com
+    autoscale_region_name = us-west-2
+
+
+Cloudformation settings can also be defined:
+
+:cfn_version: Cloud formation API version
+:cfn_region_name: Default region name
+:cfn_region_endpoint: Default endpoint
+
+For example::
+
+    [Boto]
+    cfn_version = 2010-05-15
+    cfn_region_name = us-west-2
+    cfn_region_endpoint = cloudformation.us-west-2.amazonaws.com
+
+Cloudsearch settings:
+
+:cs_region_name: Default cloudsearch region
+:cs_region_endpoint: Default cloudsearch endpoint
+
+For example::
+
+    [Boto]
+    cs_region_name = us-west-2
+    cs_region_endpoint = cloudsearch.us-west-2.amazonaws.com
+
+Cloudwatch settings:
+
+:cloudwatch_version: Cloudwatch API version
+:cloudwatch_region_name: Default region name
+:cloudwatch_region_endpoint: Default endpoint
+
+For example::
+
+    [Boto]
+    cloudwatch_version = 2010-08-01
+    cloudwatch_region_name = us-west-2
+    cloudwatch_region_endpoint = monitoring.us-west-2.amazonaws.com
+
+EC2 settings:
+
+:ec2_version: EC2 API version
+:ec2_region_name: Default region name
+:ec2_region_endpoint: Default endpoint
+
+For example::
+
+    [Boto]
+    ec2_version = 2012-12-01
+    ec2_region_name = us-west-2
+    ec2_region_endpoint = ec2.us-west-2.amazonaws.com
+
+ELB settings:
+
+:elb_version: ELB API version
+:elb_region_name: Default region name
+:elb_region_endpoint: Default endpoint
+
+For example::
+
+    [Boto]
+    elb_version = 2012-06-01
+    elb_region_name = us-west-2
+    elb_region_endpoint = elasticloadbalancing.us-west-2.amazonaws.com
+
+EMR settings:
+
+:emr_version: EMR API version
+:emr_region_name: Default region name
+:emr_region_endpoint: Default endpoint
+
+For example::
+
+    [Boto]
+    emr_version = 2009-03-31
+    emr_region_name = us-west-2
+    emr_region_endpoint = elasticmapreduce.us-west-2.amazonaws.com
+
+
 Precedence
 ----------
 
@@ -102,9 +281,119 @@ Even if you have your boto config setup, you can also have credentials and
 options stored in environmental variables or you can explicitly pass them to
 method calls i.e.::
 
-	>>> boto.connect_ec2('<KEY_ID>','<SECRET_KEY>')
+    >>> boto.ec2.connect_to_region(
+    ...     'us-west-2',
+    ...     aws_access_key_id='foo',
+    ...     aws_secret_access_key='bar')
 
 In these cases where these options can be found in more than one place boto
 will first use the explicitly supplied arguments, if none found it will then
 look for them amidst environment variables and if that fails it will use the
 ones in boto config.
+
+Notification
+^^^^^^^^^^^^
+
+If you are using notifications for boto.pyami, you can specify the email
+details through the following variables.
+
+:smtp_from: Used as the sender in notification emails.
+:smtp_to: Destination to which emails should be sent
+:smtp_host: Host to connect to when sending notification emails.
+:smtp_port: Port to connect to when connecting to the :smtp_host:
+
+Default values are::
+
+    [notification]
+    smtp_from = boto
+    smtp_to = None
+    smtp_host = localhost
+    smtp_port = 25
+    smtp_tls = True
+    smtp_user = john
+    smtp_pass = hunter2
+
+SWF
+^^^
+
+The SWF section allows you to configure the default region to be used for the
+Amazon Simple Workflow service.
+
+:region: Set the default region
+
+Example::
+
+    [SWF]
+    region = us-west-2
+
+Pyami
+^^^^^
+
+The Pyami section is used to configure the working directory for PyAMI.
+
+:working_dir: Working directory used by PyAMI
+
+Example::
+
+    [Pyami]
+    working_dir = /home/foo/
+
+DB
+^^
+The DB section is used to configure access to databases through the
+:func:`boto.sdb.db.manager.get_manager` function.
+
+:db_type: Type of the database. Current allowed values are `SimpleDB` and
+    `XML`.
+:db_user: AWS access key id.
+:db_passwd: AWS secret access key.
+:db_name: Database that will be connected to.
+:db_table: Table name :note: This doesn't appear to be used.
+:db_host: Host to connect to
+:db_port: Port to connect to
+:enable_ssl: Use SSL
+
+More examples::
+
+    [DB]
+    db_type = SimpleDB
+    db_user = <aws access key id>
+    db_passwd = <aws secret access key>
+    db_name = my_domain
+    db_table = table
+    db_host = sdb.amazonaws.com
+    enable_ssl = True
+    debug = True
+
+    [DB_TestBasic]
+    db_type = SimpleDB
+    db_user = <another aws access key id>
+    db_passwd = <another aws secret access key>
+    db_name = basic_domain
+    db_port = 1111
+
+SDB
+^^^
+
+This section is used to configure SimpleDB
+
+:region: Set the region to which SDB should connect
+
+Example::
+
+    [SDB]
+    region = us-west-2
+
+DynamoDB
+^^^^^^^^
+
+This section is used to configure DynamoDB
+
+:region: Choose the default region
+:validate_checksums: Check checksums returned by DynamoDB
+
+Example::
+
+    [DynamoDB]
+    region = us-west-2
+    validate_checksums = True

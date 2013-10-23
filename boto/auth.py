@@ -32,13 +32,14 @@ import boto.auth_handler
 import boto.exception
 import boto.plugin
 import boto.utils
+import copy
+import datetime
+from email.utils import formatdate
 import hmac
 import sys
-import urllib
 import time
-import datetime
-import copy
-from email.utils import formatdate
+import urllib
+import posixpath
 
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
@@ -164,9 +165,9 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         boto.log.debug('StringToSign:\n%s' % string_to_sign)
         b64_hmac = self.sign_string(string_to_sign)
         auth_hdr = self._provider.auth_header
-        headers['Authorization'] = ("%s %s:%s" %
-                                    (auth_hdr,
-                                     self._provider.access_key, b64_hmac))
+        auth = ("%s %s:%s" % (auth_hdr, self._provider.access_key, b64_hmac))
+        boto.log.debug('Signature:\n%s' % auth)
+        headers['Authorization'] = auth
 
 
 class HmacAuthV2Handler(AuthHandler, HmacKeys):
@@ -188,6 +189,9 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
         headers = http_request.headers
         if 'Date' not in headers:
             headers['Date'] = formatdate(usegmt=True)
+        if self._provider.security_token:
+            key = self._provider.security_token_header
+            headers[key] = self._provider.security_token
 
         b64_hmac = self.sign_string(headers['Date'])
         auth_hdr = self._provider.auth_header
@@ -264,7 +268,7 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         headers_to_sign = self.headers_to_sign(http_request)
         canonical_headers = self.canonical_headers(headers_to_sign)
         string_to_sign = '\n'.join([http_request.method,
-                                    http_request.path,
+                                    http_request.auth_path,
                                     '',
                                     canonical_headers,
                                     '',
@@ -303,9 +307,15 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
 
     capability = ['hmac-v4']
 
-    def __init__(self, host, config, provider):
+    def __init__(self, host, config, provider,
+                 service_name=None, region_name=None):
         AuthHandler.__init__(self, host, config, provider)
         HmacKeys.__init__(self, host, config, provider)
+        # You can set the service_name and region_name to override the
+        # values which would otherwise come from the endpoint, e.g.
+        # <service>.<region>.amazonaws.com.
+        self.service_name = service_name
+        self.region_name = region_name
 
     def _sign(self, key, msg, hex=False):
         if hex:
@@ -319,13 +329,21 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         Select the headers from the request that need to be included
         in the StringToSign.
         """
+        host_header_value = self.host_header(self.host, http_request)
         headers_to_sign = {}
-        headers_to_sign = {'Host': self.host}
+        headers_to_sign = {'Host': host_header_value}
         for name, value in http_request.headers.items():
             lname = name.lower()
             if lname.startswith('x-amz'):
                 headers_to_sign[name] = value
         return headers_to_sign
+
+    def host_header(self, host, http_request):
+        port = http_request.port
+        secure = http_request.protocol == 'https'
+        if ((port == 80 and not secure) or (port == 443 and secure)):
+            return host
+        return '%s:%s' % (host, port)
 
     def query_string(self, http_request):
         parameter_names = sorted(http_request.params.keys())
@@ -337,12 +355,15 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return '&'.join(pairs)
 
     def canonical_query_string(self, http_request):
+        # POST requests pass parameters in through the
+        # http_request.body field.
+        if http_request.method == 'POST':
+            return ""
         l = []
-        for param in http_request.params:
+        for param in sorted(http_request.params):
             value = str(http_request.params[param])
             l.append('%s=%s' % (urllib.quote(param, safe='-_.~'),
                                 urllib.quote(value, safe='-_.~')))
-        l = sorted(l)
         return '&'.join(l)
 
     def canonical_headers(self, headers_to_sign):
@@ -352,9 +373,9 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         case, sorting them in alphabetical order and then joining
         them into a string, separated by newlines.
         """
-        l = ['%s:%s' % (n.lower().strip(),
-                      headers_to_sign[n].strip()) for n in headers_to_sign]
-        l = sorted(l)
+        l = sorted(['%s:%s' % (n.lower().strip(),
+                    ' '.join(headers_to_sign[n].strip().split()))
+                    for n in headers_to_sign])
         return '\n'.join(l)
 
     def signed_headers(self, headers_to_sign):
@@ -363,7 +384,15 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return ';'.join(l)
 
     def canonical_uri(self, http_request):
-        return http_request.path
+        path = http_request.auth_path
+        # Normalize the path
+        # in windows normpath('/') will be '\\' so we chane it back to '/'
+        normalized = posixpath.normpath(path).replace('\\','/')
+        # Then urlencode whatever's left.
+        encoded = urllib.quote(normalized)
+        if len(path) > 1 and path.endswith('/'):
+            encoded += '/'
+        return encoded
 
     def payload(self, http_request):
         body = http_request.body
@@ -396,13 +425,32 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         scope = []
         http_request.timestamp = http_request.headers['X-Amz-Date'][0:8]
         scope.append(http_request.timestamp)
+        # The service_name and region_name either come from:
+        # * The service_name/region_name attrs or (if these values are None)
+        # * parsed from the endpoint <service>.<region>.amazonaws.com.
         parts = http_request.host.split('.')
-        if len(parts) == 3:
-            http_request.region_name = 'us-east-1'
+        if self.region_name is not None:
+            region_name = self.region_name
+        elif len(parts) > 1:
+            if parts[1] == 'us-gov':
+                region_name = 'us-gov-west-1'
+            else:
+                if len(parts) == 3:
+                    region_name = 'us-east-1'
+                else:
+                    region_name = parts[1]
         else:
-            http_request.region_name = parts[1]
+            region_name = parts[0]
+
+        if self.service_name is not None:
+            service_name = self.service_name
+        else:
+            service_name = parts[0]
+
+        http_request.service_name = service_name
+        http_request.region_name = region_name
+
         scope.append(http_request.region_name)
-        http_request.service_name = parts[0]
         scope.append(http_request.service_name)
         scope.append('aws4_request')
         return '/'.join(scope)
@@ -443,6 +491,18 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         req.headers['X-Amz-Date'] = now.strftime('%Y%m%dT%H%M%SZ')
         if self._provider.security_token:
             req.headers['X-Amz-Security-Token'] = self._provider.security_token
+        qs = self.query_string(req)
+        if qs and req.method == 'POST':
+            # Stash request parameters into post body
+            # before we generate the signature.
+            req.body = qs
+            req.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
+            req.headers['Content-Length'] = str(len(req.body))
+        else:
+            # Safe to modify req.path here since
+            # the signature will use req.auth_path.
+            req.path = req.path.split('?')[0]
+            req.path = req.path + '?' + qs
         canonical_request = self.canonical_request(req)
         boto.log.debug('CanonicalRequest:\n%s' % canonical_request)
         string_to_sign = self.string_to_sign(req, canonical_request)
@@ -454,10 +514,45 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         l.append('SignedHeaders=%s' % self.signed_headers(headers_to_sign))
         l.append('Signature=%s' % signature)
         req.headers['Authorization'] = ','.join(l)
-        qs = self.query_string(req)
-        if qs:
-            req.path = req.path.split('?')[0]
-            req.path = req.path + '?' + qs
+
+
+class QueryAuthHandler(AuthHandler):
+    """
+    Provides pure query construction (no actual signing).
+
+    Mostly useful for STS' ``assume_role_with_web_identity``.
+
+    Does **NOT** escape query string values!
+    """
+
+    capability = ['pure-query']
+
+    def _escape_value(self, value):
+        # Would normally be ``return urllib.quote(value)``.
+        return value
+
+    def _build_query_string(self, params):
+        keys = params.keys()
+        keys.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
+        pairs = []
+        for key in keys:
+            val = boto.utils.get_utf8_value(params[key])
+            pairs.append(key + '=' + self._escape_value(val))
+        return '&'.join(pairs)
+
+    def add_auth(self, http_request, **kwargs):
+        headers = http_request.headers
+        params = http_request.params
+        qs = self._build_query_string(
+            http_request.params
+        )
+        boto.log.debug('query_string: %s' % qs)
+        headers['Content-Type'] = 'application/json; charset=UTF-8'
+        http_request.body = ''
+        # if this is a retried request, the qs from the previous try will
+        # already be there, we need to get rid of that and rebuild it
+        http_request.path = http_request.path.split('?')[0]
+        http_request.path = http_request.path + '?' + qs
 
 
 class QuerySignatureHelper(HmacKeys):
@@ -518,6 +613,11 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
 
     SignatureVersion = 1
     capability = ['sign-v1', 'mturk']
+
+    def __init__(self, *args, **kw):
+        QuerySignatureHelper.__init__(self, *args, **kw)
+        AuthHandler.__init__(self, *args, **kw)
+        self._hmac_256 = None
 
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')
@@ -612,8 +712,7 @@ def get_auth_handler(host, config, provider, requested_capability=None):
         An implementation of AuthHandler.
 
     Raises:
-        boto.exception.NoAuthHandlerFound:
-        boto.exception.TooManyAuthHandlerReadyToAuthenticate:
+        boto.exception.NoAuthHandlerFound
     """
     ready_handlers = []
     auth_handlers = boto.plugin.get_plugin(AuthHandler, requested_capability)
@@ -632,18 +731,14 @@ def get_auth_handler(host, config, provider, requested_capability=None):
               ' %s '
               'Check your credentials' % (len(names), str(names)))
 
-    if len(ready_handlers) > 1:
-        # NOTE: Even though it would be nice to accept more than one handler
-        # by using one of the many ready handlers, we are never sure that each
-        # of them are referring to the same storage account. Since we cannot
-        # easily guarantee that, it is always safe to fail, rather than operate
-        # on the wrong account.
-        names = [handler.__class__.__name__ for handler in ready_handlers]
-        raise boto.exception.TooManyAuthHandlerReadyToAuthenticate(
-               '%d AuthHandlers %s ready to authenticate for requested_capability '
-               '%s, only 1 expected. This happens if you import multiple '
-               'pluging.Plugin implementations that declare support for the '
-               'requested_capability.' % (len(names), str(names),
-               requested_capability))
-
-    return ready_handlers[0]
+    # We select the last ready auth handler that was loaded, to allow users to
+    # customize how auth works in environments where there are shared boto
+    # config files (e.g., /etc/boto.cfg and ~/.boto): The more general,
+    # system-wide shared configs should be loaded first, and the user's
+    # customizations loaded last. That way, for example, the system-wide
+    # config might include a plugin_directory that includes a service account
+    # auth plugin shared by all users of a Google Compute Engine instance
+    # (allowing sharing of non-user data between various services), and the
+    # user could override this with a .boto config that includes user-specific
+    # credentials (for access to user data).
+    return ready_handlers[-1]

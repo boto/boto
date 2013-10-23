@@ -1,4 +1,5 @@
-# Copyright (c) 2006-2010 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
 # All rights reserved.
 #
@@ -142,21 +143,25 @@ class Location:
     SAEast = 'sa-east-1'
     APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
+    APSoutheast2 = 'ap-southeast-2'
 
 
 class S3Connection(AWSAuthConnection):
 
-    DefaultHost = 's3.amazonaws.com'
+    DefaultHost = boto.config.get('s3', 'host', 's3.amazonaws.com')
+    DefaultCallingFormat = boto.config.get('s3', 'calling_format', 'boto.s3.connection.SubdomainCallingFormat')
     QueryString = 'Signature=%s&Expires=%d&AWSAccessKeyId=%s'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
                  host=DefaultHost, debug=0, https_connection_factory=None,
-                 calling_format=SubdomainCallingFormat(), path='/',
+                 calling_format=DefaultCallingFormat, path='/',
                  provider='aws', bucket_class=Bucket, security_token=None,
                  suppress_consec_slashes=True, anon=False,
                  validate_certs=None):
+        if isinstance(calling_format, str):
+            calling_format=boto.utils.find_class(calling_format)()
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         self.anon = anon
@@ -204,11 +209,12 @@ class S3Connection(AWSAuthConnection):
         return '{"expiration": "%s",\n"conditions": [%s]}' % \
             (time.strftime(boto.utils.ISO8601, expiration_time), ",".join(conditions))
 
-    def build_post_form_args(self, bucket_name, key, expires_in = 6000,
-                             acl = None, success_action_redirect = None,
-                             max_content_length = None,
-                             http_method = "http", fields=None,
-                             conditions=None):
+    def build_post_form_args(self, bucket_name, key, expires_in=6000,
+                             acl=None, success_action_redirect=None,
+                             max_content_length=None,
+                             http_method='http', fields=None,
+                             conditions=None, storage_class='STANDARD',
+                             server_side_encryption=None):
         """
         Taken from the AWS book Python examples and modified for use with boto
         This only returns the arguments required for the post form, not the
@@ -226,8 +232,14 @@ class S3Connection(AWSAuthConnection):
         :param expires_in: Time (in seconds) before this expires, defaults
             to 6000
 
-        :type acl: :class:`boto.s3.acl.ACL`
-        :param acl: ACL rule to use, if any
+        :type acl: string
+        :param acl: A canned ACL.  One of:
+            * private
+            * public-read
+            * public-read-write
+            * authenticated-read
+            * bucket-owner-read
+            * bucket-owner-full-control
 
         :type success_action_redirect: string
         :param success_action_redirect: URL to redirect to on success
@@ -238,25 +250,21 @@ class S3Connection(AWSAuthConnection):
         :type http_method: string
         :param http_method:  HTTP Method to use, "http" or "https"
 
+        :type storage_class: string
+        :param storage_class: Storage class to use for storing the object.
+            Valid values: STANDARD | REDUCED_REDUNDANCY
+
+        :type server_side_encryption: string
+        :param server_side_encryption: Specifies server-side encryption
+            algorithm to use when Amazon S3 creates an object.
+            Valid values: None | AES256
+
         :rtype: dict
         :return: A dictionary containing field names/values as well as
             a url to POST to
 
             .. code-block:: python
 
-                {
-                    "action": action_url_to_post_to,
-                    "fields": [
-                        {
-                            "name": field_name,
-                            "value":  field_value
-                        },
-                        {
-                            "name": field_name2,
-                            "value": field_value2
-                        }
-                    ]
-                }
 
         """
         if fields == None:
@@ -273,13 +281,27 @@ class S3Connection(AWSAuthConnection):
             conditions.append('{"key": "%s"}' % key)
         if acl:
             conditions.append('{"acl": "%s"}' % acl)
-            fields.append({ "name": "acl", "value": acl})
+            fields.append({"name": "acl", "value": acl})
         if success_action_redirect:
             conditions.append('{"success_action_redirect": "%s"}' % success_action_redirect)
-            fields.append({ "name": "success_action_redirect", "value": success_action_redirect})
+            fields.append({"name": "success_action_redirect", "value": success_action_redirect})
         if max_content_length:
             conditions.append('["content-length-range", 0, %i]' % max_content_length)
-            fields.append({"name":'content-length-range', "value": "0,%i" % max_content_length})
+
+        if self.provider.security_token:
+            fields.append({'name': 'x-amz-security-token',
+                           'value': self.provider.security_token})
+            conditions.append('{"x-amz-security-token": "%s"}' % self.provider.security_token)
+
+        if storage_class:
+            fields.append({'name': 'x-amz-storage-class',
+                           'value': storage_class})
+            conditions.append('{"x-amz-storage-class": "%s"}' % storage_class)
+
+        if server_side_encryption:
+            fields.append({'name': 'x-amz-server-side-encryption',
+                           'value': server_side_encryption})
+            conditions.append('{"x-amz-server-side-encryption": "%s"}' % server_side_encryption)
 
         policy = self.build_post_policy(expiration, conditions)
 
@@ -291,7 +313,8 @@ class S3Connection(AWSAuthConnection):
         fields.append({"name": "AWSAccessKeyId",
                        "value": self.aws_access_key_id})
 
-        # Add signature for encoded policy document as the 'AWSAccessKeyId' field
+        # Add signature for encoded policy document as the
+        # 'signature' field
         signature = self._auth_handler.sign_string(policy_b64)
         fields.append({"name": "signature", "value": signature})
         fields.append({"name": "key", "value": key})
@@ -384,12 +407,49 @@ class S3Connection(AWSAuthConnection):
         return rs.owner.id
 
     def get_bucket(self, bucket_name, validate=True, headers=None):
+        """
+        Retrieves a bucket by name.
+
+        If the bucket does not exist, an ``S3ResponseError`` will be raised. If
+        you are unsure if the bucket exists or not, you can use the
+        ``S3Connection.lookup`` method, which will either return a valid bucket
+        or ``None``.
+
+        :type bucket_name: string
+        :param bucket_name: The name of the bucket
+
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to
+            AWS.
+
+        :type validate: boolean
+        :param validate: If ``True``, it will try to fetch all keys within the
+            given bucket. (Default: ``True``)
+        """
         bucket = self.bucket_class(self, bucket_name)
         if validate:
             bucket.get_all_keys(headers, maxkeys=0)
         return bucket
 
     def lookup(self, bucket_name, validate=True, headers=None):
+        """
+        Attempts to get a bucket from S3.
+
+        Works identically to ``S3Connection.get_bucket``, save for that it
+        will return ``None`` if the bucket does not exist instead of throwing
+        an exception.
+
+        :type bucket_name: string
+        :param bucket_name: The name of the bucket
+
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to
+            AWS.
+
+        :type validate: boolean
+        :param validate: If ``True``, it will try to fetch all keys within the
+            given bucket. (Default: ``True``)
+        """
         try:
             bucket = self.get_bucket(bucket_name, validate, headers=headers)
         except:
@@ -400,7 +460,8 @@ class S3Connection(AWSAuthConnection):
                       location=Location.DEFAULT, policy=None):
         """
         Creates a new located bucket. By default it's in the USA. You can pass
-        Location.EU to create an European bucket.
+        Location.EU to create a European bucket (S3) or European Union bucket
+        (GCS).
 
         :type bucket_name: string
         :param bucket_name: The name of the new bucket
@@ -408,8 +469,10 @@ class S3Connection(AWSAuthConnection):
         :type headers: dict
         :param headers: Additional headers to pass along with the request to AWS.
 
-        :type location: :class:`boto.s3.connection.Location`
-        :param location: The location of the new bucket
+        :type location: str
+        :param location: The location of the new bucket.  You can use one of the
+            constants in :class:`boto.s3.connection.Location` (e.g. Location.EU,
+            Location.USWest, etc.).
 
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the
@@ -441,6 +504,19 @@ class S3Connection(AWSAuthConnection):
                 response.status, response.reason, body)
 
     def delete_bucket(self, bucket, headers=None):
+        """
+        Removes an S3 bucket.
+
+        In order to remove the bucket, it must first be empty. If the bucket is
+        not empty, an ``S3ResponseError`` will be raised.
+
+        :type bucket_name: string
+        :param bucket_name: The name of the bucket
+
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to
+            AWS.
+        """
         response = self.make_request('DELETE', bucket, headers=headers)
         body = response.read()
         if response.status != 204:
@@ -448,7 +524,8 @@ class S3Connection(AWSAuthConnection):
                 response.status, response.reason, body)
 
     def make_request(self, method, bucket='', key='', headers=None, data='',
-            query_args=None, sender=None, override_num_retries=None):
+                     query_args=None, sender=None, override_num_retries=None,
+                     retry_handler=None):
         if isinstance(bucket, self.bucket_class):
             bucket = bucket.name
         if isinstance(key, Key):
@@ -463,6 +540,9 @@ class S3Connection(AWSAuthConnection):
             boto.log.debug('path=%s' % path)
             auth_path += '?' + query_args
             boto.log.debug('auth_path=%s' % auth_path)
-        return AWSAuthConnection.make_request(self, method, path, headers,
-                data, host, auth_path, sender,
-                override_num_retries=override_num_retries)
+        return AWSAuthConnection.make_request(
+            self, method, path, headers,
+            data, host, auth_path, sender,
+            override_num_retries=override_num_retries,
+            retry_handler=retry_handler
+        )

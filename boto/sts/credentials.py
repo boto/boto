@@ -15,18 +15,17 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import boto.utils
 import os
 import datetime
-try:
-    import simplejson as json
-except ImportError:
-    import json
+
+import boto.utils
+from boto.compat import json
+
 
 class Credentials(object):
     """
@@ -43,6 +42,7 @@ class Credentials(object):
         self.secret_key = None
         self.session_token = None
         self.expiration = None
+        self.request_id = None
 
     @classmethod
     def from_json(cls, json_doc):
@@ -138,7 +138,8 @@ class Credentials(object):
         ts = boto.utils.parse_ts(self.expiration)
         delta = ts - now
         return delta.total_seconds() <= 0
-    
+
+
 class FederationToken(object):
     """
     :ivar credentials: A Credentials object containing the credentials.
@@ -154,6 +155,7 @@ class FederationToken(object):
         self.federated_user_arn = None
         self.federated_user_id = None
         self.packed_policy_size = None
+        self.request_id = None
 
     def startElement(self, name, attrs, connection):
         if name == 'Credentials':
@@ -173,4 +175,63 @@ class FederationToken(object):
             self.request_id = value
         else:
             pass
-        
+
+
+class AssumedRole(object):
+    """
+    :ivar user: The assumed role user.
+    :ivar credentials: A Credentials object containing the credentials.
+    """
+    def __init__(self, connection=None, credentials=None, user=None):
+        self._connection = connection
+        self.credentials = credentials
+        self.user = user
+
+    def startElement(self, name, attrs, connection):
+        if name == 'Credentials':
+            self.credentials = Credentials()
+            return self.credentials
+        elif name == 'AssumedRoleUser':
+            self.user = User()
+            return self.user
+
+    def endElement(self, name, value, connection):
+        pass
+
+
+class User(object):
+    """
+    :ivar arn: The arn of the user assuming the role.
+    :ivar assume_role_id: The identifier of the assumed role.
+    """
+    def __init__(self, arn=None, assume_role_id=None):
+        self.arn = arn
+        self.assume_role_id = assume_role_id
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'Arn':
+            self.arn = value
+        elif name == 'AssumedRoleId':
+            self.assume_role_id = value
+
+
+class DecodeAuthorizationMessage(object):
+    """
+    :ivar request_id: The request ID.
+    :ivar decoded_message: The decoded authorization message (may be JSON).
+    """
+    def __init__(self, request_id=None, decoded_message=None):
+        self.request_id = request_id
+        self.decoded_message = decoded_message
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'requestId':
+            self.request_id = value
+        elif name == 'DecodedMessage':
+            self.decoded_message = value

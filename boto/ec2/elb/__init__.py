@@ -1,4 +1,6 @@
-# Copyright (c) 2006-2011 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -25,20 +27,24 @@ load balancing service from AWS.
 """
 from boto.connection import AWSQueryConnection
 from boto.ec2.instanceinfo import InstanceInfo
-from boto.ec2.elb.loadbalancer import LoadBalancer
+from boto.ec2.elb.loadbalancer import LoadBalancer, LoadBalancerZones
 from boto.ec2.elb.instancestate import InstanceState
 from boto.ec2.elb.healthcheck import HealthCheck
+from boto.ec2.elb.listelement import ListElement
 from boto.regioninfo import RegionInfo
 import boto
 
 RegionData = {
     'us-east-1': 'elasticloadbalancing.us-east-1.amazonaws.com',
+    'us-gov-west-1': 'elasticloadbalancing.us-gov-west-1.amazonaws.com',
     'us-west-1': 'elasticloadbalancing.us-west-1.amazonaws.com',
     'us-west-2': 'elasticloadbalancing.us-west-2.amazonaws.com',
     'sa-east-1': 'elasticloadbalancing.sa-east-1.amazonaws.com',
     'eu-west-1': 'elasticloadbalancing.eu-west-1.amazonaws.com',
     'ap-northeast-1': 'elasticloadbalancing.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1': 'elasticloadbalancing.ap-southeast-1.amazonaws.com'}
+    'ap-southeast-1': 'elasticloadbalancing.ap-southeast-1.amazonaws.com',
+    'ap-southeast-2': 'elasticloadbalancing.ap-southeast-2.amazonaws.com',
+}
 
 
 def regions():
@@ -76,13 +82,13 @@ def connect_to_region(region_name, **kw_params):
 
 class ELBConnection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'elb_version', '2011-11-15')
+    APIVersion = boto.config.get('Boto', 'elb_version', '2012-06-01')
     DefaultRegionName = boto.config.get('Boto', 'elb_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'elb_region_endpoint',
                                             'elasticloadbalancing.us-east-1.amazonaws.com')
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=False, port=None, proxy=None, proxy_port=None,
+                 is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  security_token=None, validate_certs=True):
@@ -132,8 +138,8 @@ class ELBConnection(AWSQueryConnection):
         return self.get_list('DescribeLoadBalancers', params,
                              [('member', LoadBalancer)])
 
-    def create_load_balancer(self, name, zones, listeners, subnets=None,
-        security_groups=None, scheme='internet-facing'):
+    def create_load_balancer(self, name, zones, listeners=None, subnets=None,
+        security_groups=None, scheme='internet-facing', complex_listeners=None):
         """
         Create a new load balancer for your account. By default the load
         balancer will be created in EC2. To create a load balancer inside a
@@ -152,7 +158,7 @@ class ELBConnection(AWSQueryConnection):
             (LoadBalancerPortNumber, InstancePortNumber, Protocol,
             [SSLCertificateId]) where LoadBalancerPortNumber and
             InstancePortNumber are integer values between 1 and 65535,
-            Protocol is a string containing either 'TCP', 'HTTP' or
+            Protocol is a string containing either 'TCP', 'SSL', HTTP', or
             'HTTPS'; SSLCertificateID is the ARN of a AWS AIM
             certificate, and must be specified when doing HTTPS.
 
@@ -177,18 +183,54 @@ class ELBConnection(AWSQueryConnection):
             This option is only available for LoadBalancers attached
             to an Amazon VPC.
 
+        :type complex_listeners: List of tuples
+        :param complex_listeners: Each tuple contains four or five values,
+            (LoadBalancerPortNumber, InstancePortNumber, Protocol, InstanceProtocol,
+            SSLCertificateId).
+
+            Where:
+                - LoadBalancerPortNumber and InstancePortNumber are integer
+                  values between 1 and 65535
+                - Protocol and InstanceProtocol is a string containing either 'TCP',
+                  'SSL', 'HTTP', or 'HTTPS'
+                - SSLCertificateId is the ARN of an SSL certificate loaded into
+                  AWS IAM
+
         :rtype: :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
-        :return: The newly created :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
+        :return: The newly created
+            :class:`boto.ec2.elb.loadbalancer.LoadBalancer`
         """
-        params = {'LoadBalancerName': name}
-        for index, listener in enumerate(listeners):
-            i = index + 1
-            protocol = listener[2].upper()
-            params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
-            params['Listeners.member.%d.InstancePort' % i] = listener[1]
-            params['Listeners.member.%d.Protocol' % i] = listener[2]
-            if protocol == 'HTTPS' or protocol == 'SSL':
-                params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
+        if not listeners and not complex_listeners:
+            # Must specify one of the two options
+            return None
+
+        params = {'LoadBalancerName': name,
+                  'Scheme': scheme}
+
+        # Handle legacy listeners
+        if listeners:
+            for index, listener in enumerate(listeners):
+                i = index + 1
+                protocol = listener[2].upper()
+                params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
+                params['Listeners.member.%d.InstancePort' % i] = listener[1]
+                params['Listeners.member.%d.Protocol' % i] = listener[2]
+                if protocol == 'HTTPS' or protocol == 'SSL':
+                    params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
+
+        # Handle the full listeners
+        if complex_listeners:
+            for index, listener in enumerate(complex_listeners):
+                i = index + 1
+                protocol = listener[2].upper()
+                InstanceProtocol = listener[3].upper()
+                params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
+                params['Listeners.member.%d.InstancePort' % i] = listener[1]
+                params['Listeners.member.%d.Protocol' % i] = listener[2]
+                params['Listeners.member.%d.InstanceProtocol' % i] = listener[3]
+                if protocol == 'HTTPS' or protocol == 'SSL':
+                    params['Listeners.member.%d.SSLCertificateId' % i] = listener[4]
+
         if zones:
             self.build_list_params(params, zones, 'AvailabilityZones.member.%d')
 
@@ -208,7 +250,7 @@ class ELBConnection(AWSQueryConnection):
         load_balancer.security_groups = security_groups
         return load_balancer
 
-    def create_load_balancer_listeners(self, name, listeners):
+    def create_load_balancer_listeners(self, name, listeners=None, complex_listeners=None):
         """
         Creates a Listener (or group of listeners) for an existing
         Load Balancer
@@ -217,26 +259,59 @@ class ELBConnection(AWSQueryConnection):
         :param name: The name of the load balancer to create the listeners for
 
         :type listeners: List of tuples
-        :param listeners: Each tuple contains three values,
+        :param listeners: Each tuple contains three or four values,
             (LoadBalancerPortNumber, InstancePortNumber, Protocol,
             [SSLCertificateId]) where LoadBalancerPortNumber and
             InstancePortNumber are integer values between 1 and 65535,
-            Protocol is a string containing either 'TCP', 'HTTP',
-            'HTTPS', or 'SSL'; SSLCertificateID is the ARN of a AWS
-            AIM certificate, and must be specified when doing HTTPS or
-            SSL.
+            Protocol is a string containing either 'TCP', 'SSL', HTTP', or
+            'HTTPS'; SSLCertificateID is the ARN of a AWS AIM
+            certificate, and must be specified when doing HTTPS.
+
+        :type complex_listeners: List of tuples
+        :param complex_listeners: Each tuple contains four or five values,
+            (LoadBalancerPortNumber, InstancePortNumber, Protocol, InstanceProtocol,
+            SSLCertificateId).
+
+            Where:
+                - LoadBalancerPortNumber and InstancePortNumber are integer
+                  values between 1 and 65535
+                - Protocol and InstanceProtocol is a string containing either 'TCP',
+                  'SSL', 'HTTP', or 'HTTPS'
+                - SSLCertificateId is the ARN of an SSL certificate loaded into
+                  AWS IAM
 
         :return: The status of the request
         """
+        if not listeners and not complex_listeners:
+            # Must specify one of the two options
+            return None
+
         params = {'LoadBalancerName': name}
-        for index, listener in enumerate(listeners):
-            i = index + 1
-            protocol = listener[2].upper()
-            params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
-            params['Listeners.member.%d.InstancePort' % i] = listener[1]
-            params['Listeners.member.%d.Protocol' % i] = listener[2]
-            if protocol == 'HTTPS' or protocol == 'SSL':
-                params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
+
+        # Handle the simple listeners
+        if listeners:
+            for index, listener in enumerate(listeners):
+                i = index + 1
+                protocol = listener[2].upper()
+                params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
+                params['Listeners.member.%d.InstancePort' % i] = listener[1]
+                params['Listeners.member.%d.Protocol' % i] = listener[2]
+                if protocol == 'HTTPS' or protocol == 'SSL':
+                    params['Listeners.member.%d.SSLCertificateId' % i] = listener[3]
+
+        # Handle the full listeners
+        if complex_listeners:
+            for index, listener in enumerate(complex_listeners):
+                i = index + 1
+                protocol = listener[2].upper()
+                InstanceProtocol = listener[3].upper()
+                params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
+                params['Listeners.member.%d.InstancePort' % i] = listener[1]
+                params['Listeners.member.%d.Protocol' % i] = listener[2]
+                params['Listeners.member.%d.InstanceProtocol' % i] = listener[3]
+                if protocol == 'HTTPS' or protocol == 'SSL':
+                    params['Listeners.member.%d.SSLCertificateId' % i] = listener[4]
+
         return self.get_status('CreateLoadBalancerListeners', params)
 
     def delete_load_balancer(self, name):
@@ -286,8 +361,9 @@ class ELBConnection(AWSQueryConnection):
         params = {'LoadBalancerName': load_balancer_name}
         self.build_list_params(params, zones_to_add,
                                'AvailabilityZones.member.%d')
-        return self.get_list('EnableAvailabilityZonesForLoadBalancer',
-                             params, None)
+        obj = self.get_object('EnableAvailabilityZonesForLoadBalancer',
+                               params, LoadBalancerZones)
+        return obj.zones
 
     def disable_availability_zones(self, load_balancer_name, zones_to_remove):
         """
@@ -310,8 +386,9 @@ class ELBConnection(AWSQueryConnection):
         params = {'LoadBalancerName': load_balancer_name}
         self.build_list_params(params, zones_to_remove,
                                'AvailabilityZones.member.%d')
-        return self.get_list('DisableAvailabilityZonesForLoadBalancer',
-                             params, None)
+        obj = self.get_object('DisableAvailabilityZonesForLoadBalancer',
+                               params, LoadBalancerZones)
+        return obj.zones
 
     def register_instances(self, load_balancer_name, instances):
         """
@@ -450,11 +527,31 @@ class ELBConnection(AWSQueryConnection):
         from the same user to that server. The validity of the cookie is based
         on the cookie expiration time, which is specified in the policy
         configuration.
+
+        None may be passed for cookie_expiration_period.
         """
-        params = {'CookieExpirationPeriod': cookie_expiration_period,
-                  'LoadBalancerName': lb_name,
+        params = {'LoadBalancerName': lb_name,
                   'PolicyName': policy_name}
+        if cookie_expiration_period is not None:
+            params['CookieExpirationPeriod'] = cookie_expiration_period
         return self.get_status('CreateLBCookieStickinessPolicy', params)
+
+    def create_lb_policy(self, lb_name, policy_name, policy_type, policy_attributes):
+        """
+        Creates a new policy that contais the necessary attributes depending on
+        the policy type. Policies are settings that are saved for your load
+        balancer and that can be applied to the front-end listener, or
+        the back-end application server.
+        """
+        params = {'LoadBalancerName': lb_name,
+                  'PolicyName': policy_name,
+                  'PolicyTypeName': policy_type}
+        for index, (name, value) in enumerate(policy_attributes.iteritems(), 1):
+            params['PolicyAttributes.member.%d.AttributeName' % index] = name
+            params['PolicyAttributes.member.%d.AttributeValue' % index] = value
+        else:
+            params['PolicyAttributes'] = ''
+        return self.get_status('CreateLoadBalancerPolicy', params)
 
     def delete_lb_policy(self, lb_name, policy_name):
         """
@@ -475,6 +572,19 @@ class ELBConnection(AWSQueryConnection):
                   'LoadBalancerPort': lb_port}
         self.build_list_params(params, policies, 'PolicyNames.member.%d')
         return self.get_status('SetLoadBalancerPoliciesOfListener', params)
+
+    def set_lb_policies_of_backend_server(self, lb_name, instance_port, policies):
+        """
+        Replaces the current set of policies associated with a port on which
+        the back-end server is listening with a new set of policies.
+        """
+        params = {'LoadBalancerName': lb_name,
+                  'InstancePort': instance_port}
+        if policies:
+            self.build_list_params(params, policies, 'PolicyNames.member.%d')
+        else:
+            params['PolicyNames'] = ''
+        return self.get_status('SetLoadBalancerPoliciesForBackendServer', params)
 
     def apply_security_groups_to_lb(self, name, security_groups):
         """
@@ -537,5 +647,5 @@ class ELBConnection(AWSQueryConnection):
         params = {'LoadBalancerName': name}
         self.build_list_params(params, subnets,
                                'Subnets.member.%d')
-        return self.get_list('DettachLoadBalancerFromSubnets',
+        return self.get_list('DetachLoadBalancerFromSubnets',
                              params, None)

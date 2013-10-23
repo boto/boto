@@ -4,6 +4,7 @@ Exceptions that are specific to the dynamodb module.
 from boto.exception import BotoServerError, BotoClientError
 from boto.exception import DynamoDBResponseError
 
+
 class DynamoDBExpiredTokenError(BotoServerError):
     """
     Raised when a DynamoDB security token expires. This is generally boto's
@@ -28,6 +29,13 @@ class DynamoDBItemError(BotoClientError):
     pass
 
 
+class DynamoDBNumberError(BotoClientError):
+    """
+    Raised in the event of incompatible numeric type casting.
+    """
+    pass
+
+
 class DynamoDBConditionalCheckFailedError(DynamoDBResponseError):
     """
     Raised when a ConditionalCheckFailedException response is received.
@@ -36,10 +44,21 @@ class DynamoDBConditionalCheckFailedError(DynamoDBResponseError):
     """
     pass
 
+
 class DynamoDBValidationError(DynamoDBResponseError):
     """
     Raised when a ValidationException response is received. This happens
     when one or more required parameter values are missing, or if the item
     has exceeded the 64Kb size limit.
+    """
+    pass
+
+
+class DynamoDBThroughputExceededError(DynamoDBResponseError):
+    """
+    Raised when the provisioned throughput has been exceeded.
+    Normally, when provisioned throughput is exceeded the operation
+    is retried.  If the retries are exhausted then this exception
+    will be raised.
     """
     pass

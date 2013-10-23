@@ -23,6 +23,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from __future__ import with_statement
+
 try:
     from setuptools import setup
     extra = dict(test_suite="tests.test.suite", include_package_data=True)
@@ -39,18 +41,23 @@ if sys.version_info <= (2, 4):
     print >> sys.stderr, error
     sys.exit(1)
 
+def readme():
+    with open("README.rst") as f:
+        return f.read()
+
 setup(name = "boto",
       version = __version__,
       description = "Amazon Web Services Library",
-      long_description = open("README.rst").read(),
+      long_description = readme(),
       author = "Mitch Garnaat",
       author_email = "mitch@garnaat.com",
       scripts = ["bin/sdbadmin", "bin/elbadmin", "bin/cfadmin",
                  "bin/s3put", "bin/fetch_file", "bin/launch_instance",
                  "bin/list_instances", "bin/taskadmin", "bin/kill_instance",
                  "bin/bundle_image", "bin/pyami_sendmail", "bin/lss3",
-                 "bin/cq", "bin/route53", "bin/s3multiput", "bin/cwutil",
-                 "bin/instance_events", "bin/asadmin", "bin/glacier"],
+                 "bin/cq", "bin/route53", "bin/cwutil", "bin/instance_events",
+                 "bin/asadmin", "bin/glacier", "bin/mturk",
+                 "bin/dynamodb_dump", "bin/dynamodb_load"],
       url = "https://github.com/boto/boto/",
       packages = ["boto", "boto.sqs", "boto.s3", "boto.gs", "boto.file",
                   "boto.ec2", "boto.ec2.cloudwatch", "boto.ec2.autoscale",
@@ -65,7 +72,9 @@ setup(name = "boto",
                   "boto.ecs", "boto.iam", "boto.route53", "boto.ses",
                   "boto.cloudformation", "boto.sts", "boto.dynamodb",
                   "boto.swf", "boto.mws", "boto.cloudsearch", "boto.glacier",
-                  "boto.beanstalk"],
+                  "boto.beanstalk", "boto.datapipeline", "boto.elasticache",
+                  "boto.elastictranscoder", "boto.opsworks", "boto.redshift",
+                  "boto.dynamodb2", "boto.support"],
       package_data = {"boto.cacerts": ["cacerts.txt"]},
       license = "MIT",
       platforms = "Posix; MacOS X; Windows",

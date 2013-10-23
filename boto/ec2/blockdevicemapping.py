@@ -115,27 +115,36 @@ class BlockDeviceMapping(dict):
         elif name == 'item':
             self[self.current_name] = self.current_value
 
-    def build_list_params(self, params, prefix=''):
+    def ec2_build_list_params(self, params, prefix=''):
+        pre = '%sBlockDeviceMapping' % prefix
+        return self._build_list_params(params, prefix=pre)
+
+    def autoscale_build_list_params(self, params, prefix=''):
+        pre = '%sBlockDeviceMappings.member' % prefix
+        return self._build_list_params(params, prefix=pre)
+
+    def _build_list_params(self, params, prefix=''):
         i = 1
         for dev_name in self:
-            pre = '%sBlockDeviceMapping.%d' % (prefix, i)
+            pre = '%s.%d' % (prefix, i)
             params['%s.DeviceName' % pre] = dev_name
             block_dev = self[dev_name]
             if block_dev.ephemeral_name:
                 params['%s.VirtualName' % pre] = block_dev.ephemeral_name
             else:
                 if block_dev.no_device:
-                    params['%s.Ebs.NoDevice' % pre] = 'true'
-                if block_dev.snapshot_id:
-                    params['%s.Ebs.SnapshotId' % pre] = block_dev.snapshot_id
-                if block_dev.size:
-                    params['%s.Ebs.VolumeSize' % pre] = block_dev.size
-                if block_dev.delete_on_termination:
-                    params['%s.Ebs.DeleteOnTermination' % pre] = 'true'
+                    params['%s.NoDevice' % pre] = ''
                 else:
-                    params['%s.Ebs.DeleteOnTermination' % pre] = 'false'
-                if block_dev.volume_type:
-                    params['%s.Ebs.VolumeType' % pre] = block_dev.volume_type
-                if block_dev.iops is not None:
-                    params['%s.Ebs.Iops' % pre] = block_dev.iops
+                    if block_dev.snapshot_id:
+                        params['%s.Ebs.SnapshotId' % pre] = block_dev.snapshot_id
+                    if block_dev.size:
+                        params['%s.Ebs.VolumeSize' % pre] = block_dev.size
+                    if block_dev.delete_on_termination:
+                        params['%s.Ebs.DeleteOnTermination' % pre] = 'true'
+                    else:
+                        params['%s.Ebs.DeleteOnTermination' % pre] = 'false'
+                    if block_dev.volume_type:
+                        params['%s.Ebs.VolumeType' % pre] = block_dev.volume_type
+                    if block_dev.iops is not None:
+                        params['%s.Ebs.Iops' % pre] = block_dev.iops
             i += 1

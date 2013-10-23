@@ -30,7 +30,9 @@ RegionData = {
     'sa-east-1': 'cloudformation.sa-east-1.amazonaws.com',
     'eu-west-1': 'cloudformation.eu-west-1.amazonaws.com',
     'ap-northeast-1': 'cloudformation.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1': 'cloudformation.ap-southeast-1.amazonaws.com'}
+    'ap-southeast-1': 'cloudformation.ap-southeast-1.amazonaws.com',
+    'ap-southeast-2': 'cloudformation.ap-southeast-2.amazonaws.com',
+}
 
 
 def regions():

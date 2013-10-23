@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -22,10 +22,7 @@
 import uuid
 import base64
 import time
-try:
-    import simplejson as json
-except ImportError:
-    import json
+from boto.compat import json
 from boto.cloudfront.identity import OriginAccessIdentity
 from boto.cloudfront.object import Object, StreamingObject
 from boto.cloudfront.signers import ActiveTrustedSigners, TrustedSigners
@@ -33,7 +30,7 @@ from boto.cloudfront.logging import LoggingInfo
 from boto.cloudfront.origin import S3Origin, CustomOrigin
 from boto.s3.acl import ACL
 
-class DistributionConfig:
+class DistributionConfig(object):
 
     def __init__(self, connection=None, origin=None, enabled=False,
                  caller_reference='', cnames=None, comment='',
@@ -52,23 +49,23 @@ class DistributionConfig:
         :param enabled: Whether the distribution is enabled to accept
                         end user requests for content.
         :type enabled: bool
-        
+
         :param caller_reference: A unique number that ensures the
                                  request can't be replayed.  If no
                                  caller_reference is provided, boto
                                  will generate a type 4 UUID for use
                                  as the caller reference.
         :type enabled: str
-        
+
         :param cnames: A CNAME alias you want to associate with this
                        distribution. You can have up to 10 CNAME aliases
                        per distribution.
         :type enabled: array of str
-        
+
         :param comment: Any comments you want to include about the
                         distribution.
         :type comment: str
-        
+
         :param trusted_signers: Specifies any AWS accounts you want to
                                 permit to create signed URLs for private
                                 content. If you want the distribution to
@@ -77,7 +74,7 @@ class DistributionConfig:
                                 distribution to use basic URLs, leave
                                 this None.
         :type trusted_signers: :class`boto.cloudfront.signers.TrustedSigners`
-        
+
         :param default_root_object: Designates a default root object.
                                     Only include a DefaultRootObject value
                                     if you are going to assign a default
@@ -89,7 +86,7 @@ class DistributionConfig:
                         this should contain a LoggingInfo object; otherwise
                         it should contain None.
         :type logging: :class`boto.cloudfront.logging.LoggingInfo`
-        
+
         """
         self.connection = connection
         self.origin = origin
@@ -103,7 +100,7 @@ class DistributionConfig:
             self.cnames = cnames
         self.comment = comment
         self.trusted_signers = trusted_signers
-        self.logging = None
+        self.logging = logging
         self.default_root_object = default_root_object
 
     def to_xml(self):
@@ -217,7 +214,7 @@ class StreamingDistributionConfig(DistributionConfig):
         s += '</StreamingDistributionConfig>\n'
         return s
 
-class DistributionSummary:
+class DistributionSummary(object):
 
     def __init__(self, connection=None, domain_name='', id='',
                  last_modified_time=None, status='', origin=None,
@@ -281,8 +278,8 @@ class StreamingDistributionSummary(DistributionSummary):
 
     def get_distribution(self):
         return self.connection.get_streaming_distribution_info(self.id)
-    
-class Distribution:
+
+class Distribution(object):
 
     def __init__(self, connection=None, config=None, domain_name='',
                  id='', last_modified_time=None, status=''):
@@ -365,14 +362,14 @@ class Distribution:
 
     def enable(self):
         """
-        Deactivate the Distribution.  A convenience wrapper around
+        Activate the Distribution.  A convenience wrapper around
         the update method.
         """
         self.update(enabled=True)
 
     def disable(self):
         """
-        Activate the Distribution.  A convenience wrapper around
+        Deactivate the Distribution.  A convenience wrapper around
         the update method.
         """
         self.update(enabled=False)
@@ -403,11 +400,11 @@ class Distribution:
             return self._bucket
         else:
             raise NotImplementedError('Unable to get_objects on CustomOrigin')
-    
+
     def get_objects(self):
         """
         Return a list of all content objects in this distribution.
-        
+
         :rtype: list of :class:`boto.cloudfront.object.Object`
         :return: The content objects
         """
@@ -643,13 +640,13 @@ class Distribution:
     @staticmethod
     def _sign_string(message, private_key_file=None, private_key_string=None):
         """
-        Signs a string for use with Amazon CloudFront.  Requires the M2Crypto
-        library be installed.
+        Signs a string for use with Amazon CloudFront.
+        Requires the rsa library be installed.
         """
         try:
-            from M2Crypto import EVP
+            import rsa
         except ImportError:
-            raise NotImplementedError("Boto depends on the python M2Crypto "
+            raise NotImplementedError("Boto depends on the python rsa "
                                       "library to generate signed URLs for "
                                       "CloudFront")
         # Make sure only one of private_key_file and private_key_string is set
@@ -657,18 +654,18 @@ class Distribution:
             raise ValueError("Only specify the private_key_file or the private_key_string not both")
         if not private_key_file and not private_key_string:
             raise ValueError("You must specify one of private_key_file or private_key_string")
-        # if private_key_file is a file object read the key string from there
-        if isinstance(private_key_file, file):
-            private_key_string = private_key_file.read()
-        # Now load key and calculate signature
-        if private_key_string:
-            key = EVP.load_key_string(private_key_string)
-        else:
-            key = EVP.load_key(private_key_file)
-        key.reset_context(md='sha1')
-        key.sign_init()
-        key.sign_update(str(message))
-        signature = key.sign_final()
+        # If private_key_file is a file name, open it and read it
+        if private_key_string is None:
+            if isinstance(private_key_file, basestring):
+                with open(private_key_file, 'r') as file_handle:
+                    private_key_string = file_handle.read()
+            # Otherwise, treat it like a file
+            else:
+                private_key_string = private_key_file.read()
+
+        # Sign it!
+        private_key = rsa.PrivateKey.load_pkcs1(private_key_string)
+        signature = rsa.sign(str(message), private_key, 'SHA-1')
         return signature
 
     @staticmethod
@@ -746,5 +743,5 @@ class StreamingDistribution(Distribution):
 
     def delete(self):
         self.connection.delete_streaming_distribution(self.id, self.etag)
-            
-        
+
+

@@ -43,48 +43,27 @@ Creating a Connection
 
 The first step in accessing ELB is to create a connection to the service.
 
->>> import boto
->>> conn = boto.connect_elb(
-        aws_access_key_id='YOUR-KEY-ID-HERE',
-        aws_secret_access_key='YOUR-SECRET-HERE'
-    )
-
-
-A Note About Regions and Endpoints
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Like EC2, the ELB service has a different endpoint for each region. By default
-the US East endpoint is used. To choose a specific region, instantiate the
-ELBConnection object with that region's information.
+the US East endpoint is used. To choose a specific region, use the
+``connect_to_region`` function::
 
->>> from boto.regioninfo import RegionInfo
->>> reg = RegionInfo(
-        name='eu-west-1',
-        endpoint='elasticloadbalancing.eu-west-1.amazonaws.com'
-    )
->>> conn = boto.connect_elb(
-        aws_access_key_id='YOUR-KEY-ID-HERE',
-        aws_secret_access_key='YOUR-SECRET-HERE',
-        region=reg
-    )
-
-Another way to connect to an alternative region is like this:
-
->>> import boto.ec2.elb
->>> elb = boto.ec2.elb.connect_to_region('eu-west-1')
+    >>> import boto.ec2.elb
+    >>> elb = boto.ec2.elb.connect_to_region('us-west-2')
 
 Here's yet another way to discover what regions are available and then
-connect to one:
+connect to one::
 
->>> import boto.ec2.elb
->>> regions = boto.ec2.elb.regions()
->>> regions
-[RegionInfo:us-east-1,
- RegionInfo:ap-northeast-1,
- RegionInfo:us-west-1,
- RegionInfo:ap-southeast-1,
- RegionInfo:eu-west-1]
->>> elb = regions[-1].connect()
+    >>> import boto.ec2.elb
+    >>> regions = boto.ec2.elb.regions()
+    >>> regions
+    [RegionInfo:us-east-1,
+     RegionInfo:ap-northeast-1,
+     RegionInfo:us-west-1,
+     RegionInfo:us-west-2,
+     RegionInfo:ap-southeast-1,
+     RegionInfo:eu-west-1]
+    >>> elb = regions[-1].connect()
 
 Alternatively, edit your boto.cfg with the default ELB endpoint to use::
 
@@ -194,9 +173,9 @@ Finally, let's create a load balancer in the US region that listens on ports
 and TCP. We want the load balancer to span the availability zones
 *us-east-1a* and *us-east-1b*:
 
->>> regions = ['us-east-1a', 'us-east-1b']
+>>> zones = ['us-east-1a', 'us-east-1b']
 >>> ports = [(80, 8080, 'http'), (443, 8443, 'tcp')]
->>> lb = conn.create_load_balancer('my-lb', regions, ports)
+>>> lb = conn.create_load_balancer('my-lb', zones, ports)
 >>> # This is from the previous section.
 >>> lb.configure_health_check(hc)
 
@@ -233,7 +212,7 @@ should allow incoming connections on 8080 and 8443).
 
 To remove instances:
 
->>> lb.degregister_instances(instance_ids)
+>>> lb.deregister_instances(instance_ids)
 
 Modifying Availability Zones for a Load Balancer
 ------------------------------------------------

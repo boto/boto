@@ -14,25 +14,19 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import boto
-import os
 import sys
-from boto import config
+import boto
 from boto.utils import find_class
+from boto import config
 from boto.pyami.scriptbase import ScriptBase
-from distutils.sysconfig import get_python_lib
+
 
 class Startup(ScriptBase):
-
-    def __init__(self):
-        self.working_dir = '/mnt/pyami'
-        self.python_lib = get_python_lib()
-        ScriptBase.__init__(self)
 
     def run_scripts(self):
         scripts = config.get('Pyami', 'scripts')
@@ -54,35 +48,7 @@ class Startup(ScriptBase):
                     boto.log.exception('Problem Running Script: %s. Startup process halting.' % script)
                     raise e
 
-    def fetch_s3_file(self, s3_file):
-        try:
-            from boto.utils import fetch_file
-            f = fetch_file(s3_file)
-            path = os.path.join(self.working_dir, s3_file.split("/")[-1])
-            open(path, "w").write(f.read())
-        except:
-            boto.log.exception('Problem Retrieving file: %s' % s3_file)
-            path = None
-        return path
-
-    def load_packages(self):
-        package_str = boto.config.get('Pyami', 'packages')
-        package_name = ""
-        if package_str:
-            packages = package_str.split(',')
-            for package in packages:
-                package = package.strip()
-                if package.startswith('s3:'):
-                    package = self.fetch_s3_file(package)
-                    package_name = package.split("/")[-1]
-                if package:
-                    # if the "package" is really a .py file, it doesn't have to
-                    # be installed, just being in the working dir is enough
-                    if not package.endswith('.py'):
-                        self.run('easy_install -Z %s' % package, exit_on_error=False)
-                        sys.path.append("%s/%s" % (self.python_lib, package_name))
     def main(self):
-        self.load_packages()
         self.run_scripts()
         self.notify('Startup Completed for %s' % config.get('Instance', 'instance-id'))
 

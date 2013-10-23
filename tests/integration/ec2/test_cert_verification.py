@@ -24,17 +24,16 @@
 """
 Check that all of the certs on all service endpoints validate.
 """
-
 import unittest
-import boto.rds
+
+from tests.integration import ServiceCertVerificationTest
+
+import boto.ec2
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class EC2CertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     ec2 = True
-    ssl = True
+    regions = boto.ec2.regions()
 
-    def test_certs(self):
-        for region in boto.rds.regions():
-            c = region.connect()
-            c.get_all_dbinstances()
+    def sample_service_call(self, conn):
+        conn.get_all_reservations()

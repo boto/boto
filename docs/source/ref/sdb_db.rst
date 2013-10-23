@@ -10,74 +10,61 @@ boto.sdb.db
 -----------
 
 .. automodule:: boto.sdb.db
-   :members:   
+   :members:
    :undoc-members:
 
 boto.sdb.db.blob
 ----------------
 
 .. automodule:: boto.sdb.db.blob
-   :members:   
+   :members:
    :undoc-members:
 
 boto.sdb.db.key
 ---------------
 
 .. automodule:: boto.sdb.db.key
-   :members:   
+   :members:
    :undoc-members:
 
 boto.sdb.db.manager
 -------------------
 
 .. automodule:: boto.sdb.db.manager
-   :members:   
-   :undoc-members:
-
-boto.sdb.db.manager.pgmanager
------------------------------
-
-.. note::
-
-   This module requires psycopg2__ to be installed in the Python path.
-   
-   __ http://initd.org/
-
-.. automodule:: boto.sdb.db.manager.pgmanager
-   :members:   
+   :members:
    :undoc-members:
 
 boto.sdb.db.manager.sdbmanager
 ------------------------------
 
 .. automodule:: boto.sdb.db.manager.sdbmanager
-   :members:   
+   :members:
    :undoc-members:
 
 boto.sdb.db.manager.xmlmanager
 ------------------------------
 
 .. automodule:: boto.sdb.db.manager.xmlmanager
-   :members:   
+   :members:
    :undoc-members:
 
 boto.sdb.db.model
 -----------------
 
 .. automodule:: boto.sdb.db.model
-   :members:   
+   :members:
    :undoc-members:
 
 boto.sdb.db.property
 --------------------
 
 .. automodule:: boto.sdb.db.property
-   :members:   
+   :members:
    :undoc-members:
 
 boto.sdb.db.query
 -----------------
 
 .. automodule:: boto.sdb.db.query
-   :members:   
+   :members:
    :undoc-members:

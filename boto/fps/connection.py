@@ -120,58 +120,65 @@ class FPSConnection(AWSQueryConnection):
                'SenderTokenId',      'SettlementAmount.CurrencyCode'])
     @api_action()
     def settle_debt(self, action, response, **kw):
-        """Allows a caller to initiate a transaction that atomically
-           transfers money from a sender's payment instrument to the
-           recipient, while decreasing corresponding debt balance.
+        """
+        Allows a caller to initiate a transaction that atomically transfers
+        money from a sender's payment instrument to the recipient, while
+        decreasing corresponding debt balance.
         """
         return self.get_object(action, kw, response)
 
     @requires(['TransactionId'])
     @api_action()
     def get_transaction_status(self, action, response, **kw):
-        """Gets the latest status of a transaction.
+        """
+        Gets the latest status of a transaction.
         """
         return self.get_object(action, kw, response)
 
     @requires(['StartDate'])
     @api_action()
     def get_account_activity(self, action, response, **kw):
-        """Returns transactions for a given date range.
+        """
+        Returns transactions for a given date range.
         """
         return self.get_object(action, kw, response)
 
     @requires(['TransactionId'])
     @api_action()
     def get_transaction(self, action, response, **kw):
-        """Returns all details of a transaction.
+        """
+        Returns all details of a transaction.
         """
         return self.get_object(action, kw, response)
 
     @api_action()
     def get_outstanding_debt_balance(self, action, response):
-        """Returns the total outstanding balance for all the credit
-           instruments for the given creditor account.
+        """
+        Returns the total outstanding balance for all the credit instruments
+        for the given creditor account.
         """
         return self.get_object(action, {}, response)
 
     @requires(['PrepaidInstrumentId'])
     @api_action()
     def get_prepaid_balance(self, action, response, **kw):
-        """Returns the balance available on the given prepaid instrument.
+        """
+        Returns the balance available on the given prepaid instrument.
         """
         return self.get_object(action, kw, response)
 
     @api_action()
     def get_total_prepaid_liability(self, action, response):
-        """Returns the total liability held by the given account
-           corresponding to all the prepaid instruments owned by the
-           account.
+        """
+        Returns the total liability held by the given account corresponding to
+        all the prepaid instruments owned by the account.
         """
         return self.get_object(action, {}, response)
 
     @api_action()
     def get_account_balance(self, action, response):
-        """Returns the account balance for an account in real time.
+        """
+        Returns the account balance for an account in real time.
         """
         return self.get_object(action, {}, response)
 
@@ -179,15 +186,17 @@ class FPSConnection(AWSQueryConnection):
     @requires(['PaymentInstruction', 'TokenType'])
     @api_action()
     def install_payment_instruction(self, action, response, **kw):
-        """Installs a payment instruction for caller.
+        """
+        Installs a payment instruction for caller.
         """
         return self.get_object(action, kw, response)
 
     @needs_caller_reference
     @requires(['returnURL', 'pipelineName'])
     def cbui_url(self, **kw):
-        """Generate a signed URL for the Co-Branded service API given
-           arguments as payload.
+        """
+        Generate a signed URL for the Co-Branded service API given arguments as
+        payload.
         """
         sandbox = 'sandbox' in self.host and 'payments-sandbox' or 'payments'
         endpoint = 'authorize.{0}.amazon.com'.format(sandbox)
@@ -220,9 +229,10 @@ class FPSConnection(AWSQueryConnection):
                                 'TransactionAmount.CurrencyCode'])
     @api_action()
     def reserve(self, action, response, **kw):
-        """Reserve API is part of the Reserve and Settle API conjunction
-           that serve the purpose of a pay where the authorization and
-           settlement have a timing difference.
+        """
+        Reserve API is part of the Reserve and Settle API conjunction that
+        serve the purpose of a pay where the authorization and settlement have
+        a timing difference.
         """
         return self.get_object(action, kw, response)
 
@@ -232,15 +242,16 @@ class FPSConnection(AWSQueryConnection):
                                 'TransactionAmount.CurrencyCode'])
     @api_action()
     def pay(self, action, response, **kw):
-        """Allows calling applications to move money from a sender to
-           a recipient.
+        """
+        Allows calling applications to move money from a sender to a recipient.
         """
         return self.get_object(action, kw, response)
 
     @requires(['TransactionId'])
     @api_action()
     def cancel(self, action, response, **kw):
-        """Cancels an ongoing transaction and puts it in cancelled state.
+        """
+        Cancels an ongoing transaction and puts it in cancelled state.
         """
         return self.get_object(action, kw, response)
 
@@ -249,8 +260,9 @@ class FPSConnection(AWSQueryConnection):
                                        'TransactionAmount.CurrencyCode'])
     @api_action()
     def settle(self, action, response, **kw):
-        """The Settle API is used in conjunction with the Reserve API and
-           is used to settle previously reserved transaction.
+        """
+        The Settle API is used in conjunction with the Reserve API and is used
+        to settle previously reserved transaction.
         """
         return self.get_object(action, kw, response)
 
@@ -259,50 +271,57 @@ class FPSConnection(AWSQueryConnection):
                'CallerReference', 'RefundAmount.CurrencyCode'])
     @api_action()
     def refund(self, action, response, **kw):
-        """Refunds a previously completed transaction.
+        """
+        Refunds a previously completed transaction.
         """
         return self.get_object(action, kw, response)
 
     @requires(['RecipientTokenId'])
     @api_action()
     def get_recipient_verification_status(self, action, response, **kw):
-        """Returns the recipient status.
+        """
+        Returns the recipient status.
         """
         return self.get_object(action, kw, response)
 
     @requires(['CallerReference'], ['TokenId'])
     @api_action()
     def get_token_by_caller(self, action, response, **kw):
-        """Returns the details of a particular token installed by this
-           calling application using the subway co-branded UI.
+        """
+        Returns the details of a particular token installed by this calling
+        application using the subway co-branded UI.
         """
         return self.get_object(action, kw, response)
 
     @requires(['UrlEndPoint', 'HttpParameters'])
     @api_action()
     def verify_signature(self, action, response, **kw):
-        """Verify the signature that FPS sent in IPN or callback urls.
+        """
+        Verify the signature that FPS sent in IPN or callback urls.
         """
         return self.get_object(action, kw, response)
 
     @api_action()
     def get_tokens(self, action, response, **kw):
-        """Returns a list of tokens installed on the given account.
+        """
+        Returns a list of tokens installed on the given account.
         """
         return self.get_object(action, kw, response)
 
     @requires(['TokenId'])
     @api_action()
     def get_token_usage(self, action, response, **kw):
-        """Returns the usage of a token.
+        """
+        Returns the usage of a token.
         """
         return self.get_object(action, kw, response)
 
     @requires(['TokenId'])
     @api_action()
     def cancel_token(self, action, response, **kw):
-        """Cancels any token installed by the calling application on
-           its own account.
+        """
+        Cancels any token installed by the calling application on its own
+        account.
         """
         return self.get_object(action, kw, response)
 
@@ -312,14 +331,16 @@ class FPSConnection(AWSQueryConnection):
                'SenderTokenId',       'FundingAmount.CurrencyCode'])
     @api_action()
     def fund_prepaid(self, action, response, **kw):
-        """Funds the prepaid balance on the given prepaid instrument.
+        """
+        Funds the prepaid balance on the given prepaid instrument.
         """
         return self.get_object(action, kw, response)
 
     @requires(['CreditInstrumentId'])
     @api_action()
     def get_debt_balance(self, action, response, **kw):
-        """Returns the balance corresponding to the given credit instrument.
+        """
+        Returns the balance corresponding to the given credit instrument.
         """
         return self.get_object(action, kw, response)
 
@@ -329,22 +350,25 @@ class FPSConnection(AWSQueryConnection):
                                      'AdjustmentAmount.CurrencyCode'])
     @api_action()
     def write_off_debt(self, action, response, **kw):
-        """Allows a creditor to write off the debt balance accumulated
-           partially or fully at any time.
+        """
+        Allows a creditor to write off the debt balance accumulated partially
+        or fully at any time.
         """
         return self.get_object(action, kw, response)
 
     @requires(['SubscriptionId'])
     @api_action()
     def get_transactions_for_subscription(self, action, response, **kw):
-        """Returns the transactions for a given subscriptionID.
+        """
+        Returns the transactions for a given subscriptionID.
         """
         return self.get_object(action, kw, response)
 
     @requires(['SubscriptionId'])
     @api_action()
     def get_subscription_details(self, action, response, **kw):
-        """Returns the details of Subscription for a given subscriptionID.
+        """
+        Returns the details of Subscription for a given subscriptionID.
         """
         return self.get_object(action, kw, response)
 
@@ -353,7 +377,8 @@ class FPSConnection(AWSQueryConnection):
     @requires(['SubscriptionId'])
     @api_action()
     def cancel_subscription_and_refund(self, action, response, **kw):
-        """Cancels a subscription.
+        """
+        Cancels a subscription.
         """
         message = "If you specify a RefundAmount, " \
                   "you must specify CallerReference."
@@ -364,6 +389,7 @@ class FPSConnection(AWSQueryConnection):
     @requires(['TokenId'])
     @api_action()
     def get_payment_instruction(self, action, response, **kw):
-        """Gets the payment instruction of a token.
+        """
+        Gets the payment instruction of a token.
         """
         return self.get_object(action, kw, response)

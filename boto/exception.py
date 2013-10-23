@@ -76,29 +76,35 @@ class BotoServerError(StandardError):
         self.body = body or ''
         self.request_id = None
         self.error_code = None
-        self.error_message = None
+        self._error_message = None
         self.box_usage = None
 
         # Attempt to parse the error response. If body isn't present,
         # then just ignore the error response.
         if self.body:
             try:
-                h = handler.XmlHandler(self, self)
-                xml.sax.parseString(self.body, h)
+                h = handler.XmlHandlerWrapper(self, self)
+                h.parseString(self.body)
             except (TypeError, xml.sax.SAXParseException), pe:
                 # Remove unparsable message body so we don't include garbage
                 # in exception. But first, save self.body in self.error_message
                 # because occasionally we get error messages from Eucalyptus
                 # that are just text strings that we want to preserve.
-                self.error_message = self.body
+                self.message = self.body
                 self.body = None
 
     def __getattr__(self, name):
-        if name == 'message':
-            return self.error_message
+        if name == 'error_message':
+            return self.message
         if name == 'code':
             return self.error_code
         raise AttributeError
+
+    def __setattr__(self, name, value):
+        if name == 'error_message':
+            self.message = value
+        else:
+            super(BotoServerError, self).__setattr__(name, value)
 
     def __repr__(self):
         return '%s: %s %s\n%s' % (self.__class__.__name__,
@@ -117,7 +123,7 @@ class BotoServerError(StandardError):
         elif name == 'Code':
             self.error_code = value
         elif name == 'Message':
-            self.error_message = value
+            self.message = value
         elif name == 'BoxUsage':
             self.box_usage = value
         return None
@@ -125,7 +131,7 @@ class BotoServerError(StandardError):
     def _cleanupParsedProperties(self):
         self.request_id = None
         self.error_code = None
-        self.error_message = None
+        self.message = None
         self.box_usage = None
 
 class ConsoleOutput:
@@ -298,7 +304,7 @@ class EC2ResponseError(BotoServerError):
         for p in ('errors'):
             setattr(self, p, None)
 
-class DynamoDBResponseError(BotoServerError):
+class JSONResponseError(BotoServerError):
     """
     This exception expects the fully parsed and decoded JSON response
     body to be passed as the body parameter.
@@ -311,7 +317,6 @@ class DynamoDBResponseError(BotoServerError):
     :ivar error_code: A short string that identifies the AWS error
         (e.g. ConditionalCheckFailedException)
     """
-
     def __init__(self, status, reason, body=None, *args):
         self.status = status
         self.reason = reason
@@ -323,29 +328,12 @@ class DynamoDBResponseError(BotoServerError):
                 self.error_code = self.error_code.split('#')[-1]
 
 
-class SWFResponseError(BotoServerError):
-    """
-    This exception expects the fully parsed and decoded JSON response
-    body to be passed as the body parameter.
+class DynamoDBResponseError(JSONResponseError):
+    pass
 
-    :ivar status: The HTTP status code.
-    :ivar reason: The HTTP reason message.
-    :ivar body: The Python dict that represents the decoded JSON
-        response body.
-    :ivar error_message: The full description of the AWS error encountered.
-    :ivar error_code: A short string that identifies the AWS error
-        (e.g. ConditionalCheckFailedException)
-    """
 
-    def __init__(self, status, reason, body=None, *args):
-        self.status = status
-        self.reason = reason
-        self.body = body
-        if self.body:
-            self.error_message = self.body.get('message', None)
-            self.error_code = self.body.get('__type', None)
-            if self.error_code:
-                self.error_code = self.error_code.split('#')[-1]
+class SWFResponseError(JSONResponseError):
+    pass
 
 
 class EmrResponseError(BotoServerError):
@@ -427,16 +415,12 @@ class NoAuthHandlerFound(Exception):
     """Is raised when no auth handlers were found ready to authenticate."""
     pass
 
-class TooManyAuthHandlerReadyToAuthenticate(Exception):
-    """Is raised when there are more than one auth handler ready.
+class InvalidLifecycleConfigError(Exception):
+    """Exception raised when GCS lifecycle configuration XML is invalid."""
 
-    In normal situation there should only be one auth handler that is ready to
-    authenticate. In case where more than one auth handler is ready to
-    authenticate, we raise this exception, to prevent unpredictable behavior
-    when multiple auth handlers can handle a particular case and the one chosen
-    depends on the order they were checked.
-    """
-    pass
+    def __init__(self, message):
+        Exception.__init__(self, message)
+        self.message = message
 
 # Enum class for resumable upload failure disposition.
 class ResumableTransferDisposition(object):
@@ -493,3 +477,28 @@ class ResumableDownloadException(Exception):
     def __repr__(self):
         return 'ResumableDownloadException("%s", %s)' % (
             self.message, self.disposition)
+
+class TooManyRecordsException(Exception):
+    """
+    Exception raised when a search of Route53 records returns more
+    records than requested.
+    """
+
+    def __init__(self, message):
+        Exception.__init__(self, message)
+        self.message = message
+
+
+class PleaseRetryException(Exception):
+    """
+    Indicates a request should be retried.
+    """
+    def __init__(self, message, response=None):
+        self.message = message
+        self.response = response
+
+    def __repr__(self):
+        return 'PleaseRetryException("%s", %s)' % (
+            self.message,
+            self.response
+        )

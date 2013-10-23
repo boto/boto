@@ -2,6 +2,7 @@
 # Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
 # Copyright (c) 2011, Nexenta Systems Inc.
 # Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# Copyright (c) 2010, Google, Inc.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,11 +36,24 @@ import logging.config
 import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.6.0'
+__version__ = '2.15.0'
 Version = __version__  # for backware compatibility
 
-UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
+UserAgent = 'Boto/%s Python/%s %s/%s' % (
+    __version__,
+    platform.python_version(),
+    platform.system(),
+    platform.release()
+)
 config = Config()
+
+# Regex to disallow buckets violating charset or not [3..255] chars total.
+BUCKET_NAME_RE = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9\._-]{1,253}[a-zA-Z0-9]$')
+# Regex to disallow buckets with individual DNS labels longer than 63.
+TOO_LONG_DNS_NAME_COMP = re.compile(r'[-_a-z0-9]{64}')
+GENERATION_RE = re.compile(r'(?P<versionless_uri_str>.+)'
+                           r'#(?P<generation>[0-9]+)$')
+VERSION_RE = re.compile('(?P<versionless_uri_str>.+)#(?P<version_id>.+)$')
 
 
 def init_logging():
@@ -635,9 +649,81 @@ def connect_beanstalk(aws_access_key_id=None,
     return Layer1(aws_access_key_id, aws_secret_access_key, **kwargs)
 
 
+def connect_elastictranscoder(aws_access_key_id=None,
+                              aws_secret_access_key=None,
+                              **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.ets.layer1.ElasticTranscoderConnection`
+    :return: A connection to Amazon's Elastic Transcoder service
+    """
+    from boto.elastictranscoder.layer1 import ElasticTranscoderConnection
+    return ElasticTranscoderConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs)
+
+
+def connect_opsworks(aws_access_key_id=None,
+                     aws_secret_access_key=None,
+                     **kwargs):
+    from boto.opsworks.layer1 import OpsWorksConnection
+    return OpsWorksConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs)
+
+
+def connect_redshift(aws_access_key_id=None,
+                     aws_secret_access_key=None,
+                     **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.redshift.layer1.RedshiftConnection`
+    :return: A connection to Amazon's Redshift service
+    """
+    from boto.redshift.layer1 import RedshiftConnection
+    return RedshiftConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_support(aws_access_key_id=None,
+                    aws_secret_access_key=None,
+                    **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.support.layer1.SupportConnection`
+    :return: A connection to Amazon's Support service
+    """
+    from boto.support.layer1 import SupportConnection
+    return SupportConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
                 bucket_storage_uri_class=BucketStorageUri,
-                suppress_consec_slashes=True):
+                suppress_consec_slashes=True, is_latest=False):
     """
     Instantiate a StorageUri from a URI string.
 
@@ -653,6 +739,9 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
     :param bucket_storage_uri_class: Allows mocking for unit tests.
     :param suppress_consec_slashes: If provided, controls whether
         consecutive slashes will be suppressed in key paths.
+    :type is_latest: bool
+    :param is_latest: whether this versioned object represents the
+        current version.
 
     We allow validate to be disabled to allow caller
     to implement bucket-level wildcarding (outside the boto library;
@@ -664,31 +753,23 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
     ``uri_str`` must be one of the following formats:
 
     * gs://bucket/name
+    * gs://bucket/name#ver
     * s3://bucket/name
     * gs://bucket
     * s3://bucket
     * filename (which could be a Unix path like /a/b/c or a Windows path like
       C:\a\b\c)
 
-    The last example uses the default scheme ('file', unless overridden)
+    The last example uses the default scheme ('file', unless overridden).
     """
+    version_id = None
+    generation = None
 
     # Manually parse URI components instead of using urlparse.urlparse because
     # what we're calling URIs don't really fit the standard syntax for URIs
     # (the latter includes an optional host/net location part).
     end_scheme_idx = uri_str.find('://')
     if end_scheme_idx == -1:
-        # Check for common error: user specifies gs:bucket instead
-        # of gs://bucket. Some URI parsers allow this, but it can cause
-        # confusion for callers, so we don't.
-        colon_pos = uri_str.find(':')
-        if colon_pos != -1:
-            # Allow Windows path names including drive letter (C: etc.)
-            drive_char = uri_str[0].lower()
-            if not (platform.system().lower().startswith('windows')
-                    and colon_pos == 1
-                    and drive_char >= 'a' and drive_char <= 'z'):
-              raise InvalidUriError('"%s" contains ":" instead of "://"' % uri_str)
         scheme = default_scheme.lower()
         path = uri_str
     else:
@@ -707,23 +788,38 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
     else:
         path_parts = path.split('/', 1)
         bucket_name = path_parts[0]
-        if (validate and bucket_name and
-            # Disallow buckets violating charset or not [3..255] chars total.
-            (not re.match('^[a-z0-9][a-z0-9\._-]{1,253}[a-z0-9]$', bucket_name)
-            # Disallow buckets with individual DNS labels longer than 63.
-             or re.search('[-_a-z0-9]{64}', bucket_name))):
-            raise InvalidUriError('Invalid bucket name in URI "%s"' % uri_str)
-        # If enabled, ensure the bucket name is valid, to avoid possibly
-        # confusing other parts of the code. (For example if we didn't
+        object_name = ''
+        # If validate enabled, ensure the bucket name is valid, to avoid
+        # possibly confusing other parts of the code. (For example if we didn't
         # catch bucket names containing ':', when a user tried to connect to
         # the server with that name they might get a confusing error about
         # non-integer port numbers.)
-        object_name = ''
+        if (validate and bucket_name and
+            (not BUCKET_NAME_RE.match(bucket_name)
+             or TOO_LONG_DNS_NAME_COMP.search(bucket_name))):
+            raise InvalidUriError('Invalid bucket name in URI "%s"' % uri_str)
+        if scheme == 'gs':
+            match = GENERATION_RE.search(path)
+            if match:
+                md = match.groupdict()
+                versionless_uri_str = md['versionless_uri_str']
+                path_parts = versionless_uri_str.split('/', 1)
+                generation = int(md['generation'])
+        elif scheme == 's3':
+            match = VERSION_RE.search(path)
+            if match:
+                md = match.groupdict()
+                versionless_uri_str = md['versionless_uri_str']
+                path_parts = versionless_uri_str.split('/', 1)
+                version_id = md['version_id']
+        else:
+            raise InvalidUriError('Unrecognized scheme "%s"' % scheme)
         if len(path_parts) > 1:
             object_name = path_parts[1]
         return bucket_storage_uri_class(
             scheme, bucket_name, object_name, debug,
-            suppress_consec_slashes=suppress_consec_slashes)
+            suppress_consec_slashes=suppress_consec_slashes,
+            version_id=version_id, generation=generation, is_latest=is_latest)
 
 
 def storage_uri_for_key(key):

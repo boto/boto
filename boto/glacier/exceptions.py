@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import json
+from boto.compat import json
 
 
 class UnexpectedHTTPResponseError(Exception):
@@ -42,13 +42,17 @@ class UnexpectedHTTPResponseError(Exception):
         super(UnexpectedHTTPResponseError, self).__init__(msg)
 
 
-class UploadArchiveError(Exception):
+class ArchiveError(Exception):
     pass
 
 
-class DownloadArchiveError(Exception):
+class UploadArchiveError(ArchiveError):
     pass
 
 
-class TreeHashDoesNotMatchError(DownloadArchiveError):
+class DownloadArchiveError(ArchiveError):
+    pass
+
+
+class TreeHashDoesNotMatchError(ArchiveError):
     pass

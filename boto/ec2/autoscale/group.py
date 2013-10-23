@@ -98,7 +98,7 @@ class AutoScalingGroup(object):
                  health_check_type=None, health_check_period=None,
                  placement_group=None, vpc_zone_identifier=None,
                  desired_capacity=None, min_size=None, max_size=None,
-                 tags=None, **kwargs):
+                 tags=None, termination_policies=None, **kwargs):
         """
         Creates a new AutoScalingGroup with the specified name.
 
@@ -136,10 +136,10 @@ class AutoScalingGroup(object):
         :param load_balancers: List of load balancers.
 
         :type max_size: int
-        :param maxsize: Maximum size of group (required).
+        :param max_size: Maximum size of group (required).
 
         :type min_size: int
-        :param minsize: Minimum size of group (required).
+        :param min_size: Minimum size of group (required).
 
         :type placement_group: str
         :param placement_group: Physical location of your cluster placement
@@ -148,6 +148,12 @@ class AutoScalingGroup(object):
         :type vpc_zone_identifier: str
         :param vpc_zone_identifier: The subnet identifier of the Virtual
             Private Cloud.
+
+        :type termination_policies: list
+        :param termination_policies: A list of termination policies. Valid values
+            are: "OldestInstance", "NewestInstance", "OldestLaunchConfiguration",
+            "ClosestToNextInstanceHour", "Default".  If no value is specified,
+            the "Default" value is used.
 
         :rtype: :class:`boto.ec2.autoscale.group.AutoScalingGroup`
         :return: An autoscale group.
@@ -177,7 +183,8 @@ class AutoScalingGroup(object):
         self.vpc_zone_identifier = vpc_zone_identifier
         self.instances = None
         self.tags = tags or None
-        self.termination_policies = TerminationPolicies()
+        termination_policies = termination_policies or []
+        self.termination_policies = ListElement(termination_policies)
 
     # backwards compatible access to 'cooldown' param
     def _get_cooldown(self):
@@ -294,6 +301,12 @@ class AutoScalingGroup(object):
         return self.connection.put_notification_configuration(self,
                                                               topic,
                                                               notification_types)
+
+    def delete_notification_configuration(self, topic):
+        """
+        Deletes notifications created by put_notification_configuration.
+        """
+        return self.connection.delete_notification_configuration(self, topic)
 
     def suspend_processes(self, scaling_processes=None):
         """

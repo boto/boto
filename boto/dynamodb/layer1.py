@@ -20,25 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import time
+from binascii import crc32
 
 import boto
 from boto.connection import AWSAuthConnection
 from boto.exception import DynamoDBResponseError
 from boto.provider import Provider
 from boto.dynamodb import exceptions as dynamodb_exceptions
-
-import time
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
-#
-# To get full debug output, uncomment the following line and set the
-# value of Debug to be 2
-#
-#boto.set_stream_logger('dynamodb')
-Debug = 0
+from boto.compat import json
 
 
 class Layer1(AWSAuthConnection):
@@ -78,10 +68,13 @@ class Layer1(AWSAuthConnection):
 
     ResponseError = DynamoDBResponseError
 
+    NumberRetries = 10
+    """The number of times an error is retried."""
+
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  debug=0, security_token=None, region=None,
-                 validate_certs=True):
+                 validate_certs=True, validate_checksums=True):
         if not region:
             region_name = boto.config.get('DynamoDB', 'region',
                                           self.DefaultRegionName)
@@ -98,6 +91,8 @@ class Layer1(AWSAuthConnection):
                                    debug=debug, security_token=security_token,
                                    validate_certs=validate_certs)
         self.throughput_exceeded_events = 0
+        self._validate_checksums = boto.config.getbool(
+            'DynamoDB', 'validate_checksums', validate_checksums)
 
     def _get_session_token(self):
         self.provider = Provider(self._provider_type)
@@ -119,13 +114,13 @@ class Layer1(AWSAuthConnection):
                                                     {}, headers, body, None)
         start = time.time()
         response = self._mexe(http_request, sender=None,
-                              override_num_retries=10,
+                              override_num_retries=self.NumberRetries,
                               retry_handler=self._retry_handler)
-        elapsed = (time.time() - start)*1000
+        elapsed = (time.time() - start) * 1000
         request_id = response.getheader('x-amzn-RequestId')
         boto.log.debug('RequestId: %s' % request_id)
-        boto.perflog.info('%s: id=%s time=%sms',
-                          headers['X-Amz-Target'], request_id, int(elapsed))
+        boto.perflog.debug('%s: id=%s time=%sms',
+                           headers['X-Amz-Target'], request_id, int(elapsed))
         response_body = response.read()
         boto.log.debug(response_body)
         return json.loads(response_body, object_hook=object_hook)
@@ -139,12 +134,15 @@ class Layer1(AWSAuthConnection):
             if self.ThruputError in data.get('__type'):
                 self.throughput_exceeded_events += 1
                 msg = "%s, retry attempt %s" % (self.ThruputError, i)
-                if i == 0:
-                    next_sleep = 0
-                else:
-                    next_sleep = 0.05 * (2 ** i)
+                next_sleep = self._exponential_time(i)
                 i += 1
                 status = (msg, i, next_sleep)
+                if i == self.NumberRetries:
+                    # If this was our last retry attempt, raise
+                    # a specific error saying that the throughput
+                    # was exceeded.
+                    raise dynamodb_exceptions.DynamoDBThroughputExceededError(
+                        response.status, response.reason, data)
             elif self.SessionExpiredError in data.get('__type'):
                 msg = 'Renewing Session Token'
                 self._get_session_token()
@@ -158,7 +156,24 @@ class Layer1(AWSAuthConnection):
             else:
                 raise self.ResponseError(response.status, response.reason,
                                          data)
+        expected_crc32 = response.getheader('x-amz-crc32')
+        if self._validate_checksums and expected_crc32 is not None:
+            boto.log.debug('Validating crc32 checksum for body: %s',
+                           response.read())
+            actual_crc32 = crc32(response.read()) & 0xffffffff
+            expected_crc32 = int(expected_crc32)
+            if actual_crc32 != expected_crc32:
+                msg = ("The calculated checksum %s did not match the expected "
+                       "checksum %s" % (actual_crc32, expected_crc32))
+                status = (msg, i + 1, self._exponential_time(i))
         return status
+
+    def _exponential_time(self, i):
+        if i == 0:
+            next_sleep = 0
+        else:
+            next_sleep = 0.05 * (2 ** i)
+        return next_sleep
 
     def list_tables(self, limit=None, start_table=None):
         """
@@ -447,7 +462,7 @@ class Layer1(AWSAuthConnection):
     def query(self, table_name, hash_key_value, range_key_conditions=None,
               attributes_to_get=None, limit=None, consistent_read=False,
               scan_index_forward=True, exclusive_start_key=None,
-              object_hook=None):
+              object_hook=None, count=False):
         """
         Perform a query of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body
@@ -471,6 +486,11 @@ class Layer1(AWSAuthConnection):
         :type limit: int
         :param limit: The maximum number of items to return.
 
+        :type count: bool
+        :param count: If True, Amazon DynamoDB returns a total
+            number of items for the Query operation, even if the
+            operation has no matching items for the assigned filter.
+
         :type consistent_read: bool
         :param consistent_read: If True, a consistent read
             request is issued.  Otherwise, an eventually consistent
@@ -493,6 +513,8 @@ class Layer1(AWSAuthConnection):
             data['AttributesToGet'] = attributes_to_get
         if limit:
             data['Limit'] = limit
+        if count:
+            data['Count'] = True
         if consistent_read:
             data['ConsistentRead'] = True
         if scan_index_forward:
@@ -507,8 +529,7 @@ class Layer1(AWSAuthConnection):
 
     def scan(self, table_name, scan_filter=None,
              attributes_to_get=None, limit=None,
-             count=False, exclusive_start_key=None,
-             object_hook=None):
+             exclusive_start_key=None, object_hook=None, count=False):
         """
         Perform a scan of DynamoDB.  This version is currently punting
         and expecting you to provide a full and correct JSON body
@@ -527,7 +548,7 @@ class Layer1(AWSAuthConnection):
             be returned.  Otherwise, all attributes will be returned.
 
         :type limit: int
-        :param limit: The maximum number of items to return.
+        :param limit: The maximum number of items to evaluate.
 
         :type count: bool
         :param count: If True, Amazon DynamoDB returns a total

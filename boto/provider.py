@@ -117,7 +117,8 @@ class Provider(object):
                                             'metadata-directive',
             RESUMABLE_UPLOAD_HEADER_KEY: None,
             SECURITY_TOKEN_HEADER_KEY: AWS_HEADER_PREFIX + 'security-token',
-            SERVER_SIDE_ENCRYPTION_KEY: AWS_HEADER_PREFIX + 'server-side-encryption',
+            SERVER_SIDE_ENCRYPTION_KEY: AWS_HEADER_PREFIX +
+                                         'server-side-encryption',
             VERSION_ID_HEADER_KEY: AWS_HEADER_PREFIX + 'version-id',
             STORAGE_CLASS_HEADER_KEY: AWS_HEADER_PREFIX + 'storage-class',
             MFA_HEADER_KEY: AWS_HEADER_PREFIX + 'mfa',
@@ -166,8 +167,10 @@ class Provider(object):
     def __init__(self, name, access_key=None, secret_key=None,
                  security_token=None):
         self.host = None
-        self._access_key = access_key
-        self._secret_key = secret_key
+        self.port = None
+        self.host_header = None
+        self.access_key = access_key
+        self.secret_key = secret_key
         self.security_token = security_token
         self.name = name
         self.acl_class = self.AclClassMap[self.name]
@@ -176,10 +179,16 @@ class Provider(object):
         self.get_credentials(access_key, secret_key)
         self.configure_headers()
         self.configure_errors()
-        # allow config file to override default host
+        # Allow config file to override default host and port.
         host_opt_name = '%s_host' % self.HostKeyMap[self.name]
         if config.has_option('Credentials', host_opt_name):
             self.host = config.get('Credentials', host_opt_name)
+        port_opt_name = '%s_port' % self.HostKeyMap[self.name]
+        if config.has_option('Credentials', port_opt_name):
+            self.port = config.getint('Credentials', port_opt_name)
+        host_header_opt_name = '%s_host_header' % self.HostKeyMap[self.name]
+        if config.has_option('Credentials', host_header_opt_name):
+            self.host_header = config.get('Credentials', host_header_opt_name)
 
     def get_access_key(self):
         if self._credentials_need_refresh():
@@ -230,51 +239,44 @@ class Provider(object):
             else:
                 return False
 
-
     def get_credentials(self, access_key=None, secret_key=None):
         access_key_name, secret_key_name = self.CredentialMap[self.name]
         if access_key is not None:
-            self._access_key = access_key
+            self.access_key = access_key
+            boto.log.debug("Using access key provided by client.")
         elif access_key_name.upper() in os.environ:
-            self._access_key = os.environ[access_key_name.upper()]
+            self.access_key = os.environ[access_key_name.upper()]
+            boto.log.debug("Using access key found in environment variable.")
         elif config.has_option('Credentials', access_key_name):
-            # when the property is called, re-read the access key
-            # from the config file:
-            self._access_key = None
+            self.access_key = config.get('Credentials', access_key_name)
+            boto.log.debug("Using access key found in config file.")
 
         if secret_key is not None:
-            self._secret_key = secret_key
+            self.secret_key = secret_key
+            boto.log.debug("Using secret key provided by client.")
         elif secret_key_name.upper() in os.environ:
-            self._secret_key = os.environ[secret_key_name.upper()]
+            self.secret_key = os.environ[secret_key_name.upper()]
+            boto.log.debug("Using secret key found in environment variable.")
         elif config.has_option('Credentials', secret_key_name):
-            # when the property is called, re-read the secret access key
-            # from the config file:
-            self._secret_key = None
+            self.secret_key = config.get('Credentials', secret_key_name)
+            boto.log.debug("Using secret key found in config file.")
+        elif config.has_option('Credentials', 'keyring'):
+            keyring_name = config.get('Credentials', 'keyring')
+            try:
+                import keyring
+            except ImportError:
+                boto.log.error("The keyring module could not be imported. "
+                               "For keyring support, install the keyring "
+                               "module.")
+                raise
+            self.secret_key = keyring.get_password(
+                keyring_name, self.access_key)
+            boto.log.debug("Using secret key found in keyring.")
 
         if ((self._access_key is None or self._secret_key is None) and
                 self.MetadataServiceSupport[self.name]):
             self._populate_keys_from_metadata_server()
         self._secret_key = self._convert_key_to_str(self._secret_key)
-
-    def read_access_key_from_config(self):
-        access_key_name, secret_key_name = self.CredentialMap[self.name]
-        return config.get('Credentials', access_key_name)
-
-    def read_secret_key_from_config(self):
-        access_key_name, secret_key_name = self.CredentialMap[self.name]
-        return config.get('Credentials', secret_key_name)
-
-    @property
-    def access_key(self):
-        if self._access_key:
-            return self._access_key
-        return self.read_access_key_from_config()
-
-    @property
-    def secret_key(self):
-        if self._secret_key:
-            return self._secret_key
-        return self.read_secret_key_from_config()
 
     def _populate_keys_from_metadata_server(self):
         # get_instance_metadata is imported here because of a circular
@@ -282,10 +284,16 @@ class Provider(object):
         boto.log.debug("Retrieving credentials from metadata server.")
         from boto.utils import get_instance_metadata
         timeout = config.getfloat('Boto', 'metadata_service_timeout', 1.0)
-        metadata = get_instance_metadata(timeout=timeout, num_retries=1)
-        # I'm assuming there's only one role on the instance profile.
-        if metadata and 'iam' in metadata:
-            security = metadata['iam']['security-credentials'].values()[0]
+        attempts = config.getint('Boto', 'metadata_service_num_attempts', 1)
+        # The num_retries arg is actually the total number of attempts made,
+        # so the config options is named *_num_attempts to make this more
+        # clear to users.
+        metadata = get_instance_metadata(
+            timeout=timeout, num_retries=attempts,
+            data='meta-data/iam/security-credentials')
+        if metadata:
+            # I'm assuming there's only one role on the instance profile.
+            security = metadata.values()[0]
             self._access_key = security['AccessKeyId']
             self._secret_key = self._convert_key_to_str(security['SecretAccessKey'])
             self._security_token = security['Token']

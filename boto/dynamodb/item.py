@@ -50,11 +50,11 @@ class Item(dict):
             if range_key == None:
                 range_key = attrs.get(self._range_key_name, None)
             self[self._range_key_name] = range_key
+        self._updates = {}
         for key, value in attrs.items():
             if key != self._hash_key_name and key != self._range_key_name:
                 self[key] = value
         self.consumed_units = 0
-        self._updates = {}
 
     @property
     def hash_key(self):
@@ -194,3 +194,9 @@ class Item(dict):
         if self._updates is not None:
             self.delete_attribute(key)
         dict.__delitem__(self, key)
+
+    # Allow this item to still be pickled
+    def __getstate__(self):
+        return self.__dict__
+    def __setstate__(self, d):
+        self.__dict__.update(d)

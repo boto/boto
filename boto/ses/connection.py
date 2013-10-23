@@ -29,7 +29,6 @@ from boto.regioninfo import RegionInfo
 import boto
 import boto.jsonresponse
 from boto.ses import exceptions as ses_exceptions
-from boto.exception import BotoServerError
 
 
 class SESConnection(AWSAuthConnection):
@@ -103,8 +102,13 @@ class SESConnection(AWSAuthConnection):
         )
         body = response.read()
         if response.status == 200:
-            list_markers = ('VerifiedEmailAddresses', 'SendDataPoints')
-            e = boto.jsonresponse.Element(list_marker=list_markers)
+            list_markers = ('VerifiedEmailAddresses', 'Identities',
+                            'DkimTokens', 'VerificationAttributes',
+                            'SendDataPoints')
+            item_markers = ('member', 'item', 'entry')
+
+            e = boto.jsonresponse.Element(list_marker=list_markers,
+                                          item_marker=item_markers)
             h = boto.jsonresponse.XmlHandler(e, None)
             h.parse(body)
             return e
@@ -444,3 +448,75 @@ class SESConnection(AWSAuthConnection):
         params = {}
         self._build_list_params(params, identities, 'Identities.member')
         return self._make_request('GetIdentityDkimAttributes', params)
+
+    def list_identities(self):
+        """Returns a list containing all of the identities (email addresses
+        and domains) for a specific AWS Account, regardless of
+        verification status.
+
+        :rtype: dict
+        :returns: A ListIdentitiesResponse structure. Note that
+                  keys must be unicode strings.
+        """
+        return self._make_request('ListIdentities')
+
+    def get_identity_verification_attributes(self, identities):
+        """Given a list of identities (email addresses and/or domains),
+        returns the verification status and (for domain identities)
+        the verification token for each identity.
+
+        :type identities: list of strings or string
+        :param identities: List of identities.
+
+        :rtype: dict
+        :returns: A GetIdentityVerificationAttributesResponse structure.
+                  Note that keys must be unicode strings.
+        """
+        params = {}
+        self._build_list_params(params, identities,
+                               'Identities.member')
+        return self._make_request('GetIdentityVerificationAttributes', params)
+
+    def verify_domain_identity(self, domain):
+        """Verifies a domain.
+
+        :type domain: string
+        :param domain: The domain to be verified.
+
+        :rtype: dict
+        :returns: A VerifyDomainIdentityResponse structure. Note that
+                  keys must be unicode strings.
+        """
+        return self._make_request('VerifyDomainIdentity', {
+            'Domain': domain,
+        })
+
+    def verify_email_identity(self, email_address):
+        """Verifies an email address. This action causes a confirmation
+        email message to be sent to the specified address.
+
+        :type email_adddress: string
+        :param email_address: The email address to be verified.
+
+        :rtype: dict
+        :returns: A VerifyEmailIdentityResponse structure. Note that keys must
+                  be unicode strings.
+        """
+        return self._make_request('VerifyEmailIdentity', {
+            'EmailAddress': email_address,
+        })
+
+    def delete_identity(self, identity):
+        """Deletes the specified identity (email address or domain) from
+        the list of verified identities.
+
+        :type identity: string
+        :param identity: The identity to be deleted.
+
+        :rtype: dict
+        :returns: A DeleteIdentityResponse structure. Note that keys must
+                  be unicode strings.
+        """
+        return self._make_request('DeleteIdentity', {
+            'Identity': identity,
+        })

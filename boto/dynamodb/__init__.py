@@ -35,6 +35,9 @@ def regions():
     return [RegionInfo(name='us-east-1',
                        endpoint='dynamodb.us-east-1.amazonaws.com',
                        connection_cls=boto.dynamodb.layer2.Layer2),
+            RegionInfo(name='us-gov-west-1',
+                       endpoint='dynamodb.us-gov-west-1.amazonaws.com',
+                       connection_cls=boto.dynamodb.layer2.Layer2),
             RegionInfo(name='us-west-1',
                        endpoint='dynamodb.us-west-1.amazonaws.com',
                        connection_cls=boto.dynamodb.layer2.Layer2),
@@ -47,9 +50,15 @@ def regions():
             RegionInfo(name='ap-southeast-1',
                        endpoint='dynamodb.ap-southeast-1.amazonaws.com',
                        connection_cls=boto.dynamodb.layer2.Layer2),
+            RegionInfo(name='ap-southeast-2',
+                       endpoint='dynamodb.ap-southeast-2.amazonaws.com',
+                       connection_cls=boto.dynamodb.layer2.Layer2),
             RegionInfo(name='eu-west-1',
                        endpoint='dynamodb.eu-west-1.amazonaws.com',
                        connection_cls=boto.dynamodb.layer2.Layer2),
+            RegionInfo(name='sa-east-1',
+                   endpoint='dynamodb.sa-east-1.amazonaws.com',
+                   connection_cls=boto.dynamodb.layer2.Layer2),
             ]
 
 

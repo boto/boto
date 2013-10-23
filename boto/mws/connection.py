@@ -21,6 +21,7 @@
 import xml.sax
 import hashlib
 import base64
+import string
 from boto.connection import AWSQueryConnection
 from boto.mws.exception import ResponseErrorFactory
 from boto.mws.response import ResponseFactory, ResponseElement
@@ -219,6 +220,7 @@ def api_action(section, quota, restore, *api):
             response = getattr(boto.mws.response, action + 'Response')
         else:
             response = ResponseFactory(action)
+        response._action = action
 
         def wrapper(self, *args, **kw):
             kw.setdefault(accesskey, getattr(self, accesskey, None))
@@ -277,6 +279,39 @@ class MWSConnection(AWSQueryConnection):
         h = XmlHandler(obj, self)
         xml.sax.parseString(body, h)
         return obj
+
+    def method_for(self, name):
+        """Return the MWS API method referred to in the argument.
+           The named method can be in CamelCase or underlined_lower_case.
+           This is the complement to MWSConnection.any_call.action
+        """
+        # this looks ridiculous but it should be better than regex
+        action = '_' in name and string.capwords(name, '_') or name
+        attribs = [getattr(self, m) for m in dir(self)]
+        ismethod = lambda m: type(m) is type(self.method_for)
+        ismatch = lambda m: getattr(m, 'action', None) == action
+        method = filter(ismatch, filter(ismethod, attribs))
+        return method and method[0] or None
+
+    def iter_call(self, call, *args, **kw):
+        """Pass a call name as the first argument and a generator
+           is returned for the initial response and any continuation
+           call responses made using the NextToken.
+        """
+        method = self.method_for(call)
+        assert method, 'No call named "{0}"'.format(call)
+        return self.iter_response(method(*args, **kw))
+
+    def iter_response(self, response):
+        """Pass a call's response as the initial argument and a
+           generator is returned for the initial response and any
+           continuation call responses made using the NextToken.
+        """
+        yield response
+        more = self.method_for(response._action + 'ByNextToken')
+        while more and response._result.HasNext == 'true':
+            response = more(NextToken=response._result.NextToken)
+            yield response
 
     @boolean_arguments('PurgeAndReplace')
     @http_body('FeedContent')
@@ -408,14 +443,14 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires('ReportId')
+    @requires(['ReportId'])
     @api_action('Reports', 15, 60)
     def get_report(self, path, response, **kw):
         """Returns the contents of a report.
         """
         return self.post_request(path, kw, response, isXML=False)
 
-    @requires('ReportType', 'Schedule')
+    @requires(['ReportType', 'Schedule'])
     @api_action('Reports', 10, 45)
     def manage_report_schedule(self, path, response, **kw):
         """Creates, updates, or deletes a report request schedule for
@@ -450,7 +485,7 @@ class MWSConnection(AWSQueryConnection):
         return self.post_request(path, kw, response)
 
     @boolean_arguments('Acknowledged')
-    @requires('ReportIdList')
+    @requires(['ReportIdList'])
     @structured_lists('ReportIdList.Id')
     @api_action('Reports', 10, 45)
     def update_report_acknowledgements(self, path, response, **kw):
@@ -458,7 +493,7 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires('ShipFromAddress', 'InboundShipmentPlanRequestItems')
+    @requires(['ShipFromAddress', 'InboundShipmentPlanRequestItems'])
     @structured_objects('ShipFromAddress', 'InboundShipmentPlanRequestItems')
     @api_action('Inbound', 30, 0.5)
     def create_inbound_shipment_plan(self, path, response, **kw):
@@ -466,7 +501,7 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires('ShipmentId', 'InboundShipmentHeader', 'InboundShipmentItems')
+    @requires(['ShipmentId', 'InboundShipmentHeader', 'InboundShipmentItems'])
     @structured_objects('InboundShipmentHeader', 'InboundShipmentItems')
     @api_action('Inbound', 30, 0.5)
     def create_inbound_shipment(self, path, response, **kw):
@@ -474,7 +509,7 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires('ShipmentId')
+    @requires(['ShipmentId'])
     @structured_objects('InboundShipmentHeader', 'InboundShipmentItems')
     @api_action('Inbound', 30, 0.5)
     def update_inbound_shipment(self, path, response, **kw):
@@ -549,7 +584,7 @@ class MWSConnection(AWSQueryConnection):
         return self.post_request(path, kw, response)
 
     @structured_objects('Address', 'Items')
-    @requires('Address', 'Items')
+    @requires(['Address', 'Items'])
     @api_action('Outbound', 30, 0.5)
     def get_fulfillment_preview(self, path, response, **kw):
         """Returns a list of fulfillment order previews based on items
@@ -557,10 +592,11 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @structured_objects('Address', 'Items')
-    @requires('SellerFulfillmentOrderId', 'DisplayableOrderId',
-              'ShippingSpeedCategory',    'DisplayableOrderDateTime',
-              'DestinationAddress',       'DisplayableOrderComment')
+    @structured_objects('DestinationAddress', 'Items')
+    @requires(['SellerFulfillmentOrderId', 'DisplayableOrderId',
+               'ShippingSpeedCategory',    'DisplayableOrderDateTime',
+               'DestinationAddress',       'DisplayableOrderComment',
+               'Items'])
     @api_action('Outbound', 30, 0.5)
     def create_fulfillment_order(self, path, response, **kw):
         """Requests that Amazon ship items from the seller's inventory
@@ -568,7 +604,7 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @requires('SellerFulfillmentOrderId')
+    @requires(['SellerFulfillmentOrderId'])
     @api_action('Outbound', 30, 0.5)
     def get_fulfillment_order(self, path, response, **kw):
         """Returns a fulfillment order based on a specified

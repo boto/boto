@@ -149,9 +149,9 @@ class Reservation(EC2Object):
         else:
             setattr(self, name, value)
 
-    def stop_all(self):
+    def stop_all(self, dry_run=False):
         for instance in self.instances:
-            instance.stop()
+            instance.stop(dry_run=dry_run)
 
 
 class Instance(TaggedEC2Object):
@@ -188,6 +188,8 @@ class Instance(TaggedEC2Object):
     :ivar product_codes: A list of product codes associated with this instance.
     :ivar ami_launch_index: This instances position within it's launch group.
     :ivar monitored: A boolean indicating whether monitoring is enabled or not.
+    :ivar monitoring_state: A string value that contains the actual value
+        of the monitoring element returned by EC2.
     :ivar spot_instance_request_id: The ID of the spot instance request
         if this is a spot instance.
     :ivar subnet_id: The VPC Subnet ID, if running in VPC.
@@ -223,6 +225,7 @@ class Instance(TaggedEC2Object):
         self.product_codes = ProductCodes()
         self.ami_launch_index = None
         self.monitored = False
+        self.monitoring_state = None
         self.spot_instance_request_id = None
         self.subnet_id = None
         self.vpc_id = None
@@ -273,10 +276,6 @@ class Instance(TaggedEC2Object):
         return 0
 
     @property
-    def state(self):
-        return self._state.name
-
-    @property
     def placement(self):
         return self._placement.zone
 
@@ -310,6 +309,7 @@ class Instance(TaggedEC2Object):
             return self.eventsSet
         elif name == 'networkInterfaceSet':
             self.interfaces = ResultSet([('item', NetworkInterface)])
+            return self.interfaces
         elif name == 'iamInstanceProfile':
             self.instance_profile = SubParse('iamInstanceProfile')
             return self.instance_profile
@@ -340,14 +340,6 @@ class Instance(TaggedEC2Object):
             self.ami_launch_index = value
         elif name == 'previousState':
             self.previous_state = value
-        elif name == 'name':
-            self.state = value
-        elif name == 'code':
-            try:
-                self.state_code = int(value)
-            except ValueError:
-                boto.log.warning('Error converting code (%s) to int' % value)
-                self.state_code = value
         elif name == 'instanceType':
             self.instance_type = value
         elif name == 'rootDeviceName':
@@ -364,6 +356,7 @@ class Instance(TaggedEC2Object):
             self.ramdisk = value
         elif name == 'state':
             if self._in_monitoring_element:
+                self.monitoring_state = value
                 if value == 'enabled':
                     self.monitored = True
                 self._in_monitoring_element = False
@@ -405,7 +398,7 @@ class Instance(TaggedEC2Object):
     def _update(self, updated):
         self.__dict__.update(updated.__dict__)
 
-    def update(self, validate=False):
+    def update(self, validate=False, dry_run=False):
         """
         Update the instance's state information by making a call to fetch
         the current instance attributes from the service.
@@ -417,7 +410,7 @@ class Instance(TaggedEC2Object):
                          raise a ValueError exception if no data is
                          returned from EC2.
         """
-        rs = self.connection.get_all_instances([self.id])
+        rs = self.connection.get_all_reservations([self.id], dry_run=dry_run)
         if len(rs) > 0:
             r = rs[0]
             for i in r.instances:
@@ -427,15 +420,15 @@ class Instance(TaggedEC2Object):
             raise ValueError('%s is not a valid Instance ID' % self.id)
         return self.state
 
-    def terminate(self):
+    def terminate(self, dry_run=False):
         """
         Terminate the instance
         """
-        rs = self.connection.terminate_instances([self.id])
+        rs = self.connection.terminate_instances([self.id], dry_run=dry_run)
         if len(rs) > 0:
             self._update(rs[0])
 
-    def stop(self, force=False):
+    def stop(self, force=False, dry_run=False):
         """
         Stop the instance
 
@@ -445,45 +438,65 @@ class Instance(TaggedEC2Object):
         :rtype: list
         :return: A list of the instances stopped
         """
-        rs = self.connection.stop_instances([self.id], force)
+        rs = self.connection.stop_instances([self.id], force, dry_run=dry_run)
         if len(rs) > 0:
             self._update(rs[0])
 
-    def start(self):
+    def start(self, dry_run=False):
         """
         Start the instance.
         """
-        rs = self.connection.start_instances([self.id])
+        rs = self.connection.start_instances([self.id], dry_run=dry_run)
         if len(rs) > 0:
             self._update(rs[0])
 
-    def reboot(self):
-        return self.connection.reboot_instances([self.id])
+    def reboot(self, dry_run=False):
+        return self.connection.reboot_instances([self.id], dry_run=dry_run)
 
-    def get_console_output(self):
+    def get_console_output(self, dry_run=False):
         """
         Retrieves the console output for the instance.
 
         :rtype: :class:`boto.ec2.instance.ConsoleOutput`
         :return: The console output as a ConsoleOutput object
         """
-        return self.connection.get_console_output(self.id)
+        return self.connection.get_console_output(self.id, dry_run=dry_run)
 
-    def confirm_product(self, product_code):
-        return self.connection.confirm_product_instance(self.id, product_code)
+    def confirm_product(self, product_code, dry_run=False):
+        return self.connection.confirm_product_instance(
+            self.id,
+            product_code,
+            dry_run=dry_run
+        )
 
-    def use_ip(self, ip_address):
+    def use_ip(self, ip_address, dry_run=False):
+        """
+        Associates an Elastic IP to the instance.
+
+        :type ip_address: Either an instance of
+            :class:`boto.ec2.address.Address` or a string.
+        :param ip_address: The IP address to associate
+            with the instance.
+
+        :rtype: bool
+        :return: True if successful
+        """
+
         if isinstance(ip_address, Address):
             ip_address = ip_address.public_ip
-        return self.connection.associate_address(self.id, ip_address)
+        return self.connection.associate_address(
+            self.id,
+            ip_address,
+            dry_run=dry_run
+        )
 
-    def monitor(self):
-        return self.connection.monitor_instance(self.id)
+    def monitor(self, dry_run=False):
+        return self.connection.monitor_instance(self.id, dry_run=dry_run)
 
-    def unmonitor(self):
-        return self.connection.unmonitor_instance(self.id)
+    def unmonitor(self, dry_run=False):
+        return self.connection.unmonitor_instance(self.id, dry_run=dry_run)
 
-    def get_attribute(self, attribute):
+    def get_attribute(self, attribute, dry_run=False):
         """
         Gets an attribute from this instance.
 
@@ -508,9 +521,13 @@ class Instance(TaggedEC2Object):
         :return: An InstanceAttribute object representing the value of the
                  attribute requested
         """
-        return self.connection.get_instance_attribute(self.id, attribute)
+        return self.connection.get_instance_attribute(
+            self.id,
+            attribute,
+            dry_run=dry_run
+        )
 
-    def modify_attribute(self, attribute, value):
+    def modify_attribute(self, attribute, value, dry_run=False):
         """
         Changes an attribute of this instance
 
@@ -533,10 +550,14 @@ class Instance(TaggedEC2Object):
         :rtype: bool
         :return: Whether the operation succeeded or not
         """
-        return self.connection.modify_instance_attribute(self.id, attribute,
-                                                         value)
+        return self.connection.modify_instance_attribute(
+            self.id,
+            attribute,
+            value,
+            dry_run=dry_run
+        )
 
-    def reset_attribute(self, attribute):
+    def reset_attribute(self, attribute, dry_run=False):
         """
         Resets an attribute of this instance to its default value.
 
@@ -547,7 +568,42 @@ class Instance(TaggedEC2Object):
         :rtype: bool
         :return: Whether the operation succeeded or not
         """
-        return self.connection.reset_instance_attribute(self.id, attribute)
+        return self.connection.reset_instance_attribute(
+            self.id,
+            attribute,
+            dry_run=dry_run
+        )
+
+    def create_image(self, name, description=None, no_reboot=False,
+                     dry_run=False):
+        """
+        Will create an AMI from the instance in the running or stopped
+        state.
+
+        :type name: string
+        :param name: The name of the new image
+
+        :type description: string
+        :param description: An optional human-readable string describing
+                            the contents and purpose of the AMI.
+
+        :type no_reboot: bool
+        :param no_reboot: An optional flag indicating that the bundling process
+                          should not attempt to shutdown the instance before
+                          bundling.  If this flag is True, the responsibility
+                          of maintaining file system integrity is left to the
+                          owner of the instance.
+
+        :rtype: string
+        :return: The new image id
+        """
+        return self.connection.create_image(
+            self.id,
+            name,
+            description,
+            no_reboot,
+            dry_run=dry_run
+        )
 
 
 class ConsoleOutput:

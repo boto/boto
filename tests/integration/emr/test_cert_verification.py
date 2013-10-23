@@ -24,17 +24,16 @@
 """
 Check that all of the certs on all EMR endpoints validate.
 """
-
 import unittest
+
+from tests.integration import ServiceCertVerificationTest
+
 import boto.emr
 
 
-class EMRCertVerificationTest(unittest.TestCase):
-
+class EMRCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     emr = True
-    ssl = True
+    regions = boto.emr.regions()
 
-    def test_certs(self):
-        for region in boto.emr.regions():
-            c = region.connect()
-            c.describe_jobflows()
+    def sample_service_call(self, conn):
+        conn.describe_jobflows()

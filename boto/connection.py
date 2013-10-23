@@ -67,8 +67,10 @@ import boto.handler
 import boto.cacerts
 
 from boto import config, UserAgent
-from boto.exception import AWSConnectionError, BotoClientError
+from boto.exception import AWSConnectionError
+from boto.exception import BotoClientError
 from boto.exception import BotoServerError
+from boto.exception import PleaseRetryException
 from boto.provider import Provider
 from boto.resultset import ResultSet
 
@@ -99,7 +101,7 @@ DEFAULT_CA_CERTS_FILE = os.path.join(os.path.dirname(os.path.abspath(boto.cacert
 class HostConnectionPool(object):
 
     """
-    A pool of connections for one remote (host,is_secure).
+    A pool of connections for one remote (host,port,is_secure).
 
     When connections are added to the pool, they are put into a
     pending queue.  The _mexe method returns connections to the pool
@@ -118,7 +120,7 @@ class HostConnectionPool(object):
 
     Thread Safety:
 
-        This class is used only fram ConnectionPool while it's mutex
+        This class is used only from ConnectionPool while it's mutex
         is held.
     """
 
@@ -143,7 +145,7 @@ class HostConnectionPool(object):
     def get(self):
         """
         Returns the next connection in this pool that is ready to be
-        reused.  Returns None of there aren't any.
+        reused.  Returns None if there aren't any.
         """
         # Discard ready connections that are too old.
         self.clean()
@@ -232,7 +234,7 @@ class ConnectionPool(object):
     STALE_DURATION = 60.0
 
     def __init__(self):
-        # Mapping from (host,is_secure) to HostConnectionPool.
+        # Mapping from (host,port,is_secure) to HostConnectionPool.
         # If a pool becomes empty, it is removed.
         self.host_to_pool = {}
         # The last time the pool was cleaned.
@@ -257,7 +259,7 @@ class ConnectionPool(object):
         """
         return sum(pool.size() for pool in self.host_to_pool.values())
 
-    def get_http_connection(self, host, is_secure):
+    def get_http_connection(self, host, port, is_secure):
         """
         Gets a connection from the pool for the named host.  Returns
         None if there is no connection that can be reused. It's the caller's
@@ -266,18 +268,18 @@ class ConnectionPool(object):
         """
         self.clean()
         with self.mutex:
-            key = (host, is_secure)
+            key = (host, port, is_secure)
             if key not in self.host_to_pool:
                 return None
             return self.host_to_pool[key].get()
 
-    def put_http_connection(self, host, is_secure, conn):
+    def put_http_connection(self, host, port, is_secure, conn):
         """
         Adds a connection to the pool of connections that can be
         reused for the named host.
         """
         with self.mutex:
-            key = (host, is_secure)
+            key = (host, port, is_secure)
             if key not in self.host_to_pool:
                 self.host_to_pool[key] = HostConnectionPool()
             self.host_to_pool[key].put(conn)
@@ -487,7 +489,7 @@ class AWSAuthConnection(object):
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
         # define exceptions from httplib that we want to catch and retry
         self.http_exceptions = (httplib.HTTPException, socket.error,
-                                socket.gaierror)
+                                socket.gaierror, httplib.BadStatusLine)
         # define subclasses of the above that are not retryable.
         self.http_unretryable_exceptions = []
         if HAVE_HTTPS_CONNECTION:
@@ -515,6 +517,7 @@ class AWSAuthConnection(object):
             self.port = port
         else:
             self.port = PORTS_BY_SECURITY[is_secure]
+        self.host_header = None
 
         # Timeout used to tell httplib how long to wait for socket timeouts.
         # Default is to leave timeout unchanged, which will in turn result in
@@ -523,9 +526,11 @@ class AWSAuthConnection(object):
         # timeouts will only be applied if Python is 2.6 or greater.
         self.http_connection_kwargs = {}
         if (sys.version_info[0], sys.version_info[1]) >= (2, 6):
-            if config.has_option('Boto', 'http_socket_timeout'):
-                timeout = config.getint('Boto', 'http_socket_timeout')
-                self.http_connection_kwargs['timeout'] = timeout
+            # If timeout isn't defined in boto config file, use 70 second
+            # default as recommended by
+            # http://docs.aws.amazon.com/amazonswf/latest/apireference/API_PollForActivityTask.html
+            self.http_connection_kwargs['timeout'] = config.getint(
+                'Boto', 'http_socket_timeout', 70)
 
         if isinstance(provider, Provider):
             # Allow overriding Provider
@@ -537,21 +542,44 @@ class AWSAuthConnection(object):
                                      aws_secret_access_key,
                                      security_token)
 
-        # allow config file to override default host
+        # Allow config file to override default host, port, and host header.
         if self.provider.host:
             self.host = self.provider.host
+        if self.provider.port:
+            self.port = self.provider.port
+        if self.provider.host_header:
+            self.host_header = self.provider.host_header
 
         self._pool = ConnectionPool()
-        self._connection = (self.server_name(), self.is_secure)
+        self._connection = (self.host, self.port, self.is_secure)
         self._last_rs = None
         self._auth_handler = auth.get_auth_handler(
               host, config, self.provider, self._required_auth_capability())
+        if getattr(self, 'AuthServiceName', None) is not None:
+            self.auth_service_name = self.AuthServiceName
 
     def __repr__(self):
         return '%s:%s' % (self.__class__.__name__, self.host)
 
     def _required_auth_capability(self):
         return []
+
+    def _get_auth_service_name(self):
+        return getattr(self._auth_handler, 'service_name')
+
+    # For Sigv4, the auth_service_name/auth_region_name properties allow
+    # the service_name/region_name to be explicitly set instead of being
+    # derived from the endpoint url.
+    def _set_auth_service_name(self, value):
+        self._auth_handler.service_name = value
+    auth_service_name = property(_get_auth_service_name, _set_auth_service_name)
+
+    def _get_auth_region_name(self):
+        return getattr(self._auth_handler, 'region_name')
+
+    def _set_auth_region_name(self, value):
+        self._auth_handler.region_name = value
+    auth_region_name = property(_get_auth_region_name, _set_auth_region_name)
 
     def connection(self):
         return self.get_http_connection(*self._connection)
@@ -575,7 +603,7 @@ class AWSAuthConnection(object):
         # https://groups.google.com/forum/#!topic/boto-dev/-ft0XPUy0y8
         # You can override that behavior with the suppress_consec_slashes param.
         if not self.suppress_consec_slashes:
-            return self.path + re.sub('^/*', "", path)
+            return self.path + re.sub('^(/*)/', "\\1", path)
         pos = path.find('?')
         if pos >= 0:
             params = path[pos:]
@@ -648,66 +676,103 @@ class AWSAuthConnection(object):
             print "http_proxy environment variable does not specify " \
                 "a port, using default"
             self.proxy_port = self.port
+
+        self.no_proxy = os.environ.get('no_proxy', '') or os.environ.get('NO_PROXY', '')
         self.use_proxy = (self.proxy != None)
 
-    def get_http_connection(self, host, is_secure):
-        conn = self._pool.get_http_connection(host, is_secure)
+    def get_http_connection(self, host, port, is_secure):
+        conn = self._pool.get_http_connection(host, port, is_secure)
         if conn is not None:
             return conn
         else:
-            return self.new_http_connection(host, is_secure)
+            return self.new_http_connection(host, port, is_secure)
 
-    def new_http_connection(self, host, is_secure):
-        if self.use_proxy:
-            host = '%s:%d' % (self.proxy, int(self.proxy_port))
+    def skip_proxy(self, host):
+        if not self.no_proxy:
+            return False
+
+        if self.no_proxy == "*":
+            return True
+
+        hostonly = host
+        hostonly = host.split(':')[0]
+
+        for name in self.no_proxy.split(','):
+            if name and (hostonly.endswith(name) or host.endswith(name)):
+                return True
+
+        return False
+
+    def new_http_connection(self, host, port, is_secure):
         if host is None:
             host = self.server_name()
+
+        # Make sure the host is really just the host, not including
+        # the port number
+        host = host.split(':', 1)[0]
+
+        http_connection_kwargs = self.http_connection_kwargs.copy()
+
+        # Connection factories below expect a port keyword argument
+        http_connection_kwargs['port'] = port
+
+        # Override host with proxy settings if needed
+        if self.use_proxy and not is_secure and \
+                not self.skip_proxy(host):
+            host = self.proxy
+            http_connection_kwargs['port'] = int(self.proxy_port)
+
         if is_secure:
             boto.log.debug(
                     'establishing HTTPS connection: host=%s, kwargs=%s',
-                    host, self.http_connection_kwargs)
-            if self.use_proxy:
-                connection = self.proxy_ssl()
+                    host, http_connection_kwargs)
+            if self.use_proxy and not self.skip_proxy(host):
+                connection = self.proxy_ssl(host, is_secure and 443 or 80)
             elif self.https_connection_factory:
                 connection = self.https_connection_factory(host)
             elif self.https_validate_certificates and HAVE_HTTPS_CONNECTION:
                 connection = https_connection.CertValidatingHTTPSConnection(
                         host, ca_certs=self.ca_certificates_file,
-                        **self.http_connection_kwargs)
+                        **http_connection_kwargs)
             else:
                 connection = httplib.HTTPSConnection(host,
-                        **self.http_connection_kwargs)
+                        **http_connection_kwargs)
         else:
             boto.log.debug('establishing HTTP connection: kwargs=%s' %
-                    self.http_connection_kwargs)
+                    http_connection_kwargs)
             if self.https_connection_factory:
                 # even though the factory says https, this is too handy
                 # to not be able to allow overriding for http also.
                 connection = self.https_connection_factory(host,
-                    **self.http_connection_kwargs)
+                    **http_connection_kwargs)
             else:
                 connection = httplib.HTTPConnection(host,
-                    **self.http_connection_kwargs)
+                    **http_connection_kwargs)
         if self.debug > 1:
             connection.set_debuglevel(self.debug)
         # self.connection must be maintained for backwards-compatibility
         # however, it must be dynamically pulled from the connection pool
         # set a private variable which will enable that
         if host.split(':')[0] == self.host and is_secure == self.is_secure:
-            self._connection = (host, is_secure)
+            self._connection = (host, port, is_secure)
         # Set the response class of the http connection to use our custom
         # class.
         connection.response_class = HTTPResponse
         return connection
 
-    def put_http_connection(self, host, is_secure, connection):
-        self._pool.put_http_connection(host, is_secure, connection)
+    def put_http_connection(self, host, port, is_secure, connection):
+        self._pool.put_http_connection(host, port, is_secure, connection)
 
-    def proxy_ssl(self):
-        host = '%s:%d' % (self.host, self.port)
+    def proxy_ssl(self, host=None, port=None):
+        if host and port:
+            host = '%s:%d' % (host, port)
+        else:
+            host = '%s:%d' % (self.host, self.port)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             sock.connect((self.proxy, int(self.proxy_port)))
+            if "timeout" in self.http_connection_kwargs:
+                sock.settimeout(self.http_connection_kwargs["timeout"])
         except:
             raise
         boto.log.debug("Proxy connection: CONNECT %s HTTP/1.0\r\n", host)
@@ -789,6 +854,8 @@ class AWSAuthConnection(object):
         boto.log.debug('Data: %s' % request.body)
         boto.log.debug('Headers: %s' % request.headers)
         boto.log.debug('Host: %s' % request.host)
+        boto.log.debug('Port: %s' % request.port)
+        boto.log.debug('Params: %s' % request.params)
         response = None
         body = None
         e = None
@@ -797,14 +864,21 @@ class AWSAuthConnection(object):
         else:
             num_retries = override_num_retries
         i = 0
-        connection = self.get_http_connection(request.host, self.is_secure)
+        connection = self.get_http_connection(request.host, request.port,
+                                              self.is_secure)
         while i <= num_retries:
-            # Use binary exponential backoff to desynchronize client requests
+            # Use binary exponential backoff to desynchronize client requests.
             next_sleep = random.random() * (2 ** i)
             try:
                 # we now re-sign each request before it is retried
                 boto.log.debug('Token: %s' % self.provider.security_token)
                 request.authorize(connection=self)
+                # Only force header for non-s3 connections, because s3 uses
+                # an older signing method + bucket resource URLs that include
+                # the port info. All others should be now be up to date and
+                # not include the port.
+                if 's3' not in self._required_auth_capability():
+                    request.headers['Host'] = self.host.split(':', 1)[0]
                 if callable(sender):
                     response = sender(connection, request.method, request.path,
                                       request.body, request.headers)
@@ -827,49 +901,68 @@ class AWSAuthConnection(object):
                             boto.log.debug(msg)
                         time.sleep(next_sleep)
                         continue
-                if response.status == 500 or response.status == 503:
+                if response.status in [500, 502, 503, 504]:
                     msg = 'Received %d response.  ' % response.status
                     msg += 'Retrying in %3.1f seconds' % next_sleep
                     boto.log.debug(msg)
                     body = response.read()
                 elif response.status < 300 or response.status >= 400 or \
                         not location:
-                    self.put_http_connection(request.host, self.is_secure,
-                                             connection)
+                    # don't return connection to the pool if response contains
+                    # Connection:close header, because the connection has been
+                    # closed and default reconnect behavior may do something
+                    # different than new_http_connection. Also, it's probably
+                    # less efficient to try to reuse a closed connection.
+                    conn_header_value = response.getheader('connection')
+                    if conn_header_value == 'close':
+                        connection.close()
+                    else:
+                        self.put_http_connection(request.host, request.port,
+                                                 self.is_secure, connection)
                     return response
                 else:
                     scheme, request.host, request.path, \
                         params, query, fragment = urlparse.urlparse(location)
                     if query:
                         request.path += '?' + query
+                    # urlparse can return both host and port in netloc, so if
+                    # that's the case we need to split them up properly
+                    if ':' in request.host:
+                        request.host, request.port = request.host.split(':', 1)
                     msg = 'Redirecting: %s' % scheme + '://'
                     msg += request.host + request.path
                     boto.log.debug(msg)
                     connection = self.get_http_connection(request.host,
+                                                          request.port,
                                                           scheme == 'https')
                     response = None
                     continue
+            except PleaseRetryException, e:
+                boto.log.debug('encountered a retry exception: %s' % e)
+                connection = self.new_http_connection(request.host, request.port,
+                                                      self.is_secure)
+                response = e.response
             except self.http_exceptions, e:
                 for unretryable in self.http_unretryable_exceptions:
                     if isinstance(e, unretryable):
                         boto.log.debug(
                             'encountered unretryable %s exception, re-raising' %
                             e.__class__.__name__)
-                        raise e
+                        raise
                 boto.log.debug('encountered %s exception, reconnecting' % \
                                   e.__class__.__name__)
-                connection = self.new_http_connection(request.host,
+                connection = self.new_http_connection(request.host, request.port,
                                                       self.is_secure)
             time.sleep(next_sleep)
             i += 1
         # If we made it here, it's because we have exhausted our retries
         # and stil haven't succeeded.  So, if we have a response object,
         # use it to raise an exception.
-        # Otherwise, raise the exception that must have already h#appened.
+        # Otherwise, raise the exception that must have already happened.
         if response:
             raise BotoServerError(response.status, response.reason, body)
         elif e:
-            raise e
+            raise
         else:
             msg = 'Please report this exception as a Boto Issue!'
             raise BotoClientError(msg)
@@ -887,6 +980,9 @@ class AWSAuthConnection(object):
             headers = {}
         else:
             headers = headers.copy()
+        if (self.host_header and
+            not boto.utils.find_matching_headers('host', headers)):
+            headers['host'] = self.host_header
         host = host or self.host
         if self.use_proxy:
             if not auth_path:
@@ -901,13 +997,14 @@ class AWSAuthConnection(object):
 
     def make_request(self, method, path, headers=None, data='', host=None,
                      auth_path=None, sender=None, override_num_retries=None,
-                     params=None):
+                     params=None, retry_handler=None):
         """Makes a request to the server, with stock multiple-retry logic."""
         if params is None:
             params = {}
         http_request = self.build_base_http_request(method, path, auth_path,
                                                     params, headers, data, host)
-        return self._mexe(http_request, sender, override_num_retries)
+        return self._mexe(http_request, sender, override_num_retries,
+                          retry_handler=retry_handler)
 
     def close(self):
         """(Optional) Close any open HTTP connections.  This is non-destructive,
@@ -944,7 +1041,7 @@ class AWSQueryConnection(AWSAuthConnection):
     def make_request(self, action, params=None, path='/', verb='GET'):
         http_request = self.build_base_http_request(verb, path, None,
                                                     params, {}, '',
-                                                    self.server_name())
+                                                    self.host)
         if action:
             http_request.params['Action'] = action
         if self.APIVersion:
@@ -952,10 +1049,50 @@ class AWSQueryConnection(AWSAuthConnection):
         return self._mexe(http_request)
 
     def build_list_params(self, params, items, label):
-        if isinstance(items, str):
+        if isinstance(items, basestring):
             items = [items]
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]
+
+    def build_complex_list_params(self, params, items, label, names):
+        """Serialize a list of structures.
+
+        For example::
+
+            items = [('foo', 'bar', 'baz'), ('foo2', 'bar2', 'baz2')]
+            label = 'ParamName.member'
+            names = ('One', 'Two', 'Three')
+            self.build_complex_list_params(params, items, label, names)
+
+        would result in the params dict being updated with these params::
+
+            ParamName.member.1.One = foo
+            ParamName.member.1.Two = bar
+            ParamName.member.1.Three = baz
+
+            ParamName.member.2.One = foo2
+            ParamName.member.2.Two = bar2
+            ParamName.member.2.Three = baz2
+
+        :type params: dict
+        :param params: The params dict.  The complex list params
+            will be added to this dict.
+
+        :type items: list of tuples
+        :param items: The list to serialize.
+
+        :type label: string
+        :param label: The prefix to apply to the parameter.
+
+        :type names: tuple of strings
+        :param names: The names associated with each tuple element.
+
+        """
+        for i, item in enumerate(items, 1):
+            current_prefix = '%s.%s' % (label, i)
+            for key, value in zip(names, item):
+                full_key = '%s.%s' % (current_prefix, key)
+                params[full_key] = value
 
     # generics
 

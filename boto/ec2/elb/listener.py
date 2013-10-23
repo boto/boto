@@ -1,4 +1,6 @@
-# Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -21,22 +23,26 @@
 
 from boto.ec2.elb.listelement import ListElement
 
+
 class Listener(object):
     """
     Represents an EC2 Load Balancer Listener tuple
     """
 
     def __init__(self, load_balancer=None, load_balancer_port=0,
-                 instance_port=0, protocol='', ssl_certificate_id=None):
+                 instance_port=0, protocol='', ssl_certificate_id=None, instance_protocol=None):
         self.load_balancer = load_balancer
         self.load_balancer_port = load_balancer_port
         self.instance_port = instance_port
         self.protocol = protocol
+        self.instance_protocol = instance_protocol
         self.ssl_certificate_id = ssl_certificate_id
         self.policy_names = ListElement()
 
     def __repr__(self):
         r = "(%d, %d, '%s'" % (self.load_balancer_port, self.instance_port, self.protocol)
+        if self.instance_protocol:
+            r += ", '%s'" % self.instance_protocol
         if self.ssl_certificate_id:
             r += ', %s' % (self.ssl_certificate_id)
         r += ')'
@@ -52,6 +58,8 @@ class Listener(object):
             self.load_balancer_port = int(value)
         elif name == 'InstancePort':
             self.instance_port = int(value)
+        elif name == 'InstanceProtocol':
+            self.instance_protocol = value
         elif name == 'Protocol':
             self.protocol = value
         elif name == 'SSLCertificateId':
@@ -62,6 +70,9 @@ class Listener(object):
     def get_tuple(self):
         return self.load_balancer_port, self.instance_port, self.protocol
 
+    def get_complex_tuple(self):
+        return self.load_balancer_port, self.instance_port, self.protocol, self.instance_protocol
+
     def __getitem__(self, key):
         if key == 0:
             return self.load_balancer_port
@@ -69,8 +80,6 @@ class Listener(object):
             return self.instance_port
         if key == 2:
             return self.protocol
+        if key == 4:
+            return self.instance_protocol
         raise KeyError
-
-
-
-

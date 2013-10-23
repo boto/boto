@@ -84,7 +84,7 @@ class CertValidatingHTTPSConnection(httplib.HTTPConnection):
 
   default_port = httplib.HTTPS_PORT
 
-  def __init__(self, host, port=None, key_file=None, cert_file=None,
+  def __init__(self, host, port=default_port, key_file=None, cert_file=None,
                ca_certs=None, strict=None, **kwargs):
     """Constructor.
 
@@ -106,6 +106,8 @@ class CertValidatingHTTPSConnection(httplib.HTTPConnection):
   def connect(self):
     "Connect to a host on a given (SSL) port."
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if hasattr(self, "timeout") and self.timeout is not socket._GLOBAL_DEFAULT_TIMEOUT:
+        sock.settimeout(self.timeout)
     sock.connect((self.host, self.port))
     boto.log.debug("wrapping ssl socket; CA certificate file=%s",
                    self.ca_certs)

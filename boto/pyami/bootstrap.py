@@ -14,17 +14,17 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
 import os
 import boto
-import time
 from boto.utils import get_instance_metadata, get_instance_userdata
 from boto.pyami.config import Config, BotoConfigPath
 from boto.pyami.scriptbase import ScriptBase
+import time
 
 class Bootstrap(ScriptBase):
     """
@@ -40,11 +40,7 @@ class Bootstrap(ScriptBase):
     def __init__(self):
         self.working_dir = '/mnt/pyami'
         self.write_metadata()
-
-    def create_working_dir(self):
-        boto.log.info('Working directory: %s' % self.working_dir)
-        if not os.path.exists(self.working_dir):
-            os.mkdir(self.working_dir)
+        ScriptBase.__init__(self)
 
     def write_metadata(self):
         fp = open(os.path.expanduser(BotoConfigPath), 'w')
@@ -62,6 +58,11 @@ class Bootstrap(ScriptBase):
         # now that we have written the file, read it into a pyami Config object
         boto.config = Config()
         boto.init_logging()
+
+    def create_working_dir(self):
+        boto.log.info('Working directory: %s' % self.working_dir)
+        if not os.path.exists(self.working_dir):
+            os.mkdir(self.working_dir)
 
     def load_boto(self):
         update = boto.config.get('Boto', 'boto_update', 'svn:HEAD')
@@ -86,27 +87,6 @@ class Bootstrap(ScriptBase):
                     time.sleep(2)
             if update.find(':') >= 0:
                 method, version = update.split(':')
-
-                #--
-                #-- Determine whether we have a local branch matching "version"
-                #-- If not, create it based on the remote branch
-                #--
-                swd = os.getcwd()
-                os.chdir(location)
-                branch_info = os.popen('git branch')
-                branch_info = branch_info.read()
-                branches = branch_info.split("\n")
-                have_branch = False
-                for branch in branches:
-                    branch = branch.replace('*','')
-                    branch = branch.strip()
-                    if branch:
-                        if branch == version:
-                            have_branch = True
-                            break
-                if not have_branch:
-                    os.system('git branch --track %s origin/%s' % (version, version))
-                os.chdir(swd)
             else:
                 version = 'master'
             self.run('git checkout %s' % version, cwd=location)
@@ -115,10 +95,35 @@ class Bootstrap(ScriptBase):
             self.run('rm /usr/local/lib/python2.5/site-packages/boto')
             self.run('easy_install %s' % update)
 
+    def fetch_s3_file(self, s3_file):
+        try:
+            from boto.utils import fetch_file
+            f = fetch_file(s3_file)
+            path = os.path.join(self.working_dir, s3_file.split("/")[-1])
+            open(path, "w").write(f.read())
+        except:
+            boto.log.exception('Problem Retrieving file: %s' % s3_file)
+            path = None
+        return path
+
+    def load_packages(self):
+        package_str = boto.config.get('Pyami', 'packages')
+        if package_str:
+            packages = package_str.split(',')
+            for package in packages:
+                package = package.strip()
+                if package.startswith('s3:'):
+                    package = self.fetch_s3_file(package)
+                if package:
+                    # if the "package" is really a .py file, it doesn't have to
+                    # be installed, just being in the working dir is enough
+                    if not package.endswith('.py'):
+                        self.run('easy_install -Z %s' % package, exit_on_error=False)
 
     def main(self):
         self.create_working_dir()
         self.load_boto()
+        self.load_packages()
         self.notify('Bootstrap Completed for %s' % boto.config.get_instance('instance-id'))
 
 if __name__ == "__main__":

@@ -34,9 +34,10 @@ class SQSConnection(AWSQueryConnection):
     """
     DefaultRegionName = 'us-east-1'
     DefaultRegionEndpoint = 'queue.amazonaws.com'
-    APIVersion = '2011-10-01'
+    APIVersion = '2012-11-05'
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
+    AuthServiceName = 'sqs'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -56,9 +57,10 @@ class SQSConnection(AWSQueryConnection):
                                     https_connection_factory, path,
                                     security_token=security_token,
                                     validate_certs=validate_certs)
+        self.auth_region_name = self.region.name
 
     def _required_auth_capability(self):
-        return ['sqs']
+        return ['hmac-v4']
 
     def create_queue(self, queue_name, visibility_timeout=None):
         """
@@ -98,12 +100,8 @@ class SQSConnection(AWSQueryConnection):
         :param queue: The SQS queue to be deleted
 
         :type force_deletion: Boolean
-        :param force_deletion: Normally, SQS will not delete a queue
-            that contains messages.  However, if the force_deletion
-            argument is True, the queue will be deleted regardless of
-            whether there are messages in the queue or not.  USE WITH
-            CAUTION.  This will delete all messages in the queue as
-            well.
+        :param force_deletion: A deprecated parameter that is no longer used by
+            SQS's API.
 
         :rtype: bool
         :return: True if the command succeeded, False otherwise
@@ -122,12 +120,13 @@ class SQSConnection(AWSQueryConnection):
             supplied, the default is to return all attributes.  Valid
             attributes are:
 
-            * ApproximateNumberOfMessages|
-            * ApproximateNumberOfMessagesNotVisible|
-            * VisibilityTimeout|
-            * CreatedTimestamp|
-            * LastModifiedTimestamp|
+            * ApproximateNumberOfMessages
+            * ApproximateNumberOfMessagesNotVisible
+            * VisibilityTimeout
+            * CreatedTimestamp
+            * LastModifiedTimestamp
             * Policy
+            * ReceiveMessageWaitTimeSeconds
 
         :rtype: :class:`boto.sqs.attributes.Attributes`
         :return: An Attributes object containing request value(s).
@@ -141,7 +140,8 @@ class SQSConnection(AWSQueryConnection):
         return self.get_status('SetQueueAttributes', params, queue.id)
 
     def receive_message(self, queue, number_messages=1,
-                        visibility_timeout=None, attributes=None):
+                        visibility_timeout=None, attributes=None,
+                        wait_time_seconds=None):
         """
         Read messages from an SQS Queue.
 
@@ -168,14 +168,23 @@ class SQSConnection(AWSQueryConnection):
             * ApproximateReceiveCount
             * ApproximateFirstReceiveTimestamp
 
+        :type wait_time_seconds: int
+        :param wait_time_seconds: The duration (in seconds) for which the call
+            will wait for a message to arrive in the queue before returning.
+            If a message is available, the call will return sooner than
+            wait_time_seconds.
+
         :rtype: list
         :return: A list of :class:`boto.sqs.message.Message` objects.
+
         """
         params = {'MaxNumberOfMessages' : number_messages}
-        if visibility_timeout:
+        if visibility_timeout is not None:
             params['VisibilityTimeout'] = visibility_timeout
-        if attributes:
+        if attributes is not None:
             self.build_list_params(params, attributes, 'AttributeName')
+        if wait_time_seconds is not None:
+            params['WaitTimeSeconds'] = wait_time_seconds
         return self.get_list('ReceiveMessage', params,
                              [('Message', queue.message_class)],
                              queue.id, queue)
@@ -328,16 +337,19 @@ class SQSConnection(AWSQueryConnection):
             params['QueueNamePrefix'] = prefix
         return self.get_list('ListQueues', params, [('QueueUrl', Queue)])
 
-    def get_queue(self, queue_name):
+    def get_queue(self, queue_name, owner_acct_id=None):
         """
         Retrieves the queue with the given name, or ``None`` if no match
         was found.
 
         :param str queue_name: The name of the queue to retrieve.
+        :param str owner_acct_id: Optionally, the AWS account ID of the account that created the queue.
         :rtype: :py:class:`boto.sqs.queue.Queue` or ``None``
         :returns: The requested queue, or ``None`` if no match was found.
         """
         params = {'QueueName': queue_name}
+        if owner_acct_id:
+            params['QueueOwnerAWSAccountId']=owner_acct_id
         try:
             return self.get_object('GetQueueUrl', params, Queue)
         except SQSError:

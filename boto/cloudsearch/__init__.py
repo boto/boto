@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from boto.ec2.regioninfo import RegionInfo
+from boto.regioninfo import RegionInfo
 
 
 def regions():
@@ -35,6 +35,19 @@ def regions():
     return [RegionInfo(name='us-east-1',
                        endpoint='cloudsearch.us-east-1.amazonaws.com',
                        connection_cls=boto.cloudsearch.layer1.Layer1),
+            RegionInfo(name='eu-west-1',
+                       endpoint='cloudsearch.eu-west-1.amazonaws.com',
+                       connection_cls=boto.cloudsearch.layer1.Layer1),
+            RegionInfo(name='us-west-1',
+                       endpoint='cloudsearch.us-west-1.amazonaws.com',
+                       connection_cls=boto.cloudsearch.layer1.Layer1),
+            RegionInfo(name='us-west-2',
+                       endpoint='cloudsearch.us-west-2.amazonaws.com',
+                       connection_cls=boto.cloudsearch.layer1.Layer1),
+            RegionInfo(name='ap-southeast-1',
+                       endpoint='cloudsearch.ap-southeast-1.amazonaws.com',
+                       connection_cls=boto.cloudsearch.layer1.Layer1),
+
             ]
 
 

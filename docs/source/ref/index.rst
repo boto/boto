@@ -8,6 +8,7 @@ API Reference
    :maxdepth: 4
 
    boto
+   beanstalk
    cloudformation
    cloudfront
    cloudsearch
@@ -23,8 +24,10 @@ API Reference
    iam
    manage
    mturk
+   mws
    pyami
    rds
+   redshift
    route53
    s3
    sdb

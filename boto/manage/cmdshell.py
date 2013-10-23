@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -34,10 +34,11 @@ class SSHClient(object):
 
     def __init__(self, server,
                  host_key_file='~/.ssh/known_hosts',
-                 uname='root', ssh_pwd=None):
+                 uname='root', timeout=None, ssh_pwd=None):
         self.server = server
         self.host_key_file = host_key_file
         self.uname = uname
+        self._timeout = timeout
         self._pkey = paramiko.RSAKey.from_private_key_file(server.ssh_key_file,
                                                            password=ssh_pwd)
         self._ssh_client = paramiko.SSHClient()
@@ -46,16 +47,17 @@ class SSHClient(object):
         self._ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.connect()
 
-    def connect(self):
+    def connect(self, num_retries=5):
         retry = 0
-        while retry < 5:
+        while retry < num_retries:
             try:
                 self._ssh_client.connect(self.server.hostname,
                                          username=self.uname,
-                                         pkey=self._pkey)
+                                         pkey=self._pkey,
+                                         timeout=self._timeout)
                 return
             except socket.error, (value, message):
-                if value == 61 or value == 111:
+                if value in (51, 61, 111):
                     print 'SSH Connection refused, will retry in 5 seconds'
                     time.sleep(5)
                     retry += 1
@@ -196,14 +198,14 @@ class FakeServer(object):
     """
     A little class to fake out SSHClient (which is expecting a
     :class`boto.manage.server.Server` instance.  This allows us
-    to 
+    to
     """
     def __init__(self, instance, ssh_key_file):
         self.instance = instance
         self.ssh_key_file = ssh_key_file
         self.hostname = instance.dns_name
         self.instance_id = self.instance.id
-        
+
 def start(server):
     instance_id = boto.config.get('Instance', 'instance-id', None)
     if instance_id == server.instance_id:
