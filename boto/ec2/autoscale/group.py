@@ -148,6 +148,9 @@ class AutoScalingGroup(object):
         :type vpc_zone_identifier: str
         :param vpc_zone_identifier: The subnet identifier of the Virtual
             Private Cloud.
+            
+        :type tags: list
+        :param tags: List of :class:`boto.ec2.autoscale.tag.Tag`s            
 
         :type termination_policies: list
         :param termination_policies: A list of termination policies. Valid values
