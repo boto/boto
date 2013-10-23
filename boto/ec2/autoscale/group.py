@@ -296,7 +296,12 @@ class AutoScalingGroup(object):
     def put_notification_configuration(self, topic, notification_types):
         """
         Configures an Auto Scaling group to send notifications when
-        specified events take place.
+        specified events take place. Valid notification types are:
+        'autoscaling:EC2_INSTANCE_LAUNCH',
+        'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
+        'autoscaling:EC2_INSTANCE_TERMINATE',
+        'autoscaling:EC2_INSTANCE_TERMINATE_ERROR',
+        'autoscaling:TEST_NOTIFICATION'        
         """
         return self.connection.put_notification_configuration(self,
                                                               topic,
