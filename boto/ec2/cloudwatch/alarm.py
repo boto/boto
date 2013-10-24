@@ -112,9 +112,16 @@ class MetricAlarm(object):
         :type description: str
         :param description: Description of MetricAlarm
 
-        :type dimensions: list of dicts
-        :param dimensions: Dimensions of alarm, such as:
-                            [{'InstanceId':['i-0123456,i-0123457']}]
+        :type dimensions: dict
+        :param dimensions: A dictionary of dimension key/values where
+                           the key is the dimension name and the value
+                           is either a scalar value or an iterator
+                           of values to be associated with that
+                           dimension.
+                           Example: {
+                               'InstanceId': ['i-0123456', 'i-0123457'],
+                               'LoadBalancerName': 'test-lb'
+                           }
         
         :type alarm_actions: list of strs
         :param alarm_actions: A list of the ARNs of the actions to take in
