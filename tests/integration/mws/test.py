@@ -47,9 +47,13 @@ class MWSTestCase(unittest.TestCase):
 
     @property
     def marketplace(self):
-        response = self.mws.list_marketplace_participations()
-        result = response.ListMarketplaceParticipationsResult
-        return result.ListMarketplaces.Marketplace[0]
+        try:
+            return self._marketplace
+        except AttributeError:
+            response = self.mws.list_marketplace_participations()
+            result = response.ListMarketplaceParticipationsResult
+            self._marketplace = result.ListMarketplaces.Marketplace[0]
+            return self.marketplace
 
     @property
     def marketplace_id(self):
