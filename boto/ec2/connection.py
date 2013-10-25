@@ -1516,7 +1516,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('CancelSpotInstanceRequests', params,
-                             [('item', Instance)], verb='POST')
+                             [('item', SpotInstanceRequest)], verb='POST')
 
     def get_spot_datafeed_subscription(self, dry_run=False):
         """
