@@ -345,7 +345,7 @@ class Bucket(object):
     def _validate_kwarg_names(self, kwargs, names):
         for kwarg in kwargs:
             if kwarg not in names:
-                raise TypeError('Invalid argument {0}!'.format(kwarg))
+                raise TypeError('Invalid argument %s!' % kwarg)
 
     def get_all_keys(self, headers=None, **params):
         """
