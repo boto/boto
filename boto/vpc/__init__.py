@@ -1290,7 +1290,7 @@ class VPCConnection(EC2Connection):
         params = {}
         if vpn_connection_ids:
             self.build_list_params(params, vpn_connection_ids,
-                                   'Vpn_ConnectionId')
+                                   'VpnConnectionId')
         if filters:
             self.build_filter_params(params, dict(filters))
         if dry_run:
