@@ -456,7 +456,6 @@ class VPCConnection(EC2Connection):
 
     #Network ACLs
 
-
     def get_all_network_acls(self, network_acl_ids=None, filters=None):
         """
         Retrieve information about your network acls. You can filter results
@@ -497,9 +496,8 @@ class VPCConnection(EC2Connection):
         :return: The ID of the association created
         """
 
-        acl = self.get_all_network_acls(filters = [('association.subnet-id', subnet_id)])[0]
+        acl = self.get_all_network_acls(filters=[('association.subnet-id', subnet_id)])[0]
         association_id = acl.associations[0].id
-
 
         params = {
             'AssociationId': association_id,
@@ -509,7 +507,7 @@ class VPCConnection(EC2Connection):
         result = self.get_object('ReplaceNetworkAclAssociation', params, ResultSet)
         return result.newAssociationId
 
-    def disassociate_network_acl(self, subnet_id, vpc_id ):
+    def disassociate_network_acl(self, subnet_id, vpc_id=None):
         """
         Figures out what the default ACL is for the VPC, and associates
         current network ACL with the default.
@@ -518,18 +516,17 @@ class VPCConnection(EC2Connection):
         :param association_id: The ID of the subnet to which the ACL belongs.
 
         :type vpc_id: str
-        :param vpc_id: The ID of the VPC to which the ACL/subnet belongs.
+        :param vpc_id: The ID of the VPC to which the ACL/subnet belongs. Queries EC2 if omitted.
 
         :rtype: str
         :return: The ID of the association created
         """
-
-        acls = self.get_all_network_acls(filters = [ ('vpc-id', vpc_id), ('default', 'true')])
+        if not vpc_id:
+            vpc_id = self.get_all_subnets([subnet_id])[0].vpc_id
+        acls = self.get_all_network_acls(filters=[('vpc-id', vpc_id), ('default', 'true')])
         default_acl_id = acls[0].id
 
         return self.associate_network_acl(default_acl_id, subnet_id)
-
-
 
     def create_network_acl(self, vpc_id):
         """
@@ -541,7 +538,7 @@ class VPCConnection(EC2Connection):
         :rtype: The newly created network ACL
         :return: A :class:`boto.vpc.networkacl.NetworkAcl` object
         """
-        params = { 'VpcId': vpc_id }
+        params = {'VpcId': vpc_id}
         return self.get_object('CreateNetworkAcl', params, NetworkAcl)
 
     def delete_network_acl(self, network_acl_id):
@@ -554,12 +551,12 @@ class VPCConnection(EC2Connection):
         :rtype: bool
         :return: True if successful
         """
-        params = { 'NetworkAclId': network_acl_id }
+        params = {'NetworkAclId': network_acl_id}
         return self.get_status('DeleteNetworkAcl', params)
 
     def create_network_acl_entry(self, network_acl_id, rule_number, protocol, rule_action,
-                      cidr_block, egress = None, icmp_code = None, icmp_type = None,
-                      port_range_from = None, port_range_to = None):
+                                 cidr_block, egress=None, icmp_code=None, icmp_type=None,
+                                 port_range_from=None, port_range_to=None):
         """
         Creates a new network ACL entry in a network ACL within a VPC.
 
@@ -577,9 +574,10 @@ class VPCConnection(EC2Connection):
         :param rule_action: Indicates whether to allow or deny traffic that matches the rule.
 
         :type cidr_block: str
-        :param cidr_block: The CIDR range to allow or deny, in CIDR notation (for example, 172.16.0.0/24).
+        :param cidr_block: The CIDR range to allow or deny, in CIDR notation (for example,
+        172.16.0.0/24).
 
-        :type egress: boo
+        :type egress: bool
         :param egress: Indicates whether this rule applies to egress traffic from the subnet (true)
         or ingress traffic to the subnet (false).
 
@@ -603,13 +601,16 @@ class VPCConnection(EC2Connection):
         """
         params = {
             'NetworkAclId': network_acl_id,
-            'RuleNumber'  : rule_number,
-            'Protocol'    : protocol,
-            'RuleAction'  : rule_action,
-            'Egress'      : egress,
-            'CidrBlock'   : cidr_block
+            'RuleNumber': rule_number,
+            'Protocol': protocol,
+            'RuleAction': rule_action,
+            'CidrBlock': cidr_block
         }
 
+        if egress is not None:
+            if isinstance(egress, bool):
+                egress = str(egress).lower()
+            params['Egress'] = egress
         if icmp_code is not None:
             params['Icmp.Code'] = icmp_code
         if icmp_type is not None:
@@ -621,10 +622,9 @@ class VPCConnection(EC2Connection):
 
         return self.get_status('CreateNetworkAclEntry', params)
 
-
     def replace_network_acl_entry(self, network_acl_id, rule_number, protocol, rule_action,
-                      cidr_block, egress = None, icmp_code = None, icmp_type = None,
-                      port_range_from = None, port_range_to = None):
+                                  cidr_block, egress=None, icmp_code=None, icmp_type=None,
+                                  port_range_from=None, port_range_to=None):
         """
         Creates a new network ACL entry in a network ACL within a VPC.
 
@@ -642,9 +642,10 @@ class VPCConnection(EC2Connection):
         :param rule_action: Indicates whether to allow or deny traffic that matches the rule.
 
         :type cidr_block: str
-        :param cidr_block: The CIDR range to allow or deny, in CIDR notation (for example, 172.16.0.0/24).
+        :param cidr_block: The CIDR range to allow or deny, in CIDR notation (for example,
+        172.16.0.0/24).
 
-        :type egress: boo
+        :type egress: bool
         :param egress: Indicates whether this rule applies to egress traffic from the subnet (true)
         or ingress traffic to the subnet (false).
 
@@ -668,13 +669,16 @@ class VPCConnection(EC2Connection):
         """
         params = {
             'NetworkAclId': network_acl_id,
-            'RuleNumber'  : rule_number,
-            'Protocol'    : protocol,
-            'RuleAction'  : rule_action,
-            'Egress'      : egress,
-            'CidrBlock'   : cidr_block
+            'RuleNumber': rule_number,
+            'Protocol': protocol,
+            'RuleAction': rule_action,
+            'CidrBlock': cidr_block
         }
 
+        if egress is not None:
+            if isinstance(egress, bool):
+                egress = str(egress).lower()
+            params['Egress'] = egress
         if icmp_code is not None:
             params['Icmp.Code'] = icmp_code
         if icmp_type is not None:
@@ -686,7 +690,7 @@ class VPCConnection(EC2Connection):
 
         return self.get_status('ReplaceNetworkAclEntry', params)
 
-    def delete_network_acl_entry(self, network_acl_id, rule_number, egress = None ):
+    def delete_network_acl_entry(self, network_acl_id, rule_number, egress=None):
         """
         Deletes a network ACL entry from a network ACL within a VPC.
 
@@ -696,7 +700,7 @@ class VPCConnection(EC2Connection):
         :type rule_number: int
         :param rule_number: The rule number for the entry to delete.
 
-        :type egress: boo
+        :type egress: bool
         :param egress: Specifies whether the rule to delete is an egress rule (true)
         or ingress rule (false).
 
@@ -709,10 +713,11 @@ class VPCConnection(EC2Connection):
         }
 
         if egress is not None:
+            if isinstance(egress, bool):
+                egress = str(egress).lower()
             params['Egress'] = egress
 
         return self.get_status('DeleteNetworkAclEntry', params)
-
 
     # Internet Gateways
 
