@@ -2237,12 +2237,6 @@ class EC2Connection(AWSQueryConnection):
         if snapshot_ids:
             self.build_list_params(params, snapshot_ids, 'SnapshotId')
 
-        # backward compatibility layer
-        if isinstance(owner, basestring):
-           owner = [owner]
-        if isinstance(restorable_by, basestring):
-           restorable_by = [restorable_by]
-
         if owner:
             self.build_list_params(params, owner, 'Owner')
         if restorable_by:
