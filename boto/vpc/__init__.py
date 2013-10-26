@@ -135,7 +135,7 @@ class VPCConnection(EC2Connection):
         :rtype: The newly created VPC
         :return: A :class:`boto.vpc.vpc.VPC` object
         """
-        params = {'CidrBlock' : cidr_block}
+        params = {'CidrBlock': cidr_block}
         if instance_tenancy:
             params['InstanceTenancy'] = instance_tenancy
         if dry_run:
