@@ -1299,7 +1299,7 @@ class VPCConnection(EC2Connection):
                              [('item', VpnConnection)])
 
     def create_vpn_connection(self, type, customer_gateway_id, vpn_gateway_id,
-                              dry_run=False):
+                              static_routes_only=None, dry_run=False):
         """
         Create a new VPN Connection.
 
@@ -1313,15 +1313,24 @@ class VPCConnection(EC2Connection):
         :type vpn_gateway_id: str
         :param vpn_gateway_id: The ID of the VPN gateway.
 
+        :type static_routes_only: bool
+        :param static_routes_only: Indicates whether the VPN connection
+        requires static routes. If you are creating a VPN connection
+        for a device that does not support BGP, you must specify true.
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
         :rtype: The newly created VpnConnection
         :return: A :class:`boto.vpc.vpnconnection.VpnConnection` object
         """
-        params = {'Type' : type,
-                  'CustomerGatewayId' : customer_gateway_id,
-                  'VpnGatewayId' : vpn_gateway_id}
+        params = {'Type': type,
+                  'CustomerGatewayId': customer_gateway_id,
+                  'VpnGatewayId': vpn_gateway_id}
+        if static_routes_only is not None:
+            if isinstance(static_routes_only, bool):
+                static_routes_only = str(static_routes_only).lower()
+            params['Options.StaticRoutesOnly'] = static_routes_only
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateVpnConnection', params, VpnConnection)
