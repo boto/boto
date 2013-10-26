@@ -163,5 +163,57 @@ class TestDetachVpnGateway(AWSMockServiceTestCase):
                                   'Version'])
         self.assertEqual(api_response, True)
 
+
+class TestDisableVgwRoutePropagation(AWSMockServiceTestCase):
+
+    connection_class = VPCConnection
+
+    def default_body(self):
+        return """
+            <DisableVgwRoutePropagationResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
+                <requestId>4f35a1b2-c2c3-4093-b51f-abb9d7311990</requestId>
+                <return>true</return>
+            </DisableVgwRoutePropagationResponse>
+        """
+
+    def test_disable_vgw_route_propagation(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.disable_vgw_route_propagation(
+            'rtb-c98a35a0', 'vgw-d8e09e8a')
+        self.assert_request_parameters({
+            'Action': 'DisableVgwRoutePropagation',
+            'GatewayId': 'vgw-d8e09e8a',
+            'RouteTableId': 'rtb-c98a35a0'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+        self.assertEqual(api_response, True)
+
+
+class TestEnableVgwRoutePropagation(AWSMockServiceTestCase):
+
+    connection_class = VPCConnection
+
+    def default_body(self):
+        return """
+            <DisableVgwRoutePropagationResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
+                <requestId>4f35a1b2-c2c3-4093-b51f-abb9d7311990</requestId>
+                <return>true</return>
+            </DisableVgwRoutePropagationResponse>
+        """
+
+    def test_enable_vgw_route_propagation(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.enable_vgw_route_propagation(
+            'rtb-c98a35a0', 'vgw-d8e09e8a')
+        self.assert_request_parameters({
+            'Action': 'EnableVgwRoutePropagation',
+            'GatewayId': 'vgw-d8e09e8a',
+            'RouteTableId': 'rtb-c98a35a0'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+        self.assertEqual(api_response, True)
+
 if __name__ == '__main__':
     unittest.main()
