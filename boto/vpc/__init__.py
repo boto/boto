@@ -37,6 +37,7 @@ from boto.vpc.vpnconnection import VpnConnection
 from boto.ec2 import RegionData
 from boto.regioninfo import RegionInfo
 
+
 def regions(**kw_params):
     """
     Get all available regions for the EC2 service.
@@ -54,9 +55,8 @@ def regions(**kw_params):
                             connection_cls=VPCConnection)
         regions.append(region)
     regions.append(RegionInfo(name='us-gov-west-1',
-                            endpoint=RegionData[region_name],
-                            connection_cls=VPCConnection)
-    )
+                              endpoint=RegionData[region_name],
+                              connection_cls=VPCConnection))
     return regions
 
 
