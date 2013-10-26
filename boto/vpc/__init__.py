@@ -1108,8 +1108,8 @@ class VPCConnection(EC2Connection):
         :rtype: The newly created Subnet
         :return: A :class:`boto.vpc.customergateway.Subnet` object
         """
-        params = {'VpcId' : vpc_id,
-                  'CidrBlock' : cidr_block}
+        params = {'VpcId': vpc_id,
+                  'CidrBlock': cidr_block}
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
         if dry_run:
