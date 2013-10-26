@@ -888,7 +888,7 @@ class VPCConnection(EC2Connection):
         :param ip_address: Internet-routable IP address for customer's gateway.
                            Must be a static address.
 
-        :type bgp_asn: str
+        :type bgp_asn: int
         :param bgp_asn: Customer gateway's Border Gateway Protocol (BGP)
                         Autonomous System Number (ASN)
 
@@ -898,9 +898,9 @@ class VPCConnection(EC2Connection):
         :rtype: The newly created CustomerGateway
         :return: A :class:`boto.vpc.customergateway.CustomerGateway` object
         """
-        params = {'Type' : type,
-                  'IpAddress' : ip_address,
-                  'BgpAsn' : bgp_asn}
+        params = {'Type': type,
+                  'IpAddress': ip_address,
+                  'BgpAsn': bgp_asn}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateCustomerGateway', params, CustomerGateway)
