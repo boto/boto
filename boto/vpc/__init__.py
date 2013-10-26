@@ -273,7 +273,7 @@ class VPCConnection(EC2Connection):
         :rtype: bool
         :return: True if successful
         """
-        params = { 'AssociationId': association_id }
+        params = {'AssociationId': association_id}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('DisassociateRouteTable', params)
@@ -291,7 +291,7 @@ class VPCConnection(EC2Connection):
         :rtype: The newly created route table
         :return: A :class:`boto.vpc.routetable.RouteTable` object
         """
-        params = { 'VpcId': vpc_id }
+        params = {'VpcId': vpc_id}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateRouteTable', params, RouteTable)
@@ -309,7 +309,7 @@ class VPCConnection(EC2Connection):
         :rtype: bool
         :return: True if successful
         """
-        params = { 'RouteTableId': route_table_id }
+        params = {'RouteTableId': route_table_id}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('DeleteRouteTable', params)
@@ -332,8 +332,8 @@ class VPCConnection(EC2Connection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
-        :rtype: bool
-        :return: True if successful
+        :rtype: str
+        :return: New association ID
         """
 
         params = {
@@ -342,10 +342,12 @@ class VPCConnection(EC2Connection):
         }
         if dry_run:
             params['DryRun'] = 'true'
-        return self.get_status('ReplaceRouteTableAssociation', params)
+        result = self.get_object('ReplaceRouteTableAssociation', params, ResultSet)
+        return result.newAssociationId
 
     def create_route(self, route_table_id, destination_cidr_block,
-                     gateway_id=None, instance_id=None, dry_run=False):
+                     gateway_id=None, instance_id=None, interface_id=None,
+                     dry_run=False):
         """
         Creates a new route in the route table within a VPC. The route's target
         can be either a gateway attached to the VPC or a NAT instance in the
@@ -364,6 +366,9 @@ class VPCConnection(EC2Connection):
         :type instance_id: str
         :param instance_id: The ID of a NAT instance in your VPC.
 
+        :type interface_id: str
+        :param interface_id: Allows routing to network interface attachments.
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -379,14 +384,16 @@ class VPCConnection(EC2Connection):
             params['GatewayId'] = gateway_id
         elif instance_id is not None:
             params['InstanceId'] = instance_id
+        elif interface_id is not None:
+            params['NetworkInterfaceId'] = interface_id
         if dry_run:
             params['DryRun'] = 'true'
 
         return self.get_status('CreateRoute', params)
 
     def replace_route(self, route_table_id, destination_cidr_block,
-                     gateway_id=None, instance_id=None, interface_id=None,
-                     dry_run=False):
+                      gateway_id=None, instance_id=None, interface_id=None,
+                      dry_run=False):
         """
         Replaces an existing route within a route table in a VPC.
 
