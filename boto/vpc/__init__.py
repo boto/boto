@@ -778,7 +778,7 @@ class VPCConnection(EC2Connection):
         :rtype: Bool
         :return: True if successful
         """
-        params = { 'InternetGatewayId': internet_gateway_id }
+        params = {'InternetGatewayId': internet_gateway_id}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('DeleteInternetGateway', params)

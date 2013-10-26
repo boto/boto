@@ -39,30 +39,6 @@ class TestDescribeVPCs(AWSMockServiceTestCase):
         self.assertEqual(vpc.instance_tenancy, 'default')
 
 
-class TestDetachInternetGateway(AWSMockServiceTestCase):
-
-    connection_class = VPCConnection
-
-    def default_body(self):
-        return """
-             <DetachInternetGatewayResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
-               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
-               <return>true</return>
-            </DetachInternetGatewayResponse>
-        """
-
-    def test_detach_internet_gateway(self):
-        self.set_http_response(status_code=200)
-        self.service_connection.detach_internet_gateway('igw-eaad4883', 'vpc-11ad4878')
-        self.assert_request_parameters({
-            'Action': 'DetachInternetGateway',
-            'InternetGatewayId': 'igw-eaad4883',
-            'VpcId': 'vpc-11ad4878'},
-            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                  'SignatureVersion', 'Timestamp',
-                                  'Version'])
-
-
 class TestReplaceRouteTableAssociation(AWSMockServiceTestCase):
 
     connection_class = VPCConnection
