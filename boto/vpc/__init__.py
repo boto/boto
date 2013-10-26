@@ -1219,19 +1219,19 @@ class VPCConnection(EC2Connection):
 
         if domain_name:
             key_counter = insert_option(params,
-                'domain-name', domain_name)
+                                        'domain-name', domain_name)
         if domain_name_servers:
             key_counter = insert_option(params,
-                'domain-name-servers', domain_name_servers)
+                                        'domain-name-servers', domain_name_servers)
         if ntp_servers:
             key_counter = insert_option(params,
-                'ntp-servers', ntp_servers)
+                                        'ntp-servers', ntp_servers)
         if netbios_name_servers:
             key_counter = insert_option(params,
-                'netbios-name-servers', netbios_name_servers)
+                                        'netbios-name-servers', netbios_name_servers)
         if netbios_node_type:
             key_counter = insert_option(params,
-                'netbios-node-type', netbios_node_type)
+                                        'netbios-node-type', netbios_node_type)
         if dry_run:
             params['DryRun'] = 'true'
 
@@ -1272,7 +1272,7 @@ class VPCConnection(EC2Connection):
         :return: True if successful
         """
         params = {'DhcpOptionsId': dhcp_options_id,
-                  'VpcId' : vpc_id}
+                  'VpcId': vpc_id}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('AssociateDhcpOptions', params)
