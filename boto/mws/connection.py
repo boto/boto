@@ -261,14 +261,9 @@ class MWSConnection(AWSQueryConnection):
            and return the response, optionally as raw text.
            Modelled off of the inherited get_object/make_request flow.
         """
-        # TODO: This is using ``self.server_name()``, which is a deprecated
-        #       call post-SHA: 789ace9. It likely should be ``self.host``,
-        #       but I lack MWS credentials to verify.
-        #       If you have them, you're here & you know what you're doing,
-        #       please update this & test that fix.
         request = self.build_base_http_request('POST', path, None, data=body,
                                                params=params, headers=headers,
-                                               host=self.server_name())
+                                               host=self.host)
         response = self._mexe(request, override_num_retries=None)
         body = response.read()
         boto.log.debug(body)
@@ -283,6 +278,9 @@ class MWSConnection(AWSQueryConnection):
             digest = response.getheader('Content-MD5')
             assert content_md5(body) == digest
             return body
+        return self._parse_response(cls, body)
+
+    def _parse_response(self, cls, body):
         obj = cls(self)
         h = XmlHandler(obj, self)
         xml.sax.parseString(body, h)
@@ -585,6 +583,14 @@ class MWSConnection(AWSQueryConnection):
     def get_inventory_service_status(self, path, response, **kw):
         """Returns the operational status of the Fulfillment Inventory
            API section.
+        """
+        return self.post_request(path, kw, response)
+
+    @requires(['PackageNumber'])
+    @api_action('Outbound', 30, 0.5)
+    def get_package_tracking_details(self, path, response, **kw):
+        """Returns delivery tracking information for a package in
+           an outbound shipment for a Multi-Channel Fulfillment order.
         """
         return self.post_request(path, kw, response)
 
