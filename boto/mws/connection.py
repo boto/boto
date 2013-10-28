@@ -64,7 +64,7 @@ def structured_lists(*fields):
                 if key in kw:
                     newkey = key + '.' + acc + (acc and '.' or '')
                     for i in range(len(kw[key])):
-                        kw[newkey + str(i + 1)] = kw[key][i]
+                        destructure_object(kw[key][i], into=kw, prefix=newkey + str(i + 1))
                     kw.pop(key)
             return func(self, *args, **kw)
         wrapper.__doc__ = "{0}\nLists: {1}".format(func.__doc__,
@@ -94,9 +94,10 @@ def http_body(field):
     return decorator
 
 
-def destructure_object(value, into={}, prefix=''):
+def destructure_object(value, into=None, prefix=''):
+    into = into or {}
     if isinstance(value, ResponseElement):
-        for name, attr in value.__dict__.items():
+        for name, attr in value.items():
             if name.startswith('_'):
                 continue
             destructure_object(attr, into=into, prefix=prefix + '.' + name)
@@ -597,11 +598,12 @@ class MWSConnection(AWSQueryConnection):
         """
         return self.post_request(path, kw, response)
 
-    @structured_objects('DestinationAddress', 'Items')
     @requires(['SellerFulfillmentOrderId', 'DisplayableOrderId',
                'ShippingSpeedCategory',    'DisplayableOrderDateTime',
                'DestinationAddress',       'DisplayableOrderComment',
                'Items'])
+    @structured_objects('DestinationAddress', 'Items.member.PerUnitDeclaredValue')
+    @structured_lists('Items.member', 'NotificationEmailList.member')
     @api_action('Outbound', 30, 0.5)
     def create_fulfillment_order(self, path, response, **kw):
         """Requests that Amazon ship items from the seller's inventory

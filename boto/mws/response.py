@@ -148,7 +148,8 @@ class ResponseElement(dict):
     _name = None
     _namespace = None
 
-    def __init__(self, connection=None, name=None, parent=None, attrs={}):
+    def __init__(self, connection=None, name=None, parent=None, attrs=None):
+        attrs = attrs or {}
         if parent is not None and self._namespace is None:
             self._namespace = parent._namespace
         if connection is not None:
@@ -452,6 +453,11 @@ class GetFulfillmentPreviewResult(ResponseElement):
 class FulfillmentOrder(ResponseElement):
     DestinationAddress = Element()
     NotificationEmailList = MemberList(str)
+
+
+class FulfillmentShipment(ResponseElement):
+    FulfillmentShipmentItem = MemberList()
+    FulfillmentShipmentPackage = MemberList()
 
 
 class GetFulfillmentOrderResult(ResponseElement):
