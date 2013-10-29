@@ -110,8 +110,9 @@ class LaunchConfiguration(object):
         :param key_name: The name of the EC2 key pair.
 
         :type security_groups: list
-        :param security_groups: Names of the security groups with which to
-            associate the EC2 instances.
+        :param security_groups: Names or security group id's of the security
+            groups with which to associate the EC2 instances or VPC instances,
+            respectively.
 
         :type user_data: str
         :param user_data: The user data available to launched EC2 instances.
