@@ -58,6 +58,7 @@ class LaunchSpecification(EC2Object):
         self.block_device_mapping = None
         self.instance_profile = None
         self.ebs_optimized = False
+        self.associate_public_ip = False
 
     def __repr__(self):
         return 'LaunchSpecification(%s)' % self.image_id
@@ -101,5 +102,7 @@ class LaunchSpecification(EC2Object):
                 self._in_monitoring_element = False
         elif name == 'ebsOptimized':
             self.ebs_optimized = (value == 'true')
+        elif name == 'associatePublicIpAddress':
+            self.associate_public_ip = (value == 'true')
         else:
             setattr(self, name, value)

@@ -491,6 +491,7 @@ class TestDescribeSpotInstanceRequests(TestEC2ConnectionBase):
         self.assertEqual(launch_spec.block_device_mapping, None)
         self.assertEqual(launch_spec.instance_profile, None)
         self.assertEqual(launch_spec.ebs_optimized, False)
+        self.assertEqual(launch_spec.associate_public_ip, False)
         status = spotrequest.status
         self.assertEqual(status.code, 'fulfilled')
         self.assertEqual(status.update_time, '2012-10-19T18:09:26.000Z')
