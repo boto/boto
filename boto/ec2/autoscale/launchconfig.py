@@ -94,7 +94,8 @@ class LaunchConfiguration(object):
                  instance_type='m1.small', kernel_id=None,
                  ramdisk_id=None, block_device_mappings=None,
                  instance_monitoring=False, spot_price=None,
-                 instance_profile_name=None, ebs_optimized=False):
+                 instance_profile_name=None, ebs_optimized=False,
+                 associate_public_ip=False):
         """
         A launch configuration.
 
@@ -144,6 +145,10 @@ class LaunchConfiguration(object):
         :type ebs_optimized: bool
         :param ebs_optimized: Specifies whether the instance is optimized
             for EBS I/O (true) or not (false).
+
+        :type associate_public_ip: bool
+        :param associate_public_ip: Specifies whether public IP will be
+            allocated for the instance.
         """
         self.connection = connection
         self.name = name
@@ -163,6 +168,7 @@ class LaunchConfiguration(object):
         self.instance_profile_name = instance_profile_name
         self.launch_configuration_arn = None
         self.ebs_optimized = ebs_optimized
+        self.associate_public_ip = associate_public_ip
 
     def __repr__(self):
         return 'LaunchConfiguration:%s' % self.name
@@ -208,6 +214,8 @@ class LaunchConfiguration(object):
             self.instance_profile_name = value
         elif name == 'EbsOptimized':
             self.ebs_optimized = True if value.lower() == 'true' else False
+        elif name == 'AssociatePublicIpAddress':
+            self.associate_public_ip = True if value.lower() == 'true' else False
         else:
             setattr(self, name, value)
 
