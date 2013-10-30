@@ -141,6 +141,8 @@ def canonical_string(method, path, headers, expires=None,
     buf = "%s\n" % method
     for key in sorted_header_keys:
         val = interesting_headers[key]
+        if isinstance(val, unicode):
+            val = urllib.quote_plus(val.encode('utf-8'))
         if key.startswith(provider.header_prefix):
             buf += "%s:%s\n" % (key, val)
         else:
