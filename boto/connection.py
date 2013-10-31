@@ -530,7 +530,7 @@ class AWSAuthConnection(object):
             # If timeout isn't defined in boto config file, use 70 second
             # default as recommended by
             # http://docs.aws.amazon.com/amazonswf/latest/apireference/API_PollForActivityTask.html
-            self.http_connection_kwargs['timeout'] = config.getint(
+            self.http_connection_kwargs['timeout'] = config.getfloat(
                 'Boto', 'http_socket_timeout', 70)
 
         if isinstance(provider, Provider):
