@@ -22,6 +22,8 @@
 from tests.unit import unittest
 
 from boto.sqs.message import MHMessage
+from boto.sqs.message import RawMessage
+from boto.exception import SQSDecodeError
 
 
 class TestMHMessage(unittest.TestCase):
@@ -30,6 +32,35 @@ class TestMHMessage(unittest.TestCase):
         msg.update({'hello': 'world'})
         self.assertTrue('hello' in msg)
 
+
+class DecodeExceptionRaisingMessage(RawMessage):
+    def decode(self, message):
+        raise SQSDecodeError('Sample decode error', self)
+
+class TestEncodeMessage(unittest.TestCase):
+
+    def test_message_id_available(self):
+        import xml.sax
+        from boto.resultset import ResultSet
+        from boto.handler import XmlHandler
+        sample_value = 'abcdef'
+        body = """<?xml version="1.0"?>
+            <ReceiveMessageResponse>
+              <ReceiveMessageResult>
+                <Message>
+                  <Body>%s</Body>
+                  <ReceiptHandle>%s</ReceiptHandle>
+                  <MessageId>%s</MessageId>
+                </Message>
+              </ReceiveMessageResult>
+            </ReceiveMessageResponse>""" % tuple([sample_value] * 3)
+        rs = ResultSet([('Message', DecodeExceptionRaisingMessage)])
+        h = XmlHandler(rs, None)
+        with self.assertRaises(SQSDecodeError) as context:
+            xml.sax.parseString(body, h)
+        message = context.exception.message
+        self.assertEquals(message.id, sample_value)
+        self.assertEquals(message.receipt_handle, sample_value)
 
 if __name__ == '__main__':
     unittest.main()
