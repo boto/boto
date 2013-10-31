@@ -65,6 +65,14 @@ class EmrConnection(AWSQueryConnection):
                                     https_connection_factory, path,
                                     security_token,
                                     validate_certs=validate_certs)
+        # Many of the EMR hostnames are of the form:
+        #     <region>.<service_name>.amazonaws.com
+        # rather than the more common:
+        #     <service_name>.<region>.amazonaws.com
+        # so we need to explicitly set the region_name and service_name
+        # for the SigV4 signing.
+        self.auth_region_name = self.region.name
+        self.auth_service_name = 'elasticmapreduce'
 
     def _required_auth_capability(self):
         return ['hmac-v4']
