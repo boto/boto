@@ -274,6 +274,7 @@ class TestAddJobFlowSteps(AWSMockServiceTestCase):
 <AddJobFlowStepsOutput>
     <StepIds>
         <member>Foo</member>
+        <member>Bar</member>
     </StepIds>
 </AddJobFlowStepsOutput>
 """
@@ -289,3 +290,4 @@ class TestAddJobFlowSteps(AWSMockServiceTestCase):
         # of RunJobFlowResponse.
         self.assertTrue(isinstance(response, JobFlowStepList))
         self.assertEqual(response.stepids[0].value, 'Foo')
+        self.assertEqual(response.stepids[1].value, 'Bar')
