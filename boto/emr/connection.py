@@ -31,6 +31,7 @@ from boto.ec2.regioninfo import RegionInfo
 from boto.emr.emrobject import AddInstanceGroupsResponse, BootstrapActionList, \
                                Cluster, ClusterSummaryList, HadoopStep, \
                                InstanceGroupList, InstanceList, JobFlow, \
+                               JobFlowStepList, \
                                ModifyInstanceGroupsResponse, \
                                RunJobFlowResponse, StepSummaryList
 from boto.emr.step import JarStep
@@ -305,7 +306,7 @@ class EmrConnection(AWSQueryConnection):
         params.update(self._build_step_list(step_args))
 
         return self.get_object(
-            'AddJobFlowSteps', params, RunJobFlowResponse, verb='POST')
+            'AddJobFlowSteps', params, JobFlowStepList, verb='POST')
 
     def add_instance_groups(self, jobflow_id, instance_groups):
         """
