@@ -27,6 +27,7 @@ from datetime import datetime
 from tests.unit import AWSMockServiceTestCase
 
 from boto.emr.connection import EmrConnection
+from boto.emr.emrobject import JobFlowStepList
 
 # These tests are just checking the basic structure of
 # the Elastic MapReduce code, by picking a few calls
@@ -263,3 +264,28 @@ class TestDescribeStep(AWSMockServiceTestCase):
             'StepId': 'abc',
             'Version': '2009-03-31'
         })
+
+
+class TestAddJobFlowSteps(AWSMockServiceTestCase):
+    connection_class = EmrConnection
+
+    def default_body(self):
+        return """
+<AddJobFlowStepsOutput>
+    <StepIds>
+        <member>Foo</member>
+    </StepIds>
+</AddJobFlowStepsOutput>
+"""
+
+    def test_add_jobflow_steps(self):
+        self.set_http_response(200)
+
+        response = self.service_connection.add_jobflow_steps(
+            jobflow_id='j-123', steps=[])
+
+        # Make sure the correct object is returned, as this was
+        # previously set to incorrectly return an empty instance
+        # of RunJobFlowResponse.
+        self.assertTrue(isinstance(response, JobFlowStepList))
+        self.assertEqual(response.stepids[0].value, 'Foo')
