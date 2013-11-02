@@ -69,7 +69,7 @@ class Layer1(AWSQueryConnection):
             validate_certs=validate_certs)
 
     def _required_auth_capability(self):
-        return ['sign-v2']
+        return ['hmac-v4']
 
     def get_response(self, doc_path, action, params, path='/',
                      parent=None, verb='GET', list_marker=None):

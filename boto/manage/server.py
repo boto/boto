@@ -353,7 +353,7 @@ class Server(Model):
         for region in regions:
             ec2 = region.connect()
             try:
-                rs = ec2.get_all_instances([instance_id])
+                rs = ec2.get_all_reservations([instance_id])
             except:
                 rs = []
             if len(rs) == 1:
@@ -377,7 +377,7 @@ class Server(Model):
         regions = boto.ec2.regions()
         for region in regions:
             ec2 = region.connect()
-            rs = ec2.get_all_instances()
+            rs = ec2.get_all_reservations()
             for reservation in rs:
                 for instance in reservation.instances:
                     try:
@@ -413,7 +413,7 @@ class Server(Model):
                         self.ec2 = region.connect()
                         if self.instance_id and not self._instance:
                             try:
-                                rs = self.ec2.get_all_instances([self.instance_id])
+                                rs = self.ec2.get_all_reservations([self.instance_id])
                                 if len(rs) >= 1:
                                     for instance in rs[0].instances:
                                         if instance.id == self.instance_id:

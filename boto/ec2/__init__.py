@@ -29,6 +29,7 @@ from boto.regioninfo import RegionInfo
 
 RegionData = {
     'us-east-1': 'ec2.us-east-1.amazonaws.com',
+    'us-gov-west-1': 'ec2.us-gov-west-1.amazonaws.com',
     'us-west-1': 'ec2.us-west-1.amazonaws.com',
     'us-west-2': 'ec2.us-west-2.amazonaws.com',
     'sa-east-1': 'ec2.sa-east-1.amazonaws.com',
@@ -72,9 +73,14 @@ def connect_to_region(region_name, **kw_params):
     :return: A connection to the given region, or None if an invalid region
              name is given
     """
+    if 'region' in kw_params and isinstance(kw_params['region'], RegionInfo)\
+       and region_name == kw_params['region'].name:
+        return EC2Connection(**kw_params)
+
     for region in regions(**kw_params):
         if region.name == region_name:
             return region.connect(**kw_params)
+
     return None
 
 

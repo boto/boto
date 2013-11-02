@@ -116,14 +116,14 @@ LIST_STACK_RESOURCES_XML = r"""
       <member>
         <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
         <LogicalResourceId>DBSecurityGroup</LogicalResourceId>
-        <LastUpdatedTimestamp>2011-06-21T20:15:58Z</LastUpdatedTimestamp>
+        <LastUpdatedTime>2011-06-21T20:15:58Z</LastUpdatedTime>
         <PhysicalResourceId>gmarcteststack-dbsecuritygroup-1s5m0ez5lkk6w</PhysicalResourceId>
         <ResourceType>AWS::RDS::DBSecurityGroup</ResourceType>
       </member>
       <member>
         <ResourceStatus>CREATE_COMPLETE</ResourceStatus>
         <LogicalResourceId>SampleDB</LogicalResourceId>
-        <LastUpdatedTimestamp>2011-06-21T20:25:57.875643Z</LastUpdatedTimestamp>
+        <LastUpdatedTime>2011-06-21T20:25:57.875643Z</LastUpdatedTime>
         <PhysicalResourceId>MyStack-sampledb-ycwhk1v830lx</PhysicalResourceId>
         <ResourceType>AWS::RDS::DBInstance</ResourceType>
       </member>
@@ -207,12 +207,12 @@ class TestStackParse(unittest.TestCase):
         ])
         h = boto.handler.XmlHandler(rs, None)
         xml.sax.parseString(LIST_STACK_RESOURCES_XML, h)
-        timestamp_1 = rs[0].last_updated_timestamp
+        timestamp_1 = rs[0].last_updated_time
         self.assertEqual(
             timestamp_1,
             datetime.datetime(2011, 6, 21, 20, 15, 58)
         )
-        timestamp_2 = rs[1].last_updated_timestamp
+        timestamp_2 = rs[1].last_updated_time
         self.assertEqual(
             timestamp_2,
             datetime.datetime(2011, 6, 21, 20, 25, 57, 875643)

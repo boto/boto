@@ -23,7 +23,6 @@
 import unittest
 from boto.route53.connection import Route53Connection
 from boto.route53.record import ResourceRecordSets
-from boto.exception import TooManyRecordsException
 
 
 class TestRoute53ResourceRecordSets(unittest.TestCase):
@@ -48,6 +47,53 @@ class TestRoute53ResourceRecordSets(unittest.TestCase):
         deleted.add_value('192.168.0.25')
         rrs.commit()
 
+    def test_record_count(self):
+        rrs = ResourceRecordSets(self.conn, self.zone.id)
+        hosts = 101
+
+        for hostid in range(hosts):
+            rec = "test" + str(hostid) + ".example.com"
+            created = rrs.add_change("CREATE", rec, "A")
+            ip = '192.168.0.' + str(hostid)
+            created.add_value(ip)
+
+            # Max 100 changes per commit
+            if (hostid + 1) % 100 == 0:
+                rrs.commit()
+                rrs = ResourceRecordSets(self.conn, self.zone.id)
+
+        rrs.commit()
+
+        all_records = self.conn.get_all_rrsets(self.zone.id)
+
+        # First time around was always fine
+        i = 0
+        for rset in all_records:
+            i += 1
+
+        # Second time was a failure
+        i = 0
+        for rset in all_records:
+            i += 1
+
+        # Cleanup indivual records
+        rrs = ResourceRecordSets(self.conn, self.zone.id)
+        for hostid in range(hosts):
+            rec = "test" + str(hostid) + ".example.com"
+            deleted = rrs.add_change("DELETE", rec, "A")
+            ip = '192.168.0.' + str(hostid)
+            deleted.add_value(ip)
+
+            # Max 100 changes per commit
+            if (hostid + 1) % 100 == 0:
+                rrs.commit()
+                rrs = ResourceRecordSets(self.conn, self.zone.id)
+
+        rrs.commit()
+
+        # 2nd count should match the number of hosts plus NS/SOA records
+        records = hosts + 2
+        self.assertEqual(i, records)
 
 if __name__ == '__main__':
     unittest.main()

@@ -24,7 +24,6 @@ import re
 from boto.utils import find_class
 import uuid
 from boto.sdb.db.key import Key
-from boto.sdb.db.model import Model
 from boto.sdb.db.blob import Blob
 from boto.sdb.db.property import ListProperty, MapProperty
 from datetime import datetime, date, time
@@ -53,12 +52,17 @@ class SDBConverter(object):
     called"encode_<type name>" or "decode_<type name>".
     """
     def __init__(self, manager):
+        # Do a delayed import to prevent possible circular import errors.
+        from boto.sdb.db.model import Model
+        self.model_class = Model
         self.manager = manager
         self.type_map = {bool: (self.encode_bool, self.decode_bool),
                          int: (self.encode_int, self.decode_int),
                          long: (self.encode_long, self.decode_long),
                          float: (self.encode_float, self.decode_float),
-                         Model: (self.encode_reference, self.decode_reference),
+                         self.model_class: (
+                            self.encode_reference, self.decode_reference
+                         ),
                          Key: (self.encode_reference, self.decode_reference),
                          datetime: (self.encode_datetime, self.decode_datetime),
                          date: (self.encode_date, self.decode_date),
@@ -69,8 +73,8 @@ class SDBConverter(object):
 
     def encode(self, item_type, value):
         try:
-            if Model in item_type.mro():
-                item_type = Model
+            if self.model_class in item_type.mro():
+                item_type = self.model_class
         except:
             pass
         if item_type in self.type_map:
@@ -110,8 +114,8 @@ class SDBConverter(object):
         new_value = []
         for key in value:
             item_type = getattr(prop, "item_type")
-            if Model in item_type.mro():
-                item_type = Model
+            if self.model_class in item_type.mro():
+                item_type = self.model_class
             encoded_value = self.encode(item_type, value[key])
             if encoded_value != None:
                 new_value.append('%s:%s' % (urllib.quote(key), encoded_value))
@@ -159,7 +163,7 @@ class SDBConverter(object):
         if ":" in value:
             key, value = value.split(':', 1)
             key = urllib.unquote(key)
-        if Model in item_type.mro():
+        if self.model_class in item_type.mro():
             value = item_type(id=value)
         else:
             value = self.decode(item_type, value)

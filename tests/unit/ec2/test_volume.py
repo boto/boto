@@ -38,7 +38,12 @@ class VolumeTests(unittest.TestCase):
     def test_startElement_calls_TaggedEC2Object_startElement_with_correct_args(self, startElement):
         volume = Volume()
         volume.startElement("some name", "some attrs", None)
-        startElement.assert_called_with(volume, "some name", "some attrs", None)
+        startElement.assert_called_with(
+            volume,
+            "some name",
+            "some attrs",
+            None
+        )
 
     @mock.patch("boto.ec2.volume.TaggedEC2Object.startElement")
     def test_startElement_retval_not_None_returns_correct_thing(self, startElement):
@@ -120,43 +125,57 @@ class VolumeTests(unittest.TestCase):
     def test_delete_calls_delete_volume(self):
         self.volume_one.connection = mock.Mock()
         self.volume_one.delete()
-        self.volume_one.connection.delete_volume.assert_called_with(1)
+        self.volume_one.connection.delete_volume.assert_called_with(
+            1,
+            dry_run=False
+        )
 
     def test_attach_calls_attach_volume(self):
         self.volume_one.connection = mock.Mock()
         self.volume_one.attach("instance_id", "/dev/null")
-        self.volume_one.connection.attach_volume.assert_called_with(1, "instance_id", "/dev/null")
+        self.volume_one.connection.attach_volume.assert_called_with(
+            1,
+            "instance_id",
+            "/dev/null",
+            dry_run=False
+        )
 
     def test_detach_calls_detach_volume(self):
         self.volume_one.connection = mock.Mock()
         self.volume_one.detach()
         self.volume_one.connection.detach_volume.assert_called_with(
-                1, 2, "/dev/null", False)
+                1, 2, "/dev/null", False, dry_run=False)
 
     def test_detach_with_no_attach_data(self):
         self.volume_two.connection = mock.Mock()
         self.volume_two.detach()
         self.volume_two.connection.detach_volume.assert_called_with(
-                1, None, None, False)
+                1, None, None, False, dry_run=False)
 
     def test_detach_with_force_calls_detach_volume_with_force(self):
         self.volume_one.connection = mock.Mock()
         self.volume_one.detach(True)
         self.volume_one.connection.detach_volume.assert_called_with(
-                1, 2, "/dev/null", True)
+                1, 2, "/dev/null", True, dry_run=False)
 
 
     def test_create_snapshot_calls_connection_create_snapshot(self):
         self.volume_one.connection = mock.Mock()
         self.volume_one.create_snapshot()
         self.volume_one.connection.create_snapshot.assert_called_with(
-                1, None)
+            1,
+            None,
+            dry_run=False
+        )
 
     def test_create_snapshot_with_description(self):
         self.volume_one.connection = mock.Mock()
         self.volume_one.create_snapshot("some description")
         self.volume_one.connection.create_snapshot.assert_called_with(
-                1, "some description")
+            1,
+            "some description",
+            dry_run=False
+        )
 
     def test_volume_state_returns_status(self):
         retval = self.volume_one.volume_state()
@@ -186,7 +205,7 @@ class VolumeTests(unittest.TestCase):
         self.volume_one.connection.get_all_snapshots.return_value = []
         self.volume_one.snapshots("owner", "restorable_by")
         self.volume_one.connection.get_all_snapshots.assert_called_with(
-                owner="owner", restorable_by="restorable_by")
+                owner="owner", restorable_by="restorable_by", dry_run=False)
 
 class AttachmentSetTests(unittest.TestCase):
     def check_that_attribute_has_been_set(self, name, value, attribute):

@@ -503,26 +503,34 @@ class Key(object):
         else:
             setattr(self, name, value)
 
-    def exists(self):
+    def exists(self, headers=None):
         """
         Returns True if the key exists
 
         :rtype: bool
         :return: Whether the key exists on S3
         """
-        return bool(self.bucket.lookup(self.name))
+        return bool(self.bucket.lookup(self.name, headers=headers))
 
-    def delete(self):
+    def delete(self, headers=None):
         """
         Delete this key from S3
         """
-        return self.bucket.delete_key(self.name, version_id=self.version_id)
+        return self.bucket.delete_key(self.name, version_id=self.version_id,
+                                      headers=headers)
 
     def get_metadata(self, name):
         return self.metadata.get(name)
 
     def set_metadata(self, name, value):
-        self.metadata[name] = value
+        # Ensure that metadata that is vital to signing is in the correct
+        # case. Applies to ``Content-Type`` & ``Content-MD5``.
+        if name.lower() == 'content-type':
+            self.metadata['Content-Type'] = value
+        elif name.lower() == 'content-md5':
+            self.metadata['Content-MD5'] = value
+        else:
+            self.metadata[name] = value
 
     def update_metadata(self, d):
         self.metadata.update(d)
@@ -742,7 +750,14 @@ class Key(object):
                 raise provider.storage_data_error(
                     'Cannot retry failed request. fp does not support seeking.')
 
-            http_conn.putrequest(method, path)
+            # If the caller explicitly specified host header, tell putrequest
+            # not to add a second host header. Similarly for accept-encoding.
+            skips = {}
+            if boto.utils.find_matching_headers('host', headers):
+              skips['skip_host'] = 1
+            if boto.utils.find_matching_headers('accept-encoding', headers):
+              skips['skip_accept_encoding'] = 1
+            http_conn.putrequest(method, path, **skips)
             for key in headers:
                 http_conn.putheader(key, headers[key])
             http_conn.endheaders()

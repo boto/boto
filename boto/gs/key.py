@@ -119,6 +119,14 @@ class Key(S3Key):
                 self.component_count = int(value)
             elif key == 'x-goog-generation':
                 self.generation = value
+            # Use x-goog-stored-content-encoding and
+            # x-goog-stored-content-length to indicate original content length
+            # and encoding, which are transcoding-invariant (so are preferable
+            # over using content-encoding and size headers).
+            elif key == 'x-goog-stored-content-encoding':
+                self.content_encoding = value
+            elif key == 'x-goog-stored-content-length':
+                self.size = int(value)
 
     def open_read(self, headers=None, query_args='',
                   override_num_retries=None, response_headers=None):
@@ -300,9 +308,10 @@ class Key(S3Key):
                                  chunked_transfer=chunked_transfer, size=size,
                                  hash_algs=hash_algs)
 
-    def delete(self):
+    def delete(self, headers=None):
         return self.bucket.delete_key(self.name, version_id=self.version_id,
-                                      generation=self.generation)
+                                      generation=self.generation,
+                                      headers=headers)
 
     def add_email_grant(self, permission, email_address):
         """

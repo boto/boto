@@ -24,17 +24,16 @@
 """
 Check that all of the certs on all service endpoints validate.
 """
-
 import unittest
+
+from tests.integration import ServiceCertVerificationTest
+
 import boto.dynamodb2
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class DynamoDB2CertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     dynamodb2 = True
-    ssl = True
+    regions = boto.dynamodb2.regions()
 
-    def test_certs(self):
-        for region in boto.dynamodb2.regions():
-            c = region.connect()
-            c.list_tables()
+    def sample_service_call(self, conn):
+        conn.list_tables()

@@ -12,7 +12,7 @@ Features
 --------
 
 * Added support for the ``DecodeAuthorizationMessage`` in STS (:sha:`1ada5ac`).
-* Added support for creating/deleting/describing ``OptionGroup``s in RDS.
+* Added support for creating/deleting/describing ``OptionGroup`` in RDS.
   (:sha:`d629228` & :sha:`d059a3b`)
 * Added ``CancelUpdateStack`` to CloudFormation. (:issue:`1476`, :sha:`5bae130`)
 * Added support for getting/setting lifecycle configurations on GS buckets.

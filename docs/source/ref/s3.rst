@@ -88,13 +88,6 @@ boto.s3.lifecycle
    :members:
    :undoc-members:
 
-boto.s3.prefix
------------------
-
-.. automodule:: boto.s3.prefix
-   :members:
-   :undoc-members:
-
 boto.s3.tagging
 ---------------
 

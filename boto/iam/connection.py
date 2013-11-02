@@ -836,7 +836,7 @@ class IAMConnection(AWSQueryConnection):
         :param user_name: The username of the user
 
         :type serial_number: string
-        :param seriasl_number: The serial number which uniquely identifies
+        :param serial_number: The serial number which uniquely identifies
             the MFA device.
 
         :type auth_code_1: string
@@ -862,7 +862,7 @@ class IAMConnection(AWSQueryConnection):
         :param user_name: The username of the user
 
         :type serial_number: string
-        :param seriasl_number: The serial number which uniquely identifies
+        :param serial_number: The serial number which uniquely identifies
             the MFA device.
 
         """
@@ -879,7 +879,7 @@ class IAMConnection(AWSQueryConnection):
         :param user_name: The username of the user
 
         :type serial_number: string
-        :param seriasl_number: The serial number which uniquely identifies
+        :param serial_number: The serial number which uniquely identifies
             the MFA device.
 
         :type auth_code_1: string
@@ -1004,7 +1004,10 @@ class IAMConnection(AWSQueryConnection):
         if not alias:
             raise Exception('No alias associated with this account.  Please use iam.create_account_alias() first.')
 
-        return "https://%s.signin.aws.amazon.com/console/%s" % (alias, service)
+        if self.host == 'iam.us-gov.amazonaws.com':
+            return "https://%s.signin.amazonaws-us-gov.com/console/%s" % (alias, service)
+        else:
+            return "https://%s.signin.aws.amazon.com/console/%s" % (alias, service)
 
     def get_account_summary(self):
         """
