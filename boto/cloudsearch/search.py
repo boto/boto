@@ -300,7 +300,7 @@ class SearchConnection(object):
                 except AttributeError:
                     pass
                 raise SearchServiceException('Authentication error from Amazon%s' % msg)
-            raise SearchServiceException("Got non-json response from Amazon")
+            raise SearchServiceException("Got non-json response from Amazon. %s" % r.content, query)
         data['query'] = query
         data['search_service'] = self
 
@@ -311,7 +311,7 @@ class SearchConnection(object):
                         "=> %s" % (params, m['message']), query)
         elif 'error' in data:
             raise SearchServiceException("Unknown error processing search %s"
-                % (params), query)
+                % json.dumps(data), query)
 
         return SearchResults(**data)
 
