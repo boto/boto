@@ -314,16 +314,74 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteRouteTable', params)
 
+    def _replace_route_table_association(self, association_id,
+                                        route_table_id, dry_run=False):
+        """
+        Helper function for replace_route_table_association and
+        replace_route_table_association_with_assoc. Should not be used directly.
+
+        :type association_id: str
+        :param association_id: The ID of the existing association to replace.
+
+        :type route_table_id: str
+        :param route_table_id: The route table to ID to be used in the
+            association.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: ResultSet
+        :return: ResultSet of Amazon resposne
+        """
+        params = {
+            'AssociationId': association_id,
+            'RouteTableId': route_table_id
+        }
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('ReplaceRouteTableAssociation', params,
+                               ResultSet)
+
     def replace_route_table_assocation(self, association_id,
                                        route_table_id, dry_run=False):
         """
         Replaces a route association with a new route table.  This can be
         used to replace the 'main' route table by using the main route
-        table assocation instead of the more common subnet type
+        table association instead of the more common subnet type
         association.
 
+        NOTE: It may be better to use replace_route_table_association_with_assoc
+        instead of this function; this function does not return the new
+        association ID. This function is retained for backwards compatibility.
+
+
         :type association_id: str
-        :param association_id: The ID of the existing assocation to replace.
+        :param association_id: The ID of the existing association to replace.
+
+        :type route_table_id: str
+        :param route_table_id: The route table to ID to be used in the
+            association.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        return self._replace_route_table_association(
+            association_id, route_table_id, dry_run=dry_run).status
+
+    def replace_route_table_association_with_assoc(self, association_id,
+                                                   route_table_id,
+                                                   dry_run=False):
+        """
+        Replaces a route association with a new route table.  This can be
+        used to replace the 'main' route table by using the main route
+        table association instead of the more common subnet type
+        association. Returns the new association ID.
+
+        :type association_id: str
+        :param association_id: The ID of the existing association to replace.
 
         :type route_table_id: str
         :param route_table_id: The route table to ID to be used in the
@@ -335,15 +393,8 @@ class VPCConnection(EC2Connection):
         :rtype: str
         :return: New association ID
         """
-
-        params = {
-            'AssociationId': association_id,
-            'RouteTableId': route_table_id
-        }
-        if dry_run:
-            params['DryRun'] = 'true'
-        result = self.get_object('ReplaceRouteTableAssociation', params, ResultSet)
-        return result.newAssociationId
+        return self._replace_route_table_association(
+            association_id, route_table_id, dry_run=dry_run).newAssociationId
 
     def create_route(self, route_table_id, destination_cidr_block,
                      gateway_id=None, instance_id=None, interface_id=None,
