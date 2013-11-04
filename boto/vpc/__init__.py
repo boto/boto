@@ -37,6 +37,7 @@ from boto.vpc.vpnconnection import VpnConnection
 from boto.ec2 import RegionData
 from boto.regioninfo import RegionInfo
 
+
 def regions(**kw_params):
     """
     Get all available regions for the EC2 service.
@@ -54,9 +55,8 @@ def regions(**kw_params):
                             connection_cls=VPCConnection)
         regions.append(region)
     regions.append(RegionInfo(name='us-gov-west-1',
-                            endpoint=RegionData[region_name],
-                            connection_cls=VPCConnection)
-    )
+                              endpoint=RegionData[region_name],
+                              connection_cls=VPCConnection))
     return regions
 
 
@@ -135,7 +135,7 @@ class VPCConnection(EC2Connection):
         :rtype: The newly created VPC
         :return: A :class:`boto.vpc.vpc.VPC` object
         """
-        params = {'CidrBlock' : cidr_block}
+        params = {'CidrBlock': cidr_block}
         if instance_tenancy:
             params['InstanceTenancy'] = instance_tenancy
         if dry_run:
@@ -273,7 +273,7 @@ class VPCConnection(EC2Connection):
         :rtype: bool
         :return: True if successful
         """
-        params = { 'AssociationId': association_id }
+        params = {'AssociationId': association_id}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('DisassociateRouteTable', params)
@@ -291,7 +291,7 @@ class VPCConnection(EC2Connection):
         :rtype: The newly created route table
         :return: A :class:`boto.vpc.routetable.RouteTable` object
         """
-        params = { 'VpcId': vpc_id }
+        params = {'VpcId': vpc_id}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateRouteTable', params, RouteTable)
@@ -309,21 +309,54 @@ class VPCConnection(EC2Connection):
         :rtype: bool
         :return: True if successful
         """
-        params = { 'RouteTableId': route_table_id }
+        params = {'RouteTableId': route_table_id}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('DeleteRouteTable', params)
+
+    def _replace_route_table_association(self, association_id,
+                                        route_table_id, dry_run=False):
+        """
+        Helper function for replace_route_table_association and
+        replace_route_table_association_with_assoc. Should not be used directly.
+
+        :type association_id: str
+        :param association_id: The ID of the existing association to replace.
+
+        :type route_table_id: str
+        :param route_table_id: The route table to ID to be used in the
+            association.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: ResultSet
+        :return: ResultSet of Amazon resposne
+        """
+        params = {
+            'AssociationId': association_id,
+            'RouteTableId': route_table_id
+        }
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('ReplaceRouteTableAssociation', params,
+                               ResultSet)
 
     def replace_route_table_assocation(self, association_id,
                                        route_table_id, dry_run=False):
         """
         Replaces a route association with a new route table.  This can be
         used to replace the 'main' route table by using the main route
-        table assocation instead of the more common subnet type
+        table association instead of the more common subnet type
         association.
 
+        NOTE: It may be better to use replace_route_table_association_with_assoc
+        instead of this function; this function does not return the new
+        association ID. This function is retained for backwards compatibility.
+
+
         :type association_id: str
-        :param association_id: The ID of the existing assocation to replace.
+        :param association_id: The ID of the existing association to replace.
 
         :type route_table_id: str
         :param route_table_id: The route table to ID to be used in the
@@ -335,17 +368,37 @@ class VPCConnection(EC2Connection):
         :rtype: bool
         :return: True if successful
         """
+        return self._replace_route_table_association(
+            association_id, route_table_id, dry_run=dry_run).status
 
-        params = {
-            'AssociationId': association_id,
-            'RouteTableId': route_table_id
-        }
-        if dry_run:
-            params['DryRun'] = 'true'
-        return self.get_status('ReplaceRouteTableAssociation', params)
+    def replace_route_table_association_with_assoc(self, association_id,
+                                                   route_table_id,
+                                                   dry_run=False):
+        """
+        Replaces a route association with a new route table.  This can be
+        used to replace the 'main' route table by using the main route
+        table association instead of the more common subnet type
+        association. Returns the new association ID.
+
+        :type association_id: str
+        :param association_id: The ID of the existing association to replace.
+
+        :type route_table_id: str
+        :param route_table_id: The route table to ID to be used in the
+            association.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: str
+        :return: New association ID
+        """
+        return self._replace_route_table_association(
+            association_id, route_table_id, dry_run=dry_run).newAssociationId
 
     def create_route(self, route_table_id, destination_cidr_block,
-                     gateway_id=None, instance_id=None, dry_run=False):
+                     gateway_id=None, instance_id=None, interface_id=None,
+                     dry_run=False):
         """
         Creates a new route in the route table within a VPC. The route's target
         can be either a gateway attached to the VPC or a NAT instance in the
@@ -364,6 +417,9 @@ class VPCConnection(EC2Connection):
         :type instance_id: str
         :param instance_id: The ID of a NAT instance in your VPC.
 
+        :type interface_id: str
+        :param interface_id: Allows routing to network interface attachments.
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -379,14 +435,16 @@ class VPCConnection(EC2Connection):
             params['GatewayId'] = gateway_id
         elif instance_id is not None:
             params['InstanceId'] = instance_id
+        elif interface_id is not None:
+            params['NetworkInterfaceId'] = interface_id
         if dry_run:
             params['DryRun'] = 'true'
 
         return self.get_status('CreateRoute', params)
 
     def replace_route(self, route_table_id, destination_cidr_block,
-                     gateway_id=None, instance_id=None, interface_id=None,
-                     dry_run=False):
+                      gateway_id=None, instance_id=None, interface_id=None,
+                      dry_run=False):
         """
         Replaces an existing route within a route table in a VPC.
 
@@ -778,7 +836,7 @@ class VPCConnection(EC2Connection):
         :rtype: Bool
         :return: True if successful
         """
-        params = { 'InternetGatewayId': internet_gateway_id }
+        params = {'InternetGatewayId': internet_gateway_id}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('DeleteInternetGateway', params)
@@ -888,7 +946,7 @@ class VPCConnection(EC2Connection):
         :param ip_address: Internet-routable IP address for customer's gateway.
                            Must be a static address.
 
-        :type bgp_asn: str
+        :type bgp_asn: int
         :param bgp_asn: Customer gateway's Border Gateway Protocol (BGP)
                         Autonomous System Number (ASN)
 
@@ -898,9 +956,9 @@ class VPCConnection(EC2Connection):
         :rtype: The newly created CustomerGateway
         :return: A :class:`boto.vpc.customergateway.CustomerGateway` object
         """
-        params = {'Type' : type,
-                  'IpAddress' : ip_address,
-                  'BgpAsn' : bgp_asn}
+        params = {'Type': type,
+                  'IpAddress': ip_address,
+                  'BgpAsn': bgp_asn}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateCustomerGateway', params, CustomerGateway)
@@ -979,7 +1037,7 @@ class VPCConnection(EC2Connection):
         :rtype: The newly created VpnGateway
         :return: A :class:`boto.vpc.vpngateway.VpnGateway` object
         """
-        params = {'Type' : type}
+        params = {'Type': type}
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
         if dry_run:
@@ -1021,10 +1079,32 @@ class VPCConnection(EC2Connection):
         :return: a :class:`boto.vpc.vpngateway.Attachment`
         """
         params = {'VpnGatewayId': vpn_gateway_id,
-                  'VpcId' : vpc_id}
+                  'VpcId': vpc_id}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('AttachVpnGateway', params, Attachment)
+
+    def detach_vpn_gateway(self, vpn_gateway_id, vpc_id, dry_run=False):
+        """
+        Detaches a VPN gateway from a VPC.
+
+        :type vpn_gateway_id: str
+        :param vpn_gateway_id: The ID of the vpn_gateway to detach
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC you want to detach the gateway from.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {'VpnGatewayId': vpn_gateway_id,
+                  'VpcId': vpc_id}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('DetachVpnGateway', params)
 
     # Subnets
 
@@ -1086,8 +1166,8 @@ class VPCConnection(EC2Connection):
         :rtype: The newly created Subnet
         :return: A :class:`boto.vpc.customergateway.Subnet` object
         """
-        params = {'VpcId' : vpc_id,
-                  'CidrBlock' : cidr_block}
+        params = {'VpcId': vpc_id,
+                  'CidrBlock': cidr_block}
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
         if dry_run:
@@ -1197,19 +1277,19 @@ class VPCConnection(EC2Connection):
 
         if domain_name:
             key_counter = insert_option(params,
-                'domain-name', domain_name)
+                                        'domain-name', domain_name)
         if domain_name_servers:
             key_counter = insert_option(params,
-                'domain-name-servers', domain_name_servers)
+                                        'domain-name-servers', domain_name_servers)
         if ntp_servers:
             key_counter = insert_option(params,
-                'ntp-servers', ntp_servers)
+                                        'ntp-servers', ntp_servers)
         if netbios_name_servers:
             key_counter = insert_option(params,
-                'netbios-name-servers', netbios_name_servers)
+                                        'netbios-name-servers', netbios_name_servers)
         if netbios_node_type:
             key_counter = insert_option(params,
-                'netbios-node-type', netbios_node_type)
+                                        'netbios-node-type', netbios_node_type)
         if dry_run:
             params['DryRun'] = 'true'
 
@@ -1250,7 +1330,7 @@ class VPCConnection(EC2Connection):
         :return: True if successful
         """
         params = {'DhcpOptionsId': dhcp_options_id,
-                  'VpcId' : vpc_id}
+                  'VpcId': vpc_id}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('AssociateDhcpOptions', params)
