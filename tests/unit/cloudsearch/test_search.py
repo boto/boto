@@ -5,6 +5,8 @@ from httpretty import HTTPretty
 
 import urlparse
 import json
+import mock
+import requests
 
 from boto.cloudsearch.search import SearchConnection, SearchServiceException
 
@@ -387,3 +389,43 @@ class CloudSearchUnauthorizedTest(CloudSearchSearchBaseTest):
 
         with self.assertRaisesRegexp(SearchServiceException, 'foo bar baz'):
             search.search(q='Test')
+
+
+class FakeResponse(object):
+    status_code = 405
+    content = ''
+
+
+class CloudSearchConnectionTest(unittest.TestCase):
+    cloudsearch = True
+
+    def setUp(self):
+        super(CloudSearchConnectionTest, self).setUp()
+        self.conn = SearchConnection(
+            endpoint='test-domain.cloudsearch.amazonaws.com'
+        )
+
+    def test_expose_additional_error_info(self):
+        mpo = mock.patch.object
+        fake = FakeResponse()
+        fake.content = 'Nopenopenope'
+
+        # First, in the case of a non-JSON, non-403 error.
+        with mpo(requests, 'get', return_value=fake) as mock_request:
+            with self.assertRaises(SearchServiceException) as cm:
+                self.conn.search(q='not_gonna_happen')
+
+            self.assertTrue('non-json response' in str(cm.exception))
+            self.assertTrue('Nopenopenope' in str(cm.exception))
+
+        # Then with JSON & an 'error' key within.
+        fake.content = json.dumps({
+            'error': "Something went wrong. Oops."
+        })
+
+        with mpo(requests, 'get', return_value=fake) as mock_request:
+            with self.assertRaises(SearchServiceException) as cm:
+                self.conn.search(q='no_luck_here')
+
+            self.assertTrue('Unknown error' in str(cm.exception))
+            self.assertTrue('went wrong. Oops' in str(cm.exception))
