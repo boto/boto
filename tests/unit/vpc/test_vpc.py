@@ -381,14 +381,14 @@ class TestReplaceNetworkAclAssociation(AWSMockServiceTestCase):
               </entrySet>
               <associationSet>
                 <item>
-                  <networkAclAssociationId>aclassoc-5c659635</networkAclAssociationId>
-                  <networkAclId>acl-5d659634</networkAclId>
-                  <subnetId>subnet-ff669596</subnetId>
-                </item>
-                <item>
                   <networkAclAssociationId>aclassoc-c26596ab</networkAclAssociationId>
                   <networkAclId>acl-5d659634</networkAclId>
                   <subnetId>subnet-f0669599</subnetId>
+                </item>
+                <item>
+                  <networkAclAssociationId>aclassoc-5c659635</networkAclAssociationId>
+                  <networkAclId>acl-5d659634</networkAclId>
+                  <subnetId>subnet-ff669596</subnetId>
                 </item>
               </associationSet>
               <tagSet/>
