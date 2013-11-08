@@ -1,9 +1,9 @@
 ####
 boto
 ####
-boto 2.15.0
+boto 2.16.0
 
-Released: 17-October-2013
+Released: 8-November-2013
 
 .. image:: https://travis-ci.org/boto/boto.png?branch=develop
         :target: https://travis-ci.org/boto/boto
