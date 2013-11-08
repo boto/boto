@@ -497,10 +497,10 @@ class VPCConnection(EC2Connection):
         """
 
         acl = self.get_all_network_acls(filters=[('association.subnet-id', subnet_id)])[0]
-        association_id = acl.associations[0].id
+        association = [ association for association in acl.associations if association.subnet_id == subnet_id ][0]
 
         params = {
-            'AssociationId': association_id,
+            'AssociationId': association.id,
             'NetworkAclId': network_acl_id
         }
 

@@ -381,14 +381,14 @@ class TestReplaceNetworkAclAssociation(AWSMockServiceTestCase):
               </entrySet>
               <associationSet>
                 <item>
-                  <networkAclAssociationId>aclassoc-5c659635</networkAclAssociationId>
-                  <networkAclId>acl-5d659634</networkAclId>
-                  <subnetId>subnet-ff669596</subnetId>
-                </item>
-                <item>
                   <networkAclAssociationId>aclassoc-c26596ab</networkAclAssociationId>
                   <networkAclId>acl-5d659634</networkAclId>
                   <subnetId>subnet-f0669599</subnetId>
+                </item>
+                <item>
+                  <networkAclAssociationId>aclassoc-5c659635</networkAclAssociationId>
+                  <networkAclId>acl-5d659634</networkAclId>
+                  <subnetId>subnet-ff669596</subnetId>
                 </item>
               </associationSet>
               <tagSet/>
@@ -427,8 +427,8 @@ class TestReplaceNetworkAclAssociation(AWSMockServiceTestCase):
             self.create_response(status_code=200, body=self.get_all_network_acls_subnet_body),
             self.create_response(status_code=200)
         ]
-        response = self.service_connection.disassociate_network_acl('vpc-5266953b',
-                                                                    'subnet-ff669596')
+        response = self.service_connection.disassociate_network_acl('subnet-ff669596',
+                                                                    'vpc-5266953b')
         # Note: Not testing proper call to either call to get_all_network_acls!
         self.assert_request_parameters({
             'Action': 'ReplaceNetworkAclAssociation',
