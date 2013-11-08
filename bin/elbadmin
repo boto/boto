@@ -29,8 +29,8 @@ Commands:
     delete    <name>              Delete ELB <name>
     get       <name>              Get all instances associated with <name>
     create    <name>              Create an ELB; -z and -l are required
-    add       <name> <instance>   Add <instance> in ELB <name>
-    remove|rm <name> <instance>   Remove <instance> from ELB <name>
+    add       <name> <instances>  Add <instances> in ELB <name>
+    remove|rm <name> <instances>  Remove <instances> from ELB <name>
     reap      <name>              Remove terminated instances from ELB <name>
     enable|en <name> <zone>       Enable Zone <zone> for ELB <name>
     disable   <name> <zone>       Disable Zone <zone> for ELB <name>
@@ -160,19 +160,19 @@ def delete(elb, name):
         print "Load Balancer %s deleted" % name
 
 
-def add_instance(elb, name, instance):
+def add_instances(elb, name, instances):
     """Add <instance> to ELB <name>"""
     b = find_elb(elb, name)
     if b:
-        b.register_instances([instance])
+        b.register_instances(instances)
         return get(elb, name)
 
 
-def remove_instance(elb, name, instance):
+def remove_instances(elb, name, instances):
     """Remove instance from elb <name>"""
     b = find_elb(elb, name)
     if b:
-        b.deregister_instances([instance])
+        b.deregister_instances(instances)
         return get(elb, name)
 
 
@@ -273,9 +273,9 @@ if __name__ == "__main__":
     elif command == "delete":
         delete(elb, args[1])
     elif command in ("add", "put"):
-        add_instance(elb, args[1], args[2])
+        add_instances(elb, args[1], args[2:])
     elif command in ("rm", "remove"):
-        remove_instance(elb, args[1], args[2])
+        remove_instances(elb, args[1], args[2:])
     elif command == "reap":
         reap_instances(elb, args[1])
     elif command in ("en", "enable"):

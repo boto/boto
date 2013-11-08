@@ -342,6 +342,11 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
+    def _validate_kwarg_names(self, kwargs, names):
+        for kwarg in kwargs:
+            if kwarg not in names:
+                raise TypeError('Invalid argument %s!' % kwarg)
+
     def get_all_keys(self, headers=None, **params):
         """
         A lower-level method for listing contents of a bucket.  This
@@ -371,6 +376,8 @@ class Bucket(object):
         :return: The result from S3 listing the keys requested
 
         """
+        self._validate_kwarg_names(params, ['maxkeys', 'max_keys', 'prefix',
+                                            'marker', 'delimiter'])
         return self._get_all([('Contents', self.key_class),
                               ('CommonPrefixes', Prefix)],
                              '', headers, **params)
@@ -408,6 +415,9 @@ class Bucket(object):
         :rtype: ResultSet
         :return: The result from S3 listing the keys requested
         """
+        self._validate_kwarg_names(params, ['maxkeys', 'max_keys', 'prefix',
+                                            'key_marker', 'version_id_marker',
+                                            'delimiter'])
         return self._get_all([('Version', self.key_class),
                               ('CommonPrefixes', Prefix),
                               ('DeleteMarker', DeleteMarker)],
@@ -451,6 +461,8 @@ class Bucket(object):
         :return: The result from S3 listing the uploads requested
 
         """
+        self._validate_kwarg_names(params, ['max_uploads', 'key_marker',
+                                            'upload_id_marker'])
         return self._get_all([('Upload', MultiPartUpload),
                               ('CommonPrefixes', Prefix)],
                              'uploads', headers, **params)

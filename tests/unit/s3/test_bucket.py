@@ -51,6 +51,13 @@ class TestS3Bucket(AWSMockServiceTestCase):
         with self.assertRaises(ValueError):
             key = bucket.delete_key('')
 
+    def test_bucket_kwargs_misspelling(self):
+        self.set_http_response(status_code=200)
+        bucket = self.service_connection.create_bucket('mybucket')
+
+        with self.assertRaises(TypeError):
+            bucket.get_all_keys(delimeter='foo')
+
     def test__get_all_query_args(self):
         bukket = Bucket()
 

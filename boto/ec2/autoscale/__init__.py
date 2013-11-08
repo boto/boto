@@ -241,6 +241,10 @@ class AutoScaleConnection(AWSQueryConnection):
             params['EbsOptimized'] = 'true'
         else:
             params['EbsOptimized'] = 'false'
+        if launch_config.associate_public_ip_address is True:
+            params['AssociatePublicIpAddress'] = 'true'
+        elif launch_config.associate_public_ip_address is False:
+            params['AssociatePublicIpAddress'] = 'false'
         return self.get_object('CreateLaunchConfiguration', params,
                                Request, verb='POST')
 
@@ -696,7 +700,12 @@ class AutoScaleConnection(AWSQueryConnection):
 
         :type notification_types: list
         :param notification_types: The type of events that will trigger
-            the notification.
+            the notification. Valid types are:
+            'autoscaling:EC2_INSTANCE_LAUNCH',
+            'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
+            'autoscaling:EC2_INSTANCE_TERMINATE',
+            'autoscaling:EC2_INSTANCE_TERMINATE_ERROR',
+            'autoscaling:TEST_NOTIFICATION'
         """
 
         name = autoscale_group

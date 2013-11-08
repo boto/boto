@@ -286,8 +286,8 @@ class SQSConnection(AWSQueryConnection):
         :param queue: The Queue from which messages are read.
 
         :type receipt_handle: str
-        :param queue: The receipt handle associated with the message whose
-                      visibility timeout will be changed.
+        :param receipt_handle: The receipt handle associated with the message
+                               whose visibility timeout will be changed.
 
         :type visibility_timeout: int
         :param visibility_timeout: The new value of the message's visibility

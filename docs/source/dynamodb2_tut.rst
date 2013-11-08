@@ -546,6 +546,30 @@ run::
     >>> users.delete()
 
 
+DynamoDB Local
+--------------
+
+`Amazon DynamoDB Local`_ is a utility which can be used to mock DynamoDB
+during development. Connecting to a running DynamoDB Local server is easy::
+
+    #!/usr/bin/env python
+    from boto.dynamodb2.layer1 import DynamoDBConnection
+
+
+    # Connect to DynamoDB Local
+    conn = DynamoDBConnection(
+        host='localhost',
+        port=8000,
+        aws_secret_access_key='anything',
+        is_secure=False)
+
+    # List all local tables
+    tables = conn.list_tables()
+
+
+.. _`Amazon DynamoDB Local`: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tools.html
+
+
 Next Steps
 ----------
 
