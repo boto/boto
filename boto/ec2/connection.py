@@ -62,6 +62,7 @@ from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
 from boto.ec2.networkinterface import NetworkInterface
 from boto.ec2.attributes import AccountAttribute, VPCAttribute
+from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
@@ -260,7 +261,8 @@ class EC2Connection(AWSQueryConnection):
     def register_image(self, name=None, description=None, image_location=None,
                        architecture=None, kernel_id=None, ramdisk_id=None,
                        root_device_name=None, block_device_map=None,
-                       dry_run=False, virtualization_type=None):
+                       dry_run=False, virtualization_type=None,
+                       snapshot_id=None):
         """
         Register an image.
 
@@ -299,6 +301,11 @@ class EC2Connection(AWSQueryConnection):
             * paravirtual
             * hvm
 
+        :type snapshot_id: string
+        :param snapshot_id: A snapshot ID for the snapshot to be used
+            as root device for the image. Mutually exclusive with
+            block_device_map, requires root_device_name
+            
         :rtype: string
         :return: The new image id
         """
@@ -317,12 +324,17 @@ class EC2Connection(AWSQueryConnection):
             params['ImageLocation'] = image_location
         if root_device_name:
             params['RootDeviceName'] = root_device_name
+        if snapshot_id:
+            root_vol = BlockDeviceType(snapshot_id=snapshot_id)
+            block_device_map = BlockDeviceMapping()
+            block_device_map[root_device_name] = root_vol
         if block_device_map:
             block_device_map.ec2_build_list_params(params)
         if dry_run:
             params['DryRun'] = 'true'
         if virtualization_type:
             params['VirtualizationType'] = virtualization_type
+        
 
         rs = self.get_object('RegisterImage', params, ResultSet, verb='POST')
         image_id = getattr(rs, 'imageId', None)
