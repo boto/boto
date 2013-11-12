@@ -711,7 +711,11 @@ class Bucket(object):
             acl = src_bucket.get_xml_acl(src_key_name)
         if encrypt_key:
             headers[provider.server_side_encryption_header] = 'AES256'
-        src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
+        if src_key_name.startswith('/'):
+            src_format = '{bucket}{key}'
+        else:
+            src_format = '{bucket}/{key}'
+        src = src_format.format(bucket=src_bucket_name, key=urllib.quote(src_key_name))
         if src_version_id:
             src += '?versionId=%s' % src_version_id
         headers[provider.copy_source_header] = str(src)
