@@ -1,7 +1,7 @@
 """
 Exceptions that are specific to the cloudtrail module.
 """
-from boto.exception import BotoServerError, BotoClientError
+from boto.exception import BotoServerError
 
 
 class InvalidSnsTopicNameException(BotoServerError):

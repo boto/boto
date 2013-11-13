@@ -20,7 +20,11 @@
 # IN THE SOFTWARE.
 #
 
-import json
+try:
+    import json
+except ImportError:
+    import simplejson as json
+
 import boto
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
@@ -48,8 +52,8 @@ class CloudTrailConnection(AWSQueryConnection):
     programmatic access to AWSCloudTrail. For example, the SDKs take
     care of cryptographically signing requests, managing errors, and
     retrying requests automatically. For information about the AWS
-    SDKs, including how to download and install them, see the `Tools
-    for Amazon Web Services page`_.
+    SDKs, including how to download and install them, see the Tools
+    for Amazon Web Services page.
 
     See the CloudTrail User Guide for information about the data that
     is included with each event listed in the log files.
@@ -78,11 +82,7 @@ class CloudTrailConnection(AWSQueryConnection):
 
 
     def __init__(self, **kwargs):
-        try:
-            region = kwargs.pop('region')
-        except KeyError:
-            region = None
-
+        region = kwargs.pop('region', None)
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
