@@ -44,6 +44,7 @@ Currently Supported Services
   * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
   * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
   * Opsworks -- (:doc:`API Reference <ref/opsworks>`)
+  * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`)
 
 * **Identity & Access**
 
@@ -114,6 +115,7 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.17.0
    releasenotes/v2.16.0
    releasenotes/v2.15.0
    releasenotes/v2.14.0
