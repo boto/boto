@@ -130,6 +130,8 @@ class PromoteReadReplicaTest(unittest.TestCase):
             instances = self.conn.get_all_dbinstances(self.renamedDB_name)
             inst = instances[0]
 
+        self.assertTrue(inst.status == 'available')
+
         # Since the replica DB was renamed...
         self.replicaDB = None
 
