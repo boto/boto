@@ -44,6 +44,7 @@ Currently Supported Services
   * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
   * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
   * Opsworks -- (:doc:`API Reference <ref/opsworks>`)
+  * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`)
 
 * **Identity & Access**
 
