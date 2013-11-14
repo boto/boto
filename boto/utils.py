@@ -323,7 +323,7 @@ def _build_instance_metadata_url(url, version, path):
         http://169.254.169.254/latest/meta-data/
 
     """
-    return '%s/%s/%s/' % (url, version, path)
+    return '%s/%s/%s' % (url, version, path)
 
 
 def get_instance_metadata(version='latest', url='http://169.254.169.254',
