@@ -342,10 +342,19 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def _validate_kwarg_names(self, kwargs, names):
+    def validate_kwarg_names(self, kwargs, names):
+        """
+        Checks that all named arguments are in the specified list of names.
+
+        :type kwargs: dict
+        :param kwargs: Dictionary of kwargs to validate.
+
+        :type names: list
+        :param names: List of possible named arguments.
+        """
         for kwarg in kwargs:
             if kwarg not in names:
-                raise TypeError('Invalid argument %s!' % kwarg)
+                raise TypeError('Invalid argument "%s"!' % kwarg)
 
     def get_all_keys(self, headers=None, **params):
         """
@@ -376,8 +385,8 @@ class Bucket(object):
         :return: The result from S3 listing the keys requested
 
         """
-        self._validate_kwarg_names(params, ['maxkeys', 'max_keys', 'prefix',
-                                            'marker', 'delimiter'])
+        self.validate_kwarg_names(params, ['maxkeys', 'max_keys', 'prefix',
+                                           'marker', 'delimiter'])
         return self._get_all([('Contents', self.key_class),
                               ('CommonPrefixes', Prefix)],
                              '', headers, **params)
@@ -415,13 +424,23 @@ class Bucket(object):
         :rtype: ResultSet
         :return: The result from S3 listing the keys requested
         """
-        self._validate_kwarg_names(params, ['maxkeys', 'max_keys', 'prefix',
-                                            'key_marker', 'version_id_marker',
-                                            'delimiter'])
+        self.validate_get_all_versions_params(params)
         return self._get_all([('Version', self.key_class),
                               ('CommonPrefixes', Prefix),
                               ('DeleteMarker', DeleteMarker)],
                              'versions', headers, **params)
+
+    def validate_get_all_versions_params(self, params):
+        """
+        Validate that the parameters passed to get_all_versions are valid.
+        Overridden by subclasses that allow a different set of parameters.
+
+        :type params: dict
+        :param params: Parameters to validate.
+        """
+        self.validate_kwarg_names(
+                params, ['maxkeys', 'max_keys', 'prefix', 'key_marker',
+                         'version_id_marker', 'delimiter'])
 
     def get_all_multipart_uploads(self, headers=None, **params):
         """
@@ -461,8 +480,8 @@ class Bucket(object):
         :return: The result from S3 listing the uploads requested
 
         """
-        self._validate_kwarg_names(params, ['max_uploads', 'key_marker',
-                                            'upload_id_marker'])
+        self.validate_kwarg_names(params, ['max_uploads', 'key_marker',
+                                           'upload_id_marker'])
         return self._get_all([('Upload', MultiPartUpload),
                               ('CommonPrefixes', Prefix)],
                              'uploads', headers, **params)
