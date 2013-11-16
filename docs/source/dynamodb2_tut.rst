@@ -204,8 +204,8 @@ three choices.
 
 The first is sending all the data with the expectation nothing has changed
 since you read the data. DynamoDB will verify the data is in the original state
-and, if so, will all of the item's data. If that expectation fails, the call
-will fail::
+and, if so, will send all of the item's data. If that expectation fails, the
+call will fail::
 
     >>> johndoe = users.get_item(username='johndoe')
     >>> johndoe['first_name'] = 'Johann'
