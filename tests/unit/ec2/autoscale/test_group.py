@@ -453,6 +453,7 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
             self.assertEqual(getattr(tag, attr), True)
         else:
             self.assertEqual(getattr(tag, attr), value)
+>>>>>>> upstream/develop
 
 if __name__ == '__main__':
     unittest.main()
