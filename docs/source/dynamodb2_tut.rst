@@ -204,8 +204,8 @@ three choices.
 
 The first is sending all the data with the expectation nothing has changed
 since you read the data. DynamoDB will verify the data is in the original state
-and, if so, will all of the item's data. If that expectation fails, the call
-will fail::
+and, if so, will send all of the item's data. If that expectation fails, the
+call will fail::
 
     >>> johndoe = users.get_item(username='johndoe')
     >>> johndoe['first_name'] = 'Johann'
@@ -273,7 +273,7 @@ both speed up the process & reduce the number of write requests made to the
 service.
 
 Batch writing involves wrapping the calls you want batched in a context manager.
-The context manager immitates the ``Table.put_item`` & ``Table.delete_item``
+The context manager imitates the ``Table.put_item`` & ``Table.delete_item``
 APIs. Getting & using the context manager looks like::
 
     >>> from boto.dynamodb2.table import Table
@@ -544,6 +544,30 @@ Deleting a table is a simple exercise. When you no longer need a table, simply
 run::
 
     >>> users.delete()
+
+
+DynamoDB Local
+--------------
+
+`Amazon DynamoDB Local`_ is a utility which can be used to mock DynamoDB
+during development. Connecting to a running DynamoDB Local server is easy::
+
+    #!/usr/bin/env python
+    from boto.dynamodb2.layer1 import DynamoDBConnection
+
+
+    # Connect to DynamoDB Local
+    conn = DynamoDBConnection(
+        host='localhost',
+        port=8000,
+        aws_secret_access_key='anything',
+        is_secure=False)
+
+    # List all local tables
+    tables = conn.list_tables()
+
+
+.. _`Amazon DynamoDB Local`: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tools.html
 
 
 Next Steps

@@ -128,7 +128,11 @@ class CloudTrailConnection(AWSQueryConnection):
 
         **TrailAlreadyExists**
 
+<<<<<<< HEAD
         At attempt was made to create a trail with a name that already
+=======
+        An attempt was made to create a trail with a name that already
+>>>>>>> upstream/develop
         exists.
 
         **S3BucketDoesNotExist**
@@ -138,7 +142,11 @@ class CloudTrailConnection(AWSQueryConnection):
         **InsufficientS3BucketPolicy**
 
         Policy on Amazon S3 bucket does not permit CloudTrail to write
+<<<<<<< HEAD
         to your bucket. See the AWS AWS CloudTrail User Guide for the
+=======
+        to your bucket. See the AWS CloudTrail User Guide for the
+>>>>>>> upstream/develop
         required bucket policy.
 
         **InsufficientSnsTopicPolicy**

@@ -62,6 +62,7 @@ from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
 from boto.ec2.networkinterface import NetworkInterface
 from boto.ec2.attributes import AccountAttribute, VPCAttribute
+from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
 
 #boto.set_stream_logger('ec2')
@@ -69,7 +70,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2013-07-15')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2013-10-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -260,7 +261,8 @@ class EC2Connection(AWSQueryConnection):
     def register_image(self, name=None, description=None, image_location=None,
                        architecture=None, kernel_id=None, ramdisk_id=None,
                        root_device_name=None, block_device_map=None,
-                       dry_run=False, virtualization_type=None):
+                       dry_run=False, virtualization_type=None,
+                       snapshot_id=None):
         """
         Register an image.
 
@@ -299,6 +301,11 @@ class EC2Connection(AWSQueryConnection):
             * paravirtual
             * hvm
 
+        :type snapshot_id: string
+        :param snapshot_id: A snapshot ID for the snapshot to be used
+            as root device for the image. Mutually exclusive with
+            block_device_map, requires root_device_name
+            
         :rtype: string
         :return: The new image id
         """
@@ -317,12 +324,17 @@ class EC2Connection(AWSQueryConnection):
             params['ImageLocation'] = image_location
         if root_device_name:
             params['RootDeviceName'] = root_device_name
+        if snapshot_id:
+            root_vol = BlockDeviceType(snapshot_id=snapshot_id)
+            block_device_map = BlockDeviceMapping()
+            block_device_map[root_device_name] = root_vol
         if block_device_map:
             block_device_map.ec2_build_list_params(params)
         if dry_run:
             params['DryRun'] = 'true'
         if virtualization_type:
             params['VirtualizationType'] = virtualization_type
+        
 
         rs = self.get_object('RegisterImage', params, ResultSet, verb='POST')
         image_id = getattr(rs, 'imageId', None)
@@ -364,7 +376,8 @@ class EC2Connection(AWSQueryConnection):
         return result
 
     def create_image(self, instance_id, name,
-                     description=None, no_reboot=False, dry_run=False):
+                     description=None, no_reboot=False,
+                     block_device_mapping=None, dry_run=False):
         """
         Will create an AMI from the instance in the running or stopped
         state.
@@ -386,6 +399,10 @@ class EC2Connection(AWSQueryConnection):
             responsibility of maintaining file system integrity is
             left to the owner of the instance.
 
+        :type block_device_mapping: :class:`boto.ec2.blockdevicemapping.BlockDeviceMapping`
+        :param block_device_mapping: A BlockDeviceMapping data structure
+            describing the EBS volumes associated with the Image.
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -398,6 +415,8 @@ class EC2Connection(AWSQueryConnection):
             params['Description'] = description
         if no_reboot:
             params['NoReboot'] = 'true'
+        if block_device_mapping:
+            block_device_mapping.ec2_build_list_params(params)
         if dry_run:
             params['DryRun'] = 'true'
         img = self.get_object('CreateImage', params, Image, verb='POST')
@@ -1509,7 +1528,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('CancelSpotInstanceRequests', params,
-                             [('item', Instance)], verb='POST')
+                             [('item', SpotInstanceRequest)], verb='POST')
 
     def get_spot_datafeed_subscription(self, dry_run=False):
         """
@@ -2198,17 +2217,17 @@ class EC2Connection(AWSQueryConnection):
                              present, only the Snapshots associated with
                              these snapshot ids will be returned.
 
-        :type owner: str
-        :param owner: If present, only the snapshots owned by the specified user
+        :type owner: str or list
+        :param owner: If present, only the snapshots owned by the specified user(s)
                       will be returned.  Valid values are:
 
                       * self
                       * amazon
                       * AWS Account ID
 
-        :type restorable_by: str
+        :type restorable_by: str or list
         :param restorable_by: If present, only the snapshots that are restorable
-                              by the specified account id will be returned.
+                              by the specified account id(s) will be returned.
 
         :type filters: dict
         :param filters: Optional filters that can be used to limit
@@ -2229,10 +2248,11 @@ class EC2Connection(AWSQueryConnection):
         params = {}
         if snapshot_ids:
             self.build_list_params(params, snapshot_ids, 'SnapshotId')
+
         if owner:
-            params['Owner'] = owner
+            self.build_list_params(params, owner, 'Owner')
         if restorable_by:
-            params['RestorableBy'] = restorable_by
+            self.build_list_params(params, restorable_by, 'RestorableBy')
         if filters:
             self.build_filter_params(params, filters)
         if dry_run:

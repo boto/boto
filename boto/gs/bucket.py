@@ -19,12 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import re
 import urllib
 import xml.sax
 
 import boto
 from boto import handler
 from boto.resultset import ResultSet
+from boto.exception import GSResponseError
 from boto.exception import InvalidAclError
 from boto.gs.acl import ACL, CannedACLStrings
 from boto.gs.acl import SupportedPermissions as GSPermissions
@@ -41,6 +43,7 @@ DEF_OBJ_ACL = 'defaultObjectAcl'
 STANDARD_ACL = 'acl'
 CORS_ARG = 'cors'
 LIFECYCLE_ARG = 'lifecycle'
+ERROR_DETAILS_REGEX = re.compile(r'<Details>(?P<details>.*)</Details>')
 
 class Bucket(S3Bucket):
     """Represents a Google Cloud Storage bucket."""
@@ -99,9 +102,16 @@ class Bucket(S3Bucket):
         if response_headers:
             for rk, rv in response_headers.iteritems():
                 query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
-
-        key, resp = self._get_key_internal(key_name, headers,
-                                           query_args_l=query_args_l)
+        try:
+            key, resp = self._get_key_internal(key_name, headers,
+                                               query_args_l=query_args_l)
+        except GSResponseError, e:
+            if e.status == 403 and 'Forbidden' in e.reason:
+                # If we failed getting an object, let the user know which object
+                # failed rather than just returning a generic 403.
+                e.reason = ("Access denied to 'gs://%s/%s'." %
+                            (self.name, key_name))
+            raise
         return key
 
     def copy_key(self, new_key_name, src_bucket_name, src_key_name,
@@ -211,6 +221,14 @@ class Bucket(S3Bucket):
                                             marker, generation_marker,
                                             headers)
 
+    def validate_get_all_versions_params(self, params):
+        """
+        See documentation in boto/s3/bucket.py.
+        """
+        self.validate_kwarg_names(params,
+                                  ['version_id_marker', 'delimiter', 'marker',
+                                   'generation_marker', 'prefix', 'max_keys'])
+
     def delete_key(self, key_name, headers=None, version_id=None,
                    mfa_token=None, generation=None):
         """
@@ -312,6 +330,14 @@ class Bucket(S3Bucket):
                                                 headers=headers)
         body = response.read()
         if response.status != 200:
+            if response.status == 403:
+                match = ERROR_DETAILS_REGEX.search(body)
+                details = match.group('details') if match else None
+                if details:
+                    details = (('<Details>%s. Note that Full Control access'
+                                ' is required to access ACLs.</Details>') %
+                               details)
+                    body = re.sub(ERROR_DETAILS_REGEX, details, body)
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
         return body
