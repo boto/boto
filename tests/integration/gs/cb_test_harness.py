@@ -28,13 +28,15 @@ allowing testing of various file upload/download conditions.
 """
 
 import socket
+import time
 
 
 class CallbackTestHarness(object):
 
     def __init__(self, fail_after_n_bytes=0, num_times_to_fail=1,
                  exception=socket.error('mock socket error', 0),
-                 fp_to_change=None, fp_change_pos=None):
+                 fp_to_change=None, fp_change_pos=None,
+                 delay_after_change=None):
         self.fail_after_n_bytes = fail_after_n_bytes
         self.num_times_to_fail = num_times_to_fail
         self.exception = exception
@@ -42,6 +44,7 @@ class CallbackTestHarness(object):
         # written at that position just before the first exception is thrown.
         self.fp_to_change = fp_to_change
         self.fp_change_pos = fp_change_pos
+        self.delay_after_change = delay_after_change
         self.num_failures = 0
         self.transferred_seq_before_first_failure = []
         self.transferred_seq_after_first_failure = []
@@ -67,5 +70,7 @@ class CallbackTestHarness(object):
                 self.fp_to_change.seek(self.fp_change_pos)
                 self.fp_to_change.write('abc')
                 self.fp_to_change.seek(cur_pos)
+                if self.delay_after_change:
+                    time.sleep(self.delay_after_change)
             self.called = True
             raise self.exception

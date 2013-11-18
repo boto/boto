@@ -19,17 +19,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import unittest
 
-from tests.unit import unittest
+from tests.integration import ServiceCertVerificationTest
+
 import boto.support
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class SupportCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     support = True
-    ssl = True
+    regions = boto.support.regions()
 
-    def test_certs(self):
-        for region in boto.support.regions():
-            c = region.connect()
-            c.describe_services()
+    def sample_service_call(self, conn):
+        conn.describe_services()

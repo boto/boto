@@ -19,17 +19,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import unittest
 
-from tests.unit import unittest
+from tests.integration import ServiceCertVerificationTest
+
 import boto.redshift
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class RedshiftCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     redshift = True
-    ssl = True
+    regions = boto.redshift.regions()
 
-    def test_certs(self):
-        for region in boto.redshift.regions():
-            c = region.connect()
-            c.describe_cluster_versions()
+    def sample_service_call(self, conn):
+        conn.describe_cluster_versions()

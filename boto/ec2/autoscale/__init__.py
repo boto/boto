@@ -241,6 +241,10 @@ class AutoScaleConnection(AWSQueryConnection):
             params['EbsOptimized'] = 'true'
         else:
             params['EbsOptimized'] = 'false'
+        if launch_config.associate_public_ip_address is True:
+            params['AssociatePublicIpAddress'] = 'true'
+        elif launch_config.associate_public_ip_address is False:
+            params['AssociatePublicIpAddress'] = 'false'
         return self.get_object('CreateLaunchConfiguration', params,
                                Request, verb='POST')
 
@@ -492,15 +496,19 @@ class AutoScaleConnection(AWSQueryConnection):
         If no group name or list of policy names are provided, all
         available policies are returned.
 
-        :type as_name: str
-        :param as_name: The name of the
+        :type as_group: str
+        :param as_group: The name of the
             :class:`boto.ec2.autoscale.group.AutoScalingGroup` to filter for.
 
-        :type names: list
-        :param names: List of policy names which should be searched for.
+        :type policy_names: list
+        :param policy_names: List of policy names which should be searched for.
 
         :type max_records: int
         :param max_records: Maximum amount of groups to return.
+
+        :type next_token: str
+        :param next_token: If you have more results than can be returned
+            at once, pass in this  parameter to page through all results.
         """
         params = {}
         if as_group:
@@ -692,7 +700,12 @@ class AutoScaleConnection(AWSQueryConnection):
 
         :type notification_types: list
         :param notification_types: The type of events that will trigger
-            the notification.
+            the notification. Valid types are:
+            'autoscaling:EC2_INSTANCE_LAUNCH',
+            'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
+            'autoscaling:EC2_INSTANCE_TERMINATE',
+            'autoscaling:EC2_INSTANCE_TERMINATE_ERROR',
+            'autoscaling:TEST_NOTIFICATION'
         """
 
         name = autoscale_group

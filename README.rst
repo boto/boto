@@ -1,9 +1,9 @@
 ####
 boto
 ####
-boto 2.13.3
+boto 2.17.0
 
-Released: 16-September-2013
+Released: 14-November-2013
 
 .. image:: https://travis-ci.org/boto/boto.png?branch=develop
         :target: https://travis-ci.org/boto/boto
@@ -42,6 +42,7 @@ At the moment, boto supports:
   * AWS CloudFormation
   * AWS Data Pipeline
   * AWS Opsworks
+  * AWS CloudTrail
 
 * Identity & Access
 

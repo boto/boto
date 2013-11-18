@@ -44,6 +44,7 @@ Currently Supported Services
   * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
   * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
   * Opsworks -- (:doc:`API Reference <ref/opsworks>`)
+  * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`)
 
 * **Identity & Access**
 
@@ -54,7 +55,7 @@ Currently Supported Services
 
   * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
   * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
-  * Simple Workflow Service (SWF) -- (:doc:`API Reference <ref/swf>`)
+  * :doc:`Simple Workflow Service (SWF) <swf_tut>` -- (:doc:`API Reference <ref/swf>`)
   * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`)
   * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`)
   * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`)
@@ -114,6 +115,10 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.17.0
+   releasenotes/v2.16.0
+   releasenotes/v2.15.0
+   releasenotes/v2.14.0
    releasenotes/v2.13.3
    releasenotes/v2.13.2
    releasenotes/v2.13.0
@@ -162,6 +167,7 @@ Release Notes
    rds_tut
    sqs_tut
    ses_tut
+   swf_tut
    cloudsearch_tut
    cloudwatch_tut
    vpc_tut

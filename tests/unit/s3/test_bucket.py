@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from mock import patch
+
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
@@ -49,6 +51,13 @@ class TestS3Bucket(AWSMockServiceTestCase):
         with self.assertRaises(ValueError):
             key = bucket.delete_key('')
 
+    def test_bucket_kwargs_misspelling(self):
+        self.set_http_response(status_code=200)
+        bucket = self.service_connection.create_bucket('mybucket')
+
+        with self.assertRaises(TypeError):
+            bucket.get_all_keys(delimeter='foo')
+
     def test__get_all_query_args(self):
         bukket = Bucket()
 
@@ -98,3 +107,21 @@ class TestS3Bucket(AWSMockServiceTestCase):
             qa,
             'initial=1&bar=%E2%98%83&max-keys=0&foo=true&some-other=thing'
         )
+
+    @patch.object(Bucket, 'get_all_keys')
+    def test_bucket_copy_key_no_validate(self, mock_get_all_keys):
+        self.set_http_response(status_code=200)
+        bucket = self.service_connection.create_bucket('mybucket')
+
+        self.assertFalse(mock_get_all_keys.called)
+        self.service_connection.get_bucket('mybucket', validate=True)
+        self.assertTrue(mock_get_all_keys.called)
+
+        mock_get_all_keys.reset_mock()
+        self.assertFalse(mock_get_all_keys.called)
+        try:
+            bucket.copy_key('newkey', 'srcbucket', 'srckey', preserve_acl=True)
+        except:
+            # Will throw because of empty response.
+            pass
+        self.assertFalse(mock_get_all_keys.called)
