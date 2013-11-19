@@ -880,10 +880,10 @@ class AWSAuthConnection(object):
                 # the port info. All others should be now be up to date and
                 # not include the port.
                 if 's3' not in self._required_auth_capability():
-                    if self._auth_handler.host_header:
+                    try:
                         request.headers['Host'] = \
                             self._auth_handler.host_header(self.host, request)
-                    else:
+                    except AttributeError:
                         request.headers['Host'] = self.host.split(':', 1)[0]
 
                 if callable(sender):
