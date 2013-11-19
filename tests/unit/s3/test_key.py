@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+from __future__ import with_statement
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -32,6 +34,7 @@ from tests.unit import AWSMockServiceTestCase
 from boto.exception import BotoServerError
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
+from boto.s3.key import Key
 
 
 class TestS3Key(AWSMockServiceTestCase):
@@ -146,6 +149,19 @@ class TestS3KeyRetries(AWSMockServiceTestCase):
 
         self.assertTrue(k.should_retry.count, 1)
 
+
+class TestFileError(unittest.TestCase):
+    def test_file_error(self):
+        key = Key()
+
+        class CustomException(Exception): pass
+
+        key.get_contents_to_file = mock.Mock(
+            side_effect=CustomException('File blew up!'))
+
+        # Ensure our exception gets raised instead of a file or IO error
+        with self.assertRaises(CustomException):
+            key.get_contents_to_filename('foo.txt')
 
 if __name__ == '__main__':
     unittest.main()
