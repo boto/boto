@@ -245,14 +245,6 @@ class Layer1(AWSQueryConnection):
             version to be deployed.  If no application is found with this name,
             CreateEnvironment returns an InvalidParameterValue error.
 
-        :type version_label: string
-        :param version_label: The name of the application version to deploy. If
-            the specified application has no associated application versions,
-            AWS Elastic Beanstalk UpdateEnvironment returns an
-            InvalidParameterValue error.  Default: If not specified, AWS
-            Elastic Beanstalk attempts to launch the most recently created
-            application version.
-
         :type environment_name: string
         :param environment_name: A unique name for the deployment environment.
             Used in the application URL. Constraint: Must be from 4 to 23
@@ -263,6 +255,14 @@ class Layer1(AWSQueryConnection):
             Default: If the CNAME parameter is not specified, the environment
             name becomes part of the CNAME, and therefore part of the visible
             URL for your application.
+
+        :type version_label: string
+        :param version_label: The name of the application version to deploy. If
+            the specified application has no associated application versions,
+            AWS Elastic Beanstalk UpdateEnvironment returns an
+            InvalidParameterValue error.  Default: If not specified, AWS
+            Elastic Beanstalk attempts to launch the most recently created
+            application version.
 
         :type template_name: string
         :param template_name: The name of the configuration template to
