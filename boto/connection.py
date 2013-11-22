@@ -372,7 +372,7 @@ class HTTPRequest(object):
         for key in self.headers:
             val = self.headers[key]
             if isinstance(val, unicode):
-                safe = ':;=,.-_~/\\"\''
+                safe = '!"#$%&\'()*+,/:;<=>?@[\\]^`{|}~'
                 self.headers[key] = urllib.quote_plus(val.encode('utf-8'), safe)
 
         connection._auth_handler.add_auth(self, **kwargs)
