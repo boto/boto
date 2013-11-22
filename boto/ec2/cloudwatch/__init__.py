@@ -117,7 +117,7 @@ class CloudWatchConnection(AWSQueryConnection):
                                     validate_certs=validate_certs)
 
     def _required_auth_capability(self):
-        return ['ec2']
+        return ['hmac-v4']
 
     def build_dimension_param(self, dimension, params):
         prefix = 'Dimensions.member'

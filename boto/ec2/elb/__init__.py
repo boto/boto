@@ -390,6 +390,76 @@ class ELBConnection(AWSQueryConnection):
                                params, LoadBalancerZones)
         return obj.zones
 
+    def modify_lb_attribute(self, load_balancer_name, attribute, value):
+        """Changes an attribute of a Load Balancer
+
+        :type load_balancer_name: string
+        :param load_balancer_name: The name of the Load Balancer
+
+        :type attribute: string
+        :param attribute: The attribute you wish to change.
+
+        * crossZoneLoadBalancing - Boolean (true)
+
+        :type value: string
+        :param value: The new value for the attribute
+
+        :rtype: bool
+        :return: Whether the operation succeeded or not
+        """
+
+        bool_reqs = ('crosszoneloadbalancing',)
+        if attribute.lower() in bool_reqs:
+            if isinstance(value, bool):
+                if value:
+                    value = 'true'
+                else:
+                    value = 'false'
+
+        params = {'LoadBalancerName': load_balancer_name}
+        if attribute.lower() == 'crosszoneloadbalancing':
+            params['LoadBalancerAttributes.CrossZoneLoadBalancing.Enabled'
+                   ] = value
+        else:
+            raise ValueError('InvalidAttribute', attribute)
+        return self.get_status('ModifyLoadBalancerAttributes', params,
+                               verb='GET')
+
+    def get_all_lb_attributes(self, load_balancer_name):
+        """Gets all Attributes of a Load Balancer
+
+        :type load_balancer_name: string
+        :param load_balancer_name: The name of the Load Balancer
+
+        :rtype: boto.ec2.elb.attribute.LbAttributes
+        :return: The attribute object of the ELB.
+        """
+        from boto.ec2.elb.attributes import LbAttributes
+        params = {'LoadBalancerName': load_balancer_name}
+        return self.get_object('DescribeLoadBalancerAttributes',
+                               params, LbAttributes)
+
+    def get_lb_attribute(self, load_balancer_name, attribute):
+        """Gets an attribute of a Load Balancer
+
+        This will make an EC2 call for each method call.
+
+        :type load_balancer_name: string
+        :param load_balancer_name: The name of the Load Balancer
+
+        :type attribute: string
+        :param attribute: The attribute you wish to see.
+
+          * crossZoneLoadBalancing - Boolean
+
+        :rtype: Attribute dependent
+        :return: The new value for the attribute
+        """
+        attributes = self.get_all_lb_attributes(load_balancer_name)
+        if attribute.lower() == 'crosszoneloadbalancing':
+            return attributes.cross_zone_load_balancing.enabled
+        return None
+
     def register_instances(self, load_balancer_name, instances):
         """
         Add new Instances to an existing Load Balancer.

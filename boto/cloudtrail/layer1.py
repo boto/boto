@@ -128,7 +128,7 @@ class CloudTrailConnection(AWSQueryConnection):
 
         **TrailAlreadyExists**
 
-        At attempt was made to create a trail with a name that already
+        An attempt was made to create a trail with a name that already
         exists.
 
         **S3BucketDoesNotExist**
@@ -138,7 +138,7 @@ class CloudTrailConnection(AWSQueryConnection):
         **InsufficientS3BucketPolicy**
 
         Policy on Amazon S3 bucket does not permit CloudTrail to write
-        to your bucket. See the AWS AWS CloudTrail User Guide for the
+        to your bucket. See the AWS CloudTrail User Guide for the
         required bucket policy.
 
         **InsufficientSnsTopicPolicy**
