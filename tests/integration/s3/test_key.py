@@ -401,14 +401,14 @@ class S3KeyTest(unittest.TestCase):
         key = self.bucket.new_key('test_header_encoding')
 
         key.set_metadata('Cache-control', 'public, max-age=500')
-        key.set_metadata('Content-disposition', u'filename=Schön.txt')
+        key.set_metadata('Content-disposition', u'filename=Schöne Zeit.txt')
         key.set_contents_from_string('foo')
 
         check = self.bucket.get_key('test_header_encoding')
 
         self.assertEqual(check.cache_control, 'public, max-age=500')
-        self.assertEqual(check.content_disposition, 'filename=Sch%C3%B6n.txt')
+        self.assertEqual(check.content_disposition, 'filename=Sch%C3%B6ne+Zeit.txt')
         self.assertEqual(
             urllib.unquote_plus(check.content_disposition).decode('utf-8'),
-            'filename=Schön.txt'.decode('utf-8')
+            'filename=Schöne Zeit.txt'.decode('utf-8')
         )
