@@ -744,6 +744,29 @@ def connect_cloudtrail(aws_access_key_id=None,
     )
 
 
+def connect_kinesis(aws_access_key_id=None,
+                    aws_secret_access_key=None,
+                    **kwargs):
+    """
+    Connect to Amazon Kinesis
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.kinesis.layer1.KinesisConnection`
+    :return: A connection to the Amazon Kinesis service
+    """
+    from boto.kinesis.layer1 import KinesisConnection
+    return KinesisConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
                 bucket_storage_uri_class=BucketStorageUri,
                 suppress_consec_slashes=True, is_latest=False):
