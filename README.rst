@@ -121,7 +121,7 @@ ChangeLogs
 **********
 
 To see what has changed over time in boto, you can check out the
-`release notes`_ in the wiki.
+release notes at `http://docs.pythonboto.org/en/latest/#release-notes`
 
 ***************************
 Finding Out More About Boto
