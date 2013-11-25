@@ -1084,6 +1084,23 @@ class RDSConnection(AWSQueryConnection):
         params = {'DBSnapshotIdentifier': snapshot_id,
                   'DBInstanceIdentifier': dbinstance_id}
         return self.get_object('CreateDBSnapshot', params, DBSnapshot)
+      
+    def copy_dbsnapshot(self, source_snapshot_id, target_snapshot_id):
+        """
+        Copies the specified DBSnapshot.
+        
+        :type source_snapshot_id: string
+        :param source_snapshot_id: The identifier for the source DB snapshot.
+        
+        :type target_snapshot_id: string
+        :param target_snapshot_id: The identifier for the copied snapshot.
+        
+        :rtype: :class:`boto.rds.dbsnapshot.DBSnapshot`
+        :return: The newly created DBSnapshot.        
+        """
+        params = {'SourceDBSnapshotIdentifier': source_snapshot_id, 
+                  'TargetDBSnapshotIdentifier': target_snapshot_id}
+        return self.get_object('CopyDBSnapshot', params, DBSnapshot)
 
     def delete_dbsnapshot(self, identifier):
         """
