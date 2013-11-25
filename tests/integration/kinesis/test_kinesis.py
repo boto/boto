@@ -21,8 +21,8 @@
 # IN THE SOFTWARE.
 
 import boto
+import time
 
-from time import sleep
 from unittest import TestCase
 
 
@@ -48,7 +48,7 @@ class TestKinesis(TestCase):
         tries = 0
         while tries < 10:
             tries += 1
-            sleep(15)
+            time.sleep(15)
             response = kinesis.describe_stream('test')
 
             if response['StreamDescription']['StreamStatus'] == 'ACTIVE':
@@ -69,7 +69,7 @@ class TestKinesis(TestCase):
         tries = 0
         while tries < 20:
             tries += 1
-            sleep(5)
+            time.sleep(5)
 
             response = kinesis.get_next_records(shard_iterator, limit=5)
             shard_iterator = response['NextShardIterator']
