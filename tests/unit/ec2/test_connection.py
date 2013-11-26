@@ -1256,5 +1256,62 @@ class TestTerminateInstances(TestEC2ConnectionBase):
         self.ec2.terminate_instances('foo')
 
 
+class TestDescribeInstances(TestEC2ConnectionBase):
+
+    def default_body(self):
+        return """
+            <DescribeInstancesResponse>
+            </DescribeInstancesResponse>
+        """
+
+    def test_default_behavior(self):
+        self.set_http_response(status_code=200)
+        self.ec2.get_all_instances()
+        self.assert_request_parameters({
+            'Action': 'DescribeInstances'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
+    def test_max_results(self):
+        self.set_http_response(status_code=200)
+        self.ec2.get_all_instances(
+            max_results=10
+        )
+        self.assert_request_parameters({
+            'Action': 'DescribeInstances',
+            'MaxResults': 10},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
+
+class TestDescribeTags(TestEC2ConnectionBase):
+
+    def default_body(self):
+        return """
+            <DescribeTagsResponse>
+            </DescribeTagsResponse>
+        """
+
+    def test_default_behavior(self):
+        self.set_http_response(status_code=200)
+        self.ec2.get_all_tags()
+        self.assert_request_parameters({
+            'Action': 'DescribeTags'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
+    def test_max_results(self):
+        self.set_http_response(status_code=200)
+        self.ec2.get_all_tags(
+            max_results=10
+        )
+        self.assert_request_parameters({
+            'Action': 'DescribeTags',
+            'MaxResults': 10},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
+
+
 if __name__ == '__main__':
     unittest.main()
