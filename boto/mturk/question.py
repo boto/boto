@@ -109,6 +109,31 @@ class Binary(object, XMLTemplate):
         del self.self
 
 
+class EmbeddedBinary(object):
+    template = "<EmbeddedBinary><EmbeddedMimeType><Type>%(type)s</Type><SubType>%(subtype)s</SubType></EmbeddedMimeType><DataURL>%(url)s</DataURL><AltText>%(alt_text)s</AltText><Width>%(width)s</Width><Height>%(height)s</Height>%(content)s</EmbeddedBinary>"
+    parameter_template = "<Name>%(name)s</Name><Value>%(value)s</Value>"
+
+    def __init__(self, type, subtype, url, alt_text, width, height, **parameters):
+        self.type = type
+        self.subtype = subtype
+        self.url = url
+        self.alt_text = alt_text
+        self.width = width
+        self.height = height
+        self.parameters = parameters
+
+    def get_inner_content(self, content):
+        for name, value in self.parameters.items():
+            value = self.parameter_template % vars()
+            content.append_field('ApplicationParameter', value)
+
+    def get_as_xml(self):
+        content = OrderedContent()
+        self.get_inner_content(content)
+        self.content = content.get_as_xml()
+        return self.template % vars(self)
+
+
 class List(list):
     """A bulleted list suitable for OrderedContent or Overview content"""
     def get_as_xml(self):
@@ -135,9 +160,9 @@ class Application(object):
     def get_as_xml(self):
         content = OrderedContent()
         self.get_inner_content(content)
-        content = content.get_as_xml()
-        class_ = self.__class__.__name__
-        return self.template % vars()
+        self.content = content.get_as_xml()
+        self.class_ = self.__class__.__name__
+        return self.template % vars(self)
 
 
 class HTMLQuestion(ValidatingXML):
@@ -162,7 +187,6 @@ class JavaApplet(Application):
         super(JavaApplet, self).__init__(*args, **kwargs)
 
     def get_inner_content(self, content):
-        content = OrderedContent()
         content.append_field('AppletPath', self.path)
         content.append_field('AppletFilename', self.filename)
         super(JavaApplet, self).get_inner_content(content)
@@ -174,7 +198,6 @@ class Flash(Application):
         super(Flash, self).__init__(*args, **kwargs)
 
     def get_inner_content(self, content):
-        content = OrderedContent()
         content.append_field('FlashMovieURL', self.url)
         super(Flash, self).get_inner_content(content)
 
