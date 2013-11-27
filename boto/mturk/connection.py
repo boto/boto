@@ -22,6 +22,7 @@
 import xml.sax
 import datetime
 import itertools
+import re
 
 from boto import handler
 from boto import config
