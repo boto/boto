@@ -70,7 +70,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2013-10-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2013-10-15')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -522,7 +522,8 @@ class EC2Connection(AWSQueryConnection):
 
     # Instance methods
 
-    def get_all_instances(self, instance_ids=None, filters=None, dry_run=False):
+    def get_all_instances(self, instance_ids=None, filters=None, dry_run=False,
+                          max_results=None):
         """
         Retrieve all the instance reservations associated with your account.
 
@@ -547,6 +548,10 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type max_results: int
+        :param max_results: The maximum number of paginated instance
+            items per response.
+
         :rtype: list
         :return: A list of  :class:`boto.ec2.instance.Reservation`
 
@@ -555,10 +560,11 @@ class EC2Connection(AWSQueryConnection):
                        'replaced with get_all_reservations.'),
                       PendingDeprecationWarning)
         return self.get_all_reservations(instance_ids=instance_ids,
-                                         filters=filters, dry_run=dry_run)
+                                         filters=filters, dry_run=dry_run,
+                                         max_results=max_results)
 
     def get_only_instances(self, instance_ids=None, filters=None,
-                           dry_run=False):
+                           dry_run=False, max_results=None):
         # A future release should rename this method to get_all_instances
         # and make get_only_instances an alias for that.
         """
@@ -578,17 +584,22 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type max_results: int
+        :param max_results: The maximum number of paginated instance
+            items per response.
+
         :rtype: list
         :return: A list of  :class:`boto.ec2.instance.Instance`
         """
         reservations = self.get_all_reservations(instance_ids=instance_ids,
                                                  filters=filters,
-                                                 dry_run=dry_run)
+                                                 dry_run=dry_run,
+                                                 max_results=max_results)
         return [instance for reservation in reservations
                 for instance in reservation.instances]
 
     def get_all_reservations(self, instance_ids=None, filters=None,
-                             dry_run=False):
+                             dry_run=False, max_results=None):
         """
         Retrieve all the instance reservations associated with your account.
 
@@ -605,6 +616,10 @@ class EC2Connection(AWSQueryConnection):
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
+
+        :type max_results: int
+        :param max_results: The maximum number of paginated instance
+            items per response.
 
         :rtype: list
         :return: A list of  :class:`boto.ec2.instance.Reservation`
@@ -624,6 +639,8 @@ class EC2Connection(AWSQueryConnection):
             self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
+        if max_results is not None:
+            params['MaxResults'] = max_results
         return self.get_list('DescribeInstances', params,
                              [('item', Reservation)], verb='POST')
 
@@ -1261,7 +1278,8 @@ class EC2Connection(AWSQueryConnection):
 
     def get_spot_price_history(self, start_time=None, end_time=None,
                                instance_type=None, product_description=None,
-                               availability_zone=None, dry_run=False):
+                               availability_zone=None, dry_run=False,
+                               max_results=None):
         """
         Retrieve the recent history of spot instances pricing.
 
@@ -1295,6 +1313,10 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type max_results: int
+        :param max_results: The maximum number of paginated items
+            per response.
+
         :rtype: list
         :return: A list tuples containing price and timestamp.
         """
@@ -1311,6 +1333,8 @@ class EC2Connection(AWSQueryConnection):
             params['AvailabilityZone'] = availability_zone
         if dry_run:
             params['DryRun'] = 'true'
+        if max_results is not None:
+            params['MaxResults'] = max_results
         return self.get_list('DescribeSpotPriceHistory', params,
                              [('item', SpotPriceHistory)], verb='POST')
 
@@ -3943,7 +3967,7 @@ class EC2Connection(AWSQueryConnection):
                 params['Tag.%d.Value'%i] = value
             i += 1
 
-    def get_all_tags(self, filters=None, dry_run=False):
+    def get_all_tags(self, filters=None, dry_run=False, max_results=None):
         """
         Retrieve all the metadata tags associated with your account.
 
@@ -3960,6 +3984,10 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type max_results: int
+        :param max_results: The maximum number of paginated instance
+            items per response.
+
         :rtype: list
         :return: A list of :class:`boto.ec2.tag.Tag` objects
         """
@@ -3968,6 +3996,8 @@ class EC2Connection(AWSQueryConnection):
             self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
+        if max_results is not None:
+            params['MaxResults'] = max_results
         return self.get_list('DescribeTags', params,
                              [('item', Tag)], verb='POST')
 
