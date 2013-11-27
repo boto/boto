@@ -25,15 +25,25 @@ class AddressTest(unittest.TestCase):
 
     def test_release_calls_connection_release_address_with_correct_args(self):
         self.address.release()
-        self.address.connection.release_address.assert_called_with("192.168.1.1")
+        self.address.connection.release_address.assert_called_with(
+            "192.168.1.1",
+            dry_run=False
+        )
 
     def test_associate_calls_connection_associate_address_with_correct_args(self):
         self.address.associate(1)
-        self.address.connection.associate_address.assert_called_with(1, "192.168.1.1")
+        self.address.connection.associate_address.assert_called_with(
+            1,
+            "192.168.1.1",
+            dry_run=False
+        )
 
     def test_disassociate_calls_connection_disassociate_address_with_correct_args(self):
         self.address.disassociate()
-        self.address.connection.disassociate_address.assert_called_with("192.168.1.1")
+        self.address.connection.disassociate_address.assert_called_with(
+            "192.168.1.1",
+            dry_run=False
+        )
 
 if __name__ == "__main__":
     unittest.main()

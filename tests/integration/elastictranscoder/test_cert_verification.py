@@ -19,17 +19,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import unittest
 
-from tests.unit import unittest
+from tests.integration import ServiceCertVerificationTest
+
 import boto.elastictranscoder
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class ElasticTranscoderCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     elastictranscoder = True
-    ssl = True
+    regions = boto.elastictranscoder.regions()
 
-    def test_certs(self):
-        for region in boto.elastictranscoder.regions():
-            c = region.connect()
-            c.list_pipelines()
+    def sample_service_call(self, conn):
+        conn.list_pipelines()

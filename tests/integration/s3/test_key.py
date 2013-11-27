@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
 # All rights reserved.
 #
@@ -27,12 +28,13 @@ Some unit tests for S3 Key
 from tests.unit import unittest
 import time
 import StringIO
+import urllib
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
 
 
-class S3KeyTest (unittest.TestCase):
+class S3KeyTest(unittest.TestCase):
     s3 = True
 
     def setUp(self):
@@ -373,3 +375,40 @@ class S3KeyTest (unittest.TestCase):
         with self.assertRaises(key.provider.storage_response_error):
             # Must start with a / or http
             key.set_redirect('')
+
+    def test_setting_date(self):
+        key = self.bucket.new_key('test_date')
+        # This should actually set x-amz-meta-date & not fail miserably.
+        key.set_metadata('date', '20130524T155935Z')
+        key.set_contents_from_string('Some text here.')
+
+        check = self.bucket.get_key('test_date')
+        self.assertEqual(check.get_metadata('date'), u'20130524T155935Z')
+        self.assertTrue('x-amz-meta-date' in check._get_remote_metadata())
+
+    def test_header_casing(self):
+        key = self.bucket.new_key('test_header_case')
+        # Using anything but CamelCase on ``Content-Type`` or ``Content-MD5``
+        # used to cause a signature error (when using ``s3`` for signing).
+        key.set_metadata('Content-type', 'application/json')
+        key.set_metadata('Content-md5', 'XmUKnus7svY1frWsVskxXg==')
+        key.set_contents_from_string('{"abc": 123}')
+
+        check = self.bucket.get_key('test_header_case')
+        self.assertEqual(check.content_type, 'application/json')
+
+    def test_header_encoding(self):
+        key = self.bucket.new_key('test_header_encoding')
+
+        key.set_metadata('Cache-control', 'public, max-age=500')
+        key.set_metadata('Content-disposition', u'filename=Schöne Zeit.txt')
+        key.set_contents_from_string('foo')
+
+        check = self.bucket.get_key('test_header_encoding')
+
+        self.assertEqual(check.cache_control, 'public, max-age=500')
+        self.assertEqual(check.content_disposition, 'filename=Sch%C3%B6ne+Zeit.txt')
+        self.assertEqual(
+            urllib.unquote_plus(check.content_disposition).decode('utf-8'),
+            'filename=Schöne Zeit.txt'.decode('utf-8')
+        )

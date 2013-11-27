@@ -32,13 +32,14 @@ import boto.auth_handler
 import boto.exception
 import boto.plugin
 import boto.utils
+import copy
+import datetime
+from email.utils import formatdate
 import hmac
 import sys
-import urllib
 import time
-import datetime
-import copy
-from email.utils import formatdate
+import urllib
+import posixpath
 
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
@@ -164,9 +165,9 @@ class HmacAuthV1Handler(AuthHandler, HmacKeys):
         boto.log.debug('StringToSign:\n%s' % string_to_sign)
         b64_hmac = self.sign_string(string_to_sign)
         auth_hdr = self._provider.auth_header
-        headers['Authorization'] = ("%s %s:%s" %
-                                    (auth_hdr,
-                                     self._provider.access_key, b64_hmac))
+        auth = ("%s %s:%s" % (auth_hdr, self._provider.access_key, b64_hmac))
+        boto.log.debug('Signature:\n%s' % auth)
+        headers['Authorization'] = auth
 
 
 class HmacAuthV2Handler(AuthHandler, HmacKeys):
@@ -328,13 +329,21 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         Select the headers from the request that need to be included
         in the StringToSign.
         """
+        host_header_value = self.host_header(self.host, http_request)
         headers_to_sign = {}
-        headers_to_sign = {'Host': self.host}
+        headers_to_sign = {'Host': host_header_value}
         for name, value in http_request.headers.items():
             lname = name.lower()
             if lname.startswith('x-amz'):
                 headers_to_sign[name] = value
         return headers_to_sign
+
+    def host_header(self, host, http_request):
+        port = http_request.port
+        secure = http_request.protocol == 'https'
+        if ((port == 80 and not secure) or (port == 443 and secure)):
+            return host
+        return '%s:%s' % (host, port)
 
     def query_string(self, http_request):
         parameter_names = sorted(http_request.params.keys())
@@ -375,7 +384,15 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return ';'.join(l)
 
     def canonical_uri(self, http_request):
-        return http_request.auth_path
+        path = http_request.auth_path
+        # Normalize the path
+        # in windows normpath('/') will be '\\' so we chane it back to '/'
+        normalized = posixpath.normpath(path).replace('\\','/')
+        # Then urlencode whatever's left.
+        encoded = urllib.quote(normalized)
+        if len(path) > 1 and path.endswith('/'):
+            encoded += '/'
+        return encoded
 
     def payload(self, http_request):
         body = http_request.body
@@ -414,11 +431,17 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         parts = http_request.host.split('.')
         if self.region_name is not None:
             region_name = self.region_name
-        else:
-            if len(parts) == 3:
-                region_name = 'us-east-1'
+        elif len(parts) > 1:
+            if parts[1] == 'us-gov':
+                region_name = 'us-gov-west-1'
             else:
-                region_name = parts[1]
+                if len(parts) == 3:
+                    region_name = 'us-east-1'
+                else:
+                    region_name = parts[1]
+        else:
+            region_name = parts[0]
+
         if self.service_name is not None:
             service_name = self.service_name
         else:
@@ -491,6 +514,45 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         l.append('SignedHeaders=%s' % self.signed_headers(headers_to_sign))
         l.append('Signature=%s' % signature)
         req.headers['Authorization'] = ','.join(l)
+
+
+class QueryAuthHandler(AuthHandler):
+    """
+    Provides pure query construction (no actual signing).
+
+    Mostly useful for STS' ``assume_role_with_web_identity``.
+
+    Does **NOT** escape query string values!
+    """
+
+    capability = ['pure-query']
+
+    def _escape_value(self, value):
+        # Would normally be ``return urllib.quote(value)``.
+        return value
+
+    def _build_query_string(self, params):
+        keys = params.keys()
+        keys.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
+        pairs = []
+        for key in keys:
+            val = boto.utils.get_utf8_value(params[key])
+            pairs.append(key + '=' + self._escape_value(val))
+        return '&'.join(pairs)
+
+    def add_auth(self, http_request, **kwargs):
+        headers = http_request.headers
+        params = http_request.params
+        qs = self._build_query_string(
+            http_request.params
+        )
+        boto.log.debug('query_string: %s' % qs)
+        headers['Content-Type'] = 'application/json; charset=UTF-8'
+        http_request.body = ''
+        # if this is a retried request, the qs from the previous try will
+        # already be there, we need to get rid of that and rebuild it
+        http_request.path = http_request.path.split('?')[0]
+        http_request.path = http_request.path + '?' + qs
 
 
 class QuerySignatureHelper(HmacKeys):

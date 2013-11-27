@@ -21,6 +21,8 @@
 
 from boto.rds.dbsecuritygroup import DBSecurityGroup
 from boto.rds.parametergroup import ParameterGroup
+from boto.rds.statusinfo import StatusInfo
+from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
 from boto.resultset import ResultSet
 
 
@@ -64,11 +66,16 @@ class DBInstance(object):
         Multi-AZ deployment.
     :ivar iops: The current number of provisioned IOPS for the DB Instance.
         Can be None if this is a standard instance.
+    :ivar vpc_security_groups: List of VPC Security Group Membership elements
+        containing only VpcSecurityGroupMembership.VpcSecurityGroupId and
+        VpcSecurityGroupMembership.Status subelements.
     :ivar pending_modified_values: Specifies that changes to the
         DB Instance are pending. This element is only included when changes
         are pending. Specific changes are identified by subelements.
     :ivar read_replica_dbinstance_identifiers: List of read replicas
         associated with this DB instance.
+    :ivar status_infos: The status of a Read Replica. If the instance is not a
+                        for a read replica, this will be blank.
     """
 
     def __init__(self, connection=None, id=None):
@@ -91,10 +98,12 @@ class DBInstance(object):
         self.latest_restorable_time = None
         self.multi_az = False
         self.iops = None
+        self.vpc_security_groups = None
         self.pending_modified_values = None
         self._in_endpoint = False
         self._port = None
         self._address = None
+        self.status_infos = None
 
     def __repr__(self):
         return 'DBInstance:%s' % self.id
@@ -110,6 +119,10 @@ class DBInstance(object):
             self.security_groups = ResultSet([('DBSecurityGroup',
                                                DBSecurityGroup)])
             return self.security_groups
+        elif name == 'VpcSecurityGroups':
+            self.vpc_security_groups = ResultSet([('VpcSecurityGroupMembership',
+                                               VPCSecurityGroupMembership)])
+            return self.vpc_security_groups
         elif name == 'PendingModifiedValues':
             self.pending_modified_values = PendingModifiedValues()
             return self.pending_modified_values
@@ -117,6 +130,11 @@ class DBInstance(object):
             self.read_replica_dbinstance_identifiers = \
                     ReadReplicaDBInstanceIdentifiers()
             return self.read_replica_dbinstance_identifiers
+        elif name == 'StatusInfos':
+            self.status_infos = ResultSet([
+                ('DBInstanceStatusInfo', StatusInfo)
+            ])
+            return self.status_infos
         return None
 
     def endElement(self, name, value, connection):
@@ -255,9 +273,14 @@ class DBInstance(object):
                preferred_backup_window=None,
                multi_az=False,
                iops=None,
+               vpc_security_groups=None,
                apply_immediately=False):
         """
         Modify this DBInstance.
+
+        :type param_group: str
+        :param param_group: Name of DBParameterGroup to associate with
+                            this DBInstance.
 
         :type security_groups: list of str or list of DBSecurityGroup objects
         :param security_groups: List of names of DBSecurityGroup to
@@ -322,6 +345,10 @@ class DBInstance(object):
             If you specify a value, it must be at least 1000 IOPS and
             you must allocate 100 GB of storage.
 
+        :type vpc_security_groups: list
+        :param vpc_security_groups: List of VPCSecurityGroupMembership
+            that this DBInstance is a memberof.
+
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The modified db instance.
         """
@@ -336,7 +363,8 @@ class DBInstance(object):
                                                  preferred_backup_window,
                                                  multi_az,
                                                  apply_immediately,
-                                                 iops)
+                                                 iops,
+                                                 vpc_security_groups)
 
 
 class PendingModifiedValues(dict):

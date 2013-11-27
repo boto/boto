@@ -201,8 +201,7 @@ To retrieve the instances in your autoscale group:
 >>> ec2 = boto.ec2.connect_to_region('us-west-2)
 >>> conn.get_all_groups(names=['my_group'])[0]
 >>> instance_ids = [i.instance_id for i in group.instances]
->>> reservations = ec2.get_all_instances(instance_ids)
->>> instances = [i for i in reservations for i in r.instances]
+>>> instances = ec2.get_only_instances(instance_ids)
 
 To delete your autoscale group, we first need to shutdown all the
 instances:

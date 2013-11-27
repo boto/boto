@@ -161,8 +161,7 @@ class Vault(object):
         if not file_obj:
             file_size = os.path.getsize(filename)
             try:
-                min_part_size = minimum_part_size(file_size,
-                                                  self.DefaultPartSize)
+                part_size = minimum_part_size(file_size, part_size)
             except ValueError:
                 raise UploadArchiveError("File size of %s bytes exceeds "
                                          "40,000 GB archive limit of Glacier.")
@@ -237,7 +236,8 @@ class Vault(object):
         return resume_file_upload(
             self, upload_id, part_size, file_obj, part_hash_map)
 
-    def concurrent_create_archive_from_file(self, filename, description):
+    def concurrent_create_archive_from_file(self, filename, description,
+                                            **kwargs):
         """
         Create a new archive from a file and upload the given
         file.
@@ -250,6 +250,12 @@ class Vault(object):
         :type filename: str
         :param filename: A filename to upload
 
+        :param kwargs: Additional kwargs to pass through to
+            :py:class:`boto.glacier.concurrent.ConcurrentUploader`.
+            You can pass any argument besides the ``api`` and
+            ``vault_name`` param (these arguments are already
+            passed to the ``ConcurrentUploader`` for you).
+
         :raises: `boto.glacier.exception.UploadArchiveError` is an error
             occurs during the upload process.
 
@@ -257,7 +263,7 @@ class Vault(object):
         :return: The archive id of the newly created archive
 
         """
-        uploader = ConcurrentUploader(self.layer1, self.name)
+        uploader = ConcurrentUploader(self.layer1, self.name, **kwargs)
         archive_id = uploader.upload(filename, description)
         return archive_id
 
@@ -309,8 +315,8 @@ class Vault(object):
             sends notification when the job is completed and the output
             is ready for you to download.
 
-        :rtype: :class:`boto.glacier.job.Job`
-        :return: A Job object representing the retrieval job.
+        :rtype: str
+        :return: The ID of the job
         """
         job_data = {'Type': 'inventory-retrieval'}
         if sns_topic is not None:
@@ -320,6 +326,25 @@ class Vault(object):
 
         response = self.layer1.initiate_job(self.name, job_data)
         return response['JobId']
+
+    def retrieve_inventory_job(self, **kwargs):
+        """
+        Identical to ``retrieve_inventory``, but returns a ``Job`` instance
+        instead of just the job ID.
+
+        :type description: str
+        :param description: An optional description for the job.
+
+        :type sns_topic: str
+        :param sns_topic: The Amazon SNS topic ARN where Amazon Glacier
+            sends notification when the job is completed and the output
+            is ready for you to download.
+
+        :rtype: :class:`boto.glacier.job.Job`
+        :return: A Job object representing the retrieval job.
+        """
+        job_id = self.retrieve_inventory(**kwargs)
+        return self.get_job(job_id)
 
     def delete_archive(self, archive_id):
         """

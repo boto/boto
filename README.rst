@@ -1,11 +1,15 @@
 ####
 boto
 ####
-boto 2.8.0
-31-Jan-2013
+boto 2.18.0
 
-.. image:: https://secure.travis-ci.org/boto/boto.png?branch=develop
-        :target: https://secure.travis-ci.org/boto/boto
+Released: 22-November-2013
+
+.. image:: https://travis-ci.org/boto/boto.png?branch=develop
+        :target: https://travis-ci.org/boto/boto
+
+.. image:: https://pypip.in/d/boto/badge.png
+        :target: https://crate.io/packages/boto/
 
 ************
 Introduction
@@ -30,12 +34,15 @@ At the moment, boto supports:
   * Amazon DynamoDB
   * Amazon SimpleDB
   * Amazon ElastiCache
+  * Amazon Redshift
 
 * Deployment and Management
 
   * AWS Elastic Beanstalk
   * AWS CloudFormation
   * AWS Data Pipeline
+  * AWS Opsworks
+  * AWS CloudTrail
 
 * Identity & Access
 
@@ -44,12 +51,13 @@ At the moment, boto supports:
 * Application Services
 
   * Amazon CloudSearch
+  * Amazon Elastic Transcoder
   * Amazon Simple Workflow Service (SWF)
   * Amazon Simple Queue Service (SQS)
   * Amazon Simple Notification Server (SNS)
   * Amazon Simple Email Service (SES)
 
-* Montoring
+* Monitoring
 
   * Amazon CloudWatch
 
@@ -77,15 +85,16 @@ At the moment, boto supports:
 * Other
 
   * Marketplace Web Services
+  * AWS Support
 
 The goal of boto is to support the full breadth and depth of Amazon
 Web Services.  In addition, boto provides support for other public
 services such as Google Storage in addition to private cloud systems
 like Eucalyptus, OpenStack and Open Nebula.
 
-Boto is developed mainly using Python 2.6.6 and Python 2.7.1 on Mac OSX
+Boto is developed mainly using Python 2.6.6 and Python 2.7.3 on Mac OSX
 and Ubuntu Maverick.  It is known to work on other Linux distributions
-and on Windows.  Boto requires no additional libraries or packages
+and on Windows.  Most of Boto requires no additional libraries or packages
 other than those that are distributed with Python.  Efforts are made
 to keep boto compatible with Python 2.5.x but no guarantees are made.
 
@@ -112,7 +121,7 @@ ChangeLogs
 **********
 
 To see what has changed over time in boto, you can check out the
-`release notes`_ in the wiki.
+release notes at `http://docs.pythonboto.org/en/latest/#release-notes`
 
 ***************************
 Finding Out More About Boto
@@ -146,11 +155,6 @@ following environment variables to ascertain your credentials:
 
 Credentials and other boto-related settings can also be stored in a
 boto config file.  See `this`_ for details.
-
-Copyright (c) 2006-2012 Mitch Garnaat <mitch@garnaat.com>
-Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
-Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
-All rights reserved.
 
 .. _pip: http://www.pip-installer.org/
 .. _release notes: https://github.com/boto/boto/wiki

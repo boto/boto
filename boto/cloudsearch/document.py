@@ -187,15 +187,16 @@ class DocumentServiceConnection(object):
 
         url = "http://%s/2011-02-01/documents/batch" % (self.endpoint)
 
-        request_config = {
-            'pool_connections': 20,
-            'keep_alive': True,
-            'max_retries': 5,
-            'pool_maxsize': 50
-        }
-
-        r = requests.post(url, data=sdf, config=request_config,
-            headers={'Content-Type': 'application/json'})
+        # Keep-alive is automatic in a post-1.0 requests world.
+        session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=20,
+            pool_maxsize=50,
+            max_retries=5
+        )
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        r = session.post(url, data=sdf, headers={'Content-Type': 'application/json'})
 
         return CommitResponse(r, self, sdf)
 

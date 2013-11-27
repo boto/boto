@@ -101,15 +101,7 @@ class StorageUri(object):
         @return: A connection to storage service provider of the given URI.
         """
         connection_args = dict(self.connection_args or ())
-        # Use OrdinaryCallingFormat instead of boto-default
-        # SubdomainCallingFormat because the latter changes the hostname
-        # that's checked during cert validation for HTTPS connections,
-        # which will fail cert validation (when cert validation is enabled).
-        # Note: the following import can't be moved up to the start of
-        # this file else it causes a config import failure when run from
-        # the resumable upload/download tests.
-        from boto.s3.connection import OrdinaryCallingFormat
-        connection_args['calling_format'] = OrdinaryCallingFormat()
+
         if (hasattr(self, 'suppress_consec_slashes') and
             'suppress_consec_slashes' not in connection_args):
             connection_args['suppress_consec_slashes'] = (
@@ -126,6 +118,23 @@ class StorageUri(object):
                 self.provider_pool[self.scheme] = self.connection
             elif self.scheme == 'gs':
                 from boto.gs.connection import GSConnection
+                # Use OrdinaryCallingFormat instead of boto-default
+                # SubdomainCallingFormat because the latter changes the hostname
+                # that's checked during cert validation for HTTPS connections,
+                # which will fail cert validation (when cert validation is
+                # enabled).
+                #
+                # The same is not true for S3's HTTPS certificates. In fact,
+                # we don't want to do this for S3 because S3 requires the
+                # subdomain to match the location of the bucket. If the proper
+                # subdomain is not used, the server will return a 301 redirect
+                # with no Location header.
+                #
+                # Note: the following import can't be moved up to the
+                # start of this file else it causes a config import failure when
+                # run from the resumable upload/download tests.
+                from boto.s3.connection import OrdinaryCallingFormat
+                connection_args['calling_format'] = OrdinaryCallingFormat()
                 self.connection = GSConnection(access_key_id,
                                                secret_access_key,
                                                **connection_args)
@@ -195,12 +204,20 @@ class StorageUri(object):
 
     def get_contents_to_file(self, fp, headers=None, cb=None, num_cb=10,
                              torrent=False, version_id=None,
-                             res_download_handler=None, response_headers=None):
+                             res_download_handler=None, response_headers=None,
+                             hash_algs=None):
         self._check_object_uri('get_contents_to_file')
         key = self.get_key(None, headers)
         self.check_response(key, 'key', self.uri)
-        key.get_contents_to_file(fp, headers, cb, num_cb, torrent, version_id,
-                                 res_download_handler, response_headers)
+        if hash_algs:
+            key.get_contents_to_file(fp, headers, cb, num_cb, torrent,
+                                     version_id, res_download_handler,
+                                     response_headers,
+                                     hash_algs=hash_algs)
+        else:
+            key.get_contents_to_file(fp, headers, cb, num_cb, torrent,
+                                     version_id, res_download_handler,
+                                     response_headers)
 
     def get_contents_as_string(self, validate=False, headers=None, cb=None,
                                num_cb=10, torrent=False, version_id=None):
@@ -304,13 +321,15 @@ class BucketStorageUri(StorageUri):
       self._update_from_values(
           getattr(key, 'version_id', None),
           getattr(key, 'generation', None),
-          getattr(key, 'is_latest', None))
+          getattr(key, 'is_latest', None),
+          getattr(key, 'md5', None))
 
-    def _update_from_values(self, version_id, generation, is_latest):
+    def _update_from_values(self, version_id, generation, is_latest, md5):
       self.version_id = version_id
       self.generation = generation
       self.is_latest = is_latest
       self._build_uri_strings()
+      self.md5 = md5
 
     def get_key(self, validate=False, headers=None, version_id=None):
         self._check_object_uri('get_key')
@@ -652,7 +671,7 @@ class BucketStorageUri(StorageUri):
                 rewind=rewind, res_upload_handler=res_upload_handler)
             if res_upload_handler:
                 self._update_from_values(None, res_upload_handler.generation,
-                                         None)
+                                         None, md5)
         else:
             self._warn_about_args('set_contents_from_file',
                                   res_upload_handler=res_upload_handler)
@@ -739,6 +758,32 @@ class BucketStorageUri(StorageUri):
                                                        metadata_minus,
                                                        preserve_acl,
                                                        headers=headers)
+
+    def compose(self, components, content_type=None, headers=None):
+        self._check_object_uri('compose')
+        component_keys = []
+        for suri in components:
+            component_keys.append(suri.new_key())
+            component_keys[-1].generation = suri.generation
+        self.generation = self.new_key().compose(
+                component_keys, content_type=content_type, headers=headers)
+        self._build_uri_strings()
+        return self
+
+    def get_lifecycle_config(self, validate=False, headers=None):
+        """Returns a bucket's lifecycle configuration."""
+        self._check_bucket_uri('get_lifecycle_config')
+        bucket = self.get_bucket(validate, headers)
+        lifecycle_config = bucket.get_lifecycle_config(headers)
+        self.check_response(lifecycle_config, 'lifecycle', self.uri)
+        return lifecycle_config
+
+    def configure_lifecycle(self, lifecycle_config, validate=False,
+                            headers=None):
+        """Sets or updates a bucket's lifecycle configuration."""
+        self._check_bucket_uri('configure_lifecycle')
+        bucket = self.get_bucket(validate, headers)
+        bucket.configure_lifecycle(lifecycle_config, headers)
 
     def exists(self, headers=None):
       """Returns True if the object exists or False if it doesn't"""

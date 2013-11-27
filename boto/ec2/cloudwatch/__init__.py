@@ -33,6 +33,7 @@ import boto
 
 RegionData = {
     'us-east-1': 'monitoring.us-east-1.amazonaws.com',
+    'us-gov-west-1': 'monitoring.us-gov-west-1.amazonaws.com',
     'us-west-1': 'monitoring.us-west-1.amazonaws.com',
     'us-west-2': 'monitoring.us-west-2.amazonaws.com',
     'sa-east-1': 'monitoring.sa-east-1.amazonaws.com',
@@ -116,7 +117,7 @@ class CloudWatchConnection(AWSQueryConnection):
                                     validate_certs=validate_certs)
 
     def _required_auth_capability(self):
-        return ['ec2']
+        return ['hmac-v4']
 
     def build_dimension_param(self, dimension, params):
         prefix = 'Dimensions.member'
@@ -177,16 +178,16 @@ class CloudWatchConnection(AWSQueryConnection):
                 metric_data['StatisticValues.SampleCount'] = s['samplecount']
                 metric_data['StatisticValues.Sum'] = s['sum']
                 if value != None:
-                    msg = 'You supplied a value and statistics for a metric.'
-                    msg += 'Posting statistics and not value.'
+                    msg = 'You supplied a value and statistics for a ' + \
+                          'metric.Posting statistics and not value.'
                     boto.log.warn(msg)
             elif value != None:
                 metric_data['Value'] = v
             else:
                 raise Exception('Must specify a value or statistics to put.')
 
-            for key, value in metric_data.iteritems():
-                params['MetricData.member.%d.%s' % (index + 1, key)] = value
+            for key, val in metric_data.iteritems():
+                params['MetricData.member.%d.%s' % (index + 1, key)] = val
 
     def get_metric_statistics(self, period, start_time, end_time, metric_name,
                               namespace, statistics, dimensions=None,

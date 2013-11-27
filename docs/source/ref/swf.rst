@@ -18,5 +18,8 @@ boto.swf.layer1
    :members:
    :undoc-members:
 
+boto.swf.layer2
+--------------------
 
-
+.. automodule:: boto.swf.layer2
+   :members:

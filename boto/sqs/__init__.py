@@ -32,6 +32,8 @@ def regions():
     """
     return [SQSRegionInfo(name='us-east-1',
                           endpoint='queue.amazonaws.com'),
+            SQSRegionInfo(name='us-gov-west-1',
+                          endpoint='sqs.us-gov-west-1.amazonaws.com'),
             SQSRegionInfo(name='eu-west-1',
                           endpoint='eu-west-1.queue.amazonaws.com'),
             SQSRegionInfo(name='us-west-1',

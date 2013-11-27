@@ -9,17 +9,20 @@ def sizeof_fmt(num):
         num /= 1024.0
     return "%3.1f %s" % (num, x)
 
-def list_bucket(b, prefix=None):
+def list_bucket(b, prefix=None, marker=None):
     """List everything in a bucket"""
     from boto.s3.prefix import Prefix
     from boto.s3.key import Key
     total = 0
-    query = b
+
     if prefix:
         if not prefix.endswith("/"):
             prefix = prefix + "/"
-        query = b.list(prefix=prefix, delimiter="/")
+        query = b.list(prefix=prefix, delimiter="/", marker=marker)
         print "%s" % prefix
+    else:
+        query = b.list(delimiter="/", marker=marker)
+
     num = 0
     for k in query:
         num += 1
@@ -53,25 +56,33 @@ def list_buckets(s3):
         print b.name
 
 if __name__ == "__main__":
+    import optparse
     import sys
+
+    if len(sys.argv) < 2:
+        list_buckets(boto.connect_s3())
+        sys.exit(0)
+
+    parser = optparse.OptionParser()
+    parser.add_option('-m', '--marker',
+                      help='The S3 key where the listing starts after it.')
+    options, buckets = parser.parse_args()
+    marker = options.marker
 
     pairs = []
     mixedCase = False
-    for name in sys.argv[1:]:
+    for name in buckets:
             if "/" in name:
                 pairs.append(name.split("/",1))
             else:
                 pairs.append([name, None])
             if pairs[-1][0].lower() != pairs[-1][0]:
                 mixedCase = True
-    
+
     if mixedCase:
         s3 = boto.connect_s3(calling_format=OrdinaryCallingFormat())
     else:
         s3 = boto.connect_s3()
 
-    if len(sys.argv) < 2:
-        list_buckets(s3)
-    else:
-        for name, prefix in pairs:
-            list_bucket(s3.get_bucket(name), prefix)
+    for name, prefix in pairs:
+        list_bucket(s3.get_bucket(name), prefix, marker=marker)

@@ -19,25 +19,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import re
 import urllib
 import xml.sax
 
 import boto
 from boto import handler
 from boto.resultset import ResultSet
+from boto.exception import GSResponseError
 from boto.exception import InvalidAclError
 from boto.gs.acl import ACL, CannedACLStrings
 from boto.gs.acl import SupportedPermissions as GSPermissions
 from boto.gs.bucketlistresultset import VersionedBucketListResultSet
 from boto.gs.cors import Cors
+from boto.gs.lifecycle import LifecycleConfig
 from boto.gs.key import Key as GSKey
 from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
+from boto.utils import get_utf8_value
 
 # constants for http query args
 DEF_OBJ_ACL = 'defaultObjectAcl'
 STANDARD_ACL = 'acl'
 CORS_ARG = 'cors'
+LIFECYCLE_ARG = 'lifecycle'
+ERROR_DETAILS_REGEX = re.compile(r'<Details>(?P<details>.*)</Details>')
 
 class Bucket(S3Bucket):
     """Represents a Google Cloud Storage bucket."""
@@ -96,9 +102,16 @@ class Bucket(S3Bucket):
         if response_headers:
             for rk, rv in response_headers.iteritems():
                 query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
-
-        key, resp = self._get_key_internal(key_name, headers,
-                                           query_args_l=query_args_l)
+        try:
+            key, resp = self._get_key_internal(key_name, headers,
+                                               query_args_l=query_args_l)
+        except GSResponseError, e:
+            if e.status == 403 and 'Forbidden' in e.reason:
+                # If we failed getting an object, let the user know which object
+                # failed rather than just returning a generic 403.
+                e.reason = ("Access denied to 'gs://%s/%s'." %
+                            (self.name, key_name))
+            raise
         return key
 
     def copy_key(self, new_key_name, src_bucket_name, src_key_name,
@@ -208,6 +221,14 @@ class Bucket(S3Bucket):
                                             marker, generation_marker,
                                             headers)
 
+    def validate_get_all_versions_params(self, params):
+        """
+        See documentation in boto/s3/bucket.py.
+        """
+        self.validate_kwarg_names(params,
+                                  ['version_id_marker', 'delimiter', 'marker',
+                                   'generation_marker', 'prefix', 'max_keys'])
+
     def delete_key(self, key_name, headers=None, version_id=None,
                    mfa_token=None, generation=None):
         """
@@ -309,6 +330,14 @@ class Bucket(S3Bucket):
                                                 headers=headers)
         body = response.read()
         if response.status != 200:
+            if response.status == 403:
+                match = ERROR_DETAILS_REGEX.search(body)
+                details = match.group('details') if match else None
+                if details:
+                    details = (('<Details>%s. Note that Full Control access'
+                                ' is required to access ACLs.</Details>') %
+                               details)
+                    body = re.sub(ERROR_DETAILS_REGEX, details, body)
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
         return body
@@ -390,7 +419,7 @@ class Bucket(S3Bucket):
         if canned:
             headers[self.connection.provider.acl_header] = acl_or_str
         else:
-            data = acl_or_str.encode('UTF-8')
+            data = acl_or_str
 
         if generation:
             query_args += '&generation=%s' % generation
@@ -407,8 +436,9 @@ class Bucket(S3Bucket):
         if if_metageneration is not None:
             headers['x-goog-if-metageneration-match'] = str(if_metageneration)
 
-        response = self.connection.make_request('PUT', self.name, key_name,
-                data=data, headers=headers, query_args=query_args)
+        response = self.connection.make_request(
+            'PUT', get_utf8_value(self.name), get_utf8_value(key_name),
+            data=get_utf8_value(data), headers=headers, query_args=query_args)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
@@ -552,11 +582,9 @@ class Bucket(S3Bucket):
         :param str cors: A string containing the CORS XML.
         :param dict headers: Additional headers to send with the request.
         """
-        cors_xml = cors.encode('UTF-8')
-        response = self.connection.make_request('PUT', self.name,
-                                                data=cors_xml,
-                                                query_args=CORS_ARG,
-                                                headers=headers)
+        response = self.connection.make_request(
+            'PUT', get_utf8_value(self.name), data=get_utf8_value(cors),
+            query_args=CORS_ARG, headers=headers)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
@@ -817,9 +845,9 @@ class Bucket(S3Bucket):
             error_frag = ''
 
         body = self.WebsiteBody % (main_page_frag, error_frag)
-        response = self.connection.make_request('PUT', self.name, data=body,
-                                                query_args='websiteConfig',
-                                                headers=headers)
+        response = self.connection.make_request(
+            'PUT', get_utf8_value(self.name), data=get_utf8_value(body),
+            query_args='websiteConfig', headers=headers)
         body = response.read()
         if response.status == 200:
             return True
@@ -918,3 +946,43 @@ class Bucket(S3Bucket):
         else:
             req_body = self.VersioningBody % ('Suspended')
         self.set_subresource('versioning', req_body, headers=headers)
+
+    def get_lifecycle_config(self, headers=None):
+        """
+        Returns the current lifecycle configuration on the bucket.
+
+        :rtype: :class:`boto.gs.lifecycle.LifecycleConfig`
+        :returns: A LifecycleConfig object that describes all current
+            lifecycle rules in effect for the bucket.
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args=LIFECYCLE_ARG, headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            lifecycle_config = LifecycleConfig()
+            h = handler.XmlHandler(lifecycle_config, self)
+            xml.sax.parseString(body, h)
+            return lifecycle_config
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def configure_lifecycle(self, lifecycle_config, headers=None):
+        """
+        Configure lifecycle for this bucket.
+
+        :type lifecycle_config: :class:`boto.gs.lifecycle.LifecycleConfig`
+        :param lifecycle_config: The lifecycle configuration you want
+            to configure for this bucket.
+        """
+        xml = lifecycle_config.to_xml()
+        response = self.connection.make_request(
+            'PUT', get_utf8_value(self.name), data=get_utf8_value(xml),
+            query_args=LIFECYCLE_ARG, headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)

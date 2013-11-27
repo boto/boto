@@ -25,7 +25,7 @@
 # IN THE SOFTWARE.
 
 """
-Some unit tests for the GSConnection
+Some integration tests for the GSConnection
 """
 
 import os
@@ -37,6 +37,7 @@ from boto import handler
 from boto import storage_uri
 from boto.gs.acl import ACL
 from boto.gs.cors import Cors
+from boto.gs.lifecycle import LifecycleConfig
 from tests.integration.gs.testcase import GSTestCase
 
 
@@ -48,6 +49,21 @@ CORS_DOC = ('<CorsConfig><Cors><Origins><Origin>origin1.example.com'
             '<ResponseHeader>foo</ResponseHeader>'
             '<ResponseHeader>bar</ResponseHeader></ResponseHeaders>'
             '</Cors></CorsConfig>')
+
+LIFECYCLE_EMPTY = ('<?xml version="1.0" encoding="UTF-8"?>'
+                   '<LifecycleConfiguration></LifecycleConfiguration>')
+LIFECYCLE_DOC = ('<?xml version="1.0" encoding="UTF-8"?>'
+                 '<LifecycleConfiguration><Rule>'
+                 '<Action><Delete/></Action>'
+                 '<Condition><Age>365</Age>'
+                 '<CreatedBefore>2013-01-15</CreatedBefore>'
+                 '<NumberOfNewerVersions>3</NumberOfNewerVersions>'
+                 '<IsLive>true</IsLive></Condition>'
+                 '</Rule></LifecycleConfiguration>')
+LIFECYCLE_CONDITIONS = {'Age': '365',
+                        'CreatedBefore': '2013-01-15',
+                        'NumberOfNewerVersions': '3',
+                        'IsLive': 'true'}
 
 # Regexp for matching project-private default object ACL.
 PROJECT_PRIVATE_RE = ('\s*<AccessControlList>\s*<Entries>\s*<Entry>'
@@ -377,3 +393,36 @@ class GSBasicTest(GSTestCase):
         uri.set_cors(cors_obj)
         cors = re.sub(r'\s', '', uri.get_cors().to_xml())
         self.assertEqual(cors, CORS_DOC)
+
+    def test_lifecycle_config_bucket(self):
+        """Test setting and getting of lifecycle config on Bucket."""
+        # create a new bucket
+        bucket = self._MakeBucket()
+        bucket_name = bucket.name
+        # now call get_bucket to see if it's really there
+        bucket = self._GetConnection().get_bucket(bucket_name)
+        # get lifecycle config and make sure it's empty
+        xml = bucket.get_lifecycle_config().to_xml()
+        self.assertEqual(xml, LIFECYCLE_EMPTY)
+        # set lifecycle config
+        lifecycle_config = LifecycleConfig()
+        lifecycle_config.add_rule('Delete', None, LIFECYCLE_CONDITIONS)
+        bucket.configure_lifecycle(lifecycle_config)
+        xml = bucket.get_lifecycle_config().to_xml()
+        self.assertEqual(xml, LIFECYCLE_DOC)
+
+    def test_lifecycle_config_storage_uri(self):
+        """Test setting and getting of lifecycle config with storage_uri."""
+        # create a new bucket
+        bucket = self._MakeBucket()
+        bucket_name = bucket.name
+        uri = storage_uri('gs://' + bucket_name)
+        # get lifecycle config and make sure it's empty
+        xml = uri.get_lifecycle_config().to_xml()
+        self.assertEqual(xml, LIFECYCLE_EMPTY)
+        # set lifecycle config
+        lifecycle_config = LifecycleConfig()
+        lifecycle_config.add_rule('Delete', None, LIFECYCLE_CONDITIONS)
+        uri.configure_lifecycle(lifecycle_config)
+        xml = uri.get_lifecycle_config().to_xml()
+        self.assertEqual(xml, LIFECYCLE_DOC)

@@ -42,6 +42,7 @@ class Credentials(object):
         self.secret_key = None
         self.session_token = None
         self.expiration = None
+        self.request_id = None
 
     @classmethod
     def from_json(cls, json_doc):
@@ -138,6 +139,7 @@ class Credentials(object):
         delta = ts - now
         return delta.total_seconds() <= 0
 
+
 class FederationToken(object):
     """
     :ivar credentials: A Credentials object containing the credentials.
@@ -153,6 +155,7 @@ class FederationToken(object):
         self.federated_user_arn = None
         self.federated_user_id = None
         self.packed_policy_size = None
+        self.request_id = None
 
     def startElement(self, name, attrs, connection):
         if name == 'Credentials':
@@ -213,3 +216,22 @@ class User(object):
             self.arn = value
         elif name == 'AssumedRoleId':
             self.assume_role_id = value
+
+
+class DecodeAuthorizationMessage(object):
+    """
+    :ivar request_id: The request ID.
+    :ivar decoded_message: The decoded authorization message (may be JSON).
+    """
+    def __init__(self, request_id=None, decoded_message=None):
+        self.request_id = request_id
+        self.decoded_message = decoded_message
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'requestId':
+            self.request_id = value
+        elif name == 'DecodedMessage':
+            self.decoded_message = value

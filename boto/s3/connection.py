@@ -460,7 +460,8 @@ class S3Connection(AWSAuthConnection):
                       location=Location.DEFAULT, policy=None):
         """
         Creates a new located bucket. By default it's in the USA. You can pass
-        Location.EU to create an European bucket.
+        Location.EU to create a European bucket (S3) or European Union bucket
+        (GCS).
 
         :type bucket_name: string
         :param bucket_name: The name of the new bucket
@@ -523,7 +524,8 @@ class S3Connection(AWSAuthConnection):
                 response.status, response.reason, body)
 
     def make_request(self, method, bucket='', key='', headers=None, data='',
-            query_args=None, sender=None, override_num_retries=None):
+                     query_args=None, sender=None, override_num_retries=None,
+                     retry_handler=None):
         if isinstance(bucket, self.bucket_class):
             bucket = bucket.name
         if isinstance(key, Key):
@@ -538,6 +540,9 @@ class S3Connection(AWSAuthConnection):
             boto.log.debug('path=%s' % path)
             auth_path += '?' + query_args
             boto.log.debug('auth_path=%s' % auth_path)
-        return AWSAuthConnection.make_request(self, method, path, headers,
-                data, host, auth_path, sender,
-                override_num_retries=override_num_retries)
+        return AWSAuthConnection.make_request(
+            self, method, path, headers,
+            data, host, auth_path, sender,
+            override_num_retries=override_num_retries,
+            retry_handler=retry_handler
+        )
