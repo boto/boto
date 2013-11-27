@@ -63,6 +63,13 @@ class MTurkConnection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['mturk']
 
+    def build_list_params(self, params, items, label):
+        # Convert comma- or whitespace-delimited string to array
+        if isinstance(items, basestring):
+            items = re.findall('[^,\s]+', items)
+        for i in range(1, len(items) + 1):
+            params['%s.%d' % (label, i)] = items[i - 1]
+
     def get_account_balance(self):
         """
         """
@@ -785,6 +792,12 @@ class MTurkConnection(AWSQueryConnection):
                   'PageNumber': page_number}
         return self._process_request('GetQualificationRequests', params,
                     [('QualificationRequest', QualificationRequest)])
+
+    def reject_qualification_request(self, qualification_request_id, reason=None):
+        """TODO: Document."""
+        params = {'QualificationRequestId': qualification_request_id,
+                  'Reason': reason}
+        return self._process_request('RejectQualificationRequest', params)
 
     def grant_qualification(self, qualification_request_id, integer_value=1):
         """TODO: Document."""
