@@ -73,13 +73,7 @@ class S3MultiPartUploadTest(unittest.TestCase):
         mpu.upload_part_from_file(fp, part_num=1)
         fp.close()
         cmpu = mpu.complete_upload()
-        # LOL... just found an Amazon bug when it returns the
-        # key in the completemultipartupload result. AWS returns
-        # ??? instead of the correctly encoded key name. We should
-        # fix this to the comment line below when amazon fixes this
-        # and this test starts failing due to below assertion.
-        self.assertEqual(cmpu.key_name, "???")
-        #self.assertEqual(cmpu.key_name, key_name)
+        self.assertEqual(cmpu.key_name, key_name)
         self.assertNotEqual(cmpu.etag, None)
 
     def test_list_japanese(self):
@@ -136,4 +130,24 @@ class S3MultiPartUploadTest(unittest.TestCase):
         # parts are too small to compete as each part must
         # be a min of 5MB so so we'll assume that is enough
         # testing and abort the upload.
+        mpu.cancel_upload()
+
+    # mpu.upload_part_from_file() now returns the uploaded part
+    # which makes the etag available. Confirm the etag is 
+    # available and equal to the etag returned by the parts list.
+    def test_etag_of_parts(self):
+        key_name = "etagtest"
+        mpu = self.bucket.initiate_multipart_upload(key_name)
+        fp = StringIO.StringIO("small file")
+        # upload 2 parts and save each part
+        uparts = []
+        uparts.append(mpu.upload_part_from_file(fp, part_num=1, size=5))
+        uparts.append(mpu.upload_part_from_file(fp, part_num=2))
+        fp.close()
+        # compare uploaded parts etag to listed parts
+        pn = 0
+        for lpart in mpu:
+            self.assertEqual(uparts[pn].etag, lpart.etag)
+            pn += 1
+        # Can't complete 2 small parts so just clean up.
         mpu.cancel_upload()

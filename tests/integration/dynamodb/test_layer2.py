@@ -35,7 +35,7 @@ from boto.dynamodb.types import get_dynamodb_type, Binary
 from boto.dynamodb.condition import BEGINS_WITH, CONTAINS, GT
 
 
-class DynamoDBLayer2Test (unittest.TestCase):
+class DynamoDBLayer2Test(unittest.TestCase):
     dynamodb = True
 
     def setUp(self):
@@ -160,7 +160,7 @@ class DynamoDBLayer2Test (unittest.TestCase):
                                     consistent_read=True)
         assert item1_copy.hash_key == item1.hash_key
         assert item1_copy.range_key == item1.range_key
-        for attr_name in item1_copy:
+        for attr_name in item1_attrs:
             val = item1_copy[attr_name]
             if isinstance(val, (int, long, float, basestring)):
                 assert val == item1[attr_name]
@@ -482,3 +482,13 @@ class DynamoDBLayer2Test (unittest.TestCase):
         self.assertEqual(retrieved['decimalvalue'], Decimal('129271300103398600'))
         # Also comparable directly to an int.
         self.assertEqual(retrieved['decimalvalue'], 129271300103398600)
+
+    def test_put_single_letter_attr(self):
+        # When an attr is added that is a single letter, if it overlaps with
+        # the built-in "types", the decoding used to fall down. Assert that
+        # it's now working correctly.
+        table = self.create_sample_table()
+        item = table.new_item('foo', 'foo1')
+        item.put_attribute('b', 4)
+        stored = item.save(return_values='UPDATED_NEW')
+        self.assertEqual(stored['Attributes'], {'b': 4})

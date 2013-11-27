@@ -36,14 +36,19 @@ import logging.config
 import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.8.0-dev'
+__version__ = '2.18.0'
 Version = __version__  # for backware compatibility
 
-UserAgent = 'Boto/%s (%s)' % (__version__, sys.platform)
+UserAgent = 'Boto/%s Python/%s %s/%s' % (
+    __version__,
+    platform.python_version(),
+    platform.system(),
+    platform.release()
+)
 config = Config()
 
 # Regex to disallow buckets violating charset or not [3..255] chars total.
-BUCKET_NAME_RE = re.compile(r'^[a-z0-9][a-z0-9\._-]{1,253}[a-z0-9]$')
+BUCKET_NAME_RE = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9\._-]{1,253}[a-zA-Z0-9]$')
 # Regex to disallow buckets with individual DNS labels longer than 63.
 TOO_LONG_DNS_NAME_COMP = re.compile(r'[-_a-z0-9]{64}')
 GENERATION_RE = re.compile(r'(?P<versionless_uri_str>.+)'
@@ -674,6 +679,71 @@ def connect_opsworks(aws_access_key_id=None,
         **kwargs)
 
 
+def connect_redshift(aws_access_key_id=None,
+                     aws_secret_access_key=None,
+                     **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.redshift.layer1.RedshiftConnection`
+    :return: A connection to Amazon's Redshift service
+    """
+    from boto.redshift.layer1 import RedshiftConnection
+    return RedshiftConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_support(aws_access_key_id=None,
+                    aws_secret_access_key=None,
+                    **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.support.layer1.SupportConnection`
+    :return: A connection to Amazon's Support service
+    """
+    from boto.support.layer1 import SupportConnection
+    return SupportConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_cloudtrail(aws_access_key_id=None,
+                    aws_secret_access_key=None,
+                    **kwargs):
+    """
+    Connect to AWS CloudTrail
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.cloudtrail.layer1.CloudtrailConnection`
+    :return: A connection to the AWS Cloudtrail service
+    """
+    from boto.cloudtrail.layer1 import CloudTrailConnection
+    return CloudTrailConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
                 bucket_storage_uri_class=BucketStorageUri,
                 suppress_consec_slashes=True, is_latest=False):
@@ -723,18 +793,6 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
     # (the latter includes an optional host/net location part).
     end_scheme_idx = uri_str.find('://')
     if end_scheme_idx == -1:
-        # Check for common error: user specifies gs:bucket instead
-        # of gs://bucket. Some URI parsers allow this, but it can cause
-        # confusion for callers, so we don't.
-        colon_pos = uri_str.find(':')
-        if colon_pos != -1:
-            # Allow Windows path names including drive letter (C: etc.)
-            drive_char = uri_str[0].lower()
-            if not (platform.system().lower().startswith('windows')
-                    and colon_pos == 1
-                    and drive_char >= 'a' and drive_char <= 'z'):
-              raise InvalidUriError('"%s" contains ":" instead of "://"' %
-                                    uri_str)
         scheme = default_scheme.lower()
         path = uri_str
     else:

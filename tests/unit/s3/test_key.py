@@ -20,12 +20,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+from __future__ import with_statement
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
+import mock
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
+from boto.exception import BotoServerError
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
+from boto.s3.key import Key
 
 
 class TestS3Key(AWSMockServiceTestCase):
@@ -70,6 +79,89 @@ class TestS3Key(AWSMockServiceTestCase):
         key = b.delete_key('fookey')
         self.assertIsNotNone(key)
 
+
+def counter(fn):
+    def _wrapper(*args, **kwargs):
+        _wrapper.count += 1
+        return fn(*args, **kwargs)
+    _wrapper.count = 0
+    return _wrapper
+
+
+class TestS3KeyRetries(AWSMockServiceTestCase):
+    connection_class = S3Connection
+
+    @mock.patch('time.sleep')
+    def test_500_retry(self, sleep_mock):
+        self.set_http_response(status_code=500)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.new_key('test_failure')
+        fail_file = StringIO('This will attempt to retry.')
+
+        with self.assertRaises(BotoServerError):
+            k.send_file(fail_file)
+
+    @mock.patch('time.sleep')
+    def test_400_timeout(self, sleep_mock):
+        weird_timeout_body = "<Error><Code>RequestTimeout</Code></Error>"
+        self.set_http_response(status_code=400, body=weird_timeout_body)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.new_key('test_failure')
+        fail_file = StringIO('This will pretend to be chunk-able.')
+
+        k.should_retry = counter(k.should_retry)
+        self.assertEqual(k.should_retry.count, 0)
+
+        with self.assertRaises(BotoServerError):
+            k.send_file(fail_file)
+
+        self.assertTrue(k.should_retry.count, 1)
+
+    @mock.patch('time.sleep')
+    def test_502_bad_gateway(self, sleep_mock):
+        weird_timeout_body = "<Error><Code>BadGateway</Code></Error>"
+        self.set_http_response(status_code=502, body=weird_timeout_body)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.new_key('test_failure')
+        fail_file = StringIO('This will pretend to be chunk-able.')
+
+        k.should_retry = counter(k.should_retry)
+        self.assertEqual(k.should_retry.count, 0)
+
+        with self.assertRaises(BotoServerError):
+            k.send_file(fail_file)
+
+        self.assertTrue(k.should_retry.count, 1)
+
+    @mock.patch('time.sleep')
+    def test_504_gateway_timeout(self, sleep_mock):
+        weird_timeout_body = "<Error><Code>GatewayTimeout</Code></Error>"
+        self.set_http_response(status_code=504, body=weird_timeout_body)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.new_key('test_failure')
+        fail_file = StringIO('This will pretend to be chunk-able.')
+
+        k.should_retry = counter(k.should_retry)
+        self.assertEqual(k.should_retry.count, 0)
+
+        with self.assertRaises(BotoServerError):
+            k.send_file(fail_file)
+
+        self.assertTrue(k.should_retry.count, 1)
+
+
+class TestFileError(unittest.TestCase):
+    def test_file_error(self):
+        key = Key()
+
+        class CustomException(Exception): pass
+
+        key.get_contents_to_file = mock.Mock(
+            side_effect=CustomException('File blew up!'))
+
+        # Ensure our exception gets raised instead of a file or IO error
+        with self.assertRaises(CustomException):
+            key.get_contents_to_filename('foo.txt')
 
 if __name__ == '__main__':
     unittest.main()

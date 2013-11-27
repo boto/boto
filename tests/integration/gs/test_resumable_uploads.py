@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2010 Google Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -310,8 +308,8 @@ class ResumableUploadTests(GSTestCase):
         Tests that resumable upload correctly sets passed metadata
         """
         res_upload_handler = ResumableUploadHandler()
-        headers = {'Content-Type' : 'text/plain', 'Content-Encoding' : 'gzip',
-                   'x-goog-meta-abc' : 'my meta', 'x-goog-acl' : 'public-read'}
+        headers = {'Content-Type' : 'text/plain', 'x-goog-meta-abc' : 'my meta',
+                   'x-goog-acl' : 'public-read'}
         small_src_file_as_string, small_src_file = self.make_small_file()
         small_src_file.seek(0)
         dst_key = self._MakeKey(set_contents=False)
@@ -323,7 +321,6 @@ class ResumableUploadTests(GSTestCase):
                          dst_key.get_contents_as_string())
         dst_key.open_read()
         self.assertEqual('text/plain', dst_key.content_type)
-        self.assertEqual('gzip', dst_key.content_encoding)
         self.assertTrue('abc' in dst_key.metadata)
         self.assertEqual('my meta', str(dst_key.metadata['abc']))
         acl = dst_key.get_acl()
@@ -402,38 +399,68 @@ class ResumableUploadTests(GSTestCase):
     def test_upload_with_file_content_change_during_upload(self):
         """
         Tests resumable upload on a file that changes one byte of content
-        (so, size stays the same) while upload in progress
+        (so, size stays the same) while upload in progress.
         """
-        test_file_size = 500 * 1024  # 500 KB.
-        test_file = self.build_input_file(test_file_size)[1]
-        harness = CallbackTestHarness(fail_after_n_bytes=test_file_size/2,
-                                      fp_to_change=test_file,
-                                      # Write to byte 1, as the CallbackTestHarness writes
-                                      # 3 bytes. This will result in the data on the server
-                                      # being different than the local file.
-                                      fp_change_pos=1)
-        res_upload_handler = ResumableUploadHandler(num_retries=1)
-        dst_key = self._MakeKey(set_contents=False)
-        bucket_uri = storage_uri('gs://' + dst_key.bucket.name)
-        dst_key_uri = bucket_uri.clone_replace_name(dst_key.name)
-        try:
-            dst_key.set_contents_from_file(
-                test_file, cb=harness.call,
-                res_upload_handler=res_upload_handler)
-            self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
-            self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
-            # Ensure the file size didn't change.
-            test_file.seek(0, os.SEEK_END)
-            self.assertEqual(test_file_size, test_file.tell())
-            self.assertNotEqual(
-                e.message.find('md5 signature doesn\'t match etag'), -1)
-            # Ensure the bad data wasn't left around.
+        def Execute():
+            res_upload_handler = ResumableUploadHandler(num_retries=1)
+            dst_key = self._MakeKey(set_contents=False)
+            bucket_uri = storage_uri('gs://' + dst_key.bucket.name)
+            dst_key_uri = bucket_uri.clone_replace_name(dst_key.name)
             try:
-                dst_key_uri.get_key()
-                self.fail('Did not get expected InvalidUriError')
-            except InvalidUriError, e:
-                pass
+                dst_key.set_contents_from_file(
+                    test_file, cb=harness.call,
+                    res_upload_handler=res_upload_handler)
+                return False
+            except ResumableUploadException, e:
+                self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
+                # Ensure the file size didn't change.
+                test_file.seek(0, os.SEEK_END)
+                self.assertEqual(test_file_size, test_file.tell())
+                self.assertNotEqual(
+                    e.message.find('md5 signature doesn\'t match etag'), -1)
+                # Ensure the bad data wasn't left around.
+                try:
+                    dst_key_uri.get_key()
+                    self.fail('Did not get expected InvalidUriError')
+                except InvalidUriError, e:
+                    pass
+            return True
+
+        test_file_size = 500 * 1024  # 500 KB
+        # The sizes of all the blocks written, except the final block, must be a
+        # multiple of 256K bytes. We need to trigger a failure after the first
+        # 256K bytes have been uploaded so that at least one block of data is
+        # written on the server.
+        # See https://developers.google.com/storage/docs/concepts-techniques#resumable
+        # for more information about chunking of uploads.
+        n_bytes = 300 * 1024  # 300 KB
+        delay = 0
+        # First, try the test without a delay. If that fails, try it with a
+        # 15-second delay. The first attempt may fail to recognize that the
+        # server has a block if the server hasn't yet committed that block
+        # when we resume the transfer. This would cause a restarted upload
+        # instead of a resumed upload.
+        for attempt in range(2):
+            test_file = self.build_input_file(test_file_size)[1]
+            harness = CallbackTestHarness(
+                    fail_after_n_bytes=n_bytes,
+                    fp_to_change=test_file,
+                    # Write to byte 1, as the CallbackTestHarness writes
+                    # 3 bytes. This will result in the data on the server
+                    # being different than the local file.
+                    fp_change_pos=1,
+                    delay_after_change=delay)
+            if Execute():
+                break
+            if (attempt == 0 and
+                0 in harness.transferred_seq_after_first_failure):
+                # We can confirm the upload was restarted instead of resumed
+                # by determining if there is an entry of 0 in the
+                # transferred_seq_after_first_failure list.
+                # In that case, try again with a 15 second delay.
+                delay = 15
+                continue
+            self.fail('Did not get expected ResumableUploadException')
 
     def test_upload_with_content_length_header_set(self):
         """

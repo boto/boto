@@ -19,15 +19,12 @@ def set_default_credentials(aws_access_key_id, aws_secret_access_key):
 
 class SWFBase(object):
 
-    """SWFBase."""
-
     name = None
     domain = None
     aws_access_key_id = None
     aws_secret_access_key = None
 
     def __init__(self, **kwargs):
-        """Construct an SWF object."""
         # Set default credentials.
         for credkey in ('aws_access_key_id', 'aws_secret_access_key'):
             if DEFAULT_CREDENTIALS.get(credkey):
@@ -40,7 +37,6 @@ class SWFBase(object):
                               self.aws_secret_access_key)
 
     def __repr__(self):
-        """Generate string representation."""
         rep_str = str(self.name)
         if hasattr(self, 'version'):
             rep_str += '-' + str(getattr(self, 'version'))
@@ -106,9 +102,9 @@ class Domain(SWFBase):
     def executions(self, closed=False, **kwargs):
         """List list open/closed executions.
 
-        For more info, try:
-        >>> help(boto.swf.layer1.Layer1.list_closed_workflow_executions)
-        >>> help(boto.swf.layer1.Layer1.list_open_workflow_executions)
+        For a full list of available parameters refer to
+        :py:func:`boto.swf.layer1.Layer1.list_closed_workflow_executions` and
+        :py:func:`boto.swf.layer1.Layer1.list_open_workflow_executions`
         """
         if closed:
             executions = self._swf.list_closed_workflow_executions(self.name,
@@ -148,8 +144,6 @@ class Domain(SWFBase):
 
 class Actor(SWFBase):
 
-    """Simple Workflow Actor interface."""
-
     task_list = None
     last_tasktoken = None
     domain = None
@@ -160,7 +154,7 @@ class Actor(SWFBase):
 
 class ActivityWorker(Actor):
 
-    """ActivityWorker."""
+    """Base class for SimpleWorkflow activity workers."""
 
     @wraps(Layer1.respond_activity_task_canceled)
     def cancel(self, task_token=None, details=None):
@@ -194,14 +188,18 @@ class ActivityWorker(Actor):
     @wraps(Layer1.poll_for_activity_task)
     def poll(self, **kwargs):
         """PollForActivityTask."""
-        task = self._swf.poll_for_activity_task(self.domain, self.task_list,
+        task_list = self.task_list
+        if 'task_list' in kwargs:
+            task_list = kwargs.get('task_list')
+            del kwargs['task_list']
+        task = self._swf.poll_for_activity_task(self.domain, task_list,
                                                 **kwargs)
         self.last_tasktoken = task.get('taskToken')
         return task
 
 class Decider(Actor):
 
-    """Simple Workflow Decider."""
+    """Base class for SimpleWorkflow deciders."""
 
     @wraps(Layer1.respond_decision_task_completed)
     def complete(self, task_token=None, decisions=None, **kwargs):
@@ -217,16 +215,18 @@ class Decider(Actor):
     @wraps(Layer1.poll_for_decision_task)
     def poll(self, **kwargs):
         """PollForDecisionTask."""
-        result = self._swf.poll_for_decision_task(self.domain, self.task_list,
+        task_list = self.task_list
+        if 'task_list' in kwargs:
+            task_list = kwargs.get('task_list')
+            del kwargs['task_list']
+        decision_task = self._swf.poll_for_decision_task(self.domain, task_list,
                                                   **kwargs)
-        # Record task token.
-        self.last_tasktoken = result.get('taskToken')
-        # Record the last event.
-        return result
+        self.last_tasktoken = decision_task.get('taskToken')
+        return decision_task
 
 class WorkflowType(SWFBase):
 
-    """WorkflowType."""
+    """A versioned workflow type."""
 
     version = None
     task_list = None
@@ -274,7 +274,7 @@ class WorkflowType(SWFBase):
 
 class WorkflowExecution(SWFBase):
 
-    """WorkflowExecution."""
+    """An instance of a workflow."""
 
     workflowId = None
     runId = None
@@ -312,7 +312,7 @@ class WorkflowExecution(SWFBase):
 
 class ActivityType(SWFBase):
 
-    """ActivityType."""
+    """A versioned activity type."""
 
     version = None
 

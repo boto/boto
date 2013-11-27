@@ -202,3 +202,26 @@ and uses `restructured text`_ for the markup language.
 .. _virtualenvwrapper: http://www.doughellmann.com/projects/virtualenvwrapper/
 .. _sphinx: http://sphinx.pocoo.org/
 .. _restructured text: http://sphinx.pocoo.org/rest.html
+
+
+Merging A Branch (Core Devs)
+============================
+
+* All features/bugfixes should go through a review.
+
+  * This includes new features added by core devs themselves. The usual
+    branch/pull-request/merge flow that happens for community contributions
+    should also apply to core.
+
+* Ensure there is proper test coverage. If there's a change in behavior, there
+  should be a test demonstrating the failure before the change & passing with
+  the change.
+
+  * This helps ensure we don't regress in the future as well.
+
+* Merging of pull requests is typically done with
+  ``git merge --no-ff <remote/branch_name>``.
+
+  * GitHub's big green button is probably OK for very small PRs (like doc
+    fixes), but you can't run tests on GH, so most things should get pulled
+    down locally.

@@ -37,7 +37,9 @@ try:
     multipart_capable = True
     usage_flag_multipart_capable = """ [--multipart]"""
     usage_string_multipart_capable = """
-        multipart - Upload files as multiple parts. This needs filechunkio."""
+        multipart - Upload files as multiple parts. This needs filechunkio.
+                    Requires ListBucket, ListMultipartUploadParts,
+                    ListBucketMultipartUploads and PutObject permissions."""
 except ImportError as err:
     multipart_capable = False
     usage_flag_multipart_capable = ""
@@ -46,6 +48,8 @@ except ImportError as err:
         '" is missing for multipart support '
 
 
+DEFAULT_REGION = 'us-east-1'
+
 usage_string = """
 SYNOPSIS
     s3put [-a/--access_key <access_key>] [-s/--secret_key <secret_key>]
@@ -53,7 +57,8 @@ SYNOPSIS
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
           [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
           [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
-          [--header] [--host <s3_host>]""" + usage_flag_multipart_capable + """ path [path...]
+          [--header] [--region <name>] [--host <s3_host>]""" + \
+          usage_flag_multipart_capable + """ path [path...]
 
     Where
         access_key - Your AWS Access Key ID.  If not supplied, boto will
@@ -103,6 +108,9 @@ SYNOPSIS
                        updated.
         header - key=value pairs of extra header(s) to pass along in the
                  request
+        region - Manually set a region for buckets that are not in the US
+                 classic region. Normally the region is autodetected, but
+                 setting this yourself is more efficient.
         host - Hostname override, for using an endpoint other then AWS S3
 """ + usage_string_multipart_capable + """
 
@@ -112,9 +120,9 @@ SYNOPSIS
 """
 
 
-def usage():
+def usage(status=1):
     print usage_string
-    sys.exit()
+    sys.exit(status)
 
 
 def submit_cb(bytes_so_far, total_bytes):
@@ -168,11 +176,13 @@ def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
 
 def multipart_upload(bucketname, aws_key, aws_secret, source_path, keyname,
                      reduced, debug, cb, num_cb, acl='private', headers={},
-                     guess_mimetype=True, parallel_processes=4):
+                     guess_mimetype=True, parallel_processes=4,
+                     region=DEFAULT_REGION):
     """
     Parallel multipart upload.
     """
-    conn = S3Connection(aws_key, aws_secret)
+    conn = boto.s3.connect_to_region(region, aws_access_key_id=aws_key,
+                                     aws_secret_access_key=aws_secret)
     conn.debug = debug
     bucket = conn.get_bucket(bucketname)
 
@@ -242,6 +252,7 @@ def main():
     headers = {}
     host = None
     multipart_requested = False
+    region = None
 
     try:
         opts, args = getopt.getopt(
@@ -249,14 +260,14 @@ def main():
             ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
              'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet',
              'secret_key=', 'no_overwrite', 'reduced', 'header=', 'multipart',
-             'host='])
+             'host=', 'region='])
     except:
-        usage()
+        usage(1)
 
     # parse opts
     for o, a in opts:
         if o in ('-h', '--help'):
-            usage()
+            usage(0)
         if o in ('-a', '--access_key'):
             aws_access_key_id = a
         if o in ('-b', '--bucket'):
@@ -288,7 +299,7 @@ def main():
         if o in ('-r', '--reduced'):
             reduced = True
         if o in ('--header'):
-            (k, v) = a.split("=")
+            (k, v) = a.split("=", 1)
             headers[k] = v
         if o in ('--host'):
             host = a
@@ -297,23 +308,62 @@ def main():
                 multipart_requested = True
             else:
                 print "multipart upload requested but not capable"
-                sys.exit()
+                sys.exit(4)
+        if o in ('--region'):
+            regions = boto.s3.regions()
+            for region_info in regions:
+                if region_info.name == a:
+                    region = a
+                    break
+            else:
+                raise ValueError('Invalid region %s specified' % a)
 
     if len(args) < 1:
-        usage()
+        usage(2)
 
     if not bucket_name:
         print "bucket name is required!"
-        usage()
+        usage(3)
+
+    connect_args = {
+        'aws_access_key_id': aws_access_key_id,
+        'aws_secret_access_key': aws_secret_access_key
+    }
 
     if host:
-        c = boto.connect_s3(host=host, aws_access_key_id=aws_access_key_id,
-                        aws_secret_access_key=aws_secret_access_key)
-    else:
-        c = boto.connect_s3(aws_access_key_id=aws_access_key_id,
-                        aws_secret_access_key=aws_secret_access_key)
+        connect_args['host'] = host
+
+    c = boto.s3.connect_to_region(region or DEFAULT_REGION, **connect_args)
     c.debug = debug
-    b = c.get_bucket(bucket_name)
+    b = c.get_bucket(bucket_name, validate=False)
+
+    # Attempt to determine location and warn if no --host or --region
+    # arguments were passed. Then try to automagically figure out
+    # what should have been passed and fix it.
+    if host is None and region is None:
+        try:
+            location = b.get_location()
+
+            # Classic region will be '', any other will have a name
+            if location:
+                print 'Bucket exists in %s but no host or region given!' % location
+
+                # Override for EU, which is really Ireland according to the docs
+                if location == 'EU':
+                    location = 'eu-west-1'
+
+                print 'Automatically setting region to %s' % location
+
+                # Here we create a new connection, and then take the existing
+                # bucket and set it to use the new connection
+                c = boto.s3.connect_to_region(location, **connect_args)
+                c.debug = debug
+                b.connection = c
+        except Exception, e:
+            if debug > 0:
+                print e
+            print 'Could not get bucket region info, skipping...'
+
     existing_keys_to_check_against = []
     files_to_check_for_upload = []
 
@@ -350,9 +400,10 @@ def main():
         key_name = get_key_name(fullpath, prefix, key_prefix)
 
         if no_overwrite and key_name in existing_keys_to_check_against:
-            if not quiet:
-                print 'Skipping %s as it exists in s3' % fullpath
-            continue
+            if b.get_key(key_name):
+                if not quiet:
+                    print 'Skipping %s as it exists in s3' % fullpath
+                continue
 
         if not quiet:
             print 'Copying %s to %s/%s' % (fullpath, bucket_name, key_name)
@@ -364,7 +415,8 @@ def main():
                 multipart_upload(bucket_name, aws_access_key_id,
                                  aws_secret_access_key, fullpath, key_name,
                                  reduced, debug, cb, num_cb,
-                                 grant or 'private', headers)
+                                 grant or 'private', headers,
+                                 region=region or DEFAULT_REGION)
             else:
                 singlepart_upload(b, key_name, fullpath, cb=cb, num_cb=num_cb,
                                   policy=grant, reduced_redundancy=reduced,

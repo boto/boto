@@ -47,6 +47,7 @@ from boto.ec2.autoscale.tag import Tag
 
 RegionData = {
     'us-east-1': 'autoscaling.us-east-1.amazonaws.com',
+    'us-gov-west-1': 'autoscaling.us-gov-west-1.amazonaws.com',
     'us-west-1': 'autoscaling.us-west-1.amazonaws.com',
     'us-west-2': 'autoscaling.us-west-2.amazonaws.com',
     'sa-east-1': 'autoscaling.sa-east-1.amazonaws.com',
@@ -224,8 +225,7 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.ramdisk_id:
             params['RamdiskId'] = launch_config.ramdisk_id
         if launch_config.block_device_mappings:
-            self.build_list_params(params, launch_config.block_device_mappings,
-                                   'BlockDeviceMappings')
+            [x.autoscale_build_list_params(params) for x in launch_config.block_device_mappings]
         if launch_config.security_groups:
             self.build_list_params(params, launch_config.security_groups,
                                    'SecurityGroups')
@@ -237,6 +237,14 @@ class AutoScaleConnection(AWSQueryConnection):
             params['SpotPrice'] = str(launch_config.spot_price)
         if launch_config.instance_profile_name is not None:
             params['IamInstanceProfile'] = launch_config.instance_profile_name
+        if launch_config.ebs_optimized:
+            params['EbsOptimized'] = 'true'
+        else:
+            params['EbsOptimized'] = 'false'
+        if launch_config.associate_public_ip_address is True:
+            params['AssociatePublicIpAddress'] = 'true'
+        elif launch_config.associate_public_ip_address is False:
+            params['AssociatePublicIpAddress'] = 'false'
         return self.get_object('CreateLaunchConfiguration', params,
                                Request, verb='POST')
 
@@ -251,6 +259,11 @@ class AutoScaleConnection(AWSQueryConnection):
                   'AutoScalingGroupName': scaling_policy.as_name,
                   'PolicyName': scaling_policy.name,
                   'ScalingAdjustment': scaling_policy.scaling_adjustment}
+
+        if scaling_policy.adjustment_type == "PercentChangeInCapacity" and \
+           scaling_policy.min_adjustment_step is not None:
+            params['MinAdjustmentStep'] = scaling_policy.min_adjustment_step
+
         if scaling_policy.cooldown is not None:
             params['Cooldown'] = scaling_policy.cooldown
 
@@ -483,15 +496,19 @@ class AutoScaleConnection(AWSQueryConnection):
         If no group name or list of policy names are provided, all
         available policies are returned.
 
-        :type as_name: str
-        :param as_name: The name of the
+        :type as_group: str
+        :param as_group: The name of the
             :class:`boto.ec2.autoscale.group.AutoScalingGroup` to filter for.
 
-        :type names: list
-        :param names: List of policy names which should be searched for.
+        :type policy_names: list
+        :param policy_names: List of policy names which should be searched for.
 
         :type max_records: int
         :param max_records: Maximum amount of groups to return.
+
+        :type next_token: str
+        :param next_token: If you have more results than can be returned
+            at once, pass in this  parameter to page through all results.
         """
         params = {}
         if as_group:
@@ -548,9 +565,11 @@ class AutoScaleConnection(AWSQueryConnection):
                                    'ScalingProcesses')
         return self.get_status('ResumeProcesses', params)
 
-    def create_scheduled_group_action(self, as_group, name, time,
+    def create_scheduled_group_action(self, as_group, name, time=None,
                                       desired_capacity=None,
-                                      min_size=None, max_size=None):
+                                      min_size=None, max_size=None,
+                                      start_time=None, end_time=None,
+                                      recurrence=None):
         """
         Creates a scheduled scaling action for a Auto Scaling group. If you
         leave a parameter unspecified, the corresponding value remains
@@ -563,7 +582,7 @@ class AutoScaleConnection(AWSQueryConnection):
         :param name: Scheduled action name.
 
         :type time: datetime.datetime
-        :param time: The time for this action to start.
+        :param time: The time for this action to start. (Depracated)
 
         :type desired_capacity: int
         :param desired_capacity: The number of EC2 instances that should
@@ -574,10 +593,26 @@ class AutoScaleConnection(AWSQueryConnection):
 
         :type max_size: int
         :param max_size: The minimum size for the new auto scaling group.
+
+        :type start_time: datetime.datetime
+        :param start_time: The time for this action to start. When StartTime and EndTime are specified with Recurrence, they form the boundaries of when the recurring action will start and stop.
+
+        :type end_time: datetime.datetime
+        :param end_time: The time for this action to end. When StartTime and EndTime are specified with Recurrence, they form the boundaries of when the recurring action will start and stop.
+
+        :type recurrence: string
+        :param recurrence: The time when recurring future actions will start. Start time is specified by the user following the Unix cron syntax format. EXAMPLE: '0 10 * * *'
         """
         params = {'AutoScalingGroupName': as_group,
-                  'ScheduledActionName': name,
-                  'Time': time.isoformat()}
+                  'ScheduledActionName': name}
+        if start_time is not None:
+            params['StartTime'] = start_time.isoformat()
+        if end_time is not None:
+            params['EndTime'] = end_time.isoformat()
+        if recurrence is not None:
+            params['Recurrence'] = recurrence
+        if time:
+            params['Time'] = time.isoformat()
         if desired_capacity is not None:
             params['DesiredCapacity'] = desired_capacity
         if min_size is not None:
@@ -654,9 +689,9 @@ class AutoScaleConnection(AWSQueryConnection):
         Configures an Auto Scaling group to send notifications when
         specified events take place.
 
-        :type as_group: str or
+        :type autoscale_group: str or
             :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
-        :param as_group: The Auto Scaling group to put notification
+        :param autoscale_group: The Auto Scaling group to put notification
             configuration on.
 
         :type topic: str
@@ -665,7 +700,12 @@ class AutoScaleConnection(AWSQueryConnection):
 
         :type notification_types: list
         :param notification_types: The type of events that will trigger
-            the notification.
+            the notification. Valid types are:
+            'autoscaling:EC2_INSTANCE_LAUNCH',
+            'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
+            'autoscaling:EC2_INSTANCE_TERMINATE',
+            'autoscaling:EC2_INSTANCE_TERMINATE_ERROR',
+            'autoscaling:TEST_NOTIFICATION'
         """
 
         name = autoscale_group
@@ -676,6 +716,29 @@ class AutoScaleConnection(AWSQueryConnection):
                   'TopicARN': topic}
         self.build_list_params(params, notification_types, 'NotificationTypes')
         return self.get_status('PutNotificationConfiguration', params)
+
+    def delete_notification_configuration(self, autoscale_group, topic):
+        """
+        Deletes notifications created by put_notification_configuration.
+
+        :type autoscale_group: str or
+            :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param autoscale_group: The Auto Scaling group to put notification
+            configuration on.
+
+        :type topic: str
+        :param topic: The Amazon Resource Name (ARN) of the Amazon Simple
+            Notification Service (SNS) topic.
+        """
+
+        name = autoscale_group
+        if isinstance(autoscale_group, AutoScalingGroup):
+            name = autoscale_group.name
+
+        params = {'AutoScalingGroupName': name,
+                  'TopicARN': topic}
+
+        return self.get_status('DeleteNotificationConfiguration', params)
 
     def set_instance_health(self, instance_id, health_status,
                             should_respect_grace_period=True):

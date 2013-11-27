@@ -41,11 +41,17 @@ class Stack(object):
 
     def endElement(self, name, value, connection):
         if name == 'CreationTime':
-            self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
         elif name == "Description":
             self.description = value
         elif name == "DisableRollback":
-            self.disable_rollback = bool(value)
+            if str(value).lower() == 'true':
+                self.disable_rollback = True
+            else:
+                self.disable_rollback = False
         elif name == 'StackId':
             self.stack_id = value
         elif name == 'StackName':
@@ -123,9 +129,15 @@ class StackSummary(object):
         elif name == 'StackName':
             self.stack_name = value
         elif name == 'CreationTime':
-            self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
         elif name == "DeletionTime":
-            self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
         elif name == 'TemplateDescription':
             self.template_description = value
         elif name == "member":
@@ -212,7 +224,7 @@ class Tag(dict):
             self._current_value = value
         else:
             setattr(self, name, value)
-        
+
         if self._current_key and self._current_value:
             self[self._current_key] = self._current_value
             self._current_key = None
@@ -268,7 +280,10 @@ class StackResource(object):
         elif name == "StackName":
             self.stack_name = value
         elif name == "Timestamp":
-            self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
         else:
             setattr(self, name, value)
 
@@ -280,7 +295,7 @@ class StackResource(object):
 class StackResourceSummary(object):
     def __init__(self, connection=None):
         self.connection = connection
-        self.last_updated_timestamp = None
+        self.last_updated_time = None
         self.logical_resource_id = None
         self.physical_resource_id = None
         self.resource_status = None
@@ -291,9 +306,17 @@ class StackResourceSummary(object):
         return None
 
     def endElement(self, name, value, connection):
-        if name == "LastUpdatedTimestamp":
-            self.last_updated_timestamp = datetime.strptime(value,
-                '%Y-%m-%dT%H:%M:%SZ')
+        if name == "LastUpdatedTime":
+            try:
+                self.last_updated_time = datetime.strptime(
+                    value,
+                    '%Y-%m-%dT%H:%M:%SZ'
+                )
+            except ValueError:
+                self.last_updated_time = datetime.strptime(
+                    value,
+                    '%Y-%m-%dT%H:%M:%S.%fZ'
+                )
         elif name == "LogicalResourceId":
             self.logical_resource_id = value
         elif name == "PhysicalResourceId":
@@ -351,7 +374,10 @@ class StackEvent(object):
         elif name == "StackName":
             self.stack_name = value
         elif name == "Timestamp":
-            self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
         else:
             setattr(self, name, value)
 
