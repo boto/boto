@@ -95,7 +95,36 @@ class TestRDSConnection(AWSMockServiceTestCase):
                       <StatusType>read replication</StatusType>
                     </DBInstanceStatusInfo>
                   </StatusInfos>
-                </DBInstance>
+                  <DBSubnetGroup>
+                    <VpcId>990524496922</VpcId>
+                    <SubnetGroupStatus>Complete</SubnetGroupStatus>
+                    <DBSubnetGroupDescription>My modified DBSubnetGroup</DBSubnetGroupDescription>
+                    <DBSubnetGroupName>mydbsubnetgroup</DBSubnetGroupName>
+                    <Subnets>
+                      <Subnet>
+                        <SubnetStatus>Active</SubnetStatus>
+                        <SubnetIdentifier>subnet-7c5b4115</SubnetIdentifier>
+                        <SubnetAvailabilityZone>
+                        <Name>us-east-1c</Name>
+                      </SubnetAvailabilityZone>
+                      </Subnet>
+                      <Subnet>
+                        <SubnetStatus>Active</SubnetStatus>
+                        <SubnetIdentifier>subnet-7b5b4112</SubnetIdentifier>
+                        <SubnetAvailabilityZone>
+                          <Name>us-east-1b</Name>
+                        </SubnetAvailabilityZone>
+                      </Subnet>
+                      <Subnet>
+                        <SubnetStatus>Active</SubnetStatus>
+                        <SubnetIdentifier>subnet-3ea6bd57</SubnetIdentifier>
+                        <SubnetAvailabilityZone>
+                          <Name>us-east-1d</Name>
+                        </SubnetAvailabilityZone>
+                      </Subnet>
+                    </Subnets>
+                  </DBSubnetGroup>
+              </DBInstance>
             </DBInstances>
           </DescribeDBInstancesResult>
         </DescribeDBInstancesResponse>
@@ -147,6 +176,10 @@ class TestRDSConnection(AWSMockServiceTestCase):
         self.assertEqual(db.status_infos[0].status_type, 'read replication')
         self.assertEqual(db.vpc_security_groups[0].status, 'active')
         self.assertEqual(db.vpc_security_groups[0].vpc_group, 'sg-1')
+        self.assertEqual(db.license_model, 'general-public-license')
+        self.assertEqual(db.engine_version, '5.5.27')
+        self.assertEqual(db.auto_minor_version_upgrade, True)
+        self.assertEqual(db.subnet_group.name, 'mydbsubnetgroup')
 
 
 class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
