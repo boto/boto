@@ -25,11 +25,14 @@ import hmac
 
 import mock
 
+import boto.utils
 from boto.utils import Password
 from boto.utils import pythonize_name
 from boto.utils import _build_instance_metadata_url
 from boto.utils import retry_url
+from boto.utils import LazyLoadMetadata
 
+from boto.compat import json
 
 class TestPassword(unittest.TestCase):
     """Test basic password functionality"""
@@ -185,6 +188,45 @@ class TestRetryURL(unittest.TestCase):
         response = retry_url('http://10.10.10.10/foo', num_retries=1)
         self.assertEqual(response, 'no proxy response')
 
+class TestLazyLoadMetadata(unittest.TestCase):
+
+    def setUp(self):
+        self.retry_url_patch = mock.patch('boto.utils.retry_url')
+        boto.utils.retry_url = self.retry_url_patch.start()
+
+    def tearDown(self):
+        self.retry_url_patch.stop()
+
+    def set_normal_response(self, data):
+        # here "data" should be a list of return values in some order
+        fake_response = mock.Mock()
+        fake_response.side_effect = data
+        boto.utils.retry_url = fake_response
+
+    def test_meta_data_with_invalid_json_format_happened_once(self):
+        # here "key_data" will be stored in the "self._leaves"
+        # when the class "LazyLoadMetadata" initialized
+        key_data = "test"
+        invalid_data = '{"invalid_json_format" : true,}'
+        valid_data = '{ "%s" : {"valid_json_format": true}}' % key_data
+        url = "/".join(["http://169.254.169.254", key_data])
+        num_retries = 2
+
+        self.set_normal_response([key_data, invalid_data, valid_data])
+        response = LazyLoadMetadata(url, num_retries)
+        self.assertEqual(response.values()[0], json.loads(valid_data))
+
+    def test_meta_data_with_invalid_json_format_happened_twice(self):
+        key_data = "test"
+        invalid_data = '{"invalid_json_format" : true,}'
+        valid_data = '{ "%s" : {"valid_json_format": true}}' % key_data
+        url = "/".join(["http://169.254.169.254", key_data])
+        num_retries = 2
+
+        self.set_normal_response([key_data, invalid_data, invalid_data])
+        response = LazyLoadMetadata(url, num_retries)
+        with self.assertRaises(ValueError):
+            response.values()[0]
 
 if __name__ == '__main__':
     unittest.main()
