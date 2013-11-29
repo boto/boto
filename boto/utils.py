@@ -50,6 +50,7 @@ import logging.handlers
 import boto
 import boto.provider
 import tempfile
+import random
 import smtplib
 import datetime
 import re
@@ -74,6 +75,11 @@ except ImportError:
     _hashfn = md5.md5
 
 from boto.compat import json
+
+try:
+    from json import JSONDecodeError as ValueError
+except ImportError:
+    pass
 
 # List of Query String Arguments of Interest
 qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
@@ -272,15 +278,46 @@ class LazyLoadMetadata(dict):
 
         if key in self._leaves:
             resource = self._leaves[key]
-            val = boto.utils.retry_url(self._url + urllib.quote(resource,
-                                                                safe="/:"),
-                                       num_retries=self._num_retries)
-            if val and val[0] == '{':
-                val = json.loads(val)
+
+            for i in range(0, self._num_retries):
+                try:
+                    val = boto.utils.retry_url(self._url + urllib.quote(resource,
+                                                                        safe="/:"),
+                                               num_retries=self._num_retries)
+                    if val and val[0] == '{':
+                        val = json.loads(val)
+                        break
+                    else:
+                        p = val.find('\n')
+                        if p > 0:
+                            val = val.split('\n')
+                        break
+
+                except ValueError, e:
+                    boto.log.debug(
+                            "encountered '%s' exception: %s" % (
+                            e.__class__.__name__, e))
+                    boto.log.debug(
+                            'corrupted JSON data found: %s' % val)
+
+                except Exception, e:
+                    boto.log.debug(
+                            "encountered unretryable '%s' exception, re-raising" % (
+                            e.__class__.__name__))
+                    raise
+
+                boto.log.error("Caught exception reading meta data for the '%s' try" % i+1)
+
+                if i + 1 != self._num_retries:
+                    next_sleep = random.random() * (2 ** i)
+                    time.sleep(next_sleep)
             else:
-                p = val.find('\n')
-                if p > 0:
-                    val = val.split('\n')
+                boto.log.error('Unable to read meta data, giving up')
+                boto.log.error(
+                        "encountered '%s' exception: %s" % (
+                        e.__class__.__name__, e))
+                raise
+
             self[key] = val
         elif key in self._dicts:
             self[key] = LazyLoadMetadata(self._url + key + '/',
