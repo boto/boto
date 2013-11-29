@@ -159,7 +159,7 @@ class ELBConnection(AWSQueryConnection):
             [SSLCertificateId]) where LoadBalancerPortNumber and
             InstancePortNumber are integer values between 1 and 65535,
             Protocol is a string containing either 'TCP', 'SSL', HTTP', or
-            'HTTPS'; SSLCertificateID is the ARN of a AWS AIM
+            'HTTPS'; SSLCertificateID is the ARN of a AWS IAM
             certificate, and must be specified when doing HTTPS.
 
         :type subnets: list of strings
@@ -264,7 +264,7 @@ class ELBConnection(AWSQueryConnection):
             [SSLCertificateId]) where LoadBalancerPortNumber and
             InstancePortNumber are integer values between 1 and 65535,
             Protocol is a string containing either 'TCP', 'SSL', HTTP', or
-            'HTTPS'; SSLCertificateID is the ARN of a AWS AIM
+            'HTTPS'; SSLCertificateID is the ARN of a AWS IAM
             certificate, and must be specified when doing HTTPS.
 
         :type complex_listeners: List of tuples
