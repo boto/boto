@@ -839,6 +839,13 @@ class AWSAuthConnection(object):
         auth = base64.encodestring(self.proxy_user + ':' + self.proxy_pass)
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
+    def set_host_header(self, request):
+        try:
+            request.headers['Host'] = \
+                self._auth_handler.host_header(self.host, request)
+        except AttributeError:
+            request.headers['Host'] = self.host.split(':', 1)[0]
+
     def _mexe(self, request, sender=None, override_num_retries=None,
               retry_handler=None):
         """
@@ -879,11 +886,7 @@ class AWSAuthConnection(object):
                 # the port info. All others should be now be up to date and
                 # not include the port.
                 if 's3' not in self._required_auth_capability():
-                    try:
-                        request.headers['Host'] = \
-                            self._auth_handler.host_header(self.host, request)
-                    except AttributeError:
-                        request.headers['Host'] = self.host.split(':', 1)[0]
+                    self.set_host_header(request)
                     
                 if callable(sender):
                     response = sender(connection, request.method, request.path,

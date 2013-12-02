@@ -142,6 +142,38 @@ class TestAWSAuthConnection(unittest.TestCase):
         self.assertEqual(conn.proxy_port, 8180)
         del os.environ['http_proxy']
 
+    # this tests the proper setting of the host_header in v4 signing
+    def test_host_header_with_nonstandard_port(self):
+        # test standard port first
+        conn = V4AuthConnection(
+            'testhost',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret')
+        request = conn.build_base_http_request(method='POST', path='/',
+            auth_path=None, params=None, headers=None, data='', host=None)
+        conn.set_host_header(request)
+        self.assertEqual(request.headers['Host'], 'testhost')
+
+        # next, test non-standard port
+        conn = V4AuthConnection(
+            'testhost',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            port=8773)
+        request = conn.build_base_http_request(method='POST', path='/',
+            auth_path=None, params=None, headers=None, data='', host=None)
+        conn.set_host_header(request)
+        self.assertEqual(request.headers['Host'], 'testhost:8773')
+
+class V4AuthConnection(AWSAuthConnection):
+    def __init__(self, host, aws_access_key_id, aws_secret_access_key, port=443):
+        AWSAuthConnection.__init__(self, host, aws_access_key_id,
+            aws_secret_access_key, port=port)
+
+    def _required_auth_capability(self):
+        return ['hmac-v4']
+
+
 class TestAWSQueryConnection(unittest.TestCase):
     def setUp(self):
         self.region = RegionInfo(name='cc-zone-1',
