@@ -24,6 +24,7 @@
 Some utility functions to deal with mapping Amazon DynamoDB types to
 Python types and vice-versa.
 """
+import sys
 import base64
 from decimal import (Decimal, DecimalException, Context,
                      Clamped, Overflow, Inexact, Underflow, Rounded)
@@ -34,6 +35,7 @@ DYNAMODB_CONTEXT = Context(
     Emin=-128, Emax=126, rounding=None, prec=38,
     traps=[Clamped, Overflow, Inexact, Rounded, Underflow])
 
+float_prec = '.{prec}f'.format(prec=sys.float_info.dig)
 
 # python2.6 cannot convert floats directly to
 # Decimals.  This is taken from:
@@ -240,6 +242,16 @@ class Dynamizer(object):
                 # from floats so we have to do this ourself.
                 n = str(float_to_decimal(attr))
             else:
+                if isinstance(attr, float):
+                    # If value is a float, the binary floating point value is
+                    # losslessly converted to its exact decimal equivalent. That
+                    # means float(1.1) != Decimal(float(1.1)).
+                    # Here we first convert the float to a string using the
+                    # highest precision possible. The string is then converted
+                    # to a Decimal and normalized to remove rightmost trailing
+                    # zeros.
+                    attr = format(attr, float_prec)
+                    attr = DYNAMODB_CONTEXT.create_decimal(attr).normalize()
                 n = str(DYNAMODB_CONTEXT.create_decimal(attr))
             if filter(lambda x: x in n, ('Infinity', 'NaN')):
                 raise TypeError('Infinity and NaN not supported')

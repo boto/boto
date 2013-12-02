@@ -58,14 +58,11 @@ class TestDynamizer(unittest.TestCase):
         self.assertEqual(dynamizer.decode({'BS': ['AQ==']}),
                          set([types.Binary('\x01')]))
 
-    def test_float_conversion_errors(self):
+    def test_float_conversion(self):
         dynamizer = types.Dynamizer()
-        # When supporting decimals, certain floats will work:
         self.assertEqual(dynamizer.encode(1.25), {'N': '1.25'})
-        # And some will generate errors, which is why it's best
-        # to just use Decimals directly:
-        with self.assertRaises(DynamoDBNumberError):
-            dynamizer.encode(1.1)
+        self.assertEqual(dynamizer.encode(1.1), {'N': '1.1'})
+
 
     def test_lossy_float_conversions(self):
         dynamizer = types.LossyFloatDynamizer()
