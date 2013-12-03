@@ -186,7 +186,7 @@ class DBInstance(object):
         elif name == 'AvailabilityZone':
             self.availability_zone = value
         elif name == 'BackupRetentionPeriod':
-            self.backup_retention_period = value
+            self.backup_retention_period = int(value)
         elif name == 'LatestRestorableTime':
             self.latest_restorable_time = value
         elif name == 'PreferredMaintenanceWindow':

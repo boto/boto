@@ -150,7 +150,7 @@ class TestRDSConnection(AWSMockServiceTestCase):
         self.assertEqual(db.instance_class, 'db.m1.large')
         self.assertEqual(db.master_username, 'awsuser')
         self.assertEqual(db.availability_zone, 'us-west-2b')
-        self.assertEqual(db.backup_retention_period, '1')
+        self.assertEqual(db.backup_retention_period, 1)
         self.assertEqual(db.preferred_backup_window, '10:30-11:00')
         self.assertEqual(db.preferred_maintenance_window,
                          'wed:06:30-wed:07:00')
@@ -198,7 +198,7 @@ class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
                     <PendingModifiedValues>
                         <MasterUserPassword>****</MasterUserPassword>
                     </PendingModifiedValues>
-                    <BackupRetentionPeriod>1</BackupRetentionPeriod>
+                    <BackupRetentionPeriod>0</BackupRetentionPeriod>
                     <MultiAZ>false</MultiAZ>
                     <LicenseModel>general-public-license</LicenseModel>
                     <DBSubnetGroup>
@@ -268,12 +268,14 @@ class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
             'master',
             'Password01',
             param_group='default.mysql5.1',
-            db_subnet_group_name='dbSubnetgroup01')
+            db_subnet_group_name='dbSubnetgroup01',
+            backup_retention_period=0)
 
         self.assert_request_parameters({
             'Action': 'CreateDBInstance',
             'AllocatedStorage': 10,
             'AutoMinorVersionUpgrade': 'true',
+            'BackupRetentionPeriod': 0,
             'DBInstanceClass': 'db.m1.large',
             'DBInstanceIdentifier': 'SimCoProd01',
             'DBParameterGroupName': 'default.mysql5.1',
@@ -281,7 +283,7 @@ class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
             'Engine': 'MySQL5.1',
             'MasterUsername': 'master',
             'MasterUserPassword': 'Password01',
-            'Port': 3306,
+            'Port': 3306
         }, ignore_params_values=['Version'])
 
         self.assertEqual(db.id, 'simcoprod01')
@@ -298,6 +300,7 @@ class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
                          'default.mysql5.1')
         self.assertEqual(db.parameter_group.description, None)
         self.assertEqual(db.parameter_group.engine, None)
+        self.assertEqual(db.backup_retention_period, 0)
 
     def test_create_db_instance_param_group_instance(self):
         self.set_http_response(status_code=200)
