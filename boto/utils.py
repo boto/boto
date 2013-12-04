@@ -77,9 +77,9 @@ except ImportError:
 from boto.compat import json
 
 try:
-    from json import JSONDecodeError as ValueError
+    from boto.compat.json import JSONDecodeError
 except ImportError:
-    pass
+    JSONDecodeError = ValueError
 
 # List of Query String Arguments of Interest
 qsa_of_interest = ['acl', 'cors', 'defaultObjectAcl', 'location', 'logging',
@@ -296,7 +296,7 @@ class LazyLoadMetadata(dict):
                             val = val.split('\n')
                         break
 
-                except ValueError, e:
+                except JSONDecodeError, e:
                     boto.log.debug(
                         "encountered '%s' exception: %s" % (
                             e.__class__.__name__, e))
