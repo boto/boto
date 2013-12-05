@@ -744,6 +744,28 @@ def connect_cloudtrail(aws_access_key_id=None,
     )
 
 
+def connect_directconnect(aws_access_key_id=None,
+                          aws_secret_access_key=None,
+                          **kwargs):
+    """
+    Connect to AWS DirectConnect
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.directconnect.layer1.DirectConnectConnection`
+    :return: A connection to the AWS DirectConnect service
+    """
+    from boto.directconnect.layer1 import DirectConnectConnection
+    return DirectConnectConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
 def connect_kinesis(aws_access_key_id=None,
                     aws_secret_access_key=None,
                     **kwargs):
