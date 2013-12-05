@@ -1836,7 +1836,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
 
-        return self.get_status('AssociateAddress', params, verb='POST')
+        return self.get_object('AssociateAddress', params, Address, verb='POST')
 
     def disassociate_address(self, public_ip=None, association_id=None,
                              dry_run=False):
