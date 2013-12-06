@@ -22,6 +22,7 @@
 import xml.sax
 import datetime
 import itertools
+import re
 
 from boto import handler
 from boto import config
@@ -62,6 +63,13 @@ class MTurkConnection(AWSQueryConnection):
 
     def _required_auth_capability(self):
         return ['mturk']
+
+    def build_list_params(self, params, items, label):
+        # Convert comma- or whitespace-delimited string to array
+        if isinstance(items, basestring):
+            items = re.findall('[^,\s]+', items)
+        for i in range(1, len(items) + 1):
+            params['%s.%d' % (label, i)] = items[i - 1]
 
     def get_account_balance(self):
         """
@@ -125,14 +133,23 @@ class MTurkConnection(AWSQueryConnection):
         return self._set_notification(hit_type, "SQS", queue_url,
                                       'SetHITTypeNotification', event_types)
 
-    def send_test_event_notification(self, hit_type, url,
-                                     event_types=None,
+    def send_email_test_event_notification(self, email, event_types=None,
+                                     test_event_type='Ping'):
+        """
+        Performs a SendTestEventNotification operation with email notification
+        for a specified HIT type
+        """
+        return self._set_notification(None, 'Email', email,
+                                      'SendTestEventNotification',
+                                      event_types, test_event_type)
+
+    def send_rest_test_event_notification(self, url, event_types=None,
                                      test_event_type='Ping'):
         """
         Performs a SendTestEventNotification operation with REST notification
         for a specified HIT type
         """
-        return self._set_notification(hit_type, 'REST', url,
+        return self._set_notification(None, 'REST', url,
                                       'SendTestEventNotification',
                                       event_types, test_event_type)
 
@@ -140,10 +157,15 @@ class MTurkConnection(AWSQueryConnection):
                           destination, request_type,
                           event_types=None, test_event_type=None):
         """
-        Common operation to set notification or send a test event
-        notification for a specified HIT type
+        Common operation to set notification for a specified HIT type
+        or send a test event notification
         """
-        params = {'HITTypeId': hit_type}
+        # If SetHITTypeNotification, specify the HIT type
+        if not test_event_type:
+            params = {'HITTypeId': hit_type}
+        # else if test notification, specify the notification type to be tested
+        else:
+            params = {'TestEventType': test_event_type}
 
         # from the Developer Guide:
         # The 'Active' parameter is optional. If omitted, the active status of
@@ -168,10 +190,6 @@ class MTurkConnection(AWSQueryConnection):
 
         # Update main params dict
         params.update(notification_rest_params)
-
-        # If test notification, specify the notification type to be tested
-        if test_event_type:
-            params.update({'TestEventType': test_event_type})
 
         # Execute operation
         return self._process_request(request_type, params)
@@ -306,7 +324,7 @@ class MTurkConnection(AWSQueryConnection):
         pages = total_records / page_size + bool(total_records % page_size)
         return range(1, pages + 1)
 
-    def get_all_hits(self):
+    def get_all_hits(self, response_groups=None):
         """
         Return all of a Requester's HITs
 
@@ -316,9 +334,10 @@ class MTurkConnection(AWSQueryConnection):
         iteratively, so subsequent requests are made on demand.
         """
         page_size = 100
-        search_rs = self.search_hits(page_size=page_size)
+        search_rs = self.search_hits(page_size=page_size, response_groups=response_groups)
         total_records = int(search_rs.TotalNumResults)
-        get_page_hits = lambda page: self.search_hits(page_size=page_size, page_number=page)
+        get_page_hits = lambda page: self.search_hits(page_size=page_size, 
+            page_number=page, response_groups=response_groups)
         page_nums = self._get_pages(page_size, total_records)
         hit_sets = itertools.imap(get_page_hits, page_nums)
         return itertools.chain.from_iterable(hit_sets)
@@ -774,6 +793,12 @@ class MTurkConnection(AWSQueryConnection):
                   'PageNumber': page_number}
         return self._process_request('GetQualificationRequests', params,
                     [('QualificationRequest', QualificationRequest)])
+
+    def reject_qualification_request(self, qualification_request_id, reason=None):
+        """TODO: Document."""
+        params = {'QualificationRequestId': qualification_request_id,
+                  'Reason': reason}
+        return self._process_request('RejectQualificationRequest', params)
 
     def grant_qualification(self, qualification_request_id, integer_value=1):
         """TODO: Document."""
