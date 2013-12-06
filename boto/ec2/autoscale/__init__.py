@@ -785,7 +785,7 @@ class AutoScaleConnection(AWSQueryConnection):
         params = {'AutoScalingGroupName': group_name,
                   'DesiredCapacity': desired_capacity}
         if honor_cooldown:
-            params['HonorCooldown'] = json.dumps('True')
+            params['HonorCooldown'] = 'true'
 
         return self.get_status('SetDesiredCapacity', params)
 
