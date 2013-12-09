@@ -424,7 +424,7 @@ class Table(object):
         with boto.dynamodb. Unlike get_item, it takes hash_key and range_key first,
         although you may still specify keyword arguments instead.
 
-        Also unlike the get_item command, if the returned item has no keys 
+        Also unlike the get_item command, if the returned item has no keys
         (i.e., it does not exist in DynamoDB), a None result is returned, instead
         of an empty key object.
 
@@ -668,6 +668,10 @@ class Table(object):
                     lookup['AttributeValueList'].append(
                         self._dynamizer.encode(value[1])
                     )
+            # Special-case the ``IN`` case
+            elif field_bits[-1] == 'in':
+                for val in value:
+                    lookup['AttributeValueList'].append(self._dynamizer.encode(val))
             else:
                 # Fix up the value for encoding, because it was built to only work
                 # with ``set``s.
