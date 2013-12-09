@@ -1698,7 +1698,12 @@ class TableTestCase(unittest.TestCase):
                 'ComparisonOperator': 'GE',
             },
             'age': {
-                'AttributeValueList': [{'NS': ['32', '33', '30', '31']}],
+                'AttributeValueList': [
+                    {'N': '30'},
+                    {'N': '31'},
+                    {'N': '32'},
+                    {'N': '33'},
+                ],
                 'ComparisonOperator': 'IN',
             },
             'last_name': {
