@@ -653,6 +653,10 @@ class ItemTestCase(unittest.TestCase):
             date_joined=12345
         )
 
+    def test_nonzero(self):
+        self.assertTrue(self.johndoe)
+        self.assertFalse(self.create_item({}))
+
 
 def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
     if exclusive_start_key is None:
