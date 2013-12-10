@@ -356,19 +356,28 @@ def _build_instance_metadata_url(url, version, path):
     """
     Builds an EC2 metadata URL for fetching information about an instance.
 
-    Requires the following arguments: a URL, a version and a path.
-
     Example:
 
         >>> _build_instance_metadata_url('http://169.254.169.254', 'latest', 'meta-data')
         http://169.254.169.254/latest/meta-data/
 
+    :type url: string
+    :param url: URL to metadata service, e.g. 'http://169.254.169.254'
+
+    :type version: string
+    :param version: Version of the metadata to get, e.g. 'latest'
+
+    :type path: string
+    :param path: Path of the metadata to get, e.g. 'meta-data/'. If a trailing
+                 slash is required it must be passed in with the path.
+
+    :return: The full metadata URL
     """
-    return '%s/%s/%s/' % (url, version, path)
+    return '%s/%s/%s' % (url, version, path)
 
 
 def get_instance_metadata(version='latest', url='http://169.254.169.254',
-                          data='meta-data', timeout=None, num_retries=5):
+                          data='meta-data/', timeout=None, num_retries=5):
     """
     Returns the instance metadata as a nested Python dictionary.
     Simple values (e.g. local_hostname, hostname, etc.) will be
@@ -400,7 +409,7 @@ def get_instance_identity(version='latest', url='http://169.254.169.254',
     """
     iid = {}
     base_url = _build_instance_metadata_url(url, version,
-                                            'dynamic/instance-identity')
+                                            'dynamic/instance-identity/')
     if timeout is not None:
         original = socket.getdefaulttimeout()
         socket.setdefaulttimeout(timeout)
