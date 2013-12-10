@@ -176,8 +176,16 @@ class S3Connection(AWSAuthConnection):
     def _required_auth_capability(self):
         if self.anon:
             return ['anon']
-        else:
-            return ['s3']
+        elif self.host:
+            # If we have a host, we can detect if a region (other than classic)
+            # is present.
+            host_bits = self.host.split('.')
+
+            if host_bits[0].startswith('s3'):
+                if '-' in host_bits[0]:
+                    return ['hmac-v4-s3']
+
+        return ['s3']
 
     def __iter__(self):
         for bucket in self.get_all_buckets():

@@ -39,6 +39,7 @@ import hmac
 import sys
 import time
 import urllib
+import urlparse
 import posixpath
 
 from boto.auth_handler import AuthHandler
@@ -373,10 +374,15 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         case, sorting them in alphabetical order and then joining
         them into a string, separated by newlines.
         """
-        l = sorted(['%s:%s' % (n.lower().strip(),
-                    ' '.join(headers_to_sign[n].strip().split()))
-                    for n in headers_to_sign])
-        return '\n'.join(l)
+        canonical = []
+
+        for header in headers_to_sign:
+            c_name = header.lower().strip()
+            raw_value = headers_to_sign[header]
+            c_value = ' '.join(raw_value.strip().split())
+            canonical.append('%s:%s' % (c_name, c_value))
+
+        return '\n'.join(sorted(canonical))
 
     def signed_headers(self, headers_to_sign):
         l = ['%s' % n.lower().strip() for n in headers_to_sign]
@@ -421,14 +427,11 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         scope.append('aws4_request')
         return '/'.join(scope)
 
-    def credential_scope(self, http_request):
-        scope = []
-        http_request.timestamp = http_request.headers['X-Amz-Date'][0:8]
-        scope.append(http_request.timestamp)
-        # The service_name and region_name either come from:
-        # * The service_name/region_name attrs or (if these values are None)
-        # * parsed from the endpoint <service>.<region>.amazonaws.com.
-        parts = http_request.host.split('.')
+    def split_host_parts(self, host):
+        return host.split('.')
+
+    def determine_region_name(self, host):
+        parts = self.split_host_parts(host)
         if self.region_name is not None:
             region_name = self.region_name
         elif len(parts) > 1:
@@ -442,11 +445,25 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         else:
             region_name = parts[0]
 
+        return region_name
+
+    def determine_service_name(self, host):
+        parts = self.split_host_parts(host)
         if self.service_name is not None:
             service_name = self.service_name
         else:
             service_name = parts[0]
+        return service_name
 
+    def credential_scope(self, http_request):
+        scope = []
+        http_request.timestamp = http_request.headers['X-Amz-Date'][0:8]
+        scope.append(http_request.timestamp)
+        # The service_name and region_name either come from:
+        # * The service_name/region_name attrs or (if these values are None)
+        # * parsed from the endpoint <service>.<region>.amazonaws.com.
+        region_name = self.determine_region_name(http_request.host)
+        service_name = self.determine_service_name(http_request.host)
         http_request.service_name = service_name
         http_request.region_name = region_name
 
@@ -514,6 +531,136 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         l.append('SignedHeaders=%s' % self.signed_headers(headers_to_sign))
         l.append('Signature=%s' % signature)
         req.headers['Authorization'] = ','.join(l)
+
+
+class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
+    """
+    Implements a variant of Version 4 HMAC authorization specific to S3.
+    """
+    capability = ['hmac-v4-s3']
+
+    def __init__(self, *args, **kwargs):
+        super(S3HmacAuthV4Handler, self).__init__(*args, **kwargs)
+
+        if self.region_name:
+            self.region_name = self.clean_region_name(self.region_name)
+
+    def clean_region_name(self, region_name):
+        if region_name.startswith('s3-'):
+            return region_name[3:]
+
+        return region_name
+
+    def canonical_uri(self, http_request):
+        # S3 does **NOT** do path normalization that SigV4 typically does.
+        # Urlencode the path, **NOT** ``auth_path`` (because vhosting).
+        path = urlparse.urlparse(http_request.path)
+        encoded = urllib.quote(path.path)
+        return encoded
+
+    def host_header(self, host, http_request):
+        port = http_request.port
+        secure = http_request.protocol == 'https'
+        if ((port == 80 and not secure) or (port == 443 and secure)):
+            return http_request.host
+        return '%s:%s' % (http_request.host, port)
+
+    def headers_to_sign(self, http_request):
+        """
+        Select the headers from the request that need to be included
+        in the StringToSign.
+        """
+        host_header_value = self.host_header(self.host, http_request)
+        headers_to_sign = {}
+        headers_to_sign = {'Host': host_header_value}
+        for name, value in http_request.headers.items():
+            lname = name.lower()
+            # Hooray for the only difference! The main SigV4 signer only does
+            # ``Host`` + ``x-amz-*``. But S3 wants pretty much everything
+            # signed, except for authorization itself.
+            if not lname in ['authorization']:
+                headers_to_sign[name] = value
+        return headers_to_sign
+
+    def determine_region_name(self, host):
+        # S3's different format of representing region/service from the rest of
+        # AWS makes this hurt too.
+        parts = self.split_host_parts(host)
+        if self.region_name is not None:
+            region_name = self.region_name
+        else:
+            if len(parts) == 3:
+                region_name = parts[0]
+            else:
+                region_name = parts[1]
+        cleaned = self.clean_region_name(region_name)
+        if cleaned == 's3':
+            return 'us-east-1'
+        return cleaned
+
+    def determine_service_name(self, host):
+        parts = self.split_host_parts(host)
+        if self.service_name is not None:
+            service_name = self.service_name
+        else:
+            # Virtual hosting of buckets + non-standard region names make this
+            # part of the code hurt.
+            if parts[-3].startswith('s3-'):
+                service_name = 's3'
+            else:
+                service_name = parts[-4]
+        return service_name
+
+    def mangle_path_and_params(self, req):
+        """
+        Returns a copy of the request object with fixed ``auth_path/params``
+        attributes from the original.
+        """
+        modified_req = copy.copy(req)
+
+        # Unlike the most other services, in S3, ``req.params`` isn't the only
+        # source of query string parameters.
+        # Because of the ``query_args``, we may already have a query string
+        # **ON** the ``path/auth_path``.
+        # Rip them apart, so the ``auth_path/params`` can be signed
+        # appropriately.
+        parsed_path = urlparse.urlparse(modified_req.auth_path)
+        modified_req.auth_path = parsed_path.path
+
+        if modified_req.params is None:
+            modified_req.params = {}
+
+        raw_qs = parsed_path.query
+        existing_qs = urlparse.parse_qs(
+            raw_qs,
+            keep_blank_values=True
+        )
+
+        # ``parse_qs`` will return lists. Don't do that unless there's a real,
+        # live list provided.
+        for key, value in existing_qs.items():
+            if isinstance(value, (list, tuple)):
+                if len(value) == 1:
+                    existing_qs[key] = value[0]
+
+        modified_req.params.update(existing_qs)
+        return modified_req
+
+    def payload(self, http_request):
+        if http_request.headers.get('x-amz-content-sha256'):
+            return http_request.headers['x-amz-content-sha256']
+
+        return super(S3HmacAuthV4Handler, self).payload(http_request)
+
+    def add_auth(self, req, **kwargs):
+        if not 'x-amz-content-sha256' in req.headers:
+            if '_sha256' in req.headers:
+                req.headers['x-amz-content-sha256'] = req.headers.pop('_sha256')
+            else:
+                req.headers['x-amz-content-sha256'] = self.payload(req)
+
+        req = self.mangle_path_and_params(req)
+        return super(S3HmacAuthV4Handler, self).add_auth(req, **kwargs)
 
 
 class QueryAuthHandler(AuthHandler):
