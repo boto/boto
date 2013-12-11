@@ -33,6 +33,7 @@ import boto.utils
 from boto.utils import Password
 from boto.utils import pythonize_name
 from boto.utils import _build_instance_metadata_url
+from boto.utils import get_instance_userdata
 from boto.utils import retry_url
 from boto.utils import LazyLoadMetadata
 
@@ -122,7 +123,7 @@ class TestBuildInstanceMetadataURL(unittest.TestCase):
         self.assertEqual(_build_instance_metadata_url(
                 'http://169.254.169.254',
                 'latest',
-                'meta-data'
+                'meta-data/'
             ),
             'http://169.254.169.254/latest/meta-data/'
         )
@@ -131,7 +132,7 @@ class TestBuildInstanceMetadataURL(unittest.TestCase):
         self.assertEqual(_build_instance_metadata_url(
                 'http://169.254.169.254',
                 'latest',
-                'dynamic'
+                'dynamic/'
             ),
             'http://169.254.169.254/latest/dynamic/'
         )
@@ -140,7 +141,7 @@ class TestBuildInstanceMetadataURL(unittest.TestCase):
         self.assertEqual(_build_instance_metadata_url(
                 'http://169.254.169.254',
                 '1.0',
-                'meta-data'
+                'meta-data/'
             ),
             'http://169.254.169.254/1.0/meta-data/'
         )
@@ -149,7 +150,7 @@ class TestBuildInstanceMetadataURL(unittest.TestCase):
         self.assertEqual(_build_instance_metadata_url(
                 'http://10.0.1.5',
                 'latest',
-                'meta-data'
+                'meta-data/'
             ),
             'http://10.0.1.5/latest/meta-data/'
         )
@@ -160,9 +161,8 @@ class TestBuildInstanceMetadataURL(unittest.TestCase):
                 '2013-03-22',
                 'user-data'
             ),
-            'http://10.0.1.5/2013-03-22/user-data/'
+            'http://10.0.1.5/2013-03-22/user-data'
         )
-
 
 class TestRetryURL(unittest.TestCase):
     def setUp(self):
@@ -231,6 +231,17 @@ class TestLazyLoadMetadata(unittest.TestCase):
         response = LazyLoadMetadata(url, num_retries)
         with self.assertRaises(ValueError):
             response.values()[0]
+
+    def test_user_data(self):
+        self.set_normal_response(['foo'])
+
+        userdata = get_instance_userdata()
+
+        self.assertEqual('foo', userdata)
+
+        boto.utils.retry_url.assert_called_with(
+            'http://169.254.169.254/latest/user-data',
+            retry_on_404=False)
 
 if __name__ == '__main__':
     unittest.main()
