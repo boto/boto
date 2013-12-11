@@ -52,9 +52,10 @@ Credentials
 The Credentials section is used to specify the AWS credentials used for all
 boto requests. The order of precedence for authentication credentials is:
 
-* Credentials passed into Connection class constructor.
+* Credentials passed into the Connection class constructor.
 * Credentials specified by environment variables
-* Credentials specified as options in the config file.
+* Credentials specified as named profiles in the config file.
+* Credentials specified by default in the config file.
 
 This section defines the following options: ``aws_access_key_id`` and
 ``aws_secret_access_key``. The former being your AWS key id and the latter
@@ -62,12 +63,23 @@ being the secret key.
 
 For example::
 
+    [profile name_goes_here]
+    aws_access_key_id = <access key for this profile>
+    aws_secret_access_key = <secret key for this profile>
+
     [Credentials]
-    aws_access_key_id = <your access key>
-    aws_secret_access_key = <your secret key>
+    aws_access_key_id = <your default access key>
+    aws_secret_access_key = <your default secret key>
 
 Please notice that quote characters are not used to either side of the '='
-operator even when both your AWS access key id and secret key are strings.
+operator even when both your AWS access key ID and secret key are strings.
+
+If you have multiple AWS keypairs that you use for different purposes,
+use the ``profile`` style shown above. You can set an arbitrary number
+of profiles within your configuration files and then reference them by name
+when you instantiate your connection. If you specify a profile that does not
+exist in the configuration, the keys used under the ``[Credentials]`` heading
+will be applied by default.
 
 For greater security, the secret key can be stored in a keyring and
 retrieved via the keyring package.  To use a keyring, use ``keyring``,
