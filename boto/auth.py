@@ -583,34 +583,50 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         return headers_to_sign
 
     def determine_region_name(self, host):
-        # S3's different format of representing region/service from the rest of
-        # AWS makes this hurt too.
+        # S3's different format(s) of representing region/service from the
+        # rest of AWS makes this hurt too.
+        #
+        # Possible domain formats:
+        # - s3.amazonaws.com (Classic)
+        # - s3-us-west-2.amazonaws.com (Specific region)
+        # - bukkit.s3.amazonaws.com (Vhosted Classic)
+        # - bukkit.s3-ap-northeast-1.amazonaws.com (Vhosted specific region)
+        # - s3.cn-north-1.amazonaws.com.cn - (Bejing region)
+        # - bukkit.s3.cn-north-1.amazonaws.com.cn - (Vhosted Bejing region)
         parts = self.split_host_parts(host)
+
         if self.region_name is not None:
             region_name = self.region_name
         else:
+            # Classic URLs - s3-us-west-2.amazonaws.com
             if len(parts) == 3:
-                region_name = parts[0]
+                region_name = self.clean_region_name(parts[0])
+
+                # Special-case for Classic.
+                if region_name == 's3':
+                    region_name = 'us-east-1'
             else:
-                region_name = parts[1]
-        cleaned = self.clean_region_name(region_name)
-        if cleaned == 's3':
-            return 'us-east-1'
-        return cleaned
+                # Iterate over the parts in reverse order.
+                for offset, part in enumerate(reversed(parts)):
+                    part = part.lower()
+
+                    # Look for the first thing starting with 's3'.
+                    # Until there's a ``.s3`` TLD, we should be OK. :P
+                    if part == 's3':
+                        # If it's by itself, the region is the previous part.
+                        region_name = parts[-offset]
+                        break
+                    elif part.startswith('s3-'):
+                        region_name = self.clean_region_name(part)
+                        break
+
+        return region_name
 
     def determine_service_name(self, host):
-        parts = self.split_host_parts(host)
-        if self.service_name is not None:
-            service_name = self.service_name
-        else:
-            # Virtual hosting of buckets + non-standard region names make this
-            # part of the code hurt.
-            if parts[-3].startswith('s3-'):
-                service_name = 's3'
-            else:
-                service_name = parts[-4]
-        service_name = 's3'
-        return service_name
+        # Should this signing mechanism ever be used for anything else, this
+        # will fail. Consider utilizing the logic from the parent class should
+        # you find yourself here.
+        return 's3'
 
     def mangle_path_and_params(self, req):
         """
