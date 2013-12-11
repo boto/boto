@@ -358,7 +358,7 @@ def _build_instance_metadata_url(url, version, path):
 
     Example:
 
-        >>> _build_instance_metadata_url('http://169.254.169.254', 'latest', 'meta-data')
+        >>> _build_instance_metadata_url('http://169.254.169.254', 'latest', 'meta-data/')
         http://169.254.169.254/latest/meta-data/
 
     :type url: string
