@@ -432,7 +432,7 @@ def get_instance_identity(version='latest', url='http://169.254.169.254',
 
 def get_instance_userdata(version='latest', sep=None,
                           url='http://169.254.169.254'):
-    ud_url = _build_instance_metadata_url(url, version, 'user-data')
+    ud_url = '%s/%s/user-data' % (url, version)
     user_data = retry_url(ud_url, retry_on_404=False)
     if user_data:
         if sep:
