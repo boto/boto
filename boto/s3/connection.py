@@ -182,7 +182,7 @@ class S3Connection(AWSAuthConnection):
             host_bits = self.host.split('.')
 
             if host_bits[0].startswith('s3'):
-                if '-' in host_bits[0]:
+                if '-' in host_bits[0] or '-' in host_bits[1]:
                     return ['hmac-v4-s3']
 
         return ['s3']

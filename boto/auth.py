@@ -609,6 +609,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
                 service_name = 's3'
             else:
                 service_name = parts[-4]
+        service_name = 's3'
         return service_name
 
     def mangle_path_and_params(self, req):
