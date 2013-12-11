@@ -131,16 +131,51 @@ def search_boto_config(**kwargs):
     paths = [os.path.expanduser(p) for p in paths]
     cp = configparser.RawConfigParser()
     cp.read(paths)
-    if cp.has_section('Credentials'):
+    if cp.has_option('Credentials', 'aws_access_key_id'):
         access_key = cp.get('Credentials', 'aws_access_key_id')
+    if cp.has_option('Credentials', 'aws_secret_access_key'):
         secret_key = cp.get('Credentials', 'aws_secret_access_key')
     if access_key and secret_key:
         credentials = Credentials(access_key, secret_key)
     return credentials
 
+
+def search_boto_config_persona(**kwargs):
+    """
+    Look for persona file option in boto config file.
+    """
+    credentials = access_key = secret_key = None
+    if 'BOTO_CONFIG' in os.environ:
+        paths = [os.environ['BOTO_CONFIG']]
+    else:
+        paths = ['/etc/boto.cfg',  '~/.boto']
+    paths = [os.path.expandvars(p) for p in paths]
+    paths = [os.path.expanduser(p) for p in paths]
+    cp = configparser.RawConfigParser()
+    cp.read(paths)
+    if cp.has_option('Credentials', 'aws_credential_file'):
+        path = cp.get('Credentials', 'aws_credential_file')
+        path = os.path.expanduser(os.path.expandvars(path))
+        persona = kwargs.get('persona', 'default')
+        access_key_name = kwargs['access_key_name']
+        secret_key_name = kwargs['secret_key_name']
+        persona_cp = configparser.RawConfigParser()
+        persona_cp.read(path)
+        if not persona_cp.has_section(persona):
+            raise ValueError('Persona: %s not found' % persona)
+        if persona_cp.has_option(persona, access_key_name):
+            access_key = persona_cp.get(persona, access_key_name)
+        if persona_cp.has_option(persona, secret_key_name):
+            secret_key = persona_cp.get(persona, secret_key_name)
+        if access_key and secret_key:
+            credentials = Credentials(access_key, secret_key)
+    return credentials
+
+
 AllCredentialFunctions = [search_environment,
                           search_file,
                           search_boto_config,
+                          search_boto_config_persona,
                           search_metadata]
 
 
