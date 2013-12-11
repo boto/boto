@@ -161,7 +161,7 @@ class S3Connection(AWSAuthConnection):
                  calling_format=DefaultCallingFormat, path='/',
                  provider='aws', bucket_class=Bucket, security_token=None,
                  suppress_consec_slashes=True, anon=False,
-                 validate_certs=None):
+                 validate_certs=None, profile_name=None):
         if isinstance(calling_format, basestring):
             calling_format=boto.utils.find_class(calling_format)()
         self.calling_format = calling_format
@@ -173,7 +173,7 @@ class S3Connection(AWSAuthConnection):
                 debug=debug, https_connection_factory=https_connection_factory,
                 path=path, provider=provider, security_token=security_token,
                 suppress_consec_slashes=suppress_consec_slashes,
-                validate_certs=validate_certs)
+                validate_certs=validate_certs, profile_name=profile_name)
 
     @detect_potential_s3sigv4
     def _required_auth_capability(self):
