@@ -52,26 +52,26 @@ class TestKinesis(TestCase):
             response = kinesis.describe_stream('test')
 
             if response['StreamDescription']['StreamStatus'] == 'ACTIVE':
+                shard_id = response['StreamDescription']['Shards'][0]['ShardId']
                 break
         else:
             raise TimeoutError('Stream is still not active, aborting...')
 
-        # Write some data to the stream
-        data = 'Some data ...'
-        response = kinesis.put_record('test', data, data)
-        shard_id = response['ShardId']
-
-        # Process some data from the stream
+        # Get ready to process some data from the stream
         response = kinesis.get_shard_iterator('test', shard_id, 'TRIM_HORIZON')
         shard_iterator = response['ShardIterator']
 
+        # Write some data to the stream
+        data = 'Some data ...'
+        response = kinesis.put_record('test', data, data)
+
         # Wait for the data to show up
         tries = 0
-        while tries < 20:
+        while tries < 100:
             tries += 1
-            time.sleep(5)
+            time.sleep(1)
 
-            response = kinesis.get_next_records(shard_iterator, limit=5)
+            response = kinesis.get_records(shard_iterator)
             shard_iterator = response['NextShardIterator']
 
             if len(response['Records']):
