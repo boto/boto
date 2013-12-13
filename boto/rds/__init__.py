@@ -443,7 +443,7 @@ class RDSConnection(AWSQueryConnection):
 
         # Remove any params set to None
         for k, v in params.items():
-          if not v: del(params[k])
+          if v is None: del(params[k])
 
         return self.get_object('CreateDBInstance', params, DBInstance)
 

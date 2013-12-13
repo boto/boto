@@ -95,7 +95,36 @@ class TestRDSConnection(AWSMockServiceTestCase):
                       <StatusType>read replication</StatusType>
                     </DBInstanceStatusInfo>
                   </StatusInfos>
-                </DBInstance>
+                  <DBSubnetGroup>
+                    <VpcId>990524496922</VpcId>
+                    <SubnetGroupStatus>Complete</SubnetGroupStatus>
+                    <DBSubnetGroupDescription>My modified DBSubnetGroup</DBSubnetGroupDescription>
+                    <DBSubnetGroupName>mydbsubnetgroup</DBSubnetGroupName>
+                    <Subnets>
+                      <Subnet>
+                        <SubnetStatus>Active</SubnetStatus>
+                        <SubnetIdentifier>subnet-7c5b4115</SubnetIdentifier>
+                        <SubnetAvailabilityZone>
+                        <Name>us-east-1c</Name>
+                      </SubnetAvailabilityZone>
+                      </Subnet>
+                      <Subnet>
+                        <SubnetStatus>Active</SubnetStatus>
+                        <SubnetIdentifier>subnet-7b5b4112</SubnetIdentifier>
+                        <SubnetAvailabilityZone>
+                          <Name>us-east-1b</Name>
+                        </SubnetAvailabilityZone>
+                      </Subnet>
+                      <Subnet>
+                        <SubnetStatus>Active</SubnetStatus>
+                        <SubnetIdentifier>subnet-3ea6bd57</SubnetIdentifier>
+                        <SubnetAvailabilityZone>
+                          <Name>us-east-1d</Name>
+                        </SubnetAvailabilityZone>
+                      </Subnet>
+                    </Subnets>
+                  </DBSubnetGroup>  
+              </DBInstance>
             </DBInstances>
           </DescribeDBInstancesResult>
         </DescribeDBInstancesResponse>
@@ -121,7 +150,7 @@ class TestRDSConnection(AWSMockServiceTestCase):
         self.assertEqual(db.instance_class, 'db.m1.large')
         self.assertEqual(db.master_username, 'awsuser')
         self.assertEqual(db.availability_zone, 'us-west-2b')
-        self.assertEqual(db.backup_retention_period, '1')
+        self.assertEqual(db.backup_retention_period, 1)
         self.assertEqual(db.preferred_backup_window, '10:30-11:00')
         self.assertEqual(db.preferred_maintenance_window,
                          'wed:06:30-wed:07:00')
@@ -147,6 +176,10 @@ class TestRDSConnection(AWSMockServiceTestCase):
         self.assertEqual(db.status_infos[0].status_type, 'read replication')
         self.assertEqual(db.vpc_security_groups[0].status, 'active')
         self.assertEqual(db.vpc_security_groups[0].vpc_group, 'sg-1')
+        self.assertEqual(db.license_model, 'general-public-license')
+        self.assertEqual(db.engine_version, '5.5.27')
+        self.assertEqual(db.auto_minor_version_upgrade, True)
+        self.assertEqual(db.subnet_group.name, 'mydbsubnetgroup')
 
 
 class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
@@ -165,7 +198,7 @@ class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
                     <PendingModifiedValues>
                         <MasterUserPassword>****</MasterUserPassword>
                     </PendingModifiedValues>
-                    <BackupRetentionPeriod>1</BackupRetentionPeriod>
+                    <BackupRetentionPeriod>0</BackupRetentionPeriod>
                     <MultiAZ>false</MultiAZ>
                     <LicenseModel>general-public-license</LicenseModel>
                     <DBSubnetGroup>
@@ -235,12 +268,14 @@ class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
             'master',
             'Password01',
             param_group='default.mysql5.1',
-            db_subnet_group_name='dbSubnetgroup01')
+            db_subnet_group_name='dbSubnetgroup01',
+            backup_retention_period=0)
 
         self.assert_request_parameters({
             'Action': 'CreateDBInstance',
             'AllocatedStorage': 10,
             'AutoMinorVersionUpgrade': 'true',
+            'BackupRetentionPeriod': 0,
             'DBInstanceClass': 'db.m1.large',
             'DBInstanceIdentifier': 'SimCoProd01',
             'DBParameterGroupName': 'default.mysql5.1',
@@ -248,7 +283,7 @@ class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
             'Engine': 'MySQL5.1',
             'MasterUsername': 'master',
             'MasterUserPassword': 'Password01',
-            'Port': 3306,
+            'Port': 3306
         }, ignore_params_values=['Version'])
 
         self.assertEqual(db.id, 'simcoprod01')
@@ -265,6 +300,7 @@ class TestRDSCCreateDBInstance(AWSMockServiceTestCase):
                          'default.mysql5.1')
         self.assertEqual(db.parameter_group.description, None)
         self.assertEqual(db.parameter_group.engine, None)
+        self.assertEqual(db.backup_retention_period, 0)
 
     def test_create_db_instance_param_group_instance(self):
         self.set_http_response(status_code=200)

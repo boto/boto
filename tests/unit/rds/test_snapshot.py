@@ -29,6 +29,10 @@ class TestDescribeDBSnapshots(AWSMockServiceTestCase):
                     <SnapshotType>manual</SnapshotType>
                     <MasterUsername>master</MasterUsername>
                     <OptionGroupName>myoptiongroupname</OptionGroupName>
+                    <Iops>1000</Iops>
+                    <PercentProgress>100</PercentProgress>
+                    <SourceRegion>eu-west-1</SourceRegion>
+                    <VpcId>myvpc</VpcId>
                 </DBSnapshot>
                 <DBSnapshot>
                     <Port>3306</Port>
@@ -45,6 +49,7 @@ class TestDescribeDBSnapshots(AWSMockServiceTestCase):
                     <SnapshotType>manual</SnapshotType>
                     <MasterUsername>sa</MasterUsername>
                     <OptionGroupName>myoptiongroupname</OptionGroupName>
+                    <Iops>1000</Iops>
                 </DBSnapshot>
                 <DBSnapshot>
                     <Port>3306</Port>
@@ -61,6 +66,7 @@ class TestDescribeDBSnapshots(AWSMockServiceTestCase):
                     <SnapshotType>automated</SnapshotType>
                     <MasterUsername>master</MasterUsername>
                     <OptionGroupName>myoptiongroupname</OptionGroupName>
+                    <Iops>1000</Iops>
                 </DBSnapshot>
                 </DBSnapshots>
             </DescribeDBSnapshotsResult>
@@ -82,6 +88,15 @@ class TestDescribeDBSnapshots(AWSMockServiceTestCase):
         self.assertEqual(response[0].id, 'mydbsnapshot')
         self.assertEqual(response[0].status, 'available')
         self.assertEqual(response[0].instance_id, 'simcoprod01')
+        self.assertEqual(response[0].engine_version, '5.1.50')
+        self.assertEqual(response[0].license_model, 'general-public-license')
+        self.assertEqual(response[0].iops, 1000)
+        self.assertEqual(response[0].option_group_name, 'myoptiongroupname')
+        self.assertEqual(response[0].percent_progress, 100)
+        self.assertEqual(response[0].snapshot_type, 'manual')
+        self.assertEqual(response[0].source_region, 'eu-west-1')
+        self.assertEqual(response[0].vpc_id, 'myvpc')
+        
 
 
 class TestCreateDBSnapshot(AWSMockServiceTestCase):

@@ -51,7 +51,7 @@ def confirm(message="Are you sure?"):
     return choice and len(choice) > 0 and choice[0].lower() == "y"
 
 
-def dump_db(domain, file_name, use_json=False):
+def dump_db(domain, file_name, use_json=False, sort_attributes=False):
     """
     Dump SDB domain to file
     """
@@ -59,7 +59,7 @@ def dump_db(domain, file_name, use_json=False):
     if use_json:
         for item in domain:
             data = {"name": item.name, "attributes": item}
-            print >> f, json.dumps(data)
+            print >> f, json.dumps(data, sort_keys=sort_attributes)
     else:
         doc = domain.to_xml(f)
 
@@ -113,6 +113,7 @@ if __name__ == "__main__":
     parser.add_option("-a", "--all-domains", help="Operate on all domains", action="store_true", default=False, dest="all_domains")
     if json:
         parser.add_option("-j", "--use-json", help="Load/Store as JSON instead of XML", action="store_true", default=False, dest="json")
+    parser.add_option("-s", "--sort-attibutes", help="Sort the element attributes", action="store_true", default=False, dest="sort_attributes")
     parser.add_option("-d", "--domain", help="Do functions on domain (may be more then one)", action="append", dest="domains")
     parser.add_option("-f", "--file", help="Input/Output file we're operating on", dest="file_name")
     parser.add_option("-r", "--region", help="Region (e.g. us-east-1[default] or eu-west-1)", default="us-east-1", dest="region_name")
@@ -170,7 +171,7 @@ if __name__ == "__main__":
                 file_name = options.file_name
             else:
                 file_name = "%s.db" % domain.name
-            dump_db(domain, file_name, options.json)
+            dump_db(domain, file_name, options.json, options.sort_attributes)
 
     if options.load:
         for domain in domains:
