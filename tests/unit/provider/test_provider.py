@@ -132,7 +132,7 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.security_token, 'iam_token')
         self.assertEqual(
             self.get_instance_metadata.call_args[1]['data'],
-            'meta-data/iam/security-credentials')
+            'meta-data/iam/security-credentials/')
 
     def test_refresh_credentials(self):
         now = datetime.now()
@@ -180,7 +180,7 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.security_token, 'iam_token')
         self.get_instance_metadata.assert_called_with(
             timeout=4.0, num_retries=10,
-            data='meta-data/iam/security-credentials')
+            data='meta-data/iam/security-credentials/')
 
 
 if __name__ == '__main__':
