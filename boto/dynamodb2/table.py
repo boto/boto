@@ -21,7 +21,7 @@ class Table(object):
     max_batch_get = 100
 
     def __init__(self, table_name, schema=None, throughput=None, indexes=None,
-                 connection=None):
+                 global_indexes=None, connection=None):
         """
         Sets up a new in-memory ``Table``.
 
@@ -48,6 +48,9 @@ class Table(object):
         Optionally accepts a ``indexes`` parameter, which should be a list of
         ``BaseIndexField`` subclasses representing the desired indexes.
 
+        Optionally accepts a ``global_indexes`` parameter, which should be a
+        list of ``BaseIndexField`` subclasses representing the desired indexes.
+
         Optionally accepts a ``connection`` parameter, which should be a
         ``DynamoDBConnection`` instance (or subclass). This is primarily useful
         for specifying alternate connection parameters.
@@ -67,10 +70,19 @@ class Table(object):
             ...     'write': 10,
             ... }, indexes=[
             ...     KeysOnlyIndex('MostRecentlyJoined', parts=[
+            ...         HashKey('username')
             ...         RangeKey('date_joined')
             ...     ]),
-            ... ],
-            ... connection=dynamodb2.connect_to_region('us-west-2',
+            ... ], global_indexes=[
+            ...     AllIndex('UsersByZipcode', parts=[
+            ...         HashKey('zipcode'),
+            ...         RangeKey('username'),
+            ...     ], global_index=True,
+            ...     throughput={
+            ...       'read':10,
+            ...       'write":10,
+            ...     }),
+            ... ], connection=dynamodb2.connect_to_region('us-west-2',
 		    ...     aws_access_key_id='key',
 		    ...     aws_secret_access_key='key',
 	        ... ))
@@ -84,6 +96,7 @@ class Table(object):
         }
         self.schema = schema
         self.indexes = indexes
+        self.global_indexes = global_indexes
 
         if self.connection is None:
             self.connection = DynamoDBConnection()
@@ -95,7 +108,7 @@ class Table(object):
 
     @classmethod
     def create(cls, table_name, schema, throughput=None, indexes=None,
-               connection=None):
+               global_indexes=None, connection=None):
         """
         Creates a new table in DynamoDB & returns an in-memory ``Table`` object.
 
@@ -127,6 +140,9 @@ class Table(object):
         Optionally accepts a ``indexes`` parameter, which should be a list of
         ``BaseIndexField`` subclasses representing the desired indexes.
 
+        Optionally accepts a ``global_indexes`` parameter, which should be a
+        list of ``BaseIndexField`` subclasses representing the desired indexes.
+
         Optionally accepts a ``connection`` parameter, which should be a
         ``DynamoDBConnection`` instance (or subclass). This is primarily useful
         for specifying alternate connection parameters.
@@ -142,7 +158,15 @@ class Table(object):
             ... }, indexes=[
             ...     KeysOnlyIndex('MostRecentlyJoined', parts=[
             ...         RangeKey('date_joined')
-            ...     ]),
+            ... ]), global_indexes=[
+            ...     AllIndex('UsersByZipcode', parts=[
+            ...         HashKey('zipcode'),
+            ...         RangeKey('username'),
+            ...     ], global_index=True,
+            ...     throughput={
+            ...       'read':10,
+            ...       'write":10,
+            ...     }),
             ... ])
 
         """
@@ -155,13 +179,18 @@ class Table(object):
         if indexes is not None:
             table.indexes = indexes
 
+        if global_indexes is not None:
+            table.global_indexes = global_indexes
+
         # Prep the schema.
         raw_schema = []
         attr_defs = []
+        seen_attrs = set()
 
         for field in table.schema:
             raw_schema.append(field.schema())
             # Build the attributes off what we know.
+            seen_attrs.add(field.name)
             attr_defs.append(field.definition())
 
         raw_throughput = {
@@ -170,23 +199,24 @@ class Table(object):
         }
         kwargs = {}
 
-        if table.indexes:
-            # Prep the LSIs.
-            raw_lsi = []
+        kwarg_map = {
+            'indexes': 'local_secondary_indexes',
+            'global_indexes': 'global_secondary_indexes',
+        }
+        for index_attr in ('indexes', 'global_indexes'):
+            table_indexes = getattr(table, index_attr)
+            if table_indexes:
+                raw_indexes = []
+                for index_field in table_indexes:
+                    raw_indexes.append(index_field.schema())
+                    # Make sure all attributes specified in the indexes are
+                    # added to the definition
+                    for field in index_field.parts:
+                        if field.name not in seen_attrs:
+                            seen_attrs.add(field.name)
+                            attr_defs.append(field.definition())
 
-            for index_field in table.indexes:
-                raw_lsi.append(index_field.schema())
-                # Again, build the attributes off what we know.
-                # HOWEVER, only add attributes *NOT* already seen.
-                attr_define = index_field.definition()
-
-                for part in attr_define:
-                    attr_names = [attr['AttributeName'] for attr in attr_defs]
-
-                    if not part['AttributeName'] in attr_names:
-                        attr_defs.append(part)
-
-            kwargs['local_secondary_indexes'] = raw_lsi
+                kwargs[kwarg_map[index_attr]] = raw_indexes
 
         table.connection.create_table(
             table_name=table.table_name,
