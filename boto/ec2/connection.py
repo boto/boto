@@ -1062,6 +1062,7 @@ class EC2Connection(AWSQueryConnection):
             * sourceDestCheck
             * groupSet
             * ebsOptimized
+            * sriovNetSupport
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -1171,6 +1172,7 @@ class EC2Connection(AWSQueryConnection):
             * sourceDestCheck - Boolean (true)
             * groupSet - Set of Security Groups or IDs
             * ebsOptimized - Boolean (false)
+            * sriovNetSupport - String - ie: 'simple'
 
         :type value: string
         :param value: The new value for the attribute
