@@ -169,7 +169,7 @@ class RDSConnection(AWSQueryConnection):
                           iops=None,
                           vpc_security_groups=None,
                           ):
-        # API version: 2012-09-17
+        # API version: 2013-09-09
         # Parameter notes:
         # =================
         # id should be db_instance_identifier according to API docs but has been left
@@ -196,20 +196,23 @@ class RDSConnection(AWSQueryConnection):
         :param allocated_storage: Initially allocated storage size, in GBs.
                                   Valid values are depending on the engine value.
 
-                                  * MySQL = 5--1024
-                                  * oracle-se1 = 10--1024
-                                  * oracle-se = 10--1024
-                                  * oracle-ee = 10--1024
+                                  * MySQL = 5--3072
+                                  * oracle-se1 = 10--3072
+                                  * oracle-se = 10--3072
+                                  * oracle-ee = 10--3072
                                   * sqlserver-ee = 200--1024
                                   * sqlserver-se = 200--1024
                                   * sqlserver-ex = 30--1024
                                   * sqlserver-web = 30--1024
+                                  * postgres = 5--3072 
 
         :type instance_class: str
         :param instance_class: The compute and memory capacity of
                                the DBInstance. Valid values are:
 
+                               * db.t1.micro
                                * db.m1.small
+                               * db.m1.medium
                                * db.m1.large
                                * db.m1.xlarge
                                * db.m2.xlarge
@@ -227,6 +230,7 @@ class RDSConnection(AWSQueryConnection):
                        * sqlserver-se
                        * sqlserver-ex
                        * sqlserver-web
+                       * postgres
 
         :type master_username: str
         :param master_username: Name of master user for the DBInstance.
@@ -263,7 +267,10 @@ class RDSConnection(AWSQueryConnection):
 
                      * Oracle defaults to 1521
 
-                     * SQL Server defaults to 1433 and _cannot_ be 1434 or 3389
+                     * SQL Server defaults to 1433 and _cannot_ be 1434, 3389,
+                       47001, 49152, and 49152 through 49156.
+
+                     * PostgreSQL defaults to 5432
 
         :type db_name: str
         :param db_name: * MySQL:
@@ -279,6 +286,15 @@ class RDSConnection(AWSQueryConnection):
 
                         * SQL Server:
                           Not applicable and must be None.
+
+                        * PostgreSQL:
+                          Name of a database to create when the DBInstance
+                          is created. Default is to create no databases.
+
+                          Must contain 1--63 alphanumeric characters. Must 
+                          begin with a letter or an underscore. Subsequent 
+                          characters can be letters, underscores, or digits (0-9)
+                          and cannot be a reserved PostgreSQL word.
 
         :type param_group: str or ParameterGroup object
         :param param_group: Name of DBParameterGroup or ParameterGroup instance
@@ -325,6 +341,8 @@ class RDSConnection(AWSQueryConnection):
                                * Oracle format example: 11.2.0.2.v2
 
                                * SQL Server format example: 10.50.2789.0.v1
+
+                               * PostgreSQL format example: 9.3
 
         :type auto_minor_version_upgrade: bool
         :param auto_minor_version_upgrade: Indicates that minor engine
