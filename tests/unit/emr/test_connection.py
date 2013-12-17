@@ -291,3 +291,80 @@ class TestAddJobFlowSteps(AWSMockServiceTestCase):
         self.assertTrue(isinstance(response, JobFlowStepList))
         self.assertEqual(response.stepids[0].value, 'Foo')
         self.assertEqual(response.stepids[1].value, 'Bar')
+
+
+class TestBuildTagList(AWSMockServiceTestCase):
+    connection_class = EmrConnection
+
+    def test_key_without_value_encoding(self):
+        input_dict = {
+            'KeyWithNoValue': '',
+            'AnotherKeyWithNoValue': None
+        }
+        res = self.service_connection._build_tag_list(input_dict)
+        # Keys are outputted in ascending key order.
+        expected = {
+            'Tags.member.1.Key': 'AnotherKeyWithNoValue',
+            'Tags.member.2.Key': 'KeyWithNoValue'
+        }
+        self.assertEqual(expected, res)
+
+    def test_key_full_key_value_encoding(self):
+        input_dict = {
+            'FirstKey': 'One',
+            'SecondKey': 'Two'
+        }
+        res = self.service_connection._build_tag_list(input_dict)
+        # Keys are outputted in ascending key order.
+        expected = {
+            'Tags.member.1.Key': 'FirstKey',
+            'Tags.member.1.Value': 'One',
+            'Tags.member.2.Key': 'SecondKey',
+            'Tags.member.2.Value': 'Two'
+        }
+        self.assertEqual(expected, res)
+
+
+class TestAddTag(AWSMockServiceTestCase):
+    connection_class = EmrConnection
+
+    def default_body(self):
+        return """<AddTagsResponse
+               xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+                   <AddTagsResult/>
+                   <ResponseMetadata>
+                        <RequestId>88888888-8888-8888-8888-888888888888</RequestId>
+                   </ResponseMetadata>
+               </AddTagsResponse>
+               """
+
+    def test_add_mix_of_tags_with_withou_values(self):
+        input_tags = {
+            'FirstKey': 'One',
+            'SecondKey': 'Two',
+            'ZzzNoValue': ''
+        }
+        self.set_http_response(200)
+
+        with self.assertRaises(TypeError):
+            self.service_connection.add_tags()
+
+        with self.assertRaises(TypeError):
+            self.service_connection.add_tags('j-123')
+
+        with self.assertRaises(AssertionError):
+            self.service_connection.add_tags('j-123', [])
+
+        response = self.service_connection.add_tags('j-123', input_tags)
+
+        self.assertTrue(response)
+        self.assert_request_parameters({
+            'Action': 'AddTags',
+            'ResourceId': 'j-123',
+            'Tags.member.1.Key': 'FirstKey',
+            'Tags.member.1.Value': 'One',
+            'Tags.member.2.Key': 'SecondKey',
+            'Tags.member.2.Value': 'Two',
+            'Tags.member.3.Key': 'ZzzNoValue',
+            'Version': '2009-03-31'
+        })

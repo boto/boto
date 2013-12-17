@@ -267,6 +267,26 @@ class EmrConnection(AWSQueryConnection):
 
         self.get_object('ListSteps', params, StepSummaryList)
 
+    def add_tags(self, resource_id, tags):
+        """
+        Create new metadata tags for the specified resource ids.
+
+        :type resource_ids: str
+        :param resource_ids: The cluster id
+
+        :type tags: dict
+        :param tags: A dictionary containing the name/value pairs.
+                     If you want to create only a tag name, the
+                     value for that tag should be the empty string
+                     (e.g. '') or None.
+        """
+        assert isinstance(resource_id, basestring)
+        params = {
+            'ResourceId': resource_id,
+        }
+        params.update(self._build_tag_list(tags))
+        return self.get_status('AddTags', params, verb='POST')
+
     def terminate_jobflow(self, jobflow_id):
         """
         Terminate an Elastic MapReduce job flow
@@ -621,6 +641,18 @@ class EmrConnection(AWSQueryConnection):
         for i, step in enumerate(steps):
             for key, value in step.iteritems():
                 params['Steps.member.%s.%s' % (i+1, key)] = value
+        return params
+
+    def _build_tag_list(self, tags):
+        assert isinstance(tags, dict)
+
+        params = {}
+        for i, key_value in enumerate(sorted(tags.iteritems()), start=1):
+            key, value = key_value
+            current_prefix = 'Tags.member.%s' % i
+            params['%s.Key' % current_prefix] = key
+            if value:
+                params['%s.Value' % current_prefix] = value
         return params
 
     def _build_instance_common_args(self, ec2_keyname, availability_zone,
