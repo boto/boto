@@ -34,8 +34,8 @@ class BigMessage(RawMessage):
 
     To create a BigMessage, you should create a BigMessage object
     and pass in a file-like object as the ``body`` param and also
-    pass in the name of the bucket in which to store the message
-    body::
+    pass in the an S3 URL specifying the bucket in which to store
+    the message body::
 
         import boto.sqs
         from boto.sqs.bigmessage import BigMessage
@@ -45,6 +45,11 @@ class BigMessage(RawMessage):
         fp = open('/path/to/bigmessage/data')
         msg = BigMessage(queue, fp, 's3://mybucket')
         queue.write(msg)
+
+    Passing in a fully-qualified S3 URL (e.g. s3://mybucket/foo)
+    is interpreted to mean that the body of the message is already
+    stored in S3 and the that S3 URL is then used directly with no
+    content uploaded by BigMessage.
     """
 
     def __init__(self, queue=None, body=None, s3_url=None):
@@ -54,6 +59,10 @@ class BigMessage(RawMessage):
     def _get_bucket_key(self, s3_url):
         bucket_name = key_name = None
         if s3_url.startswith('s3://'):
+            # We need to split out the bucket from the key (if
+            # supplied).  We also have to be aware that someone
+            # may provide a trailing '/' character as in:
+            # s3://foo/ and we want to handle that.
             s3_components = s3_url[5:].split('/', 1)
             bucket_name = s3_components[0]
             if len(s3_components) > 1:
