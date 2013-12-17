@@ -338,7 +338,7 @@ class TestAddTag(AWSMockServiceTestCase):
                </AddTagsResponse>
                """
 
-    def test_add_mix_of_tags_with_withou_values(self):
+    def test_add_mix_of_tags_with_without_values(self):
         input_tags = {
             'FirstKey': 'One',
             'SecondKey': 'Two',
