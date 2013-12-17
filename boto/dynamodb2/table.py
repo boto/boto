@@ -1,7 +1,9 @@
 import boto
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
-                                   AllIndex, KeysOnlyIndex, IncludeIndex)
+                                   AllIndex, KeysOnlyIndex, IncludeIndex,
+                                   GlobalAllIndex, GlobalKeysOnlyIndex,
+                                   GlobalIncludeIndex)
 from boto.dynamodb2.items import Item
 from boto.dynamodb2.layer1 import DynamoDBConnection
 from boto.dynamodb2.results import ResultSet, BatchGetResultSet
@@ -49,7 +51,8 @@ class Table(object):
         ``BaseIndexField`` subclasses representing the desired indexes.
 
         Optionally accepts a ``global_indexes`` parameter, which should be a
-        list of ``BaseIndexField`` subclasses representing the desired indexes.
+        list of ``GlobalBaseIndexField`` subclasses representing the desired
+        indexes.
 
         Optionally accepts a ``connection`` parameter, which should be a
         ``DynamoDBConnection`` instance (or subclass). This is primarily useful
@@ -74,18 +77,18 @@ class Table(object):
             ...         RangeKey('date_joined')
             ...     ]),
             ... ], global_indexes=[
-            ...     AllIndex('UsersByZipcode', parts=[
+            ...     GlobalAllIndex('UsersByZipcode', parts=[
             ...         HashKey('zipcode'),
             ...         RangeKey('username'),
-            ...     ], global_index=True,
+            ...     ],
             ...     throughput={
             ...       'read':10,
             ...       'write":10,
             ...     }),
             ... ], connection=dynamodb2.connect_to_region('us-west-2',
-		    ...     aws_access_key_id='key',
-		    ...     aws_secret_access_key='key',
-	        ... ))
+            ...     aws_access_key_id='key',
+            ...     aws_secret_access_key='key',
+            ... ))
 
         """
         self.table_name = table_name
@@ -141,7 +144,8 @@ class Table(object):
         ``BaseIndexField`` subclasses representing the desired indexes.
 
         Optionally accepts a ``global_indexes`` parameter, which should be a
-        list of ``BaseIndexField`` subclasses representing the desired indexes.
+        list of ``GlobalBaseIndexField`` subclasses representing the desired
+        indexes.
 
         Optionally accepts a ``connection`` parameter, which should be a
         ``DynamoDBConnection`` instance (or subclass). This is primarily useful
@@ -159,10 +163,10 @@ class Table(object):
             ...     KeysOnlyIndex('MostRecentlyJoined', parts=[
             ...         RangeKey('date_joined')
             ... ]), global_indexes=[
-            ...     AllIndex('UsersByZipcode', parts=[
+            ...     GlobalAllIndex('UsersByZipcode', parts=[
             ...         HashKey('zipcode'),
             ...         RangeKey('username'),
-            ...     ], global_index=True,
+            ...     ],
             ...     throughput={
             ...       'read':10,
             ...       'write":10,
