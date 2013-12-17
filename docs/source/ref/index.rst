@@ -22,6 +22,7 @@ API Reference
    glacier
    gs
    iam
+   kinesis
    manage
    mturk
    mws
