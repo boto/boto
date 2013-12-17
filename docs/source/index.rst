@@ -24,6 +24,7 @@ Currently Supported Services
   * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
   * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
   * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
+  * Kinesis -- (:doc:`API Reference <ref/kinesis>`)
 
 * **Content Delivery**
 
