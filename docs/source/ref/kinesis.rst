@@ -1,8 +1,8 @@
 .. ref-kinesis
 
-===
+=======
 Kinesis
-===
+=======
 
 boto.kinesis
 ------------
