@@ -43,7 +43,7 @@ class BigMessage(RawMessage):
         sqs = boto.sqs.connect_to_region('us-west-2')
         queue = sqs.get_queue('myqueue')
         fp = open('/path/to/bigmessage/data')
-        msg = BigMessage(queue, fp, 'mybucket')
+        msg = BigMessage(queue, fp, 's3://mybucket')
         queue.write(msg)
     """
 
