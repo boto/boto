@@ -23,7 +23,7 @@ class Signer(object):
     def __init__(self):
         self.id = None
         self.key_pair_ids = []
-        
+
     def startElement(self, name, attrs, connection):
         return None
 

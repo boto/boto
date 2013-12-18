@@ -35,4 +35,4 @@ class Group(object):
             self.name = value
         else:
             setattr(self, name, value)
-    
+

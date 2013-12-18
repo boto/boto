@@ -41,4 +41,4 @@ class ScriptBase(object):
 
     def main(self):
         pass
-        
+
