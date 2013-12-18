@@ -227,6 +227,14 @@ class MultiPartUpload(object):
         """
         Upload another part of this MultiPart Upload.
 
+        .. note::
+
+            After you initiate multipart upload and upload one or more parts,
+            you must either complete or abort multipart upload in order to stop
+            getting charged for storage of the uploaded parts. Only after you
+            either complete or abort multipart upload, Amazon S3 frees up the
+            parts storage and stops charging you for the parts storage.
+
         :type fp: file
         :param fp: The file object you want to upload.
 
