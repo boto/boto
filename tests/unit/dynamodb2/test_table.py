@@ -2,7 +2,9 @@ import mock
 import unittest
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
-                                   AllIndex, KeysOnlyIndex, IncludeIndex)
+                                   AllIndex, KeysOnlyIndex, IncludeIndex,
+                                   GlobalAllIndex, GlobalKeysOnlyIndex,
+                                   GlobalIncludeIndex)
 from boto.dynamodb2.items import Item
 from boto.dynamodb2.layer1 import DynamoDBConnection
 from boto.dynamodb2.results import ResultSet, BatchGetResultSet
@@ -166,6 +168,133 @@ class IndexFieldTestCase(unittest.TestCase):
                     'gender',
                     'friend_count',
                 ]
+            }
+        })
+
+    def test_global_all_index(self):
+        all_index = GlobalAllIndex('AllKeys', parts=[
+            HashKey('username'),
+            RangeKey('date_joined')
+        ],
+        throughput={
+            'read': 6,
+            'write': 2,
+        })
+        self.assertEqual(all_index.name, 'AllKeys')
+        self.assertEqual([part.attr_type for part in all_index.parts], [
+            'HASH',
+            'RANGE'
+        ])
+        self.assertEqual(all_index.projection_type, 'ALL')
+
+        self.assertEqual(all_index.definition(), [
+            {'AttributeName': 'username', 'AttributeType': 'S'},
+            {'AttributeName': 'date_joined', 'AttributeType': 'S'}
+        ])
+        self.assertEqual(all_index.schema(), {
+            'IndexName': 'AllKeys',
+            'KeySchema': [
+                {
+                    'AttributeName': 'username',
+                    'KeyType': 'HASH'
+                },
+                {
+                    'AttributeName': 'date_joined',
+                    'KeyType': 'RANGE'
+                }
+            ],
+            'Projection': {
+                'ProjectionType': 'ALL'
+            },
+            'ProvisionedThroughput': {
+                'ReadCapacityUnits': 6,
+                'WriteCapacityUnits': 2
+            }
+        })
+
+    def test_global_keys_only_index(self):
+        keys_only = GlobalKeysOnlyIndex('KeysOnly', parts=[
+            HashKey('username'),
+            RangeKey('date_joined')
+        ],
+        throughput={
+            'read': 3,
+            'write': 4,
+        })
+        self.assertEqual(keys_only.name, 'KeysOnly')
+        self.assertEqual([part.attr_type for part in keys_only.parts], [
+            'HASH',
+            'RANGE'
+        ])
+        self.assertEqual(keys_only.projection_type, 'KEYS_ONLY')
+
+        self.assertEqual(keys_only.definition(), [
+            {'AttributeName': 'username', 'AttributeType': 'S'},
+            {'AttributeName': 'date_joined', 'AttributeType': 'S'}
+        ])
+        self.assertEqual(keys_only.schema(), {
+            'IndexName': 'KeysOnly',
+            'KeySchema': [
+                {
+                    'AttributeName': 'username',
+                    'KeyType': 'HASH'
+                },
+                {
+                    'AttributeName': 'date_joined',
+                    'KeyType': 'RANGE'
+                }
+            ],
+            'Projection': {
+                'ProjectionType': 'KEYS_ONLY'
+            },
+            'ProvisionedThroughput': {
+                'ReadCapacityUnits': 3,
+                'WriteCapacityUnits': 4
+            }
+        })
+
+    def test_global_include_index(self):
+        # Lean on the default throughput
+        include_index = GlobalIncludeIndex('IncludeKeys', parts=[
+            HashKey('username'),
+            RangeKey('date_joined')
+        ], includes=[
+            'gender',
+            'friend_count'
+        ])
+        self.assertEqual(include_index.name, 'IncludeKeys')
+        self.assertEqual([part.attr_type for part in include_index.parts], [
+            'HASH',
+            'RANGE'
+        ])
+        self.assertEqual(include_index.projection_type, 'INCLUDE')
+
+        self.assertEqual(include_index.definition(), [
+            {'AttributeName': 'username', 'AttributeType': 'S'},
+            {'AttributeName': 'date_joined', 'AttributeType': 'S'}
+        ])
+        self.assertEqual(include_index.schema(), {
+            'IndexName': 'IncludeKeys',
+            'KeySchema': [
+                {
+                    'AttributeName': 'username',
+                    'KeyType': 'HASH'
+                },
+                {
+                    'AttributeName': 'date_joined',
+                    'KeyType': 'RANGE'
+                }
+            ],
+            'Projection': {
+                'ProjectionType': 'INCLUDE',
+                'NonKeyAttributes': [
+                    'gender',
+                    'friend_count',
+                ]
+            },
+            'ProvisionedThroughput': {
+                'ReadCapacityUnits': 5,
+                'WriteCapacityUnits': 5
             }
         })
 
@@ -476,7 +605,7 @@ class ItemTestCase(unittest.TestCase):
             'date_joined'
         ]))
 
-    def test_prepare_partial(self):
+    def test_prepare_partial_empty_set(self):
         self.johndoe.mark_clean()
         # Change some data.
         self.johndoe['first_name'] = 'Johann'
@@ -1132,6 +1261,13 @@ class TableTestCase(unittest.TestCase):
                 KeysOnlyIndex('FriendCountIndex', parts=[
                     RangeKey('friend_count')
                 ]),
+            ], global_indexes=[
+                GlobalKeysOnlyIndex('FullFriendCountIndex', parts=[
+                    RangeKey('friend_count')
+                ], throughput={
+                    'read': 10,
+                    'write': 8,
+                }),
             ], connection=conn)
             self.assertTrue(retval)
 
@@ -1165,6 +1301,24 @@ class TableTestCase(unittest.TestCase):
             'WriteCapacityUnits': 10,
             'ReadCapacityUnits': 20
         },
+        global_secondary_indexes=[
+            {
+                'KeySchema': [
+                    {
+                        'KeyType': 'RANGE',
+                        'AttributeName': 'friend_count'
+                    }
+                ],
+                'IndexName': 'FullFriendCountIndex',
+                'Projection': {
+                    'ProjectionType': 'KEYS_ONLY'
+                },
+                'ProvisionedThroughput': {
+                    'WriteCapacityUnits': 8,
+                    'ReadCapacityUnits': 10
+                }
+            }
+        ],
         local_secondary_indexes=[
             {
                 'KeySchema': [
@@ -1252,10 +1406,65 @@ class TableTestCase(unittest.TestCase):
             self.assertEqual(self.users.throughput['read'], 7)
             self.assertEqual(self.users.throughput['write'], 2)
 
-        mock_update.assert_called_once_with('users', {
-            'WriteCapacityUnits': 2,
-            'ReadCapacityUnits': 7
-        })
+        mock_update.assert_called_once_with(
+            'users',
+            global_secondary_index_updates=None,
+            provisioned_throughput={
+                'WriteCapacityUnits': 2,
+                'ReadCapacityUnits': 7
+            }
+        )
+
+        with mock.patch.object(
+                self.users.connection,
+                'update_table',
+                return_value={}) as mock_update:
+            self.assertEqual(self.users.throughput['read'], 7)
+            self.assertEqual(self.users.throughput['write'], 2)
+            self.users.update(throughput={
+                'read': 9,
+                'write': 5,
+            },
+            global_indexes={
+                'WhateverIndex': {
+                    'read': 6,
+                    'write': 1
+                },
+                'AnotherIndex': {
+                    'read': 1,
+                    'write': 2
+                }
+            })
+            self.assertEqual(self.users.throughput['read'], 9)
+            self.assertEqual(self.users.throughput['write'], 5)
+
+        mock_update.assert_called_once_with(
+            'users',
+            global_secondary_index_updates=[
+                {
+                    'Update': {
+                        'IndexName': 'AnotherIndex',
+                        'ProvisionedThroughput': {
+                            'WriteCapacityUnits': 2,
+                            'ReadCapacityUnits': 1
+                        }
+                    }
+                },
+                {
+                    'Update': {
+                        'IndexName': 'WhateverIndex',
+                        'ProvisionedThroughput': {
+                            'WriteCapacityUnits': 1,
+                            'ReadCapacityUnits': 6
+                        }
+                    }
+                }
+            ],
+            provisioned_throughput={
+                'WriteCapacityUnits': 5,
+                'ReadCapacityUnits': 9,
+            }
+        )
 
     def test_delete(self):
         with mock.patch.object(
