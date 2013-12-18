@@ -27,7 +27,7 @@ import urlparse
 from boto.sqs.message import Message
 
 
-class Queue:
+class Queue(object):
 
     def __init__(self, connection=None, url=None, message_class=Message):
         self.connection = connection

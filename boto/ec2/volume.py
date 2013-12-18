@@ -289,8 +289,7 @@ class AttachmentSet(object):
             setattr(self, name, value)
 
 
-class VolumeAttribute:
-
+class VolumeAttribute(object):
     def __init__(self, parent=None):
         self.id = None
         self._key_name = None

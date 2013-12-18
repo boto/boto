@@ -23,8 +23,8 @@
 from boto.ec2.ec2object import EC2Object, TaggedEC2Object
 from boto.ec2.blockdevicemapping import BlockDeviceMapping
 
-class ProductCodes(list):
 
+class ProductCodes(list):
     def startElement(self, name, attrs, connection):
         pass
 
@@ -32,8 +32,8 @@ class ProductCodes(list):
         if name == 'productCode':
             self.append(value)
 
-class BillingProducts(list):
 
+class BillingProducts(list):
     def startElement(self, name, attrs, connection):
         pass
 
@@ -370,8 +370,8 @@ class Image(TaggedEC2Object):
         )
         return img_attrs.ramdisk
 
-class ImageAttribute:
 
+class ImageAttribute(object):
     def __init__(self, parent=None):
         self.name = None
         self.kernel = None

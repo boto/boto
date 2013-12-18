@@ -54,7 +54,7 @@ from collections import defaultdict
 # as per http://goo.gl/BDuud (02/19/2011)
 
 
-class S3WebsiteEndpointTranslate:
+class S3WebsiteEndpointTranslate(object):
 
     trans_region = defaultdict(lambda: 's3-website-us-east-1')
     trans_region['eu-west-1'] = 's3-website-eu-west-1'

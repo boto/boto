@@ -875,7 +875,7 @@ class MTurkConnection(AWSQueryConnection):
         return duration
 
 
-class BaseAutoResultElement:
+class BaseAutoResultElement(object):
     """
     Base class to automatically add attributes when parsing XML
     """

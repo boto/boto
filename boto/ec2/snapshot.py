@@ -26,8 +26,8 @@ Represents an EC2 Elastic Block Store Snapshot
 from boto.ec2.ec2object import TaggedEC2Object
 from boto.ec2.zone import Zone
 
-class Snapshot(TaggedEC2Object):
 
+class Snapshot(TaggedEC2Object):
     AttrName = 'createVolumePermission'
 
     def __init__(self, connection=None):
@@ -156,8 +156,7 @@ class Snapshot(TaggedEC2Object):
         )
 
 
-class SnapshotAttribute:
-
+class SnapshotAttribute(object):
     def __init__(self, parent=None):
         self.snapshot_id = None
         self.attrs = {}

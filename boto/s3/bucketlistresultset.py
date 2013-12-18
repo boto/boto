@@ -33,8 +33,8 @@ def bucket_lister(bucket, prefix='', delimiter='', marker='', headers=None):
         if k:
             marker = rs.next_marker or k.name
         more_results= rs.is_truncated
-        
-class BucketListResultSet:
+
+class BucketListResultSet(object):
     """
     A resultset for listing keys within a bucket.  Uses the bucket_lister
     generator function and implements the iterator interface.  This
@@ -72,8 +72,8 @@ def versioned_bucket_lister(bucket, prefix='', delimiter='',
         key_marker = rs.next_key_marker
         version_id_marker = rs.next_version_id_marker
         more_results= rs.is_truncated
-        
-class VersionedBucketListResultSet:
+
+class VersionedBucketListResultSet(object):
     """
     A resultset for listing versions within a bucket.  Uses the bucket_lister
     generator function and implements the iterator interface.  This
@@ -115,8 +115,8 @@ def multipart_upload_lister(bucket, key_marker='',
         key_marker = rs.next_key_marker
         upload_id_marker = rs.next_upload_id_marker
         more_results= rs.is_truncated
-        
-class MultiPartUploadListResultSet:
+
+class MultiPartUploadListResultSet(object):
     """
     A resultset for listing multipart uploads within a bucket.
     Uses the multipart_upload_lister generator function and

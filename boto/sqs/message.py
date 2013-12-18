@@ -69,7 +69,7 @@ from boto.sqs.attributes import Attributes
 from boto.exception import SQSDecodeError
 import boto
 
-class RawMessage:
+class RawMessage(object):
     """
     Base class for SQS messages.  RawMessage does not encode the message
     in any way.  Whatever you store in the body of the message is what
