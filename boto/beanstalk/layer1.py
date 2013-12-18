@@ -238,7 +238,7 @@ class Layer1(AWSQueryConnection):
                            solution_stack_name=None, cname_prefix=None,
                            description=None, option_settings=None,
                            options_to_remove=None, tier_name=None,
-                           tier_type=None, tier_version=None):
+                           tier_type=None, tier_version='1.0'):
         """Launches an environment for the application using a configuration.
 
         :type application_name: string
@@ -312,6 +312,12 @@ class Layer1(AWSQueryConnection):
         :type tier_name: string
         :param tier_name: The name of the tier.  Valid values are
             "WebServer" and "Worker". Defaults to "WebServer".
+            The ``tier_name`` and a ``tier_type`` parameters are
+            related and the values provided must be valid.
+            The possible combinations are:
+
+              * "WebServer" and "Standard" (the default)
+              * "Worker" and "SQS/HTTP"
 
         :type tier_type: string
         :param tier_type: The type of the tier.  Valid values are
@@ -1040,7 +1046,7 @@ class Layer1(AWSQueryConnection):
                            version_label=None, template_name=None,
                            description=None, option_settings=None,
                            options_to_remove=None, tier_name=None,
-                           tier_type=None, tier_version=None):
+                           tier_type=None, tier_version='1.0'):
         """
         Updates the environment description, deploys a new application
         version, updates the configuration settings to an entirely new
@@ -1095,6 +1101,12 @@ class Layer1(AWSQueryConnection):
         :type tier_name: string
         :param tier_name: The name of the tier.  Valid values are
             "WebServer" and "Worker". Defaults to "WebServer".
+            The ``tier_name`` and a ``tier_type`` parameters are
+            related and the values provided must be valid.
+            The possible combinations are:
+
+              * "WebServer" and "Standard" (the default)
+              * "Worker" and "SQS/HTTP"
 
         :type tier_type: string
         :param tier_type: The type of the tier.  Valid values are
