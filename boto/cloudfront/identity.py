@@ -30,7 +30,7 @@ class OriginAccessIdentity(object):
         self.s3_user_id = s3_user_id
         self.comment = comment
         self.etag = None
-        
+
     def startElement(self, name, attrs, connection):
         if name == 'CloudFrontOriginAccessIdentityConfig':
             self.config = OriginAccessIdentityConfig()
@@ -102,7 +102,7 @@ class OriginAccessIdentitySummary(object):
         self.s3_user_id = s3_user_id
         self.comment = comment
         self.etag = None
-        
+
     def startElement(self, name, attrs, connection):
         return None
 
@@ -118,4 +118,4 @@ class OriginAccessIdentitySummary(object):
 
     def get_origin_access_identity(self):
         return self.connection.get_origin_access_identity_info(self.id)
-    
+

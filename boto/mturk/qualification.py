@@ -49,7 +49,7 @@ class Requirement(object):
         self.comparator = comparator
         self.integer_value = integer_value
         self.required_to_preview = required_to_preview
-    
+
     def get_as_params(self):
         params =  {
             "QualificationTypeId": self.qualification_type_id,
@@ -105,7 +105,7 @@ class NumberHitsApprovedRequirement(Requirement):
     """
     Specifies the total number of HITs submitted by a Worker that have been approved. The value is an integer greater than or equal to 0.
     """
-    
+
     def __init__(self, comparator, integer_value, required_to_preview=False):
         Requirement.__init__(self, qualification_type_id="00000000000000000040", comparator=comparator, integer_value=integer_value, required_to_preview=required_to_preview)
 
@@ -132,6 +132,6 @@ class AdultRequirement(Requirement):
     """
     Requires workers to acknowledge that they are over 18 and that they agree to work on potentially offensive content. The value type is boolean, 1 (required), 0 (not required, the default).
     """
-    
+
     def __init__(self, comparator, integer_value, required_to_preview=False):
         Requirement.__init__(self, qualification_type_id="00000000000000000060", comparator=comparator, integer_value=integer_value, required_to_preview=required_to_preview)

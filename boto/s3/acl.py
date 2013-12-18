@@ -160,5 +160,5 @@ class Grant(object):
         s += '<Permission>%s</Permission>' % self.permission
         s += '</Grant>'
         return s
-        
-            
+
+

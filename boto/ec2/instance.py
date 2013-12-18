@@ -628,7 +628,6 @@ class ConsoleOutput(object):
 
 
 class InstanceAttribute(dict):
-
     ValidValues = ['instanceType', 'kernel', 'ramdisk', 'userData',
                    'disableApiTermination',
                    'instanceInitiatedShutdownBehavior',
@@ -667,7 +666,6 @@ class InstanceAttribute(dict):
 
 
 class SubParse(dict):
-
     def __init__(self, section, parent=None):
         dict.__init__(self)
         self.section = section
