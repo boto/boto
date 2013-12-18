@@ -269,10 +269,10 @@ class EmrConnection(AWSQueryConnection):
 
     def add_tags(self, resource_id, tags):
         """
-        Create new metadata tags for the specified resource ids.
+        Create new metadata tags for the specified resource id.
 
-        :type resource_ids: str
-        :param resource_ids: The cluster id
+        :type resource_id: str
+        :param resource_id: The cluster id
 
         :type tags: dict
         :param tags: A dictionary containing the name/value pairs.
@@ -286,6 +286,22 @@ class EmrConnection(AWSQueryConnection):
         }
         params.update(self._build_tag_list(tags))
         return self.get_status('AddTags', params, verb='POST')
+
+    def remove_tags(self, resource_id, tags):
+        """
+        Remove metadata tags for the specified resource id.
+
+        :type resource_id: str
+        :param resource_id: The cluster id
+
+        :type tags: list
+        :param tags: A list of tag names to remove.
+        """
+        params = {
+            'ResourceId': resource_id,
+        }
+        params.update(self._build_string_list('TagKeys', tags))
+        return self.get_status('RemoveTags', params, verb='POST')
 
     def terminate_jobflow(self, jobflow_id):
         """
@@ -641,6 +657,15 @@ class EmrConnection(AWSQueryConnection):
         for i, step in enumerate(steps):
             for key, value in step.iteritems():
                 params['Steps.member.%s.%s' % (i+1, key)] = value
+        return params
+
+    def _build_string_list(self, field, items):
+        if not isinstance(items, types.ListType):
+            items = [items]
+
+        params = {}
+        for i, item in enumerate(items):
+            params['%s.member.%s' % (field, i + 1)] = item
         return params
 
     def _build_tag_list(self, tags):
