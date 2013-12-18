@@ -28,7 +28,7 @@ from boto.sqs.message import RawMessage
 
 class BigMessage(RawMessage):
     """
-    The BigMessage class provides arbitrarily large message payloads
+    The BigMessage class provides large payloads (up to 5GB)
     by storing the payload itself in S3 and then placing a reference
     to the S3 object in the actual SQS message payload.
 
