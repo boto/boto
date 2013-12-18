@@ -328,7 +328,7 @@ class Table(object):
         # This is leaky.
         return result
 
-    def update(self, throughput):
+    def update(self, throughput, global_indexes=None):
         """
         Updates table attributes in DynamoDB.
 
@@ -350,12 +350,46 @@ class Table(object):
             ... })
             True
 
+            # To also update the global index(es) throughput.
+            >>> users.update(throughput={
+            ...     'read': 20,
+            ...     'write': 10,
+            ... },
+            ... global_secondary_indexes={
+            ...     'TheIndexNameHere': {
+            ...         'read': 15,
+            ...         'write': 5,
+            ...     }
+            ... })
+            True
+
         """
         self.throughput = throughput
-        self.connection.update_table(self.table_name, {
+        data = {
             'ReadCapacityUnits': int(self.throughput['read']),
             'WriteCapacityUnits': int(self.throughput['write']),
-        })
+        }
+        gsi_data = None
+
+        if global_indexes:
+            gsi_data = []
+
+            for gsi_name, gsi_throughput in global_indexes.items():
+                gsi_data.append({
+                    "Update": {
+                        "IndexName": gsi_name,
+                        "ProvisionedThroughput": {
+                            "ReadCapacityUnits": int(gsi_throughput['read']),
+                            "WriteCapacityUnits": int(gsi_throughput['write']),
+                        },
+                    },
+                })
+
+        self.connection.update_table(
+            self.table_name,
+            provisioned_throughput=data,
+            global_secondary_index_updates=gsi_data
+        )
         return True
 
     def delete(self):

@@ -605,7 +605,7 @@ class ItemTestCase(unittest.TestCase):
             'date_joined'
         ]))
 
-    def test_prepare_partial(self):
+    def test_prepare_partial_empty_set(self):
         self.johndoe.mark_clean()
         # Change some data.
         self.johndoe['first_name'] = 'Johann'
@@ -1261,6 +1261,13 @@ class TableTestCase(unittest.TestCase):
                 KeysOnlyIndex('FriendCountIndex', parts=[
                     RangeKey('friend_count')
                 ]),
+            ], global_indexes=[
+                GlobalKeysOnlyIndex('FullFriendCountIndex', parts=[
+                    RangeKey('friend_count')
+                ], throughput={
+                    'read': 10,
+                    'write': 8,
+                }),
             ], connection=conn)
             self.assertTrue(retval)
 
@@ -1294,6 +1301,24 @@ class TableTestCase(unittest.TestCase):
             'WriteCapacityUnits': 10,
             'ReadCapacityUnits': 20
         },
+        global_secondary_indexes=[
+            {
+                'KeySchema': [
+                    {
+                        'KeyType': 'RANGE',
+                        'AttributeName': 'friend_count'
+                    }
+                ],
+                'IndexName': 'FullFriendCountIndex',
+                'Projection': {
+                    'ProjectionType': 'KEYS_ONLY'
+                },
+                'ProvisionedThroughput': {
+                    'WriteCapacityUnits': 8,
+                    'ReadCapacityUnits': 10
+                }
+            }
+        ],
         local_secondary_indexes=[
             {
                 'KeySchema': [
@@ -1381,10 +1406,65 @@ class TableTestCase(unittest.TestCase):
             self.assertEqual(self.users.throughput['read'], 7)
             self.assertEqual(self.users.throughput['write'], 2)
 
-        mock_update.assert_called_once_with('users', {
-            'WriteCapacityUnits': 2,
-            'ReadCapacityUnits': 7
-        })
+        mock_update.assert_called_once_with(
+            'users',
+            global_secondary_index_updates=None,
+            provisioned_throughput={
+                'WriteCapacityUnits': 2,
+                'ReadCapacityUnits': 7
+            }
+        )
+
+        with mock.patch.object(
+                self.users.connection,
+                'update_table',
+                return_value={}) as mock_update:
+            self.assertEqual(self.users.throughput['read'], 7)
+            self.assertEqual(self.users.throughput['write'], 2)
+            self.users.update(throughput={
+                'read': 9,
+                'write': 5,
+            },
+            global_indexes={
+                'WhateverIndex': {
+                    'read': 6,
+                    'write': 1
+                },
+                'AnotherIndex': {
+                    'read': 1,
+                    'write': 2
+                }
+            })
+            self.assertEqual(self.users.throughput['read'], 9)
+            self.assertEqual(self.users.throughput['write'], 5)
+
+        mock_update.assert_called_once_with(
+            'users',
+            global_secondary_index_updates=[
+                {
+                    'Update': {
+                        'IndexName': 'AnotherIndex',
+                        'ProvisionedThroughput': {
+                            'WriteCapacityUnits': 2,
+                            'ReadCapacityUnits': 1
+                        }
+                    }
+                },
+                {
+                    'Update': {
+                        'IndexName': 'WhateverIndex',
+                        'ProvisionedThroughput': {
+                            'WriteCapacityUnits': 1,
+                            'ReadCapacityUnits': 6
+                        }
+                    }
+                }
+            ],
+            provisioned_throughput={
+                'WriteCapacityUnits': 5,
+                'ReadCapacityUnits': 9,
+            }
+        )
 
     def test_delete(self):
         with mock.patch.object(
