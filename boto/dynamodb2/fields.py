@@ -96,9 +96,11 @@ class BaseIndexField(object):
     Contains most of the core functionality for the field. Subclasses must
     define an ``attr_type`` to pass to DynamoDB.
     """
-    def __init__(self, name, parts):
+    def __init__(self, name, parts, global_index=False, throughput=None):
         self.name = name
         self.parts = parts
+        self.global_index = global_index
+        self.throughput = throughput or {'read': 5, 'write': 5}
 
     def definition(self):
         """
@@ -139,7 +141,11 @@ class BaseIndexField(object):
                     },
                 ],
                 'Projection': {
-                    'ProjectionType': 'KEYS_ONLY,
+                    'ProjectionType': 'KEYS_ONLY',
+                }
+                'ProvisionedThroughput': {
+                    'ReadCapacityUnits': 1,
+                    'WriteCapacityUnits': 1,
                 }
             }
 
@@ -149,13 +155,19 @@ class BaseIndexField(object):
         for part in self.parts:
             key_schema.append(part.schema())
 
-        return {
+        schema = {
             'IndexName': self.name,
             'KeySchema': key_schema,
             'Projection': {
                 'ProjectionType': self.projection_type,
             }
         }
+        if self.global_index:
+            schema['ProvisionedThroughput'] = {
+                'ReadCapacityUnits': int(self.throughput['read']),
+                'WriteCapacityUnits': int(self.throughput['write']),
+            }
+        return schema
 
 
 class AllIndex(BaseIndexField):
