@@ -368,3 +368,45 @@ class TestAddTag(AWSMockServiceTestCase):
             'Tags.member.3.Key': 'ZzzNoValue',
             'Version': '2009-03-31'
         })
+
+
+class TestRemoveTag(AWSMockServiceTestCase):
+    connection_class = EmrConnection
+
+    def default_body(self):
+        return """<RemoveTagsResponse
+               xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+                   <RemoveTagsResult/>
+                   <ResponseMetadata>
+                        <RequestId>88888888-8888-8888-8888-888888888888</RequestId>
+                   </ResponseMetadata>
+               </RemoveTagsResponse>
+               """
+
+    def test_remove_tags(self):
+        input_tags = {
+            'FirstKey': 'One',
+            'SecondKey': 'Two',
+            'ZzzNoValue': ''
+        }
+        self.set_http_response(200)
+
+        with self.assertRaises(TypeError):
+            self.service_connection.add_tags()
+
+        with self.assertRaises(TypeError):
+            self.service_connection.add_tags('j-123')
+
+        with self.assertRaises(AssertionError):
+            self.service_connection.add_tags('j-123', [])
+
+        response = self.service_connection.remove_tags('j-123', ['FirstKey', 'SecondKey'])
+
+        self.assertTrue(response)
+        self.assert_request_parameters({
+            'Action': 'RemoveTags',
+            'ResourceId': 'j-123',
+            'TagKeys.member.1': 'FirstKey',
+            'TagKeys.member.2': 'SecondKey',
+            'Version': '2009-03-31'
+        })
