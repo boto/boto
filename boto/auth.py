@@ -906,3 +906,13 @@ def get_auth_handler(host, config, provider, requested_capability=None):
     # user could override this with a .boto config that includes user-specific
     # credentials (for access to user data).
     return ready_handlers[-1]
+
+
+def detect_potential_s3sigv4(func):
+    def _wrapper(self):
+        if hasattr(self, 'host'):
+            if '.cn-' in self.host:
+                return ['hmac-v4-s3']
+
+        return func(self)
+    return _wrapper

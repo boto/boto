@@ -27,6 +27,7 @@ import urllib
 import base64
 import time
 
+from boto.auth import detect_potential_s3sigv4
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
@@ -173,19 +174,12 @@ class S3Connection(AWSAuthConnection):
                 suppress_consec_slashes=suppress_consec_slashes,
                 validate_certs=validate_certs)
 
+    @detect_potential_s3sigv4
     def _required_auth_capability(self):
         if self.anon:
             return ['anon']
-        elif self.host:
-            # If we have a host, we can detect if a region (other than classic)
-            # is present.
-            host_bits = self.host.split('.')
-
-            if host_bits[0].startswith('s3'):
-                if '-' in host_bits[0] or '-' in host_bits[1]:
-                    return ['hmac-v4-s3']
-
-        return ['s3']
+        else:
+            return ['s3']
 
     def __iter__(self):
         for bucket in self.get_all_buckets():
