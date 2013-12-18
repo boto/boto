@@ -27,7 +27,7 @@ from xml.dom.minidom import getDOMImplementation, parse, parseString, Node
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
-class XMLConverter:
+class XMLConverter(object):
     """
     Responsible for converting base Python types to format compatible with underlying
     database.  For SimpleDB, that means everything needs to be converted to a string

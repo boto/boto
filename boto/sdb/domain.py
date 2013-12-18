@@ -24,7 +24,7 @@ Represents an SDB Domain
 """
 from boto.sdb.queryresultset import SelectResultSet
 
-class Domain:
+class Domain(object):
 
     def __init__(self, connection=None, name=None):
         self.connection = connection
@@ -279,7 +279,7 @@ class Domain:
         return self.connection.delete_domain(self)
 
 
-class DomainMetaData:
+class DomainMetaData(object):
 
     def __init__(self, domain=None):
         self.domain = domain

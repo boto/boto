@@ -45,8 +45,8 @@ class BotoClientError(StandardError):
     def __str__(self):
         return 'BotoClientError: %s' % self.reason
 
-class SDBPersistenceError(StandardError):
 
+class SDBPersistenceError(StandardError):
     pass
 
 class StoragePermissionsError(BotoClientError):
@@ -67,8 +67,8 @@ class GSPermissionsError(StoragePermissionsError):
     """
     pass
 
-class BotoServerError(StandardError):
 
+class BotoServerError(StandardError):
     def __init__(self, status, reason, body=None, *args):
         StandardError.__init__(self, status, reason, body, *args)
         self.status = status
@@ -134,8 +134,8 @@ class BotoServerError(StandardError):
         self.message = None
         self.box_usage = None
 
-class ConsoleOutput:
 
+class ConsoleOutput(object):
     def __init__(self, parent=None):
         self.parent = parent
         self.instance_id = None

@@ -25,8 +25,8 @@ from datetime import datetime, timedelta
 from boto.utils import parse_ts
 import boto
 
-class ResultProcessor:
-    
+class ResultProcessor(object):
+
     LogFileName = 'log.csv'
 
     def __init__(self, batch_name, sd, mimetype_files=None):

@@ -22,7 +22,7 @@
 import xml.sax.saxutils
 from acl import Grant
 
-class BucketLogging:
+class BucketLogging(object):
 
     def __init__(self, target=None, prefix=None, grants=None):
         self.target = target

@@ -14,15 +14,14 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
 import uuid
 
-class OriginAccessIdentity:
-
+class OriginAccessIdentity(object):
     def __init__(self, connection=None, config=None, id='',
                  s3_user_id='', comment=''):
         self.connection = connection
@@ -63,9 +62,9 @@ class OriginAccessIdentity:
 
     def uri(self):
         return 'origin-access-identity/cloudfront/%s' % self.id
-            
-class OriginAccessIdentityConfig:
 
+
+class OriginAccessIdentityConfig(object):
     def __init__(self, connection=None, caller_reference='', comment=''):
         self.connection = connection
         if caller_reference:
@@ -94,8 +93,8 @@ class OriginAccessIdentityConfig:
         else:
             setattr(self, name, value)
 
-class OriginAccessIdentitySummary:
 
+class OriginAccessIdentitySummary(object):
     def __init__(self, connection=None, id='',
                  s3_user_id='', comment=''):
         self.connection = connection

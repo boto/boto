@@ -134,7 +134,7 @@ class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
         return url_base
 
 
-class Location:
+class Location(object):
 
     DEFAULT = ''  # US Classic Region
     EU = 'EU'

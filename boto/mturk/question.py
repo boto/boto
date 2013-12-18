@@ -82,12 +82,12 @@ class ExternalQuestion(ValidatingXML):
         return self.template % vars(self)
 
 
-class XMLTemplate:
+class XMLTemplate(object):
     def get_as_xml(self):
         return self.template % vars(self)
 
 
-class SimpleField(object, XMLTemplate):
+class SimpleField(XMLTemplate):
     """
     A Simple name/value pair that can be easily rendered as XML.
 
@@ -101,7 +101,7 @@ class SimpleField(object, XMLTemplate):
         self.value = value
 
 
-class Binary(object, XMLTemplate):
+class Binary(XMLTemplate):
     template = """<Binary><MimeType><Type>%(type)s</Type><SubType>%(subtype)s</SubType></MimeType><DataURL>%(url)s</DataURL><AltText>%(alt_text)s</AltText></Binary>"""
 
     def __init__(self, type, subtype, url, alt_text):

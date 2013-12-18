@@ -606,8 +606,7 @@ class Instance(TaggedEC2Object):
         )
 
 
-class ConsoleOutput:
-
+class ConsoleOutput(object):
     def __init__(self, parent=None):
         self.parent = parent
         self.instance_id = None

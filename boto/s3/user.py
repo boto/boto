@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-class User:
+class User(object):
     def __init__(self, parent=None, id='', display_name=''):
         if parent:
             parent.owner = self
