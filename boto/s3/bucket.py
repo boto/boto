@@ -244,6 +244,18 @@ class Bucket(object):
         :type marker: string
         :param marker: The "marker" of where you are in the result set
 
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
+
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
@@ -275,8 +287,20 @@ class Bucket(object):
 
             for more details.
 
-        :type marker: string
-        :param marker: The "marker" of where you are in the result set
+        :type key_marker: string
+        :param key_marker: The "marker" of where you are in the result set
+
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
 
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
@@ -295,8 +319,23 @@ class Bucket(object):
         handles all of the result paging, etc. from S3.  You just need
         to keep iterating until there are no more results.
 
-        :type marker: string
-        :param marker: The "marker" of where you are in the result set
+        :type key_marker: string
+        :param key_marker: The "marker" of where you are in the result set
+
+        :type upload_id_marker: string
+        :param upload_id_marker: The upload identifier
+
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
 
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
