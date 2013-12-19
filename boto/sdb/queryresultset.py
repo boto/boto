@@ -34,8 +34,6 @@ def query_lister(domain, query='', max_items=None, attr_names=None):
             num_results += 1
         next_token = rs.next_token
         more_results = next_token is not None
-        
-class QueryResultSet:
 
 class QueryResultSet(object):
 
