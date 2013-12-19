@@ -1312,6 +1312,30 @@ class TestDescribeTags(TestEC2ConnectionBase):
                                    'SignatureVersion', 'Timestamp', 'Version'])
 
 
+class TestSignatureAlteration(TestEC2ConnectionBase):
+    def test_unchanged(self):
+        self.assertEqual(
+            self.service_connection._required_auth_capability(),
+            ['ec2']
+        )
+
+    def test_switched(self):
+        region = RegionInfo(
+            name='cn-north-1',
+            endpoint='ec2.cn-north-1.amazonaws.com.cn',
+            connection_cls=EC2Connection
+        )
+
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more',
+            region=region
+        )
+        self.assertEqual(
+            conn._required_auth_capability(),
+            ['hmac-v4']
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

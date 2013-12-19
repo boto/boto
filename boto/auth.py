@@ -721,3 +721,14 @@ def get_auth_handler(host, config, provider, requested_capability=None):
     # user could override this with a .boto config that includes user-specific
     # credentials (for access to user data).
     return ready_handlers[-1]
+
+
+def detect_potential_sigv4(func):
+    def _wrapper(self):
+        if hasattr(self, 'region'):
+            if getattr(self.region, 'endpoint', ''):
+                if '.cn-' in self.region.endpoint:
+                    return ['hmac-v4']
+
+        return func(self)
+    return _wrapper

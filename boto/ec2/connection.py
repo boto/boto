@@ -31,6 +31,7 @@ from datetime import datetime
 from datetime import timedelta
 
 import boto
+from boto.auth import detect_potential_sigv4
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.image import Image, ImageAttribute, CopyImage
@@ -101,6 +102,7 @@ class EC2Connection(AWSQueryConnection):
         if api_version:
             self.APIVersion = api_version
 
+    @detect_potential_sigv4
     def _required_auth_capability(self):
         return ['ec2']
 
@@ -305,7 +307,7 @@ class EC2Connection(AWSQueryConnection):
         :param snapshot_id: A snapshot ID for the snapshot to be used
             as root device for the image. Mutually exclusive with
             block_device_map, requires root_device_name
-            
+
         :rtype: string
         :return: The new image id
         """
@@ -334,7 +336,7 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         if virtualization_type:
             params['VirtualizationType'] = virtualization_type
-        
+
 
         rs = self.get_object('RegisterImage', params, ResultSet, verb='POST')
         image_id = getattr(rs, 'imageId', None)
