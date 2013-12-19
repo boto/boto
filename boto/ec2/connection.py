@@ -264,6 +264,7 @@ class EC2Connection(AWSQueryConnection):
                        architecture=None, kernel_id=None, ramdisk_id=None,
                        root_device_name=None, block_device_map=None,
                        dry_run=False, virtualization_type=None,
+                       sriov_net_support=None,
                        snapshot_id=None):
         """
         Register an image.
@@ -303,6 +304,11 @@ class EC2Connection(AWSQueryConnection):
             * paravirtual
             * hvm
 
+        :type sriov_net_support: string
+        :param sriov_net_support: Advanced networking support.
+            Valid choices are:
+            * simple
+
         :type snapshot_id: string
         :param snapshot_id: A snapshot ID for the snapshot to be used
             as root device for the image. Mutually exclusive with
@@ -336,6 +342,8 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         if virtualization_type:
             params['VirtualizationType'] = virtualization_type
+        if sriov_net_support:
+            params['SriovNetSupport'] = sriov_net_support
 
 
         rs = self.get_object('RegisterImage', params, ResultSet, verb='POST')
