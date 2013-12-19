@@ -1629,6 +1629,15 @@ class Bucket(object):
         """
         Start a multipart upload operation.
 
+        .. note::
+
+            Note: After you initiate multipart upload and upload one or more
+            parts, you must either complete or abort multipart upload in order
+            to stop getting charged for storage of the uploaded parts. Only
+            after you either complete or abort multipart upload, Amazon S3
+            frees up the parts storage and stops charging you for the parts
+            storage.
+
         :type key_name: string
         :param key_name: The name of the key that will ultimately
             result from this multipart upload operation.  This will be
@@ -1729,6 +1738,11 @@ class Bucket(object):
                 response.status, response.reason, body)
 
     def cancel_multipart_upload(self, key_name, upload_id, headers=None):
+        """
+        To verify that all parts have been removed, so you don't get charged
+        for the part storage, you should call the List Parts operation and
+        ensure the parts list is empty.
+        """
         query_args = 'uploadId=%s' % upload_id
         response = self.connection.make_request('DELETE', self.name, key_name,
                                                 query_args=query_args,
