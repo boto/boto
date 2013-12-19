@@ -382,10 +382,11 @@ class TestS3HmacAuthV4Handler(unittest.TestCase):
 /
 max-keys=0
 host:awesome-bucket.s3-us-west-2.amazonaws.com
+user-agent:Boto
 x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 x-amz-date:20130605T193245Z
 
-host;x-amz-content-sha256;x-amz-date
+host;user-agent;x-amz-content-sha256;x-amz-date
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
 
         authed_req = self.auth.canonical_request(self.awesome_bucket_request)
@@ -399,10 +400,11 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
 /
 max-keys=0
 host:awesome-bucket.s3-us-west-2.amazonaws.com
+user-agent:Boto
 x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 x-amz-date:20130605T193245Z
 
-host;x-amz-content-sha256;x-amz-date
+host;user-agent;x-amz-content-sha256;x-amz-date
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
 
         # Pre-mangle it. In practice, this happens as part of ``add_auth``,
