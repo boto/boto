@@ -136,6 +136,8 @@ class Image(TaggedEC2Object):
             self.hypervisor = value
         elif name == 'instanceLifecycle':
             self.instance_lifecycle = value
+        elif name == 'sriovNetSupport':
+            self.sriov_net_support = value
         else:
             setattr(self, name, value)
 
