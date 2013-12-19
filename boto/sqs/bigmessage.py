@@ -24,6 +24,7 @@ import uuid
 
 import boto
 from boto.sqs.message import RawMessage
+from boto.exception import SQSDecodeError
 
 
 class BigMessage(RawMessage):
@@ -58,18 +59,20 @@ class BigMessage(RawMessage):
 
     def _get_bucket_key(self, s3_url):
         bucket_name = key_name = None
-        if s3_url.startswith('s3://'):
-            # We need to split out the bucket from the key (if
-            # supplied).  We also have to be aware that someone
-            # may provide a trailing '/' character as in:
-            # s3://foo/ and we want to handle that.
-            s3_components = s3_url[5:].split('/', 1)
-            bucket_name = s3_components[0]
-            if len(s3_components) > 1:
-                if s3_components[1]:
-                    key_name = s3_components[1]
-        else:
-            raise ValueError('s3_url parameter should start with s3://')
+        if s3_url:
+            if s3_url.startswith('s3://'):
+                # We need to split out the bucket from the key (if
+                # supplied).  We also have to be aware that someone
+                # may provide a trailing '/' character as in:
+                # s3://foo/ and we want to handle that.
+                s3_components = s3_url[5:].split('/', 1)
+                bucket_name = s3_components[0]
+                if len(s3_components) > 1:
+                    if s3_components[1]:
+                        key_name = s3_components[1]
+            else:
+                msg = 's3_url parameter should start with s3://'
+                raise SQSDecodeError(msg, self)
         return bucket_name, key_name
 
     def encode(self, value):
@@ -91,21 +94,26 @@ class BigMessage(RawMessage):
         self.s3_url = 's3://%s/%s' % (bucket_name, key_name)
         return self.s3_url
 
-    def decode(self, value):
-        self.s3_url = value
-        bucket_name, key_name = self._get_bucket_key(self.s3_url)
+    def _get_s3_object(self, s3_url):
+        bucket_name, key_name = self._get_bucket_key(s3_url)
         if bucket_name and key_name:
             s3_conn = boto.connect_s3()
             s3_bucket = s3_conn.get_bucket(bucket_name)
             key = s3_bucket.get_key(key_name)
-            return key.get_contents_as_string()
+            return key
+        else:
+            msg = 'Unable to decode S3 URL: %s' % s3_url
+            raise SQSDecodeError(msg, self)
+
+    def decode(self, value):
+        self.s3_url = value
+        key = self._get_s3_object(value)
+        return key.get_contents_as_string()
 
     def delete(self):
-        RawMessage.delete(self)
+        # Delete the object in S3 first, then delete the SQS message
         if self.s3_url:
-            bucket_name, key_name = self._get_bucket_key(self.s3_url)
-            if bucket_name and key_name:
-                s3_conn = boto.connect_s3()
-                s3_bucket = s3_conn.get_bucket(bucket_name)
-                s3_bucket.delete_key(key_name)
+            key = self._get_s3_object(self.s3_url)
+            key.delete()
+        RawMessage.delete(self)
                 

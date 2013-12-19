@@ -85,7 +85,7 @@ class TestBigMessage(unittest.TestCase):
         self.assertEquals(bucket, 'foo')
         self.assertEquals(key, 'bar/fie/baz')
         # Try it with no s3:// prefix
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(SQSDecodeError) as context:
             bucket, key = msg._get_bucket_key('foo/bar')
 
 
