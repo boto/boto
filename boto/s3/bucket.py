@@ -211,7 +211,8 @@ class Bucket(object):
                 raise self.connection.provider.storage_response_error(
                     response.status, response.reason, '')
 
-    def list(self, prefix='', delimiter='', marker='', headers=None):
+    def list(self, prefix='', delimiter='', marker='', headers=None,
+             encoding_type=None):
         """
         List key objects within a bucket.  This returns an instance of an
         BucketListResultSet that automatically handles all of the result
@@ -243,13 +244,26 @@ class Bucket(object):
         :type marker: string
         :param marker: The "marker" of where you are in the result set
 
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
+
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
-        return BucketListResultSet(self, prefix, delimiter, marker, headers)
+        return BucketListResultSet(self, prefix, delimiter, marker, headers,
+                                   encoding_type=encoding_type)
 
     def list_versions(self, prefix='', delimiter='', key_marker='',
-                      version_id_marker='', headers=None):
+                      version_id_marker='', headers=None, encoding_type=None):
         """
         List version objects within a bucket.  This returns an
         instance of an VersionedBucketListResultSet that automatically
@@ -273,34 +287,63 @@ class Bucket(object):
 
             for more details.
 
-        :type marker: string
-        :param marker: The "marker" of where you are in the result set
+        :type key_marker: string
+        :param key_marker: The "marker" of where you are in the result set
+
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
 
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
         return VersionedBucketListResultSet(self, prefix, delimiter,
                                             key_marker, version_id_marker,
-                                            headers)
+                                            headers,
+                                            encoding_type=encoding_type)
 
     def list_multipart_uploads(self, key_marker='',
                                upload_id_marker='',
-                               headers=None):
+                               headers=None, encoding_type=None):
         """
         List multipart upload objects within a bucket.  This returns an
         instance of an MultiPartUploadListResultSet that automatically
         handles all of the result paging, etc. from S3.  You just need
         to keep iterating until there are no more results.
 
-        :type marker: string
-        :param marker: The "marker" of where you are in the result set
+        :type key_marker: string
+        :param key_marker: The "marker" of where you are in the result set
+
+        :type upload_id_marker: string
+        :param upload_id_marker: The upload identifier
+
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
 
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
         return MultiPartUploadListResultSet(self, key_marker,
                                             upload_id_marker,
-                                            headers)
+                                            headers,
+                                            encoding_type=encoding_type)
 
     def _get_all_query_args(self, params, initial_query_string=''):
         pairs = []
@@ -381,12 +424,25 @@ class Bucket(object):
             element in the CommonPrefixes collection. These rolled-up
             keys are not returned elsewhere in the response.
 
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
+
         :rtype: ResultSet
         :return: The result from S3 listing the keys requested
 
         """
         self.validate_kwarg_names(params, ['maxkeys', 'max_keys', 'prefix',
-                                           'marker', 'delimiter'])
+                                           'marker', 'delimiter',
+                                           'encoding_type'])
         return self._get_all([('Contents', self.key_class),
                               ('CommonPrefixes', Prefix)],
                              '', headers, **params)
@@ -421,6 +477,18 @@ class Bucket(object):
             element in the CommonPrefixes collection. These rolled-up
             keys are not returned elsewhere in the response.
 
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
+
         :rtype: ResultSet
         :return: The result from S3 listing the keys requested
         """
@@ -440,7 +508,7 @@ class Bucket(object):
         """
         self.validate_kwarg_names(
                 params, ['maxkeys', 'max_keys', 'prefix', 'key_marker',
-                         'version_id_marker', 'delimiter'])
+                         'version_id_marker', 'delimiter', 'encoding_type'])
 
     def get_all_multipart_uploads(self, headers=None, **params):
         """
@@ -476,12 +544,24 @@ class Bucket(object):
             list only if they have an upload ID lexicographically
             greater than the specified upload_id_marker.
 
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
+
         :rtype: ResultSet
         :return: The result from S3 listing the uploads requested
 
         """
         self.validate_kwarg_names(params, ['max_uploads', 'key_marker',
-                                           'upload_id_marker'])
+                                           'upload_id_marker', 'encoding_type'])
         return self._get_all([('Upload', MultiPartUpload),
                               ('CommonPrefixes', Prefix)],
                              'uploads', headers, **params)
