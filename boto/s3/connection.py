@@ -27,6 +27,7 @@ import urllib
 import base64
 import time
 
+from boto.auth import detect_potential_s3sigv4
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
@@ -173,6 +174,7 @@ class S3Connection(AWSAuthConnection):
                 suppress_consec_slashes=suppress_consec_slashes,
                 validate_certs=validate_certs)
 
+    @detect_potential_s3sigv4
     def _required_auth_capability(self):
         if self.anon:
             return ['anon']
