@@ -219,7 +219,7 @@ class Key(S3Key):
             with the stored object in the response. See
             http://goo.gl/sMkcC for details.
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             if res_download_handler:
                 res_download_handler.get_file(self, fp, headers, cb, num_cb,
                                               torrent=torrent,
@@ -528,7 +528,7 @@ class Key(S3Key):
 
         if hasattr(fp, 'name'):
             self.path = fp.name
-        if self.bucket != None:
+        if self.bucket is not None:
             if isinstance(fp, KeyFile):
                 # Avoid EOF seek for KeyFile case as it's very inefficient.
                 key = fp.getkey()
@@ -552,12 +552,12 @@ class Key(S3Key):
                 fp.seek(spos)
                 size = self.size
 
-            if md5 == None:
+            if md5 is None:
                 md5 = self.compute_md5(fp, size)
             self.md5 = md5[0]
             self.base64md5 = md5[1]
 
-            if self.name == None:
+            if self.name is None:
                 self.name = self.md5
 
             if not replace:
@@ -792,7 +792,7 @@ class Key(S3Key):
             the acl will only be updated if its current metageneration number is
             this value.
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             self.bucket.set_acl(acl_or_str, self.name, headers=headers,
                                 generation=generation,
                                 if_generation=if_generation,
@@ -809,7 +809,7 @@ class Key(S3Key):
 
         :rtype: :class:`.gs.acl.ACL`
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.get_acl(self.name, headers=headers,
                                        generation=generation)
 
@@ -824,7 +824,7 @@ class Key(S3Key):
 
         :rtype: str
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.get_xml_acl(self.name, headers=headers,
                                            generation=generation)
 
@@ -852,7 +852,7 @@ class Key(S3Key):
             the acl will only be updated if its current metageneration number is
             this value.
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.set_xml_acl(acl_str, self.name, headers=headers,
                                            generation=generation,
                                            if_generation=if_generation,
@@ -883,7 +883,7 @@ class Key(S3Key):
             the acl will only be updated if its current metageneration number is
             this value.
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.set_canned_acl(
                 acl_str,
                 self.name,

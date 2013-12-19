@@ -324,7 +324,7 @@ class LoadBalancer(object):
                                                               listeners)
 
     def create_listener(self, inPort, outPort=None, proto="tcp"):
-        if outPort == None:
+        if outPort is None:
             outPort = inPort
         return self.create_listeners([(inPort, outPort, proto)])
 

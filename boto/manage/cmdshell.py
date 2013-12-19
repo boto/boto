@@ -182,7 +182,7 @@ class LocalClient(object):
         log_fp = StringIO.StringIO()
         process = subprocess.Popen(self.command, shell=True, stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        while process.poll() == None:
+        while process.poll() is None:
             time.sleep(1)
             t = process.communicate()
             log_fp.write(t[0])

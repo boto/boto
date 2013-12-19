@@ -1382,11 +1382,11 @@ class RDSConnection(AWSQueryConnection):
         :return: A list of :class:`boto.rds.dbsubnetgroup.DBSubnetGroup`
         """
         params = dict()
-        if name != None:
+        if name is not None:
             params['DBSubnetGroupName'] = name
-        if max_records != None:
+        if max_records is not None:
             params['MaxRecords'] = max_records
-        if marker != None:
+        if marker is not None:
             params['Marker'] = marker
 
         return self.get_list('DescribeDBSubnetGroups', params, [('DBSubnetGroup',DBSubnetGroup)])
@@ -1405,9 +1405,9 @@ class RDSConnection(AWSQueryConnection):
         :return: The newly created ParameterGroup
         """
         params = {'DBSubnetGroupName': name}
-        if description != None:
+        if description is not None:
             params['DBSubnetGroupDescription'] = description
-        if subnet_ids != None:
+        if subnet_ids is not None:
             self.build_list_params(params, subnet_ids, 'SubnetIds.member')
 
         return self.get_object('ModifyDBSubnetGroup', params, DBSubnetGroup)

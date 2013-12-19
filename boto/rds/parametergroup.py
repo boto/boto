@@ -175,7 +175,7 @@ class Parameter(object):
             raise TypeError('unknown type (%s)' % self.type)
 
     def get_value(self):
-        if self._value == None:
+        if self._value is None:
             return self._value
         if self.type == 'string':
             return self._value

@@ -102,13 +102,13 @@ class ResumableUploadHandler(object):
             # Ignore non-existent file (happens first time an upload
             # is attempted on a file), but warn user for other errors.
             if e.errno != errno.ENOENT:
-                # Will restart because self.tracker_uri == None.
+                # Will restart because self.tracker_uri is None.
                 print('Couldn\'t read URI tracker file (%s): %s. Restarting '
                       'upload from scratch.' %
                       (self.tracker_file_name, e.strerror))
         except InvalidUriError, e:
             # Warn user, but proceed (will restart because
-            # self.tracker_uri == None).
+            # self.tracker_uri is None).
             print('Invalid tracker URI (%s) found in URI tracker file '
                   '(%s). Restarting upload from scratch.' %
                   (uri, self.tracker_file_name))

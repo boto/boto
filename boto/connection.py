@@ -680,7 +680,7 @@ class AWSAuthConnection(object):
             self.proxy_port = self.port
 
         self.no_proxy = os.environ.get('no_proxy', '') or os.environ.get('NO_PROXY', '')
-        self.use_proxy = (self.proxy != None)
+        self.use_proxy = (self.proxy is not None)
 
     def get_http_connection(self, host, port, is_secure):
         conn = self._pool.get_http_connection(host, port, is_secure)
@@ -982,11 +982,11 @@ class AWSAuthConnection(object):
         path = self.get_path(path)
         if auth_path is not None:
             auth_path = self.get_path(auth_path)
-        if params == None:
+        if params is None:
             params = {}
         else:
             params = params.copy()
-        if headers == None:
+        if headers is None:
             headers = {}
         else:
             headers = headers.copy()

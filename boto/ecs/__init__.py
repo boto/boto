@@ -66,7 +66,7 @@ class ECSConnection(AWSQueryConnection):
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
 
-        if itemSet == None:
+        if itemSet is None:
             rs = ItemSet(self, action, params, page)
         else:
             rs = itemSet

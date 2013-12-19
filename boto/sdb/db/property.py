@@ -85,7 +85,7 @@ class Property(object):
         return self.default
 
     def validate(self, value):
-        if self.required and value == None:
+        if self.required and value is None:
             raise ValueError('%s is a required property' % self.name)
         if self.choices and value and not value in self.choices:
             raise ValueError('%s not a valid choice for %s.%s' % (value, self.model_class.__name__, self.name))
@@ -111,7 +111,7 @@ class Property(object):
 
 
 def validate_string(value):
-    if value == None:
+    if value is None:
         return
     elif isinstance(value, str) or isinstance(value, unicode):
         if len(value) > 1024:
@@ -328,7 +328,7 @@ class IntegerProperty(Property):
         return value is None
 
     def __set__(self, obj, value):
-        if value == "" or value == None:
+        if value == "" or value is None:
             value = 0
         return Property.__set__(self, obj, value)
 
@@ -408,7 +408,7 @@ class DateTimeProperty(Property):
         return Property.default_value(self)
 
     def validate(self, value):
-        if value == None:
+        if value is None:
             return
         if isinstance(value, datetime.date):
             return value
@@ -441,7 +441,7 @@ class DateProperty(Property):
 
     def validate(self, value):
         value = super(DateProperty, self).validate(value)
-        if value == None:
+        if value is None:
             return
         if not isinstance(value, self.data_type):
             raise TypeError('Validation Error, expecting %s, got %s' % (self.data_type, type(value)))
@@ -501,7 +501,7 @@ class ReferenceProperty(Property):
     def __set__(self, obj, value):
         """Don't allow this object to be associated to itself
         This causes bad things to happen"""
-        if value != None and (obj.id == value or (hasattr(value, "id") and obj.id == value.id)):
+        if value is not None and (obj.id == value or (hasattr(value, "id") and obj.id == value.id)):
             raise ValueError("Can not associate an object with itself!")
         return super(ReferenceProperty, self).__set__(obj, value)
 
@@ -533,7 +533,7 @@ class ReferenceProperty(Property):
     def validate(self, value):
         if self.validator:
             self.validator(value)
-        if self.required and value == None:
+        if self.required and value is None:
             raise ValueError('%s is a required property' % self.name)
         if value == self.default_value():
             return
@@ -658,7 +658,7 @@ class ListProperty(Property):
             item_type = self.item_type
         if isinstance(value, item_type):
             value = [value]
-        elif value == None:  # Override to allow them to set this to "None" to remove everything
+        elif value is None:  # Override to allow them to set this to "None" to remove everything
             value = []
         return super(ListProperty, self).__set__(obj, value)
 

@@ -257,7 +257,7 @@ class Key(object):
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
         """
-        if self.resp == None:
+        if self.resp is None:
             self.mode = 'r'
 
             provider = self.bucket.connection.provider
@@ -537,19 +537,19 @@ class Key(object):
 
     # convenience methods for setting/getting ACL
     def set_acl(self, acl_str, headers=None):
-        if self.bucket != None:
+        if self.bucket is not None:
             self.bucket.set_acl(acl_str, self.name, headers=headers)
 
     def get_acl(self, headers=None):
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.get_acl(self.name, headers=headers)
 
     def get_xml_acl(self, headers=None):
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.get_xml_acl(self.name, headers=headers)
 
     def set_xml_acl(self, acl_str, headers=None):
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.set_xml_acl(acl_str, self.name, headers=headers)
 
     def set_canned_acl(self, acl_str, headers=None):
@@ -881,7 +881,7 @@ class Key(object):
                     'Content-Type', headers)
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
-            if self.content_type == None:
+            if self.content_type is None:
                 self.content_type = self.DefaultContentType
             headers['Content-Type'] = self.content_type
         else:
@@ -1053,7 +1053,7 @@ class Key(object):
             if provider.storage_class_header:
                 headers[provider.storage_class_header] = self.storage_class
 
-        if self.bucket != None:
+        if self.bucket is not None:
             if not replace:
                 if self.bucket.lookup(self.name):
                     return
@@ -1187,7 +1187,7 @@ class Key(object):
                 # What if different providers provide different classes?
         if hasattr(fp, 'name'):
             self.path = fp.name
-        if self.bucket != None:
+        if self.bucket is not None:
             if not md5 and provider.supports_chunked_transfer():
                 # defer md5 calculation to on the fly and
                 # we don't know anything about size yet.
@@ -1226,7 +1226,7 @@ class Key(object):
                 self.md5 = md5[0]
                 self.base64md5 = md5[1]
 
-            if self.name == None:
+            if self.name is None:
                 self.name = self.md5
             if not replace:
                 if self.bucket.lookup(self.name):
@@ -1567,7 +1567,7 @@ class Key(object):
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             if res_download_handler:
                 res_download_handler.get_file(self, fp, headers, cb, num_cb,
                                               torrent=torrent,
@@ -1634,7 +1634,7 @@ class Key(object):
             os.remove(filename)
             raise
         # if last_modified date was sent from s3, try to set file's timestamp
-        if self.last_modified != None:
+        if self.last_modified is not None:
             try:
                 modified_tuple = rfc822.parsedate_tz(self.last_modified)
                 modified_stamp = int(rfc822.mktime_tz(modified_tuple))

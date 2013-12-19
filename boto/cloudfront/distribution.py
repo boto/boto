@@ -350,11 +350,11 @@ class Distribution(object):
                                         self.config.cnames, self.config.comment,
                                         self.config.trusted_signers,
                                         self.config.default_root_object)
-        if enabled != None:
+        if enabled is not None:
             new_config.enabled = enabled
-        if cnames != None:
+        if cnames is not None:
             new_config.cnames = cnames
-        if comment != None:
+        if comment is not None:
             new_config.comment = comment
         self.etag = self.connection.set_distribution_config(self.id, self.etag, new_config)
         self.config = new_config
@@ -729,11 +729,11 @@ class StreamingDistribution(Distribution):
                                                  self.config.cnames,
                                                  self.config.comment,
                                                  self.config.trusted_signers)
-        if enabled != None:
+        if enabled is not None:
             new_config.enabled = enabled
-        if cnames != None:
+        if cnames is not None:
             new_config.cnames = cnames
-        if comment != None:
+        if comment is not None:
             new_config.comment = comment
         self.etag = self.connection.set_streaming_distribution_config(self.id,
                                                                       self.etag,
