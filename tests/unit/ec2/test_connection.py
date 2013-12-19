@@ -1229,6 +1229,24 @@ class TestRegisterImage(TestEC2ConnectionBase):
             'Version'
         ])
 
+    def test_sriov_net_support_simple(self):
+        self.set_http_response(status_code=200)
+        self.ec2.register_image('name', 'description',
+                                image_location='s3://foo',
+                                sriov_net_support='simple')
+
+        self.assert_request_parameters({
+            'Action': 'RegisterImage',
+            'ImageLocation': 's3://foo',
+            'Name': 'name',
+            'Description': 'description',
+            'SriovNetSupport': 'simple'
+        }, ignore_params_values=[
+            'AWSAccessKeyId', 'SignatureMethod',
+            'SignatureVersion', 'Timestamp',
+            'Version'
+        ])
+
 
 class TestTerminateInstances(TestEC2ConnectionBase):
     def default_body(self):
