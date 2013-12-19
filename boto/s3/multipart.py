@@ -199,7 +199,8 @@ class MultiPartUpload(object):
         else:
             setattr(self, name, value)
 
-    def get_all_parts(self, max_parts=None, part_number_marker=None):
+    def get_all_parts(self, max_parts=None, part_number_marker=None,
+                      encoding_type=None):
         """
         Return the uploaded parts of this MultiPart Upload.  This is
         a lower-level method that requires you to manually page through
@@ -213,6 +214,8 @@ class MultiPartUpload(object):
             query_args += '&max-parts=%d' % max_parts
         if part_number_marker:
             query_args += '&part-number-marker=%s' % part_number_marker
+        if encoding_type:
+            query_args += '&encoding-type=%s' % encoding_type
         response = self.bucket.connection.make_request('GET', self.bucket.name,
                                                        self.key_name,
                                                        query_args=query_args)
