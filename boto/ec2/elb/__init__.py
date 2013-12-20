@@ -44,6 +44,7 @@ RegionData = {
     'ap-northeast-1': 'elasticloadbalancing.ap-northeast-1.amazonaws.com',
     'ap-southeast-1': 'elasticloadbalancing.ap-southeast-1.amazonaws.com',
     'ap-southeast-2': 'elasticloadbalancing.ap-southeast-2.amazonaws.com',
+    'cn-north-1': 'elasticloadbalancing.cn-north-1.amazonaws.com.cn',
 }
 
 

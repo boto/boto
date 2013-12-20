@@ -41,6 +41,7 @@ RegionData = {
     'ap-northeast-1': 'monitoring.ap-northeast-1.amazonaws.com',
     'ap-southeast-1': 'monitoring.ap-southeast-1.amazonaws.com',
     'ap-southeast-2': 'monitoring.ap-southeast-2.amazonaws.com',
+    'cn-north-1': 'monitoring.cn-north-1.amazonaws.com.cn',
 }
 
 
