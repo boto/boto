@@ -763,6 +763,11 @@ class EC2Connection(AWSQueryConnection):
             * cg1.4xlarge
             * cc2.8xlarge
             * g2.2xlarge
+            * c3.large
+            * c3.xlarge
+            * c3.2xlarge
+            * c3.4xlarge
+            * c3.8xlarge
             * i2.xlarge
             * i2.2xlarge
             * i2.4xlarge
@@ -1433,6 +1438,11 @@ class EC2Connection(AWSQueryConnection):
             * cg1.4xlarge
             * cc2.8xlarge
             * g2.2xlarge
+            * c3.large
+            * c3.xlarge
+            * c3.2xlarge
+            * c3.4xlarge
+            * c3.8xlarge
             * i2.xlarge
             * i2.2xlarge
             * i2.4xlarge
@@ -2738,7 +2748,7 @@ class EC2Connection(AWSQueryConnection):
 
     def import_key_pair(self, key_name, public_key_material, dry_run=False):
         """
-        mports the public key from an RSA key pair that you created
+        imports the public key from an RSA key pair that you created
         with a third-party tool.
 
         Supported formats:
