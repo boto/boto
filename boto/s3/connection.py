@@ -145,6 +145,7 @@ class Location(object):
     APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
     APSoutheast2 = 'ap-southeast-2'
+    CNNorth1 = 'cn-north-1'
 
 
 class S3Connection(AWSAuthConnection):

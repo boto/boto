@@ -55,6 +55,7 @@ RegionData = {
     'ap-northeast-1': 'autoscaling.ap-northeast-1.amazonaws.com',
     'ap-southeast-1': 'autoscaling.ap-southeast-1.amazonaws.com',
     'ap-southeast-2': 'autoscaling.ap-southeast-2.amazonaws.com',
+    'cn-north-1': 'autoscaling.cn-north-1.amazonaws.com.cn',
 }
 
 
