@@ -3,7 +3,18 @@ boto v2.21.0
 
 :date: 2013/12/19
 
-This release adds support for the latest AWS OpsWorks, AWS Elastic Beanstalk, Amazon DynamoDB, Amazon Elastic MapReduce (EMR), Amazon Simple Storage Service (S3), Amazon Elastic Transcoder, AWS CloudTrail, and AWS Support APIs. It also includes documentation and other fixes.
+This release adds support for the latest AWS OpsWorks, AWS Elastic Beanstalk,
+Amazon DynamoDB, Amazon Elastic MapReduce (EMR), Amazon Simple Storage Service
+(S3), Amazon Elastic Transcoder, AWS CloudTrail, and AWS Support APIs. It also
+includes documentation and other fixes.
+
+.. note::
+
+    Although Boto now includes support for the newly announced China (Beijing)
+    Region, the service endpoints will not be accessible until the Region’s
+    limited preview is launched in early 2014. To find out more about the new
+    Region and request a limited preview account, please visit
+    http://www.amazonaws.cn/.
 
 
 Features
