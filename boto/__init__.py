@@ -27,6 +27,7 @@
 from boto.pyami.config import Config, BotoConfigLocations
 from boto.storage_uri import BucketStorageUri, FileStorageUri
 import boto.plugin
+import datetime
 import os
 import platform
 import re
@@ -38,6 +39,9 @@ from boto.exception import InvalidUriError
 
 __version__ = '2.21.0'
 Version = __version__  # for backware compatibility
+
+# http://bugs.python.org/issue7980
+datetime.datetime.strptime('', '')
 
 UserAgent = 'Boto/%s Python/%s %s/%s' % (
     __version__,
