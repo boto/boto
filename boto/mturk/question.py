@@ -179,7 +179,7 @@ class Flash(Application):
         super(Flash, self).get_inner_content(content)
 
 
-class FormattedContent(object, XMLTemplate):
+class FormattedContent(XMLTemplate):
     schema_url = 'http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2006-07-14/FormattedContentXHTMLSubset.xsd'
     template = '<FormattedContent><![CDATA[%(content)s]]></FormattedContent>'
 
