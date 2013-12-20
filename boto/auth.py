@@ -109,7 +109,7 @@ class AnonAuthHandler(AuthHandler, HmacKeys):
     capability = ['anon']
 
     def __init__(self, host, config, provider):
-        AuthHandler.__init__(self, host, config, provider)
+        super(AnonAuthHandler, self).__init__(host, config, provider)
 
     def add_auth(self, http_request, **kwargs):
         pass

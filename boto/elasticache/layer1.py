@@ -55,7 +55,7 @@ class ElastiCacheConnection(AWSQueryConnection):
         else:
             del kwargs['region']
         kwargs['host'] = region.endpoint
-        AWSQueryConnection.__init__(self, **kwargs)
+        super(ElastiCacheConnection, self).__init__(**kwargs)
         self.region = region
 
 

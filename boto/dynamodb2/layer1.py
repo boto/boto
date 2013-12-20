@@ -75,7 +75,7 @@ class DynamoDBConnection(AWSQueryConnection):
         if 'host' not in kwargs:
             kwargs['host'] = region.endpoint
 
-        AWSQueryConnection.__init__(self, **kwargs)
+        super(DynamoDBConnection, self).__init__(**kwargs)
         self.region = region
         self._validate_checksums = boto.config.getbool(
             'DynamoDB', 'validate_checksums', validate_checksums)

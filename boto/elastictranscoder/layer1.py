@@ -55,7 +55,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         else:
             del kwargs['region']
         kwargs['host'] = region.endpoint
-        AWSAuthConnection.__init__(self, **kwargs)
+        super(ElasticTranscoderConnection, self).__init__(**kwargs)
         self.region = region
 
     def _required_auth_capability(self):
@@ -528,7 +528,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         The ListPipelines operation gets a list of the pipelines
         associated with the current AWS account.
 
-        
+
         """
         uri = '/2012-09-25/pipelines'
         return self.make_request('GET', uri, expected_status=200)
@@ -539,7 +539,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         included with Elastic Transcoder and the presets that you've
         added in an AWS region.
 
-        
+
         """
         uri = '/2012-09-25/presets'
         return self.make_request('GET', uri, expected_status=200)

@@ -166,7 +166,7 @@ class S3Connection(AWSAuthConnection):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         self.anon = anon
-        AWSAuthConnection.__init__(self, host,
+        super(S3Connection, self).__init__(host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                 debug=debug, https_connection_factory=https_connection_factory,

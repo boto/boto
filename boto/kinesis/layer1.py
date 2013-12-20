@@ -65,7 +65,7 @@ class KinesisConnection(AWSQueryConnection):
                                 self.DefaultRegionEndpoint)
         if 'host' not in kwargs:
             kwargs['host'] = region.endpoint
-        AWSQueryConnection.__init__(self, **kwargs)
+        super(KinesisConnection, self).__init__(**kwargs)
         self.region = region
 
     def _required_auth_capability(self):
