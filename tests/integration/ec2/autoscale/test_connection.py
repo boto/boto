@@ -53,47 +53,47 @@ class AutoscaleConnectionTest(unittest.TestCase):
 
         groups = c.get_all_groups()
         for group in groups:
-            self.assertTrue(type(group), AutoScalingGroup)
+            self.assertIsInstance(group, AutoScalingGroup)
 
             # get activities
             activities = group.get_activities()
 
             for activity in activities:
-                self.assertEqual(type(activity), Activity)
+                self.assertIsInstance(activity, Activity)
 
         # get launch configs
         configs = c.get_all_launch_configurations()
         for config in configs:
-            self.assertTrue(type(config), LaunchConfiguration)
+            self.assertIsInstance(config, LaunchConfiguration)
 
         # get policies
         policies = c.get_all_policies()
         for policy in policies:
-            self.assertTrue(type(policy), ScalingPolicy)
+            self.assertIsInstance(policy, ScalingPolicy)
 
         # get scheduled actions
         actions = c.get_all_scheduled_actions()
         for action in actions:
-            self.assertTrue(type(action), ScheduledUpdateGroupAction)
+            self.assertIsInstance(action, ScheduledUpdateGroupAction)
 
         # get instances
         instances = c.get_all_autoscaling_instances()
         for instance in instances:
-            self.assertTrue(type(instance), Instance)
+            self.assertIsInstance(instance, Instance)
 
         # get all scaling process types
         ptypes = c.get_all_scaling_process_types()
         for ptype in ptypes:
-            self.assertTrue(type(ptype), ProcessType)
+            self.assertTrue(ptype, ProcessType)
 
         # get adjustment types
         adjustments = c.get_all_adjustment_types()
         for adjustment in adjustments:
-            self.assertTrue(type(adjustment), AdjustmentType)
+            self.assertIsInstance(adjustment, AdjustmentType)
 
         # get metrics collection types
         types = c.get_all_metric_collection_types()
-        self.assertTrue(type(types), MetricCollectionTypes)
+        self.assertIsInstance(types, MetricCollectionTypes)
 
         # create the simplest possible AutoScale group
         # first create the launch configuration

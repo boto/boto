@@ -23,6 +23,7 @@ from tests.unit import unittest
 
 from boto.sqs.message import MHMessage
 from boto.sqs.message import RawMessage
+from boto.sqs.bigmessage import BigMessage
 from boto.exception import SQSDecodeError
 
 
@@ -62,5 +63,32 @@ class TestEncodeMessage(unittest.TestCase):
         self.assertEquals(message.id, sample_value)
         self.assertEquals(message.receipt_handle, sample_value)
 
+
+class TestBigMessage(unittest.TestCase):
+    
+    def test_s3url_parsing(self):
+        msg = BigMessage()
+        # Try just a bucket name
+        bucket, key = msg._get_bucket_key('s3://foo')
+        self.assertEquals(bucket, 'foo')
+        self.assertEquals(key, None)
+        # Try just a bucket name with trailing "/"
+        bucket, key = msg._get_bucket_key('s3://foo/')
+        self.assertEquals(bucket, 'foo')
+        self.assertEquals(key, None)
+        # Try a bucket and a key
+        bucket, key = msg._get_bucket_key('s3://foo/bar')
+        self.assertEquals(bucket, 'foo')
+        self.assertEquals(key, 'bar')
+        # Try a bucket and a key with "/"
+        bucket, key = msg._get_bucket_key('s3://foo/bar/fie/baz')
+        self.assertEquals(bucket, 'foo')
+        self.assertEquals(key, 'bar/fie/baz')
+        # Try it with no s3:// prefix
+        with self.assertRaises(SQSDecodeError) as context:
+            bucket, key = msg._get_bucket_key('foo/bar')
+
+
+        
 if __name__ == '__main__':
     unittest.main()

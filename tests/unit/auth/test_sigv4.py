@@ -19,10 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import copy
 from mock import Mock
 from tests.unit import unittest
 
 from boto.auth import HmacAuthV4Handler
+from boto.auth import S3HmacAuthV4Handler
 from boto.connection import HTTPRequest
 
 
@@ -208,3 +210,205 @@ class TestSigV4Handler(unittest.TestCase):
         auth.service_name = 'sqs'
         scope = auth.credential_scope(self.request)
         self.assertEqual(scope, '20121121/us-west-2/sqs/aws4_request')
+
+
+class TestS3HmacAuthV4Handler(unittest.TestCase):
+    def setUp(self):
+        self.provider = Mock()
+        self.provider.access_key = 'access_key'
+        self.provider.secret_key = 'secret_key'
+        self.provider.security_token = 'sekret_tokens'
+        self.request = HTTPRequest(
+            'GET', 'https', 's3-us-west-2.amazonaws.com', 443,
+            '/awesome-bucket/?max-keys=0', None, {},
+            {}, ''
+        )
+        self.awesome_bucket_request = HTTPRequest(
+            method='GET',
+            protocol='https',
+            host='awesome-bucket.s3-us-west-2.amazonaws.com',
+            port=443,
+            path='/',
+            auth_path=None,
+            params={
+                'max-keys': 0,
+            },
+            headers={
+                'User-Agent': 'Boto',
+                'X-AMZ-Content-sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+                'X-AMZ-Date': '20130605T193245Z',
+            },
+            body=''
+        )
+        self.auth = S3HmacAuthV4Handler(
+            host='awesome-bucket.s3-us-west-2.amazonaws.com',
+            config=Mock(),
+            provider=self.provider,
+            region_name='s3-us-west-2'
+        )
+
+    def test_clean_region_name(self):
+        # Untouched.
+        cleaned = self.auth.clean_region_name('us-west-2')
+        self.assertEqual(cleaned, 'us-west-2')
+
+        # Stripped of the ``s3-`` prefix.
+        cleaned = self.auth.clean_region_name('s3-us-west-2')
+        self.assertEqual(cleaned, 'us-west-2')
+
+        # Untouched (classic).
+        cleaned = self.auth.clean_region_name('s3.amazonaws.com')
+        self.assertEqual(cleaned, 's3.amazonaws.com')
+
+        # Untouched.
+        cleaned = self.auth.clean_region_name('something-s3-us-west-2')
+        self.assertEqual(cleaned, 'something-s3-us-west-2')
+
+    def test_region_stripping(self):
+        auth = S3HmacAuthV4Handler(
+            host='s3-us-west-2.amazonaws.com',
+            config=Mock(),
+            provider=self.provider
+        )
+        self.assertEqual(auth.region_name, None)
+
+        # What we wish we got.
+        auth = S3HmacAuthV4Handler(
+            host='s3-us-west-2.amazonaws.com',
+            config=Mock(),
+            provider=self.provider,
+            region_name='us-west-2'
+        )
+        self.assertEqual(auth.region_name, 'us-west-2')
+
+        # What we actually get (i.e. ``s3-us-west-2``).
+        self.assertEqual(self.auth.region_name, 'us-west-2')
+
+    def test_determine_region_name(self):
+        name = self.auth.determine_region_name('s3-us-west-2.amazonaws.com')
+        self.assertEqual(name, 'us-west-2')
+
+    def test_canonical_uri(self):
+        request = HTTPRequest(
+            'GET', 'https', 's3-us-west-2.amazonaws.com', 443,
+            'x/./././x .html', None, {},
+            {}, ''
+        )
+        canonical_uri = self.auth.canonical_uri(request)
+        # S3 doesn't canonicalize the way other SigV4 services do.
+        # This just urlencoded, no normalization of the path.
+        self.assertEqual(canonical_uri, 'x/./././x%20.html')
+
+    def test_determine_service_name(self):
+        # What we wish we got.
+        name = self.auth.determine_service_name(
+            's3.us-west-2.amazonaws.com'
+        )
+        self.assertEqual(name, 's3')
+
+        # What we actually get.
+        name = self.auth.determine_service_name(
+            's3-us-west-2.amazonaws.com'
+        )
+        self.assertEqual(name, 's3')
+
+        # What we wish we got with virtual hosting.
+        name = self.auth.determine_service_name(
+            'bucket.s3.us-west-2.amazonaws.com'
+        )
+        self.assertEqual(name, 's3')
+
+        # What we actually get with virtual hosting.
+        name = self.auth.determine_service_name(
+            'bucket.s3-us-west-2.amazonaws.com'
+        )
+        self.assertEqual(name, 's3')
+
+    def test_add_auth(self):
+        # The side-effects sideshow.
+        self.assertFalse('x-amz-content-sha256' in self.request.headers)
+        self.auth.add_auth(self.request)
+        self.assertTrue('x-amz-content-sha256' in self.request.headers)
+        the_sha = self.request.headers['x-amz-content-sha256']
+        self.assertEqual(
+            the_sha,
+            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+        )
+
+    def test_host_header(self):
+        host = self.auth.host_header(
+            self.awesome_bucket_request.host,
+            self.awesome_bucket_request
+        )
+        self.assertEqual(host, 'awesome-bucket.s3-us-west-2.amazonaws.com')
+
+    def test_canonical_query_string(self):
+        qs = self.auth.canonical_query_string(self.awesome_bucket_request)
+        self.assertEqual(qs, 'max-keys=0')
+
+    def test_mangle_path_and_params(self):
+        request = HTTPRequest(
+            method='GET',
+            protocol='https',
+            host='awesome-bucket.s3-us-west-2.amazonaws.com',
+            port=443,
+            # LOOK AT THIS PATH. JUST LOOK AT IT.
+            path='/?delete&max-keys=0',
+            auth_path=None,
+            params={
+                'key': 'why hello there',
+                # This gets overwritten, to make sure back-compat is maintained.
+                'max-keys': 1,
+            },
+            headers={
+                'User-Agent': 'Boto',
+                'X-AMZ-Content-sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+                'X-AMZ-Date': '20130605T193245Z',
+            },
+            body=''
+        )
+
+        mod_req = self.auth.mangle_path_and_params(request)
+        self.assertEqual(mod_req.path, '/?delete&max-keys=0')
+        self.assertEqual(mod_req.auth_path, '/')
+        self.assertEqual(mod_req.params, {
+            'max-keys': '0',
+            'key': 'why hello there',
+            'delete': ''
+        })
+
+    def test_canonical_request(self):
+        expected = """GET
+/
+max-keys=0
+host:awesome-bucket.s3-us-west-2.amazonaws.com
+user-agent:Boto
+x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+x-amz-date:20130605T193245Z
+
+host;user-agent;x-amz-content-sha256;x-amz-date
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
+
+        authed_req = self.auth.canonical_request(self.awesome_bucket_request)
+        self.assertEqual(authed_req, expected)
+
+        # Now the way ``boto.s3`` actually sends data.
+        request = copy.copy(self.awesome_bucket_request)
+        request.path = request.auth_path = '/?max-keys=0'
+        request.params = {}
+        expected = """GET
+/
+max-keys=0
+host:awesome-bucket.s3-us-west-2.amazonaws.com
+user-agent:Boto
+x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+x-amz-date:20130605T193245Z
+
+host;user-agent;x-amz-content-sha256;x-amz-date
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
+
+        # Pre-mangle it. In practice, this happens as part of ``add_auth``,
+        # but that's a side-effect that's hard to test.
+        request = self.auth.mangle_path_and_params(request)
+        authed_req = self.auth.canonical_request(request)
+        self.assertEqual(authed_req, expected)

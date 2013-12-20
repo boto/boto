@@ -1,4 +1,4 @@
-# Copyright (c) 2008 Chris Moyer http://coredumped.org/
+# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -18,38 +18,33 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+#
+from tests.unit import unittest
+from tests.unit import AWSMockServiceTestCase
 
-class LayoutParameters(object):
+from boto.s3.connection import S3Connection
 
-    def __init__(self, layoutParameters=None):
-        if layoutParameters == None:
-            layoutParameters = []
-        self.layoutParameters = layoutParameters
 
-    def add(self, req):
-        self.layoutParameters.append(req)
+class TestSignatureAlteration(AWSMockServiceTestCase):
+    connection_class = S3Connection
 
-    def get_as_params(self):
-        params = {}
-        assert(len(self.layoutParameters) <= 25)
-        for n, layoutParameter in enumerate(self.layoutParameters):
-            kv = layoutParameter.get_as_params()
-            for key in kv:
-                params['HITLayoutParameter.%s.%s' % ((n+1), key) ] = kv[key]
-        return params
+    def test_unchanged(self):
+        self.assertEqual(
+            self.service_connection._required_auth_capability(),
+            ['s3']
+        )
 
-class LayoutParameter(object):
-    """
-    Representation of a single HIT layout parameter
-    """
+    def test_switched(self):
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more',
+            host='s3.cn-north-1.amazonaws.com.cn'
+        )
+        self.assertEqual(
+            conn._required_auth_capability(),
+            ['hmac-v4-s3']
+        )
 
-    def __init__(self, name, value):
-        self.name = name
-        self.value = value
 
-    def get_as_params(self):
-        params =  {
-            "Name": self.name,
-            "Value": self.value,
-        }
-        return params
+if __name__ == "__main__":
+    unittest.main()

@@ -606,8 +606,7 @@ class Instance(TaggedEC2Object):
         )
 
 
-class ConsoleOutput:
-
+class ConsoleOutput(object):
     def __init__(self, parent=None):
         self.parent = parent
         self.instance_id = None
@@ -629,7 +628,6 @@ class ConsoleOutput:
 
 
 class InstanceAttribute(dict):
-
     ValidValues = ['instanceType', 'kernel', 'ramdisk', 'userData',
                    'disableApiTermination',
                    'instanceInitiatedShutdownBehavior',
@@ -668,7 +666,6 @@ class InstanceAttribute(dict):
 
 
 class SubParse(dict):
-
     def __init__(self, section, parent=None):
         dict.__init__(self)
         self.section = section

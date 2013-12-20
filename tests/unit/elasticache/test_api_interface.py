@@ -15,6 +15,6 @@ class TestAPIInterface(AWSMockServiceTestCase):
             'Action': 'CreateCacheCluster',
             'CacheClusterId': name,
         }, ignore_params_values=[
-            'Version', 'AWSAccessKeyId', 'SignatureMethod', 'SignatureVersion',
-            'Timestamp', 'ContentType',
+            'Version',
+            'ContentType',
         ])

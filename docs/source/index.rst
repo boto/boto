@@ -24,6 +24,7 @@ Currently Supported Services
   * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
   * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
   * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
+  * Kinesis -- (:doc:`API Reference <ref/kinesis>`)
 
 * **Content Delivery**
 
@@ -115,6 +116,7 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.21.0
    releasenotes/v2.20.1
    releasenotes/v2.20.0
    releasenotes/v2.19.0

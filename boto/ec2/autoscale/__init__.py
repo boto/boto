@@ -163,7 +163,7 @@ class AutoScaleConnection(AWSQueryConnection):
         # get availability zone information (required param)
         zones = as_group.availability_zones
         self.build_list_params(params, zones, 'AvailabilityZones')
-        if as_group.desired_capacity:
+        if as_group.desired_capacity is not None:
             params['DesiredCapacity'] = as_group.desired_capacity
         if as_group.vpc_zone_identifier:
             params['VPCZoneIdentifier'] = as_group.vpc_zone_identifier
