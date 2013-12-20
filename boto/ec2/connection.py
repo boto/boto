@@ -2740,7 +2740,7 @@ class EC2Connection(AWSQueryConnection):
 
     def import_key_pair(self, key_name, public_key_material, dry_run=False):
         """
-        mports the public key from an RSA key pair that you created
+        imports the public key from an RSA key pair that you created
         with a third-party tool.
 
         Supported formats:
