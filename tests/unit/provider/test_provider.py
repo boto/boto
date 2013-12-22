@@ -71,6 +71,15 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.secret_key, 'env_secret_key')
         self.assertIsNone(p.security_token)
 
+    def test_environment_variable_aws_security_token(self):
+        self.environ['AWS_ACCESS_KEY_ID'] = 'env_access_key'
+        self.environ['AWS_SECRET_ACCESS_KEY'] = 'env_secret_key'
+        self.environ['AWS_SECURITY_TOKEN'] = 'env_security_token'
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'env_access_key')
+        self.assertEqual(p.secret_key, 'env_secret_key')
+        self.assertEqual(p.security_token, 'env_security_token')
+
     def test_config_values_are_used(self):
         self.config = {
             'Credentials': {
@@ -82,6 +91,19 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.access_key, 'cfg_access_key')
         self.assertEqual(p.secret_key, 'cfg_secret_key')
         self.assertIsNone(p.security_token)
+
+    def test_config_value_security_token_is_used(self):
+        self.config = {
+            'Credentials': {
+                'aws_access_key_id': 'cfg_access_key',
+                'aws_secret_access_key': 'cfg_secret_key',
+                'aws_security_token': 'cfg_security_token',
+            }
+        }
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'cfg_access_key')
+        self.assertEqual(p.secret_key, 'cfg_secret_key')
+        self.assertEqual(p.security_token, 'cfg_security_token')
 
     def test_keyring_is_used(self):
         self.config = {
@@ -123,6 +145,22 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.access_key, 'env_access_key')
         self.assertEqual(p.secret_key, 'env_secret_key')
         self.assertIsNone(p.security_token)
+
+    def test_env_vars_security_token_beats_config_values(self):
+        self.environ['AWS_ACCESS_KEY_ID'] = 'env_access_key'
+        self.environ['AWS_SECRET_ACCESS_KEY'] = 'env_secret_key'
+        self.environ['AWS_SECURITY_TOKEN'] = 'env_security_token'
+        self.config = {
+            'Credentials': {
+                'aws_access_key_id': 'cfg_access_key',
+                'aws_secret_access_key': 'cfg_secret_key',
+                'aws_security_token': 'cfg_security_token',
+            }
+        }
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'env_access_key')
+        self.assertEqual(p.secret_key, 'env_secret_key')
+        self.assertEqual(p.security_token, 'env_security_token')
 
     def test_metadata_server_credentials(self):
         self.get_instance_metadata.return_value = INSTANCE_CONFIG

@@ -68,8 +68,10 @@ STORAGE_RESPONSE_ERROR = 'StorageResponseError'
 class Provider(object):
 
     CredentialMap = {
-        'aws':    ('aws_access_key_id', 'aws_secret_access_key'),
-        'google': ('gs_access_key_id',  'gs_secret_access_key'),
+        'aws':    ('aws_access_key_id', 'aws_secret_access_key',
+                   'aws_security_token'),
+        'google': ('gs_access_key_id',  'gs_secret_access_key',
+                   None),
     }
 
     AclClassMap = {
@@ -176,7 +178,7 @@ class Provider(object):
         self.acl_class = self.AclClassMap[self.name]
         self.canned_acls = self.CannedAclsMap[self.name]
         self._credential_expiry_time = None
-        self.get_credentials(access_key, secret_key)
+        self.get_credentials(access_key, secret_key, security_token)
         self.configure_headers()
         self.configure_errors()
         # Allow config file to override default host and port.
@@ -239,8 +241,9 @@ class Provider(object):
             else:
                 return False
 
-    def get_credentials(self, access_key=None, secret_key=None):
-        access_key_name, secret_key_name = self.CredentialMap[self.name]
+    def get_credentials(self, access_key=None, secret_key=None,
+                        security_token=None):
+        access_key_name, secret_key_name, security_token_name = self.CredentialMap[self.name]
         if access_key is not None:
             self.access_key = access_key
             boto.log.debug("Using access key provided by client.")
@@ -272,6 +275,19 @@ class Provider(object):
             self.secret_key = keyring.get_password(
                 keyring_name, self.access_key)
             boto.log.debug("Using secret key found in keyring.")
+
+        if security_token is not None:
+            self.security_token = security_token
+            boto.log.debug("Using security token provided by client.")
+        elif security_token_name is not None:
+            if security_token_name.upper() in os.environ:
+                self.security_token = os.environ[security_token_name.upper()]
+                boto.log.debug("Using security token found in environment"
+                               " variable.")
+            elif config.has_option('Credentials', security_token_name):
+                self.security_token = config.get('Credentials',
+                                                 security_token_name)
+                boto.log.debug("Using security token found in config file.")
 
         if ((self._access_key is None or self._secret_key is None) and
                 self.MetadataServiceSupport[self.name]):
