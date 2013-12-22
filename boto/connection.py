@@ -434,6 +434,10 @@ class AWSAuthConnection(object):
         :keyword str aws_secret_access_key: Your AWS Secret Access Key
             (provided by Amazon). If none is specified, the value in your
             ``AWS_SECRET_ACCESS_KEY`` environmental variable is used.
+        :keyword str security_token: The security token associated with
+            temporary credentials issued by STS.  Optional unless using
+            temporary credentials.  If none is specified, the environment
+            variable ``AWS_SECURITY_TOKEN`` is used if defined.
 
         :type is_secure: boolean
         :param is_secure: Whether the connection is over SSL
