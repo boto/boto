@@ -55,7 +55,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         else:
             del kwargs['region']
         kwargs['host'] = region.endpoint
-        AWSAuthConnection.__init__(self, **kwargs)
+        super(ElasticTranscoderConnection, self).__init__(**kwargs)
         self.region = region
 
     def _required_auth_capability(self):
@@ -921,8 +921,8 @@ class ElasticTranscoderConnection(AWSAuthConnection):
                      expected_status=None, params=None):
         if headers is None:
             headers = {}
-        response = AWSAuthConnection.make_request(
-            self, verb, resource, headers=headers, data=data)
+        response = super(ElasticTranscoderConnection, self).make_request(
+            verb, resource, headers=headers, data=data)
         body = json.load(response)
         if response.status == expected_status:
             return body

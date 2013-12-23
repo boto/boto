@@ -179,7 +179,7 @@ class MHMessage(Message):
     def __init__(self, queue=None, body=None, xml_attrs=None):
         if body == None or body == '':
             body = {}
-        Message.__init__(self, queue, body)
+        super(MHMessage, self).__init__(queue, body)
 
     def decode(self, value):
         try:
@@ -251,9 +251,9 @@ class EncodedMHMessage(MHMessage):
             value = base64.b64decode(value)
         except:
             raise SQSDecodeError('Unable to decode message', self)
-        return MHMessage.decode(self, value)
+        return super(EncodedMHMessage, self).decode(value)
 
     def encode(self, value):
-        value = MHMessage.encode(self, value)
+        value = super(EncodedMHMessage, self).encode(value)
         return base64.b64encode(value)
 

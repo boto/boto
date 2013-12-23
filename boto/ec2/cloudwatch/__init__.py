@@ -108,7 +108,7 @@ class CloudWatchConnection(AWSQueryConnection):
         if self.region.name == 'eu-west-1':
             validate_certs = False
 
-        AWSQueryConnection.__init__(self, aws_access_key_id,
+        super(CloudWatchConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,

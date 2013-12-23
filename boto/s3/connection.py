@@ -167,7 +167,7 @@ class S3Connection(AWSAuthConnection):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         self.anon = anon
-        AWSAuthConnection.__init__(self, host,
+        super(S3Connection, self).__init__(host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                 debug=debug, https_connection_factory=https_connection_factory,
@@ -543,8 +543,8 @@ class S3Connection(AWSAuthConnection):
             boto.log.debug('path=%s' % path)
             auth_path += '?' + query_args
             boto.log.debug('auth_path=%s' % auth_path)
-        return AWSAuthConnection.make_request(
-            self, method, path, headers,
+        return super(S3Connection, self).make_request(
+            method, path, headers,
             data, host, auth_path, sender,
             override_num_retries=override_num_retries,
             retry_handler=retry_handler

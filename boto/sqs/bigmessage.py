@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -55,7 +55,7 @@ class BigMessage(RawMessage):
 
     def __init__(self, queue=None, body=None, s3_url=None):
         self.s3_url = s3_url
-        RawMessage.__init__(self, queue, body)
+        super(BigMessage, self).__init__(queue, body)
 
     def _get_bucket_key(self, s3_url):
         bucket_name = key_name = None
@@ -115,5 +115,5 @@ class BigMessage(RawMessage):
         if self.s3_url:
             key = self._get_s3_object(self.s3_url)
             key.delete()
-        RawMessage.delete(self)
-                
+        super(BigMessage, self).delete()
+

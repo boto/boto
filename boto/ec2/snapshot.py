@@ -31,7 +31,7 @@ class Snapshot(TaggedEC2Object):
     AttrName = 'createVolumePermission'
 
     def __init__(self, connection=None):
-        TaggedEC2Object.__init__(self, connection)
+        super(Snapshot, self).__init__(connection)
         self.id = None
         self.volume_id = None
         self.status = None

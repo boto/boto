@@ -888,7 +888,7 @@ class AWSAuthConnection(object):
                 # not include the port.
                 if 's3' not in self._required_auth_capability():
                     self.set_host_header(request)
-                    
+
                 if callable(sender):
                     response = sender(connection, request.method, request.path,
                                       request.body, request.headers)
@@ -1034,7 +1034,7 @@ class AWSQueryConnection(AWSAuthConnection):
                  proxy_user=None, proxy_pass=None, host=None, debug=0,
                  https_connection_factory=None, path='/', security_token=None,
                  validate_certs=True):
-        AWSAuthConnection.__init__(self, host, aws_access_key_id,
+        super(AWSQueryConnection, self).__init__(host, aws_access_key_id,
                                    aws_secret_access_key,
                                    is_secure, port, proxy,
                                    proxy_port, proxy_user, proxy_pass,

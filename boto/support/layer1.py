@@ -108,7 +108,7 @@ class SupportConnection(AWSQueryConnection):
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         kwargs['host'] = region.endpoint
-        AWSQueryConnection.__init__(self, **kwargs)
+        super(SupportConnection, self).__init__(**kwargs)
         self.region = region
 
     def _required_auth_capability(self):

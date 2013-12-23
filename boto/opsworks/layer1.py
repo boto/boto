@@ -96,7 +96,7 @@ class OpsWorksConnection(AWSQueryConnection):
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         kwargs['host'] = region.endpoint
-        AWSQueryConnection.__init__(self, **kwargs)
+        super(OpsWorksConnection, self).__init__(**kwargs)
         self.region = region
 
     def _required_auth_capability(self):
@@ -1437,7 +1437,7 @@ class OpsWorksConnection(AWSQueryConnection):
         explicitly grants permissions. For more information on user
         permissions, see `Managing User Permissions`_.
 
-        
+
         """
         params = {}
         return self.make_request(action='DescribeMyUserProfile',

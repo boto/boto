@@ -600,7 +600,7 @@ class AuthSMTPHandler(logging.handlers.SMTPHandler):
         We have extended the constructor to accept a username/password
         for SMTP authentication.
         """
-        logging.handlers.SMTPHandler.__init__(self, mailhost, fromaddr,
+        super(AuthSMTPHandler, self).__init__(mailhost, fromaddr,
                                               toaddrs, subject)
         self.username = username
         self.password = password

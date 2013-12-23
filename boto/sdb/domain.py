@@ -364,7 +364,7 @@ class UploaderThread(Thread):
     def __init__(self, domain):
         self.db = domain
         self.items = {}
-        Thread.__init__(self)
+        super(UploaderThread, self).__init__()
 
     def run(self):
         try:
