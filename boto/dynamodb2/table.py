@@ -755,7 +755,7 @@ class Table(object):
         return filters
 
     def query(self, limit=None, index=None, reverse=False, consistent=False,
-              attributes=None, **filter_kwargs):
+              attributes=None, max_page_size=None, **filter_kwargs):
         """
         Queries for a set of matching items in a DynamoDB table.
 
@@ -789,6 +789,12 @@ class Table(object):
         tuple. If you provide any attributes only these will be fetched
         from DynamoDB. This uses the ``AttributesToGet`` and set's
         ``Select`` to ``SPECIFIC_ATTRIBUTES`` API.
+
+        Optionally accepts a ``max_page_size`` parameter, which should be an
+        integer count of the maximum number of items to retrieve
+        **per-request**. This is useful in making faster requests & prevent
+        the scan from drowning out other queries. (Default: ``None`` -
+        fetch as many as DynamoDB will return)
 
         Returns a ``ResultSet``, which transparently handles the pagination of
         results you get back.
@@ -840,7 +846,9 @@ class Table(object):
         else:
             select = None
 
-        results = ResultSet()
+        results = ResultSet(
+            max_page_size=max_page_size
+        )
         kwargs = filter_kwargs.copy()
         kwargs.update({
             'limit': limit,
@@ -848,7 +856,7 @@ class Table(object):
             'reverse': reverse,
             'consistent': consistent,
             'select': select,
-            'attributes_to_get': attributes
+            'attributes_to_get': attributes,
         })
         results.to_call(self._query, **kwargs)
         return results
@@ -961,7 +969,7 @@ class Table(object):
         }
 
     def scan(self, limit=None, segment=None, total_segments=None,
-             **filter_kwargs):
+             max_page_size=None, **filter_kwargs):
         """
         Scans across all items within a DynamoDB table.
 
@@ -976,6 +984,21 @@ class Table(object):
         Optionally accepts a ``limit`` parameter, which should be an integer
         count of the total number of items to return. (Default: ``None`` -
         all results)
+
+        Optionally accepts a ``segment`` parameter, which should be an integer
+        of the segment to retrieve on. Please see the documentation about
+        Parallel Scans (Default: ``None`` - no segments)
+
+        Optionally accepts a ``total_segments`` parameter, which should be an
+        integer count of number of segments to divide the table into.
+        Please see the documentation about Parallel Scans (Default: ``None`` -
+        no segments)
+
+        Optionally accepts a ``max_page_size`` parameter, which should be an
+        integer count of the maximum number of items to retrieve
+        **per-request**. This is useful in making faster requests & prevent
+        the scan from drowning out other queries. (Default: ``None`` -
+        fetch as many as DynamoDB will return)
 
         Returns a ``ResultSet``, which transparently handles the pagination of
         results you get back.
@@ -1003,7 +1026,9 @@ class Table(object):
             'Alice'
 
         """
-        results = ResultSet()
+        results = ResultSet(
+            max_page_size=max_page_size
+        )
         kwargs = filter_kwargs.copy()
         kwargs.update({
             'limit': limit,

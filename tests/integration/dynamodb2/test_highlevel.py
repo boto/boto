@@ -25,6 +25,7 @@ Tests for DynamoDB v2 high-level abstractions.
 """
 from __future__ import with_statement
 
+import os
 import time
 
 from tests.unit import unittest
@@ -34,6 +35,11 @@ from boto.dynamodb2.fields import (HashKey, RangeKey, KeysOnlyIndex,
 from boto.dynamodb2.items import Item
 from boto.dynamodb2.table import Table
 from boto.dynamodb2.types import NUMBER
+
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 
 class DynamoDBv2Test(unittest.TestCase):
@@ -380,3 +386,48 @@ class DynamoDBv2Test(unittest.TestCase):
 
         # Wait again for the changes to finish propagating.
         time.sleep(120)
+
+    def test_query_with_limits(self):
+        # Per the DDB team, it's recommended to do many smaller gets with a
+        # reduced page size.
+        # Clamp down the page size while ensuring that the correct number of
+        # results are still returned.
+        posts = Table.create('posts', schema=[
+            HashKey('thread'),
+            RangeKey('posted_on')
+        ], throughput={
+            'read': 5,
+            'write': 5,
+        })
+        self.addCleanup(posts.delete)
+
+        # Wait for it.
+        time.sleep(60)
+
+        # Add some data.
+        test_data_path = os.path.join(
+            os.path.dirname(__file__),
+            'forum_test_data.json'
+        )
+        with open(test_data_path, 'r') as test_data:
+            data = json.load(test_data)
+
+            with posts.batch_write() as batch:
+                for post in data:
+                    batch.put_item(post)
+
+        time.sleep(5)
+
+        # Test the reduced page size.
+        results = posts.query(
+            thread__eq='Favorite chiptune band?',
+            posted_on__gte='2013-12-24T00:00:00',
+            max_page_size=2
+        )
+
+        all_posts = list(results)
+        self.assertEqual(
+            [post['posted_by'] for post in all_posts],
+            ['joe', 'jane', 'joe', 'joe', 'jane', 'joe']
+        )
+        self.assertEqual(results._fetches, 3)

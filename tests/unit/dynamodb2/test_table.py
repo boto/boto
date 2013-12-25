@@ -874,20 +874,20 @@ class ResultSetTestCase(unittest.TestCase):
         self.assertEqual(self.results.next(), 'Hello john #2')
         self.assertEqual(self.results.next(), 'Hello john #3')
         self.assertEqual(self.results.next(), 'Hello john #4')
-        self.assertEqual(self.results.call_kwargs['limit'], 15)
+        self.assertEqual(self.results._limit, 15)
         # Second page.
         self.assertEqual(self.results.next(), 'Hello john #5')
         self.assertEqual(self.results.next(), 'Hello john #6')
         self.assertEqual(self.results.next(), 'Hello john #7')
         self.assertEqual(self.results.next(), 'Hello john #8')
         self.assertEqual(self.results.next(), 'Hello john #9')
-        self.assertEqual(self.results.call_kwargs['limit'], 10)
+        self.assertEqual(self.results._limit, 10)
         # Third page.
         self.assertEqual(self.results.next(), 'Hello john #10')
         self.assertEqual(self.results.next(), 'Hello john #11')
         self.assertEqual(self.results.next(), 'Hello john #12')
         self.assertRaises(StopIteration, self.results.next)
-        self.assertEqual(self.results.call_kwargs['limit'], 7)
+        self.assertEqual(self.results._limit, 7)
 
     def test_limit_smaller_than_first_page(self):
         results = ResultSet()
