@@ -118,7 +118,7 @@ class SSHClient(object):
     def run(self, command):
         """
         Execute a command on the remote host.  Return a tuple containing
-        an integer status and a two strings, the first containing stdout
+        an integer status and two strings, the first containing stdout
         and the second containing stderr from the command.
         """
         boto.log.debug('running:%s on %s' % (command, self.server.instance_id))
