@@ -42,6 +42,14 @@ class SSHClient(object):
         self._pkey = paramiko.RSAKey.from_private_key_file(server.ssh_key_file,
                                                            password=ssh_pwd)
         self._ssh_client = paramiko.SSHClient()
+
+        # This prevents an AttributeError in paramiko 1.12.0 (and probably
+        # other versions).
+        # https://github.com/paramiko/paramiko/pull/176
+        # https://github.com/paramiko/paramiko/pull/214
+        # https://github.com/paramiko/paramiko/issues/220
+        self._ssh_client.known_hosts = None
+
         self._ssh_client.load_system_host_keys()
         self._ssh_client.load_host_keys(os.path.expanduser(host_key_file))
         self._ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
