@@ -162,7 +162,7 @@ class S3Connection(AWSAuthConnection):
                  provider='aws', bucket_class=Bucket, security_token=None,
                  suppress_consec_slashes=True, anon=False,
                  validate_certs=None):
-        if isinstance(calling_format, str):
+        if isinstance(calling_format, basestring):
             calling_format=boto.utils.find_class(calling_format)()
         self.calling_format = calling_format
         self.bucket_class = bucket_class
