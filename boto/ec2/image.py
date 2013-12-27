@@ -47,7 +47,7 @@ class Image(TaggedEC2Object):
     """
 
     def __init__(self, connection=None):
-        TaggedEC2Object.__init__(self, connection)
+        super(Image, self).__init__(connection)
         self.id = None
         self.location = None
         self.state = None
@@ -70,12 +70,13 @@ class Image(TaggedEC2Object):
         self.virtualization_type = None
         self.hypervisor = None
         self.instance_lifecycle = None
+        self.sriov_net_support = None
 
     def __repr__(self):
         return 'Image:%s' % self.id
 
     def startElement(self, name, attrs, connection):
-        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        retval = super(Image, self).startElement(name, attrs, connection)
         if retval is not None:
             return retval
         if name == 'blockDeviceMapping':
@@ -136,6 +137,8 @@ class Image(TaggedEC2Object):
             self.hypervisor = value
         elif name == 'instanceLifecycle':
             self.instance_lifecycle = value
+        elif name == 'sriovNetSupport':
+            self.sriov_net_support = value
         else:
             setattr(self, name, value)
 
@@ -219,6 +222,11 @@ class Image(TaggedEC2Object):
             * cg1.4xlarge
             * cc2.8xlarge
             * g2.2xlarge
+            * c3.large
+            * c3.xlarge
+            * c3.2xlarge
+            * c3.4xlarge
+            * c3.8xlarge
             * i2.xlarge
             * i2.2xlarge
             * i2.4xlarge

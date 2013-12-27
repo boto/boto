@@ -39,7 +39,6 @@ class VolumeTests(unittest.TestCase):
         volume = Volume()
         volume.startElement("some name", "some attrs", None)
         startElement.assert_called_with(
-            volume,
             "some name",
             "some attrs",
             None

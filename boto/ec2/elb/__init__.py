@@ -44,6 +44,7 @@ RegionData = {
     'ap-northeast-1': 'elasticloadbalancing.ap-northeast-1.amazonaws.com',
     'ap-southeast-1': 'elasticloadbalancing.ap-southeast-1.amazonaws.com',
     'ap-southeast-2': 'elasticloadbalancing.ap-southeast-2.amazonaws.com',
+    'cn-north-1': 'elasticloadbalancing.cn-north-1.amazonaws.com.cn',
 }
 
 
@@ -102,7 +103,7 @@ class ELBConnection(AWSQueryConnection):
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id,
+        super(ELBConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,

@@ -26,6 +26,18 @@ from boto.sts.connection import STSConnection
 from tests.unit import AWSMockServiceTestCase
 
 
+class TestSecurityToken(AWSMockServiceTestCase):
+    connection_class = STSConnection
+
+    def create_service_connection(self, **kwargs):
+        kwargs['security_token'] = 'token'
+
+        return super(TestSecurityToken, self).create_service_connection(**kwargs)
+
+    def test_security_token(self):
+        self.assertEqual('token',
+                         self.service_connection.provider.security_token)
+
 class TestSTSConnection(AWSMockServiceTestCase):
     connection_class = STSConnection
 

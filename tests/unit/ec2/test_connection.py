@@ -1229,6 +1229,24 @@ class TestRegisterImage(TestEC2ConnectionBase):
             'Version'
         ])
 
+    def test_sriov_net_support_simple(self):
+        self.set_http_response(status_code=200)
+        self.ec2.register_image('name', 'description',
+                                image_location='s3://foo',
+                                sriov_net_support='simple')
+
+        self.assert_request_parameters({
+            'Action': 'RegisterImage',
+            'ImageLocation': 's3://foo',
+            'Name': 'name',
+            'Description': 'description',
+            'SriovNetSupport': 'simple'
+        }, ignore_params_values=[
+            'AWSAccessKeyId', 'SignatureMethod',
+            'SignatureVersion', 'Timestamp',
+            'Version'
+        ])
+
 
 class TestTerminateInstances(TestEC2ConnectionBase):
     def default_body(self):
@@ -1311,6 +1329,30 @@ class TestDescribeTags(TestEC2ConnectionBase):
              ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                    'SignatureVersion', 'Timestamp', 'Version'])
 
+
+class TestSignatureAlteration(TestEC2ConnectionBase):
+    def test_unchanged(self):
+        self.assertEqual(
+            self.service_connection._required_auth_capability(),
+            ['ec2']
+        )
+
+    def test_switched(self):
+        region = RegionInfo(
+            name='cn-north-1',
+            endpoint='ec2.cn-north-1.amazonaws.com.cn',
+            connection_cls=EC2Connection
+        )
+
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more',
+            region=region
+        )
+        self.assertEqual(
+            conn._required_auth_capability(),
+            ['hmac-v4']
+        )
 
 
 if __name__ == '__main__':

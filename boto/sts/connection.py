@@ -69,7 +69,8 @@ class STSConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 converter=None, validate_certs=True, anon=False):
+                 converter=None, validate_certs=True, anon=False,
+                 security_token=None):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint,
@@ -77,13 +78,14 @@ class STSConnection(AWSQueryConnection):
         self.region = region
         self.anon = anon
         self._mutex = threading.Semaphore()
-        AWSQueryConnection.__init__(self, aws_access_key_id,
+        super(STSConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    security_token=security_token)
 
     def _required_auth_capability(self):
         if self.anon:

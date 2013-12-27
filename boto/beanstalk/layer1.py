@@ -45,7 +45,7 @@ class Layer1(AWSQueryConnection):
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id,
+        super(Layer1, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
@@ -1116,7 +1116,7 @@ class Layer1(AWSQueryConnection):
         :type tier_version: string
         :type tier_version: The version of the tier.  Valid values
             currently are "1.0". Defaults to "1.0".
-        
+
         :raises: InsufficientPrivilegesException
         """
         params = {}

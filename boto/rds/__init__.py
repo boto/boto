@@ -57,6 +57,8 @@ def regions():
                           endpoint='rds.ap-southeast-1.amazonaws.com'),
             RDSRegionInfo(name='ap-southeast-2',
                           endpoint='rds.ap-southeast-2.amazonaws.com'),
+            RDSRegionInfo(name='cn-north-1',
+                          endpoint='rds.cn-north-1.amazonaws.com.cn'),
             ]
 
 
@@ -97,7 +99,7 @@ class RDSConnection(AWSQueryConnection):
             region = RDSRegionInfo(self, self.DefaultRegionName,
                                    self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id,
+        super(RDSConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
@@ -204,7 +206,7 @@ class RDSConnection(AWSQueryConnection):
                                   * sqlserver-se = 200--1024
                                   * sqlserver-ex = 30--1024
                                   * sqlserver-web = 30--1024
-                                  * postgres = 5--3072 
+                                  * postgres = 5--3072
 
         :type instance_class: str
         :param instance_class: The compute and memory capacity of
@@ -291,8 +293,8 @@ class RDSConnection(AWSQueryConnection):
                           Name of a database to create when the DBInstance
                           is created. Default is to create no databases.
 
-                          Must contain 1--63 alphanumeric characters. Must 
-                          begin with a letter or an underscore. Subsequent 
+                          Must contain 1--63 alphanumeric characters. Must
+                          begin with a letter or an underscore. Subsequent
                           characters can be letters, underscores, or digits (0-9)
                           and cannot be a reserved PostgreSQL word.
 
@@ -1102,21 +1104,21 @@ class RDSConnection(AWSQueryConnection):
         params = {'DBSnapshotIdentifier': snapshot_id,
                   'DBInstanceIdentifier': dbinstance_id}
         return self.get_object('CreateDBSnapshot', params, DBSnapshot)
-      
+
     def copy_dbsnapshot(self, source_snapshot_id, target_snapshot_id):
         """
         Copies the specified DBSnapshot.
-        
+
         :type source_snapshot_id: string
         :param source_snapshot_id: The identifier for the source DB snapshot.
-        
+
         :type target_snapshot_id: string
         :param target_snapshot_id: The identifier for the copied snapshot.
-        
+
         :rtype: :class:`boto.rds.dbsnapshot.DBSnapshot`
-        :return: The newly created DBSnapshot.        
+        :return: The newly created DBSnapshot.
         """
-        params = {'SourceDBSnapshotIdentifier': source_snapshot_id, 
+        params = {'SourceDBSnapshotIdentifier': source_snapshot_id,
                   'TargetDBSnapshotIdentifier': target_snapshot_id}
         return self.get_object('CopyDBSnapshot', params, DBSnapshot)
 

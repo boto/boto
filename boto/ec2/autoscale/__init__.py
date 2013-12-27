@@ -55,6 +55,7 @@ RegionData = {
     'ap-northeast-1': 'autoscaling.ap-northeast-1.amazonaws.com',
     'ap-southeast-1': 'autoscaling.ap-southeast-1.amazonaws.com',
     'ap-southeast-2': 'autoscaling.ap-southeast-2.amazonaws.com',
+    'cn-north-1': 'autoscaling.cn-north-1.amazonaws.com.cn',
 }
 
 
@@ -114,7 +115,7 @@ class AutoScaleConnection(AWSQueryConnection):
                                 self.DefaultRegionEndpoint,
                                 AutoScaleConnection)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id,
+        super(AutoScaleConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,

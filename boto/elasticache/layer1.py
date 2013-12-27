@@ -55,12 +55,12 @@ class ElastiCacheConnection(AWSQueryConnection):
         else:
             del kwargs['region']
         kwargs['host'] = region.endpoint
-        AWSQueryConnection.__init__(self, **kwargs)
+        super(ElastiCacheConnection, self).__init__(**kwargs)
         self.region = region
 
 
     def _required_auth_capability(self):
-        return ['sign-v2']
+        return ['hmac-v4']
 
     def authorize_cache_security_group_ingress(self,
                                                cache_security_group_name,

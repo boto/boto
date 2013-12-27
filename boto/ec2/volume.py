@@ -47,7 +47,7 @@ class Volume(TaggedEC2Object):
     """
 
     def __init__(self, connection=None):
-        TaggedEC2Object.__init__(self, connection)
+        super(Volume, self).__init__(connection)
         self.id = None
         self.create_time = None
         self.status = None
@@ -62,7 +62,7 @@ class Volume(TaggedEC2Object):
         return 'Volume:%s' % self.id
 
     def startElement(self, name, attrs, connection):
-        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        retval = super(Volume, self).startElement(name, attrs, connection)
         if retval is not None:
             return retval
         if name == 'attachmentSet':

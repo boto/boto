@@ -31,6 +31,7 @@ from datetime import datetime
 from datetime import timedelta
 
 import boto
+from boto.auth import detect_potential_sigv4
 from boto.connection import AWSQueryConnection
 from boto.resultset import ResultSet
 from boto.ec2.image import Image, ImageAttribute, CopyImage
@@ -90,7 +91,7 @@ class EC2Connection(AWSQueryConnection):
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id,
+        super(EC2Connection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
@@ -101,6 +102,7 @@ class EC2Connection(AWSQueryConnection):
         if api_version:
             self.APIVersion = api_version
 
+    @detect_potential_sigv4
     def _required_auth_capability(self):
         return ['ec2']
 
@@ -262,6 +264,7 @@ class EC2Connection(AWSQueryConnection):
                        architecture=None, kernel_id=None, ramdisk_id=None,
                        root_device_name=None, block_device_map=None,
                        dry_run=False, virtualization_type=None,
+                       sriov_net_support=None,
                        snapshot_id=None):
         """
         Register an image.
@@ -301,11 +304,16 @@ class EC2Connection(AWSQueryConnection):
             * paravirtual
             * hvm
 
+        :type sriov_net_support: string
+        :param sriov_net_support: Advanced networking support.
+            Valid choices are:
+            * simple
+
         :type snapshot_id: string
         :param snapshot_id: A snapshot ID for the snapshot to be used
             as root device for the image. Mutually exclusive with
             block_device_map, requires root_device_name
-            
+
         :rtype: string
         :return: The new image id
         """
@@ -334,7 +342,9 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         if virtualization_type:
             params['VirtualizationType'] = virtualization_type
-        
+        if sriov_net_support:
+            params['SriovNetSupport'] = sriov_net_support
+
 
         rs = self.get_object('RegisterImage', params, ResultSet, verb='POST')
         image_id = getattr(rs, 'imageId', None)
@@ -753,6 +763,11 @@ class EC2Connection(AWSQueryConnection):
             * cg1.4xlarge
             * cc2.8xlarge
             * g2.2xlarge
+            * c3.large
+            * c3.xlarge
+            * c3.2xlarge
+            * c3.4xlarge
+            * c3.8xlarge
             * i2.xlarge
             * i2.2xlarge
             * i2.4xlarge
@@ -1423,6 +1438,11 @@ class EC2Connection(AWSQueryConnection):
             * cg1.4xlarge
             * cc2.8xlarge
             * g2.2xlarge
+            * c3.large
+            * c3.xlarge
+            * c3.2xlarge
+            * c3.4xlarge
+            * c3.8xlarge
             * i2.xlarge
             * i2.2xlarge
             * i2.4xlarge
@@ -2728,7 +2748,7 @@ class EC2Connection(AWSQueryConnection):
 
     def import_key_pair(self, key_name, public_key_material, dry_run=False):
         """
-        mports the public key from an RSA key pair that you created
+        imports the public key from an RSA key pair that you created
         with a third-party tool.
 
         Supported formats:
