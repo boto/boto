@@ -66,11 +66,13 @@ class InstanceMonitoring(object):
 
 # this should use the BlockDeviceMapping from boto.ec2.blockdevicemapping
 class BlockDeviceMapping(object):
-    def __init__(self, connection=None, device_name=None, virtual_name=None):
+    def __init__(self, connection=None, device_name=None, virtual_name=None,
+                 ebs=None, no_device=None):
         self.connection = connection
-        self.device_name = None
-        self.virtual_name = None
-        self.ebs = None
+        self.device_name = device_name
+        self.virtual_name = virtual_name
+        self.ebs = ebs
+        self.no_device = no_device
 
     def __repr__(self):
         return 'BlockDeviceMapping(%s, %s)' % (self.device_name,
@@ -86,6 +88,8 @@ class BlockDeviceMapping(object):
             self.device_name = value
         elif name == 'VirtualName':
             self.virtual_name = value
+        elif name == 'NoDevice':
+            self.no_device = bool(value)
 
 
 class LaunchConfiguration(object):
@@ -95,7 +99,8 @@ class LaunchConfiguration(object):
                  ramdisk_id=None, block_device_mappings=None,
                  instance_monitoring=False, spot_price=None,
                  instance_profile_name=None, ebs_optimized=False,
-                 associate_public_ip_address=None):
+                 associate_public_ip_address=None, volume_type=None,
+                 delete_on_termination=True, iops=None):
         """
         A launch configuration.
 
@@ -148,7 +153,7 @@ class LaunchConfiguration(object):
             for EBS I/O (true) or not (false).
 
         :type associate_public_ip_address: bool
-        :param associate_public_ip_address: Used for Auto Scaling groups that launch instances into an Amazon Virtual Private Cloud. 
+        :param associate_public_ip_address: Used for Auto Scaling groups that launch instances into an Amazon Virtual Private Cloud.
             Specifies whether to assign a public IP address to each instance launched in a Amazon VPC.
         """
         self.connection = connection
@@ -170,6 +175,9 @@ class LaunchConfiguration(object):
         self.launch_configuration_arn = None
         self.ebs_optimized = ebs_optimized
         self.associate_public_ip_address = associate_public_ip_address
+        self.volume_type = volume_type
+        self.delete_on_termination = delete_on_termination
+        self.iops = iops
 
     def __repr__(self):
         return 'LaunchConfiguration:%s' % self.name
@@ -215,6 +223,15 @@ class LaunchConfiguration(object):
             self.instance_profile_name = value
         elif name == 'EbsOptimized':
             self.ebs_optimized = True if value.lower() == 'true' else False
+        elif name == 'VolumeType':
+            self.volume_type = value
+        elif name == 'DeleteOnTermination':
+            if value.lower() == 'true':
+                self.delete_on_termination = True
+            else:
+                self.delete_on_termination = False
+        elif name == 'Iops':
+            self.iops = int(value)
         else:
             setattr(self, name, value)
 

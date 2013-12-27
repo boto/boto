@@ -55,7 +55,8 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
         autoscale = AutoScalingGroup(
             name='foo', launch_config='lauch_config',
             min_size=1, max_size=2,
-            termination_policies=['OldestInstance', 'OldestLaunchConfiguration'])
+            termination_policies=['OldestInstance', 'OldestLaunchConfiguration'],
+            instance_id='test-id')
         self.service_connection.create_auto_scaling_group(autoscale)
         self.assert_request_parameters({
             'Action': 'CreateAutoScalingGroup',
@@ -65,6 +66,7 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
             'MinSize': 1,
             'TerminationPolicies.member.1': 'OldestInstance',
             'TerminationPolicies.member.2': 'OldestLaunchConfiguration',
+            'InstanceId': 'test-id',
         }, ignore_params_values=['Version'])
 
 
@@ -167,6 +169,7 @@ class TestParseAutoScaleGroupResponse(AWSMockServiceTestCase):
                    <member>OldestLaunchConfiguration</member>
                  </TerminationPolicies>
                  <MaxSize>2</MaxSize>
+                 <InstanceId>Something</InstanceId>
                </member>
              </AutoScalingGroups>
           </DescribeAutoScalingGroupsResult>
@@ -192,6 +195,7 @@ class TestParseAutoScaleGroupResponse(AWSMockServiceTestCase):
         self.assertEqual(as_group.tags, [])
         self.assertEqual(as_group.termination_policies,
                          ['OldestInstance', 'OldestLaunchConfiguration'])
+        self.assertEqual(as_group.instance_id, 'Something')
 
 
 class TestDescribeTerminationPolicies(AWSMockServiceTestCase):
@@ -251,7 +255,10 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
                 security_groups = ['group1', 'group2'],
                 spot_price='price',
                 block_device_mappings = [bdm],
-                associate_public_ip_address = True
+                associate_public_ip_address = True,
+                volume_type='atype',
+                delete_on_termination=False,
+                iops=3000
                 )
 
         response = self.service_connection.create_launch_configuration(lc)
@@ -272,7 +279,10 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'SecurityGroups.member.1': 'group1',
             'SecurityGroups.member.2': 'group2',
             'SpotPrice': 'price',
-            'AssociatePublicIpAddress' : 'true'
+            'AssociatePublicIpAddress' : 'true',
+            'VolumeType': 'atype',
+            'DeleteOnTermination': 'false',
+            'Iops': 3000,
         }, ignore_params_values=['Version'])
 
 
@@ -441,7 +451,7 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
                 resource_type='auto-scaling-group',
                 propagate_at_launch=False
                 )]
-               
+
 
         response = self.service_connection.create_or_update_tags(tags)
 
@@ -467,8 +477,8 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
             ('ResourceId', 'sg-01234567', 'resource_id'),
             ('PropagateAtLaunch', 'true', 'propagate_at_launch')]:
                 self.check_tag_attributes_set(i[0], i[1], i[2])
-            
-             
+
+
     def check_tag_attributes_set(self, name, value, attr):
         tag = Tag()
         tag.endElement(name, value, None)
@@ -476,6 +486,64 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
             self.assertEqual(getattr(tag, attr), True)
         else:
             self.assertEqual(getattr(tag, attr), value)
+
+
+class TestAttachInstances(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def setUp(self):
+        super(TestAttachInstances, self).setUp()
+
+    def default_body(self):
+        return """
+            <AttachInstancesResponse>
+              <ResponseMetadata>
+                <RequestId>requestid</RequestId>
+              </ResponseMetadata>
+            </AttachInstancesResponse>
+        """
+
+    def test_attach_instances(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.attach_instances(
+          'autoscale',
+          ['inst2', 'inst1', 'inst4']
+        )
+        self.assert_request_parameters({
+            'Action': 'AttachInstances',
+            'AutoScalingGroupName': 'autoscale',
+            'InstanceIds.member.1': 'inst2',
+            'InstanceIds.member.2': 'inst1',
+            'InstanceIds.member.3': 'inst4',
+        }, ignore_params_values=['Version'])
+
+
+class TestGetAccountLimits(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def setUp(self):
+        super(TestGetAccountLimits, self).setUp()
+
+    def default_body(self):
+        return """
+            <DescribeAccountLimitsAnswer>
+              <MaxNumberOfAutoScalingGroups>6</MaxNumberOfAutoScalingGroups>
+              <MaxNumberOfLaunchConfigurations>3</MaxNumberOfLaunchConfigurations>
+              <ResponseMetadata>
+                <RequestId>requestid</RequestId>
+              </ResponseMetadata>
+            </DescribeAccountLimitsAnswer>
+        """
+
+    def test_autoscaling_group_put_notification_configuration(self):
+        self.set_http_response(status_code=200)
+        limits = self.service_connection.get_account_limits()
+        self.assert_request_parameters({
+            'Action': 'DescribeAccountLimits',
+        }, ignore_params_values=['Version'])
+        self.assertEqual(limits.max_autoscaling_groups, 6)
+        self.assertEqual(limits.max_launch_configurations, 3)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -44,6 +44,7 @@ from boto.ec2.autoscale.policy import TerminationPolicies
 from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.tag import Tag
+from boto.ec2.autoscale.limits import AccountLimits
 
 RegionData = {
     'us-east-1': 'autoscaling.us-east-1.amazonaws.com',
@@ -176,6 +177,8 @@ class AutoScaleConnection(AWSQueryConnection):
             params['DefaultCooldown'] = as_group.default_cooldown
         if as_group.placement_group:
             params['PlacementGroup'] = as_group.placement_group
+        if as_group.instance_id:
+            params['InstanceId'] = as_group.instance_id
         if as_group.termination_policies:
             self.build_list_params(params, as_group.termination_policies,
                                    'TerminationPolicies')
@@ -189,6 +192,16 @@ class AutoScaleConnection(AWSQueryConnection):
                 for i, tag in enumerate(as_group.tags):
                     tag.build_params(params, i + 1)
         return self.get_object(op, params, Request)
+
+    def attach_instances(self, name, instance_ids):
+        """
+        Attach instances to an autoscaling group.
+        """
+        params = {
+            'AutoScalingGroupName': name,
+        }
+        self.build_list_params(params, instance_ids, 'InstanceIds')
+        return self.get_status('AttachInstances', params)
 
     def create_auto_scaling_group(self, as_group):
         """
@@ -246,8 +259,24 @@ class AutoScaleConnection(AWSQueryConnection):
             params['AssociatePublicIpAddress'] = 'true'
         elif launch_config.associate_public_ip_address is False:
             params['AssociatePublicIpAddress'] = 'false'
+        if launch_config.volume_type:
+            params['VolumeType'] = launch_config.volume_type
+        if launch_config.delete_on_termination:
+            params['DeleteOnTermination'] = 'true'
+        else:
+            params['DeleteOnTermination'] = 'false'
+        if launch_config.iops:
+            params['Iops'] = launch_config.iops
         return self.get_object('CreateLaunchConfiguration', params,
                                Request, verb='POST')
+
+    def get_account_limits(self):
+        """
+        Returns the limits for the Auto Scaling resources currently granted for
+        your AWS account.
+        """
+        params = {}
+        return self.get_object('DescribeAccountLimits', params, AccountLimits)
 
     def create_scaling_policy(self, scaling_policy):
         """
