@@ -264,7 +264,7 @@ class SDBConverter(object):
         return float(mantissa + 'e' + exponent)
 
     def encode_datetime(self, value):
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, basestring):
             return value
         if isinstance(value, datetime):
             return value.strftime(ISO8601)
@@ -289,7 +289,7 @@ class SDBConverter(object):
             return None
 
     def encode_date(self, value):
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, basestring):
             return value
         return value.isoformat()
 
@@ -322,7 +322,7 @@ class SDBConverter(object):
     def encode_reference(self, value):
         if value in (None, 'None', '', ' '):
             return None
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, basestring):
             return value
         else:
             return value.id
@@ -335,7 +335,7 @@ class SDBConverter(object):
     def encode_blob(self, value):
         if not value:
             return None
-        if isinstance(value, str):
+        if isinstance(value, basestring):
             return value
 
         if not value.id:
@@ -581,7 +581,7 @@ class SDBManager(object):
                 order_by_filtered = True
             query_parts.append("(%s)" % select)
 
-        if isinstance(filters, str) or isinstance(filters, unicode):
+        if isinstance(filters, basestring):
             query = "WHERE %s AND `__type__` = '%s'" % (filters, cls.__name__)
             if order_by in ["__id__", "itemName()"]:
                 query += " ORDER BY itemName() %s" % order_by_method

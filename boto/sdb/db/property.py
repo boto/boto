@@ -113,7 +113,7 @@ class Property(object):
 def validate_string(value):
     if value == None:
         return
-    elif isinstance(value, str) or isinstance(value, unicode):
+    elif isinstance(value, basestring):
         if len(value) > 1024:
             raise ValueError('Length of value greater than maxlength')
     else:
@@ -144,7 +144,7 @@ class TextProperty(Property):
 
     def validate(self, value):
         value = super(TextProperty, self).validate(value)
-        if not isinstance(value, str) and not isinstance(value, unicode):
+        if not isinstance(value, basestring):
             raise TypeError('Expecting Text, got %s' % type(value))
         if self.max_length and len(value) > self.max_length:
             raise ValueError('Length of value greater than maxlength %s' % self.max_length)
@@ -493,7 +493,7 @@ class ReferenceProperty(Property):
             # If the value is still the UUID for the referenced object, we need to create
             # the object now that is the attribute has actually been accessed.  This lazy
             # instantiation saves unnecessary roundtrips to SimpleDB
-            if isinstance(value, str) or isinstance(value, unicode):
+            if isinstance(value, basestring):
                 value = self.reference_class(value)
                 setattr(obj, self.name, value)
             return value
@@ -537,7 +537,7 @@ class ReferenceProperty(Property):
             raise ValueError('%s is a required property' % self.name)
         if value == self.default_value():
             return
-        if not isinstance(value, str) and not isinstance(value, unicode):
+        if not isinstance(value, basestring):
             self.check_instance(value)
 
 

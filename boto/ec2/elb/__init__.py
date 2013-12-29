@@ -116,7 +116,7 @@ class ELBConnection(AWSQueryConnection):
         return ['ec2']
 
     def build_list_params(self, params, items, label):
-        if isinstance(items, str):
+        if isinstance(items, basestring):
             items = [items]
         for index, item in enumerate(items):
             params[label % (index + 1)] = item

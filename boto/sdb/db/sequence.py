@@ -146,7 +146,7 @@ class Sequence(object):
         self.item_type = type(fnc(None))
         self.timestamp = None
         # Allow us to pass in a full name to a function
-        if isinstance(fnc, str):
+        if isinstance(fnc, basestring):
             from boto.utils import find_class
             fnc = find_class(fnc)
         self.fnc = fnc

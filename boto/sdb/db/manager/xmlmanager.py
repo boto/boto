@@ -145,7 +145,7 @@ class XMLConverter(object):
             return None
 
     def encode_reference(self, value):
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, basestring):
             return value
         if value == None:
             return ''
@@ -466,7 +466,7 @@ class XMLManager(object):
         return doc
 
     def unmarshal_object(self, fp, cls=None, id=None):
-        if isinstance(fp, str) or isinstance(fp, unicode):
+        if isinstance(fp, basestring):
             doc = parseString(fp)
         else:
             doc = parse(fp)
@@ -477,7 +477,7 @@ class XMLManager(object):
         Same as unmarshalling an object, except it returns
         from "get_props_from_doc"
         """
-        if isinstance(fp, str) or isinstance(fp, unicode):
+        if isinstance(fp, basestring):
             doc = parseString(fp)
         else:
             doc = parse(fp)
