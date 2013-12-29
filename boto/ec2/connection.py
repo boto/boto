@@ -1301,7 +1301,8 @@ class EC2Connection(AWSQueryConnection):
     def get_spot_price_history(self, start_time=None, end_time=None,
                                instance_type=None, product_description=None,
                                availability_zone=None, dry_run=False,
-                               max_results=None):
+                               max_results=None, next_token=None,
+                               filters=None):
         """
         Retrieve the recent history of spot instances pricing.
 
@@ -1339,6 +1340,19 @@ class EC2Connection(AWSQueryConnection):
         :param max_results: The maximum number of paginated items
             per response.
 
+        :type next_token: str
+        :param next_token: The next set of rows to return.  This should
+            be the value of the ``next_token`` attribute from a previous
+            call to ``get_spot_price_history``.
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
+
         :rtype: list
         :return: A list tuples containing price and timestamp.
         """
@@ -1357,6 +1371,10 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         if max_results is not None:
             params['MaxResults'] = max_results
+        if next_token:
+            params['NextToken'] = next_token
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeSpotPriceHistory', params,
                              [('item', SpotPriceHistory)], verb='POST')
 
