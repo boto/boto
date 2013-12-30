@@ -843,7 +843,7 @@ def notify(subject, body=None, html_body=None, to_string=None,
 
 
 def get_utf8_value(value):
-    if not isinstance(value, str) and not isinstance(value, unicode):
+    if not isinstance(value, basestring):
         value = str(value)
     if isinstance(value, unicode):
         return value.encode('utf-8')

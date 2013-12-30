@@ -55,7 +55,7 @@ class Service(object):
         return e
 
     def build_list_params(self, params, items, label):
-        if isinstance(items, str):
+        if isinstance(items, basestring):
             items = [items]
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]
