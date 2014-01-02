@@ -273,9 +273,13 @@ class CloudWatchConnection(AWSQueryConnection):
             pairs that will be used to filter the results.  The key in
             the dictionary is the name of a Dimension.  The value in
             the dictionary is either a scalar value of that Dimension
-            name that you want to filter on, a list of values to
-            filter on or None if you want all metrics with that
-            Dimension name.
+            name that you want to filter on or None if you want all
+            metrics with that Dimension name.  To be included in the
+            result a metric must contain all specified dimensions,
+            although the metric may contain additional dimensions beyond
+            the requested metrics.  The Dimension names, and values must
+            be strings between 1 and 250 characters long. A maximum of
+            10 dimensions are allowed.
 
         :type metric_name: str
         :param metric_name: The name of the Metric to filter against.  If None,
