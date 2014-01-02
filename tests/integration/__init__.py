@@ -42,21 +42,21 @@ class ServiceCertVerificationTest(object):
         self.assertTrue(len(self.regions) > 0)
 
         for region in self.regions:
+            special_access_required = False
+
+            for snippet in ('gov', 'cn-'):
+                if snippet in region.name:
+                    special_access_required = True
+                    break
+
             try:
                 c = region.connect()
                 self.sample_service_call(c)
-            except (socket.gaierror, httplib.BadStatusLine):
+            except:
                 # This is bad (because the SSL cert failed). Re-raise the
                 # exception.
-                raise
-            except:
-                if 'gov' in region.name:
-                    # Ignore it. GovCloud accounts require special permission
-                    # to use.
-                    continue
-
-                # Anything else is bad. Re-raise.
-                raise
+                if not special_access_required:
+                    raise
 
     def sample_service_call(self, conn):
         """
