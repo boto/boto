@@ -265,7 +265,7 @@ class EmrConnection(AWSQueryConnection):
         if step_states:
             self.build_list_params(params, step_states, 'StepStateList.member')
 
-        self.get_object('ListSteps', params, StepSummaryList)
+        return self.get_object('ListSteps', params, StepSummaryList)
 
     def add_tags(self, resource_id, tags):
         """
