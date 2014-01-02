@@ -78,5 +78,17 @@ class TestDynamizer(unittest.TestCase):
         self.assertEqual(dynamizer.decode({'NS': ['1.1', '2.2', '3.3']}),
                          set([1.1, 2.2, 3.3]))
 
+
+class TestBinary(unittest.TestCase):
+    def test_bad_input(self):
+        with self.assertRaises(TypeError):
+            data = types.Binary(1)
+
+    def test_good_input(self):
+        data = types.Binary(chr(1))
+
+        self.assertEqual('\x01', str(data))
+
+
 if __name__ == '__main__':
     unittest.main()
