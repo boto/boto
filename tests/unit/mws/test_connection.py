@@ -20,7 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from boto.mws.connection import MWSConnection, api_call_map
+from boto.mws.connection import MWSConnection, api_call_map, destructure_object
+from boto.mws.response import ResponseElement
 
 from tests.unit import AWSMockServiceTestCase
 
@@ -48,6 +49,29 @@ doc/2009-01-01/">
   </ResponseMetadata>
 </GetFeedSubmissionListResponse>"""
 
+    def test_destructure_object(self):
+        # Test that parsing of user input to Amazon input works.
+        response = ResponseElement(name='Prefix')
+        response.C = 'four'
+        response.D = 'five'
+        inputs = [
+            ('A', 'B'), ['B', 'A'], set(['C']),
+            False, 'String', {'A': 'one', 'B': 'two'},
+            response,
+        ]
+        outputs = [
+            {'Prefix.1': 'A', 'Prefix.2': 'B'},
+            {'Prefix.1': 'B', 'Prefix.2': 'A'},
+            {'Prefix.1': 'C'},
+            {'Prefix': 'false'}, {'Prefix': 'String'},
+            {'Prefix.A': 'one', 'Prefix.B': 'two'},
+            {'Prefix.C': 'four', 'Prefix.D': 'five'},
+        ]
+        for user, amazon in zip(inputs, outputs):
+            result = {}
+            destructure_object(user, result, prefix='Prefix')
+            self.assertEqual(result, amazon)
+
     def test_built_api_call_map(self):
         # Ensure that the map is populated.
         # It starts empty, but the decorators should add to it as they're
@@ -63,7 +87,8 @@ doc/2009-01-01/">
         func = self.service_connection.method_for('GetFeedSubmissionList')
         # Ensure the right name was found.
         self.assertTrue(callable(func))
-        self.assertEqual(func, self.service_connection.get_feed_submission_list)
+        ideal = self.service_connection.get_feed_submission_list
+        self.assertEqual(func, ideal)
 
         # Check a non-existent action.
         func = self.service_connection.method_for('NotHereNorThere')
