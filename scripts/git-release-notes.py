@@ -51,8 +51,11 @@ removals = [
 changes = ''
 for commit, message in commit_list:
     append = []
+    issues = set()
     for issue in ISSUE.findall(message):
-        append.append(':issue:`{issue}`'.format(issue=issue))
+        if issue not in issues:
+            append.append(':issue:`{issue}`'.format(issue=issue))
+            issues.add(issue)
     append.append(':sha:`{commit}`'.format(commit=commit))
     append = ' (' + ', '.join(append) + ')'
 
