@@ -1874,6 +1874,54 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful
         """
+        return bool(self.associate_address_object(instance_id=instance_id,
+            public_ip=public_ip, allocation_id=allocation_id,
+            network_interface_id=network_interface_id,
+            private_ip_address=private_ip_address,
+            allow_reassociation=allow_reassociation, dry_run=dry_run))
+
+    def associate_address_object(self, instance_id=None, public_ip=None,
+                          allocation_id=None, network_interface_id=None,
+                          private_ip_address=None, allow_reassociation=False,
+                          dry_run=False):
+        """
+        Associate an Elastic IP address with a currently running instance.
+        This requires one of ``public_ip`` or ``allocation_id`` depending
+        on if you're associating a VPC address or a plain EC2 address.
+
+        When using an Allocation ID, make sure to pass ``None`` for ``public_ip``
+        as EC2 expects a single parameter and if ``public_ip`` is passed boto
+        will preference that instead of ``allocation_id``.
+
+        :type instance_id: string
+        :param instance_id: The ID of the instance
+
+        :type public_ip: string
+        :param public_ip: The public IP address for EC2 based allocations.
+
+        :type allocation_id: string
+        :param allocation_id: The allocation ID for a VPC-based elastic IP.
+
+        :type network_interface_id: string
+        :param network_interface_id: The network interface ID to which
+            elastic IP is to be assigned to
+
+        :type private_ip_address: string
+        :param private_ip_address: The primary or secondary private IP address
+            to associate with the Elastic IP address.
+
+        :type allow_reassociation: bool
+        :param allow_reassociation: Specify this option to allow an Elastic IP
+            address that is already associated with another network interface
+            or instance to be re-associated with the specified instance or
+            interface.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: class:`boto.ec2.address.Address`
+        :return: The associated address instance
+        """
         params = {}
         if instance_id is not None:
                 params['InstanceId'] = instance_id
@@ -1894,7 +1942,8 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
 
-        return self.get_status('AssociateAddress', params, verb='POST')
+        return self.get_object('AssociateAddress', params, Address,
+                               verb='POST')
 
     def disassociate_address(self, public_ip=None, association_id=None,
                              dry_run=False):
