@@ -178,11 +178,11 @@ class CloudWatchConnection(AWSQueryConnection):
                 metric_data['StatisticValues.Minimum'] = s['minimum']
                 metric_data['StatisticValues.SampleCount'] = s['samplecount']
                 metric_data['StatisticValues.Sum'] = s['sum']
-                if value != None:
+                if value is not None:
                     msg = 'You supplied a value and statistics for a ' + \
                           'metric.Posting statistics and not value.'
                     boto.log.warn(msg)
-            elif value != None:
+            elif value is not None:
                 metric_data['Value'] = v
             else:
                 raise Exception('Must specify a value or statistics to put.')

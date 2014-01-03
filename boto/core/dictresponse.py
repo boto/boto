@@ -47,7 +47,7 @@ class XmlHandler(xml.sax.ContentHandler):
     def startElement(self, name, attrs):
         self.current_text = ''
         t = self.nodes[-1][1].startElement(name, attrs, self.connection)
-        if t != None:
+        if t is not None:
             if isinstance(t, tuple):
                 self.nodes.append(t)
             else:

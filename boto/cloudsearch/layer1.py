@@ -88,7 +88,7 @@ class Layer1(AWSQueryConnection):
             for p in doc_path:
                 inner = inner.get(p)
             if not inner:
-                return None if list_marker == None else []
+                return None if list_marker is None else []
             if isinstance(inner, list):
                 return inner
             else:

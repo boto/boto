@@ -223,7 +223,7 @@ class Config(ConfigParser.SafeConfigParser):
             d = json.loads(item[section])
             for attr_name in d.keys():
                 attr_value = d[attr_name]
-                if attr_value == None:
+                if attr_value is None:
                     attr_value = 'None'
                 if isinstance(attr_value, bool):
                     self.setbool(section, attr_name, attr_value)

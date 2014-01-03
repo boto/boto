@@ -147,7 +147,7 @@ class XMLConverter(object):
     def encode_reference(self, value):
         if isinstance(value, basestring):
             return value
-        if value == None:
+        if value is None:
             return ''
         else:
             val_node = self.manager.doc.createElement("object")
@@ -296,7 +296,7 @@ class XMLManager(object):
             prop = obj.find_property(prop_name)
             value = self.decode_value(prop, prop_node)
             value = prop.make_value_from_datastore(value)
-            if value != None:
+            if value is not None:
                 try:
                     setattr(obj, prop.name, value)
                 except:
@@ -321,7 +321,7 @@ class XMLManager(object):
             prop = cls.find_property(prop_name)
             value = self.decode_value(prop, prop_node)
             value = prop.make_value_from_datastore(value)
-            if value != None:
+            if value is not None:
                 props[prop.name] = value
         return (cls, props, id)
 

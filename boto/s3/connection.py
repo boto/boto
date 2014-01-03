@@ -270,9 +270,9 @@ class S3Connection(AWSAuthConnection):
 
 
         """
-        if fields == None:
+        if fields is None:
             fields = []
-        if conditions == None:
+        if conditions is None:
             conditions = []
         expiration = time.gmtime(int(time.time() + expires_in))
 
