@@ -534,7 +534,10 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         # S3 does **NOT** do path normalization that SigV4 typically does.
         # Urlencode the path, **NOT** ``auth_path`` (because vhosting).
         path = urlparse.urlparse(http_request.path)
-        encoded = urllib.quote(path.path)
+        # Because some quoting may have already been applied, let's back it out.
+        unquoted = urllib.unquote(path.path)
+        # Requote, this time addressing all characters.
+        encoded = urllib.quote(unquoted)
         return encoded
 
     def host_header(self, host, http_request):
