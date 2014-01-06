@@ -83,6 +83,8 @@ class TestGetSpotPriceHistory(AWSMockServiceTestCase):
         self.assertEqual(len(response), 2)
         self.assertEqual(response.next_token,
                          'q5GwEl5bMGjKq6YmhpDLJ7hEwyWU54jJC2GQ93n61vZV4s1+fzZ674xzvUlTihrl')
+        self.assertEqual(response.nextToken,
+                         'q5GwEl5bMGjKq6YmhpDLJ7hEwyWU54jJC2GQ93n61vZV4s1+fzZ674xzvUlTihrl')
         self.assertEqual(response[0].instance_type, 'c3.large')
         self.assertEqual(response[0].availability_zone, 'us-west-2c')
         self.assertEqual(response[1].instance_type, 'c3.large')
@@ -106,4 +108,3 @@ class TestGetSpotPriceHistory(AWSMockServiceTestCase):
             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                   'SignatureVersion', 'Timestamp',
                                   'Version'])
-        

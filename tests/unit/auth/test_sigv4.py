@@ -346,6 +346,25 @@ class TestS3HmacAuthV4Handler(unittest.TestCase):
         qs = self.auth.canonical_query_string(self.awesome_bucket_request)
         self.assertEqual(qs, 'max-keys=0')
 
+    def test_correct_handling_of_plus_sign(self):
+        request = HTTPRequest(
+            'GET', 'https', 's3-us-west-2.amazonaws.com', 443,
+            'hello+world.txt', None, {},
+            {}, ''
+        )
+        canonical_uri = self.auth.canonical_uri(request)
+        # Ensure that things are properly quoted.
+        self.assertEqual(canonical_uri, 'hello%2Bworld.txt')
+
+        request = HTTPRequest(
+            'GET', 'https', 's3-us-west-2.amazonaws.com', 443,
+            'hello%2Bworld.txt', None, {},
+            {}, ''
+        )
+        canonical_uri = self.auth.canonical_uri(request)
+        # Verify double escaping hasn't occurred.
+        self.assertEqual(canonical_uri, 'hello%2Bworld.txt')
+
     def test_mangle_path_and_params(self):
         request = HTTPRequest(
             method='GET',
