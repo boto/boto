@@ -1014,13 +1014,13 @@ class Table(object):
             'limit': limit,
             'segment': segment,
             'total_segments': total_segments,
-            'attributes_to_get': attributes,
+            'attributes': attributes,
         })
         results.to_call(self._scan, **kwargs)
         return results
 
     def _scan(self, limit=None, exclusive_start_key=None, segment=None,
-              total_segments=None, attributes_to_get=None, **filter_kwargs):
+              total_segments=None, attributes=None, **filter_kwargs):
         """
         The internal method that performs the actual scan. Used extensively
         by ``ResultSet`` to perform each (paginated) request.
@@ -1029,7 +1029,7 @@ class Table(object):
             'limit': limit,
             'segment': segment,
             'total_segments': total_segments,
-            'attributes_to_get': attributes_to_get,
+            'attributes_to_get': attributes,
         }
 
         if exclusive_start_key:
