@@ -2162,6 +2162,7 @@ class TableTestCase(unittest.TestCase):
             },
             limit=2,
             segment=None,
+            attributes_to_get=None,
             total_segments=None
         )
 
@@ -2204,6 +2205,7 @@ class TableTestCase(unittest.TestCase):
                 },
             },
             segment=None,
+            attributes_to_get=None,
             total_segments=None
         )
 
@@ -2355,6 +2357,40 @@ class TableTestCase(unittest.TestCase):
             self.assertRaises(StopIteration, results.next)
 
         self.assertEqual(mock_scan_2.call_count, 1)
+
+
+    def test_scan_with_specific_attributes(self):
+        items_1 = {
+            'results': [
+                Item(self.users, data={
+                    'username': 'johndoe',
+                }),
+                Item(self.users, data={
+                    'username': 'jane',
+                }),
+            ],
+            'last_key': 'jane',
+        }
+
+        results = self.users.scan(attributes=['username'])
+        self.assertTrue(isinstance(results, ResultSet))
+        self.assertEqual(len(results._results), 0)
+        self.assertEqual(results.the_callable, self.users._scan)
+
+        with mock.patch.object(
+                results,
+                'the_callable',
+                return_value=items_1) as mock_query:
+            res_1 = results.next()
+            # Now it should be populated.
+            self.assertEqual(len(results._results), 2)
+            self.assertEqual(res_1['username'], 'johndoe')
+            self.assertEqual(res_1.keys(), ['username'])
+            res_2 = results.next()
+            self.assertEqual(res_2['username'], 'jane')
+
+        self.assertEqual(mock_query.call_count, 1)
+
 
     def test_count(self):
         expected = {

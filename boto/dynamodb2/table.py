@@ -969,7 +969,7 @@ class Table(object):
         }
 
     def scan(self, limit=None, segment=None, total_segments=None,
-             max_page_size=None, **filter_kwargs):
+             max_page_size=None, attributes=None, **filter_kwargs):
         """
         Scans across all items within a DynamoDB table.
 
@@ -999,6 +999,11 @@ class Table(object):
         **per-request**. This is useful in making faster requests & prevent
         the scan from drowning out other queries. (Default: ``None`` -
         fetch as many as DynamoDB will return)
+
+        Optionally accepts an ``attributes`` parameter, which should be a
+        tuple. If you provide any attributes only these will be fetched
+        from DynamoDB. This uses the ``AttributesToGet`` and set's
+        ``Select`` to ``SPECIFIC_ATTRIBUTES`` API.
 
         Returns a ``ResultSet``, which transparently handles the pagination of
         results you get back.
@@ -1034,12 +1039,13 @@ class Table(object):
             'limit': limit,
             'segment': segment,
             'total_segments': total_segments,
+            'attributes': attributes,
         })
         results.to_call(self._scan, **kwargs)
         return results
 
     def _scan(self, limit=None, exclusive_start_key=None, segment=None,
-              total_segments=None, **filter_kwargs):
+              total_segments=None, attributes=None, **filter_kwargs):
         """
         The internal method that performs the actual scan. Used extensively
         by ``ResultSet`` to perform each (paginated) request.
@@ -1048,6 +1054,7 @@ class Table(object):
             'limit': limit,
             'segment': segment,
             'total_segments': total_segments,
+            'attributes_to_get': attributes,
         }
 
         if exclusive_start_key:
