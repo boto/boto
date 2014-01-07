@@ -436,7 +436,7 @@ class Table(object):
 
         return raw_key
 
-    def get_item(self, consistent=False, **kwargs):
+    def get_item(self, consistent=False, attributes=None, **kwargs):
         """
         Fetches an item (record) from a table in DynamoDB.
 
@@ -480,6 +480,7 @@ class Table(object):
         item_data = self.connection.get_item(
             self.table_name,
             raw_key,
+            attributes_to_get=attributes,
             consistent_read=consistent
         )
         item = Item(self)
@@ -523,7 +524,6 @@ class Table(object):
         for x, arg in enumerate(args):
             data[self.schema[x].name] = arg
         return Item(self, data=data)
-
 
     def put_item(self, data, overwrite=False):
         """

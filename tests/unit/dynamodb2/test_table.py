@@ -1497,7 +1497,20 @@ class TableTestCase(unittest.TestCase):
 
         mock_get_item.assert_called_once_with('users', {
             'username': {'S': 'johndoe'}
-        }, consistent_read=False)
+        }, consistent_read=False, attributes_to_get=None)
+
+        with mock.patch.object(
+                self.users.connection,
+                'get_item',
+                return_value=expected) as mock_get_item:
+            item = self.users.get_item(username='johndoe', attributes=[
+                'username',
+                'first_name',
+            ])
+
+        mock_get_item.assert_called_once_with('users', {
+            'username': {'S': 'johndoe'}
+        }, consistent_read=False, attributes_to_get=['username', 'first_name'])
 
     def test_lookup_hash(self):
         """Tests the "lookup" function with just a hash key"""
