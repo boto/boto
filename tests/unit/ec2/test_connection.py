@@ -1355,5 +1355,50 @@ class TestSignatureAlteration(TestEC2ConnectionBase):
         )
 
 
+class TestAssociateAddress(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+            <AssociateAddressResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+               <return>true</return>
+               <associationId>eipassoc-fc5ca095</associationId>
+            </AssociateAddressResponse>
+        """
+
+    def test_associate_address(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.associate_address(instance_id='i-1234',
+                                            public_ip='192.0.2.1')
+        self.assertEqual(True, result)
+
+    def test_associate_address_object(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.associate_address_object(instance_id='i-1234',
+                                                   public_ip='192.0.2.1')
+        self.assertEqual('eipassoc-fc5ca095', result.association_id)
+
+
+class TestAssociateAddressFail(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+            <Response>
+                <Errors>
+                     <Error>
+                       <Code>InvalidInstanceID.NotFound</Code>
+                       <Message>The instance ID 'i-4cbc822a' does not exist</Message>
+                     </Error>
+                </Errors>
+                <RequestID>ea966190-f9aa-478e-9ede-cb5432daacc0</RequestID>
+                <StatusCode>Failure</StatusCode>
+            </Response>
+        """
+
+    def test_associate_address(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.associate_address(instance_id='i-1234',
+                                            public_ip='192.0.2.1')
+        self.assertEqual(False, result)
+
+
 if __name__ == '__main__':
     unittest.main()
