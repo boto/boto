@@ -1832,6 +1832,36 @@ class EC2Connection(AWSQueryConnection):
 
         return self.get_status('AssignPrivateIpAddresses', params, verb='POST')
 
+    def _associate_address(self, status, instance_id=None, public_ip=None,
+                          allocation_id=None, network_interface_id=None,
+                          private_ip_address=None, allow_reassociation=False,
+                          dry_run=False):
+        params = {}
+        if instance_id is not None:
+                params['InstanceId'] = instance_id
+        elif network_interface_id is not None:
+                params['NetworkInterfaceId'] = network_interface_id
+
+        if public_ip is not None:
+            params['PublicIp'] = public_ip
+        elif allocation_id is not None:
+            params['AllocationId'] = allocation_id
+
+        if private_ip_address is not None:
+            params['PrivateIpAddress'] = private_ip_address
+
+        if allow_reassociation:
+            params['AllowReassociation'] = 'true'
+
+        if dry_run:
+            params['DryRun'] = 'true'
+
+        if status:
+            return self.get_status('AssociateAddress', params, verb='POST')
+        else:
+            return self.get_object('AssociateAddress', params, Address,
+                                   verb='POST')
+
     def associate_address(self, instance_id=None, public_ip=None,
                           allocation_id=None, network_interface_id=None,
                           private_ip_address=None, allow_reassociation=False,
@@ -1874,11 +1904,11 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful
         """
-        return bool(self.associate_address_object(instance_id=instance_id,
+        return self._associate_address(True, instance_id=instance_id,
             public_ip=public_ip, allocation_id=allocation_id,
             network_interface_id=network_interface_id,
             private_ip_address=private_ip_address,
-            allow_reassociation=allow_reassociation, dry_run=dry_run))
+            allow_reassociation=allow_reassociation, dry_run=dry_run)
 
     def associate_address_object(self, instance_id=None, public_ip=None,
                           allocation_id=None, network_interface_id=None,
@@ -1922,28 +1952,11 @@ class EC2Connection(AWSQueryConnection):
         :rtype: class:`boto.ec2.address.Address`
         :return: The associated address instance
         """
-        params = {}
-        if instance_id is not None:
-                params['InstanceId'] = instance_id
-        elif network_interface_id is not None:
-                params['NetworkInterfaceId'] = network_interface_id
-
-        if public_ip is not None:
-            params['PublicIp'] = public_ip
-        elif allocation_id is not None:
-            params['AllocationId'] = allocation_id
-
-        if private_ip_address is not None:
-            params['PrivateIpAddress'] = private_ip_address
-
-        if allow_reassociation:
-            params['AllowReassociation'] = 'true'
-
-        if dry_run:
-            params['DryRun'] = 'true'
-
-        return self.get_object('AssociateAddress', params, Address,
-                               verb='POST')
+        return self._associate_address(False, instance_id=instance_id,
+            public_ip=public_ip, allocation_id=allocation_id,
+            network_interface_id=network_interface_id,
+            private_ip_address=private_ip_address,
+            allow_reassociation=allow_reassociation, dry_run=dry_run)
 
     def disassociate_address(self, public_ip=None, association_id=None,
                              dry_run=False):
