@@ -448,6 +448,10 @@ class Table(object):
         a consistent (but more expensive) read from DynamoDB.
         (Default: ``False``)
 
+        Optionally accepts an ``attributes`` parameter, which should be a
+        list of fieldname to fetch. (Default: ``None``, which means all fields
+        should be fetched)
+
         Returns an ``Item`` instance containing all the data for that record.
 
         Example::
