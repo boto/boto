@@ -505,10 +505,10 @@ class Table(object):
         (Default: ``False``)
 
         Optionally accepts an ``attributes`` parameter, which should be a
-        list of fieldname to fetch. (Default: ``None``, which means all fields
+        list of fieldnames to fetch. (Default: ``None``, which means all fields
         should be fetched)
 
-        Returns ``True`` if an ``Item`` present, ``False`` if not.
+        Returns ``True`` if an ``Item`` is present, ``False`` if not.
 
         Example::
 
