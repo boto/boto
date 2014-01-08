@@ -8,6 +8,7 @@ from boto.dynamodb2.items import Item
 from boto.dynamodb2.layer1 import DynamoDBConnection
 from boto.dynamodb2.results import ResultSet, BatchGetResultSet
 from boto.dynamodb2.types import Dynamizer, FILTER_OPERATORS, QUERY_OPERATORS
+from boto.exception import JSONResponseError
 
 
 class Table(object):
@@ -490,6 +491,45 @@ class Table(object):
         item = Item(self)
         item.load(item_data)
         return item
+
+    def has_item(self, **kwargs):
+        """
+        Return whether an item (record) exists within a table in DynamoDB.
+
+        To specify the key of the item you'd like to get, you can specify the
+        key attributes as kwargs.
+
+        Optionally accepts a ``consistent`` parameter, which should be a
+        boolean. If you provide ``True``, it will perform
+        a consistent (but more expensive) read from DynamoDB.
+        (Default: ``False``)
+
+        Optionally accepts an ``attributes`` parameter, which should be a
+        list of fieldname to fetch. (Default: ``None``, which means all fields
+        should be fetched)
+
+        Returns ``True`` if an ``Item`` present, ``False`` if not.
+
+        Example::
+
+            # Simple, just hash-key schema.
+            >>> users.has_item(username='johndoe')
+            True
+
+            # Complex schema, item not present.
+            >>> users.has_item(
+            ...     username='johndoe',
+            ...     date_joined='2014-01-07'
+            ... )
+            False
+
+        """
+        try:
+            self.get_item(**kwargs)
+        except JSONResponseError:
+            return False
+
+        return True
 
     def lookup(self, *args, **kwargs):
         """
