@@ -324,6 +324,16 @@ class DynamoDBv2Test(unittest.TestCase):
         })
         self.assertTrue(penny_created)
 
+        # Test attributes.
+        mau5 = users.get_item(
+            username='mau5',
+            friend_count=2,
+            attributes=['username', 'first_name']
+        )
+        self.assertEqual(mau5['username'], 'mau5')
+        self.assertEqual(mau5['first_name'], 'dead')
+        self.assertTrue('last_name' not in mau5)
+
     def test_unprocessed_batch_writes(self):
         # Create a very limited table w/ low throughput.
         users = Table.create('slow_users', schema=[

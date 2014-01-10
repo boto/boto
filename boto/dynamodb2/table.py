@@ -8,6 +8,7 @@ from boto.dynamodb2.items import Item
 from boto.dynamodb2.layer1 import DynamoDBConnection
 from boto.dynamodb2.results import ResultSet, BatchGetResultSet
 from boto.dynamodb2.types import Dynamizer, FILTER_OPERATORS, QUERY_OPERATORS
+from boto.exception import JSONResponseError
 
 
 class Table(object):
@@ -436,7 +437,7 @@ class Table(object):
 
         return raw_key
 
-    def get_item(self, consistent=False, **kwargs):
+    def get_item(self, consistent=False, attributes=None, **kwargs):
         """
         Fetches an item (record) from a table in DynamoDB.
 
@@ -447,6 +448,10 @@ class Table(object):
         boolean. If you provide ``True``, it will perform
         a consistent (but more expensive) read from DynamoDB.
         (Default: ``False``)
+
+        Optionally accepts an ``attributes`` parameter, which should be a
+        list of fieldname to fetch. (Default: ``None``, which means all fields
+        should be fetched)
 
         Returns an ``Item`` instance containing all the data for that record.
 
@@ -480,11 +485,51 @@ class Table(object):
         item_data = self.connection.get_item(
             self.table_name,
             raw_key,
+            attributes_to_get=attributes,
             consistent_read=consistent
         )
         item = Item(self)
         item.load(item_data)
         return item
+
+    def has_item(self, **kwargs):
+        """
+        Return whether an item (record) exists within a table in DynamoDB.
+
+        To specify the key of the item you'd like to get, you can specify the
+        key attributes as kwargs.
+
+        Optionally accepts a ``consistent`` parameter, which should be a
+        boolean. If you provide ``True``, it will perform
+        a consistent (but more expensive) read from DynamoDB.
+        (Default: ``False``)
+
+        Optionally accepts an ``attributes`` parameter, which should be a
+        list of fieldnames to fetch. (Default: ``None``, which means all fields
+        should be fetched)
+
+        Returns ``True`` if an ``Item`` is present, ``False`` if not.
+
+        Example::
+
+            # Simple, just hash-key schema.
+            >>> users.has_item(username='johndoe')
+            True
+
+            # Complex schema, item not present.
+            >>> users.has_item(
+            ...     username='johndoe',
+            ...     date_joined='2014-01-07'
+            ... )
+            False
+
+        """
+        try:
+            self.get_item(**kwargs)
+        except JSONResponseError:
+            return False
+
+        return True
 
     def lookup(self, *args, **kwargs):
         """
@@ -523,7 +568,6 @@ class Table(object):
         for x, arg in enumerate(args):
             data[self.schema[x].name] = arg
         return Item(self, data=data)
-
 
     def put_item(self, data, overwrite=False):
         """
@@ -969,7 +1013,7 @@ class Table(object):
         }
 
     def scan(self, limit=None, segment=None, total_segments=None,
-             max_page_size=None, **filter_kwargs):
+             max_page_size=None, attributes=None, **filter_kwargs):
         """
         Scans across all items within a DynamoDB table.
 
@@ -999,6 +1043,11 @@ class Table(object):
         **per-request**. This is useful in making faster requests & prevent
         the scan from drowning out other queries. (Default: ``None`` -
         fetch as many as DynamoDB will return)
+
+        Optionally accepts an ``attributes`` parameter, which should be a
+        tuple. If you provide any attributes only these will be fetched
+        from DynamoDB. This uses the ``AttributesToGet`` and set's
+        ``Select`` to ``SPECIFIC_ATTRIBUTES`` API.
 
         Returns a ``ResultSet``, which transparently handles the pagination of
         results you get back.
@@ -1034,12 +1083,13 @@ class Table(object):
             'limit': limit,
             'segment': segment,
             'total_segments': total_segments,
+            'attributes': attributes,
         })
         results.to_call(self._scan, **kwargs)
         return results
 
     def _scan(self, limit=None, exclusive_start_key=None, segment=None,
-              total_segments=None, **filter_kwargs):
+              total_segments=None, attributes=None, **filter_kwargs):
         """
         The internal method that performs the actual scan. Used extensively
         by ``ResultSet`` to perform each (paginated) request.
@@ -1048,6 +1098,7 @@ class Table(object):
             'limit': limit,
             'segment': segment,
             'total_segments': total_segments,
+            'attributes_to_get': attributes,
         }
 
         if exclusive_start_key:

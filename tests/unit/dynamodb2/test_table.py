@@ -11,6 +11,7 @@ from boto.dynamodb2.results import ResultSet, BatchGetResultSet
 from boto.dynamodb2.table import Table
 from boto.dynamodb2.types import (STRING, NUMBER,
                                   FILTER_OPERATORS, QUERY_OPERATORS)
+from boto.exception import JSONResponseError
 
 
 FakeDynamoDBConnection = mock.create_autospec(DynamoDBConnection)
@@ -1497,7 +1498,46 @@ class TableTestCase(unittest.TestCase):
 
         mock_get_item.assert_called_once_with('users', {
             'username': {'S': 'johndoe'}
-        }, consistent_read=False)
+        }, consistent_read=False, attributes_to_get=None)
+
+        with mock.patch.object(
+                self.users.connection,
+                'get_item',
+                return_value=expected) as mock_get_item:
+            item = self.users.get_item(username='johndoe', attributes=[
+                'username',
+                'first_name',
+            ])
+
+        mock_get_item.assert_called_once_with('users', {
+            'username': {'S': 'johndoe'}
+        }, consistent_read=False, attributes_to_get=['username', 'first_name'])
+
+    def test_has_item(self):
+        expected = {
+            'Item': {
+                'username': {'S': 'johndoe'},
+                'first_name': {'S': 'John'},
+                'last_name': {'S': 'Doe'},
+                'date_joined': {'N': '1366056668'},
+                'friend_count': {'N': '3'},
+                'friends': {'SS': ['alice', 'bob', 'jane']},
+            }
+        }
+
+        with mock.patch.object(
+                self.users.connection,
+                'get_item',
+                return_value=expected) as mock_get_item:
+            found = self.users.has_item(username='johndoe')
+            self.assertTrue(found)
+
+        with mock.patch.object(
+                self.users.connection,
+                'get_item') as mock_get_item:
+            mock_get_item.side_effect = JSONResponseError("Nope.", None, None)
+            found = self.users.has_item(username='mrsmith')
+            self.assertFalse(found)
 
     def test_lookup_hash(self):
         """Tests the "lookup" function with just a hash key"""
@@ -2162,6 +2202,7 @@ class TableTestCase(unittest.TestCase):
             },
             limit=2,
             segment=None,
+            attributes_to_get=None,
             total_segments=None
         )
 
@@ -2204,6 +2245,7 @@ class TableTestCase(unittest.TestCase):
                 },
             },
             segment=None,
+            attributes_to_get=None,
             total_segments=None
         )
 
@@ -2355,6 +2397,40 @@ class TableTestCase(unittest.TestCase):
             self.assertRaises(StopIteration, results.next)
 
         self.assertEqual(mock_scan_2.call_count, 1)
+
+
+    def test_scan_with_specific_attributes(self):
+        items_1 = {
+            'results': [
+                Item(self.users, data={
+                    'username': 'johndoe',
+                }),
+                Item(self.users, data={
+                    'username': 'jane',
+                }),
+            ],
+            'last_key': 'jane',
+        }
+
+        results = self.users.scan(attributes=['username'])
+        self.assertTrue(isinstance(results, ResultSet))
+        self.assertEqual(len(results._results), 0)
+        self.assertEqual(results.the_callable, self.users._scan)
+
+        with mock.patch.object(
+                results,
+                'the_callable',
+                return_value=items_1) as mock_query:
+            res_1 = results.next()
+            # Now it should be populated.
+            self.assertEqual(len(results._results), 2)
+            self.assertEqual(res_1['username'], 'johndoe')
+            self.assertEqual(res_1.keys(), ['username'])
+            res_2 = results.next()
+            self.assertEqual(res_2['username'], 'jane')
+
+        self.assertEqual(mock_query.call_count, 1)
+
 
     def test_count(self):
         expected = {

@@ -178,11 +178,11 @@ class CloudWatchConnection(AWSQueryConnection):
                 metric_data['StatisticValues.Minimum'] = s['minimum']
                 metric_data['StatisticValues.SampleCount'] = s['samplecount']
                 metric_data['StatisticValues.Sum'] = s['sum']
-                if value != None:
+                if value is not None:
                     msg = 'You supplied a value and statistics for a ' + \
                           'metric.Posting statistics and not value.'
                     boto.log.warn(msg)
-            elif value != None:
+            elif value is not None:
                 metric_data['Value'] = v
             else:
                 raise Exception('Must specify a value or statistics to put.')
@@ -273,9 +273,13 @@ class CloudWatchConnection(AWSQueryConnection):
             pairs that will be used to filter the results.  The key in
             the dictionary is the name of a Dimension.  The value in
             the dictionary is either a scalar value of that Dimension
-            name that you want to filter on, a list of values to
-            filter on or None if you want all metrics with that
-            Dimension name.
+            name that you want to filter on or None if you want all
+            metrics with that Dimension name.  To be included in the
+            result a metric must contain all specified dimensions,
+            although the metric may contain additional dimensions beyond
+            the requested metrics.  The Dimension names, and values must
+            be strings between 1 and 250 characters long. A maximum of
+            10 dimensions are allowed.
 
         :type metric_name: str
         :param metric_name: The name of the Metric to filter against.  If None,

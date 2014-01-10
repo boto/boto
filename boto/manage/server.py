@@ -323,7 +323,7 @@ class Server(Model):
         i = 0
         elastic_ip = params.get('elastic_ip')
         instances = reservation.instances
-        if elastic_ip != None and instances.__len__() > 0:
+        if elastic_ip is not None and instances.__len__() > 0:
             instance = instances[0]
             print 'Waiting for instance to start so we can set its elastic IP address...'
             # Sometimes we get a message from ec2 that says that the instance does not exist.

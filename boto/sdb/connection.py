@@ -493,7 +493,7 @@ class SDBConnection(AWSQueryConnection):
         response = self.make_request('GetAttributes', params)
         body = response.read()
         if response.status == 200:
-            if item == None:
+            if item is None:
                 item = self.item_cls(domain, item_name)
             h = handler.XmlHandler(item, self)
             xml.sax.parseString(body, h)
