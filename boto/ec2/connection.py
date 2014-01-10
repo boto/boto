@@ -541,8 +541,8 @@ class EC2Connection(AWSQueryConnection):
             launch instances.
 
         :type security_groups: list of strings
-        :param security_groups: The names of the security groups with which to
-            associate instances
+        :param security_groups: The names of the ec2 classic security groups 
+            with which to associate instances
 
         :type user_data: string
         :param user_data: The user data passed to the launched instances

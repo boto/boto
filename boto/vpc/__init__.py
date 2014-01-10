@@ -580,7 +580,7 @@ class VPCConnection(EC2Connection):
 
                         - *state*, a list of states of the Subnet
                           (pending,available)
-                        - *vpcId*, a list of IDs of teh VPC the subnet is in.
+                        - *vpcId*, a list of IDs of the VPC that the subnet is in.
                         - *cidrBlock*, a list of CIDR blocks of the subnet
                         - *availabilityZone*, list of the Availability Zones
                           the subnet is in.

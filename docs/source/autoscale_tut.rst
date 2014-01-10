@@ -200,7 +200,7 @@ beyond the limits of the Scaling Group's 'max_size' and 'min_size' properties.
 To retrieve the instances in your autoscale group:
 
 >>> ec2 = boto.connect_ec2()
->>> conn.get_all_groups(names=['my_group'])[0]
+>>> group = conn.get_all_groups(names=['my_group'])[0]
 >>> instance_ids = [i.instance_id for i in group.instances]
 >>> reservations = ec2.get_all_instances(instance_ids)
 >>> instances = [i for i in reservations for i in r.instances]

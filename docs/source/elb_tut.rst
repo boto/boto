@@ -113,7 +113,7 @@ works very much like a list.
 
 >>> balancers = conn.get_all_load_balancers()
 >>> balancers[0]
-[LoadBalancer:load-balancer-prod]
+LoadBalancer:load-balancer-prod
 
 Creating a Load Balancer
 ------------------------
