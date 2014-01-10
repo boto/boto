@@ -124,8 +124,9 @@ class ResumableUploadHandler(object):
             return
         f = None
         try:
-            f = open(self.tracker_file_name, 'w')
-            f.write(self.tracker_uri)
+            with os.fdopen(os.open(self.tracker_file_name,
+                                   os.O_WRONLY | os.O_CREAT, 0600), 'w') as f:
+              f.write(self.tracker_uri)
         except IOError, e:
             raise ResumableUploadException(
                 'Couldn\'t write URI tracker file (%s): %s.\nThis can happen'
@@ -134,9 +135,6 @@ class ResumableUploadHandler(object):
                 'unwritable directory)' %
                 (self.tracker_file_name, e.strerror),
                 ResumableTransferDisposition.ABORT)
-        finally:
-            if f:
-                f.close()
 
     def _set_tracker_uri(self, uri):
         """
