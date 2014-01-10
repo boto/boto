@@ -69,6 +69,23 @@ For example::
 Please notice that quote characters are not used to either side of the '='
 operator even when both your AWS access key id and secret key are strings.
 
+If using multiple personae managed in a separate configuration file,
+specify ``aws_credential_file`` instead of a specific keypair.::
+
+    [Credentials]
+    aws_credential_file = /path/to/persona/creds
+
+The persona configuration file then looks like this::
+
+    [production]
+    access_key = <your production access key>
+    secret_key = <your production secret key>
+
+    [default]
+    access_key = <your default access key, if no persona is specified>
+    secret_key = <your default secret key, if no persona is specified>
+
+
 For greater security, the secret key can be stored in a keyring and
 retrieved via the keyring package.  To use a keyring, use ``keyring``,
 rather than ``aws_secret_access_key``::
