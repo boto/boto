@@ -712,6 +712,25 @@ class SNSConnection(AWSQueryConnection):
             params['EndpointArn'] = endpoint_arn
         return self._make_request(action='GetEndpointAttributes',
                                   params=params)
+                                                                                                                                  
+    def get_subscription_attributes(self, subscription_arn=None):
+        """
+        `GetSubscriptionAttributes` returns all the properties of a subscription.
+
+        Specifically this includes details about the subscription, not just
+        the subscription itself. It corresponds to the GetSubscriptionAttributesResult
+        API data type, while get_all_subscriptions returns Subscription API data
+        types.
+
+        :type subscription_arn: string
+        :param subscription_arn: SubscriptionArn for GetSubscriptionAttributes input.
+
+        """
+        params = {}
+        if subscription_arn is not None:
+            params['SubscriptionArn'] = subscription_arn
+        return self._make_request(action='GetSubscriptionAttributes',
+                                  params=params)
 
     def _make_request(self, action, params, path='/', verb='GET'):
         params['ContentType'] = 'JSON'
