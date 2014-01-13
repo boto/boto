@@ -107,12 +107,13 @@ So, first we need to create a Message object::
 >>> from boto.sqs.message import Message
 >>> m = Message()
 >>> m.set_body('This is my first message.')
->>> status = q.write(m)
+>>> q.write(m)
 
-The write method returns a True if everything went well.  If the write
-didn't succeed it will either return a False (meaning SQS simply chose
-not to write the message for some reason) or an exception if there was
-some sort of problem with the request.
+The write method will return the ``Message`` object.  The ``id`` and
+``md5`` attribute of the ``Message`` object will be updated with the
+values of the message that was written to the queue.
+
+If the message cannot be written an ``SQSError`` exception will be raised.
 
 Writing Messages (Custom Format)
 --------------------------------
@@ -135,7 +136,7 @@ default boto Message object.  To register your message class, you would::
 >>> q.set_message_class(MyMessage)
 >>> m = MyMessage()
 >>> m.set_body('This is my first message.')
->>> status = q.write(m)
+>>> q.write(m)
 
 where MyMessage is the class definition for your message class.  Your
 message class should subclass the boto Message because there is a small
