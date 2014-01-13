@@ -167,18 +167,19 @@ class Provider(object):
     }
 
     def __init__(self, name, access_key=None, secret_key=None,
-                 security_token=None):
+                 security_token=None, profile_name=None):
         self.host = None
         self.port = None
         self.host_header = None
         self.access_key = access_key
         self.secret_key = secret_key
         self.security_token = security_token
+        self.profile_name = profile_name
         self.name = name
         self.acl_class = self.AclClassMap[self.name]
         self.canned_acls = self.CannedAclsMap[self.name]
         self._credential_expiry_time = None
-        self.get_credentials(access_key, secret_key, security_token)
+        self.get_credentials(access_key, secret_key, security_token, profile_name)
         self.configure_headers()
         self.configure_errors()
         # Allow config file to override default host and port.
@@ -242,7 +243,7 @@ class Provider(object):
                 return False
 
     def get_credentials(self, access_key=None, secret_key=None,
-                        security_token=None):
+                        security_token=None, profile_name=None):
         access_key_name, secret_key_name, security_token_name = self.CredentialMap[self.name]
         if access_key is not None:
             self.access_key = access_key
@@ -250,6 +251,9 @@ class Provider(object):
         elif access_key_name.upper() in os.environ:
             self.access_key = os.environ[access_key_name.upper()]
             boto.log.debug("Using access key found in environment variable.")
+        elif config.has_option("profile %s" % profile_name, access_key_name):
+            self.access_key = config.get("profile %s" % profile_name, access_key_name)
+            boto.log.debug("Using access key found in config file: profile %s." % profile_name)
         elif config.has_option('Credentials', access_key_name):
             self.access_key = config.get('Credentials', access_key_name)
             boto.log.debug("Using access key found in config file.")
@@ -260,6 +264,9 @@ class Provider(object):
         elif secret_key_name.upper() in os.environ:
             self.secret_key = os.environ[secret_key_name.upper()]
             boto.log.debug("Using secret key found in environment variable.")
+        elif config.has_option("profile %s" % profile_name, secret_key_name):
+            self.secret_key = config.get("profile %s" % profile_name, secret_key_name)
+            boto.log.debug("Using secret key found in config file: profile %s." % profile_name)
         elif config.has_option('Credentials', secret_key_name):
             self.secret_key = config.get('Credentials', secret_key_name)
             boto.log.debug("Using secret key found in config file.")
