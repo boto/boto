@@ -217,7 +217,8 @@ class Key(object):
             self.delete_marker = False
 
     def handle_restore_headers(self, response):
-        header = response.getheader('x-amz-restore')
+        provider = self.bucket.connection.provider
+        header = response.getheader(provider.restore_header)
         if header is None:
             return
         parts = header.split(',', 1)
@@ -299,6 +300,7 @@ class Key(object):
                     self.content_disposition = value
             self.handle_version_headers(self.resp)
             self.handle_encryption_headers(self.resp)
+            self.handle_restore_headers(self.resp)
             self.handle_addl_headers(self.resp.getheaders())
 
     def open_write(self, headers=None, override_num_retries=None):
