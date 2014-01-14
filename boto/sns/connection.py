@@ -48,9 +48,11 @@ class SNSConnection(AWSQueryConnection):
     requests, and handling error responses. For a list of available
     SDKs, go to `Tools for Amazon Web Services`_.
     """
-    DefaultRegionName = 'us-east-1'
-    DefaultRegionEndpoint = 'sns.us-east-1.amazonaws.com'
-    APIVersion = '2010-03-31'
+    DefaultRegionName = boto.config.get('Boto', 'sns_region_name', 'us-east-1')
+    DefaultRegionEndpoint = boto.config.get('Boto', 'sns_region_endpoint', 
+                                            'sns.us-east-1.amazonaws.com')
+    APIVersion = boto.config.get('Boto', 'sns_version', '2010-03-31')
+
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
