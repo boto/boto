@@ -32,9 +32,10 @@ class SQSConnection(AWSQueryConnection):
     """
     A Connection to the SQS Service.
     """
-    DefaultRegionName = 'us-east-1'
-    DefaultRegionEndpoint = 'queue.amazonaws.com'
-    APIVersion = '2012-11-05'
+    DefaultRegionName = boto.config.get('Boto', 'sqs_region_name', 'us-east-1')
+    DefaultRegionEndpoint = boto.config.get('Boto', 'sqs_region_endpoint', 
+                                            'queue.amazonaws.com')
+    APIVersion = boto.config.get('Boto', 'sqs_version', '2012-11-05')
     DefaultContentType = 'text/plain'
     ResponseError = SQSError
     AuthServiceName = 'sqs'
