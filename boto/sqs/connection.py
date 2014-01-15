@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import boto
 from boto.connection import AWSQueryConnection
 from boto.sqs.regioninfo import SQSRegionInfo
 from boto.sqs.queue import Queue
@@ -33,7 +34,7 @@ class SQSConnection(AWSQueryConnection):
     A Connection to the SQS Service.
     """
     DefaultRegionName = boto.config.get('Boto', 'sqs_region_name', 'us-east-1')
-    DefaultRegionEndpoint = boto.config.get('Boto', 'sqs_region_endpoint', 
+    DefaultRegionEndpoint = boto.config.get('Boto', 'sqs_region_endpoint',
                                             'queue.amazonaws.com')
     APIVersion = boto.config.get('Boto', 'sqs_version', '2012-11-05')
     DefaultContentType = 'text/plain'
