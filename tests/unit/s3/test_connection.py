@@ -19,10 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import mock
+
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
-from boto.s3.connection import S3Connection
+from boto.s3.connection import S3Connection, HostRequiredError
 
 
 class TestSignatureAlteration(AWSMockServiceTestCase):
@@ -44,6 +46,76 @@ class TestSignatureAlteration(AWSMockServiceTestCase):
             conn._required_auth_capability(),
             ['hmac-v4-s3']
         )
+
+
+class TestSigV4HostError(AWSMockServiceTestCase):
+    connection_class = S3Connection
+
+    def setUp(self):
+        super(TestSigV4HostError, self).setUp()
+        self.config = {}
+        self.config_patch = mock.patch('boto.provider.config.get',
+                                       self.get_config)
+        self.has_config_patch = mock.patch('boto.provider.config.has_option',
+                                           self.has_config)
+        self.config_patch.start()
+        self.has_config_patch.start()
+
+    def tearDown(self):
+        self.config_patch.stop()
+        self.has_config_patch.stop()
+
+    def has_config(self, section_name, key):
+        try:
+            self.config[section_name][key]
+            return True
+        except KeyError:
+            return False
+
+    def get_config(self, section_name, key, default=None):
+        try:
+            return self.config[section_name][key]
+        except KeyError:
+            return None
+
+    def test_historical_behavior(self):
+        self.assertEqual(
+            self.service_connection._required_auth_capability(),
+            ['s3']
+        )
+        self.assertEqual(self.service_connection.host, 's3.amazonaws.com')
+
+    def test_sigv4_opt_in(self):
+        # Switch it at the config, so we can check to see how the host is
+        # handled.
+        self.config = {
+            's3': {
+                'use-sigv4': True,
+            }
+        }
+
+        with self.assertRaises(HostRequiredError):
+            # No host+SigV4 == KABOOM
+            self.connection_class(
+                aws_access_key_id='less',
+                aws_secret_access_key='more'
+            )
+
+        # Ensure passing a ``host`` still works.
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more',
+            host='s3.cn-north-1.amazonaws.com.cn'
+        )
+        self.assertEqual(
+            conn._required_auth_capability(),
+            ['hmac-v4-s3']
+        )
+        self.assertEqual(
+            conn.host,
+            's3.cn-north-1.amazonaws.com.cn'
+        )
+
 
 
 class TestUnicodeCallingFormat(AWSMockServiceTestCase):
