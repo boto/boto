@@ -20,11 +20,13 @@
 # IN THE SOFTWARE.
 #
 import copy
+import mock
 from mock import Mock
 from tests.unit import unittest
 
 from boto.auth import HmacAuthV4Handler
 from boto.auth import S3HmacAuthV4Handler
+from boto.auth import detect_potential_s3sigv4
 from boto.connection import HTTPRequest
 
 
@@ -431,3 +433,60 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
         request = self.auth.mangle_path_and_params(request)
         authed_req = self.auth.canonical_request(request)
         self.assertEqual(authed_req, expected)
+
+
+class FakeS3Connection(object):
+    def __init__(self, host=None):
+        self.host = host
+
+    @detect_potential_s3sigv4
+    def _required_auth_capability(self):
+        return ['nope']
+
+
+class TestSigV4OptIn(unittest.TestCase):
+    def setUp(self):
+        self.config = {}
+        self.config_patch = mock.patch('boto.provider.config.get',
+                                       self.get_config)
+        self.has_config_patch = mock.patch('boto.provider.config.has_option',
+                                           self.has_config)
+        self.config_patch.start()
+        self.has_config_patch.start()
+
+    def tearDown(self):
+        self.config_patch.stop()
+        self.has_config_patch.stop()
+
+    def has_config(self, section_name, key):
+        try:
+            self.config[section_name][key]
+            return True
+        except KeyError:
+            return False
+
+    def get_config(self, section_name, key, default=None):
+        try:
+            return self.config[section_name][key]
+        except KeyError:
+            return None
+
+    def test_sigv4_opt_out(self):
+        # Default is opt-out.
+        fake = FakeS3Connection(host='s3.amazonaws.com')
+        self.assertEqual(fake._required_auth_capability(), ['nope'])
+
+    def test_sigv4_non_optional(self):
+        # Default is opt-out.
+        fake = FakeS3Connection(host='s3.cn-north-1.amazonaws.com.cn')
+        self.assertEqual(fake._required_auth_capability(), ['hmac-v4-s3'])
+
+    def test_sigv4_opt_in(self):
+        # Opt-in via the config.
+        self.config = {
+            's3': {
+                'use-sigv4': True,
+            },
+        }
+        fake = FakeS3Connection()
+        self.assertEqual(fake._required_auth_capability(), ['hmac-v4-s3'])

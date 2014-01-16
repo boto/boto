@@ -903,6 +903,9 @@ def detect_potential_sigv4(func):
 
 def detect_potential_s3sigv4(func):
     def _wrapper(self):
+        if boto.config.get('s3', 'use-sigv4', False):
+            return ['hmac-v4-s3']
+
         if hasattr(self, 'host'):
             if '.cn-' in self.host:
                 return ['hmac-v4-s3']
