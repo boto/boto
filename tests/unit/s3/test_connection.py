@@ -23,6 +23,7 @@ import mock
 
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
+from tests.unit import MockServiceWithConfigTestCase
 
 from boto.s3.connection import S3Connection, HostRequiredError
 
@@ -48,35 +49,8 @@ class TestSignatureAlteration(AWSMockServiceTestCase):
         )
 
 
-class TestSigV4HostError(AWSMockServiceTestCase):
+class TestSigV4HostError(MockServiceWithConfigTestCase):
     connection_class = S3Connection
-
-    def setUp(self):
-        super(TestSigV4HostError, self).setUp()
-        self.config = {}
-        self.config_patch = mock.patch('boto.provider.config.get',
-                                       self.get_config)
-        self.has_config_patch = mock.patch('boto.provider.config.has_option',
-                                           self.has_config)
-        self.config_patch.start()
-        self.has_config_patch.start()
-
-    def tearDown(self):
-        self.config_patch.stop()
-        self.has_config_patch.stop()
-
-    def has_config(self, section_name, key):
-        try:
-            self.config[section_name][key]
-            return True
-        except KeyError:
-            return False
-
-    def get_config(self, section_name, key, default=None):
-        try:
-            return self.config[section_name][key]
-        except KeyError:
-            return None
 
     def test_historical_behavior(self):
         self.assertEqual(

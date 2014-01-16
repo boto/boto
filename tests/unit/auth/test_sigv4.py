@@ -22,7 +22,7 @@
 import copy
 import mock
 from mock import Mock
-from tests.unit import unittest
+from tests.unit import unittest, MockServiceWithConfigTestCase
 
 from boto.auth import HmacAuthV4Handler
 from boto.auth import S3HmacAuthV4Handler
@@ -436,40 +436,19 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
 
 
 class FakeS3Connection(object):
-    def __init__(self, host=None):
-        self.host = host
+    def __init__(self, *args, **kwargs):
+        self.host = kwargs.pop('host', None)
 
     @detect_potential_s3sigv4
     def _required_auth_capability(self):
         return ['nope']
 
+    def _mexe(self, *args, **kwargs):
+        pass
 
-class TestSigV4OptIn(unittest.TestCase):
-    def setUp(self):
-        self.config = {}
-        self.config_patch = mock.patch('boto.provider.config.get',
-                                       self.get_config)
-        self.has_config_patch = mock.patch('boto.provider.config.has_option',
-                                           self.has_config)
-        self.config_patch.start()
-        self.has_config_patch.start()
 
-    def tearDown(self):
-        self.config_patch.stop()
-        self.has_config_patch.stop()
-
-    def has_config(self, section_name, key):
-        try:
-            self.config[section_name][key]
-            return True
-        except KeyError:
-            return False
-
-    def get_config(self, section_name, key, default=None):
-        try:
-            return self.config[section_name][key]
-        except KeyError:
-            return None
+class TestSigV4OptIn(MockServiceWithConfigTestCase):
+    connection_class = FakeS3Connection
 
     def test_sigv4_opt_out(self):
         # Default is opt-out.
