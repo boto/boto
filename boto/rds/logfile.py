@@ -1,5 +1,5 @@
 # Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
-# 2014-01-15  Jumping Qu  @ BPO
+# Copyright (c) 2014 Jumping Qu http://newrice.blogspot.com/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -25,21 +25,21 @@ class LogFile(object):
     def __init__(self, connection=None):
         self.connection = connection
         self.size = None
-        self.logfilename = None
-        self.lastwritten = None
+        self.log_filename = None
+        self.last_written = None
         
     def __repr__(self):
         #return '(%s, %s, %s)' % (self.logfilename, self.size, self.lastwritten)
-        return '%s' % (self.logfilename)
+        return '%s' % (self.log_filename)
 
     def startElement(self, name, attrs, connection):
         pass
 
     def endElement(self, name, value, connection):
         if name == 'LastWritten':
-            self.lastwritten = value
+            self.last_written = value
         elif name == 'LogFileName':
-            self.logfilename = value
+            self.log_filename = value
         elif name == 'Size':
             self.size = value
         else:
