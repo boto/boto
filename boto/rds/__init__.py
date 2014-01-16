@@ -31,6 +31,7 @@ from boto.rds.event import Event
 from boto.rds.regioninfo import RDSRegionInfo
 from boto.rds.dbsubnetgroup import DBSubnetGroup
 from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
+from boto.rds.logfile import LogFile
 
 def regions():
     """
@@ -1086,6 +1087,27 @@ class RDSConnection(AWSQueryConnection):
             params['Marker'] = marker
         return self.get_list('DescribeDBSnapshots', params,
                              [('DBSnapshot', DBSnapshot)])
+
+    def get_all_logs(self, dbinstance_id):
+        """
+        Get all log files
+
+        :type instance_id: str
+        :param instance_id: The identifier of a DBInstance.  If provided,
+                            only the DBSnapshots related to that instance will
+                            be returned.
+                            If not provided, all RDS snapshots will be returned.
+
+        :rtype: list
+        :return: A list of :class:`boto.rds.dbsnapshot.DBSnapshot`
+        """
+        params = {}
+        if dbinstance_id:
+           params['DBInstanceIdentifier'] = dbinstance_id
+        params['MaxRecords'] = 26
+
+        return self.get_list('DescribeDBLogFiles', params,
+                             [('DescribeDBLogFilesDetails',LogFile)])
 
     def create_dbsnapshot(self, snapshot_id, dbinstance_id):
         """
