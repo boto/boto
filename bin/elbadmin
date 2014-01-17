@@ -108,10 +108,10 @@ def get(elb, name):
         print
 
         # Make map of all instance Id's to Name tags
+        import boto
         if not options.region:
             ec2 = boto.connect_ec2()
         else:
-            import boto.ec2.elb
             ec2 = boto.ec2.connect_to_region(options.region)
 
         instance_health = b.get_instance_health()
