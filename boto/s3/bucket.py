@@ -545,6 +545,7 @@ class Bucket(object):
             list only if they have an upload ID lexicographically
             greater than the specified upload_id_marker.
 
+        :type encoding_type: string
         :param encoding_type: Requests Amazon S3 to encode the response and
             specifies the encoding method to use.
 
@@ -555,14 +556,31 @@ class Bucket(object):
             encode the keys in the response.
 
             Valid options: ``url``
-        :type encoding_type: string
+
+        :type delimiter: string
+        :param delimiter: Character you use to group keys.
+            All keys that contain the same string between the prefix, if
+            specified, and the first occurrence of the delimiter after the
+            prefix are grouped under a single result element, CommonPrefixes.
+            If you don't specify the prefix parameter, then the substring
+            starts at the beginning of the key. The keys that are grouped
+            under CommonPrefixes result element are not returned elsewhere
+            in the response.
+
+        :type prefix: string
+        :param prefix: Lists in-progress uploads only for those keys that
+            begin with the specified prefix. You can use prefixes to separate
+            a bucket into different grouping of keys. (You can think of using
+            prefix to make groups in the same way you'd use a folder in a
+            file system.)
 
         :rtype: ResultSet
         :return: The result from S3 listing the uploads requested
 
         """
         self.validate_kwarg_names(params, ['max_uploads', 'key_marker',
-                                           'upload_id_marker', 'encoding_type'])
+                                           'upload_id_marker', 'encoding_type',
+                                           'delimiter', 'prefix'])
         return self._get_all([('Upload', MultiPartUpload),
                               ('CommonPrefixes', Prefix)],
                              'uploads', headers, **params)
