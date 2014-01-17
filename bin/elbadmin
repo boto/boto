@@ -117,9 +117,10 @@ def get(elb, name):
         instance_health = b.get_instance_health()
         instances = [state.instance_id for state in instance_health]
 
-        names = {}
-        for i in ec2.get_only_instances(instances):
-            names[i.id] = i.tags.get('Name', '')
+        names = dict((k,'') for k in instances)
+        for i in ec2.get_only_instances():
+            if i.id in instances:
+                names[i.id] = i.tags.get('Name', '')
 
         name_column_width = max([4] + [len(v) for k,v in names.iteritems()]) + 2
 
