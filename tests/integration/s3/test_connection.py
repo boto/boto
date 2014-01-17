@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -196,7 +196,7 @@ class S3ConnectionTest (unittest.TestCase):
         # now try to inject a response header
         data = k.get_contents_as_string(response_headers={'response-content-type' : 'foo/bar'})
         assert k.content_type == 'foo/bar'
-        
+
         # now delete all keys in bucket
         for k in bucket:
             if k.name == 'reduced_redundancy':
@@ -224,6 +224,7 @@ class S3ConnectionTest (unittest.TestCase):
 
         # give bucket anon user access and anon read again
         auth_bucket.set_acl('public-read')
+        time.sleep(5)
         try:
             iter(anon_bucket.list()).next()
             self.fail("not expecting contents")
