@@ -821,7 +821,8 @@ class ResultSetTestCase(unittest.TestCase):
     def setUp(self):
         super(ResultSetTestCase, self).setUp()
         self.results = ResultSet()
-        self.results.to_call(fake_results, 'john', greeting='Hello', limit=20)
+        self.result_function = mock.MagicMock(side_effect=fake_results)
+        self.results.to_call(self.result_function, 'john', greeting='Hello', limit=20)
 
     def test_first_key(self):
         self.assertEqual(self.results.first_key, 'exclusive_start_key')
@@ -837,6 +838,9 @@ class ResultSetTestCase(unittest.TestCase):
             'Hello john #4',
         ])
 
+        self.result_function.assert_called_with('john', greeting='Hello', limit=20)
+        self.result_function.reset_mock()
+
         # Fake in a last key.
         self.results._last_key_seen = 4
         # Second "page".
@@ -848,6 +852,9 @@ class ResultSetTestCase(unittest.TestCase):
             'Hello john #8',
             'Hello john #9',
         ])
+
+        self.result_function.assert_called_with('john', greeting='Hello', limit=20, exclusive_start_key=4)
+        self.result_function.reset_mock()
 
         # Fake in a last key.
         self.results._last_key_seen = 9
