@@ -33,6 +33,9 @@ def regions():
     """
     return [RegionInfo(name='us-east-1',
                        endpoint='email.us-east-1.amazonaws.com',
+                       connection_cls=SESConnection),
+            RegionInfo(name='eu-west-1',
+                       endpoint='email.eu-west-1.amazonaws.com',
                        connection_cls=SESConnection)]
 
 
