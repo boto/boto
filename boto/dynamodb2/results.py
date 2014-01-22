@@ -128,9 +128,18 @@ class ResultSet(object):
         if self._last_key_seen is not None:
             kwargs[self.first_key] = self._last_key_seen
 
+        # If the page size is greater than limit set them
+        #   to the same value
+        if self._max_page_size > self._limit:
+            self._max_page_size = self._limit
+
         # Put in the max page size.
         if self._max_page_size is not None:
             kwargs['limit'] = self._max_page_size
+        elif self._limit is not None:
+            # If max_page_size is not set and limit is available
+            #   use it as the page size
+            kwargs['limit'] = self._limit
 
         results = self.the_callable(*args, **kwargs)
         self._fetches += 1
