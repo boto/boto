@@ -196,7 +196,7 @@ class TestProvider(unittest.TestCase):
             'meta-data/iam/security-credentials/')
 
     def test_refresh_credentials(self):
-        now = datetime.now()
+        now = datetime.utcnow()
         first_expiration = (now + timedelta(seconds=10)).strftime(
             "%Y-%m-%dT%H:%M:%SZ")
         credentials = {
