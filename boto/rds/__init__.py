@@ -1090,7 +1090,7 @@ class RDSConnection(AWSQueryConnection):
         return self.get_list('DescribeDBSnapshots', params,
                              [('DBSnapshot', DBSnapshot)])
 
-    def get_all_logs(self, dbinstance_id):
+    def get_all_logs(self, dbinstance_id=None):
         """
         Get all log files
 
