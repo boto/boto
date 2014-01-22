@@ -1096,12 +1096,12 @@ class RDSConnection(AWSQueryConnection):
 
         :type instance_id: str
         :param instance_id: The identifier of a DBInstance.  If provided,
-                            only the DBSnapshots related to that instance will
-                            be returned.
-                            If not provided, all RDS snapshots will be returned.
+                            only the :class:`boto.rds.logfile.LogFile` related
+                            to that instance will be returned.  If not
+                            provided, all logfiles will be returned.
 
         :rtype: list
-        :return: A list of :class:`boto.rds.dbsnapshot.DBSnapshot`
+        :return: A list of :class:`boto.rds.logfile.LogFile`
         """
         params = {}
         if dbinstance_id:
