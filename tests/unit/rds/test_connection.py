@@ -28,7 +28,7 @@ from boto.ec2.securitygroup import SecurityGroup
 from boto.rds import RDSConnection
 from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
 from boto.rds.parametergroup import ParameterGroup
-
+from boto.rds.logfile import LogFile
 
 class TestRDSConnection(AWSMockServiceTestCase):
     connection_class = RDSConnection
@@ -550,6 +550,85 @@ class TestRDSOptionGroups(AWSMockServiceTestCase):
         self.assertEqual(options.engine_name, 'oracle-se1')
         self.assertEqual(options.major_engine_version, '11.2')
 
+class TestRDSLogFile(AWSMockServiceTestCase):
+    connection_class = RDSConnection
+
+    def setUp(self):
+        super(TestRDSLogFile, self).setUp()
+
+    def default_body(self):
+        return """
+        <DescribeDBLogFilesResponse xmlns="http://rds.amazonaws.com/doc/2013-02-12/">
+          <DescribeDBLogFilesResult>
+            <DescribeDBLogFiles>
+              <DescribeDBLogFilesDetails>
+                <LastWritten>1364403600000</LastWritten>
+                <LogFileName>error/mysql-error-running.log</LogFileName>
+                <Size>0</Size>
+              </DescribeDBLogFilesDetails>
+              <DescribeDBLogFilesDetails>
+                <LastWritten>1364338800000</LastWritten>
+                <LogFileName>error/mysql-error-running.log.0</LogFileName>
+                <Size>0</Size>
+              </DescribeDBLogFilesDetails>
+              <DescribeDBLogFilesDetails>
+                <LastWritten>1364342400000</LastWritten>
+                <LogFileName>error/mysql-error-running.log.1</LogFileName>
+                <Size>0</Size>
+              </DescribeDBLogFilesDetails>
+              <DescribeDBLogFilesDetails>
+                <LastWritten>1364346000000</LastWritten>
+                <LogFileName>error/mysql-error-running.log.2</LogFileName>
+                <Size>0</Size>
+              </DescribeDBLogFilesDetails>
+              <DescribeDBLogFilesDetails>
+                <LastWritten>1364349600000</LastWritten>
+                <LogFileName>error/mysql-error-running.log.3</LogFileName>
+                <Size>0</Size>
+              </DescribeDBLogFilesDetails>
+              <DescribeDBLogFilesDetails>
+                <LastWritten>1364405700000</LastWritten>
+                <LogFileName>error/mysql-error.log</LogFileName>
+                <Size>0</Size>
+              </DescribeDBLogFilesDetails>
+            </DescribeDBLogFiles>
+          </DescribeDBLogFilesResult>
+          <ResponseMetadata>
+            <RequestId>d70fb3b3-9704-11e2-a0db-871552e0ef19</RequestId>
+          </ResponseMetadata>
+        </DescribeDBLogFilesResponse>
+        """
+
+    def test_get_all_logs(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_all_logs()
+
+        self.assert_request_parameters({
+            'Action': 'DescribeDBLogFiles',
+            'MaxRecords': 26,
+        }, ignore_params_values=['Version'])
+
+        self.assertEqual(len(response), 6)
+        self.assertTrue(isinstance(response[0], LogFile))
+        self.assertEqual(response[0].log_filename, 'error/mysql-error-running.log')
+        self.assertEqual(response[0].last_written, '1364403600000')
+        self.assertEqual(response[0].size, '0')
+
+    def test_get_all_logs_single(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_all_logs('db_instance_1')
+
+        self.assert_request_parameters({
+            'Action': 'DescribeDBLogFiles',
+            'DBInstanceIdentifier': 'db_instance_1',
+            'MaxRecords': 26,
+        }, ignore_params_values=['Version'])
+
+        self.assertEqual(len(response), 6)
+        self.assertTrue(isinstance(response[0], LogFile))
+        self.assertEqual(response[0].log_filename, 'error/mysql-error-running.log')
+        self.assertEqual(response[0].last_written, '1364403600000')
+        self.assertEqual(response[0].size, '0')
 
 class TestRDSOptionGroupOptions(AWSMockServiceTestCase):
     connection_class = RDSConnection
