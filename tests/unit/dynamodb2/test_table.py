@@ -821,11 +821,33 @@ class ResultSetTestCase(unittest.TestCase):
     def setUp(self):
         super(ResultSetTestCase, self).setUp()
         self.results = ResultSet()
-        self.results.to_call(fake_results, 'john', greeting='Hello', limit=20)
+        self.result_function = mock.MagicMock(side_effect=fake_results)
+        self.results.to_call(self.result_function, 'john', greeting='Hello', limit=20)
 
     def test_first_key(self):
         self.assertEqual(self.results.first_key, 'exclusive_start_key')
 
+    def test_max_page_size_fetch_more(self):
+        self.results = ResultSet(max_page_size=10)
+        self.results.to_call(self.result_function, 'john', greeting='Hello')
+        self.results.fetch_more()
+        self.result_function.assert_called_with('john', greeting='Hello', limit=10)
+        self.result_function.reset_mock()
+
+    def test_max_page_size_and_smaller_limit_fetch_more(self):
+        self.results = ResultSet(max_page_size=10)
+        self.results.to_call(self.result_function, 'john', greeting='Hello', limit=5)
+        self.results.fetch_more()
+        self.result_function.assert_called_with('john', greeting='Hello', limit=5)
+        self.result_function.reset_mock()
+
+    def test_max_page_size_and_bigger_limit_fetch_more(self):
+        self.results = ResultSet(max_page_size=10)
+        self.results.to_call(self.result_function, 'john', greeting='Hello', limit=15)
+        self.results.fetch_more()
+        self.result_function.assert_called_with('john', greeting='Hello', limit=10)
+        self.result_function.reset_mock()
+    
     def test_fetch_more(self):
         # First "page".
         self.results.fetch_more()
@@ -836,6 +858,9 @@ class ResultSetTestCase(unittest.TestCase):
             'Hello john #3',
             'Hello john #4',
         ])
+
+        self.result_function.assert_called_with('john', greeting='Hello', limit=20)
+        self.result_function.reset_mock()
 
         # Fake in a last key.
         self.results._last_key_seen = 4
@@ -848,6 +873,9 @@ class ResultSetTestCase(unittest.TestCase):
             'Hello john #8',
             'Hello john #9',
         ])
+
+        self.result_function.assert_called_with('john', greeting='Hello', limit=20, exclusive_start_key=4)
+        self.result_function.reset_mock()
 
         # Fake in a last key.
         self.results._last_key_seen = 9
