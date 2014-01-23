@@ -827,6 +827,27 @@ class ResultSetTestCase(unittest.TestCase):
     def test_first_key(self):
         self.assertEqual(self.results.first_key, 'exclusive_start_key')
 
+    def test_max_page_size_fetch_more(self):
+        self.results = ResultSet(max_page_size=10)
+        self.results.to_call(self.result_function, 'john', greeting='Hello')
+        self.results.fetch_more()
+        self.result_function.assert_called_with('john', greeting='Hello', limit=10)
+        self.result_function.reset_mock()
+
+    def test_max_page_size_and_smaller_limit_fetch_more(self):
+        self.results = ResultSet(max_page_size=10)
+        self.results.to_call(self.result_function, 'john', greeting='Hello', limit=5)
+        self.results.fetch_more()
+        self.result_function.assert_called_with('john', greeting='Hello', limit=5)
+        self.result_function.reset_mock()
+
+    def test_max_page_size_and_bigger_limit_fetch_more(self):
+        self.results = ResultSet(max_page_size=10)
+        self.results.to_call(self.result_function, 'john', greeting='Hello', limit=15)
+        self.results.fetch_more()
+        self.result_function.assert_called_with('john', greeting='Hello', limit=10)
+        self.result_function.reset_mock()
+    
     def test_fetch_more(self):
         # First "page".
         self.results.fetch_more()

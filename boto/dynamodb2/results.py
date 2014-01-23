@@ -130,7 +130,7 @@ class ResultSet(object):
 
         # If the page size is greater than limit set them
         #   to the same value
-        if self._max_page_size > self._limit:
+        if self._limit and self._max_page_size > self._limit:
             self._max_page_size = self._limit
 
         # Put in the max page size.
