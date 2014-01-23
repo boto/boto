@@ -71,8 +71,10 @@ class MWSTestCase(unittest.TestCase):
         response = self.mws.get_product_categories_for_asin(
             MarketplaceId=self.marketplace_id,
             ASIN=asin)
-        result = response._result
-        self.assertTrue(int(result.Self.ProductCategoryId) == 21)
+        self.assertTrue(len(response._result.Self) == 2)
+        category_ids = lambda x: int(x.ProductCategoryId)
+        category_ids = map(category_ids, response._result.Self)
+        self.assertSequenceEqual(category_ids, [285856, 21])
 
     @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_list_matching_products(self):
