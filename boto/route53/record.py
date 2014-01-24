@@ -35,7 +35,7 @@ class ResourceRecordSets(ResultSet):
     """
 
     ChangeResourceRecordSetsBody = """<?xml version="1.0" encoding="UTF-8"?>
-    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
+    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2012-12-12/">
             <ChangeBatch>
                 <Comment>%(comment)s</Comment>
                 <Changes>%(changes)s</Changes>
@@ -66,7 +66,7 @@ class ResourceRecordSets(ResultSet):
 
     def add_change(self, action, name, type, ttl=600,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
-            weight=None, region=None):
+            weight=None, region=None, health_check=None):
         """
         Add a change request to the set.
 
@@ -118,11 +118,14 @@ class ResourceRecordSets(ResultSet):
             record sets that have the same combination of DNS name and type,
             a value that determines which region this should be associated with
             for the latency-based routing
+
+        :type health_check: str
+        :param health_check: Health check to associate with this record
         """
         change = Record(name, type, ttl,
                 alias_hosted_zone_id=alias_hosted_zone_id,
                 alias_dns_name=alias_dns_name, identifier=identifier,
-                weight=weight, region=region)
+                weight=weight, region=region, health_check=health_check)
         self.changes.append([action, change])
         return change
 
@@ -178,11 +181,14 @@ class ResourceRecordSets(ResultSet):
 class Record(object):
     """An individual ResourceRecordSet"""
 
+    HealthCheckBody = """<HealthCheckId>%s</HealthCheckId>"""
+
     XMLBody = """<ResourceRecordSet>
         <Name>%(name)s</Name>
         <Type>%(type)s</Type>
         %(weight)s
         %(body)s
+        %(health_check)s
     </ResourceRecordSet>"""
 
     WRRBody = """
@@ -265,11 +271,16 @@ class Record(object):
             weight = self.RRRBody % {"identifier": self.identifier, "region":
                     self.region}
 
+        health_check = ""
+        if self.health_check is not None:
+            health_check = self.HealthCheckBody % (self.health_check)
+
         params = {
             "name": self.name,
             "type": self.type,
             "weight": weight,
             "body": body,
+            "health_check": health_check
         }
         return self.XMLBody % params
 

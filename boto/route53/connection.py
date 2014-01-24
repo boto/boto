@@ -54,10 +54,10 @@ class Route53Connection(AWSAuthConnection):
     DefaultHost = 'route53.amazonaws.com'
     """The default Route53 API endpoint to connect to."""
 
-    Version = '2012-02-29'
+    Version = '2012-12-12'
     """Route53 API version."""
 
-    XMLNameSpace = 'https://route53.amazonaws.com/doc/2012-02-29/'
+    XMLNameSpace = 'https://route53.amazonaws.com/doc/2012-12-12/'
     """XML schema for this Route53 API version."""
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -225,6 +225,74 @@ class Route53Connection(AWSAuthConnection):
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
+
+
+    # Health checks
+
+    POSTHCXMLBody = """<CreateHealthCheckRequest xmlns="%(xmlns)s">
+    <CallerReference>%(caller_ref)s</CallerReference>
+    %(health_check)s
+    </CreateHealthCheckRequest>"""
+
+    def create_health_check(self, health_check, caller_ref=None):
+        """
+        Create a new health check
+        """
+        if caller_ref is None:
+            caller_ref = str(uuid.uuid4())
+        uri = '/%s/healthcheck' % self.Version
+        params = {'xmlns': self.XMLNameSpace,
+                  'caller_ref': caller_ref,
+                  'health_check': health_check.to_xml()
+                  }
+        xml_body = self.POSTHCXMLBody % params
+        response = self.make_request('POST', uri, {'Content-Type': 'text/xml'}, xml_body)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 201:
+            e = boto.jsonresponse.Element()
+            h = boto.jsonresponse.XmlHandler(e, None)
+            h.parse(body)
+            return e
+        else:
+            raise exception.DNSServerError(response.status, response.reason, body)
+
+    def get_list_health_checks(self, maxitems=None, marker=None):
+        """ Return a list of existing health checks """
+
+        params = {}
+        if maxitems is not None:
+            params['maxitems'] = maxitems
+        if marker is not None:
+            params['marker'] = marker
+
+        uri = '/%s/healthcheck' % (self.Version, )
+        response = self.make_request('GET', uri, params=params)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element(list_marker='HealthChecks', item_marker=('HealthCheck',))
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
+
+    def delete_health_check(self, health_check_id):
+        uri = '/%s/healthcheck/%s' % (self.Version, health_check_id)
+        response = self.make_request('DELETE', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status not in (200, 204):
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element()
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
+    
 
     # Resource Record Sets
 
