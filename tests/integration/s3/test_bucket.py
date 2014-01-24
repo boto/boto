@@ -173,6 +173,29 @@ class S3BucketTest (unittest.TestCase):
         self.assertEqual(response[0][1].key, 'anotherkey')
         self.assertEqual(response[0][1].value, 'anothervalue')
 
+    def test_delete_subresource(self):
+        # First lets add a tag to our default bucket
+        t = Tags()
+        tag_set = TagSet()
+        tag_set.add_tag('akey', 'avalue')
+        t.add_tag_set(tag_set)
+        self.bucket.set_tags(t)
+        # next confirm its there
+        tags = self.bucket.get_tags()
+        self.assertEqual(tags[0][0].key, 'akey')
+        self.assertEqual(tags[0][0].value, 'avalue')
+        # next delete using delete_subresource command instead of
+        # using delete_tags().
+        self.assertTrue(self.bucket.delete_subresource('tagging'))
+        # Next just validate the tags are gone
+        try:
+            tags = self.bucket.get_tags()
+            self.assertFalse('Not expecting tags')
+        except S3ResponseError as e:
+            self.assertEqual(e.code, 'NoSuchTagSet')
+        else:
+            self.assertFalse('Not expecting this')
+
     def test_website_configuration(self):
         response = self.bucket.configure_website('index.html')
         self.assertTrue(response)

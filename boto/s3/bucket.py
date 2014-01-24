@@ -973,14 +973,14 @@ class Bucket(object):
         :param value: The value of the subresource.
 
         :type key_name: string
-        :param key_name: The key to operate on, or None to operate on the
+        :param key_name: The key to operate on, or '' to operate on the
             bucket.
 
         :type headers: dict
         :param headers: Additional HTTP headers to include in the request.
 
-        :type src_version_id: string
-        :param src_version_id: Optional. The version id of the key to
+        :type version_id: string
+        :param version_id: Optional. The version id of the key to
             operate on. If not specified, operate on the newest
             version.
         """
@@ -1000,6 +1000,40 @@ class Bucket(object):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
+    def delete_subresource(self, subresource, key_name='',
+                           headers=None, version_id=None):
+        """
+        DELETE a subresource for a bucket or key.
+
+        :type subresource: string
+        :param subresource: The subresource to delete.
+
+        :type key_name: string
+        :param key_name: The key to operate on, or '' to operate on the
+            bucket.
+
+        :type headers: dict
+        :param headers: Additional HTTP headers to include in the request.
+
+        :type version_id: string
+        :param version_id: Optional. A specific version id of the key to
+            operate on.
+        """
+        if subresource is None:
+            raise TypeError('delete_subresource called with subresource=None')
+        query_args = subresource
+        if version_id:
+            query_args += '&versionId=%s' % version_id
+        response = self.connection.make_request('DELETE', self.name, key_name,
+                                                query_args=query_args,
+                                                headers=headers)
+        body = response.read()
+        if response.status == 204:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
     def get_subresource(self, subresource, key_name='', headers=None,
                         version_id=None):
         """
@@ -1015,8 +1049,8 @@ class Bucket(object):
         :type headers: dict
         :param headers: Additional HTTP headers to include in the request.
 
-        :type src_version_id: string
-        :param src_version_id: Optional. The version id of the key to
+        :type version_id: string
+        :param version_id: Optional. The version id of the key to
             operate on. If not specified, operate on the newest
             version.
 
