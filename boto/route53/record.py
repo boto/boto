@@ -220,7 +220,7 @@ class Record(object):
 
     def __init__(self, name=None, type=None, ttl=600, resource_records=None,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
-            weight=None, region=None):
+            weight=None, region=None, health_check=None):
         self.name = name
         self.type = type
         self.ttl = ttl
@@ -232,7 +232,8 @@ class Record(object):
         self.identifier = identifier
         self.weight = weight
         self.region = region
-
+        self.health_check = health_check
+        
     def __repr__(self):
         return '<Record:%s:%s:%s>' % (self.name, self.type, self.to_print())
 
