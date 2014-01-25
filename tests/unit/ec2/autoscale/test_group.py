@@ -33,7 +33,7 @@ from boto.ec2.autoscale.tag import Tag
 
 from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 
-from boto.ec2.autoscale import launchconfig
+from boto.ec2.autoscale import launchconfig, LaunchConfiguration
 
 class TestAutoScaleGroup(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
@@ -226,6 +226,58 @@ class TestDescribeTerminationPolicies(AWSMockServiceTestCase):
             response,
             ['ClosestToNextInstanceHour', 'Default',
              'NewestInstance', 'OldestInstance', 'OldestLaunchConfiguration'])
+
+class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def default_body(self):
+        # This is a dummy response
+        return """
+        <DescribeLaunchConfigurationsResponse>
+          <DescribeLaunchConfigurationsResult>
+            <LaunchConfigurations>
+              <member>
+                <AssociatePublicIpAddress>true</AssociatePublicIpAddress>
+                <SecurityGroups/>
+                <CreatedTime>2013-01-21T23:04:42.200Z</CreatedTime>
+                <KernelId/>
+                <LaunchConfigurationName>my-test-lc</LaunchConfigurationName>
+                <UserData/>
+                <InstanceType>m1.small</InstanceType>
+                <LaunchConfigurationARN>arn:aws:autoscaling:us-east-1:803981987763:launchConfiguration:9dbbbf87-6141-428a-a409-0752edbe6cad:launchConfigurationName/my-test-lc</LaunchConfigurationARN>
+                <BlockDeviceMappings/>
+                <ImageId>ami-514ac838</ImageId>
+                <KeyName/>
+                <RamdiskId/>
+                <InstanceMonitoring>
+                  <Enabled>true</Enabled>
+                </InstanceMonitoring>
+                <EbsOptimized>false</EbsOptimized>
+              </member>
+            </LaunchConfigurations>
+          </DescribeLaunchConfigurationsResult>
+          <ResponseMetadata>
+            <RequestId>d05a22f8-b690-11e2-bf8e-2113fEXAMPLE</RequestId>
+          </ResponseMetadata>
+        </DescribeLaunchConfigurationsResponse>
+        """
+
+    def test_get_all_launch_configurations(self):
+        self.set_http_response(status_code=200)
+        
+        response = self.service_connection.get_all_launch_configurations()
+        self.assertTrue(isinstance(response, list))
+        self.assertEqual(len(response), 1)
+        self.assertTrue(isinstance(response[0], LaunchConfiguration))
+
+        self.assertEqual(response[0].associate_public_ip_address, True)
+        self.assertEqual(response[0].name, "my-test-lc")
+        self.assertEqual(response[0].instance_type, "m1.small")
+        self.assertEqual(response[0].launch_configuration_arn, "arn:aws:autoscaling:us-east-1:803981987763:launchConfiguration:9dbbbf87-6141-428a-a409-0752edbe6cad:launchConfigurationName/my-test-lc")
+        self.assertEqual(response[0].image_id, "ami-514ac838")
+        self.assertTrue(isinstance(response[0].instance_monitoring, launchconfig.InstanceMonitoring))
+        self.assertEqual(response[0].instance_monitoring.enabled, 'true')
+        self.assertEqual(response[0].ebs_optimized, False)
 
 class TestLaunchConfiguration(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
