@@ -223,6 +223,8 @@ class LaunchConfiguration(object):
             self.instance_profile_name = value
         elif name == 'EbsOptimized':
             self.ebs_optimized = True if value.lower() == 'true' else False
+        elif name == 'AssociatePublicIpAddress':
+            self.associate_public_ip_address = True if value.lower() == 'true' else False
         elif name == 'VolumeType':
             self.volume_type = value
         elif name == 'DeleteOnTermination':
