@@ -27,7 +27,7 @@ from datetime import datetime
 from tests.unit import AWSMockServiceTestCase
 
 from boto.emr.connection import EmrConnection
-from boto.emr.emrobject import JobFlowStepList, StepSummaryList
+from boto.emr.emrobject import Cluster, JobFlowStepList, StepSummaryList
 
 # These tests are just checking the basic structure of
 # the Elastic MapReduce code, by picking a few calls
@@ -223,7 +223,47 @@ class TestDescribeCluster(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<DescribeClusterOutput></DescribeClusterOutput>"""
+        return """
+<DescribeClusterResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+  <DescribeClusterResult>
+    <Cluster>
+      <Id>j-aaaaaaaaa</Id>
+      <Tags/>
+      <Ec2InstanceAttributes>
+        <Ec2AvailabilityZone>us-west-1c</Ec2AvailabilityZone>
+        <Ec2KeyName>my_secret_key</Ec2KeyName>
+      </Ec2InstanceAttributes>
+      <RunningAmiVersion>2.4.2</RunningAmiVersion>
+      <VisibleToAllUsers>true</VisibleToAllUsers>
+      <Status>
+        <StateChangeReason>
+          <Message>Terminated by user request</Message>
+          <Code>USER_REQUEST</Code>
+        </StateChangeReason>
+        <State>TERMINATED</State>
+        <Timeline>
+          <CreationDateTime>2014-01-24T01:21:21Z</CreationDateTime>
+          <ReadyDateTime>2014-01-24T01:25:26Z</ReadyDateTime>
+          <EndDateTime>2014-01-24T02:19:46Z</EndDateTime>
+        </Timeline>
+      </Status>
+      <AutoTerminate>false</AutoTerminate>
+      <Name>test analytics</Name>
+      <RequestedAmiVersion>2.4.2</RequestedAmiVersion>
+      <Applications>
+        <member>
+          <Name>hadoop</Name>
+          <Version>1.0.3</Version>
+        </member>
+      </Applications>
+      <TerminationProtected>false</TerminationProtected>
+    </Cluster>
+  </DescribeClusterResult>
+  <ResponseMetadata>
+    <RequestId>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</RequestId>
+  </ResponseMetadata>
+</DescribeClusterResponse>
+        """
 
     def test_describe_cluster(self):
         self.set_http_response(200)
@@ -232,6 +272,20 @@ class TestDescribeCluster(AWSMockServiceTestCase):
             self.service_connection.describe_cluster()
 
         response = self.service_connection.describe_cluster(cluster_id='j-123')
+
+        self.assertTrue(isinstance(response, Cluster))
+        self.assertEqual(response.id, 'j-aaaaaaaaa')
+        self.assertEqual(response.runningamiversion, '2.4.2')
+        self.assertEqual(response.visibletoallusers, 'true')
+        self.assertEqual(response.autoterminate, 'false')
+        self.assertEqual(response.name, 'test analytics')
+        self.assertEqual(response.requestedamiversion, '2.4.2')
+        self.assertEqual(response.terminationprotected, 'false')
+        self.assertEqual(response.ec2instanceattributes.ec2availabilityzone, "us-west-1c")
+        self.assertEqual(response.ec2instanceattributes.ec2keyname, 'my_secret_key')
+        self.assertEqual(response.status.state, 'TERMINATED')
+        self.assertEqual(response.applications[0].name, 'hadoop')
+        self.assertEqual(response.applications[0].version, '1.0.3')
 
         self.assert_request_parameters({
             'Action': 'DescribeCluster',
