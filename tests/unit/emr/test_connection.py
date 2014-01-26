@@ -24,10 +24,11 @@ from __future__ import with_statement
 import boto.utils
 
 from datetime import datetime
+from time import time
 from tests.unit import AWSMockServiceTestCase
 
 from boto.emr.connection import EmrConnection
-from boto.emr.emrobject import Cluster, JobFlowStepList, StepSummaryList
+from boto.emr.emrobject import BootstrapAction, BootstrapActionList, ClusterStatus, ClusterSummaryList, ClusterSummary, ClusterTimeline, InstanceInfo, InstanceList, InstanceGroupInfo, InstanceGroup, InstanceGroupList, JobFlow, JobFlowStepList, Step, StepSummaryList
 
 # These tests are just checking the basic structure of
 # the Elastic MapReduce code, by picking a few calls
@@ -38,7 +39,49 @@ class TestListClusters(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<ListClustersOutput><Clusters></Clusters></ListClustersOutput>"""
+        return """
+<ListClustersResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+  <ListClustersResult>
+    <Clusters>
+      <member>
+        <Id>j-aaaaaaaaaaaa</Id>
+        <Status>
+          <StateChangeReason>
+            <Message>Terminated by user request</Message>
+            <Code>USER_REQUEST</Code>
+          </StateChangeReason>
+          <State>TERMINATED</State>
+          <Timeline>
+            <CreationDateTime>2014-01-24T01:21:21Z</CreationDateTime>
+            <ReadyDateTime>2014-01-24T01:25:26Z</ReadyDateTime>
+            <EndDateTime>2014-01-24T02:19:46Z</EndDateTime>
+          </Timeline>
+        </Status>
+        <Name>analytics test</Name>
+      </member>
+      <member>
+        <Id>j-aaaaaaaaaaaab</Id>
+        <Status>
+          <StateChangeReason>
+            <Message>Terminated by user request</Message>
+            <Code>USER_REQUEST</Code>
+          </StateChangeReason>
+          <State>TERMINATED</State>
+          <Timeline>
+            <CreationDateTime>2014-01-21T02:53:08Z</CreationDateTime>
+            <ReadyDateTime>2014-01-21T02:56:40Z</ReadyDateTime>
+            <EndDateTime>2014-01-21T03:40:22Z</EndDateTime>
+          </Timeline>
+        </Status>
+        <Name>test job</Name>
+      </member>
+    </Clusters>
+  </ListClustersResult>
+  <ResponseMetadata>
+    <RequestId>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</RequestId>
+  </ResponseMetadata>
+</ListClustersResponse>
+        """
 
     def test_list_clusters(self):
         self.set_http_response(status_code=200)
@@ -48,6 +91,21 @@ class TestListClusters(AWSMockServiceTestCase):
             'Action': 'ListClusters',
             'Version': '2009-03-31',
         })
+
+        self.assertTrue(isinstance(response, ClusterSummaryList))
+
+        self.assertEqual(len(response.clusters), 2)
+        self.assertTrue(isinstance(response.clusters[0], ClusterSummary))
+        self.assertEqual(response.clusters[0].name, 'analytics test')
+
+        self.assertTrue(isinstance(response.clusters[0].status, ClusterStatus))
+
+        self.assertTrue(isinstance(response.clusters[0].status.timeline, ClusterTimeline))
+
+        self.assertEqual(response.clusters[0].status.timeline.creationdatetime, '2014-01-24T01:21:21Z')
+        self.assertEqual(response.clusters[0].status.timeline.readydatetime, '2014-01-24T01:25:26Z')
+        self.assertEqual(response.clusters[0].status.timeline.enddatetime, '2014-01-24T02:19:46Z')
+
 
     def test_list_clusters_created_before(self):
         self.set_http_response(status_code=200)
@@ -92,7 +150,60 @@ class TestListInstanceGroups(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<ListInstanceGroupsOutput><InstanceGroups></InstanceGroups></ListInstanceGroupsOutput>"""
+        return """
+<ListInstanceGroupsResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+  <ListInstanceGroupsResult>
+    <InstanceGroups>
+      <member>
+        <Id>ig-aaaaaaaaaaaaa</Id>
+        <InstanceType>m1.large</InstanceType>
+        <Market>ON_DEMAND</Market>
+        <Status>
+          <StateChangeReason>
+            <Message>Job flow terminated</Message>
+            <Code>CLUSTER_TERMINATED</Code>
+          </StateChangeReason>
+          <State>TERMINATED</State>
+          <Timeline>
+            <CreationDateTime>2014-01-24T01:21:21Z</CreationDateTime>
+            <ReadyDateTime>2014-01-24T01:25:08Z</ReadyDateTime>
+            <EndDateTime>2014-01-24T02:19:46Z</EndDateTime>
+          </Timeline>
+        </Status>
+        <Name>Master instance group</Name>
+        <RequestedInstanceCount>1</RequestedInstanceCount>
+        <RunningInstanceCount>0</RunningInstanceCount>
+        <InstanceGroupType>MASTER</InstanceGroupType>
+      </member>
+      <member>
+        <Id>ig-aaaaaaaaaaab</Id>
+        <InstanceType>m1.large</InstanceType>
+        <Market>ON_DEMAND</Market>
+        <Status>
+          <StateChangeReason>
+            <Message>Job flow terminated</Message>
+            <Code>CLUSTER_TERMINATED</Code>
+          </StateChangeReason>
+          <State>TERMINATED</State>
+          <Timeline>
+            <CreationDateTime>2014-01-24T01:21:21Z</CreationDateTime>
+            <ReadyDateTime>2014-01-24T01:25:26Z</ReadyDateTime>
+            <EndDateTime>2014-01-24T02:19:46Z</EndDateTime>
+          </Timeline>
+        </Status>
+        <Name>Core instance group</Name>
+        <RequestedInstanceCount>2</RequestedInstanceCount>
+        <RunningInstanceCount>0</RunningInstanceCount>
+        <InstanceGroupType>CORE</InstanceGroupType>
+      </member>
+    </InstanceGroups>
+  </ListInstanceGroupsResult>
+  <ResponseMetadata>
+    <RequestId>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</RequestId>
+  </ResponseMetadata>
+</ListInstanceGroupsResponse>
+
+"""
 
     def test_list_instance_groups(self):
         self.set_http_response(200)
@@ -108,11 +219,96 @@ class TestListInstanceGroups(AWSMockServiceTestCase):
             'Version': '2009-03-31'
         })
 
+        self.assertTrue(isinstance(response, InstanceGroupList))
+        self.assertEqual(len(response.instancegroups), 2)
+        self.assertTrue(isinstance(response.instancegroups[0], InstanceGroupInfo))
+        self.assertEqual(response.instancegroups[0].id, 'ig-aaaaaaaaaaaaa')
+        self.assertEqual(response.instancegroups[0].instancegrouptype, "MASTER")
+        self.assertEqual(response.instancegroups[0].instancetype, "m1.large")
+        self.assertEqual(response.instancegroups[0].market, "ON_DEMAND")
+        self.assertEqual(response.instancegroups[0].name, "Master instance group")
+        self.assertEqual(response.instancegroups[0].requestedinstancecount, '1')
+        self.assertEqual(response.instancegroups[0].runninginstancecount, '0')
+        self.assertTrue(isinstance(response.instancegroups[0].status, ClusterStatus))
+        self.assertEqual(response.instancegroups[0].status.state, 'TERMINATED')
+        # status.statechangereason is not parsed into an object
+        #self.assertEqual(response.instancegroups[0].status.statechangereason.code, 'CLUSTER_TERMINATED')
+
 class TestListInstances(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<ListInstancesOutput><Instances></Instances></ListInstancesOutput>"""
+        return """
+<ListInstancesResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+  <ListInstancesResult>
+    <Instances>
+      <member>
+        <Id>ci-123456789abc</Id>
+        <Status>
+          <StateChangeReason>
+            <Message>Cluster was terminated.</Message>
+            <Code>CLUSTER_TERMINATED</Code>
+          </StateChangeReason>
+          <State>TERMINATED</State>
+          <Timeline>
+            <CreationDateTime>2014-01-24T01:21:26Z</CreationDateTime>
+            <ReadyDateTime>2014-01-24T01:25:25Z</ReadyDateTime>
+            <EndDateTime>2014-01-24T02:19:46Z</EndDateTime>
+          </Timeline>
+        </Status>
+        <PrivateDnsName>ip-10-0-0-60.us-west-1.compute.internal</PrivateDnsName>
+        <PublicIpAddress>54.0.0.1</PublicIpAddress>
+        <PublicDnsName>ec2-54-0-0-1.us-west-1.compute.amazonaws.com</PublicDnsName>
+        <Ec2InstanceId>i-aaaaaaaa</Ec2InstanceId>
+        <PrivateIpAddress>10.0.0.60</PrivateIpAddress>
+      </member>
+      <member>
+        <Id>ci-123456789abd</Id>
+        <Status>
+          <StateChangeReason>
+            <Message>Cluster was terminated.</Message>
+            <Code>CLUSTER_TERMINATED</Code>
+          </StateChangeReason>
+          <State>TERMINATED</State>
+          <Timeline>
+            <CreationDateTime>2014-01-24T01:21:26Z</CreationDateTime>
+            <ReadyDateTime>2014-01-24T01:25:25Z</ReadyDateTime>
+            <EndDateTime>2014-01-24T02:19:46Z</EndDateTime>
+          </Timeline>
+        </Status>
+        <PrivateDnsName>ip-10-0-0-61.us-west-1.compute.internal</PrivateDnsName>
+        <PublicIpAddress>54.0.0.2</PublicIpAddress>
+        <PublicDnsName>ec2-54-0-0-2.us-west-1.compute.amazonaws.com</PublicDnsName>
+        <Ec2InstanceId>i-aaaaaaab</Ec2InstanceId>
+        <PrivateIpAddress>10.0.0.61</PrivateIpAddress>
+      </member>
+      <member>
+        <Id>ci-123456789abe3</Id>
+        <Status>
+          <StateChangeReason>
+            <Message>Cluster was terminated.</Message>
+            <Code>CLUSTER_TERMINATED</Code>
+          </StateChangeReason>
+          <State>TERMINATED</State>
+          <Timeline>
+            <CreationDateTime>2014-01-24T01:21:33Z</CreationDateTime>
+            <ReadyDateTime>2014-01-24T01:25:08Z</ReadyDateTime>
+            <EndDateTime>2014-01-24T02:19:46Z</EndDateTime>
+          </Timeline>
+        </Status>
+        <PrivateDnsName>ip-10-0-0-62.us-west-1.compute.internal</PrivateDnsName>
+        <PublicIpAddress>54.0.0.3</PublicIpAddress>
+        <PublicDnsName>ec2-54-0-0-3.us-west-1.compute.amazonaws.com</PublicDnsName>
+        <Ec2InstanceId>i-aaaaaaac</Ec2InstanceId>
+        <PrivateIpAddress>10.0.0.62</PrivateIpAddress>
+      </member>
+    </Instances>
+  </ListInstancesResult>
+  <ResponseMetadata>
+    <RequestId>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</RequestId>
+  </ResponseMetadata>
+</ListInstancesResponse>
+        """
 
     def test_list_instances(self):
         self.set_http_response(200)
@@ -121,6 +317,16 @@ class TestListInstances(AWSMockServiceTestCase):
             self.service_connection.list_instances()
 
         response = self.service_connection.list_instances(cluster_id='j-123')
+        self.assertTrue(isinstance(response, InstanceList))
+        self.assertEqual(len(response.instances), 3)
+        self.assertTrue(isinstance(response.instances[0], InstanceInfo))
+        self.assertEqual(response.instances[0].ec2instanceid, 'i-aaaaaaaa')
+        self.assertEqual(response.instances[0].id, 'ci-123456789abc')
+        self.assertEqual(response.instances[0].privatednsname , 'ip-10-0-0-60.us-west-1.compute.internal')
+        self.assertEqual(response.instances[0].privateipaddress , '10.0.0.60')
+        self.assertEqual(response.instances[0].publicdnsname , 'ec2-54-0-0-1.us-west-1.compute.amazonaws.com')
+        self.assertEqual(response.instances[0].publicipaddress , '54.0.0.1')
+
 
         self.assert_request_parameters({
             'Action': 'ListInstances',
@@ -467,3 +673,191 @@ class TestRemoveTag(AWSMockServiceTestCase):
             'TagKeys.member.2': 'SecondKey',
             'Version': '2009-03-31'
         })
+
+class DescribeJobFlowsTestBase(AWSMockServiceTestCase):
+    connection_class = EmrConnection
+
+    def default_body(self):
+        return """
+<DescribeJobFlowsResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+  <DescribeJobFlowsResult>
+    <JobFlows>
+      <member>
+        <AmiVersion>2.4.2</AmiVersion>
+        <ExecutionStatusDetail>
+          <CreationDateTime>2014-01-24T01:21:21Z</CreationDateTime>
+          <LastStateChangeReason>Terminated by user request</LastStateChangeReason>
+          <StartDateTime>2014-01-24T01:25:26Z</StartDateTime>
+          <ReadyDateTime>2014-01-24T01:25:26Z</ReadyDateTime>
+          <State>TERMINATED</State>
+          <EndDateTime>2014-01-24T02:19:46Z</EndDateTime>
+        </ExecutionStatusDetail>
+        <BootstrapActions/>
+        <VisibleToAllUsers>true</VisibleToAllUsers>
+        <SupportedProducts/>
+        <Name>test analytics</Name>
+        <JobFlowId>j-aaaaaa</JobFlowId>
+        <Steps>
+          <member>
+            <ExecutionStatusDetail>
+              <CreationDateTime>2014-01-24T01:21:21Z</CreationDateTime>
+              <StartDateTime>2014-01-24T01:25:26Z</StartDateTime>
+              <State>COMPLETED</State>
+              <EndDateTime>2014-01-24T01:26:08Z</EndDateTime>
+            </ExecutionStatusDetail>
+            <StepConfig>
+              <HadoopJarStep>
+                <Args>
+                  <member>s3://us-west-1.elasticmapreduce/libs/hive/hive-script</member>
+                  <member>--base-path</member>
+                  <member>s3://us-west-1.elasticmapreduce/libs/hive/</member>
+                  <member>--install-hive</member>
+                  <member>--hive-versions</member>
+                  <member>0.11.0.1</member>
+                </Args>
+                <Jar>s3://us-west-1.elasticmapreduce/libs/script-runner/script-runner.jar</Jar>
+                <Properties/>
+              </HadoopJarStep>
+              <Name>Setup hive</Name>
+              <ActionOnFailure>TERMINATE_JOB_FLOW</ActionOnFailure>
+            </StepConfig>
+          </member>
+        </Steps>
+        <Instances>
+          <Placement>
+            <AvailabilityZone>us-west-1c</AvailabilityZone>
+          </Placement>
+          <MasterInstanceType>m1.large</MasterInstanceType>
+          <Ec2KeyName>my_key</Ec2KeyName>
+          <KeepJobFlowAliveWhenNoSteps>true</KeepJobFlowAliveWhenNoSteps>
+          <InstanceGroups>
+            <member>
+              <CreationDateTime>2014-01-24T01:21:21Z</CreationDateTime>
+              <InstanceRunningCount>0</InstanceRunningCount>
+              <StartDateTime>2014-01-24T01:23:56Z</StartDateTime>
+              <ReadyDateTime>2014-01-24T01:25:08Z</ReadyDateTime>
+              <State>ENDED</State>
+              <EndDateTime>2014-01-24T02:19:46Z</EndDateTime>
+              <InstanceRequestCount>1</InstanceRequestCount>
+              <InstanceType>m1.large</InstanceType>
+              <LastStateChangeReason>Job flow terminated</LastStateChangeReason>
+              <Market>ON_DEMAND</Market>
+              <InstanceGroupId>ig-aaaaaa</InstanceGroupId>
+              <InstanceRole>MASTER</InstanceRole>
+              <Name>Master instance group</Name>
+            </member>
+            <member>
+              <CreationDateTime>2014-01-24T01:21:21Z</CreationDateTime>
+              <InstanceRunningCount>0</InstanceRunningCount>
+              <StartDateTime>2014-01-24T01:25:26Z</StartDateTime>
+              <ReadyDateTime>2014-01-24T01:25:26Z</ReadyDateTime>
+              <State>ENDED</State>
+              <EndDateTime>2014-01-24T02:19:46Z</EndDateTime>
+              <InstanceRequestCount>2</InstanceRequestCount>
+              <InstanceType>m1.large</InstanceType>
+              <LastStateChangeReason>Job flow terminated</LastStateChangeReason>
+              <Market>ON_DEMAND</Market>
+              <InstanceGroupId>ig-aaaaab</InstanceGroupId>
+              <InstanceRole>CORE</InstanceRole>
+              <Name>Core instance group</Name>
+            </member>
+          </InstanceGroups>
+          <SlaveInstanceType>m1.large</SlaveInstanceType>
+          <MasterInstanceId>i-aaaaaa</MasterInstanceId>
+          <HadoopVersion>1.0.3</HadoopVersion>
+          <NormalizedInstanceHours>12</NormalizedInstanceHours>
+          <MasterPublicDnsName>ec2-184-0-0-1.us-west-1.compute.amazonaws.com</MasterPublicDnsName>
+          <InstanceCount>3</InstanceCount>
+          <TerminationProtected>false</TerminationProtected>
+        </Instances>
+      </member>
+    </JobFlows>
+  </DescribeJobFlowsResult>
+  <ResponseMetadata>
+    <RequestId>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</RequestId>
+  </ResponseMetadata>
+</DescribeJobFlowsResponse>
+        """
+
+class TestDescribeJobFlows(DescribeJobFlowsTestBase):
+
+    def test_describe_jobflows_response(self):
+        self.set_http_response(200)
+
+        response = self.service_connection.describe_jobflows()
+        self.assertTrue(isinstance(response, list))
+
+        jf = response[0]
+        self.assertTrue(isinstance(jf, JobFlow))
+        self.assertEqual(jf.amiversion, '2.4.2')
+        self.assertEqual(jf.visibletoallusers, 'true')
+        self.assertEqual(jf.name, 'test analytics')
+        self.assertEqual(jf.jobflowid, 'j-aaaaaa')
+        self.assertEqual(jf.ec2keyname, 'my_key')
+        self.assertEqual(jf.masterinstancetype, 'm1.large')
+        self.assertEqual(jf.availabilityzone, 'us-west-1c')
+        self.assertEqual(jf.keepjobflowalivewhennosteps, 'true')
+        self.assertEqual(jf.slaveinstancetype, 'm1.large')
+        self.assertEqual(jf.masterinstanceid, 'i-aaaaaa')
+        self.assertEqual(jf.hadoopversion, '1.0.3')
+        self.assertEqual(jf.normalizedinstancehours, '12')
+        self.assertEqual(jf.masterpublicdnsname, 'ec2-184-0-0-1.us-west-1.compute.amazonaws.com')
+        self.assertEqual(jf.instancecount, '3')
+        self.assertEqual(jf.terminationprotected, 'false')
+
+        self.assertTrue(isinstance(jf.steps, list))
+        step = jf.steps[0]
+        self.assertTrue(isinstance(step, Step))
+        self.assertEqual(step.jar, 's3://us-west-1.elasticmapreduce/libs/script-runner/script-runner.jar')
+        self.assertEqual(step.name, 'Setup hive')
+        self.assertEqual(step.actiononfailure, 'TERMINATE_JOB_FLOW')
+
+        self.assertTrue(isinstance(jf.instancegroups, list))
+        ig = jf.instancegroups[0]
+        self.assertTrue(isinstance(ig, InstanceGroup))
+        self.assertEqual(ig.creationdatetime, '2014-01-24T01:21:21Z')
+        self.assertEqual(ig.state, 'ENDED')
+        self.assertEqual(ig.instancerequestcount, '1')
+        self.assertEqual(ig.instancetype, 'm1.large')
+        self.assertEqual(ig.laststatechangereason, 'Job flow terminated')
+        self.assertEqual(ig.market, 'ON_DEMAND')
+        self.assertEqual(ig.instancegroupid, 'ig-aaaaaa')
+        self.assertEqual(ig.instancerole, 'MASTER')
+        self.assertEqual(ig.name, 'Master instance group')
+
+    def test_describe_jobflows_no_args(self):
+        self.set_http_response(200)
+
+        self.service_connection.describe_jobflows()
+
+        self.assert_request_parameters({
+            'Action': 'DescribeJobFlows',
+        }, ignore_params_values=['Version'])
+
+    def test_describe_jobflows_filtered(self):
+        self.set_http_response(200)
+
+        now = datetime.now()
+        a_bit_before = datetime.fromtimestamp(time() - 1000)
+
+        self.service_connection.describe_jobflows(states=['WAITING', 'RUNNING'], jobflow_ids=['j-aaaaaa', 'j-aaaaab'], created_after=a_bit_before, created_before=now)
+        self.assert_request_parameters({
+            'Action': 'DescribeJobFlows',
+            'JobFlowIds.member.1': 'j-aaaaaa',
+            'JobFlowIds.member.2': 'j-aaaaab',
+            'JobFlowStates.member.1': 'WAITING',
+            'JobFlowStates.member.2': 'RUNNING',
+            'CreatedAfter': a_bit_before.strftime(boto.utils.ISO8601),
+            'CreatedBefore': now.strftime(boto.utils.ISO8601),
+        }, ignore_params_values=['Version'])
+
+class TestDescribeJobFlow(DescribeJobFlowsTestBase):
+    def test_describe_jobflow(self):
+        self.set_http_response(200)
+
+        response = self.service_connection.describe_jobflow('j-aaaaaa')
+        self.assertTrue(isinstance(response, JobFlow))
+        self.assert_request_parameters({
+            'Action': 'DescribeJobFlows',
+            'JobFlowIds.member.1': 'j-aaaaaa',
+        }, ignore_params_values=['Version'])
