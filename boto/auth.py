@@ -329,8 +329,12 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         parameter_names = sorted(http_request.params.keys())
         pairs = []
         for pname in parameter_names:
-            pval = str(http_request.params[pname]).encode('utf-8')
-            pairs.append(urllib.quote(pname, safe='') + '=' +
+            try:
+                pval = str(http_request.params[pname]).encode('utf-8')
+            except UnicodeEncodeError:
+                pval = http_request.params[pname].encode('utf-8')
+
+            pairs.append(urllib.quote(pname, safe='') + u'=' +
                          urllib.quote(pval, safe='-_~'))
         return '&'.join(pairs)
 

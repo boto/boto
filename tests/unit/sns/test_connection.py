@@ -1,3 +1,4 @@
+# coding: utf-8
 #!/usr/bin/env python
 # Copyright (c) 2013 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
@@ -225,6 +226,18 @@ class TestSNSConnection(AWSMockServiceTestCase):
             'MessageStructure': 'json',
         }, ignore_params_values=['Version', 'ContentType'])
 
+    def test_publish_with_kwargs_with_unicode_message(self):
+        self.set_http_response(status_code=200)
+
+        self.service_connection.publish(topic='topic',
+                                        message=u'ãoéî',
+                                        subject='subject')
+        self.assert_request_parameters({
+            'Action': 'Publish',
+            'TopicArn': 'topic',
+            'Subject': 'subject',
+            'Message': u'ãoéî',
+        }, ignore_params_values=['Version', 'ContentType'])
 
 if __name__ == '__main__':
     unittest.main()
