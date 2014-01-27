@@ -329,7 +329,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         parameter_names = sorted(http_request.params.keys())
         pairs = []
         for pname in parameter_names:
-            pval = str(http_request.params[pname]).encode('utf-8')
+            pval = boto.utils.get_utf8_value(http_request.params[pname])
             pairs.append(urllib.quote(pname, safe='') + '=' +
                          urllib.quote(pval, safe='-_~'))
         return '&'.join(pairs)
@@ -341,7 +341,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
             return ""
         l = []
         for param in sorted(http_request.params):
-            value = str(http_request.params[param])
+            value = boto.utils.get_utf8_value(http_request.params[param])
             l.append('%s=%s' % (urllib.quote(param, safe='-_.~'),
                                 urllib.quote(value, safe='-_.~')))
         return '&'.join(l)
