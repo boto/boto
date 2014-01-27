@@ -330,12 +330,12 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         pairs = []
         for pname in parameter_names:
             try:
-                pval = str(http_request.params[pname]).encode('utf-8')
-            except UnicodeEncodeError:
-                pval = http_request.params[pname].encode('utf-8')
+                pval = str(http_request.params[pname])
+            except UnicodeError:
+                pval = http_request.params[pname]
 
             pairs.append(urllib.quote(pname, safe='') + u'=' +
-                         urllib.quote(pval, safe='-_~'))
+                         urllib.quote(pval.encode('utf-8'), safe='-_~'))
         return '&'.join(pairs)
 
     def canonical_query_string(self, http_request):
