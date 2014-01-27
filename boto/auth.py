@@ -36,6 +36,7 @@ import copy
 import datetime
 from email.utils import formatdate
 import hmac
+import os
 import sys
 import time
 import urllib
@@ -903,6 +904,9 @@ def detect_potential_sigv4(func):
 
 def detect_potential_s3sigv4(func):
     def _wrapper(self):
+        if os.environ.get('S3_USE_SIGV4', False):
+            return ['hmac-v4-s3']
+
         if boto.config.get('s3', 'use-sigv4', False):
             return ['hmac-v4-s3']
 

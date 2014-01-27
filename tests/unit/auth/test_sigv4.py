@@ -22,6 +22,7 @@
 import copy
 import mock
 from mock import Mock
+import os
 from tests.unit import unittest, MockServiceWithConfigTestCase
 
 from boto.auth import HmacAuthV4Handler
@@ -460,7 +461,7 @@ class TestSigV4OptIn(MockServiceWithConfigTestCase):
         fake = FakeS3Connection(host='s3.cn-north-1.amazonaws.com.cn')
         self.assertEqual(fake._required_auth_capability(), ['hmac-v4-s3'])
 
-    def test_sigv4_opt_in(self):
+    def test_sigv4_opt_in_config(self):
         # Opt-in via the config.
         self.config = {
             's3': {
@@ -468,4 +469,10 @@ class TestSigV4OptIn(MockServiceWithConfigTestCase):
             },
         }
         fake = FakeS3Connection()
+        self.assertEqual(fake._required_auth_capability(), ['hmac-v4-s3'])
+
+    def test_sigv4_opt_in_env(self):
+        # Opt-in via the ENV.
+        self.environ['S3_USE_SIGV4'] = True
+        fake = FakeS3Connection(host='s3.amazonaws.com')
         self.assertEqual(fake._required_auth_capability(), ['hmac-v4-s3'])
