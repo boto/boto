@@ -498,7 +498,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
             # Safe to modify req.path here since
             # the signature will use req.auth_path.
             req.path = req.path.split('?')[0]
-            
+
             if qs:
                 # Don't insert the '?' unless there's actually a query string
                 req.path = req.path + '?' + qs
