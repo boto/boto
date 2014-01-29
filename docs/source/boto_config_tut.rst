@@ -152,6 +152,10 @@ For example::
   timeout for httplib .
 :send_crlf_after_proxy_auth_headers: Change line ending behaviour with proxies.
   For more details see this `discussion <https://groups.google.com/forum/?fromgroups=#!topic/boto-dev/teenFvOq2Cc>`_
+:endpoints_path: Allows customizing the regions/endpoints available in Boto.
+  Provide an absolute path to a custom JSON file, which gets merged into the
+  defaults. (This can also be specified with the ``BOTO_ENDPOINTS``
+  environment variable instead.)
 
 These settings will default to::
 
@@ -162,6 +166,7 @@ These settings will default to::
     ca_certificates_file = cacerts.txt
     http_socket_timeout = 60
     send_crlf_after_proxy_auth_headers = False
+    endpoints_path = /path/to/my/boto/endpoints.json
 
 You can control the timeouts and number of retries used when retrieving
 information from the Metadata Service (this is used for retrieving credentials
