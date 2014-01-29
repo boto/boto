@@ -35,7 +35,7 @@ from boto.vpc.dhcpoptions import DhcpOptions
 from boto.vpc.subnet import Subnet
 from boto.vpc.vpnconnection import VpnConnection
 from boto.ec2 import RegionData
-from boto.regioninfo import RegionInfo
+from boto.regioninfo import RegionInfo, get_regions
 
 
 def regions(**kw_params):
@@ -48,16 +48,7 @@ def regions(**kw_params):
     :rtype: list
     :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
     """
-    regions = []
-    for region_name in RegionData:
-        region = RegionInfo(name=region_name,
-                            endpoint=RegionData[region_name],
-                            connection_cls=VPCConnection)
-        regions.append(region)
-    regions.append(RegionInfo(name='us-gov-west-1',
-                              endpoint=RegionData[region_name],
-                              connection_cls=VPCConnection))
-    return regions
+    return get_regions('ec2', connection_cls=VPCConnection)
 
 
 def connect_to_region(region_name, **kw_params):
