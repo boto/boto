@@ -129,6 +129,7 @@ class SQSConnection(AWSQueryConnection):
             * LastModifiedTimestamp
             * Policy
             * ReceiveMessageWaitTimeSeconds
+            * RedrivePolicy
 
         :rtype: :class:`boto.sqs.attributes.Attributes`
         :return: An Attributes object containing request value(s).
@@ -358,6 +359,19 @@ class SQSConnection(AWSQueryConnection):
             return None
 
     lookup = get_queue
+
+    def get_dead_letter_source_queues(self, queue):
+        """
+        Retrieves the dead letter source queues for a given queue.
+
+        :type queue: A :class:`boto.sqs.queue.Queue` object.
+        :param queue: The queue for which to get DL source queues
+        :rtype: list
+        :returns: A list of :py:class:`boto.sqs.queue.Queue` instances.
+        """
+        params = {'QueueUrl': queue.url}
+        return self.get_list('ListDeadLetterSourceQueues', params,
+                             [('QueueUrl', Queue)])
 
     #
     # Permissions methods
