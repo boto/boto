@@ -232,8 +232,9 @@
         "us-west-2": "sdb.us-west-2.amazonaws.com"
     },
     "ses": {
+        "eu-west-1": "email.eu-west-1.amazonaws.com",
         "us-east-1": "email.us-east-1.amazonaws.com",
-        "eu-west-1": "email.eu-west-1.amazonaws.com"
+        "us-west-2": "email.us-west-2.amazonaws.com"
     },
     "sns": {
         "ap-northeast-1": "sns.ap-northeast-1.amazonaws.com",
