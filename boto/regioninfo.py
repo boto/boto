@@ -99,7 +99,7 @@ def load_regions():
     return endpoints
 
 
-def get_regions(service_name, region_class=None, connection_cls=None):
+def get_regions(service_name, region_cls=None, connection_cls=None):
     """
     Given a service name (like ``ec2``), returns a list of ``RegionInfo``
     objects for that service.
@@ -111,9 +111,9 @@ def get_regions(service_name, region_class=None, connection_cls=None):
         objects for. Ex: ``ec2``, ``s3``, ``sns``, etc.
     :type service_name: string
 
-    :param region_class: (Optional) The class to use when constructing. By
+    :param region_cls: (Optional) The class to use when constructing. By
         default, this is ``RegionInfo``.
-    :type region_class: class
+    :type region_cls: class
 
     :param connection_cls: (Optional) The connection class for the
         ``RegionInfo`` object. Providing this allows the ``connect`` method on
@@ -130,14 +130,14 @@ def get_regions(service_name, region_class=None, connection_cls=None):
             "Service '%s' not found in endpoints." % service_name
         )
 
-    if region_class is None:
-        region_class = RegionInfo
+    if region_cls is None:
+        region_cls = RegionInfo
 
     region_objs = []
 
     for region_name, endpoint in endpoints.get(service_name, {}).items():
         region_objs.append(
-            region_class(
+            region_cls(
                 name=region_name,
                 endpoint=endpoint,
                 connection_cls=connection_cls
