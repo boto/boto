@@ -148,6 +148,16 @@ class Location(object):
     CNNorth1 = 'cn-north-1'
 
 
+class NoHostProvided(object):
+    # An identifying object to help determine whether the user provided a
+    # ``host`` or not. Never instantiated.
+    pass
+
+
+class HostRequiredError(BotoClientError):
+    pass
+
+
 class S3Connection(AWSAuthConnection):
 
     DefaultHost = boto.config.get('s3', 'host', 's3.amazonaws.com')
@@ -157,11 +167,15 @@ class S3Connection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
-                 host=DefaultHost, debug=0, https_connection_factory=None,
+                 host=NoHostProvided, debug=0, https_connection_factory=None,
                  calling_format=DefaultCallingFormat, path='/',
                  provider='aws', bucket_class=Bucket, security_token=None,
                  suppress_consec_slashes=True, anon=False,
                  validate_certs=None, profile_name=None):
+        no_host_provided = False
+        if host is NoHostProvided:
+            no_host_provided = True
+            host = self.DefaultHost
         if isinstance(calling_format, basestring):
             calling_format=boto.utils.find_class(calling_format)()
         self.calling_format = calling_format
@@ -174,6 +188,13 @@ class S3Connection(AWSAuthConnection):
                 path=path, provider=provider, security_token=security_token,
                 suppress_consec_slashes=suppress_consec_slashes,
                 validate_certs=validate_certs, profile_name=profile_name)
+        # We need to delay until after the call to ``super`` before checking
+        # to see if SigV4 is in use.
+        if no_host_provided:
+            if 'hmac-v4-s3' in self._required_auth_capability():
+                raise HostRequiredError(
+                    "When using SigV4, you must specify a 'host' parameter."
+                )
 
     @detect_potential_s3sigv4
     def _required_auth_capability(self):
