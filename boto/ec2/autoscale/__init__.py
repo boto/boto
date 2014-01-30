@@ -31,7 +31,7 @@ import base64
 
 import boto
 from boto.connection import AWSQueryConnection
-from boto.ec2.regioninfo import RegionInfo
+from boto.regioninfo import RegionInfo, get_regions, load_regions
 from boto.ec2.autoscale.request import Request
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 from boto.ec2.autoscale.group import AutoScalingGroup
@@ -46,18 +46,7 @@ from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.tag import Tag
 from boto.ec2.autoscale.limits import AccountLimits
 
-RegionData = {
-    'us-east-1': 'autoscaling.us-east-1.amazonaws.com',
-    'us-gov-west-1': 'autoscaling.us-gov-west-1.amazonaws.com',
-    'us-west-1': 'autoscaling.us-west-1.amazonaws.com',
-    'us-west-2': 'autoscaling.us-west-2.amazonaws.com',
-    'sa-east-1': 'autoscaling.sa-east-1.amazonaws.com',
-    'eu-west-1': 'autoscaling.eu-west-1.amazonaws.com',
-    'ap-northeast-1': 'autoscaling.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1': 'autoscaling.ap-southeast-1.amazonaws.com',
-    'ap-southeast-2': 'autoscaling.ap-southeast-2.amazonaws.com',
-    'cn-north-1': 'autoscaling.cn-north-1.amazonaws.com.cn',
-}
+RegionData = load_regions().get('autoscaling', {})
 
 
 def regions():
@@ -67,13 +56,7 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.RegionInfo` instances
     """
-    regions = []
-    for region_name in RegionData:
-        region = RegionInfo(name=region_name,
-                            endpoint=RegionData[region_name],
-                            connection_cls=AutoScaleConnection)
-        regions.append(region)
-    return regions
+    return get_regions('autoscaling', connection_cls=AutoScaleConnection)
 
 
 def connect_to_region(region_name, **kw_params):
@@ -104,7 +87,7 @@ class AutoScaleConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True):
+                 security_token=None, validate_certs=True, profile_name=None):
         """
         Init method to create a new connection to the AutoScaling service.
 
@@ -123,7 +106,8 @@ class AutoScaleConnection(AWSQueryConnection):
                                     self.region.endpoint, debug,
                                     https_connection_factory, path=path,
                                     security_token=security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['hmac-v4']

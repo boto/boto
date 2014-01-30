@@ -83,7 +83,7 @@ class EC2Connection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  api_version=None, security_token=None,
-                 validate_certs=True):
+                 validate_certs=True, profile_name=None):
         """
         Init method to create a new connection to EC2.
         """
@@ -98,7 +98,8 @@ class EC2Connection(AWSQueryConnection):
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
                                     security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    profile_name=profile_name)
         if api_version:
             self.APIVersion = api_version
 
@@ -734,8 +735,8 @@ class EC2Connection(AWSQueryConnection):
             launch instances.
 
         :type security_groups: list of strings
-        :param security_groups: The names of the security groups with which to
-            associate instances.
+        :param security_groups: The names of the EC2 classic security groups
+            with which to associate instances
 
         :type user_data: string
         :param user_data: The Base64-encoded MIME user data to be made
@@ -749,6 +750,8 @@ class EC2Connection(AWSQueryConnection):
             * m1.medium
             * m1.large
             * m1.xlarge
+            * m3.medium
+            * m3.large
             * m3.xlarge
             * m3.2xlarge
             * c1.medium
@@ -1442,6 +1445,8 @@ class EC2Connection(AWSQueryConnection):
             * m1.medium
             * m1.large
             * m1.xlarge
+            * m3.medium
+            * m3.large
             * m3.xlarge
             * m3.2xlarge
             * c1.medium

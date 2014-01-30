@@ -217,7 +217,8 @@ class Key(object):
             self.delete_marker = False
 
     def handle_restore_headers(self, response):
-        header = response.getheader('x-amz-restore')
+        provider = self.bucket.connection.provider
+        header = response.getheader(provider.restore_header)
         if header is None:
             return
         parts = header.split(',', 1)
@@ -299,6 +300,7 @@ class Key(object):
                     self.content_disposition = value
             self.handle_version_headers(self.resp)
             self.handle_encryption_headers(self.resp)
+            self.handle_restore_headers(self.resp)
             self.handle_addl_headers(self.resp.getheaders())
 
     def open_write(self, headers=None, override_num_retries=None):
@@ -1416,6 +1418,14 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
+            
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
         """
         self._get_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
                                 torrent=torrent, version_id=version_id,
@@ -1573,6 +1583,14 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
+
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
         """
         if self.bucket is not None:
             if res_download_handler:
@@ -1629,6 +1647,14 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
+            
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
         """
         try:
             with open(filename, 'wb') as fp:
@@ -1686,6 +1712,14 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
+
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
 
         :rtype: string
         :returns: The contents of the file as a string

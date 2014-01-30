@@ -31,6 +31,7 @@ from boto.rds.event import Event
 from boto.rds.regioninfo import RDSRegionInfo
 from boto.rds.dbsubnetgroup import DBSubnetGroup
 from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
+from boto.regioninfo import get_regions
 
 def regions():
     """
@@ -39,27 +40,11 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.rds.regioninfo.RDSRegionInfo`
     """
-    return [RDSRegionInfo(name='us-east-1',
-                          endpoint='rds.amazonaws.com'),
-            RDSRegionInfo(name='us-gov-west-1',
-                          endpoint='rds.us-gov-west-1.amazonaws.com'),
-            RDSRegionInfo(name='eu-west-1',
-                          endpoint='rds.eu-west-1.amazonaws.com'),
-            RDSRegionInfo(name='us-west-1',
-                          endpoint='rds.us-west-1.amazonaws.com'),
-            RDSRegionInfo(name='us-west-2',
-                          endpoint='rds.us-west-2.amazonaws.com'),
-            RDSRegionInfo(name='sa-east-1',
-                          endpoint='rds.sa-east-1.amazonaws.com'),
-            RDSRegionInfo(name='ap-northeast-1',
-                          endpoint='rds.ap-northeast-1.amazonaws.com'),
-            RDSRegionInfo(name='ap-southeast-1',
-                          endpoint='rds.ap-southeast-1.amazonaws.com'),
-            RDSRegionInfo(name='ap-southeast-2',
-                          endpoint='rds.ap-southeast-2.amazonaws.com'),
-            RDSRegionInfo(name='cn-north-1',
-                          endpoint='rds.cn-north-1.amazonaws.com.cn'),
-            ]
+    return get_regions(
+        'rds',
+        region_cls=RDSRegionInfo,
+        connection_cls=RDSConnection
+    )
 
 
 def connect_to_region(region_name, **kw_params):
@@ -94,7 +79,8 @@ class RDSConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True):
+                 security_token=None, validate_certs=True,
+                 profile_name=None):
         if not region:
             region = RDSRegionInfo(self, self.DefaultRegionName,
                                    self.DefaultRegionEndpoint)
@@ -106,7 +92,8 @@ class RDSConnection(AWSQueryConnection):
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
                                     security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
