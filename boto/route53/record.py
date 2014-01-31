@@ -35,7 +35,7 @@ class ResourceRecordSets(ResultSet):
     """
 
     ChangeResourceRecordSetsBody = """<?xml version="1.0" encoding="UTF-8"?>
-    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2012-12-12/">
+    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
             <ChangeBatch>
                 <Comment>%(comment)s</Comment>
                 <Changes>%(changes)s</Changes>
