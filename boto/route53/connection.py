@@ -236,7 +236,18 @@ class Route53Connection(AWSAuthConnection):
 
     def create_health_check(self, health_check, caller_ref=None):
         """
-        Create a new health check
+        Create a new Health Check
+
+        :type health_check: HealthCheck
+        :param health_check: HealthCheck object
+
+        :type caller_ref: str
+        :param caller_ref: A unique string that identifies the request
+            and that allows failed CreateHealthCheckRequest requests to be retried
+            without the risk of executing the operation twice.  If you don't
+            provide a value for this, boto will generate a Type 4 UUID and
+            use that.
+
         """
         if caller_ref is None:
             caller_ref = str(uuid.uuid4())
@@ -258,7 +269,16 @@ class Route53Connection(AWSAuthConnection):
             raise exception.DNSServerError(response.status, response.reason, body)
 
     def get_list_health_checks(self, maxitems=None, marker=None):
-        """ Return a list of existing health checks """
+        """
+        Return a list of health checks
+
+        :type maxitems: int
+        :param maxitems: Maximum number of items to return
+
+        :type marker: str
+        :param marker: marker to get next set of items to list
+
+        """
 
         params = {}
         if maxitems is not None:
@@ -280,6 +300,13 @@ class Route53Connection(AWSAuthConnection):
         return e
 
     def delete_health_check(self, health_check_id):
+        """
+        Delete a health check
+
+        :type health_check_id: str
+        :param health_check_id: ID of the health check to delete
+
+        """
         uri = '/%s/healthcheck/%s' % (self.Version, health_check_id)
         response = self.make_request('DELETE', uri)
         body = response.read()

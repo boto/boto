@@ -64,6 +64,28 @@ class HealthCheck(object):
     XMLStringMatchPart = """<SearchString>%(string_match)s</SearchString>"""
 
     def __init__(self, ip_addr, port, hc_type, resource_path, fqdn=None, string_match=None):
+        """
+        HealthCheck object
+
+        :type ip_addr: str
+        :param ip_addr: IP Address
+
+        :type port: int
+        :param port: Port to check
+
+        :type hc_type: str
+        :param ip_addr: One of HTTP | HTTPS | HTTP_STR_MATCH | HTTPS_STR_MATCH | TCP
+
+        :type resource_path: str
+        :param resource_path: Path to check
+
+        :type fqdn: str
+        :param fqdn: domain name of the endpoint to check
+
+        :type string_match: str 
+        :param string_match: if hc_type is HTTP_STR_MATCH or HTTPS_STR_MATCH, the string to search for in the response body from the specified resource
+
+        """
         self.ip_addr = ip_addr
         self.port = port
         self.hc_type = hc_type
