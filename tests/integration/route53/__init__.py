@@ -18,3 +18,18 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+
+import unittest
+from nose.plugins.attrib import attr
+from boto.route53.connection import Route53Connection
+
+@attr(route53=True)
+class Route53TestCase(unittest.TestCase):
+    def setUp(self):
+        super(Route53TestCase, self).setUp()
+        self.conn = Route53Connection()
+        self.zone = self.conn.create_zone('example.com')
+
+    def tearDown(self):
+        self.zone.delete()
+        super(Route53TestCase, self).tearDown()
