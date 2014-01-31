@@ -32,10 +32,10 @@ from tests.integration import ServiceCertVerificationTest
 import boto.route53
 
 
+@attr(route53=True)
 class Route53CertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     route53 = True
     regions = boto.route53.regions()
 
-    @attr(route53=True)
     def sample_service_call(self, conn):
         conn.get_all_hosted_zones()

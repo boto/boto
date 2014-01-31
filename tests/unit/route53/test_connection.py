@@ -31,6 +31,7 @@ from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 
+@attr(route53=True)
 class TestRoute53Connection(AWSMockServiceTestCase):
     connection_class = Route53Connection
 
@@ -45,8 +46,6 @@ class TestRoute53Connection(AWSMockServiceTestCase):
     <Message>It failed.</Message>
 </Route53Result>
 """
-
-    @attr(route53=True)
     def test_typical_400(self):
         self.set_http_response(status_code=400, header=[
             ['Code', 'Throttling'],
@@ -57,7 +56,6 @@ class TestRoute53Connection(AWSMockServiceTestCase):
 
         self.assertTrue('It failed.' in str(err.exception))
 
-    @attr(route53=True)
     @mock.patch('time.sleep')
     def test_retryable_400(self, sleep_mock):
         self.set_http_response(status_code=400, header=[
