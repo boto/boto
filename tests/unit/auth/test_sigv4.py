@@ -41,6 +41,13 @@ class TestSigV4Handler(unittest.TestCase):
             '/-/vaults/foo/archives', None, {},
             {'x-amz-glacier-version': '2012-06-01'}, '')
 
+    def test_not_adding_empty_qs(self):
+        self.provider.security_token = None
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com', Mock(), self.provider)
+        req = copy.copy(self.request)
+        auth.add_auth(req)
+        self.assertEqual(req.path, '/-/vaults/foo/archives')
+
     def test_inner_whitespace_is_collapsed(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
                                  Mock(), self.provider)
