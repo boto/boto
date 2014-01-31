@@ -26,6 +26,7 @@ from boto.exception import BotoServerError
 from boto.route53.connection import Route53Connection
 from boto.route53.exception import DNSServerError
 
+from nose.plugins.attrib import attr
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
@@ -45,6 +46,7 @@ class TestRoute53Connection(AWSMockServiceTestCase):
 </Route53Result>
 """
 
+    @attr(route53=True)
     def test_typical_400(self):
         self.set_http_response(status_code=400, header=[
             ['Code', 'Throttling'],
@@ -55,6 +57,7 @@ class TestRoute53Connection(AWSMockServiceTestCase):
 
         self.assertTrue('It failed.' in str(err.exception))
 
+    @attr(route53=True)
     @mock.patch('time.sleep')
     def test_retryable_400(self, sleep_mock):
         self.set_http_response(status_code=400, header=[

@@ -21,6 +21,7 @@
 #
 
 import unittest
+from nose.plugins.attrib import attr
 from boto.route53.connection import Route53Connection
 from boto.route53.record import ResourceRecordSets
 
@@ -35,6 +36,7 @@ class TestRoute53ResourceRecordSets(unittest.TestCase):
         self.zone.delete()
         super(TestRoute53ResourceRecordSets, self).tearDown()
 
+    @attr(route53=True)
     def test_add_change(self):
         rrs = ResourceRecordSets(self.conn, self.zone.id)
 
@@ -47,6 +49,7 @@ class TestRoute53ResourceRecordSets(unittest.TestCase):
         deleted.add_value('192.168.0.25')
         rrs.commit()
 
+    @attr(route53=True)
     def test_record_count(self):
         rrs = ResourceRecordSets(self.conn, self.zone.id)
         hosts = 101
