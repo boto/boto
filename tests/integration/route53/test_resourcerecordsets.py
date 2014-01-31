@@ -21,16 +21,10 @@
 #
 
 import unittest
-from nose.plugins.attrib import attr
-from boto.route53.connection import Route53Connection
-from boto.route53.record import ResourceRecordSets
-
 from tests.integration.route53 import Route53TestCase
 
-class TestRoute53HealthCheck(Route53TestCase):
-    def test_create_health_check(self):
-        pass
-
+from boto.route53.connection import Route53Connection
+from boto.route53.record import ResourceRecordSets
 
 class TestRoute53ResourceRecordSets(Route53TestCase):
     def test_add_change(self):
