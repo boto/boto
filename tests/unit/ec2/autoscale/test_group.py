@@ -676,11 +676,15 @@ class TestGetAdjustmentTypes(AWSMockServiceTestCase):
         """
     def test_autoscaling_adjustment_types(self):
         self.set_http_response(status_code=200)
-        self.service_connection.get_all_adjustment_types()
+        response = self.service_connection.get_all_adjustment_types()
         self.assert_request_parameters({
             'Action': 'DescribeAdjustmentTypes'
         }, ignore_params_values=['Version'])
 
+        self.assertTrue(isinstance(response, list))
+        self.assertEqual(response[0].adjustment_type, "ChangeInCapacity")
+        self.assertEqual(response[1].adjustment_type, "ExactCapacity")
+        self.assertEqual(response[2].adjustment_type, "PercentChangeInCapacity")
 
 if __name__ == '__main__':
     unittest.main()
