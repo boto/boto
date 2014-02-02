@@ -67,7 +67,7 @@ Currently Supported Services
 
 * **Networking**
 
-  * Route 53 -- (:doc:`API Reference <ref/route53>`)
+  * :doc:`Route 53 <route53_tut>` -- (:doc:`API Reference <ref/route53>`)
   * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`)
   * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:doc:`API Reference <ref/elb>`)
 
@@ -184,6 +184,7 @@ Release Notes
    vpc_tut
    elb_tut
    s3_tut
+   route53_tut
    boto_config_tut
    documentation
    contributing
