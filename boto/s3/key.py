@@ -1910,9 +1910,13 @@ class Key(object):
             respect to the completion time of the request.
 
         """
+        data = self.RestoreBody % days
+        md5 = compute_md5(StringIO.StringIO(data))
+        headers = headers or {}
+        headers['Content-MD5'] = md5[1]
         response = self.bucket.connection.make_request(
             'POST', self.bucket.name, self.name,
-            data=self.RestoreBody % days,
+            data=data,
             headers=headers, query_args='restore')
         if response.status not in (200, 202):
             provider = self.bucket.connection.provider
