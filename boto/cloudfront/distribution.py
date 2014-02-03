@@ -103,6 +103,9 @@ class DistributionConfig(object):
         self.logging = logging
         self.default_root_object = default_root_object
 
+    def __repr__(self):
+        return "DistributionConfig:%s" % self.origin
+
     def to_xml(self):
         s = '<?xml version="1.0" encoding="UTF-8"?>\n'
         s += '<DistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-07-15/">\n'
@@ -234,6 +237,9 @@ class DistributionSummary(object):
         self.etag = None
         self.streaming = False
 
+    def __repr__(self):
+        return "DistributionSummary:%s" % self.domain_name
+
     def startElement(self, name, attrs, connection):
         if name == 'TrustedSigners':
             self.trusted_signers = TrustedSigners()
@@ -294,6 +300,9 @@ class Distribution(object):
         self.etag = None
         self._bucket = None
         self._object_class = Object
+
+    def __repr__(self):
+        return "Distribution:%s" % self.domain_name
 
     def startElement(self, name, attrs, connection):
         if name == 'DistributionConfig':
