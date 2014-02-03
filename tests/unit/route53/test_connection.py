@@ -25,6 +25,8 @@ import mock
 from boto.exception import BotoServerError
 from boto.route53.connection import Route53Connection
 from boto.route53.exception import DNSServerError
+from boto.route53.record import ResourceRecordSets, Record
+from boto.route53.zone import Zone
 
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
@@ -82,3 +84,199 @@ class TestRoute53Connection(AWSMockServiceTestCase):
 
         # Unpatch.
         self.service_connection._retry_handler = orig_retry
+
+
+class TestCreateZoneRoute53(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestCreateZoneRoute53, self).setUp()
+
+    def default_body(self):
+        return """
+<CreateHostedZoneResponse xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
+    <HostedZone>
+        <Id>/hostedzone/Z11111</Id>
+        <Name>example.com.</Name>
+        <CallerReference>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</CallerReference>
+        <Config>
+            <Comment></Comment>
+        </Config>
+        <ResourceRecordSetCount>2</ResourceRecordSetCount>
+    </HostedZone>
+    <ChangeInfo>
+        <Id>/change/C1111111111111</Id>
+        <Status>PENDING</Status>
+        <SubmittedAt>2014-02-02T10:19:29.928Z</SubmittedAt>
+    </ChangeInfo>
+    <DelegationSet>
+        <NameServers>
+            <NameServer>ns-100.awsdns-01.com</NameServer>
+            <NameServer>ns-1000.awsdns-01.co.uk</NameServer>
+            <NameServer>ns-1000.awsdns-01.org</NameServer>
+            <NameServer>ns-900.awsdns-01.net</NameServer>
+        </NameServers>
+    </DelegationSet>
+</CreateHostedZoneResponse>
+        """
+
+    def test_create_zone(self):
+        self.set_http_response(status_code=201)
+        response = self.service_connection.create_zone("example.com.")
+
+        self.assertTrue(isinstance(response, Zone))
+        self.assertEqual(response.id, "Z11111")
+        self.assertEqual(response.name, "example.com.")
+
+    def test_create_hosted_zone(self):
+        self.set_http_response(status_code=201)
+        response = self.service_connection.create_hosted_zone("example.com.", "my_ref", "this is a comment")
+
+        self.assertEqual(response['CreateHostedZoneResponse']['DelegationSet']['NameServers'],
+                         ['ns-100.awsdns-01.com', 'ns-1000.awsdns-01.co.uk', 'ns-1000.awsdns-01.org', 'ns-900.awsdns-01.net'])
+
+
+class TestGetZoneRoute53(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestGetZoneRoute53, self).setUp()
+
+    def default_body(self):
+        return """
+<ListHostedZonesResponse xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
+    <HostedZones>
+        <HostedZone>
+            <Id>/hostedzone/Z1111</Id>
+            <Name>example2.com.</Name>
+            <CallerReference>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</CallerReference>
+            <Config/>
+            <ResourceRecordSetCount>3</ResourceRecordSetCount>
+        </HostedZone>
+        <HostedZone>
+            <Id>/hostedzone/Z2222</Id>
+            <Name>example1.com.</Name>
+            <CallerReference>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeef</CallerReference>
+            <Config/>
+            <ResourceRecordSetCount>6</ResourceRecordSetCount>
+        </HostedZone>
+        <HostedZone>
+            <Id>/hostedzone/Z3333</Id>
+            <Name>example.com.</Name>
+            <CallerReference>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeeg</CallerReference>
+            <Config/>
+            <ResourceRecordSetCount>6</ResourceRecordSetCount>
+        </HostedZone>
+    </HostedZones>
+    <IsTruncated>false</IsTruncated>
+    <MaxItems>100</MaxItems>
+</ListHostedZonesResponse>
+        """
+
+    def test_list_zones(self):
+        self.set_http_response(status_code=201)
+        response = self.service_connection.get_all_hosted_zones()
+
+        domains = ['example2.com.', 'example1.com.', 'example.com.']
+        print response['ListHostedZonesResponse']['HostedZones'][0]
+        for d in response['ListHostedZonesResponse']['HostedZones']:
+            print "Removing: %s" % d['Name']
+            domains.remove(d['Name'])
+
+        self.assertEqual(domains, [])
+
+    def test_get_zone(self):
+        self.set_http_response(status_code=201)
+        response = self.service_connection.get_zone('example.com.')
+
+        self.assertTrue(isinstance(response, Zone))
+        self.assertEqual(response.name, "example.com.")
+
+
+class TestGetHostedZoneRoute53(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestGetHostedZoneRoute53, self).setUp()
+
+    def default_body(self):
+        return """
+<GetHostedZoneResponse xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
+    <HostedZone>
+        <Id>/hostedzone/Z1111</Id>
+        <Name>example.com.</Name>
+        <CallerReference>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</CallerReference>
+        <Config/>
+        <ResourceRecordSetCount>3</ResourceRecordSetCount>
+    </HostedZone>
+    <DelegationSet>
+        <NameServers>
+            <NameServer>ns-1000.awsdns-40.org</NameServer>
+            <NameServer>ns-200.awsdns-30.com</NameServer>
+            <NameServer>ns-900.awsdns-50.net</NameServer>
+            <NameServer>ns-1000.awsdns-00.co.uk</NameServer>
+        </NameServers>
+    </DelegationSet>
+</GetHostedZoneResponse>
+"""
+
+    def test_list_zones(self):
+        self.set_http_response(status_code=201)
+        response = self.service_connection.get_hosted_zone("Z1111")
+
+        self.assertEqual(response['GetHostedZoneResponse']['HostedZone']['Id'], '/hostedzone/Z1111')
+        self.assertEqual(response['GetHostedZoneResponse']['HostedZone']['Name'], 'example.com.')
+        self.assertEqual(response['GetHostedZoneResponse']['DelegationSet']['NameServers'],
+                         ['ns-1000.awsdns-40.org', 'ns-200.awsdns-30.com', 'ns-900.awsdns-50.net', 'ns-1000.awsdns-00.co.uk'])
+
+
+class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestGetAllRRSetsRoute53, self).setUp()
+
+    def default_body(self):
+        return """
+<ListResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
+    <ResourceRecordSets>
+        <ResourceRecordSet>
+            <Name>test.example.com.</Name>
+            <Type>A</Type>
+            <TTL>60</TTL>
+            <ResourceRecords>
+                <ResourceRecord>
+                    <Value>10.0.0.1</Value>
+                </ResourceRecord>
+            </ResourceRecords>
+        </ResourceRecordSet>
+        <ResourceRecordSet>
+            <Name>www.example.com.</Name>
+            <Type>A</Type>
+            <TTL>60</TTL>
+            <ResourceRecords>
+                <ResourceRecord>
+                    <Value>10.0.0.2</Value>
+                </ResourceRecord>
+            </ResourceRecords>
+        </ResourceRecordSet>
+    </ResourceRecordSets>
+    <IsTruncated>false</IsTruncated>
+    <MaxItems>100</MaxItems>
+</ListResourceRecordSetsResponse>
+        """
+
+    def test_get_all_rr_sets(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_all_rrsets("Z1111", "A", "example.com.")
+
+        self.assertEqual(self.actual_request.path,
+                         "/2012-02-29/hostedzone/Z1111/rrset?type=A&name=example.com.")
+
+        self.assertTrue(isinstance(response, ResourceRecordSets))
+        self.assertEqual(response.hosted_zone_id, "Z1111")
+        self.assertTrue(isinstance(response[0], Record))
+
+        self.assertTrue(response[0].name, "test.example.com.")
+        self.assertTrue(response[0].ttl, "60")
+        self.assertTrue(response[0].type, "A")
