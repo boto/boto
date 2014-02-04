@@ -158,7 +158,7 @@ exists within a bucket, you can skip the check for a key on the server.
     >>> possible_key = b.get_key('mykey') # substitute your key name here
 
     # Won't hit the API.
-    >>> key_we_know_is_there = b.get_key(validate=False)
+    >>> key_we_know_is_there = b.get_key('mykey', validate=False)
 
 
 Accessing A Bucket
