@@ -896,6 +896,12 @@ def get_auth_handler(host, config, provider, requested_capability=None):
 
 def detect_potential_sigv4(func):
     def _wrapper(self):
+        if os.environ.get('EC2_USE_SIGV4', False):
+            return ['hmac-v4']
+
+        if boto.config.get('ec2', 'use-sigv4', False):
+            return ['hmac-v4']
+
         if hasattr(self, 'region'):
             if getattr(self.region, 'endpoint', ''):
                 if '.cn-' in self.region.endpoint:
