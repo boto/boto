@@ -84,9 +84,17 @@ class KeyFile():
 
     self.location = pos
 
-  def read(self, size):
-    self.location += size
-    return self.key.read(size)
+  def read(self,*args):
+    if len(args) == 0 or (len(args) == 1 and args[0] < 0):
+      rv = self.key.read()
+      if rv != None:
+	self.location += len(rv)
+    else:
+      size = args[0]
+      rv = self.key.read(size)
+      if rv != None:
+	self.location += len(rv)
+    return rv
 
   def close(self):
     self.key.close()
