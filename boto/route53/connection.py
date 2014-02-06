@@ -130,6 +130,7 @@ class Route53Connection(AWSAuthConnection):
         :param hosted_zone_id: The unique identifier for the Hosted Zone
 
         """
+        hosted_zone_id = self._sanitize_zone_id(hosted_zone_id)
         uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
         response = self.make_request('GET', uri)
         body = response.read()
@@ -213,6 +214,7 @@ class Route53Connection(AWSAuthConnection):
                                            body)
 
     def delete_hosted_zone(self, hosted_zone_id):
+        hosted_zone_id = self._sanitize_zone_id(hosted_zone_id)
         uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
         response = self.make_request('DELETE', uri)
         body = response.read()
@@ -280,6 +282,8 @@ class Route53Connection(AWSAuthConnection):
         :param maxitems: The maximum number of records
 
         """
+        from boto.route53.record import ResourceRecordSets
+        hosted_zone_id = self._sanitize_zone_id(hosted_zone_id)
         params = {'type': type, 'name': name,
                   'Identifier': identifier, 'maxitems': maxitems}
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
@@ -310,6 +314,7 @@ class Route53Connection(AWSAuthConnection):
             XML schema defined by the Route53 service.
 
         """
+        hosted_zone_id = self._sanitize_zone_id(hosted_zone_id)
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
         response = self.make_request('POST', uri,
                                      {'Content-Type': 'text/xml'},
@@ -349,6 +354,15 @@ class Route53Connection(AWSAuthConnection):
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
+
+    def _sanitize_zone_id(self , zone_id):
+        """
+        The "Id" value of a hosted zone is actually returned as 
+        "/hostedzone/<Id>".  This breaks any calls that use that zone id
+        if it is not removed outside of this library.  This method
+        simply removes that.
+        """
+        return zone_id.replace('/hostedzone/' , '')
 
     def create_zone(self, name):
         """
