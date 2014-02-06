@@ -1725,9 +1725,9 @@ class Key(object):
         :returns: The contents of the file as a string
         """
         fp = StringIO.StringIO()
-        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
-                                  version_id=version_id,
-                                  response_headers=response_headers)
+        self.get_file(fp, headers, cb, num_cb,
+                 torrent=torrent, version_id=version_id, None,
+                 response_headers=response_headers)
         return fp.getvalue()
 
     def add_email_grant(self, permission, email_address, headers=None):
