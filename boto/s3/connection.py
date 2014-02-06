@@ -439,6 +439,22 @@ class S3Connection(AWSAuthConnection):
         ``S3Connection.lookup`` method, which will either return a valid bucket
         or ``None``.
 
+        If ``validate=False`` is passed, no request is made to the service (no
+        charge/communication delay). This is only safe to do if you are **sure**
+        the bucket exists.
+
+        If the default ``validate=True`` is passed, a request is made to the
+        service to ensure the bucket exists. Prior to Boto v2.25.0, this fetched
+        a list of keys in the bucket (& included better error messages), at an
+        increased expense. As of Boto v2.25.0, this now performs a HEAD request
+        (less expensive but worse error messages).
+
+        If you were relying on parsing the error message before, you should call
+        something like::
+
+            bucket = conn.get_bucket('<bucket_name>', validate=False)
+            bucket.get_all_keys(maxkeys=0)
+
         :type bucket_name: string
         :param bucket_name: The name of the bucket
 
@@ -447,13 +463,58 @@ class S3Connection(AWSAuthConnection):
             AWS.
 
         :type validate: boolean
-        :param validate: If ``True``, it will try to fetch all keys within the
-            given bucket. (Default: ``True``)
+        :param validate: If ``True``, it will try to verify the bucket exists
+            on the service-side. (Default: ``True``)
         """
-        bucket = self.bucket_class(self, bucket_name)
         if validate:
-            bucket.get_all_keys(headers, maxkeys=0)
-        return bucket
+            return self.head_bucket(bucket_name, headers=headers)
+        else:
+            return self.bucket_class(self, bucket_name)
+
+    def head_bucket(self, bucket_name, headers=None):
+        """
+        Determines if a bucket exists by name.
+
+        If the bucket does not exist, an ``S3ResponseError`` will be raised.
+
+        :type bucket_name: string
+        :param bucket_name: The name of the bucket
+
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to
+            AWS.
+
+        :returns: A <Bucket> object
+        """
+        response = self.make_request('HEAD', bucket_name, headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return self.bucket_class(self, bucket_name)
+        elif response.status == 403:
+            # For backward-compatibility, we'll populate part of the exception
+            # with the most-common default.
+            err = self.provider.storage_response_error(
+                response.status,
+                response.reason,
+                body
+            )
+            err.error_code = 'AccessDenied'
+            err.error_message = 'Access Denied'
+            raise err
+        elif response.status == 404:
+            # For backward-compatibility, we'll populate part of the exception
+            # with the most-common default.
+            err = self.provider.storage_response_error(
+                response.status,
+                response.reason,
+                body
+            )
+            err.error_code = 'NoSuchBucket'
+            err.error_message = 'The specified bucket does not exist'
+            raise err
+        else:
+            raise self.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def lookup(self, bucket_name, validate=True, headers=None):
         """

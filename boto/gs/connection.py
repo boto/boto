@@ -103,3 +103,27 @@ class GSConnection(S3Connection):
             raise self.provider.storage_response_error(
                 response.status, response.reason, body)
 
+    def get_bucket(self, bucket_name, validate=True, headers=None):
+        """
+        Retrieves a bucket by name.
+
+        If the bucket does not exist, an ``S3ResponseError`` will be raised. If
+        you are unsure if the bucket exists or not, you can use the
+        ``S3Connection.lookup`` method, which will either return a valid bucket
+        or ``None``.
+
+        :type bucket_name: string
+        :param bucket_name: The name of the bucket
+
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to
+            AWS.
+
+        :type validate: boolean
+        :param validate: If ``True``, it will try to fetch all keys within the
+            given bucket. (Default: ``True``)
+        """
+        bucket = self.bucket_class(self, bucket_name)
+        if validate:
+            bucket.get_all_keys(headers, maxkeys=0)
+        return bucket

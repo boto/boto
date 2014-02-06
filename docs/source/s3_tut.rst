@@ -184,6 +184,25 @@ you'd rather not deal with any exceptions, you can use the ``lookup`` method.::
     ...
     No such bucket!
 
+.. warning::
+
+    If ``validate=False`` is passed, no request is made to the service (no
+    charge/communication delay). This is only safe to do if you are **sure**
+    the bucket exists.
+
+    If the default ``validate=True`` is passed, a request is made to the
+    service to ensure the bucket exists. Prior to Boto v2.25.0, this fetched
+    a list of keys in the bucket (& included better error messages), at an
+    increased expense. As of Boto v2.25.0, this now performs a HEAD request
+    (less expensive but worse error messages).
+
+    If you were relying on parsing the error message before, you should call
+    something like::
+
+        bucket = conn.get_bucket('<bucket_name>', validate=False)
+        bucket.get_all_keys(maxkeys=0)
+
+
 Deleting A Bucket
 -----------------
 
