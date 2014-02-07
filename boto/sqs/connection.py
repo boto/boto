@@ -115,7 +115,7 @@ class SQSConnection(AWSQueryConnection):
         Gets one or all attributes of a Queue
 
         :type queue: A Queue object
-        :param queue: The SQS queue to be deleted
+        :param queue: The SQS queue to get attributes for
 
         :type attribute: str
         :type attribute: The specific attribute requested.  If not

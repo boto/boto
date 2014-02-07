@@ -499,7 +499,10 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
             # Safe to modify req.path here since
             # the signature will use req.auth_path.
             req.path = req.path.split('?')[0]
-            req.path = req.path + '?' + qs
+
+            if qs:
+                # Don't insert the '?' unless there's actually a query string
+                req.path = req.path + '?' + qs
         canonical_request = self.canonical_request(req)
         boto.log.debug('CanonicalRequest:\n%s' % canonical_request)
         string_to_sign = self.string_to_sign(req, canonical_request)
@@ -893,6 +896,12 @@ def get_auth_handler(host, config, provider, requested_capability=None):
 
 def detect_potential_sigv4(func):
     def _wrapper(self):
+        if os.environ.get('EC2_USE_SIGV4', False):
+            return ['hmac-v4']
+
+        if boto.config.get('ec2', 'use-sigv4', False):
+            return ['hmac-v4']
+
         if hasattr(self, 'region'):
             if getattr(self.region, 'endpoint', ''):
                 if '.cn-' in self.region.endpoint:

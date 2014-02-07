@@ -28,7 +28,9 @@ from tests.unit import unittest, MockServiceWithConfigTestCase
 from boto.auth import HmacAuthV4Handler
 from boto.auth import S3HmacAuthV4Handler
 from boto.auth import detect_potential_s3sigv4
+from boto.auth import detect_potential_sigv4
 from boto.connection import HTTPRequest
+from boto.regioninfo import RegionInfo
 
 
 class TestSigV4Handler(unittest.TestCase):
@@ -40,6 +42,13 @@ class TestSigV4Handler(unittest.TestCase):
             'POST', 'https', 'glacier.us-east-1.amazonaws.com', 443,
             '/-/vaults/foo/archives', None, {},
             {'x-amz-glacier-version': '2012-06-01'}, '')
+
+    def test_not_adding_empty_qs(self):
+        self.provider.security_token = None
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com', Mock(), self.provider)
+        req = copy.copy(self.request)
+        auth.add_auth(req)
+        self.assertEqual(req.path, '/-/vaults/foo/archives')
 
     def test_inner_whitespace_is_collapsed(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
@@ -448,7 +457,19 @@ class FakeS3Connection(object):
         pass
 
 
-class TestSigV4OptIn(MockServiceWithConfigTestCase):
+class FakeEC2Connection(object):
+    def __init__(self, *args, **kwargs):
+        self.region = kwargs.pop('region', None)
+
+    @detect_potential_sigv4
+    def _required_auth_capability(self):
+        return ['nope']
+
+    def _mexe(self, *args, **kwargs):
+        pass
+
+
+class TestS3SigV4OptIn(MockServiceWithConfigTestCase):
     connection_class = FakeS3Connection
 
     def test_sigv4_opt_out(self):
@@ -457,7 +478,7 @@ class TestSigV4OptIn(MockServiceWithConfigTestCase):
         self.assertEqual(fake._required_auth_capability(), ['nope'])
 
     def test_sigv4_non_optional(self):
-        # Default is opt-out.
+        # Requires SigV4.
         fake = FakeS3Connection(host='s3.cn-north-1.amazonaws.com.cn')
         self.assertEqual(fake._required_auth_capability(), ['hmac-v4-s3'])
 
@@ -476,3 +497,44 @@ class TestSigV4OptIn(MockServiceWithConfigTestCase):
         self.environ['S3_USE_SIGV4'] = True
         fake = FakeS3Connection(host='s3.amazonaws.com')
         self.assertEqual(fake._required_auth_capability(), ['hmac-v4-s3'])
+
+
+class TestSigV4OptIn(MockServiceWithConfigTestCase):
+    connection_class = FakeEC2Connection
+
+    def setUp(self):
+        super(TestSigV4OptIn, self).setUp()
+        self.standard_region = RegionInfo(
+            name='us-west-2',
+            endpoint='ec2.us-west-2.amazonaws.com'
+        )
+        self.sigv4_region = RegionInfo(
+            name='cn-north-1',
+            endpoint='ec2.cn-north-1.amazonaws.com.cn'
+        )
+
+    def test_sigv4_opt_out(self):
+        # Default is opt-out.
+        fake = FakeEC2Connection(region=self.standard_region)
+        self.assertEqual(fake._required_auth_capability(), ['nope'])
+
+    def test_sigv4_non_optional(self):
+        # Requires SigV4.
+        fake = FakeEC2Connection(region=self.sigv4_region)
+        self.assertEqual(fake._required_auth_capability(), ['hmac-v4'])
+
+    def test_sigv4_opt_in_config(self):
+        # Opt-in via the config.
+        self.config = {
+            'ec2': {
+                'use-sigv4': True,
+            },
+        }
+        fake = FakeEC2Connection(region=self.standard_region)
+        self.assertEqual(fake._required_auth_capability(), ['hmac-v4'])
+
+    def test_sigv4_opt_in_env(self):
+        # Opt-in via the ENV.
+        self.environ['EC2_USE_SIGV4'] = True
+        fake = FakeEC2Connection(region=self.standard_region)
+        self.assertEqual(fake._required_auth_capability(), ['hmac-v4'])

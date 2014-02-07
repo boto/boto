@@ -35,7 +35,7 @@ class ResourceRecordSets(ResultSet):
     """
 
     ChangeResourceRecordSetsBody = """<?xml version="1.0" encoding="UTF-8"?>
-    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
+    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
             <ChangeBatch>
                 <Comment>%(comment)s</Comment>
                 <Changes>%(changes)s</Changes>
@@ -71,7 +71,7 @@ class ResourceRecordSets(ResultSet):
         Add a change request to the set.
 
         :type action: str
-        :param action: The action to perform ('CREATE'|'DELETE')
+        :param action: The action to perform ('CREATE'|'DELETE'|'UPSERT')
 
         :type name: str
         :param name: The name of the domain you want to perform the action on.
