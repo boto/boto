@@ -175,15 +175,7 @@ override this behavior by passing ``validate=False``.::
 
     >>> nonexistent = conn.get_bucket('i-dont-exist-at-all', validate=False)
 
-If the bucket does not exist, a ``S3ResponseError`` will commonly be thrown. If
-you'd rather not deal with any exceptions, you can use the ``lookup`` method.::
-
-    >>> nonexistent = conn.lookup('i-dont-exist-at-all')
-    >>> if nonexistent is None:
-    ...     print "No such bucket!"
-    ...
-    No such bucket!
-
+.. versionchanged:: 2.25.0
 .. warning::
 
     If ``validate=False`` is passed, no request is made to the service (no
@@ -192,7 +184,8 @@ you'd rather not deal with any exceptions, you can use the ``lookup`` method.::
 
     If the default ``validate=True`` is passed, a request is made to the
     service to ensure the bucket exists. Prior to Boto v2.25.0, this fetched
-    a list of keys in the bucket (& included better error messages), at an
+    a list of keys (but with a max limit set to ``0``, always returning an empty
+    list) in the bucket (& included better error messages), at an
     increased expense. As of Boto v2.25.0, this now performs a HEAD request
     (less expensive but worse error messages).
 
@@ -201,6 +194,15 @@ you'd rather not deal with any exceptions, you can use the ``lookup`` method.::
 
         bucket = conn.get_bucket('<bucket_name>', validate=False)
         bucket.get_all_keys(maxkeys=0)
+
+If the bucket does not exist, a ``S3ResponseError`` will commonly be thrown. If
+you'd rather not deal with any exceptions, you can use the ``lookup`` method.::
+
+    >>> nonexistent = conn.lookup('i-dont-exist-at-all')
+    >>> if nonexistent is None:
+    ...     print "No such bucket!"
+    ...
+    No such bucket!
 
 
 Deleting A Bucket

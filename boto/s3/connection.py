@@ -445,7 +445,8 @@ class S3Connection(AWSAuthConnection):
 
         If the default ``validate=True`` is passed, a request is made to the
         service to ensure the bucket exists. Prior to Boto v2.25.0, this fetched
-        a list of keys in the bucket (& included better error messages), at an
+        a list of keys (but with a max limit set to ``0``, always returning an empty
+        list) in the bucket (& included better error messages), at an
         increased expense. As of Boto v2.25.0, this now performs a HEAD request
         (less expensive but worse error messages).
 
