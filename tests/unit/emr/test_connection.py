@@ -28,7 +28,12 @@ from time import time
 from tests.unit import AWSMockServiceTestCase
 
 from boto.emr.connection import EmrConnection
-from boto.emr.emrobject import BootstrapAction, BootstrapActionList, ClusterStatus, ClusterSummaryList, ClusterSummary, ClusterTimeline, InstanceInfo, InstanceList, InstanceGroupInfo, InstanceGroup, InstanceGroupList, JobFlow, JobFlowStepList, Step, StepSummaryList
+from boto.emr.emrobject import BootstrapAction, BootstrapActionList, \
+                               ClusterStatus, ClusterSummaryList, \
+                               ClusterSummary, ClusterTimeline, InstanceInfo, \
+                               InstanceList, InstanceGroupInfo, \
+                               InstanceGroup, InstanceGroupList, JobFlow, \
+                               JobFlowStepList, Step, StepSummaryList, Cluster
 
 # These tests are just checking the basic structure of
 # the Elastic MapReduce code, by picking a few calls
