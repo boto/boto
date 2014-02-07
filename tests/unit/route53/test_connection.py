@@ -271,7 +271,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         response = self.service_connection.get_all_rrsets("Z1111", "A", "example.com.")
 
         self.assertEqual(self.actual_request.path,
-                         "/2012-02-29/hostedzone/Z1111/rrset?type=A&name=example.com.")
+                         "/2013-04-01/hostedzone/Z1111/rrset?type=A&name=example.com.")
 
         self.assertTrue(isinstance(response, ResourceRecordSets))
         self.assertEqual(response.hosted_zone_id, "Z1111")
