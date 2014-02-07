@@ -113,23 +113,23 @@ class TestS3Bucket(AWSMockServiceTestCase):
             'initial=1&bar=%E2%98%83&max-keys=0&foo=true&some-other=thing'
         )
 
-    @patch.object(Bucket, 'get_all_keys')
-    def test_bucket_copy_key_no_validate(self, mock_get_all_keys):
+    @patch.object(S3Connection, 'head_bucket')
+    def test_bucket_copy_key_no_validate(self, mock_head_bucket):
         self.set_http_response(status_code=200)
         bucket = self.service_connection.create_bucket('mybucket')
 
-        self.assertFalse(mock_get_all_keys.called)
+        self.assertFalse(mock_head_bucket.called)
         self.service_connection.get_bucket('mybucket', validate=True)
-        self.assertTrue(mock_get_all_keys.called)
+        self.assertTrue(mock_head_bucket.called)
 
-        mock_get_all_keys.reset_mock()
-        self.assertFalse(mock_get_all_keys.called)
+        mock_head_bucket.reset_mock()
+        self.assertFalse(mock_head_bucket.called)
         try:
             bucket.copy_key('newkey', 'srcbucket', 'srckey', preserve_acl=True)
         except:
             # Will throw because of empty response.
             pass
-        self.assertFalse(mock_get_all_keys.called)
+        self.assertFalse(mock_head_bucket.called)
 
     @patch.object(Bucket, '_get_all')
     def test_bucket_encoding(self, mock_get_all):
