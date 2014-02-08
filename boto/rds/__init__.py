@@ -1076,23 +1076,47 @@ class RDSConnection(AWSQueryConnection):
         return self.get_list('DescribeDBSnapshots', params,
                              [('DBSnapshot', DBSnapshot)])
 
-    def get_all_logs(self, dbinstance_id=None):
+    def get_all_logs(self, dbinstance_id, max_records=None, marker=None, file_size=None, filename_contains=None, file_last_written=None):
         """
         Get all log files
 
         :type instance_id: str
-        :param instance_id: The identifier of a DBInstance.  If provided,
-                            only the :class:`boto.rds.logfile.LogFile` related
-                            to that instance will be returned.  If not
-                            provided, all logfiles will be returned.
+        :param instance_id: The identifier of a DBInstance.
+
+        :type max_records: int
+        :param max_records: Number of log file names to return.
+
+        :type marker: str
+        :param marker: The marker provided by a previous request.
+
+        :file_size: int
+        :param file_size: Filter results to files large than this size in bytes.
+
+        :filename_contains: str
+        :param filename_contains: Filter results to files with filename containing this string
+
+        :file_last_written: int
+        :param file_last_written: Filter results to files written after this time (POSIX timestamp)
 
         :rtype: list
         :return: A list of :class:`boto.rds.logfile.LogFile`
         """
-        params = {}
-        if dbinstance_id:
-           params['DBInstanceIdentifier'] = dbinstance_id
-        params['MaxRecords'] = 26
+        params = {'DBInstanceIdentifier': dbinstance_id}
+
+        if file_size:
+            params['FileSize'] = file_size
+
+        if filename_contains:
+            params['FilenameContains'] = filename_contains
+
+        if file_last_written:
+            params['FileLastWritten'] = file_last_written
+
+        if marker:
+            params['Marker'] = marker
+
+        if max_records:
+            params['MaxRecords'] = max_records
 
         return self.get_list('DescribeDBLogFiles', params,
                              [('DescribeDBLogFilesDetails',LogFile)])

@@ -599,13 +599,13 @@ class TestRDSLogFile(AWSMockServiceTestCase):
         </DescribeDBLogFilesResponse>
         """
 
-    def test_get_all_logs(self):
+    def test_get_all_logs_simple(self):
         self.set_http_response(status_code=200)
-        response = self.service_connection.get_all_logs()
+        response = self.service_connection.get_all_logs('db1')
 
         self.assert_request_parameters({
             'Action': 'DescribeDBLogFiles',
-            'MaxRecords': 26,
+            'DBInstanceIdentifier': 'db1',
         }, ignore_params_values=['Version'])
 
         self.assertEqual(len(response), 6)
@@ -614,14 +614,18 @@ class TestRDSLogFile(AWSMockServiceTestCase):
         self.assertEqual(response[0].last_written, '1364403600000')
         self.assertEqual(response[0].size, '0')
 
-    def test_get_all_logs_single(self):
+    def test_get_all_logs_filtered(self):
         self.set_http_response(status_code=200)
-        response = self.service_connection.get_all_logs('db_instance_1')
+        response = self.service_connection.get_all_logs('db_instance_1', max_records=100, marker='error/mysql-error.log', file_size=2000000, filename_contains='error', file_last_written=12345678)
 
         self.assert_request_parameters({
             'Action': 'DescribeDBLogFiles',
             'DBInstanceIdentifier': 'db_instance_1',
-            'MaxRecords': 26,
+            'MaxRecords': 100,
+            'Marker': 'error/mysql-error.log',
+            'FileSize': 2000000,
+            'FilenameContains': 'error',
+            'FileLastWritten': 12345678,
         }, ignore_params_values=['Version'])
 
         self.assertEqual(len(response), 6)
