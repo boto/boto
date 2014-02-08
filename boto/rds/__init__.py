@@ -31,13 +31,9 @@ from boto.rds.event import Event
 from boto.rds.regioninfo import RDSRegionInfo
 from boto.rds.dbsubnetgroup import DBSubnetGroup
 from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
-<<<<<<< HEAD
-from boto.rds.logfile import LogFile
-=======
 from boto.regioninfo import get_regions
-from boto.rds.logfile import LogFile
+from boto.rds.logfile import LogFile, LogFilePortion
 
->>>>>>> upstream/master
 
 def regions():
     """
@@ -1080,31 +1076,18 @@ class RDSConnection(AWSQueryConnection):
         return self.get_list('DescribeDBSnapshots', params,
                              [('DBSnapshot', DBSnapshot)])
 
-<<<<<<< HEAD
-    def get_all_logs(self, dbinstance_id):
-=======
     def get_all_logs(self, dbinstance_id=None):
->>>>>>> upstream/master
         """
         Get all log files
 
         :type instance_id: str
         :param instance_id: The identifier of a DBInstance.  If provided,
-<<<<<<< HEAD
-                            only the DBSnapshots related to that instance will
-                            be returned.
-                            If not provided, all RDS snapshots will be returned.
-
-        :rtype: list
-        :return: A list of :class:`boto.rds.dbsnapshot.DBSnapshot`
-=======
                             only the :class:`boto.rds.logfile.LogFile` related
                             to that instance will be returned.  If not
                             provided, all logfiles will be returned.
 
         :rtype: list
         :return: A list of :class:`boto.rds.logfile.LogFile`
->>>>>>> upstream/master
         """
         params = {}
         if dbinstance_id:
@@ -1113,6 +1096,30 @@ class RDSConnection(AWSQueryConnection):
 
         return self.get_list('DescribeDBLogFiles', params,
                              [('DescribeDBLogFilesDetails',LogFile)])
+
+    def download_log_portion(self, dbinstance_id, log_filename):
+        """
+        Download log file
+
+        :type instance_id: str
+        :param instance_id: The identifier of a DBInstance.
+
+        :type log_filename: str
+        :param log_filename: The filename of log
+
+        :rtype: :class:`boto.rds.logfile.LogFilePortion`
+        :return: The log entry, get it from the log_filedata attribute
+
+        """
+        params = {}
+        if not dbinstance_id or not log_filename:
+            return
+
+        params['LogFileName'] = log_filename
+        params['DBInstanceIdentifier'] = dbinstance_id
+
+        return self.get_object('DownloadDBLogFilePortion', params, LogFilePortion)
+
 
     def create_dbsnapshot(self, snapshot_id, dbinstance_id):
         """
