@@ -82,7 +82,7 @@ class MockAWSService(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  api_version=None, security_token=None,
-                 validate_certs=True):
+                 validate_certs=True, profile_name=None):
         self.region = region
         if host is None:
             host = self.region.endpoint
@@ -93,7 +93,8 @@ class MockAWSService(AWSQueryConnection):
                                     host, debug,
                                     https_connection_factory, path,
                                     security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    profile_name=profile_name)
 
 class TestAWSAuthConnection(unittest.TestCase):
     def test_get_path(self):

@@ -146,9 +146,9 @@ class AutoScalingGroup(object):
         :param placement_group: Physical location of your cluster placement
             group created in Amazon EC2.
 
-        :type vpc_zone_identifier: str
-        :param vpc_zone_identifier: The subnet identifier of the Virtual
-            Private Cloud.
+        :type vpc_zone_identifier: str or list
+        :param vpc_zone_identifier: A comma-separated string or python list of
+            the subnet identifiers of the Virtual Private Cloud.
 
         :type tags: list
         :param tags: List of :class:`boto.ec2.autoscale.tag.Tag`s
@@ -188,6 +188,8 @@ class AutoScalingGroup(object):
         self.health_check_type = health_check_type
         self.placement_group = placement_group
         self.autoscaling_group_arn = None
+        if type(vpc_zone_identifier) is list:
+            vpc_zone_identifier = ','.join(vpc_zone_identifier)
         self.vpc_zone_identifier = vpc_zone_identifier
         self.instances = None
         self.tags = tags or None

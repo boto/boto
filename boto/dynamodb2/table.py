@@ -170,7 +170,7 @@ class Table(object):
             ...     ],
             ...     throughput={
             ...       'read':10,
-            ...       'write":10,
+            ...       'write':10,
             ...     }),
             ... ])
 

@@ -77,7 +77,8 @@ class Layer1(AWSAuthConnection):
                  https_connection_factory=None, path='/',
                  provider='aws', security_token=None,
                  suppress_consec_slashes=True,
-                 region=None, region_name='us-east-1'):
+                 region=None, region_name='us-east-1',
+                 profile_name=None):
 
         if not region:
             for reg in boto.glacier.regions():
@@ -93,7 +94,7 @@ class Layer1(AWSAuthConnection):
                                    proxy_user, proxy_pass, debug,
                                    https_connection_factory,
                                    path, provider, security_token,
-                                   suppress_consec_slashes)
+                                   suppress_consec_slashes, profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['hmac-v4']

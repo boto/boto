@@ -31,7 +31,13 @@ from boto.rds.event import Event
 from boto.rds.regioninfo import RDSRegionInfo
 from boto.rds.dbsubnetgroup import DBSubnetGroup
 from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
+<<<<<<< HEAD
 from boto.rds.logfile import LogFile
+=======
+from boto.regioninfo import get_regions
+from boto.rds.logfile import LogFile
+
+>>>>>>> upstream/master
 
 def regions():
     """
@@ -40,27 +46,11 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.rds.regioninfo.RDSRegionInfo`
     """
-    return [RDSRegionInfo(name='us-east-1',
-                          endpoint='rds.amazonaws.com'),
-            RDSRegionInfo(name='us-gov-west-1',
-                          endpoint='rds.us-gov-west-1.amazonaws.com'),
-            RDSRegionInfo(name='eu-west-1',
-                          endpoint='rds.eu-west-1.amazonaws.com'),
-            RDSRegionInfo(name='us-west-1',
-                          endpoint='rds.us-west-1.amazonaws.com'),
-            RDSRegionInfo(name='us-west-2',
-                          endpoint='rds.us-west-2.amazonaws.com'),
-            RDSRegionInfo(name='sa-east-1',
-                          endpoint='rds.sa-east-1.amazonaws.com'),
-            RDSRegionInfo(name='ap-northeast-1',
-                          endpoint='rds.ap-northeast-1.amazonaws.com'),
-            RDSRegionInfo(name='ap-southeast-1',
-                          endpoint='rds.ap-southeast-1.amazonaws.com'),
-            RDSRegionInfo(name='ap-southeast-2',
-                          endpoint='rds.ap-southeast-2.amazonaws.com'),
-            RDSRegionInfo(name='cn-north-1',
-                          endpoint='rds.cn-north-1.amazonaws.com.cn'),
-            ]
+    return get_regions(
+        'rds',
+        region_cls=RDSRegionInfo,
+        connection_cls=RDSConnection
+    )
 
 
 def connect_to_region(region_name, **kw_params):
@@ -95,7 +85,8 @@ class RDSConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True):
+                 security_token=None, validate_certs=True,
+                 profile_name=None):
         if not region:
             region = RDSRegionInfo(self, self.DefaultRegionName,
                                    self.DefaultRegionEndpoint)
@@ -107,7 +98,8 @@ class RDSConnection(AWSQueryConnection):
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
                                     security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
@@ -1088,18 +1080,31 @@ class RDSConnection(AWSQueryConnection):
         return self.get_list('DescribeDBSnapshots', params,
                              [('DBSnapshot', DBSnapshot)])
 
+<<<<<<< HEAD
     def get_all_logs(self, dbinstance_id):
+=======
+    def get_all_logs(self, dbinstance_id=None):
+>>>>>>> upstream/master
         """
         Get all log files
 
         :type instance_id: str
         :param instance_id: The identifier of a DBInstance.  If provided,
+<<<<<<< HEAD
                             only the DBSnapshots related to that instance will
                             be returned.
                             If not provided, all RDS snapshots will be returned.
 
         :rtype: list
         :return: A list of :class:`boto.rds.dbsnapshot.DBSnapshot`
+=======
+                            only the :class:`boto.rds.logfile.LogFile` related
+                            to that instance will be returned.  If not
+                            provided, all logfiles will be returned.
+
+        :rtype: list
+        :return: A list of :class:`boto.rds.logfile.LogFile`
+>>>>>>> upstream/master
         """
         params = {}
         if dbinstance_id:

@@ -58,13 +58,11 @@ class TestConcurrentUploader(unittest.TestCase):
     def setUp(self):
         super(TestConcurrentUploader, self).setUp()
         self.stat_patch = mock.patch('os.stat')
+        self.addCleanup(self.stat_patch.stop)
         self.stat_mock = self.stat_patch.start()
         # Give a default value for tests that don't care
         # what the file size is.
         self.stat_mock.return_value.st_size = 1024 * 1024 * 8
-
-    def tearDown(self):
-        self.stat_mock = self.stat_patch.start()
 
     def test_calculate_required_part_size(self):
         self.stat_mock.return_value.st_size = 1024 * 1024 * 8

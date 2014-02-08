@@ -80,6 +80,29 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.secret_key, 'env_secret_key')
         self.assertEqual(p.security_token, 'env_security_token')
 
+    def test_config_profile_values_are_used(self):
+        self.config = {
+            'profile dev': {
+                'aws_access_key_id': 'dev_access_key',
+                'aws_secret_access_key': 'dev_secret_key',
+            }, 'profile prod': {
+                'aws_access_key_id': 'prod_access_key',
+                'aws_secret_access_key': 'prod_secret_key',
+            }, 'Credentials': {
+                'aws_access_key_id': 'default_access_key',
+                'aws_secret_access_key': 'default_secret_key'
+            }
+        }
+        p = provider.Provider('aws', profile_name='prod')
+        self.assertEqual(p.access_key, 'prod_access_key')
+        self.assertEqual(p.secret_key, 'prod_secret_key')
+        q = provider.Provider('aws', profile_name='dev')
+        self.assertEqual(q.access_key, 'dev_access_key')
+        self.assertEqual(q.secret_key, 'dev_secret_key')
+        r = provider.Provider('aws', profile_name='doesntexist')
+        self.assertEqual(r.access_key, 'default_access_key')
+        self.assertEqual(r.secret_key, 'default_secret_key')
+
     def test_config_values_are_used(self):
         self.config = {
             'Credentials': {
@@ -173,7 +196,7 @@ class TestProvider(unittest.TestCase):
             'meta-data/iam/security-credentials/')
 
     def test_refresh_credentials(self):
-        now = datetime.now()
+        now = datetime.utcnow()
         first_expiration = (now + timedelta(seconds=10)).strftime(
             "%Y-%m-%dT%H:%M:%SZ")
         credentials = {

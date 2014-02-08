@@ -28,21 +28,10 @@ from boto.connection import AWSQueryConnection
 from boto.ec2.cloudwatch.metric import Metric
 from boto.ec2.cloudwatch.alarm import MetricAlarm, MetricAlarms, AlarmHistoryItem
 from boto.ec2.cloudwatch.datapoint import Datapoint
-from boto.regioninfo import RegionInfo
+from boto.regioninfo import RegionInfo, get_regions, load_regions
 import boto
 
-RegionData = {
-    'us-east-1': 'monitoring.us-east-1.amazonaws.com',
-    'us-gov-west-1': 'monitoring.us-gov-west-1.amazonaws.com',
-    'us-west-1': 'monitoring.us-west-1.amazonaws.com',
-    'us-west-2': 'monitoring.us-west-2.amazonaws.com',
-    'sa-east-1': 'monitoring.sa-east-1.amazonaws.com',
-    'eu-west-1': 'monitoring.eu-west-1.amazonaws.com',
-    'ap-northeast-1': 'monitoring.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1': 'monitoring.ap-southeast-1.amazonaws.com',
-    'ap-southeast-2': 'monitoring.ap-southeast-2.amazonaws.com',
-    'cn-north-1': 'monitoring.cn-north-1.amazonaws.com.cn',
-}
+RegionData = load_regions().get('cloudwatch', {})
 
 
 def regions():
@@ -52,13 +41,7 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.RegionInfo` instances
     """
-    regions = []
-    for region_name in RegionData:
-        region = RegionInfo(name=region_name,
-                            endpoint=RegionData[region_name],
-                            connection_cls=CloudWatchConnection)
-        regions.append(region)
-    return regions
+    return get_regions('cloudwatch', connection_cls=CloudWatchConnection)
 
 
 def connect_to_region(region_name, **kw_params):
@@ -91,7 +74,7 @@ class CloudWatchConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True):
+                 security_token=None, validate_certs=True, profile_name=None):
         """
         Init method to create a new connection to EC2 Monitoring Service.
 
@@ -115,7 +98,8 @@ class CloudWatchConnection(AWSQueryConnection):
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
                                     security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['hmac-v4']

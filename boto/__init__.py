@@ -37,7 +37,7 @@ import logging.config
 import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.23.0'
+__version__ = '2.25.0'
 Version = __version__  # for backware compatibility
 
 # http://bugs.python.org/issue7980
@@ -58,6 +58,7 @@ TOO_LONG_DNS_NAME_COMP = re.compile(r'[-_a-z0-9]{64}')
 GENERATION_RE = re.compile(r'(?P<versionless_uri_str>.+)'
                            r'#(?P<generation>[0-9]+)$')
 VERSION_RE = re.compile('(?P<versionless_uri_str>.+)#(?P<version_id>.+)$')
+ENDPOINTS_PATH = os.path.join(os.path.dirname(__file__), 'endpoints.json')
 
 
 def init_logging():
