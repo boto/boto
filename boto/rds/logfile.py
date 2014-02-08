@@ -29,7 +29,6 @@ class LogFile(object):
         self.last_written = None
         
     def __repr__(self):
-        #return '(%s, %s, %s)' % (self.logfilename, self.size, self.lastwritten)
         return '%s' % (self.log_filename)
 
     def startElement(self, name, attrs, connection):
@@ -42,5 +41,29 @@ class LogFile(object):
             self.log_filename = value
         elif name == 'Size':
             self.size = value
+        else:
+            setattr(self, name, value)
+
+class LogFilePortion(object):
+
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.marker = None
+        self.log_filedata = None
+        self.data_pending = None
+
+    def __repr__(self):
+        return self.marker
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'Marker':
+            self.marker = value
+        elif name == 'LogFileData':
+            self.log_filedata = value
+        elif name == 'AdditionalDataPending':
+            self.data_pending = value
         else:
             setattr(self, name, value)

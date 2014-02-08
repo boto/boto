@@ -32,7 +32,7 @@ from boto.rds.regioninfo import RDSRegionInfo
 from boto.rds.dbsubnetgroup import DBSubnetGroup
 from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
 from boto.regioninfo import get_regions
-from boto.rds.logfile import LogFile
+from boto.rds.logfile import LogFile, LogFilePortion
 
 
 def regions():
@@ -1096,6 +1096,30 @@ class RDSConnection(AWSQueryConnection):
 
         return self.get_list('DescribeDBLogFiles', params,
                              [('DescribeDBLogFilesDetails',LogFile)])
+
+    def download_log_portion(self, dbinstance_id, log_filename):
+        """
+        Download log file
+
+        :type instance_id: str
+        :param instance_id: The identifier of a DBInstance.
+
+        :type log_filename: str
+        :param log_filename: The filename of log
+
+        :rtype: :class:`boto.rds.logfile.LogFilePortion`
+        :return: The log entry, get it from the log_filedata attribute
+
+        """
+        params = {}
+        if not dbinstance_id or not log_filename:
+            return
+
+        params['LogFileName'] = log_filename
+        params['DBInstanceIdentifier'] = dbinstance_id
+
+        return self.get_object('DownloadDBLogFilePortion', params, LogFilePortion)
+
 
     def create_dbsnapshot(self, snapshot_id, dbinstance_id):
         """
