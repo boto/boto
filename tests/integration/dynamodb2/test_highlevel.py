@@ -109,6 +109,14 @@ class DynamoDBv2Test(unittest.TestCase):
 
         time.sleep(5)
 
+        # Does it exist? It should?
+        self.assertTrue(users.has_item(username='jane', friend_count=3))
+        # But this shouldn't be there...
+        self.assertFalse(users.has_item(
+            username='mrcarmichaeljones',
+            friend_count=72948
+        ))
+
         # Test getting an item & updating it.
         # This is the "safe" variant (only write if there have been no
         # changes).
