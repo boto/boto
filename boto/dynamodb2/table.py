@@ -488,6 +488,8 @@ class Table(object):
             attributes_to_get=attributes,
             consistent_read=consistent
         )
+        if 'Item' not in item_data:
+            raise exceptions.ItemNotFound("Item %s couldn't be found." % kwargs)
         item = Item(self)
         item.load(item_data)
         return item
@@ -526,7 +528,7 @@ class Table(object):
         """
         try:
             self.get_item(**kwargs)
-        except JSONResponseError:
+        except (JSONResponseError, exceptions.ItemNotFound):
             return False
 
         return True
