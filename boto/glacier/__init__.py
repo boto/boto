@@ -22,7 +22,6 @@
 #
 
 from boto.ec2.regioninfo import RegionInfo
-from boto.exception import InvalidRegionError
 
 
 def regions():
@@ -61,5 +60,4 @@ def connect_to_region(region_name, **kw_params):
     for region in regions():
         if region.name == region_name:
             return region.connect(**kw_params)
-    else:
-        raise InvalidRegionError('Invalid region (%s)' % region_name)
+    return None

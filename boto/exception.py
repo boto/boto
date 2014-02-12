@@ -518,10 +518,3 @@ class PleaseRetryException(Exception):
             self.message,
             self.response
         )
-
-class InvalidRegionError(Exception):
-    """Exception raised when region is invalid."""
-
-    def __init__(self, message):
-        super(InvalidRegionError, self).__init__(message)
-        self.message = message

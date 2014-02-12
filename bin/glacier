@@ -84,10 +84,14 @@ glacier <command> [args]
 
 def connect(region, debug_level=0, access_key=None, secret_key=None):
     """ Connect to a specific region """
-    return connect_to_region(region,
-                             aws_access_key_id=access_key, 
-                             aws_secret_access_key=secret_key,
-                             debug=debug_level)
+    layer2 = connect_to_region(region,
+                               aws_access_key_id=access_key,
+                               aws_secret_access_key=secret_key,
+                               debug=debug_level)
+    if layer2 is None:
+        print 'Invalid region (%s)' % region
+        sys.exit(1)
+    return layer2
 
 
 def list_vaults(region, access_key=None, secret_key=None):
