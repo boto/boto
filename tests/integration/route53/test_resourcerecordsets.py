@@ -30,12 +30,12 @@ class TestRoute53ResourceRecordSets(Route53TestCase):
     def test_add_change(self):
         rrs = ResourceRecordSets(self.conn, self.zone.id)
 
-        created = rrs.add_change("CREATE", "vpn.example.com.", "A")
+        created = rrs.add_change("CREATE", "vpn.bototest.com.", "A")
         created.add_value('192.168.0.25')
         rrs.commit()
 
         rrs = ResourceRecordSets(self.conn, self.zone.id)
-        deleted = rrs.add_change('DELETE', "vpn.example.com.", "A")
+        deleted = rrs.add_change('DELETE', "vpn.bototest.com.", "A")
         deleted.add_value('192.168.0.25')
         rrs.commit()
 
@@ -44,7 +44,7 @@ class TestRoute53ResourceRecordSets(Route53TestCase):
         hosts = 101
 
         for hostid in range(hosts):
-            rec = "test" + str(hostid) + ".example.com"
+            rec = "test" + str(hostid) + ".bototest.com"
             created = rrs.add_change("CREATE", rec, "A")
             ip = '192.168.0.' + str(hostid)
             created.add_value(ip)
@@ -71,7 +71,7 @@ class TestRoute53ResourceRecordSets(Route53TestCase):
         # Cleanup indivual records
         rrs = ResourceRecordSets(self.conn, self.zone.id)
         for hostid in range(hosts):
-            rec = "test" + str(hostid) + ".example.com"
+            rec = "test" + str(hostid) + ".bototest.com"
             deleted = rrs.add_change("DELETE", rec, "A")
             ip = '192.168.0.' + str(hostid)
             deleted.add_value(ip)

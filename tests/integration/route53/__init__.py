@@ -29,7 +29,7 @@ class Route53TestCase(unittest.TestCase):
     def setUp(self):
         super(Route53TestCase, self).setUp()
         self.conn = Route53Connection()
-        self.zone = self.conn.create_zone('example.com')
+        self.zone = self.conn.create_zone('bototest.com')
 
     def tearDown(self):
         self.zone.delete()

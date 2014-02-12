@@ -105,13 +105,13 @@ class TestRoute53HealthCheck(Route53TestCase):
         result = self.conn.create_health_check(hc)
         records = ResourceRecordSets(
             connection=self.conn, hosted_zone_id=self.zone.id, comment='Create DNS entry for test')
-        change = records.add_change('CREATE', 'unittest.example.com.', 'A', ttl=30, identifier='test',
+        change = records.add_change('CREATE', 'unittest.bototest.com.', 'A', ttl=30, identifier='test',
                                     weight=1, health_check=result['CreateHealthCheckResponse']['HealthCheck']['Id'])
         change.add_value("54.217.7.118")
         records.commit()
 
         records = ResourceRecordSets(self.conn, self.zone.id)
-        deleted = records.add_change('DELETE', "unittest.example.com.", "A", ttl=30, identifier='test',
+        deleted = records.add_change('DELETE', "unittest.bototest.com.", "A", ttl=30, identifier='test',
                                     weight=1, health_check=result['CreateHealthCheckResponse']['HealthCheck']['Id'])
         deleted.add_value('54.217.7.118')
         records.commit()
