@@ -45,6 +45,7 @@ from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.tag import Tag
 from boto.ec2.autoscale.limits import AccountLimits
+from boto.ec2.autoscale.notificationconfiguration import NotificationConfiguration
 
 RegionData = load_regions().get('autoscaling', {})
 
@@ -753,6 +754,50 @@ class AutoScaleConnection(AWSQueryConnection):
                   'TopicARN': topic}
 
         return self.get_status('DeleteNotificationConfiguration', params)
+
+    def get_all_notification_configurations(self, autoscale_groups=None, max_records=None, next_token=None):
+        """
+        List notifications created by put_notification_configuration.
+
+        This action supports pagination by returning a token if there are more
+        pages to retrieve. To get the next page, call this action again with
+        the returned token as the NextToken parameter.
+
+        :type autoscale_groups: str or
+            lsit of :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param autoscale_groups: The Auto Scaling group to put notification
+            configuration on.
+
+        :type max_records: int
+        :param max_records: Maximum amount of groups to return.
+
+        :rtype: list
+        :returns: List of :class:`boto.ec2.autoscale.notificationconfiguration.NotificationConfiguration`
+            instances.
+        """
+
+        params = {}
+        if max_records:
+            params['MaxRecords'] = max_records
+        if next_token:
+            params['NextToken'] = next_token
+        if autoscale_groups:
+            if isinstance(autoscale_groups, list):
+                autoscale_group_names = [ autoscale_group.name
+                                          if isinstance(autoscale_group, AutoScalingGroup)
+                                          else autoscale_group
+                                          for autoscale_group in autoscale_groups ]
+            else:
+                autoscale_group_names = [ autoscale_groups.name
+                                          if isinstance(autoscale_groups, AutoScalingGroup)
+                                          else autoscale_groups ]
+
+            print autoscale_group_names
+            self.build_list_params(params, autoscale_group_names, 'AutoScalingGroupNames')
+
+        return self.get_list('DescribeNotificationConfigurations', params,
+                             [('member', NotificationConfiguration)])
+
 
     def set_instance_health(self, instance_id, health_status,
                             should_respect_grace_period=True):
