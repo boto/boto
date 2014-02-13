@@ -85,23 +85,29 @@ class TestProvider(unittest.TestCase):
             'profile dev': {
                 'aws_access_key_id': 'dev_access_key',
                 'aws_secret_access_key': 'dev_secret_key',
+                'aws_security_token' : 'dev_security_token',
             }, 'profile prod': {
                 'aws_access_key_id': 'prod_access_key',
                 'aws_secret_access_key': 'prod_secret_key',
+                'aws_security_token' : 'prod_security_token',
             }, 'Credentials': {
                 'aws_access_key_id': 'default_access_key',
-                'aws_secret_access_key': 'default_secret_key'
+                'aws_secret_access_key': 'default_secret_key',
+                'aws_security_token': 'default_security_token',
             }
         }
         p = provider.Provider('aws', profile_name='prod')
         self.assertEqual(p.access_key, 'prod_access_key')
         self.assertEqual(p.secret_key, 'prod_secret_key')
+        self.assertEqual(p.security_token, 'prod_security_token')
         q = provider.Provider('aws', profile_name='dev')
         self.assertEqual(q.access_key, 'dev_access_key')
         self.assertEqual(q.secret_key, 'dev_secret_key')
+        self.assertEqual(q.security_token, 'dev_security_token')
         r = provider.Provider('aws', profile_name='doesntexist')
         self.assertEqual(r.access_key, 'default_access_key')
         self.assertEqual(r.secret_key, 'default_secret_key')
+        self.assertEqual(r.security_token, 'default_security_token')
 
     def test_config_values_are_used(self):
         self.config = {
