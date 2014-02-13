@@ -8,6 +8,15 @@ This tutorial focuses on the boto interface to the Relational Database Service
 from Amazon Web Services.  This tutorial assumes that you have boto already
 downloaded and installed, and that you wish to setup a MySQL instance in RDS.
 
+.. warning::
+
+    This tutorial covers the **ORIGINAL** module for RDS.
+    It has since been supplanted by a second major version & an
+    updated API complete with all service operations. The documentation for the
+    new version of boto's support for RDS is at
+    :doc:`RDS v2 <ref/rds2>`.
+
+
 Creating a Connection
 ---------------------
 The first step in accessing RDS is to create a connection to the service.
