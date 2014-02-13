@@ -66,7 +66,7 @@ class ResourceRecordSets(ResultSet):
 
     def add_change(self, action, name, type, ttl=600,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
-            weight=None, region=None):
+            weight=None, region=None, alias_evaluate_target_health=None):
         """
         Add a change request to the set.
 
@@ -118,11 +118,18 @@ class ResourceRecordSets(ResultSet):
             record sets that have the same combination of DNS name and type,
             a value that determines which region this should be associated with
             for the latency-based routing
+
+        :type alias_evaluate_target_health: Boolean
+        :param region: *Required for alias resource record sets* Indicates
+        whether this Resource Record Set should respect the health status of
+        any health checks associated with the ALIAS target record which it is
+        linked to.
+
         """
         change = Record(name, type, ttl,
                 alias_hosted_zone_id=alias_hosted_zone_id,
                 alias_dns_name=alias_dns_name, identifier=identifier,
-                weight=weight, region=region)
+                weight=weight, region=region, alias_evaluate_target_health=alias_evaluate_target_health)
         self.changes.append([action, change])
         return change
 
@@ -206,15 +213,17 @@ class Record(object):
     </ResourceRecord>"""
 
     AliasBody = """<AliasTarget>
-        <HostedZoneId>%s</HostedZoneId>
-        <DNSName>%s</DNSName>
+        <HostedZoneId>%(hosted_zone_id)s</HostedZoneId>
+        <DNSName>%(dns_name)s</DNSName>
+        %(eval_target_health)s
     </AliasTarget>"""
 
+    EvaluateTargetHealth = """<EvaluateTargetHealth>%s</EvaluateTargetHealth>"""
 
 
     def __init__(self, name=None, type=None, ttl=600, resource_records=None,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
-            weight=None, region=None):
+            weight=None, region=None, alias_evaluate_target_health=None):
         self.name = name
         self.type = type
         self.ttl = ttl
@@ -226,6 +235,7 @@ class Record(object):
         self.identifier = identifier
         self.weight = weight
         self.region = region
+        self.alias_evaluate_target_health = alias_evaluate_target_health
 
     def __repr__(self):
         return '<Record:%s:%s:%s>' % (self.name, self.type, self.to_print())
@@ -243,7 +253,14 @@ class Record(object):
         """Spit this resource record set out as XML"""
         if self.alias_hosted_zone_id is not None and self.alias_dns_name is not None:
             # Use alias
-            body = self.AliasBody % (self.alias_hosted_zone_id, self.alias_dns_name)
+            if self.alias_evaluate_target_health is not None:
+                eval_target_health = self.EvaluateTargetHealth % ('true' if self.alias_evaluate_target_health else 'false')
+            else:
+                eval_target_health = ""
+
+            body = self.AliasBody % { "hosted_zone_id": self.alias_hosted_zone_id,
+                                      "dns_name": self.alias_dns_name,
+                                      "eval_target_health": eval_target_health }
         else:
             # Use resource record(s)
             records = ""
