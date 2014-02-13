@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 #
 
+import time
 import unittest
 from boto.route53.connection import Route53Connection
 from boto.route53.record import ResourceRecordSets
@@ -32,18 +33,20 @@ class TestRoute53AliasResourceRecordSets(unittest.TestCase):
     def setUp(self):
         super(TestRoute53AliasResourceRecordSets, self).setUp()
         self.conn = Route53Connection()
-        self.zone = self.conn.create_zone('example.com')
-        self.zone.add_a('target.example.com', '102.11.23.1')  # a standard record to use as the target for our alias
+        self.base_domain = 'boto-test-%s.com' % str(int(time.time()))
+        self.zone = self.conn.create_zone(self.base_domain)
+        # a standard record to use as the target for our alias
+        self.zone.add_a('target.%s' % self.base_domain, '102.11.23.1')
 
     def tearDown(self):
-        self.zone.delete_a('target.example.com')
+        self.zone.delete_a('target.%s' % self.base_domain)
         self.zone.delete()
         super(TestRoute53AliasResourceRecordSets, self).tearDown()
 
     def test_incomplete_add_alias_failure(self):
-        base_record = dict(name="alias.example.com.",
+        base_record = dict(name="alias.%s." % self.base_domain,
                            type="A",
-                           alias_dns_name="target.example.com",
+                           alias_dns_name="target.%s" % self.base_domain,
                            alias_hosted_zone_id=self.zone.id,
                            identifier="boto:TestRoute53AliasResourceRecordSets")
 
@@ -60,10 +63,10 @@ class TestRoute53AliasResourceRecordSets(unittest.TestCase):
             raise
 
     def test_add_alias(self):
-        base_record = dict(name="alias.example.com.",
+        base_record = dict(name="alias.%s." % self.base_domain,
                            type="A",
                            alias_evaluate_target_health=False,
-                           alias_dns_name="target.example.com",
+                           alias_dns_name="target.%s" % self.base_domain,
                            alias_hosted_zone_id=self.zone.id,
                            identifier="boto:TestRoute53AliasResourceRecordSets")
 
