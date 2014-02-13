@@ -616,5 +616,81 @@ class TestCloudFormationCancelUpdateStack(CloudFormationConnectionBase):
         })
 
 
+class TestCloudFormationEstimateTemplateCost(CloudFormationConnectionBase):
+    def default_body(self):
+        return """
+            {
+                "EstimateTemplateCostResponse": {
+                    "EstimateTemplateCostResult": {
+                        "Url": "http://calculator.s3.amazonaws.com/calc5.html?key=cf-2e351785-e821-450c-9d58-625e1e1ebfb6"
+                    }
+                }
+            }
+        """
+
+    def test_estimate_template_cost(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.estimate_template_cost(
+            template_body='{}')
+        self.assertEqual(api_response,
+            'http://calculator.s3.amazonaws.com/calc5.html?key=cf-2e351785-e821-450c-9d58-625e1e1ebfb6')
+        self.assert_request_parameters({
+            'Action': 'EstimateTemplateCost',
+            'ContentType': 'JSON',
+            'TemplateBody': '{}',
+            'Version': '2010-05-15',
+        })
+
+
+class TestCloudFormationGetStackPolicy(CloudFormationConnectionBase):
+    def default_body(self):
+        return """
+            {
+                "GetStackPolicyResponse": {
+                    "GetStackPolicyResult": {
+                        "StackPolicyBody": "{...}"
+                    }
+                }
+            }
+        """
+
+    def test_get_stack_policy(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.get_stack_policy('stack-id')
+        self.assertEqual(api_response, '{...}')
+        self.assert_request_parameters({
+            'Action': 'GetStackPolicy',
+            'ContentType': 'JSON',
+            'StackName': 'stack-id',
+            'Version': '2010-05-15',
+        })
+
+
+class TestCloudFormationSetStackPolicy(CloudFormationConnectionBase):
+    def default_body(self):
+        return """
+            {
+                "SetStackPolicyResponse": {
+                    "SetStackPolicyResult": {
+                        "Some": "content"
+                    }
+                }
+            }
+        """
+
+    def test_set_stack_policy(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.set_stack_policy('stack-id',
+            stack_policy_body='{}')
+        self.assertEqual(api_response['Some'], 'content')
+        self.assert_request_parameters({
+            'Action': 'SetStackPolicy',
+            'ContentType': 'JSON',
+            'StackName': 'stack-id',
+            'StackPolicyBody': '{}',
+            'Version': '2010-05-15',
+        })
+
+
 if __name__ == '__main__':
     unittest.main()
