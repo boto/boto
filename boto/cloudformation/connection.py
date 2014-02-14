@@ -496,7 +496,6 @@ class CloudFormationConnection(AWSQueryConnection):
 
         """
         params = {'ContentType': "JSON", 'StackName': stack_name_or_id}
-        # TODO: change this to get_status ?
         return self._do_request('DeleteStack', params, '/', 'GET')
 
     def describe_stack_events(self, stack_name_or_id=None, next_token=None):
