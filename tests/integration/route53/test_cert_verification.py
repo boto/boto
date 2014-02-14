@@ -25,12 +25,14 @@
 Check that all of the certs on all service endpoints validate.
 """
 import unittest
+from nose.plugins.attrib import attr
 
 from tests.integration import ServiceCertVerificationTest
 
 import boto.route53
 
 
+@attr(route53=True)
 class Route53CertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     route53 = True
     regions = boto.route53.regions()

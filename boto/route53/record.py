@@ -66,7 +66,8 @@ class ResourceRecordSets(ResultSet):
 
     def add_change(self, action, name, type, ttl=600,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
-            weight=None, region=None, alias_evaluate_target_health=None):
+            weight=None, region=None, alias_evaluate_target_health=None,
+            health_check=None):
         """
         Add a change request to the set.
 
@@ -125,11 +126,15 @@ class ResourceRecordSets(ResultSet):
         any health checks associated with the ALIAS target record which it is
         linked to.
 
+        :type health_check: str
+        :param health_check: Health check to associate with this record
         """
         change = Record(name, type, ttl,
                 alias_hosted_zone_id=alias_hosted_zone_id,
                 alias_dns_name=alias_dns_name, identifier=identifier,
-                weight=weight, region=region, alias_evaluate_target_health=alias_evaluate_target_health)
+                weight=weight, region=region,
+                alias_evaluate_target_health=alias_evaluate_target_health,
+                health_check=health_check)
         self.changes.append([action, change])
         return change
 
@@ -185,11 +190,14 @@ class ResourceRecordSets(ResultSet):
 class Record(object):
     """An individual ResourceRecordSet"""
 
+    HealthCheckBody = """<HealthCheckId>%s</HealthCheckId>"""
+
     XMLBody = """<ResourceRecordSet>
         <Name>%(name)s</Name>
         <Type>%(type)s</Type>
         %(weight)s
         %(body)s
+        %(health_check)s
     </ResourceRecordSet>"""
 
     WRRBody = """
@@ -223,7 +231,8 @@ class Record(object):
 
     def __init__(self, name=None, type=None, ttl=600, resource_records=None,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
-            weight=None, region=None, alias_evaluate_target_health=None):
+            weight=None, region=None, alias_evaluate_target_health=None,
+            health_check=None):
         self.name = name
         self.type = type
         self.ttl = ttl
@@ -236,6 +245,7 @@ class Record(object):
         self.weight = weight
         self.region = region
         self.alias_evaluate_target_health = alias_evaluate_target_health
+        self.health_check = health_check
 
     def __repr__(self):
         return '<Record:%s:%s:%s>' % (self.name, self.type, self.to_print())
@@ -282,11 +292,16 @@ class Record(object):
             weight = self.RRRBody % {"identifier": self.identifier, "region":
                     self.region}
 
+        health_check = ""
+        if self.health_check is not None:
+            health_check = self.HealthCheckBody % (self.health_check)
+
         params = {
             "name": self.name,
             "type": self.type,
             "weight": weight,
             "body": body,
+            "health_check": health_check
         }
         return self.XMLBody % params
 
