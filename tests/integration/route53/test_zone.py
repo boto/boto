@@ -24,10 +24,12 @@
 
 import time
 import unittest
+from nose.plugins.attrib import attr
 from boto.route53.connection import Route53Connection
 from boto.exception import TooManyRecordsException
 
 
+@attr(route53=True)
 class TestRoute53Zone(unittest.TestCase):
     @classmethod
     def setUpClass(self):

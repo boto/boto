@@ -28,10 +28,12 @@ from boto.route53.exception import DNSServerError
 from boto.route53.record import ResourceRecordSets, Record
 from boto.route53.zone import Zone
 
+from nose.plugins.attrib import attr
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 
+@attr(route53=True)
 class TestRoute53Connection(AWSMockServiceTestCase):
     connection_class = Route53Connection
 

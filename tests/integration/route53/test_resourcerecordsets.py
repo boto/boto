@@ -22,21 +22,12 @@
 
 import time
 import unittest
+from tests.integration.route53 import Route53TestCase
+
 from boto.route53.connection import Route53Connection
 from boto.route53.record import ResourceRecordSets
 
-
-class TestRoute53ResourceRecordSets(unittest.TestCase):
-    def setUp(self):
-        super(TestRoute53ResourceRecordSets, self).setUp()
-        self.conn = Route53Connection()
-        self.base_domain = 'boto-test-%s.com' % str(int(time.time()))
-        self.zone = self.conn.create_zone(self.base_domain)
-
-    def tearDown(self):
-        self.zone.delete()
-        super(TestRoute53ResourceRecordSets, self).tearDown()
-
+class TestRoute53ResourceRecordSets(Route53TestCase):
     def test_add_change(self):
         rrs = ResourceRecordSets(self.conn, self.zone.id)
 
