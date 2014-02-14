@@ -201,7 +201,7 @@ class CloudFormationConnection(AWSQueryConnection):
         if template_body and template_url:
             boto.log.warning("If both TemplateBody and TemplateURL are"
                 " specified, only TemplateBody will be honored by the API")
-        if len(parameters) > 0:
+        if parameters and len(parameters) > 0:
             for i, (key, value) in enumerate(parameters):
                 params['Parameters.member.%d.ParameterKey' % (i + 1)] = key
                 params['Parameters.member.%d.ParameterValue' % (i + 1)] = value
@@ -212,7 +212,7 @@ class CloudFormationConnection(AWSQueryConnection):
             for i, (key, value) in enumerate(tags.items()):
                 params['Tags.member.%d.Key' % (i + 1)] = key
                 params['Tags.member.%d.Value' % (i + 1)] = value
-        if len(notification_arns) > 0:
+        if notification_arns and len(notification_arns) > 0:
             self.build_list_params(params, notification_arns,
                                    "NotificationARNs.member")
         if timeout_in_minutes:
@@ -262,11 +262,9 @@ class CloudFormationConnection(AWSQueryConnection):
             raise self.ResponseError(response.status, response.reason, body)
 
     def create_stack(self, stack_name, template_body=None, template_url=None,
-                     parameters=[], disable_rollback=None,
-                     timeout_in_minutes=None, notification_arns=[],
-                     capabilities=None, on_failure=None,
-                     stack_policy_body=None, stack_policy_url=None,
-                     tags=None):
+            parameters=None, notification_arns=None, disable_rollback=None,
+            timeout_in_minutes=None, capabilities=None, tags=None,
+            on_failure=None, stack_policy_body=None, stack_policy_url=None):
         """
         Creates a stack as specified in the template. After the call
         completes successfully, the stack creation starts. You can
@@ -364,7 +362,7 @@ class CloudFormationConnection(AWSQueryConnection):
         return body['CreateStackResponse']['CreateStackResult']['StackId']
 
     def update_stack(self, stack_name, template_body=None, template_url=None,
-            parameters=[], notification_arns=[], disable_rollback=False,
+            parameters=None, notification_arns=None, disable_rollback=False,
             timeout_in_minutes=None, capabilities=None, tags=None, 
             stack_policy_during_update_body=None,
             stack_policy_during_update_url=None,
@@ -694,7 +692,7 @@ class CloudFormationConnection(AWSQueryConnection):
         return self.get_list('ListStackResources', params,
                              [('member', StackResourceSummary)])
 
-    def list_stacks(self, stack_status_filters=[], next_token=None):
+    def list_stacks(self, stack_status_filters=None, next_token=None):
         """
         Returns the summary information for stacks whose status
         matches the specified StackStatusFilter. Summary information
@@ -718,7 +716,7 @@ class CloudFormationConnection(AWSQueryConnection):
         params = {}
         if next_token:
             params['NextToken'] = next_token
-        if len(stack_status_filters) > 0:
+        if stack_status_filters and len(stack_status_filters) > 0:
             self.build_list_params(params, stack_status_filters,
                 "StackStatusFilter.member")
 
@@ -775,7 +773,7 @@ class CloudFormationConnection(AWSQueryConnection):
         return self.get_status('CancelUpdateStack', params)
 
     def estimate_template_cost(self, template_body=None, template_url=None,
-                               parameters=[]):
+                               parameters=None):
         """
         Returns the estimated monthly cost of a template. The return
         value is an AWS Simple Monthly Calculator URL with a query
@@ -809,7 +807,7 @@ class CloudFormationConnection(AWSQueryConnection):
             params['TemplateBody'] = template_body
         if template_url is not None:
             params['TemplateURL'] = template_url
-        if len(parameters) > 0:
+        if parameters and len(parameters) > 0:
             for i, (key, value) in enumerate(parameters):
                 params['Parameters.member.%d.ParameterKey' % (i + 1)] = key
                 params['Parameters.member.%d.ParameterValue' % (i + 1)] = value
