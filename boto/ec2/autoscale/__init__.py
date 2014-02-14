@@ -792,7 +792,6 @@ class AutoScaleConnection(AWSQueryConnection):
                                           if isinstance(autoscale_groups, AutoScalingGroup)
                                           else autoscale_groups ]
 
-            print autoscale_group_names
             self.build_list_params(params, autoscale_group_names, 'AutoScalingGroupNames')
 
         return self.get_list('DescribeNotificationConfigurations', params,
