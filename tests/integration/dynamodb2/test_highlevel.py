@@ -231,6 +231,16 @@ class DynamoDBv2Test(unittest.TestCase):
             self.assertTrue(res['username'] in ['johndoe',])
             self.assertEqual(res.keys(), ['username'])
 
+        # Ensure that queries with attributes don't return the hash key.
+        results = users.query(
+            username__eq='johndoe',
+            friend_count__eq=4,
+            attributes=('first_name',)
+        )
+
+        for res in results:
+            self.assertTrue(res['first_name'] in ['John',])
+            self.assertEqual(res.keys(), ['first_name'])
 
         # Test the strongly consistent query.
         c_results = users.query(
