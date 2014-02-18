@@ -106,6 +106,8 @@ class ItemSet(ResponseGroup):
         self.curItem = None
         self.total_results = 0
         self.total_pages = 0
+        self.is_valid = False
+        self.errors = []
 
     def startElement(self, name, attrs, connection):
         if name == "Item":
@@ -119,7 +121,14 @@ class ItemSet(ResponseGroup):
             self.total_results = value
         elif name == 'TotalPages':
             self.total_pages = value
-        elif name == "Item":
+        elif name == 'IsValid':
+            if value == 'True':
+                self.is_valid = True
+        elif name == 'Code':
+            self.errors.append({'Code': value, 'Message': None})
+        elif name == 'Message':
+            self.errors[-1]['Message'] = value
+        elif name == 'Item':
             self.objs.append(self.curItem)
             self._xml.write(self.curItem.to_xml())
             self.curItem = None
