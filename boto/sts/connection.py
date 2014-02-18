@@ -238,7 +238,9 @@ class STSConnection(AWSQueryConnection):
                                 FederationToken, verb='POST')
 
     def assume_role(self, role_arn, role_session_name, policy=None,
-                    duration_seconds=None, external_id=None):
+                    duration_seconds=None, external_id=None,
+                    mfa_serial_number=None,
+                    mfa_token=None):
         """
         Returns a set of temporary security credentials (consisting of
         an access key ID, a secret access key, and a security token)
@@ -328,6 +330,24 @@ class STSConnection(AWSQueryConnection):
             information about the external ID, see `About the External ID`_ in
             Using Temporary Security Credentials .
 
+        :type mfa_serial_number: string
+        :param mfa_serial_number: The identification number of the MFA device that
+            is associated with the user who is making the AssumeRole call.
+            Specify this value if the trust policy of the role being assumed
+            includes a condition that requires MFA authentication. The value is
+            either the serial number for a hardware device (such as
+            GAHT12345678) or an Amazon Resource Name (ARN) for a virtual device
+            (such as arn:aws:iam::123456789012:mfa/user). Minimum length of 9.
+            Maximum length of 256.
+
+        :type mfa_token: string
+        :param mfa_token: The value provided by the MFA device, if the trust
+            policy of the role being assumed requires MFA (that is, if the
+            policy includes a condition that tests for MFA). If the role being
+            assumed requires MFA and if the TokenCode value is missing or
+            expired, the AssumeRole call returns an "access denied" errror.
+            Minimum length of 6. Maximum length of 6.
+
         """
         params = {
             'RoleArn': role_arn,
@@ -339,6 +359,10 @@ class STSConnection(AWSQueryConnection):
             params['DurationSeconds'] = duration_seconds
         if external_id is not None:
             params['ExternalId'] = external_id
+        if mfa_serial_number is not None:
+            params['SerialNumber'] = mfa_serial_number
+        if mfa_token is not None:
+            params['TokenCode'] = mfa_token
         return self.get_object('AssumeRole', params, AssumedRole, verb='POST')
 
     def assume_role_with_saml(self, role_arn, principal_arn, saml_assertion,
