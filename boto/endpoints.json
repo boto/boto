@@ -176,6 +176,9 @@
         "us-west-1": "importexport.amazonaws.com",
         "us-west-2": "importexport.amazonaws.com"
     },
+    "kinesis": {
+        "us-east-1": "kinesis.us-east-1.amazonaws.com"
+    },
     "opsworks": {
         "us-east-1": "opsworks.us-east-1.amazonaws.com"
     },
