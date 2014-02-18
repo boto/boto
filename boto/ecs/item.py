@@ -90,14 +90,14 @@ class Item(ResponseGroup):
 
     def __init__(self, connection=None):
         """Initialize this Item"""
-        super(Item, self).__init__(connection, "Item")
+        ResponseGroup.__init__(self, connection, "Item")
 
 class ItemSet(ResponseGroup):
     """A special ResponseGroup that has built-in paging, and
     only creates new Items on the "Item" tag"""
 
     def __init__(self, connection, action, params, page=0):
-        super(ItemSet, self).__init__(connection, "Items")
+        ResponseGroup.__init__(self, connection, "Items")
         self.objs = []
         self.iter = None
         self.page = page
@@ -150,4 +150,4 @@ class ItemSet(ResponseGroup):
         """Override to first fetch everything"""
         for item in self:
             pass
-        return super(ItemSet, self).to_xml()
+        return ResponseGroup.to_xml(self)
