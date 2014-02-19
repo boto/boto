@@ -56,6 +56,7 @@ class HealthCheck(object):
             <ResourcePath>%(resource_path)s</ResourcePath>
             %(fqdn_part)s
             %(string_match_part)s
+            %(request_interval)s
         </HealthCheckConfig>
     """
 
@@ -63,7 +64,11 @@ class HealthCheck(object):
 
     XMLStringMatchPart = """<SearchString>%(string_match)s</SearchString>"""
 
-    def __init__(self, ip_addr, port, hc_type, resource_path, fqdn=None, string_match=None):
+    XMLRequestIntervalPart = """<RequestInterval>%(request_interval)d</RequestInterval>"""
+
+    valid_request_intervals = (10, 30)
+
+    def __init__(self, ip_addr, port, hc_type, resource_path, fqdn=None, string_match=None, request_interval=30):
         """
         HealthCheck object
 
@@ -85,6 +90,9 @@ class HealthCheck(object):
         :type string_match: str
         :param string_match: if hc_type is HTTP_STR_MATCH or HTTPS_STR_MATCH, the string to search for in the response body from the specified resource
 
+        :type request_interval: int
+        :param request_interval: The number of seconds between the time that Amazon Route 53 gets a response from your endpoint and the time that it sends the next health-check request.
+
         """
         self.ip_addr = ip_addr
         self.port = port
@@ -92,6 +100,13 @@ class HealthCheck(object):
         self.resource_path = resource_path
         self.fqdn = fqdn
         self.string_match = string_match
+
+        if request_interval in self.valid_request_intervals:
+            self.request_interval = request_interval
+        else:
+            raise AttributeError(
+                "Valid values for request_interval are: %s" %
+                ",".join(str(i) for i in self.valid_request_intervals))
 
     def to_xml(self):
         params = {
@@ -101,6 +116,8 @@ class HealthCheck(object):
             'resource_path': self.resource_path,
             'fqdn_part': "",
             'string_match_part': "",
+            'request_interval': (self.XMLRequestIntervalPart %
+                                 {'request_interval': self.request_interval}),
         }
         if self.fqdn is not None:
             params['fqdn_part'] = self.XMLFQDNPart % {'fqdn': self.fqdn}
