@@ -99,7 +99,6 @@ class TestRoute53HealthCheck(Route53TestCase):
         self.assertEquals(result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'][u'SearchString'], 'test')
         self.conn.delete_health_check(result['CreateHealthCheckResponse']['HealthCheck']['Id'])
 
-
     def test_create_resource_record_set(self):
         hc = HealthCheck(ip_addr="54.217.7.118", port=80, hc_type="HTTP", resource_path="/testing")
         result = self.conn.create_health_check(hc)
@@ -115,3 +114,30 @@ class TestRoute53HealthCheck(Route53TestCase):
                                     weight=1, health_check=result['CreateHealthCheckResponse']['HealthCheck']['Id'])
         deleted.add_value('54.217.7.118')
         records.commit()
+
+    def test_create_health_check_invalid_request_interval(self):
+        """Test that health checks cannot be created with an invalid
+        'request_interval'.
+
+        """
+        with self.assertRaises(AttributeError):
+            HealthCheck(**self.health_check_params(request_interval=5))
+
+    def test_create_health_check_request_interval(self):
+        hc_params = self.health_check_params(request_interval=10)
+        hc = HealthCheck(**hc_params)
+        result = self.conn.create_health_check(hc)
+        hc_config = (result[u'CreateHealthCheckResponse']
+                     [u'HealthCheck'][u'HealthCheckConfig'])
+        self.assertEquals(hc_config[u'RequestInterval'],
+                          unicode(hc_params['request_interval']))
+
+    def health_check_params(self, **kwargs):
+        params = {
+            'ip_addr': "54.217.7.118",
+            'port': 80,
+            'hc_type': 'HTTP',
+            'resource_path': '/testing',
+        }
+        params.update(kwargs)
+        return params
