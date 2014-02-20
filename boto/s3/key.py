@@ -218,7 +218,9 @@ class Key(object):
 
     def handle_restore_headers(self, response):
         provider = self.bucket.connection.provider
-        header = response.getheader(provider.restore_header)
+        header = None
+        if provider.restore_header:
+            header = response.getheader(provider.restore_header)
         if header is None:
             return
         parts = header.split(',', 1)
