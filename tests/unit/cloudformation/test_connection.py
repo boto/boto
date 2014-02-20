@@ -569,6 +569,10 @@ class TestCloudFormationValidateTemplate(CloudFormationConnectionBase):
                     <Description>EC2 KeyPair</Description>
                   </member>
                 </Parameters>
+                <CapabilitiesReason>Reason</CapabilitiesReason>
+                <Capabilities>
+                  <member>CAPABILITY_IAM</member>
+                </Capabilities>
               </ValidateTemplateResult>
               <ResponseMetadata>
                 <RequestId>0be7b6e8-e4a0-11e0-a5bd-9f8d5a7dbc91</RequestId>
@@ -592,6 +596,11 @@ class TestCloudFormationValidateTemplate(CloudFormationConnectionBase):
         self.assertEqual(param2.description, 'EC2 KeyPair')
         self.assertEqual(param2.no_echo, True)
         self.assertEqual(param2.parameter_key, 'KeyName')
+
+        self.assertEqual(template.capabilities_reason, 'Reason')
+
+        self.assertEqual(len(template.capabilities), 1)
+        self.assertEqual(template.capabilities[0].value, 'CAPABILITY_IAM')
 
         self.assert_request_parameters({
             'Action': 'ValidateTemplate',
