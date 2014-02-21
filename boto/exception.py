@@ -24,14 +24,10 @@
 """
 Exception classes - Subclassing allows you to check for specific errors
 """
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
 import base64
 import xml.sax
 from boto import handler
+from boto.compat import json
 from boto.resultset import ResultSet
 
 
