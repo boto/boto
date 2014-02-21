@@ -259,7 +259,7 @@ class CloudFormationConnection(AWSQueryConnection):
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
-            raise self.ResponseError(response.status, response.reason, body)
+            raise self.ResponseError(response.status, response.reason, body=body)
 
     def create_stack(self, stack_name, template_body=None, template_url=None,
             parameters=None, notification_arns=None, disable_rollback=None,

@@ -11,6 +11,7 @@ from mock import Mock
 
 from tests.unit import AWSMockServiceTestCase
 from boto.cloudformation.connection import CloudFormationConnection
+from boto.exception import BotoServerError
 
 
 SAMPLE_TEMPLATE = r"""
@@ -108,12 +109,24 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
 
     def test_create_stack_fails(self):
         self.set_http_response(status_code=400, reason='Bad Request',
-                               body='Invalid arg.')
-        with self.assertRaises(self.service_connection.ResponseError):
+            body='{"Error": {"Code": 1, "Message": "Invalid arg."}}')
+        with self.assertRaisesRegexp(self.service_connection.ResponseError,
+            'Invalid arg.'):
             api_response = self.service_connection.create_stack(
                 'stack_name', template_body=SAMPLE_TEMPLATE,
                 parameters=[('KeyName', 'myKeyName')])
 
+    def test_create_stack_fail_error(self):
+        self.set_http_response(status_code=400, reason='Bad Request',
+            body='{"RequestId": "abc", "Error": {"Code": 1, "Message": "Invalid arg."}}')
+        try:
+            api_response = self.service_connection.create_stack(
+                'stack_name', template_body=SAMPLE_TEMPLATE,
+                parameters=[('KeyName', 'myKeyName')])
+        except BotoServerError, e:
+            self.assertEqual('abc', e.request_id)
+            self.assertEqual(1, e.error_code)
+            self.assertEqual('Invalid arg.', e.message)
 
 class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
     def default_body(self):
