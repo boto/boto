@@ -108,8 +108,9 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
 
     def test_create_stack_fails(self):
         self.set_http_response(status_code=400, reason='Bad Request',
-                               body='Invalid arg.')
-        with self.assertRaises(self.service_connection.ResponseError):
+            body='{"Error": {"Code": 1, "Message": "Invalid arg."}}')
+        with self.assertRaisesRegexp(self.service_connection.ResponseError,
+            'Invalid arg.'):
             api_response = self.service_connection.create_stack(
                 'stack_name', template_body=SAMPLE_TEMPLATE,
                 parameters=[('KeyName', 'myKeyName')])
