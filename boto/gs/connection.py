@@ -32,7 +32,7 @@ class Location(object):
 class GSConnection(S3Connection):
 
     DefaultHost = 'storage.googleapis.com'
-    QueryString = 'Signature=%s&Expires=%d&AWSAccessKeyId=%s'
+    QueryString = 'Signature=%s&Expires=%d&GoogleAccessId=%s'
 
     def __init__(self, gs_access_key_id=None, gs_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
