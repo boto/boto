@@ -45,6 +45,7 @@ Handles basic connections to AWS
 
 from __future__ import with_statement
 import base64
+from datetime import datetime
 import errno
 import httplib
 import os
@@ -568,6 +569,7 @@ class AWSAuthConnection(object):
               host, config, self.provider, self._required_auth_capability())
         if getattr(self, 'AuthServiceName', None) is not None:
             self.auth_service_name = self.AuthServiceName
+        self.request_hook = None
 
     def __repr__(self):
         return '%s:%s' % (self.__class__.__name__, self.host)
@@ -860,6 +862,9 @@ class AWSAuthConnection(object):
         except AttributeError:
             request.headers['Host'] = self.host.split(':', 1)[0]
 
+    def set_request_hook(self, hook):
+        self.request_hook = hook
+
     def _mexe(self, request, sender=None, override_num_retries=None,
               retry_handler=None):
         """
@@ -902,6 +907,7 @@ class AWSAuthConnection(object):
                 if 's3' not in self._required_auth_capability():
                     if not getattr(self, 'anon', False):
                         self.set_host_header(request)
+                request.start_time = datetime.now()
                 if callable(sender):
                     response = sender(connection, request.method, request.path,
                                       request.body, request.headers)
@@ -942,6 +948,8 @@ class AWSAuthConnection(object):
                     else:
                         self.put_http_connection(request.host, request.port,
                                                  self.is_secure, connection)
+                    if self.request_hook is not None:
+                        self.request_hook.handle_request_data(request, response)
                     return response
                 else:
                     scheme, request.host, request.path, \
@@ -982,6 +990,8 @@ class AWSAuthConnection(object):
         # and stil haven't succeeded.  So, if we have a response object,
         # use it to raise an exception.
         # Otherwise, raise the exception that must have already happened.
+        if self.request_hook is not None:
+            self.request_hook.handle_request_data(request, response, error=True)
         if response:
             raise BotoServerError(response.status, response.reason, body)
         elif e:

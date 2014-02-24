@@ -1025,3 +1025,12 @@ def merge_headers_by_name(name, headers):
     matching_headers = find_matching_headers(name, headers)
     return ','.join(str(headers[h]) for h in matching_headers
                     if headers[h] is not None)
+
+class RequestHook(object):
+    """
+    This can be extended and supplied to the connection object
+    to gain access to request and response object after the request completes.
+    One use for this would be to implement some specific request logging.
+    """
+    def handle_request_data(self, request, response, error=False):
+        pass
