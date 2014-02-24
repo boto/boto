@@ -225,6 +225,17 @@ class TestSNSConnection(AWSMockServiceTestCase):
             'MessageStructure': 'json',
         }, ignore_params_values=['Version', 'ContentType'])
 
+    def test_publish_with_utf8_message(self):
+        self.set_http_response(status_code=200)
+        subject = message = u'We \u2665 utf-8'.encode('utf-8')
+        self.service_connection.publish('topic', message, subject)
+        self.assert_request_parameters({
+            'Action': 'Publish',
+            'TopicArn': 'topic',
+            'Subject': subject,
+            'Message': message,
+        }, ignore_params_values=['Version', 'ContentType'])
+
 
 if __name__ == '__main__':
     unittest.main()
