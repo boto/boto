@@ -31,6 +31,7 @@ Some integration tests for the GSConnection
 import os
 import re
 import StringIO
+import urllib
 import xml.sax
 
 from boto import handler
@@ -99,6 +100,11 @@ class GSBasicTest(GSTestCase):
         # check to make sure content read from gcs is identical to original
         self.assertEqual(s1, fp.read())
         fp.close()
+        # Use generate_url to get the contents
+        url = self._conn.generate_url(900, 'GET', bucket=bucket.name, key=key_name)
+        f = urllib.urlopen(url)
+        self.assertEqual(s1, f.read())
+        f.close()
         # check to make sure set_contents_from_file is working
         sfp = StringIO.StringIO('foo')
         k.set_contents_from_file(sfp)
