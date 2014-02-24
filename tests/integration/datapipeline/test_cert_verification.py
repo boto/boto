@@ -1,5 +1,6 @@
-# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.
-# All Rights Reserved
+# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
+# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,23 +20,20 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-#
-from boto.regioninfo import get_regions
+
+"""
+Check that all of the certs on all service endpoints validate.
+"""
+import unittest
+
+from tests.integration import ServiceCertVerificationTest
+
+import boto.datapipeline
 
 
-def regions():
-    """
-    Get all available regions for the AWS Datapipeline service.
+class DatapipelineCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
+    datapipeline = True
+    regions = boto.datapipeline.regions()
 
-    :rtype: list
-    :return: A list of :class:`boto.regioninfo.RegionInfo`
-    """
-    from boto.datapipeline.layer1 import DataPipelineConnection
-    return get_regions('datapipeline', connection_cls=DataPipelineConnection)
-
-
-def connect_to_region(region_name, **kw_params):
-    for region in regions():
-        if region.name == region_name:
-            return region.connect(**kw_params)
-    return None
+    def sample_service_call(self, conn):
+        conn.list_pipelines()
