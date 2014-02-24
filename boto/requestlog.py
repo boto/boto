@@ -10,8 +10,8 @@ class RequestLogger(RequestHook):
     This class implements a request logger that uses a single thread to
     write to a log file.
     """
-    def __init__(self):
-        self.request_log_file = open('/tmp/request_log.csv', 'w')
+    def __init__(self, filename='/tmp/request_log.csv'):
+        self.request_log_file = open(filename, 'w')
         self.request_log_queue = Queue.Queue(100)
         Thread(target=self._request_log_worker).start()
     
