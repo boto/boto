@@ -289,7 +289,12 @@ class Provider(object):
         if security_token is not None:
             self.security_token = security_token
             boto.log.debug("Using security token provided by client.")
-        elif security_token_name is not None:
+        elif ((security_token_name is not None) and
+              (access_key is None) and (secret_key is None)):
+            # Only provide a token from the environment/config if the
+            # caller did not specify a key and secret.  Otherwise an
+            # environment/config token could be paired with a
+            # different set of credentials provided by the caller
             if security_token_name.upper() in os.environ:
                 self.security_token = os.environ[security_token_name.upper()]
                 boto.log.debug("Using security token found in environment"
