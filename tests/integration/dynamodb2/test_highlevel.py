@@ -31,7 +31,7 @@ import time
 from tests.unit import unittest
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey, KeysOnlyIndex,
-                                   GlobalKeysOnlyIndex)
+                                   GlobalKeysOnlyIndex, GlobalIncludeIndex)
 from boto.dynamodb2.items import Item
 from boto.dynamodb2.table import Table
 from boto.dynamodb2.types import NUMBER
@@ -413,7 +413,64 @@ class DynamoDBv2Test(unittest.TestCase):
         )
 
         # Wait again for the changes to finish propagating.
-        time.sleep(120)
+        time.sleep(150)
+
+    def test_gsi_with_just_hash_key(self):
+        # GSI allows for querying off a different keys. This is behavior we
+        # previously disallowed (due to standard & LSI queries).
+        # See https://forums.aws.amazon.com/thread.jspa?threadID=146212&tstart=0
+        users = Table.create('gsi_query_users', schema=[
+            HashKey('user_id')
+        ], throughput={
+            'read': 5,
+            'write': 3,
+        },
+        global_indexes=[
+            GlobalIncludeIndex('UsernameIndex', parts=[
+                HashKey('username'),
+            ], includes=['user_id', 'username'], throughput={
+                'read': 3,
+                'write': 1,
+            })
+        ])
+        self.addCleanup(users.delete)
+
+        # Wait for it.
+        time.sleep(60)
+
+        users.put_item(data={
+            'user_id': '7',
+            'username': 'johndoe',
+            'first_name': 'John',
+            'last_name': 'Doe',
+        })
+        users.put_item(data={
+            'user_id': '24',
+            'username': 'alice',
+            'first_name': 'Alice',
+            'last_name': 'Expert',
+        })
+        users.put_item(data={
+            'user_id': '35',
+            'username': 'jane',
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+        })
+
+        # Try the main key. Should be fine.
+        rs = users.query(
+            user_id__eq='24'
+        )
+        results = sorted([user['username'] for user in rs])
+        self.assertEqual(results, ['alice'])
+
+        # Now try the GSI. Also should work.
+        rs = users.query(
+            username__eq='johndoe',
+            index='UsernameIndex'
+        )
+        results = sorted([user['username'] for user in rs])
+        self.assertEqual(results, ['johndoe'])
 
     def test_query_with_limits(self):
         # Per the DDB team, it's recommended to do many smaller gets with a
