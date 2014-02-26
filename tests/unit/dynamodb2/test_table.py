@@ -17,7 +17,6 @@ from boto.exception import JSONResponseError
 FakeDynamoDBConnection = mock.create_autospec(DynamoDBConnection)
 
 
-
 class SchemaFieldsTestCase(unittest.TestCase):
     def test_hash_key(self):
         hash_key = HashKey('hello')
@@ -296,6 +295,43 @@ class IndexFieldTestCase(unittest.TestCase):
             'ProvisionedThroughput': {
                 'ReadCapacityUnits': 5,
                 'WriteCapacityUnits': 5
+            }
+        })
+
+    def test_global_include_index_throughput(self):
+        include_index = GlobalIncludeIndex('IncludeKeys', parts=[
+            HashKey('username'),
+            RangeKey('date_joined')
+        ], includes=[
+            'gender',
+            'friend_count'
+        ], throughput={
+            'read': 10,
+            'write': 8
+        })
+
+        self.assertEqual(include_index.schema(), {
+            'IndexName': 'IncludeKeys',
+            'KeySchema': [
+                {
+                    'AttributeName': 'username',
+                    'KeyType': 'HASH'
+                },
+                {
+                    'AttributeName': 'date_joined',
+                    'KeyType': 'RANGE'
+                }
+            ],
+            'Projection': {
+                'ProjectionType': 'INCLUDE',
+                'NonKeyAttributes': [
+                    'gender',
+                    'friend_count',
+                ]
+            },
+            'ProvisionedThroughput': {
+                'ReadCapacityUnits': 10,
+                'WriteCapacityUnits': 8
             }
         })
 
@@ -1624,7 +1660,6 @@ class TableTestCase(unittest.TestCase):
             username= 'johndoe',
             date_joined= 1366056668)
 
-
     def test_put_item(self):
         with mock.patch.object(
                 self.users.connection,
@@ -2426,7 +2461,6 @@ class TableTestCase(unittest.TestCase):
 
         self.assertEqual(mock_scan_2.call_count, 1)
 
-
     def test_scan_with_specific_attributes(self):
         items_1 = {
             'results': [
@@ -2458,7 +2492,6 @@ class TableTestCase(unittest.TestCase):
             self.assertEqual(res_2['username'], 'jane')
 
         self.assertEqual(mock_query.call_count, 1)
-
 
     def test_count(self):
         expected = {
