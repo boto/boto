@@ -416,7 +416,7 @@ class DynamoDBv2Test(unittest.TestCase):
         time.sleep(150)
 
     def test_gsi_with_just_hash_key(self):
-        # GSI allows for querying off a different keys. This is behavior we
+        # GSI allows for querying off of different keys. This is behavior we
         # previously disallowed (due to standard & LSI queries).
         # See https://forums.aws.amazon.com/thread.jspa?threadID=146212&tstart=0
         users = Table.create('gsi_query_users', schema=[
