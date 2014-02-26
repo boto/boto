@@ -54,6 +54,10 @@ class TestVPCConnection(unittest.TestCase):
             else:
                 time.sleep(10)
 
+    def delete_elastic_ip(self, eip):
+        eip.disassociate()
+        eip.delete()
+
     def test_multi_ip_create(self):
         interface = NetworkInterfaceSpecification(
             device_index=0, subnet_id=self.subnet.id,
@@ -134,6 +138,32 @@ class TestVPCConnection(unittest.TestCase):
         # We can't reason about the IP itself, so just make sure it vaguely
         # resembles an IP (& isn't empty/``None``)...
         self.assertTrue(interface.publicIp.count('.') >= 3)
+
+    def test_associate_elastic_ip(self):
+        interface = NetworkInterfaceSpecification(
+            associate_public_ip_address=False,
+            subnet_id=self.subnet.id,
+            # Just for testing.
+            delete_on_termination=True
+        )
+        interfaces = NetworkInterfaceCollection(interface)
+
+        reservation = self.api.run_instances(
+            image_id='ami-a0cd60c9',
+            instance_type='m1.small',
+            network_interfaces=interfaces
+        )
+        instance = reservation.instances[0]
+        self.addCleanup(self.terminate_instance, instance)
+
+        eip = self.api.allocate_address('vpc')
+        self.addCleanup(self.delete_elastic_ip, eip)
+
+        # Wait on instance and eip
+        time.sleep(60)
+
+        eip.associate(instance.id)
+
 
 
 if __name__ == '__main__':
