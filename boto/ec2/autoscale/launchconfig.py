@@ -21,9 +21,8 @@
 # IN THE SOFTWARE.
 
 from datetime import datetime
-from boto.resultset import ResultSet
 from boto.ec2.elb.listelement import ListElement
-from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
+from boto.ec2.blockdevicemapping import BlockDeviceMapping
 import boto.utils
 import base64
 
