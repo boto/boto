@@ -110,9 +110,9 @@ class BlockDeviceMapping(dict):
             return self.current_value
 
     def endElement(self, name, value, connection):
-        if name == 'device' or name == 'deviceName':
+        if name.lower() == 'device' or name.lower() == 'devicename':
             self.current_name = value
-        elif name == 'item':
+        elif name == 'item' or 'member':
             self[self.current_name] = self.current_value
 
     def ec2_build_list_params(self, params, prefix=''):

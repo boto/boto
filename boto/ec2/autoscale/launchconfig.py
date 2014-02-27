@@ -138,8 +138,7 @@ class LaunchConfiguration(object):
         if name == 'SecurityGroups':
             return self.security_groups
         elif name == 'BlockDeviceMappings':
-            self.block_device_mappings = ResultSet([('member',
-                                                     BlockDeviceMapping)])
+            self.block_device_mappings = BlockDeviceMapping()
             return self.block_device_mappings
         elif name == 'InstanceMonitoring':
             self.instance_monitoring = InstanceMonitoring(self)

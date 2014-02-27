@@ -300,7 +300,7 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
 
     def test_get_all_launch_configurations(self):
         self.set_http_response(status_code=200)
-        
+
         response = self.service_connection.get_all_launch_configurations()
         self.assertTrue(isinstance(response, list))
         self.assertEqual(len(response), 1)
@@ -707,8 +707,31 @@ class TestLaunchConfigurationDescribeWithBlockDeviceMappings(AWSMockServiceTestC
                 <LaunchConfigurationARN>arn:aws:autoscaling:us-east-1:803981987763:launchConfiguration:9dbbbf87-6141-428a-a409-0752edbe6cad:launchConfigurationName/my-test-lc</LaunchConfigurationARN>
                 <BlockDeviceMappings>
                   <member>
+                    <DeviceName>/dev/xvdp</DeviceName>
+                    <Ebs>
+                      <SnapshotId>snap-1234abcd</SnapshotId>
+                      <Iops>1000</Iops>
+                      <DeleteOnTermination>true</DeleteOnTermination>
+                      <VolumeType>io1</VolumeType>
+                      <VolumeSize>100</VolumeSize>
+                    </Ebs>
+                  </member>
+                  <member>
                     <VirtualName>ephemeral1</VirtualName>
                     <DeviceName>/dev/xvdc</DeviceName>
+                  </member>
+                  <member>
+                    <VirtualName>ephemeral0</VirtualName>
+                    <DeviceName>/dev/xvdb</DeviceName>
+                  </member>
+                  <member>
+                    <DeviceName>/dev/xvdh</DeviceName>
+                    <Ebs>
+                      <Iops>2000</Iops>
+                      <DeleteOnTermination>false</DeleteOnTermination>
+                      <VolumeType>io1</VolumeType>
+                      <VolumeSize>200</VolumeSize>
+                    </Ebs>
                   </member>
                 </BlockDeviceMappings>
                 <ImageId>ami-514ac838</ImageId>
@@ -743,7 +766,21 @@ class TestLaunchConfigurationDescribeWithBlockDeviceMappings(AWSMockServiceTestC
         self.assertTrue(isinstance(response[0].instance_monitoring, launchconfig.InstanceMonitoring))
         self.assertEqual(response[0].instance_monitoring.enabled, 'true')
         self.assertEqual(response[0].ebs_optimized, False)
+
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdb'].ephemeral_name, 'ephemeral0')
+
         self.assertEqual(response[0].block_device_mappings['/dev/xvdc'].ephemeral_name, 'ephemeral1')
+
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdp'].snapshot_id, 'snap-1234abcd')
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdp'].delete_on_termination, True)
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdp'].iops, 1000)
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdp'].size, 100)
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdp'].volume_type, 'io1')
+
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdh'].delete_on_termination, False)
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdh'].iops, 2000)
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdh'].size, 200)
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdh'].volume_type, 'io1')
 
         self.assert_request_parameters({
             'Action': 'DescribeLaunchConfigurations',
