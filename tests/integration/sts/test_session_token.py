@@ -33,7 +33,7 @@ from boto.sts.credentials import Credentials
 from boto.s3.connection import S3Connection
 
 
-class SessionTokenTest (unittest.TestCase):
+class SessionTokenTest(unittest.TestCase):
     sts = True
 
     def test_session_token(self):
