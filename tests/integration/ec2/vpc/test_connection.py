@@ -30,18 +30,44 @@ from boto.ec2.networkinterface import PrivateIPAddress
 
 
 class TestVPCConnection(unittest.TestCase):
+
     def setUp(self):
+        # Registry of instances to be removed
+        self.instances = []
+        # Registry for cleaning up the vpc after all instances are terminated
+        # in the format [ ( func, (arg1, ... argn) ) ]
+        self.post_terminate_cleanups = []
+        
         self.api = boto.connect_vpc()
-        vpc = self.api.create_vpc('10.0.0.0/16')
-        self.addCleanup(self.api.delete_vpc, vpc.id)
+        self.vpc = self.api.create_vpc('10.0.0.0/16')
 
         # Need time for the VPC to be in place. :/
         time.sleep(5)
-        self.subnet = self.api.create_subnet(vpc.id, '10.0.0.0/24')
-        self.addCleanup(self.api.delete_subnet, self.subnet.id)
+        self.subnet = self.api.create_subnet(self.vpc.id, '10.0.0.0/24')
+        # Register the subnet to be deleted after instance termination
+        self.post_terminate_cleanups.append((self.api.delete_subnet, (self.subnet.id,)))
 
         # Need time for the subnet to be in place.
         time.sleep(10)
+
+    def post_terminate_cleanup(self):
+        """Helper to run clean up tasks after instances are removed."""
+        for fn, args in self.post_terminate_cleanups:
+            fn(*args)
+            # Give things time to catch up each time
+            time.sleep(10)
+
+        # Now finally delete the vpc
+        if self.vpc:
+            self.api.delete_vpc(self.vpc.id)
+
+    def terminate_instances(self):
+        """Helper to remove all instances and kick off additional cleanup
+        once they are terminated.
+        """
+        for instance in self.instances:
+            self.terminate_instance(instance)
+        self.post_terminate_cleanup()
 
     def terminate_instance(self, instance):
         instance.terminate()
@@ -49,14 +75,18 @@ class TestVPCConnection(unittest.TestCase):
             instance.update()
             if instance.state == 'terminated':
                 # Give it a litle more time to settle.
-                time.sleep(10)
+                time.sleep(30)
                 return
             else:
                 time.sleep(10)
 
     def delete_elastic_ip(self, eip):
-        eip.disassociate()
-        eip.delete()
+        # Fetch a new copy of the eip so we're up to date
+        new_eip = self.api.get_all_addresses([eip.public_ip])[0]
+        if new_eip.association_id:
+            new_eip.disassociate()
+        new_eip.release()
+        time.sleep(10)
 
     def test_multi_ip_create(self):
         interface = NetworkInterfaceSpecification(
@@ -115,7 +145,8 @@ class TestVPCConnection(unittest.TestCase):
             network_interfaces=interfaces
         )
         instance = reservation.instances[0]
-        self.addCleanup(self.terminate_instance, instance)
+        self.instances.append(instance)
+        self.addCleanup(self.terminate_instances)
 
         # Give it a **LONG** time to start up.
         # Because the public IP won't be there right away.
@@ -154,16 +185,27 @@ class TestVPCConnection(unittest.TestCase):
             network_interfaces=interfaces
         )
         instance = reservation.instances[0]
-        self.addCleanup(self.terminate_instance, instance)
+        # Register instance to be removed
+        self.instances.append(instance)
+        # Add terminate instances helper as cleanup command
+        self.addCleanup(self.terminate_instances)
 
+        # Create an internet gateway so we can attach an eip
+        igw = self.api.create_internet_gateway()
+        # Wait on gateway before attaching
+        time.sleep(5)
+        # Attach and register clean up tasks
+        self.api.attach_internet_gateway(igw.id, self.vpc.id)
+        self.post_terminate_cleanups.append((self.api.detach_internet_gateway, (igw.id, self.vpc.id)))
+        self.post_terminate_cleanups.append((self.api.delete_internet_gateway, (igw.id,)))
+
+        # Allocate an elastic ip to this vpc
         eip = self.api.allocate_address('vpc')
-        self.addCleanup(self.delete_elastic_ip, eip)
+        self.post_terminate_cleanups.append((self.delete_elastic_ip, (eip,)))
 
-        # Wait on instance and eip
+        # Wait on instance and eip then try to associate directly to instance
         time.sleep(60)
-
         eip.associate(instance.id)
-
 
 
 if __name__ == '__main__':
