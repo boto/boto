@@ -112,7 +112,7 @@ class BlockDeviceMapping(dict):
     def endElement(self, name, value, connection):
         if name.lower() == 'device' or name.lower() == 'devicename':
             self.current_name = value
-        elif name == 'item' or 'member':
+        elif name == 'item' or name == 'member':
             self[self.current_name] = self.current_value
 
     def ec2_build_list_params(self, params, prefix=''):
