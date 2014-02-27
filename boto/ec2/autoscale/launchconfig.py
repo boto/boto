@@ -23,29 +23,9 @@
 from datetime import datetime
 from boto.resultset import ResultSet
 from boto.ec2.elb.listelement import ListElement
+from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 import boto.utils
 import base64
-
-# this should use the corresponding object from boto.ec2
-
-
-class Ebs(object):
-    def __init__(self, connection=None, snapshot_id=None, volume_size=None):
-        self.connection = connection
-        self.snapshot_id = snapshot_id
-        self.volume_size = volume_size
-
-    def __repr__(self):
-        return 'Ebs(%s, %s)' % (self.snapshot_id, self.volume_size)
-
-    def startElement(self, name, attrs, connection):
-        pass
-
-    def endElement(self, name, value, connection):
-        if name == 'SnapshotId':
-            self.snapshot_id = value
-        elif name == 'VolumeSize':
-            self.volume_size = value
 
 
 class InstanceMonitoring(object):
@@ -62,34 +42,6 @@ class InstanceMonitoring(object):
     def endElement(self, name, value, connection):
         if name == 'Enabled':
             self.enabled = value
-
-
-# this should use the BlockDeviceMapping from boto.ec2.blockdevicemapping
-class BlockDeviceMapping(object):
-    def __init__(self, connection=None, device_name=None, virtual_name=None,
-                 ebs=None, no_device=None):
-        self.connection = connection
-        self.device_name = device_name
-        self.virtual_name = virtual_name
-        self.ebs = ebs
-        self.no_device = no_device
-
-    def __repr__(self):
-        return 'BlockDeviceMapping(%s, %s)' % (self.device_name,
-                                               self.virtual_name)
-
-    def startElement(self, name, attrs, connection):
-        if name == 'Ebs':
-            self.ebs = Ebs(self)
-            return self.ebs
-
-    def endElement(self, name, value, connection):
-        if name == 'DeviceName':
-            self.device_name = value
-        elif name == 'VirtualName':
-            self.virtual_name = value
-        elif name == 'NoDevice':
-            self.no_device = bool(value)
 
 
 class LaunchConfiguration(object):
