@@ -34,6 +34,7 @@ Currently Supported Services
 
   * :doc:`DynamoDB2 <dynamodb2_tut>` -- (:doc:`API Reference <ref/dynamodb2>`) -- (:doc:`Migration Guide from v1 <migrations/dynamodb_v1_to_v2>`)
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
+  * Relational Data Services 2 (RDS) -- (:doc:`API Reference <ref/rds2>`) -- (:doc:`Migration Guide from v1 <migrations/rds_v1_to_v2>`)
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
   * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
   * Redshift -- (:doc:`API Reference <ref/redshift>`)
@@ -116,6 +117,7 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.26.0
    releasenotes/v2.25.0
    releasenotes/v2.24.0
    releasenotes/v2.23.0
@@ -194,6 +196,7 @@ Release Notes
    support_tut
    dynamodb2_tut
    migrations/dynamodb_v1_to_v2
+   migrations/rds_v1_to_v2
    apps_built_on_boto
    ref/*
    releasenotes/*

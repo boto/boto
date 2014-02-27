@@ -488,6 +488,8 @@ class Table(object):
             attributes_to_get=attributes,
             consistent_read=consistent
         )
+        if 'Item' not in item_data:
+            raise exceptions.ItemNotFound("Item %s couldn't be found." % kwargs)
         item = Item(self)
         item.load(item_data)
         return item
@@ -526,7 +528,7 @@ class Table(object):
         """
         try:
             self.get_item(**kwargs)
-        except JSONResponseError:
+        except (JSONResponseError, exceptions.ItemNotFound):
             return False
 
         return True
@@ -880,10 +882,15 @@ class Table(object):
 
         """
         if self.schema:
-            if len(self.schema) == 1 and len(filter_kwargs) <= 1:
-                raise exceptions.QueryError(
-                    "You must specify more than one key to filter on."
-                )
+            if len(self.schema) == 1:
+                if len(filter_kwargs) <= 1:
+                    if not self.global_indexes or not len(self.global_indexes):
+                        # If the schema only has one field, there's <= 1 filter
+                        # param & no Global Secondary Indexes, this is user
+                        # error. Bail early.
+                        raise exceptions.QueryError(
+                            "You must specify more than one key to filter on."
+                        )
 
         if attributes is not None:
             select = 'SPECIFIC_ATTRIBUTES'

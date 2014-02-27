@@ -28,10 +28,12 @@ from boto.route53.exception import DNSServerError
 from boto.route53.record import ResourceRecordSets, Record
 from boto.route53.zone import Zone
 
+from nose.plugins.attrib import attr
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 
+@attr(route53=True)
 class TestRoute53Connection(AWSMockServiceTestCase):
     connection_class = Route53Connection
 
@@ -260,6 +262,17 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
                 </ResourceRecord>
             </ResourceRecords>
         </ResourceRecordSet>
+        <ResourceRecordSet>
+            <Name>us-west-2.example.com.</Name>
+            <Type>A</Type>
+            <SetIdentifier>latency-example-us-west-2</SetIdentifier>
+            <Region>us-west-2</Region>
+            <AliasTarget>
+                <HostedZoneId>ABCDEFG123456</HostedZoneId>
+                <EvaluateTargetHealth>true</EvaluateTargetHealth>
+                <DNSName>example-123456.us-west-2.elb.amazonaws.com.</DNSName>
+            </AliasTarget>
+        </ResourceRecordSet>
     </ResourceRecordSets>
     <IsTruncated>false</IsTruncated>
     <MaxItems>100</MaxItems>
@@ -280,3 +293,12 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.assertTrue(response[0].name, "test.example.com.")
         self.assertTrue(response[0].ttl, "60")
         self.assertTrue(response[0].type, "A")
+
+        latency_record = response[2]
+        self.assertEqual(latency_record.name, 'us-west-2.example.com.')
+        self.assertEqual(latency_record.type, 'A')
+        self.assertEqual(latency_record.identifier, 'latency-example-us-west-2')
+        self.assertEqual(latency_record.region, 'us-west-2')
+        self.assertEqual(latency_record.alias_hosted_zone_id, 'ABCDEFG123456')
+        self.assertEqual(latency_record.alias_evaluate_target_health, 'true')
+        self.assertEqual(latency_record.alias_dns_name, 'example-123456.us-west-2.elb.amazonaws.com.')

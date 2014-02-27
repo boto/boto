@@ -76,6 +76,18 @@ class TestSigV4Handler(unittest.TestCase):
         query_string = auth.canonical_query_string(request)
         self.assertEqual(query_string, 'Foo.1=aaa&Foo.10=zzz')
 
+    def test_query_string(self):
+        auth = HmacAuthV4Handler('sns.us-east-1.amazonaws.com',
+                                 Mock(), self.provider)
+        params = {
+            'Message': u'We \u2665 utf-8'.encode('utf-8'),
+        }
+        request = HTTPRequest(
+            'POST', 'https', 'sns.us-east-1.amazonaws.com', 443,
+            '/', None, params, {}, '')
+        query_string = auth.query_string(request)
+        self.assertEqual(query_string, 'Message=We%20%E2%99%A5%20utf-8')
+
     def test_canonical_uri(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
                                  Mock(), self.provider)

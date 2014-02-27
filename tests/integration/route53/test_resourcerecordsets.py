@@ -20,30 +20,23 @@
 # IN THE SOFTWARE.
 #
 
+import time
 import unittest
+from tests.integration.route53 import Route53TestCase
+
 from boto.route53.connection import Route53Connection
 from boto.route53.record import ResourceRecordSets
 
-
-class TestRoute53ResourceRecordSets(unittest.TestCase):
-    def setUp(self):
-        super(TestRoute53ResourceRecordSets, self).setUp()
-        self.conn = Route53Connection()
-        self.zone = self.conn.create_zone('example.com')
-
-    def tearDown(self):
-        self.zone.delete()
-        super(TestRoute53ResourceRecordSets, self).tearDown()
-
+class TestRoute53ResourceRecordSets(Route53TestCase):
     def test_add_change(self):
         rrs = ResourceRecordSets(self.conn, self.zone.id)
 
-        created = rrs.add_change("CREATE", "vpn.example.com.", "A")
+        created = rrs.add_change("CREATE", "vpn.%s." % self.base_domain, "A")
         created.add_value('192.168.0.25')
         rrs.commit()
 
         rrs = ResourceRecordSets(self.conn, self.zone.id)
-        deleted = rrs.add_change('DELETE', "vpn.example.com.", "A")
+        deleted = rrs.add_change('DELETE', "vpn.%s." % self.base_domain, "A")
         deleted.add_value('192.168.0.25')
         rrs.commit()
 
@@ -52,7 +45,7 @@ class TestRoute53ResourceRecordSets(unittest.TestCase):
         hosts = 101
 
         for hostid in range(hosts):
-            rec = "test" + str(hostid) + ".example.com"
+            rec = "test" + str(hostid) + ".%s" % self.base_domain
             created = rrs.add_change("CREATE", rec, "A")
             ip = '192.168.0.' + str(hostid)
             created.add_value(ip)
@@ -79,7 +72,7 @@ class TestRoute53ResourceRecordSets(unittest.TestCase):
         # Cleanup indivual records
         rrs = ResourceRecordSets(self.conn, self.zone.id)
         for hostid in range(hosts):
-            rec = "test" + str(hostid) + ".example.com"
+            rec = "test" + str(hostid) + ".%s" % self.base_domain
             deleted = rrs.add_change("DELETE", rec, "A")
             ip = '192.168.0.' + str(hostid)
             deleted.add_value(ip)

@@ -32,7 +32,7 @@ from boto.rds.regioninfo import RDSRegionInfo
 from boto.rds.dbsubnetgroup import DBSubnetGroup
 from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
 from boto.regioninfo import get_regions
-from boto.rds.logfile import LogFile
+from boto.rds.logfile import LogFile, LogFileObject
 
 
 def regions():
@@ -1076,26 +1076,90 @@ class RDSConnection(AWSQueryConnection):
         return self.get_list('DescribeDBSnapshots', params,
                              [('DBSnapshot', DBSnapshot)])
 
-    def get_all_logs(self, dbinstance_id=None):
+    def get_all_logs(self, dbinstance_id, max_records=None, marker=None, file_size=None, filename_contains=None, file_last_written=None):
         """
         Get all log files
 
         :type instance_id: str
-        :param instance_id: The identifier of a DBInstance.  If provided,
-                            only the :class:`boto.rds.logfile.LogFile` related
-                            to that instance will be returned.  If not
-                            provided, all logfiles will be returned.
+        :param instance_id: The identifier of a DBInstance.
+
+        :type max_records: int
+        :param max_records: Number of log file names to return.
+
+        :type marker: str
+        :param marker: The marker provided by a previous request.
+
+        :file_size: int
+        :param file_size: Filter results to files large than this size in bytes.
+
+        :filename_contains: str
+        :param filename_contains: Filter results to files with filename containing this string
+
+        :file_last_written: int
+        :param file_last_written: Filter results to files written after this time (POSIX timestamp)
 
         :rtype: list
         :return: A list of :class:`boto.rds.logfile.LogFile`
         """
-        params = {}
-        if dbinstance_id:
-           params['DBInstanceIdentifier'] = dbinstance_id
-        params['MaxRecords'] = 26
+        params = {'DBInstanceIdentifier': dbinstance_id}
+
+        if file_size:
+            params['FileSize'] = file_size
+
+        if filename_contains:
+            params['FilenameContains'] = filename_contains
+
+        if file_last_written:
+            params['FileLastWritten'] = file_last_written
+
+        if marker:
+            params['Marker'] = marker
+
+        if max_records:
+            params['MaxRecords'] = max_records
 
         return self.get_list('DescribeDBLogFiles', params,
                              [('DescribeDBLogFilesDetails',LogFile)])
+
+    def get_log_file(self, dbinstance_id, log_file_name, marker=None, number_of_lines=None, max_records=None):
+        """
+        Download a log file from RDS
+
+        :type instance_id: str
+        :param instance_id: The identifier of a DBInstance.
+
+        :type log_file_name: str
+        :param log_file_name: The name of the log file to retrieve
+
+        :type marker: str
+        :param marker: A marker returned from a previous call to this method, or 0 to indicate the start of file. If
+                       no marker is specified, this will fetch log lines from the end of file instead.
+
+        :type number_of_lines: int
+        :param marker: The maximium number of lines to be returned.
+        """
+
+        params = {
+                'DBInstanceIdentifier': dbinstance_id,
+                'LogFileName': log_file_name,
+                }
+
+        if marker:
+            params['Marker'] = marker
+
+        if number_of_lines:
+            params['NumberOfLines'] = number_of_lines
+
+        if max_records:
+            params['MaxRecords'] = max_records
+
+        logfile =  self.get_object('DownloadDBLogFilePortion', params, LogFileObject)
+
+        if logfile:
+            logfile.log_filename = log_file_name
+            logfile.dbinstance_id = dbinstance_id
+
+        return logfile
 
     def create_dbsnapshot(self, snapshot_id, dbinstance_id):
         """
