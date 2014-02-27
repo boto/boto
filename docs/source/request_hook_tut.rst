@@ -17,10 +17,10 @@ Creating a connection
 ---------------------
 
 For this example, let's use the EC2 interface as an example. Any connection
-will work (IAM, SQS, etc..)
+will work (IAM, SQS, etc..)::
 
->>> from boto import ec2
->>> conn = ec2.connect_to_region('us-west-2')
+    >>> from boto import ec2
+    >>> conn = ec2.connect_to_region('us-west-2')
 
 You will be using this conn object for the remainder of the tutorial to send
 commands to EC2.
@@ -29,9 +29,9 @@ Adding your own hook
 --------------------
 
 The hook interface is defined in boto.utils.RequestHook
-The method signature looks like;
+The method signature looks like::
 
-def handle_request_data(self, request, response, error=False):
+    def handle_request_data(self, request, response, error=False):
 
 In boto.requestlog.py, there is an implementation of this interface which
 is written to handle multiple threads sending data to a single log
@@ -46,16 +46,16 @@ One thing to note is that the boto request object has an additional value
 request was issued. This can be used along with the current time (after the
 request) to calculate the duration of the request.
 
-To add this logger to your connection;
+To add this logger to your connection::
 
->>> from boto.requestlog import RequestLogger
->>> conn.set_request_hook(RequestLogger())
+    >>> from boto.requestlog import RequestLogger
+    >>> conn.set_request_hook(RequestLogger())
 
-That's all you need to do! Now, if you make a request, like
+That's all you need to do! Now, if you make a request, like::
 
->>> conn.get_all_volumes()
+    >>> conn.get_all_volumes()
 
-The log message produced might look something like this;
+The log message produced might look something like this::
 
-'2014-02-26 21:38:27', '200', '0.791542', '592', 'DescribeVolumes'
+    '2014-02-26 21:38:27', '200', '0.791542', '592', 'DescribeVolumes'
 
