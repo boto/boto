@@ -4,5 +4,5 @@ python:
   - "2.7"
 before_install:
   - sudo apt-get install swig
-install: pip install --use-mirrors -r requirements.txt
+install: pip install --allow-all-external -r requirements.txt
 script: python tests/test.py unit
