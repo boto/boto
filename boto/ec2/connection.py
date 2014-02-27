@@ -1847,10 +1847,11 @@ class EC2Connection(AWSQueryConnection):
         elif network_interface_id is not None:
                 params['NetworkInterfaceId'] = network_interface_id
 
-        if public_ip is not None:
-            params['PublicIp'] = public_ip
-        elif allocation_id is not None:
+        # Allocation id trumps public ip in order to associate with VPCs
+        if allocation_id is not None:
             params['AllocationId'] = allocation_id
+        elif public_ip is not None:
+            params['PublicIp'] = public_ip
 
         if private_ip_address is not None:
             params['PrivateIpAddress'] = private_ip_address
@@ -1982,10 +1983,12 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {}
 
-        if public_ip is not None:
-            params['PublicIp'] = public_ip
-        elif association_id is not None:
+        # If there is an association id it trumps public ip
+        # in order to successfully dissassociate with a VPC elastic ip
+        if association_id is not None:
             params['AssociationId'] = association_id
+        elif public_ip is not None:
+            params['PublicIp'] = public_ip
 
         if dry_run:
             params['DryRun'] = 'true'
