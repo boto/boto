@@ -254,10 +254,12 @@ class Record(object):
         """Add a resource record value"""
         self.resource_records.append(value)
 
-    def set_alias(self, alias_hosted_zone_id, alias_dns_name):
+    def set_alias(self, alias_hosted_zone_id, alias_dns_name,
+                  alias_evaluate_target_health=False):
         """Make this an alias resource record set"""
         self.alias_hosted_zone_id = alias_hosted_zone_id
         self.alias_dns_name = alias_dns_name
+        self.alias_evaluate_target_health = alias_evaluate_target_health
 
     def to_xml(self):
         """Spit this resource record set out as XML"""
@@ -310,6 +312,8 @@ class Record(object):
         if self.alias_hosted_zone_id is not None and self.alias_dns_name is not None:
             # Show alias
             rr = 'ALIAS ' + self.alias_hosted_zone_id + ' ' + self.alias_dns_name
+            if self.alias_evaluate_target_health is not None:
+                rr += ' (EvalTarget %s)' % self.alias_evaluate_target_health
         else:
             # Show resource record(s)
             rr =  ",".join(self.resource_records)
