@@ -255,7 +255,7 @@ class Record(object):
         self.resource_records.append(value)
 
     def set_alias(self, alias_hosted_zone_id, alias_dns_name,
-                  alias_evaluate_target_health=True):
+                  alias_evaluate_target_health=False):
         """Make this an alias resource record set"""
         self.alias_hosted_zone_id = alias_hosted_zone_id
         self.alias_dns_name = alias_dns_name
@@ -313,7 +313,7 @@ class Record(object):
             # Show alias
             rr = 'ALIAS ' + self.alias_hosted_zone_id + ' ' + self.alias_dns_name
             if self.alias_evaluate_target_health is not None:
-                rr += ' (EvalTarget %s)' % ('true' if self.alias_evaluate_target_health else 'false')
+                rr += ' (EvalTarget %s)' % self.alias_evaluate_target_health
         else:
             # Show resource record(s)
             rr =  ",".join(self.resource_records)
