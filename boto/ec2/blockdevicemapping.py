@@ -57,23 +57,23 @@ class BlockDeviceType(object):
     def endElement(self, name, value, connection):
         if name == 'volumeId':
             self.volume_id = value
-        elif name == 'virtualName' or name == 'VirtualName':
+        elif name.lower() == 'virtualname':
             self.ephemeral_name = value
-        elif name == 'NoDevice':
+        elif name.lower() == 'nodevice':
             self.no_device = (value == 'true')
-        elif name == 'snapshotId' or name == 'SnapshotId':
+        elif name.lower() == 'snapshotid':
             self.snapshot_id = value
-        elif name == 'volumeSize' or name == 'VolumeSize':
+        elif name.lower() == 'volumesize':
             self.size = int(value)
-        elif name == 'status':
+        elif name.lower() == 'status':
             self.status = value
-        elif name == 'attachTime':
+        elif name.lower() == 'attachtime':
             self.attach_time = value
-        elif name == 'deleteOnTermination' or name == 'DeleteOnTermination':
+        elif name.lower() == 'deleteontermination':
             self.delete_on_termination = (value == 'true')
-        elif name == 'volumeType' or name == 'VolumeType':
+        elif name.lower() == 'volumetype':
             self.volume_type = value
-        elif name == 'iops' or name == 'Iops':
+        elif name.lower() == 'iops':
             self.iops = int(value)
         else:
             setattr(self, name, value)
