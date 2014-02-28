@@ -98,6 +98,7 @@ Additional Resources
 * :doc:`Command Line Utilities <commandline>`
 * :doc:`Boto Config Tutorial <boto_config_tut>`
 * :doc:`Contributing to Boto <contributing>`
+* :doc:`Evaluating Application performance with Boto logging <request_hook_tut>`
 * `Boto Source Repository`_
 * `Boto Issue Tracker`_
 * `Boto Twitter`_
