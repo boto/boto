@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import boto
+from boto.exception import S3ResponseError
 from boto.s3.connection import OrdinaryCallingFormat
 
 
@@ -62,8 +63,10 @@ def list_buckets(s3, display_tags=False):
                 tags = b.get_tags()
                 for tag in tags[0]:
                     print "   %s:%s" % (tag.key, tag.value)
-            except:
-                pass
+            except S3ResponseError as e:
+                if e.status != 404:
+                    raise
+
 
 def main():
     import optparse
