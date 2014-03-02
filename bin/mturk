@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2012 Kodi Arfer
+# Copyright 2012, 2014 Kodi Arfer
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -315,6 +315,16 @@ def unreject_assignments(message, assignments):
 def notify_workers(subject, text, workers):
     con.notify_workers(workers, subject, text)
 
+def give_qualification(qualification, workers, value = 1, notify = True):
+    for w in workers:
+        con.assign_qualification(qualification, w, value, notify)
+        if interactive: print 'Gave to', w
+
+def revoke_qualification(qualification, workers, message = None):
+    for w in workers:
+        con.revoke_qualification(w, qualification, message)
+        if interactive: print 'Revoked from', w
+
 # --------------------------------------------------
 # Mainline code
 # --------------------------------------------------
@@ -434,6 +444,33 @@ if __name__ == '__main__':
         help = 'ID of a worker')
     sub.set_defaults(f = notify_workers, a = lambda:
         [args.subject, args.message, args.worker])
+
+    sub = subs.add_parser('give-qual',
+        help = 'give a qualification to some workers')
+    sub.add_argument('qual',
+        help = 'ID of the qualification')
+    sub.add_argument('worker', nargs = '+',
+        help = 'ID of a worker')
+    sub.add_argument('-v', '--value', dest = 'value',
+        metavar = 'N', type = int, default = 1,
+        help = 'value of the qualification')
+    sub.add_argument('--dontnotify', dest = 'notify',
+        action = 'store_false', default = True,
+        help = "don't notify workers")
+    sub.set_defaults(f = give_qualification, a = lambda:
+        [args.qual, args.worker, args.value, args.notify])
+
+    sub = subs.add_parser('revoke-qual',
+        help = 'revoke a qualification from some workers')
+    sub.add_argument('qual',
+        help = 'ID of the qualification')
+    sub.add_argument('worker', nargs = '+',
+        help = 'ID of a worker')
+    sub.add_argument('-m', '--message', dest = 'message',
+        metavar = 'TEXT',
+        help = 'the reason the qualification was revoked (shown to workers in an email sent by MTurk)')
+    sub.set_defaults(f = revoke_qualification, a = lambda:
+        [args.qual, args.worker, args.message])
 
     args = parser.parse_args()
 
