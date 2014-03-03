@@ -976,9 +976,11 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
             now - timedelta(days=2),
             now - timedelta(days=7),
             now - timedelta(days=14),
-            datetime(now.year, now.month, 1) - timedelta(days=30),
-            datetime(now.year, now.month, 1) - timedelta(days=60),
-            datetime(now.year, now.month, 1) - timedelta(days=90)
+            # We want to simulate 30/60/90-day snapshots, but February is
+            # short, so decrease by 2 days apiece.
+            datetime(now.year, now.month, 1) - timedelta(days=28),
+            datetime(now.year, now.month, 1) - timedelta(days=58),
+            datetime(now.year, now.month, 1) - timedelta(days=88)
         ]
 
         for date in dates:
