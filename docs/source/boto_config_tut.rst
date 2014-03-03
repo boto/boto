@@ -147,7 +147,10 @@ For example::
 :is_secure: Is the connection over SSL. This setting will overide passed in
   values.
 :https_validate_certificates: Validate HTTPS certificates. This is on by default
-:ca_certificates_file: Location of CA certificates
+:ca_certificates_file: Location of CA certificates or the keyword "system".
+  Using the system keyword lets boto get out of the way and makes the
+  SSL certificate validation the responsibility the underlying SSL
+  implementation provided by the system.
 :http_socket_timeout: Timeout used to overwrite the system default socket
   timeout for httplib .
 :send_crlf_after_proxy_auth_headers: Change line ending behaviour with proxies.

@@ -494,8 +494,11 @@ class AWSAuthConnection(object):
                     "support this feature are not available. Certificate "
                     "validation is only supported when running under Python "
                     "2.6 or later.")
-        self.ca_certificates_file = config.get_value(
+        certs_file = config.get_value(
                 'Boto', 'ca_certificates_file', DEFAULT_CA_CERTS_FILE)
+        if certs_file == 'system':
+            certs_file = None
+        self.ca_certificates_file = certs_file
         if port:
             self.port = port
         else:
@@ -821,9 +824,12 @@ class AWSAuthConnection(object):
         h = httplib.HTTPConnection(host)
 
         if self.https_validate_certificates and HAVE_HTTPS_CONNECTION:
-            boto.log.debug("wrapping ssl socket for proxied connection; "
-                           "CA certificate file=%s",
-                           self.ca_certificates_file)
+            msg = "wrapping ssl socket for proxied connection; "
+            if self.ca_certificates_file:
+                msg += "CA certificate file=%s" %self.ca_certificates_file
+            else:
+                msg += "using system provided SSL certs"
+            boto.log.debug(msg)
             key_file = self.http_connection_kwargs.get('key_file', None)
             cert_file = self.http_connection_kwargs.get('cert_file', None)
             sslSock = ssl.wrap_socket(sock, keyfile=key_file,
