@@ -37,7 +37,7 @@ import logging.config
 import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.26.0'
+__version__ = '2.26.1'
 Version = __version__  # for backware compatibility
 
 # http://bugs.python.org/issue7980
@@ -324,7 +324,11 @@ def connect_rds2(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     :return: A connection to RDS
     """
     from boto.rds2.layer1 import RDSConnection
-    return RDSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+    return RDSConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
 
 
 def connect_emr(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):

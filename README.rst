@@ -1,9 +1,9 @@
 ####
 boto
 ####
-boto 2.26.0
+boto 2.26.1
 
-Released: 27-February-2014
+Released: 3-March-2014
 
 .. image:: https://travis-ci.org/boto/boto.png?branch=develop
         :target: https://travis-ci.org/boto/boto
@@ -108,15 +108,15 @@ Install via `pip`_:
 
 ::
 
-	$ pip install boto
+    $ pip install boto
 
 Install from source:
 
 ::
 
-	$ git clone git://github.com/boto/boto.git
-	$ cd boto
-	$ python setup.py install
+    $ git clone git://github.com/boto/boto.git
+    $ cd boto
+    $ python setup.py install
 
 **********
 ChangeLogs
