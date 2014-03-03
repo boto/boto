@@ -32,6 +32,12 @@ class TestRDS2Connection(unittest.TestCase):
         self.conn = RDSConnection()
         self.db_name = "test-db-%s" % str(int(time.time()))
 
+    def test_connect_rds(self):
+        # Upon release, this did not function correct. Ensure that
+        # args are passed correctly.
+        import boto
+        conn = boto.connect_rds2()
+
     def test_integration(self):
         resp = self.conn.create_db_instance(
             db_instance_identifier=self.db_name,
