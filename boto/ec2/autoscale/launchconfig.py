@@ -22,9 +22,32 @@
 
 from datetime import datetime
 from boto.ec2.elb.listelement import ListElement
-from boto.ec2.blockdevicemapping import BlockDeviceMapping
+# Namespacing issue with deprecated local class
+from boto.ec2.blockdevicemapping import BlockDeviceMapping as BDM
+from boto.resultset import ResultSet
 import boto.utils
 import base64
+
+
+# this should use the corresponding object from boto.ec2
+# Currently in use by deprecated local BlockDeviceMapping class
+class Ebs(object):
+    def __init__(self, connection=None, snapshot_id=None, volume_size=None):
+        self.connection = connection
+        self.snapshot_id = snapshot_id
+        self.volume_size = volume_size
+
+    def __repr__(self):
+        return 'Ebs(%s, %s)' % (self.snapshot_id, self.volume_size)
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        if name == 'SnapshotId':
+            self.snapshot_id = value
+        elif name == 'VolumeSize':
+            self.volume_size = value
 
 
 class InstanceMonitoring(object):
@@ -43,6 +66,36 @@ class InstanceMonitoring(object):
             self.enabled = value
 
 
+# this should use the BlockDeviceMapping from boto.ec2.blockdevicemapping
+# Currently in use by deprecated code for backwards compatability
+# Removign this class can also remove the Ebs class in this same file
+class BlockDeviceMapping(object):
+    def __init__(self, connection=None, device_name=None, virtual_name=None,
+                 ebs=None, no_device=None):
+        self.connection = connection
+        self.device_name = device_name
+        self.virtual_name = virtual_name
+        self.ebs = ebs
+        self.no_device = no_device
+
+    def __repr__(self):
+        return 'BlockDeviceMapping(%s, %s)' % (self.device_name,
+                                               self.virtual_name)
+
+    def startElement(self, name, attrs, connection):
+        if name == 'Ebs':
+            self.ebs = Ebs(self)
+            return self.ebs
+
+    def endElement(self, name, value, connection):
+        if name == 'DeviceName':
+            self.device_name = value
+        elif name == 'VirtualName':
+            self.virtual_name = value
+        elif name == 'NoDevice':
+            self.no_device = bool(value)
+
+
 class LaunchConfiguration(object):
     def __init__(self, connection=None, name=None, image_id=None,
                  key_name=None, security_groups=None, user_data=None,
@@ -51,7 +104,7 @@ class LaunchConfiguration(object):
                  instance_monitoring=False, spot_price=None,
                  instance_profile_name=None, ebs_optimized=False,
                  associate_public_ip_address=None, volume_type=None,
-                 delete_on_termination=True, iops=None):
+                 delete_on_termination=True, iops=None, use_block_device_types=False):
         """
         A launch configuration.
 
@@ -103,6 +156,7 @@ class LaunchConfiguration(object):
         :param ebs_optimized: Specifies whether the instance is optimized
             for EBS I/O (true) or not (false).
 
+
         :type associate_public_ip_address: bool
         :param associate_public_ip_address: Used for Auto Scaling groups that launch instances into an Amazon Virtual Private Cloud.
             Specifies whether to assign a public IP address to each instance launched in a Amazon VPC.
@@ -129,6 +183,7 @@ class LaunchConfiguration(object):
         self.volume_type = volume_type
         self.delete_on_termination = delete_on_termination
         self.iops = iops
+        self.use_block_device_types = connection.use_block_device_types
 
     def __repr__(self):
         return 'LaunchConfiguration:%s' % self.name
@@ -137,7 +192,10 @@ class LaunchConfiguration(object):
         if name == 'SecurityGroups':
             return self.security_groups
         elif name == 'BlockDeviceMappings':
-            self.block_device_mappings = BlockDeviceMapping()
+            if self.use_block_device_types:
+                self.block_device_mappings = BDM()
+            else:
+                self.block_device_mappings = ResultSet([('member', BlockDeviceMapping)])
             return self.block_device_mappings
         elif name == 'InstanceMonitoring':
             self.instance_monitoring = InstanceMonitoring(self)

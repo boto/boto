@@ -314,6 +314,7 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
         self.assertTrue(isinstance(response[0].instance_monitoring, launchconfig.InstanceMonitoring))
         self.assertEqual(response[0].instance_monitoring.enabled, 'true')
         self.assertEqual(response[0].ebs_optimized, False)
+        self.assertEqual(response[0].block_device_mappings, [])
 
         self.assert_request_parameters({
             'Action': 'DescribeLaunchConfigurations',
@@ -687,7 +688,7 @@ class TestGetAdjustmentTypes(AWSMockServiceTestCase):
         self.assertEqual(response[2].adjustment_type, "PercentChangeInCapacity")
 
 
-class TestLaunchConfigurationDescribeWithBlockDeviceMappings(AWSMockServiceTestCase):
+class TestLaunchConfigurationDescribeWithBlockDeviceTypes(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
     def default_body(self):
@@ -750,8 +751,9 @@ class TestLaunchConfigurationDescribeWithBlockDeviceMappings(AWSMockServiceTestC
         </DescribeLaunchConfigurationsResponse>
         """
 
-    def test_get_all_launch_configurations_with_block_device_mappings(self):
+    def test_get_all_launch_configurations_with_block_device_types(self):
         self.set_http_response(status_code=200)
+        self.service_connection.use_block_device_types = True
 
         response = self.service_connection.get_all_launch_configurations()
         self.assertTrue(isinstance(response, list))
