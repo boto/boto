@@ -221,7 +221,6 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         Select the headers from the request that need to be included
         in the StringToSign.
         """
-        headers_to_sign = {}
         headers_to_sign = {'Host': self.host}
         for name, value in http_request.headers.items():
             lname = name.lower()
