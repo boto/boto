@@ -54,15 +54,18 @@ class TestSigV4Handler(unittest.TestCase):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
                                  Mock(), self.provider)
         self.request.headers['x-amz-archive-description'] = 'two  spaces'
+        self.request.headers['x-amz-quoted-string'] = '  "a   b   c" '
         headers = auth.headers_to_sign(self.request)
         self.assertEqual(headers, {'Host': 'glacier.us-east-1.amazonaws.com',
                                    'x-amz-archive-description': 'two  spaces',
-                                   'x-amz-glacier-version': '2012-06-01'})
+                                   'x-amz-glacier-version': '2012-06-01',
+                                   'x-amz-quoted-string': '  "a   b   c" '})
         # Note the single space between the "two spaces".
         self.assertEqual(auth.canonical_headers(headers),
                          'host:glacier.us-east-1.amazonaws.com\n'
                          'x-amz-archive-description:two spaces\n'
-                         'x-amz-glacier-version:2012-06-01')
+                         'x-amz-glacier-version:2012-06-01\n'
+                         'x-amz-quoted-string:"a   b   c"')
 
     def test_canonical_query_string(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
