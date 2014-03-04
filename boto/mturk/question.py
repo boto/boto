@@ -257,6 +257,26 @@ class QuestionForm(ValidatingXML, list):
         return self.xml_template % vars()
 
 
+class AnswerKey(ValidatingXML, list):
+    '''From the AMT API:
+       The AnswerKey data structure specifies answers for a Qualification test,
+       and a mechanism to use to calculate a score from the key
+       and a Worker's answers.
+
+       This class consists of modified question objects'''
+    schema_url = 'http://mechanicalturk.amazonaws.com/AWSMechanicalTurkDataSchemas/2005-10-01/AnswerKey.xsd'
+    xml_template = '''<?xml version="1.0" encoding="UTF-8"?>
+<AnswerKey xmlns="{}">
+    {}
+</AnswerKey>'''
+
+    def get_as_xml(self):
+        '''Generates an XML representation of the AnswerKey object by combining
+        the results of get_as_xml() calls on all objects in the list'''
+        items = '\n'.join(item.get_as_xml() for item in self)
+        return self.xml_template.format(self.schema_url, items)
+
+
 class QuestionContent(OrderedContent):
     template = '<QuestionContent>%(content)s</QuestionContent>'
 
