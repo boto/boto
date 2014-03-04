@@ -662,11 +662,7 @@ class MTurkConnection(AWSQueryConnection):
             params['TestDurationInSeconds'] = test_duration
 
         if answer_key is not None:
-            if isinstance(answer_key, basestring):
-                params['AnswerKey'] = answer_key  # xml
-            else:
-                raise TypeError
-                # Eventually someone will write an AnswerKey class.
+            params['AnswerKey'] = answer_key  # xml
 
         if auto_granted:
             assert(test is None)
