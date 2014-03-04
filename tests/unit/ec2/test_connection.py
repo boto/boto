@@ -968,7 +968,9 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
         """
         snaps = []
 
-        # Generate some dates offset by days, weeks, months
+        # Generate some dates offset by days, weeks, months.
+        # This is to validate the various types of snapshot logic handled by
+        # ``trim_snapshots``.
         now = datetime.now()
         dates = [
             now,
@@ -976,9 +978,14 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
             now - timedelta(days=2),
             now - timedelta(days=7),
             now - timedelta(days=14),
-            datetime(now.year, now.month, 1) - timedelta(days=30),
-            datetime(now.year, now.month, 1) - timedelta(days=60),
-            datetime(now.year, now.month, 1) - timedelta(days=90)
+            # We want to simulate 30/60/90-day snapshots, but February is
+            # short (only 28 days), so we decrease the delta by 2 days apiece.
+            # This prevents the ``delete_snapshot`` code below from being
+            # called, since they don't fall outside the allowed timeframes
+            # for the snapshots.
+            datetime(now.year, now.month, 1) - timedelta(days=28),
+            datetime(now.year, now.month, 1) - timedelta(days=58),
+            datetime(now.year, now.month, 1) - timedelta(days=88)
         ]
 
         for date in dates:
