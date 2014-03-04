@@ -21,6 +21,7 @@
 
 import xml.sax.saxutils
 
+
 class Question(object):
     template = "<Question>%(items)s</Question>"
 
