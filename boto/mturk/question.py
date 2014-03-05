@@ -41,7 +41,7 @@ class Question(object):
             self.content,
             self.answer_spec,
         ]
-        if self.display_name is not None:
+        if self.display_name:
             items.insert(1, SimpleField('DisplayName', self.display_name))
         items = ''.join(item.get_as_xml() for item in items)
         return self.template % vars()
