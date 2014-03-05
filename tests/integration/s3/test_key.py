@@ -409,8 +409,8 @@ class S3KeyTest(unittest.TestCase):
 
         self.assertEqual(check.cache_control, 'public, max-age=500')
         self.assertEqual(check.get_metadata('test-plus'), 'A plus (+)')
-        self.assertEqual(check.content_disposition, 'filename=Sch%C3%B6ne+Zeit.txt')
+        self.assertEqual(check.content_disposition, 'filename=Sch%C3%B6ne%20Zeit.txt')
         self.assertEqual(
-            urllib.unquote_plus(check.content_disposition).decode('utf-8'),
+            urllib.unquote(check.content_disposition).decode('utf-8'),
             'filename=Schöne Zeit.txt'.decode('utf-8')
         )
