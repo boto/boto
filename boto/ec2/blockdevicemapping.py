@@ -57,23 +57,23 @@ class BlockDeviceType(object):
     def endElement(self, name, value, connection):
         if name == 'volumeId':
             self.volume_id = value
-        elif name == 'virtualName':
+        elif name.lower() == 'virtualname':
             self.ephemeral_name = value
-        elif name == 'NoDevice':
+        elif name.lower() == 'nodevice':
             self.no_device = (value == 'true')
-        elif name == 'snapshotId':
+        elif name.lower() == 'snapshotid':
             self.snapshot_id = value
-        elif name == 'volumeSize':
+        elif name.lower() == 'volumesize':
             self.size = int(value)
-        elif name == 'status':
+        elif name.lower() == 'status':
             self.status = value
-        elif name == 'attachTime':
+        elif name.lower() == 'attachtime':
             self.attach_time = value
-        elif name == 'deleteOnTermination':
+        elif name.lower() == 'deleteontermination':
             self.delete_on_termination = (value == 'true')
-        elif name == 'volumeType':
+        elif name.lower() == 'volumetype':
             self.volume_type = value
-        elif name == 'iops':
+        elif name.lower() == 'iops':
             self.iops = int(value)
         else:
             setattr(self, name, value)
@@ -105,14 +105,14 @@ class BlockDeviceMapping(dict):
         self.current_value = None
 
     def startElement(self, name, attrs, connection):
-        if name == 'ebs' or name == 'virtualName':
+        if name.lower() == 'ebs' or name.lower() == 'virtualname':
             self.current_value = BlockDeviceType(self)
             return self.current_value
 
     def endElement(self, name, value, connection):
-        if name == 'device' or name == 'deviceName':
+        if name.lower() == 'device' or name.lower() == 'devicename':
             self.current_name = value
-        elif name == 'item':
+        elif name == 'item' or name == 'member':
             self[self.current_name] = self.current_value
 
     def ec2_build_list_params(self, params, prefix=''):
