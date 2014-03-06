@@ -183,7 +183,10 @@ class LaunchConfiguration(object):
         self.volume_type = volume_type
         self.delete_on_termination = delete_on_termination
         self.iops = iops
-        self.use_block_device_types = connection.use_block_device_types
+        self.use_block_device_types = use_block_device_types
+
+        if connection is not None:
+            self.use_block_device_types = connection.use_block_device_types
 
     def __repr__(self):
         return 'LaunchConfiguration:%s' % self.name
