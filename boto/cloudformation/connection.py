@@ -30,9 +30,28 @@ from boto.compat import json
 
 
 class CloudFormationConnection(AWSQueryConnection):
-
     """
-    A Connection to the CloudFormation Service.
+    AWS CloudFormation
+    AWS CloudFormation enables you to create and manage AWS
+    infrastructure deployments predictably and repeatedly. AWS
+    CloudFormation helps you leverage AWS products such as Amazon EC2,
+    EBS, Amazon SNS, ELB, and Auto Scaling to build highly-reliable,
+    highly scalable, cost effective applications without worrying
+    about creating and configuring the underlying AWS infrastructure.
+
+    With AWS CloudFormation, you declare all of your resources and
+    dependencies in a template file. The template defines a collection
+    of resources as a single unit called a stack. AWS CloudFormation
+    creates and deletes all member resources of the stack together and
+    manages all dependencies between the resources for you.
+
+    For more information about this product, go to the `CloudFormation
+    Product Page`_.
+
+    Amazon CloudFormation makes use of other AWS products. If you need
+    additional technical information about a specific AWS product, you
+    can find the product's technical documentation at
+    `http://aws.amazon.com/documentation/`_.
     """
     APIVersion = boto.config.get('Boto', 'cfn_version', '2010-05-15')
     DefaultRegionName = boto.config.get('Boto', 'cfn_region_name', 'us-east-1')
@@ -356,14 +375,14 @@ class CloudFormationConnection(AWSQueryConnection):
         """
         params = self._build_create_or_update_params(stack_name, template_body,
             template_url, parameters, disable_rollback, timeout_in_minutes,
-            notification_arns, capabilities, on_failure, stack_policy_body, 
+            notification_arns, capabilities, on_failure, stack_policy_body,
             stack_policy_url, tags)
         body = self._do_request('CreateStack', params, '/', 'POST')
         return body['CreateStackResponse']['CreateStackResult']['StackId']
 
     def update_stack(self, stack_name, template_body=None, template_url=None,
             parameters=None, notification_arns=None, disable_rollback=False,
-            timeout_in_minutes=None, capabilities=None, tags=None, 
+            timeout_in_minutes=None, capabilities=None, tags=None,
             stack_policy_during_update_body=None,
             stack_policy_during_update_url=None,
             stack_policy_body=None, stack_policy_url=None):
@@ -477,7 +496,7 @@ class CloudFormationConnection(AWSQueryConnection):
         """
         params = self._build_create_or_update_params(stack_name, template_body,
             template_url, parameters, disable_rollback, timeout_in_minutes,
-            notification_arns, capabilities, None, stack_policy_body, 
+            notification_arns, capabilities, None, stack_policy_body,
             stack_policy_url, tags, stack_policy_during_update_body,
             stack_policy_during_update_url)
         body = self._do_request('UpdateStack', params, '/', 'POST')
