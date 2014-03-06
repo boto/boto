@@ -21,14 +21,16 @@
 # IN THE SOFTWARE.
 
 from datetime import datetime
-from boto.resultset import ResultSet
 from boto.ec2.elb.listelement import ListElement
+# Namespacing issue with deprecated local class
+from boto.ec2.blockdevicemapping import BlockDeviceMapping as BDM
+from boto.resultset import ResultSet
 import boto.utils
 import base64
 
+
 # this should use the corresponding object from boto.ec2
-
-
+# Currently in use by deprecated local BlockDeviceMapping class
 class Ebs(object):
     def __init__(self, connection=None, snapshot_id=None, volume_size=None):
         self.connection = connection
@@ -65,6 +67,8 @@ class InstanceMonitoring(object):
 
 
 # this should use the BlockDeviceMapping from boto.ec2.blockdevicemapping
+# Currently in use by deprecated code for backwards compatability
+# Removing this class can also remove the Ebs class in this same file
 class BlockDeviceMapping(object):
     def __init__(self, connection=None, device_name=None, virtual_name=None,
                  ebs=None, no_device=None):
@@ -100,7 +104,7 @@ class LaunchConfiguration(object):
                  instance_monitoring=False, spot_price=None,
                  instance_profile_name=None, ebs_optimized=False,
                  associate_public_ip_address=None, volume_type=None,
-                 delete_on_termination=True, iops=None):
+                 delete_on_termination=True, iops=None, use_block_device_types=False):
         """
         A launch configuration.
 
@@ -152,6 +156,7 @@ class LaunchConfiguration(object):
         :param ebs_optimized: Specifies whether the instance is optimized
             for EBS I/O (true) or not (false).
 
+
         :type associate_public_ip_address: bool
         :param associate_public_ip_address: Used for Auto Scaling groups that launch instances into an Amazon Virtual Private Cloud.
             Specifies whether to assign a public IP address to each instance launched in a Amazon VPC.
@@ -178,6 +183,7 @@ class LaunchConfiguration(object):
         self.volume_type = volume_type
         self.delete_on_termination = delete_on_termination
         self.iops = iops
+        self.use_block_device_types = connection.use_block_device_types
 
     def __repr__(self):
         return 'LaunchConfiguration:%s' % self.name
@@ -186,8 +192,10 @@ class LaunchConfiguration(object):
         if name == 'SecurityGroups':
             return self.security_groups
         elif name == 'BlockDeviceMappings':
-            self.block_device_mappings = ResultSet([('member',
-                                                     BlockDeviceMapping)])
+            if self.use_block_device_types:
+                self.block_device_mappings = BDM()
+            else:
+                self.block_device_mappings = ResultSet([('member', BlockDeviceMapping)])
             return self.block_device_mappings
         elif name == 'InstanceMonitoring':
             self.instance_monitoring = InstanceMonitoring(self)

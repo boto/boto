@@ -87,18 +87,22 @@ class AutoScaleConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True, profile_name=None):
+                 security_token=None, validate_certs=True, profile_name=None,
+                 use_block_device_types=False):
         """
         Init method to create a new connection to the AutoScaling service.
 
         B{Note:} The host argument is overridden by the host specified in the
                  boto configuration file.
+
+
         """
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint,
                                 AutoScaleConnection)
         self.region = region
+        self.use_block_device_types = use_block_device_types
         super(AutoScaleConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
