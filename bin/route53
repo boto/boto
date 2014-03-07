@@ -131,7 +131,7 @@ def change_record(conn, hosted_zone_id, name, type, newvalues, ttl=600,
         for old_value in response.resource_records:
             change1.add_value(old_value)
 
-    change2 = changes.add_change("CREATE", name, type, ttl,
+    change2 = changes.add_change("UPSERT", name, type, ttl,
             identifier=identifier, weight=weight)
     for new_value in newvalues.split(','):
         change2.add_value(new_value)
@@ -148,11 +148,11 @@ def change_alias(conn, hosted_zone_id, name, type, new_alias_hosted_zone_id, new
             continue
         if response.identifier != identifier or response.weight != weight:
             continue
-        change1 = changes.add_change("DELETE", name, type, 
+        change1 = changes.add_change("DELETE", name, type,
                                      identifier=response.identifier,
                                      weight=response.weight)
         change1.set_alias(response.alias_hosted_zone_id, response.alias_dns_name)
-    change2 = changes.add_change("CREATE", name, type, identifier=identifier, weight=weight)
+    change2 = changes.add_change("UPSERT", name, type, identifier=identifier, weight=weight)
     change2.set_alias(new_alias_hosted_zone_id, new_alias_dns_name)
     print changes.commit()
 
