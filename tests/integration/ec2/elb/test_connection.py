@@ -24,6 +24,8 @@
 Initial, and very limited, unit tests for ELBConnection.
 """
 
+import boto
+import time
 import unittest
 from boto.ec2.elb import ELBConnection
 
@@ -38,6 +40,19 @@ class ELBConnectionTest(unittest.TestCase):
         self.availability_zones = ['us-east-1a']
         self.listeners = [(80, 8000, 'HTTP')]
         self.balancer = self.conn.create_load_balancer(self.name, self.availability_zones, self.listeners)
+
+        # S3 bucket for log tests
+        self.s3 = boto.connect_s3()
+        self.timestamp = str(int(time.time()))
+        self.bucket_name = 'boto-elb-%s' % self.timestamp
+        self.bucket = self.s3.create_bucket(self.bucket_name)
+        self.bucket.set_canned_acl('public-read-write')
+        self.addCleanup(self.cleanup_bucket, self.bucket)
+
+    def cleanup_bucket(self, bucket):
+        for key in bucket.get_all_keys():
+            key.delete()
+        bucket.delete()
 
     def tearDown(self):
         """ Deletes the test load balancer after every test.
@@ -160,6 +175,29 @@ class ELBConnectionTest(unittest.TestCase):
             # We need an extra 'HTTP' here over what ``self.listeners`` uses.
             sorted([(80, 8000, 'HTTP', 'HTTP')] + complex_listeners)
         )
+
+    def test_load_balancer_access_log(self):
+        attributes = self.balancer.get_attributes()
+
+        self.assertEqual(False, attributes.access_log.enabled)
+
+        attributes.access_log.enabled = True
+        attributes.access_log.s3_bucket_name = self.bucket_name
+        attributes.access_log.s3_bucket_prefix = 'access-logs'
+        attributes.access_log.emit_interval = 5
+
+        self.conn.modify_lb_attribute(self.balancer.name, 'accessLog',
+                                      attributes.access_log)
+
+        new_attributes = self.balancer.get_attributes()
+
+        self.assertEqual(True, new_attributes.access_log.enabled)
+        self.assertEqual(self.bucket_name,
+            new_attributes.access_log.s3_bucket_name)
+        self.assertEqual('access-logs',
+            new_attributes.access_log.s3_bucket_prefix)
+        self.assertEqual(5, new_attributes.access_log.emit_interval)
+
 
 if __name__ == '__main__':
     unittest.main()
