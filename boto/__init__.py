@@ -37,7 +37,7 @@ import logging.config
 import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.26.1'
+__version__ = '2.27.0'
 Version = __version__  # for backware compatibility
 
 # http://bugs.python.org/issue7980
