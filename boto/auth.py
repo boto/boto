@@ -904,6 +904,9 @@ def detect_potential_sigv4(func):
             return ['hmac-v4']
 
         if hasattr(self, 'region'):
+            # If you're making changes here, you should also check
+            # ``boto/iam/connection.py``, as several things there are also
+            # endpoint-related.
             if getattr(self.region, 'endpoint', ''):
                 if '.cn-' in self.region.endpoint:
                     return ['hmac-v4']
@@ -921,6 +924,9 @@ def detect_potential_s3sigv4(func):
             return ['hmac-v4-s3']
 
         if hasattr(self, 'host'):
+            # If you're making changes here, you should also check
+            # ``boto/iam/connection.py``, as several things there are also
+            # endpoint-related.
             if '.cn-' in self.host:
                 return ['hmac-v4-s3']
 
