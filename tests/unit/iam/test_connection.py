@@ -236,3 +236,71 @@ class TestCreateRole(AWSMockServiceTestCase):
              'AssumeRolePolicyDocument': '{"hello": "policy"}',
              'RoleName': 'a_name'},
             ignore_params_values=['Version'])
+
+
+class TestGetSigninURL(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return """
+          <ListAccountAliasesResponse>
+            <ListAccountAliasesResult>
+              <IsTruncated>false</IsTruncated>
+              <AccountAliases>
+                <member>foocorporation</member>
+                <member>anotherunused</member>
+              </AccountAliases>
+            </ListAccountAliasesResult>
+            <ResponseMetadata>
+              <RequestId>c5a076e9-f1b0-11df-8fbe-45274EXAMPLE</RequestId>
+            </ResponseMetadata>
+          </ListAccountAliasesResponse>
+        """
+
+    def test_get_signin_url_default(self):
+        self.set_http_response(status_code=200)
+        url = self.service_connection.get_signin_url()
+        self.assertEqual(
+            url,
+            'https://foocorporation.signin.aws.amazon.com/console/ec2'
+        )
+
+    def test_get_signin_url_s3(self):
+        self.set_http_response(status_code=200)
+        url = self.service_connection.get_signin_url(service='s3')
+        self.assertEqual(
+            url,
+            'https://foocorporation.signin.aws.amazon.com/console/s3'
+        )
+
+    def test_get_signin_url_cn_north(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.host = 'iam.cn-north-1.amazonaws.com.cn'
+        url = self.service_connection.get_signin_url()
+        self.assertEqual(
+            url,
+            'https://foocorporation.signin.aws.amazon.com/console/ec2'
+        )
+
+
+class TestGetSigninURL(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return """
+          <ListAccountAliasesResponse>
+            <ListAccountAliasesResult>
+              <IsTruncated>false</IsTruncated>
+              <AccountAliases></AccountAliases>
+            </ListAccountAliasesResult>
+            <ResponseMetadata>
+              <RequestId>c5a076e9-f1b0-11df-8fbe-45274EXAMPLE</RequestId>
+            </ResponseMetadata>
+          </ListAccountAliasesResponse>
+        """
+
+    def test_get_signin_url_no_aliases(self):
+        self.set_http_response(status_code=200)
+
+        with self.assertRaises(Exception):
+            self.service_connection.get_signin_url()

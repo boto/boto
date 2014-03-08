@@ -1027,13 +1027,35 @@ class IAMConnection(AWSQueryConnection):
         :param service: Default service to go to in the console.
         """
         alias = self.get_account_alias()
+
         if not alias:
             raise Exception('No alias associated with this account.  Please use iam.create_account_alias() first.')
 
+        resp = alias.get('list_account_aliases_response', {})
+        result = resp.get('list_account_aliases_result', {})
+        aliases = result.get('account_aliases', [])
+
+        if not len(aliases):
+            raise Exception('No alias associated with this account.  Please use iam.create_account_alias() first.')
+
+        # We'll just use the first one we find.
+        alias = aliases[0]
+
         if self.host == 'iam.us-gov.amazonaws.com':
-            return "https://%s.signin.amazonaws-us-gov.com/console/%s" % (alias, service)
+            return "https://%s.signin.amazonaws-us-gov.com/console/%s" % (
+                alias,
+                service
+            )
+        elif self.host.endswith('amazonaws.com.cn'):
+            return "https://%s.signin.amazonaws.cn/console/%s" % (
+                alias,
+                service
+            )
         else:
-            return "https://%s.signin.aws.amazon.com/console/%s" % (alias, service)
+            return "https://%s.signin.aws.amazon.com/console/%s" % (
+                alias,
+                service
+            )
 
     def get_account_summary(self):
         """
