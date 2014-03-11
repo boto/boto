@@ -341,7 +341,7 @@ class Record(object):
         elif name == 'SetIdentifier':
             self.identifier = value
         elif name == 'EvaluateTargetHealth':
-            self.alias_evaluate_target_health = value
+            self.alias_evaluate_target_health = value.lower() == 'true'
         elif name == 'Weight':
             self.weight = value
         elif name == 'Region':

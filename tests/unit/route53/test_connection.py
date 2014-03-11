@@ -263,14 +263,25 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
             </ResourceRecords>
         </ResourceRecordSet>
         <ResourceRecordSet>
-            <Name>us-west-2.example.com.</Name>
+            <Name>us-west-2-evaluate-health.example.com.</Name>
             <Type>A</Type>
-            <SetIdentifier>latency-example-us-west-2</SetIdentifier>
+            <SetIdentifier>latency-example-us-west-2-evaluate-health</SetIdentifier>
             <Region>us-west-2</Region>
             <AliasTarget>
                 <HostedZoneId>ABCDEFG123456</HostedZoneId>
                 <EvaluateTargetHealth>true</EvaluateTargetHealth>
-                <DNSName>example-123456.us-west-2.elb.amazonaws.com.</DNSName>
+                <DNSName>example-123456-evaluate-health.us-west-2.elb.amazonaws.com.</DNSName>
+            </AliasTarget>
+        </ResourceRecordSet>
+        <ResourceRecordSet>
+            <Name>us-west-2-no-evaluate-health.example.com.</Name>
+            <Type>A</Type>
+            <SetIdentifier>latency-example-us-west-2-no-evaluate-health</SetIdentifier>
+            <Region>us-west-2</Region>
+            <AliasTarget>
+                <HostedZoneId>ABCDEFG567890</HostedZoneId>
+                <EvaluateTargetHealth>false</EvaluateTargetHealth>
+                <DNSName>example-123456-no-evaluate-health.us-west-2.elb.amazonaws.com.</DNSName>
             </AliasTarget>
         </ResourceRecordSet>
     </ResourceRecordSets>
@@ -294,11 +305,24 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.assertTrue(response[0].ttl, "60")
         self.assertTrue(response[0].type, "A")
 
-        latency_record = response[2]
-        self.assertEqual(latency_record.name, 'us-west-2.example.com.')
-        self.assertEqual(latency_record.type, 'A')
-        self.assertEqual(latency_record.identifier, 'latency-example-us-west-2')
-        self.assertEqual(latency_record.region, 'us-west-2')
-        self.assertEqual(latency_record.alias_hosted_zone_id, 'ABCDEFG123456')
-        self.assertEqual(latency_record.alias_evaluate_target_health, 'true')
-        self.assertEqual(latency_record.alias_dns_name, 'example-123456.us-west-2.elb.amazonaws.com.')
+        evaluate_record = response[2]
+        self.assertEqual(evaluate_record.name, 'us-west-2-evaluate-health.example.com.')
+        self.assertEqual(evaluate_record.type, 'A')
+        self.assertEqual(evaluate_record.identifier, 'latency-example-us-west-2-evaluate-health')
+        self.assertEqual(evaluate_record.region, 'us-west-2')
+        self.assertEqual(evaluate_record.alias_hosted_zone_id, 'ABCDEFG123456')
+        self.assertTrue(evaluate_record.alias_evaluate_target_health)
+        self.assertEqual(evaluate_record.alias_dns_name, 'example-123456-evaluate-health.us-west-2.elb.amazonaws.com.')
+        evaluate_xml = evaluate_record.to_xml()
+        self.assertTrue('<EvaluateTargetHealth>true</EvaluateTargetHealth>' in evaluate_xml)
+
+        no_evaluate_record = response[3]
+        self.assertEqual(no_evaluate_record.name, 'us-west-2-no-evaluate-health.example.com.')
+        self.assertEqual(no_evaluate_record.type, 'A')
+        self.assertEqual(no_evaluate_record.identifier, 'latency-example-us-west-2-no-evaluate-health')
+        self.assertEqual(no_evaluate_record.region, 'us-west-2')
+        self.assertEqual(no_evaluate_record.alias_hosted_zone_id, 'ABCDEFG567890')
+        self.assertFalse(no_evaluate_record.alias_evaluate_target_health)
+        self.assertEqual(no_evaluate_record.alias_dns_name, 'example-123456-no-evaluate-health.us-west-2.elb.amazonaws.com.')
+        no_evaluate_xml = no_evaluate_record.to_xml()
+        self.assertTrue('<EvaluateTargetHealth>false</EvaluateTargetHealth>' in no_evaluate_xml)
