@@ -343,9 +343,9 @@ class Vault(object):
             rparams = {}
 
             if start_date is not None:
-                rparams['StartDate'] = start_date.isoformat()
+                rparams['StartDate'] = start_date.strftime('%Y-%m-%dT%H:%M:%S%Z')
             if end_date is not None:
-                rparams['EndDate'] = end_date.isoformat()
+                rparams['EndDate'] = end_date.strftime('%Y-%m-%dT%H:%M:%S%Z')
             if limit is not None:
                 rparams['Limit'] = limit
 
