@@ -385,6 +385,7 @@ class ELBConnection(AWSQueryConnection):
         :param attribute: The attribute you wish to change.
 
         * crossZoneLoadBalancing - Boolean (true)
+        * accessLog - :py:class:`AccessLogAttribute` instance
 
         :type value: string
         :param value: The new value for the attribute
@@ -405,6 +406,15 @@ class ELBConnection(AWSQueryConnection):
         if attribute.lower() == 'crosszoneloadbalancing':
             params['LoadBalancerAttributes.CrossZoneLoadBalancing.Enabled'
                    ] = value
+        elif attribute.lower() == 'accesslog':
+            params['LoadBalancerAttributes.AccessLog.Enabled'] = \
+                value.enabled and 'true' or 'false'
+            params['LoadBalancerAttributes.AccessLog.S3BucketName'] = \
+                value.s3_bucket_name
+            params['LoadBalancerAttributes.AccessLog.S3BucketPrefix'] = \
+                value.s3_bucket_prefix
+            params['LoadBalancerAttributes.AccessLog.EmitInterval'] = \
+                value.emit_interval
         else:
             raise ValueError('InvalidAttribute', attribute)
         return self.get_status('ModifyLoadBalancerAttributes', params,

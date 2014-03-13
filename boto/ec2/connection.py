@@ -58,7 +58,7 @@ from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
 from boto.ec2.bundleinstance import BundleInstanceTask
 from boto.ec2.placementgroup import PlacementGroup
 from boto.ec2.tag import Tag
-from boto.ec2.vmtype import VmType
+from boto.ec2.instancetype import InstanceType
 from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
 from boto.ec2.networkinterface import NetworkInterface
@@ -4324,15 +4324,15 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteNetworkInterface', params, verb='POST')
 
-    def get_all_vmtypes(self):
+    def get_all_instance_types(self):
         """
-        Get all vmtypes available on this cloud (eucalyptus specific)
+        Get all instance_types available on this cloud (eucalyptus specific)
 
-        :rtype: list of :class:`boto.ec2.vmtype.VmType`
-        :return: The requested VmType objects
+        :rtype: list of :class:`boto.ec2.instancetype.InstanceType`
+        :return: The requested InstanceType objects
         """
         params = {}
-        return self.get_list('DescribeVmTypes', params, [('euca:item', VmType)], verb='POST')
+        return self.get_list('DescribeInstanceTypes', params, [('item', InstanceType)], verb='POST')
 
     def copy_image(self, source_region, source_image_id, name=None,
                    description=None, client_token=None, dry_run=False):
