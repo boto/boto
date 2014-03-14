@@ -515,10 +515,10 @@ class DynamoDBv2Test(unittest.TestCase):
             [post['posted_by'] for post in all_posts],
             ['joe', 'jane', 'joe', 'joe', 'jane', 'joe']
         )
-        self.assertEqual(results._fetches, 3)
+        self.assertTrue(results._fetches >= 3)
 
     def test_query_with_reverse(self):
-        posts = Table.create('posts', schema=[
+        posts = Table.create('more-posts', schema=[
             HashKey('thread'),
             RangeKey('posted_on')
         ], throughput={
