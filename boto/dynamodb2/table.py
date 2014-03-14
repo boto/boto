@@ -824,7 +824,7 @@ class Table(object):
         (Default: ``None``)
 
         Optionally accepts a ``reverse`` parameter, which will present the
-        results in reverse order. (Default: ``None`` - normal order)
+        results in descending order. (Default: ``False`` - descending order)
 
         Optionally accepts a ``consistent`` parameter, which should be a
         boolean. If you provide ``True``, it will force a consistent read of
