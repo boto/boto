@@ -824,7 +824,7 @@ class Table(object):
         (Default: ``None``)
 
         Optionally accepts a ``reverse`` parameter, which will present the
-        results in reverse order. (Default: ``None`` - normal order)
+        results in reverse order. (Default: ``False`` - normal order)
 
         Optionally accepts a ``consistent`` parameter, which should be a
         boolean. If you provide ``True``, it will force a consistent read of
@@ -975,11 +975,13 @@ class Table(object):
         kwargs = {
             'limit': limit,
             'index_name': index,
-            'scan_index_forward': reverse,
             'consistent_read': consistent,
             'select': select,
-            'attributes_to_get': attributes_to_get
+            'attributes_to_get': attributes_to_get,
         }
+
+        if reverse:
+            kwargs['scan_index_forward'] = False
 
         if exclusive_start_key:
             kwargs['exclusive_start_key'] = {}
