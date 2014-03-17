@@ -635,7 +635,10 @@ class ELBConnection(AWSQueryConnection):
         """
         params = {'LoadBalancerName': lb_name,
                   'LoadBalancerPort': lb_port}
-        self.build_list_params(params, policies, 'PolicyNames.member.%d')
+        if len(policies):
+            self.build_list_params(params, policies, 'PolicyNames.member.%d')
+        else:
+            params['PolicyNames'] = ''
         return self.get_status('SetLoadBalancerPoliciesOfListener', params)
 
     def set_lb_policies_of_backend_server(self, lb_name, instance_port, policies):

@@ -198,6 +198,31 @@ class ELBConnectionTest(unittest.TestCase):
             new_attributes.access_log.s3_bucket_prefix)
         self.assertEqual(5, new_attributes.access_log.emit_interval)
 
+    def test_set_load_balancer_policies_of_listeners(self):
+        more_listeners = [(443, 8001, 'HTTP')]
+        self.conn.create_load_balancer_listeners(self.name, more_listeners)
+
+        lb_policy_name = 'lb-policy'
+        self.conn.create_lb_cookie_stickiness_policy(
+            1000,
+            self.name,
+            lb_policy_name
+        )
+        self.conn.set_lb_policies_of_listener(
+            self.name,
+            self.listeners[0][0],
+            lb_policy_name
+        )
+
+        # Try to remove the policy by passing empty list.
+        # http://docs.aws.amazon.com/ElasticLoadBalancing/latest/APIReference/API_SetLoadBalancerPoliciesOfListener.html
+        # documents this as the way to remove policies.
+        self.conn.set_lb_policies_of_listener(
+            self.name,
+            self.listeners[0][0],
+            []
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
