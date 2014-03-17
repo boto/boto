@@ -816,6 +816,20 @@ class Table(object):
     def query(self, limit=None, index=None, reverse=False, consistent=False,
               attributes=None, max_page_size=None, **filter_kwargs):
         """
+        **WARNING:** This method is provided **strictly** for
+        backward-compatibility. It returns results in an incorrect order.
+
+        If you are writing new code, please use ``Table.query_2``.
+        """
+        reverse = not reverse
+        return self.query_2(limit=limit, index=index, reverse=reverse,
+                            consistent=consistent, attributes=attributes,
+                            max_page_size=max_page_size, **filter_kwargs)
+
+    def query_2(self, limit=None, index=None, reverse=False,
+                consistent=False, attributes=None, max_page_size=None,
+                **filter_kwargs):
+        """
         Queries for a set of matching items in a DynamoDB table.
 
         Queries can be performed against a hash key, a hash+range key or
@@ -837,7 +851,7 @@ class Table(object):
         (Default: ``None``)
 
         Optionally accepts a ``reverse`` parameter, which will present the
-        results in reverse order. (Default: ``None`` - normal order)
+        results in reverse order. (Default: ``False`` - normal order)
 
         Optionally accepts a ``consistent`` parameter, which should be a
         boolean. If you provide ``True``, it will force a consistent read of
@@ -988,11 +1002,13 @@ class Table(object):
         kwargs = {
             'limit': limit,
             'index_name': index,
-            'scan_index_forward': reverse,
             'consistent_read': consistent,
             'select': select,
-            'attributes_to_get': attributes_to_get
+            'attributes_to_get': attributes_to_get,
         }
+
+        if reverse:
+            kwargs['scan_index_forward'] = False
 
         if exclusive_start_key:
             kwargs['exclusive_start_key'] = {}

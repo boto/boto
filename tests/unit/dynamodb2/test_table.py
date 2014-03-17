@@ -883,7 +883,7 @@ class ResultSetTestCase(unittest.TestCase):
         self.results.fetch_more()
         self.result_function.assert_called_with('john', greeting='Hello', limit=10)
         self.result_function.reset_mock()
-    
+
     def test_fetch_more(self):
         # First "page".
         self.results.fetch_more()
@@ -2196,7 +2196,7 @@ class TableTestCase(unittest.TestCase):
 
         mock_query.assert_called_once_with('users',
             consistent_read=False,
-            scan_index_forward=True,
+            scan_index_forward=False,
             index_name=None,
             attributes_to_get=None,
             limit=4,
@@ -2243,7 +2243,7 @@ class TableTestCase(unittest.TestCase):
             },
             index_name=None,
             attributes_to_get=None,
-            scan_index_forward=True,
+            scan_index_forward=False,
             limit=4,
             exclusive_start_key={
                 'username': {
@@ -2376,7 +2376,7 @@ class TableTestCase(unittest.TestCase):
             'last_key': 'jane',
         }
 
-        results = self.users.query(last_name__eq='Doe')
+        results = self.users.query_2(last_name__eq='Doe')
         self.assertTrue(isinstance(results, ResultSet))
         self.assertEqual(len(results._results), 0)
         self.assertEqual(results.the_callable, self.users._query)
@@ -2430,7 +2430,7 @@ class TableTestCase(unittest.TestCase):
             'last_key': 'jane',
         }
 
-        results = self.users.query(last_name__eq='Doe',
+        results = self.users.query_2(last_name__eq='Doe',
                                    attributes=['username'])
         self.assertTrue(isinstance(results, ResultSet))
         self.assertEqual(len(results._results), 0)

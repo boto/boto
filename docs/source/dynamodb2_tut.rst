@@ -310,6 +310,13 @@ manager.
 Querying
 --------
 
+.. warning::
+
+    The ``Table`` object has both a ``query`` & a ``query_2`` method. If you
+    are writing new code, **DO NOT** use ``Table.query``. It presents results
+    in an incorrect order than expected & is strictly present for
+    backward-compatibility.
+
 Manually fetching out each item by itself isn't tenable for large datasets.
 To cope with fetching many records, you can either perform a standard query,
 query via a local secondary index or scan the entire table.
@@ -338,7 +345,7 @@ request.
 
 To run a query for last names starting with the letter "D"::
 
-    >>> names_with_d = users.query(
+    >>> names_with_d = users.query_2(
     ...     account_type__eq='standard_user',
     ...     last_name__beginswith='D'
     ... )
@@ -352,7 +359,7 @@ To run a query for last names starting with the letter "D"::
 You can also reverse results (``reverse=True``) as well as limiting them
 (``limit=2``)::
 
-    >>> rev_with_d = users.query(
+    >>> rev_with_d = users.query_2(
     ...     account_type__eq='standard_user',
     ...     last_name__beginswith='D',
     ...     reverse=True,
@@ -369,7 +376,7 @@ the index name (``index='FirstNameIndex'``) & filter parameters against its
 fields::
 
     # Users within the last hour.
-    >>> recent = users.query(
+    >>> recent = users.query_2(
     ...     account_type__eq='standard_user',
     ...     date_joined__gte=time.time() - (60 * 60),
     ...     index='DateJoinedIndex'
@@ -383,11 +390,11 @@ fields::
 By default, DynamoDB can return a large amount of data per-request (up to 1Mb
 of data). To prevent these requests from drowning other smaller gets, you can
 specify a smaller page size via the ``max_page_size`` argument to
-``Table.query`` & ``Table.scan``. Doing so looks like::
+``Table.query_2`` & ``Table.scan``. Doing so looks like::
 
     # Small pages yield faster responses & less potential of drowning other
     # requests.
-    >>> all_users = users.query(
+    >>> all_users = users.query_2(
     ...     account_type__eq='standard_user',
     ...     date_joined__gte=0,
     ...     max_page_size=10
@@ -429,7 +436,7 @@ Filtering a scan looks like::
 The ``ResultSet``
 ~~~~~~~~~~~~~~~~~
 
-Both ``Table.query`` & ``Table.scan`` return an object called ``ResultSet``.
+Both ``Table.query_2`` & ``Table.scan`` return an object called ``ResultSet``.
 It's a lazily-evaluated object that uses the `Iterator protocol`_. It delays
 your queries until you request the next item in the result set.
 
@@ -460,7 +467,7 @@ a call to ``list()``. Ex.::
     Wrapping calls like the above in ``list(...)`` **WILL** cause it to evaluate
     the **ENTIRE** potentially large data set.
 
-    Appropriate use of the ``limit=...`` kwarg to ``Table.query`` &
+    Appropriate use of the ``limit=...`` kwarg to ``Table.query_2`` &
     ``Table.scan`` calls are **VERY** important should you chose to do this.
 
     Alternatively, you can build your own list, using ``for`` on the
