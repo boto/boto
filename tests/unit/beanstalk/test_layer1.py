@@ -143,7 +143,7 @@ class TestCreateEnvironment(AWSMockServiceTestCase):
             'OptionSettings.member.2.Namespace': 'aws:elasticbeanstalk:application:environment',
             'OptionSettings.member.2.OptionName': 'ENVVAR',
             'OptionSettings.member.2.Value': 'VALUE1',
-            'Tier.member.Name': 'Worker',
-            'Tier.member.Type': 'SQS/HTTP',
-            'Tier.member.Version': '1.0',
+            'Tier.Name': 'Worker',
+            'Tier.Type': 'SQS/HTTP',
+            'Tier.Version': '1.0',
         })

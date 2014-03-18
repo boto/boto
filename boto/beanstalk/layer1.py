@@ -351,9 +351,9 @@ class Layer1(AWSQueryConnection):
             self.build_list_params(params, options_to_remove,
                                    'OptionsToRemove.member')
         if tier_name and tier_type and tier_version:
-            params['Tier.member.Name'] = tier_name
-            params['Tier.member.Type'] = tier_type
-            params['Tier.member.Version'] = tier_version
+            params['Tier.Name'] = tier_name
+            params['Tier.Type'] = tier_type
+            params['Tier.Version'] = tier_version
         return self._get_response('CreateEnvironment', params)
 
     def create_storage_location(self):
