@@ -2890,7 +2890,7 @@ class RDSConnection(AWSQueryConnection):
         self.build_complex_list_params(
             params, parameters,
             'Parameters.member',
-            ('ParameterName', 'ParameterValue', 'Description', 'Source', 'ApplyType', 'DataType', 'AllowedValues', 'IsModifiable', 'MinimumEngineVersion', 'ApplyMethod'))
+            ('ParameterName', 'ParameterValue', 'ApplyMethod'))
         return self._make_request(
             action='ModifyDBParameterGroup',
             verb='POST',
