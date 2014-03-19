@@ -79,12 +79,12 @@ class SQSAuthParams(AWSMockServiceTestCase):
             region=region)
         self.initialize_service_connection()
         self.set_http_response(status_code=200)
-
         self.service_connection.create_queue('my_queue')
+        
         # Note the region name below is 'us-west-2'.
         self.assertIn('us-west-2/sqs/aws4_request',
                       self.actual_request.headers['Authorization'])
-
+        
     def test_set_get_auth_service_and_region_names(self):
         self.service_connection.auth_service_name = 'service_name'
         self.service_connection.auth_region_name = 'region_name'
@@ -93,6 +93,16 @@ class SQSAuthParams(AWSMockServiceTestCase):
                          'service_name')
         self.assertEqual(self.service_connection.auth_region_name, 'region_name')
 
+    def test_get_queue_with_owner_account_id_returns_queue(self):
+        
+        self.set_http_response(status_code=200)
+        self.service_connection.create_queue('my_queue')
+        
+        self.service_connection.get_queue('my_queue', '599169622985')
+
+        assert 'QueueOwnerAWSAccountId' in self.actual_request.params.keys()
+        self.assertEquals(self.actual_request.params['QueueOwnerAWSAccountId'], '599169622985')
+        
 
 if __name__ == '__main__':
     unittest.main()

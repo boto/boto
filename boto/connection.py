@@ -67,8 +67,10 @@ import boto.handler
 import boto.cacerts
 
 from boto import config, UserAgent
-from boto.exception import AWSConnectionError, BotoClientError
+from boto.exception import AWSConnectionError
+from boto.exception import BotoClientError
 from boto.exception import BotoServerError
+from boto.exception import PleaseRetryException
 from boto.provider import Provider
 from boto.resultset import ResultSet
 
@@ -126,7 +128,7 @@ class HostConnectionPool(object):
 
     Thread Safety:
 
-        This class is used only fram ConnectionPool while it's mutex
+        This class is used only from ConnectionPool while it's mutex
         is held.
     """
 
@@ -612,7 +614,7 @@ class AWSAuthConnection(object):
         # https://groups.google.com/forum/#!topic/boto-dev/-ft0XPUy0y8
         # You can override that behavior with the suppress_consec_slashes param.
         if not self.suppress_consec_slashes:
-            return self.path + re.sub('^/*', "", path)
+            return self.path + re.sub('^(/*)/', "\\1", path)
         pos = path.find('?')
         if pos >= 0:
             params = path[pos:]
@@ -674,6 +676,8 @@ class AWSAuthConnection(object):
             print "http_proxy environment variable does not specify " \
                 "a port, using default"
             self.proxy_port = self.port
+
+        self.no_proxy = os.environ.get('no_proxy', '') or os.environ.get('NO_PROXY', '')
         self.use_proxy = (self.proxy != None)
 
     def get_http_connection(self, host, is_secure):
@@ -683,8 +687,25 @@ class AWSAuthConnection(object):
         else:
             return self.new_http_connection(host, is_secure)
 
+    def skip_proxy(self, host):
+        if not self.no_proxy:
+            return False
+
+        if self.no_proxy == "*":
+            return True
+
+        hostonly = host
+        hostonly = host.split(':')[0]
+
+        for name in self.no_proxy.split(','):
+            if name and (hostonly.endswith(name) or host.endswith(name)):
+                return True
+
+        return False
+
     def new_http_connection(self, host, is_secure):
-        if self.use_proxy and not is_secure:
+        if self.use_proxy and not is_secure and \
+                not self.skip_proxy(host):
             host = '%s:%d' % (self.proxy, int(self.proxy_port))
         if host is None:
             host = self.server_name()
@@ -692,7 +713,7 @@ class AWSAuthConnection(object):
             boto.log.debug(
                     'establishing HTTPS connection: host=%s, kwargs=%s',
                     host, self.http_connection_kwargs)
-            if self.use_proxy:
+            if self.use_proxy and not self.skip_proxy(host):
                 connection = self.proxy_ssl(host, is_secure and 443 or 80)
             elif self.https_connection_factory:
                 connection = self.https_connection_factory(host)
@@ -881,6 +902,11 @@ class AWSAuthConnection(object):
                                                           scheme == 'https')
                     response = None
                     continue
+            except PleaseRetryException, e:
+                boto.log.debug('encountered a retry exception: %s' % e)
+                connection = self.new_http_connection(request.host,
+                                                      self.is_secure)
+                response = e.response
             except self.http_exceptions, e:
                 ex = e # e will be unset after leaving the except: block
                 for unretryable in self.http_unretryable_exceptions:
@@ -898,7 +924,7 @@ class AWSAuthConnection(object):
         # If we made it here, it's because we have exhausted our retries
         # and stil haven't succeeded.  So, if we have a response object,
         # use it to raise an exception.
-        # Otherwise, raise the exception that must have already h#appened.
+        # Otherwise, raise the exception that must have already happened.
         if response:
             raise BotoServerError(response.status, response.reason, body)
         elif ex:
@@ -934,13 +960,14 @@ class AWSAuthConnection(object):
 
     def make_request(self, method, path, headers=None, data='', host=None,
                      auth_path=None, sender=None, override_num_retries=None,
-                     params=None):
+                     params=None, retry_handler=None):
         """Makes a request to the server, with stock multiple-retry logic."""
         if params is None:
             params = {}
         http_request = self.build_base_http_request(method, path, auth_path,
                                                     params, headers, data, host)
-        return self._mexe(http_request, sender, override_num_retries)
+        return self._mexe(http_request, sender, override_num_retries,
+                          retry_handler=retry_handler)
 
     def close(self):
         """(Optional) Close any open HTTP connections.  This is non-destructive,

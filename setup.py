@@ -32,15 +32,33 @@ except ImportError:
     from distutils.core import setup
     extra = {}
 
+import os
 import sys
+import glob
+import shutil
+
+scripts = glob.glob('bin/*')
 
 try:  # Python 3
   from distutils.command.build_py import build_py_2to3 as build_py
+  from distutils.util import run_2to3
+  extra['use_2to3'] = True
 except ImportError:  # Python 2
   from distutils.command.build_py import build_py
 
-if sys.version_info <= (2, 4):
-    error = "ERROR: boto requires Python Version 2.5 or above...exiting."
+if 'use_2to3' in extra:
+    try:
+        os.mkdir('3bin')
+    except OSError as err:
+        if err.errno != 17:
+            raise
+    for script in scripts:
+        shutil.copy(script, '3bin')
+    scripts = glob.glob('3bin/*')
+    run_2to3(scripts)
+
+if sys.version_info <= (2, 5):
+    error = "ERROR: boto requires Python Version 2.6 or above...exiting."
     print >> sys.stderr, error
     sys.exit(1)
 
@@ -52,21 +70,14 @@ def version():
     with open("boto/version.txt") as f:
         return f.read().strip()
 
-setup(cmdclass = {'build_py': build_py},
-      name = "boto",
+setup(name = "boto",
       version = version(),
       description = "Amazon Web Services Library",
       long_description = readme(),
       author = "Mitch Garnaat",
       author_email = "mitch@garnaat.com",
-      scripts = ["bin/sdbadmin", "bin/elbadmin", "bin/cfadmin",
-                 "bin/s3put", "bin/fetch_file", "bin/launch_instance",
-                 "bin/list_instances", "bin/taskadmin", "bin/kill_instance",
-                 "bin/bundle_image", "bin/pyami_sendmail", "bin/lss3",
-                 "bin/cq", "bin/route53", "bin/cwutil", "bin/instance_events",
-                 "bin/asadmin", "bin/glacier", "bin/mturk",
-                 "bin/dynamodb_dump", "bin/dynamodb_load"],
       url = "https://github.com/boto/boto/",
+      scripts = scripts,
       packages = ["boto", "boto.sqs", "boto.s3", "boto.gs", "boto.file",
                   "boto.ec2", "boto.ec2.cloudwatch", "boto.ec2.autoscale",
                   "boto.ec2.elb", "boto.sdb", "boto.cacerts",
@@ -96,5 +107,6 @@ setup(cmdclass = {'build_py': build_py},
                      "Programming Language :: Python :: 2.7",
                      "Programming Language :: Python :: 3",
                      "Programming Language :: Python :: 3.3"],
+      cmdclass = {'build_py': build_py},
       **extra
       )

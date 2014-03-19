@@ -36,10 +36,10 @@ import copy
 import datetime
 from email.utils import formatdate
 import hmac
-import os
 import sys
 import time
 import urllib
+import posixpath
 
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
@@ -416,10 +416,14 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         return ';'.join(l)
 
     def canonical_uri(self, http_request):
-        # Normalize the path.
-        normalized = os.path.normpath(http_request.auth_path)
+        path = http_request.auth_path
+        # Normalize the path
+        # in windows normpath('/') will be '\\' so we chane it back to '/'
+        normalized = posixpath.normpath(path).replace('\\','/')
         # Then urlencode whatever's left.
         encoded = urllib.quote(normalized)
+        if len(path) > 1 and path.endswith('/'):
+            encoded += '/'
         return encoded
 
     def payload(self, http_request):
@@ -643,9 +647,10 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
         boto.log.debug('string_to_sign: %s' % string_to_sign)
         hmac.update(string_to_sign)
         b64 = base64.b64encode(hmac.digest())
+        sb64 = boto.utils.ensure_string(b64)
         boto.log.debug('len(b64)=%d' % len(b64))
-        boto.log.debug('base64 encoded digest: %s' % b64)
-        return (qs, b64)
+        boto.log.debug('base64 encoded digest: %s' % sb64)
+        return (qs, sb64)
 
 
 class POSTPathQSV2AuthHandler(QuerySignatureV2AuthHandler, AuthHandler):

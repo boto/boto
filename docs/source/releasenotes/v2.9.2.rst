@@ -15,4 +15,4 @@ Features
 Bugfixes
 --------
 
-* Fixed the missing ``boto.support`` in ``setup.py``. (SHA: 9ac196)
+* Fixed the missing ``boto.support`` in ``setup.py``. (:sha:`9ac196`)

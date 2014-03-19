@@ -58,7 +58,10 @@ class ResultSet(object):
 
             self.fetch_more()
 
-        return self._results[self._offset]
+        if self._offset < len(self._results):
+            return self._results[self._offset]
+        else:
+            raise StopIteration()
 
     def to_call(self, the_callable, *args, **kwargs):
         """
@@ -117,7 +120,11 @@ class ResultSet(object):
         # Decrease the limit, if it's present.
         if self.call_kwargs.get('limit'):
             self.call_kwargs['limit'] -= len(results['results'])
-
+            # and if limit hits zero, we don't have any more
+            # results to look for
+            if 0 == self.call_kwargs['limit']:
+                self._results_left = False
+                                            
 
 class BatchGetResultSet(ResultSet):
     def __init__(self, *args, **kwargs):

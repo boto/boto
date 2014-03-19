@@ -2,9 +2,13 @@
 
 import os
 import boto
+import sys
 
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo']
-autoclass_content="both"
+sys.path.append(os.path.join(os.path.dirname(__file__), 'extensions'))
+
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo',
+              'githublinks']
+autoclass_content = "both"
 templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
@@ -22,6 +26,7 @@ latex_documents = [
    u'Mitch Garnaat', 'manual'),
 ]
 intersphinx_mapping = {'http://docs.python.org/': None}
+github_project_url = 'https://github.com/boto/boto/'
 
 try:
     release = os.environ.get('SVN_REVISION', 'HEAD')

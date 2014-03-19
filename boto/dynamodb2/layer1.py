@@ -63,13 +63,16 @@ class DynamoDBConnection(AWSQueryConnection):
         if not region:
             region_name = boto.config.get('DynamoDB', 'region',
                                           self.DefaultRegionName)
-            region = RegionInfo(self, region_name,
-                                self.DefaultRegionEndpoint)
+            for reg in boto.dynamodb2.regions():
+                if reg.name == region_name:
+                    region = reg
+                    break
         kwargs['host'] = region.endpoint
         AWSQueryConnection.__init__(self, **kwargs)
         self.region = region
         self._validate_checksums = boto.config.getbool(
             'DynamoDB', 'validate_checksums', validate_checksums)
+        self.throughput_exceeded_events = 0
 
     def _required_auth_capability(self):
         return ['hmac-v4']
