@@ -386,6 +386,7 @@ class ELBConnection(AWSQueryConnection):
 
         * crossZoneLoadBalancing - Boolean (true)
         * accessLog - :py:class:`AccessLogAttribute` instance
+        * connectionDraining - :py:class:`ConnectionDrainingAttribute` instance
 
         :type value: string
         :param value: The new value for the attribute
@@ -415,6 +416,11 @@ class ELBConnection(AWSQueryConnection):
                 value.s3_bucket_prefix
             params['LoadBalancerAttributes.AccessLog.EmitInterval'] = \
                 value.emit_interval
+        elif attribute.lower() == 'connectiondraining':
+            params['LoadBalancerAttributes.ConnectionDraining.Enabled'] = \
+                value.enabled and 'true' or 'false'
+            params['LoadBalancerAttributes.ConnectionDraining.Timeout'] = \
+                value.timeout
         else:
             raise ValueError('InvalidAttribute', attribute)
         return self.get_status('ModifyLoadBalancerAttributes', params,
@@ -446,6 +452,7 @@ class ELBConnection(AWSQueryConnection):
         :param attribute: The attribute you wish to see.
 
           * crossZoneLoadBalancing - Boolean
+          * connectionDraining - :py:class:`ConnectionDrainingAttribute` instance
 
         :rtype: Attribute dependent
         :return: The new value for the attribute
@@ -453,6 +460,8 @@ class ELBConnection(AWSQueryConnection):
         attributes = self.get_all_lb_attributes(load_balancer_name)
         if attribute.lower() == 'crosszoneloadbalancing':
             return attributes.cross_zone_load_balancing.enabled
+        if attribute.lower() == 'connectiondraining':
+            return attributes.connection_draining
         return None
 
     def register_instances(self, load_balancer_name, instances):
