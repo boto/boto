@@ -40,8 +40,11 @@ POST /2013-04-01/healthcheck HTTP/1.1
       <SearchString>if Type is HTTP_STR_MATCH or HTTPS_STR_MATCH,
          the string to search for in the response body
          from the specified resource</SearchString>
+      <RequestInterval>10 | 30</RequestInterval>
+      <FailureThreshold>integer between 1 and 10</FailureThreshold>
    </HealthCheckConfig>
-</CreateHealthCheckRequest"""
+</CreateHealthCheckRequest>
+"""
 
 
 class HealthCheck(object):
@@ -57,6 +60,7 @@ class HealthCheck(object):
             %(fqdn_part)s
             %(string_match_part)s
             %(request_interval)s
+            <FailureThreshold>%(failure_threshold)s</FailureThreshold>
         </HealthCheckConfig>
     """
 
@@ -68,7 +72,7 @@ class HealthCheck(object):
 
     valid_request_intervals = (10, 30)
 
-    def __init__(self, ip_addr, port, hc_type, resource_path, fqdn=None, string_match=None, request_interval=30):
+    def __init__(self, ip_addr, port, hc_type, resource_path, fqdn=None, string_match=None, request_interval=30, failure_threshold=3):
         """
         HealthCheck object
 
@@ -93,6 +97,9 @@ class HealthCheck(object):
         :type request_interval: int
         :param request_interval: The number of seconds between the time that Amazon Route 53 gets a response from your endpoint and the time that it sends the next health-check request.
 
+        :type failure_threshold: int
+        :param failure_threshold: The number of consecutive health checks that an endpoint must pass or fail for Amazon Route 53 to change the current status of the endpoint from unhealthy to healthy or vice versa.
+
         """
         self.ip_addr = ip_addr
         self.port = port
@@ -100,6 +107,7 @@ class HealthCheck(object):
         self.resource_path = resource_path
         self.fqdn = fqdn
         self.string_match = string_match
+        self.failure_threshold = failure_threshold
 
         if request_interval in self.valid_request_intervals:
             self.request_interval = request_interval
@@ -107,6 +115,10 @@ class HealthCheck(object):
             raise AttributeError(
                 "Valid values for request_interval are: %s" %
                 ",".join(str(i) for i in self.valid_request_intervals))
+
+        if failure_threshold < 1 or failure_threshold > 10:
+            raise AttributeError(
+                'Valid values for failure_threshold are 1 - 10.')
 
     def to_xml(self):
         params = {
@@ -118,6 +130,7 @@ class HealthCheck(object):
             'string_match_part': "",
             'request_interval': (self.XMLRequestIntervalPart %
                                  {'request_interval': self.request_interval}),
+            'failure_threshold': self.failure_threshold,
         }
         if self.fqdn is not None:
             params['fqdn_part'] = self.XMLFQDNPart % {'fqdn': self.fqdn}
