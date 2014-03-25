@@ -40,6 +40,8 @@ default_nicknames_path = os.path.expanduser('~/.boto_mturkcli_hit_nicknames')
 nicknames = {}
 nickname_pool = set(string.ascii_lowercase)
 
+get_assignments_page_size = 100
+
 time_units = dict(
     s = 1,
     min = 60,
@@ -281,10 +283,20 @@ but apparently, it does.'''
     nicknames = {k: v for k, v in nicknames.items() if v != hit}
 
 def list_assignments(hit, only_reviewable = False):
-    assignments = map(digest_assignment, con.get_assignments(
-        hit_id = hit,
-        page_size = 100,
-        status = 'Submitted' if only_reviewable else None))
+    # Accumulate all relevant assignments, one page of results at
+    # a time.
+    assignments = []
+    page = 1
+    while True:
+        rs = con.get_assignments(
+            hit_id = hit,
+            page_size = get_assignments_page_size,
+            page_number = page,
+            status = 'Submitted' if only_reviewable else None)
+        assignments += map(digest_assignment, rs)
+        if len(assignments) >= int(rs.TotalNumResults):
+            break
+        page += 1
     if interactive:
         print json.dumps(assignments, sort_keys = True, indent = 4)
         print ' '.join([a['AssignmentId'] for a in assignments])
