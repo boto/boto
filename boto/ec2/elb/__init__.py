@@ -451,6 +451,7 @@ class ELBConnection(AWSQueryConnection):
         :type attribute: string
         :param attribute: The attribute you wish to see.
 
+          * accessLog - :py:class:`AccessLogAttribute` instance
           * crossZoneLoadBalancing - Boolean
           * connectionDraining - :py:class:`ConnectionDrainingAttribute` instance
 
@@ -458,6 +459,8 @@ class ELBConnection(AWSQueryConnection):
         :return: The new value for the attribute
         """
         attributes = self.get_all_lb_attributes(load_balancer_name)
+        if attribute.lower() == 'accesslog':
+            return attributes.access_log
         if attribute.lower() == 'crosszoneloadbalancing':
             return attributes.cross_zone_load_balancing.enabled
         if attribute.lower() == 'connectiondraining':

@@ -198,6 +198,48 @@ class ELBConnectionTest(unittest.TestCase):
             new_attributes.access_log.s3_bucket_prefix)
         self.assertEqual(5, new_attributes.access_log.emit_interval)
 
+    def test_load_balancer_get_attributes(self):
+        attributes = self.balancer.get_attributes()
+        connection_draining = self.conn.get_lb_attribute(self.balancer.name,
+                                                         'ConnectionDraining')
+        self.assertEqual(connection_draining.enabled,
+                         attributes.connection_draining.enabled)
+        self.assertEqual(connection_draining.timeout,
+                         attributes.connection_draining.timeout)
+
+        access_log = self.conn.get_lb_attribute(self.balancer.name,
+                                                'AccessLog')
+        self.assertEqual(access_log.enabled, attributes.access_log.enabled)
+        self.assertEqual(access_log.s3_bucket_name, attributes.access_log.s3_bucket_name)
+        self.assertEqual(access_log.s3_bucket_prefix, attributes.access_log.s3_bucket_prefix)
+        self.assertEqual(access_log.emit_interval, attributes.access_log.emit_interval)
+
+        cross_zone_load_balancing = self.conn.get_lb_attribute(self.balancer.name,
+                                                'CrossZoneLoadBalancing')
+        self.assertEqual(cross_zone_load_balancing,
+                         attributes.cross_zone_load_balancing.enabled)
+
+    def change_and_verify_load_balancer_connection_draining(self, enabled, timeout = None):
+        attributes = self.balancer.get_attributes()
+
+        attributes.connection_draining.enabled = enabled
+        if timeout != None:
+            attributes.connection_draining.timeout = timeout
+
+	self.conn.modify_lb_attribute(self.balancer.name,
+                                      'ConnectionDraining', attributes.connection_draining)
+
+        attributes = self.balancer.get_attributes()
+        self.assertEqual(enabled, attributes.connection_draining.enabled)
+        if timeout != None:
+            self.assertEqual(timeout, attributes.connection_draining.timeout)
+
+    def test_load_balancer_connection_draining_config(self):
+    	self.change_and_verify_load_balancer_connection_draining(True, 128)
+    	self.change_and_verify_load_balancer_connection_draining(True, 256)
+    	self.change_and_verify_load_balancer_connection_draining(False)
+    	self.change_and_verify_load_balancer_connection_draining(True, 64) 
+
     def test_set_load_balancer_policies_of_listeners(self):
         more_listeners = [(443, 8001, 'HTTP')]
         self.conn.create_load_balancer_listeners(self.name, more_listeners)
