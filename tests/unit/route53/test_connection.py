@@ -240,7 +240,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
 
     def default_body(self):
         return """
-<ListResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
+<ListResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
     <ResourceRecordSets>
         <ResourceRecordSet>
             <Name>test.example.com.</Name>
@@ -284,6 +284,18 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
                 <DNSName>example-123456-no-evaluate-health.us-west-2.elb.amazonaws.com.</DNSName>
             </AliasTarget>
         </ResourceRecordSet>
+        <ResourceRecordSet>
+            <Name>failover.example.com.</Name>
+            <Type>A</Type>
+            <SetIdentifier>failover-primary</SetIdentifier>
+            <Failover>PRIMARY</Failover>
+            <TTL>60</TTL>
+            <ResourceRecords>
+                <ResourceRecord>
+                    <Value>10.0.0.4</Value>
+                </ResourceRecord>
+            </ResourceRecords>
+        </ResourceRecordSet>
     </ResourceRecordSets>
     <IsTruncated>false</IsTruncated>
     <MaxItems>100</MaxItems>
@@ -326,3 +338,11 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.assertEqual(no_evaluate_record.alias_dns_name, 'example-123456-no-evaluate-health.us-west-2.elb.amazonaws.com.')
         no_evaluate_xml = no_evaluate_record.to_xml()
         self.assertTrue('<EvaluateTargetHealth>false</EvaluateTargetHealth>' in no_evaluate_xml)
+        
+        failover_record = response[4]
+        self.assertEqual(failover_record.name, 'failover.example.com.')
+        self.assertEqual(failover_record.type, 'A')
+        self.assertEqual(failover_record.identifier, 'failover-primary')
+        self.assertEqual(failover_record.failover, 'PRIMARY')
+        self.assertEqual(failover_record.ttl, '60')
+        
