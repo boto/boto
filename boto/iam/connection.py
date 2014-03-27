@@ -76,7 +76,7 @@ class IAMConnection(AWSQueryConnection):
         return ['hmac-v4']
 
     def get_response(self, action, params, path='/', parent=None,
-                     verb='POST', list_marker='Set'):
+                     verb='POST', list_marker='Set', silent=False):
         """
         Utility method to handle calls to IAM and parsing of responses.
         """
@@ -97,8 +97,9 @@ class IAMConnection(AWSQueryConnection):
                 # according to the official documentation.
                 return {}
         else:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
+            if not(silent):
+                boto.log.error('%s %s' % (response.status, response.reason))
+                boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
 
     #
@@ -926,16 +927,19 @@ class IAMConnection(AWSQueryConnection):
     # Login Profiles
     #
 
-    def get_login_profiles(self, user_name):
+    def get_login_profiles(self, user_name, silent=False):
         """
         Retrieves the login profile for the specified user.
 
         :type user_name: string
         :param user_name: The username of the user
 
+        :type silent: boolean
+        :param silent: skips logging error for no login profiles
+
         """
         params = {'UserName': user_name}
-        return self.get_response('GetLoginProfile', params)
+        return self.get_response('GetLoginProfile', params, silent=silent)
 
     def create_login_profile(self, user_name, password):
         """
