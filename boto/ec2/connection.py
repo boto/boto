@@ -109,7 +109,7 @@ class EC2Connection(AWSQueryConnection):
 
     def get_params(self):
         """
-        Returns a dictionary containing the value of of all of the keyword
+        Returns a dictionary containing the value of all of the keyword
         arguments passed when constructing this connection.
         """
         param_names = ['aws_access_key_id', 'aws_secret_access_key',
