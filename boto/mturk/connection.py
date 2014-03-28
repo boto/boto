@@ -388,15 +388,15 @@ class MTurkConnection(AWSQueryConnection):
                 The number of assignments on the page in the filtered results
                 list, equivalent to the number of assignments being returned
                 by this call.
-                A non-negative integer
+                A non-negative integer, as a string.
         PageNumber
                 The number of the page in the filtered results list being
                 returned.
-                A positive integer
+                A positive integer, as a string.
         TotalNumResults
                 The total number of HITs in the filtered results list based
                 on this call.
-                A non-negative integer
+                A non-negative integer, as a string.
 
         The ResultSet will contain zero or more Assignment objects
 
