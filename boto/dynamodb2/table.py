@@ -939,7 +939,7 @@ class Table(object):
         results.to_call(self._query, **kwargs)
         return results
 
-    def query_count(self, index=None, consistent=False, **filter_kwargs):
+    def query_count(self, index=None, consistent=False, scan_index_forward=True, limit=None, **filter_kwargs):
         """
         Queries the exact count of matching items in a DynamoDB table.
 
@@ -989,6 +989,8 @@ class Table(object):
             consistent_read=consistent,
             select='COUNT',
             key_conditions=key_conditions,
+            limit=limit,
+            scan_index_forward=scan_index_forward,
         )
         return int(raw_results.get('Count', 0))
 
