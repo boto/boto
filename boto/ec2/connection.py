@@ -610,15 +610,24 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list
         :return: A list of  :class:`boto.ec2.instance.Instance`
         """
-        reservations = self.get_all_reservations(instance_ids=instance_ids,
-                                                 filters=filters,
-                                                 dry_run=dry_run,
-                                                 max_results=max_results)
-        return [instance for reservation in reservations
-                for instance in reservation.instances]
+        next_token = None
+        retval = []
+        while True:
+            reservations = self.get_all_reservations(instance_ids=instance_ids,
+                                                     filters=filters,
+                                                     dry_run=dry_run,
+                                                     max_results=max_results,
+                                                     next_token=next_token)
+            retval.extend([instance for reservation in reservations for
+                           instance in reservation.instances])
+            next_token = reservations.next_token
+            if not next_token:
+                break
+
+        return retval
 
     def get_all_reservations(self, instance_ids=None, filters=None,
-                             dry_run=False, max_results=None):
+                             dry_run=False, max_results=None, next_token=None):
         """
         Retrieve all the instance reservations associated with your account.
 
@@ -640,6 +649,10 @@ class EC2Connection(AWSQueryConnection):
         :param max_results: The maximum number of paginated instance
             items per response.
 
+        :type next_token: str
+        :param next_token: A string specifying the next paginated set
+            of results to return.
+
         :rtype: list
         :return: A list of  :class:`boto.ec2.instance.Reservation`
         """
@@ -660,6 +673,8 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         if max_results is not None:
             params['MaxResults'] = max_results
+        if next_token:
+            params['NextToken'] = next_token
         return self.get_list('DescribeInstances', params,
                              [('item', Reservation)], verb='POST')
 
