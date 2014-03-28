@@ -96,7 +96,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
         # Autoscaling).
         self.set_http_response(status_code=200)
         dev_sdf = BlockDeviceType(snapshot_id='snap-12345')
-        dev_sdg = BlockDeviceType(snapshot_id='snap-12346')
+        dev_sdg = BlockDeviceType(snapshot_id='snap-12346', delete_on_termination=False)
 
         bdm = BlockDeviceMapping()
         bdm['/dev/sdf'] = dev_sdf
@@ -112,7 +112,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'RunInstances',
             'BlockDeviceMapping.1.DeviceName': '/dev/sdf',
-            'BlockDeviceMapping.1.Ebs.DeleteOnTermination': 'false',
+            'BlockDeviceMapping.1.Ebs.DeleteOnTermination': 'true',
             'BlockDeviceMapping.1.Ebs.SnapshotId': 'snap-12345',
             'BlockDeviceMapping.2.DeviceName': '/dev/sdg',
             'BlockDeviceMapping.2.Ebs.DeleteOnTermination': 'false',
