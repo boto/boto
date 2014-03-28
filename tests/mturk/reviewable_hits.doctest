@@ -84,10 +84,10 @@ True
 >>> len(assignments_rs) == int(assignments_rs.NumResults)
 True
 
->>> assignments_rs.PageNumber
-u'1'
+>>> int(assignments_rs.PageNumber)
+1
 
->>> assignments_rs.TotalNumResults >= 1
+>>> int(assignments_rs.TotalNumResults) >= 1
 True
 
 # should contain at least one Assignment object
