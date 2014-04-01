@@ -40,7 +40,7 @@ Reporting An Issue/Feature
     * boto
     * Optionally of the other dependencies involved
 
-  * If possile, create a pull request with a (failing) test case demonstrating
+  * If possible, create a pull request with a (failing) test case demonstrating
     what's wrong. This makes the process for fixing bugs quicker & gets issues
     resolved sooner.
 
