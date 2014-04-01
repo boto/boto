@@ -266,7 +266,8 @@ class EC2Connection(AWSQueryConnection):
                        root_device_name=None, block_device_map=None,
                        dry_run=False, virtualization_type=None,
                        sriov_net_support=None,
-                       snapshot_id=None):
+                       snapshot_id=None, 
+                       delete_root_volume_on_termination=True):
         """
         Register an image.
 
@@ -315,6 +316,11 @@ class EC2Connection(AWSQueryConnection):
             as root device for the image. Mutually exclusive with
             block_device_map, requires root_device_name
 
+        :type delete_root_volume_on_termination: bool
+        :param delete_root_volume_on_termination: Whether to delete the root
+            volume of the image after instance termination. Only applies when
+            creating image from snapshot_id.
+
         :rtype: string
         :return: The new image id
         """
@@ -334,7 +340,8 @@ class EC2Connection(AWSQueryConnection):
         if root_device_name:
             params['RootDeviceName'] = root_device_name
         if snapshot_id:
-            root_vol = BlockDeviceType(snapshot_id=snapshot_id)
+            root_vol = BlockDeviceType(snapshot_id=snapshot_id, 
+              delete_on_termination=delete_root_volume_on_termination)
             block_device_map = BlockDeviceMapping()
             block_device_map[root_device_name] = root_vol
         if block_device_map:

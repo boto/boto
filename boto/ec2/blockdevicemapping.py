@@ -35,7 +35,7 @@ class BlockDeviceType(object):
                  snapshot_id=None,
                  status=None,
                  attach_time=None,
-                 delete_on_termination=False,
+                 delete_on_termination=True,
                  size=None,
                  volume_type=None,
                  iops=None):
