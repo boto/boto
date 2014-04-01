@@ -346,6 +346,8 @@ class Record(object):
             self.weight = value
         elif name == 'Region':
             self.region = value
+        elif name == 'HealthCheckId':
+            self.health_check = value
 
     def startElement(self, name, attrs, connection):
         return None
