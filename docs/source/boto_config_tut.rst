@@ -17,23 +17,27 @@ of boto config files.
 Details
 -------
 
-A boto config file is simply a .ini format configuration file that specifies
-values for options that control the behavior of the boto library. Upon startup,
-the boto library looks for configuration files in the following locations
+A boto config file is a text file formatted like an .ini configuration file that specifies
+values for options that control the behavior of the boto library. In Unix/Linux systems,
+on startup, the boto library looks for configuration files in the following locations
 and in the following order:
 
 * /etc/boto.cfg - for site-wide settings that all users on this machine will use
 * ~/.boto - for user-specific settings
 
-The options are merged into a single, in-memory configuration that is
-available as :py:mod:`boto.config`. The :py:class:`boto.pyami.config.Config`
+In Windows, create a text file that has any name (e.g. boto.config). It's
+recommended that you put this file in your user folder. Then set 
+a user environment variable named BOTO_CONFIG to the full path of that file.
+
+The options in the config file are merged into a single, in-memory configuration 
+that is available as :py:mod:`boto.config`. The :py:class:`boto.pyami.config.Config`
 class is a subclass of the standard Python
 :py:class:`ConfigParser.SafeConfigParser` object and inherits all of the
 methods of that object. In addition, the boto
 :py:class:`Config <boto.pyami.config.Config>` class defines additional
 methods that are described on the PyamiConfigMethods page.
 
-An example ``~/.boto`` file should look like::
+An example boto config file might look like::
 
     [Credentials]
     aws_access_key_id = <your_access_key_here>
