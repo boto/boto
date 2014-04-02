@@ -267,7 +267,7 @@ class EC2Connection(AWSQueryConnection):
                        dry_run=False, virtualization_type=None,
                        sriov_net_support=None,
                        snapshot_id=None, 
-                       delete_root_volume_on_termination=True):
+                       delete_root_volume_on_termination=False):
         """
         Register an image.
 
@@ -319,7 +319,8 @@ class EC2Connection(AWSQueryConnection):
         :type delete_root_volume_on_termination: bool
         :param delete_root_volume_on_termination: Whether to delete the root
             volume of the image after instance termination. Only applies when
-            creating image from snapshot_id.
+            creating image from snapshot_id. Defaults to False.  Note that 
+            leaving volumes behind after instance termination is not free.
 
         :rtype: string
         :return: The new image id
