@@ -1297,6 +1297,18 @@ class TestDescribeInstances(TestEC2ConnectionBase):
              ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                    'SignatureVersion', 'Timestamp', 'Version'])
 
+        self.ec2.get_all_reservations()
+        self.assert_request_parameters({
+            'Action': 'DescribeInstances'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
+        self.ec2.get_only_instances()
+        self.assert_request_parameters({
+            'Action': 'DescribeInstances'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
     def test_max_results(self):
         self.set_http_response(status_code=200)
         self.ec2.get_all_instances(
@@ -1308,6 +1320,16 @@ class TestDescribeInstances(TestEC2ConnectionBase):
              ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                    'SignatureVersion', 'Timestamp', 'Version'])
 
+    def test_next_token(self):
+        self.set_http_response(status_code=200)
+        self.ec2.get_all_reservations(
+            next_token='abcdefgh',
+        )
+        self.assert_request_parameters({
+            'Action': 'DescribeInstances',
+            'NextToken': 'abcdefgh'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
 
 class TestDescribeTags(TestEC2ConnectionBase):
 
