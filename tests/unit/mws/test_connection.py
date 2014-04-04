@@ -21,7 +21,8 @@
 # IN THE SOFTWARE.
 #
 from boto.mws.connection import MWSConnection, api_call_map, destructure_object
-from boto.mws.response import ResponseElement
+from boto.mws.response import (ResponseElement, GetFeedSubmissionListResult,
+                               ResponseFactory)
 
 from tests.unit import AWSMockServiceTestCase
 
@@ -51,13 +52,16 @@ doc/2009-01-01/">
 
     def test_destructure_object(self):
         # Test that parsing of user input to Amazon input works.
-        response = ResponseElement(name='Prefix')
+        response = ResponseElement()
         response.C = 'four'
         response.D = 'five'
         inputs = [
             ('A', 'B'), ['B', 'A'], set(['C']),
             False, 'String', {'A': 'one', 'B': 'two'},
             response,
+            {'A': 'one', 'B': 'two',
+             'C': [{'D': 'four', 'E': 'five'},
+                   {'F': 'six', 'G': 'seven'}]},
         ]
         outputs = [
             {'Prefix.1': 'A', 'Prefix.2': 'B'},
@@ -66,10 +70,16 @@ doc/2009-01-01/">
             {'Prefix': 'false'}, {'Prefix': 'String'},
             {'Prefix.A': 'one', 'Prefix.B': 'two'},
             {'Prefix.C': 'four', 'Prefix.D': 'five'},
+            {'Prefix.A': 'one', 'Prefix.B': 'two',
+             'Prefix.C.member.1.D': 'four',
+             'Prefix.C.member.1.E': 'five',
+             'Prefix.C.member.2.F': 'six',
+             'Prefix.C.member.2.G': 'seven'}
         ]
         for user, amazon in zip(inputs, outputs):
             result = {}
-            destructure_object(user, result, prefix='Prefix')
+            members = user is inputs[-1]
+            destructure_object(user, result, prefix='Prefix', members=members)
             self.assertEqual(result, amazon)
 
     def test_built_api_call_map(self):
@@ -93,6 +103,31 @@ doc/2009-01-01/">
         # Check a non-existent action.
         func = self.service_connection.method_for('NotHereNorThere')
         self.assertEqual(func, None)
+
+    def test_response_factory(self):
+        connection = self.service_connection
+        body = self.default_body()
+        action = 'GetFeedSubmissionList'
+        parser = connection._response_factory(action, connection=connection)
+        response = connection._parse_response(parser, 'text/xml', body)
+        self.assertEqual(response._action, action)
+        self.assertEqual(response.__class__.__name__, action + 'Response')
+        self.assertEqual(response._result.__class__,
+                         GetFeedSubmissionListResult)
+
+        class MyResult(GetFeedSubmissionListResult):
+            _hello = '_world'
+
+        scope = {'GetFeedSubmissionListResult': MyResult}
+        connection._setup_factories([scope])
+
+        parser = connection._response_factory(action, connection=connection)
+        response = connection._parse_response(parser, 'text/xml', body)
+        self.assertEqual(response._action, action)
+        self.assertEqual(response.__class__.__name__, action + 'Response')
+        self.assertEqual(response._result.__class__, MyResult)
+        self.assertEqual(response._result._hello, '_world')
+        self.assertEqual(response._result.HasNext, 'true')
 
     def test_get_service_status(self):
         with self.assertRaises(AttributeError) as err:
