@@ -852,6 +852,22 @@ class MWSConnection(AWSQueryConnection):
         """
         return self._post_request(request, kw, response)
 
+    @requires(['MarketplaceId', 'SellerSKUList'])
+    @structured_lists('SellerSKUList.SellerSKU')
+    @api_action('Products', 20, 10, 'GetMyPriceForSKU')
+    def get_my_price_for_sku(self, request, response, **kw):
+        """Returns pricing information for your own offer listings, based on SellerSKU.
+        """
+        return self._post_request(request, kw, response)
+
+    @requires(['MarketplaceId', 'ASINList'])
+    @structured_lists('ASINList.ASIN')
+    @api_action('Products', 20, 10, 'GetMyPriceForASIN')
+    def get_my_price_for_asin(self, request, response, **kw):
+        """Returns pricing information for your own offer listings, based on ASIN.
+        """
+        return self._post_request(request, kw, response)
+
     @api_action('Sellers', 15, 60)
     def list_marketplace_participations(self, request, response, **kw):
         """Returns a list of marketplaces that the seller submitting
