@@ -541,6 +541,11 @@ class LowestOfferListing(ResponseElement):
     Price = Element(Price)
 
 
+class Offer(ResponseElement):
+    BuyingPrice = Element(Price)
+    RegularPrice = Element(ComplexMoney)
+
+
 class Product(ResponseElement):
     _namespace = 'ns2'
     Identifiers = Element(MarketplaceASIN=Element(),
@@ -557,6 +562,9 @@ class Product(ResponseElement):
     )
     LowestOfferListings = Element(
         LowestOfferListing=ElementList(LowestOfferListing),
+    )
+    Offers = Element(
+        Offer=ElementList(Offer),
     )
 
 
@@ -598,6 +606,14 @@ class GetLowestOfferListingsForSKUResponse(ProductsBulkOperationResponse):
 
 
 class GetLowestOfferListingsForASINResponse(ProductsBulkOperationResponse):
+    pass
+
+
+class GetMyPriceForSKUResponse(ProductsBulkOperationResponse):
+    pass
+
+
+class GetMyPriceForASINResponse(ProductsBulkOperationResponse):
     pass
 
 
