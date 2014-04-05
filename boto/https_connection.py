@@ -86,7 +86,7 @@ class CertValidatingHTTPSConnection(httplib.HTTPConnection):
   default_port = httplib.HTTPS_PORT
 
   def __init__(self, host, port=default_port, key_file=None, cert_file=None,
-               ca_certs=None, strict=None, **kwargs):
+               ca_certs=None, **kwargs):
     """Constructor.
 
     Args:
@@ -96,10 +96,8 @@ class CertValidatingHTTPSConnection(httplib.HTTPConnection):
       cert_file: A file containing the client's certificates
       ca_certs: A file contianing a set of concatenated certificate authority
           certs for validating the server against.
-      strict: When true, causes BadStatusLine to be raised if the status line
-          can't be parsed as a valid HTTP/1.0 or 1.1 status line.
     """
-    httplib.HTTPConnection.__init__(self, host, port, strict, **kwargs)
+    httplib.HTTPConnection.__init__(self, host, port, **kwargs)
     self.key_file = key_file
     self.cert_file = cert_file
     self.ca_certs = ca_certs
