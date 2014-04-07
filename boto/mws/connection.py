@@ -33,7 +33,7 @@ __all__ = ['MWSConnection']
 api_version_path = {
     'Feeds':        ('2009-01-01', 'Merchant', '/'),
     'Reports':      ('2009-01-01', 'Merchant', '/'),
-    'Orders':       ('2011-01-01', 'SellerId', '/Orders/2011-01-01'),
+    'Orders':       ('2013-09-01', 'SellerId', '/Orders/2013-09-01'),
     'Products':     ('2011-10-01', 'SellerId', '/Products/2011-10-01'),
     'Sellers':      ('2011-07-01', 'SellerId', '/Sellers/2011-07-01'),
     'Inbound':      ('2010-10-01', 'SellerId',
