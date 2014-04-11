@@ -55,6 +55,19 @@ class TestRoute53Zone(unittest.TestCase):
         self.assertEquals(record.resource_records, [u'186.143.32.2'])
         self.assertEquals(record.ttl, u'800')
 
+    def test_aaaa(self):
+        self.zone.add_aaaa(self.base_domain, '3ffe::2', 80)
+        record = self.zone.get_aaaa(self.base_domain)
+        self.assertEquals(record.name, u'%s.' % self.base_domain)
+        self.assertEquals(record.resource_records, [u'3ffe::2'])
+        self.assertEquals(record.ttl, u'80')
+        self.zone.update_aaaa(self.base_domain, '3ffe:1000:1:2::1', '800')
+        record = self.zone.get_aaaa(self.base_domain)
+        self.assertEquals(record.name, u'%s.' % self.base_domain)
+        self.assertEquals(record.resource_records, [u'3ffe:1000:1:2::1'])
+        self.assertEquals(record.ttl, u'800')
+
+
     def test_cname(self):
         self.zone.add_cname(
             'www.%s' % self.base_domain,
@@ -158,6 +171,7 @@ class TestRoute53Zone(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         self.zone.delete_a(self.base_domain)
+        self.zone.delete_aaaa(self.base_domain)
         self.zone.delete_cname('www.%s' % self.base_domain)
         self.zone.delete_mx(self.base_domain)
         self.zone.delete()

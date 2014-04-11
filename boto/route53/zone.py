@@ -184,6 +184,20 @@ class Zone(object):
                                identifier=identifier,
                                comment=comment)
 
+    def add_aaaa(self, name, value, ttl=None, identifier=None, comment=""):
+        """
+        Add a new AAAA (IPv6) record to this Zone.  See _new_record for
+        parameter documentation.  Returns a Status object.
+        """
+        ttl = ttl or default_ttl
+        name = self.route53connection._make_qualified(name)
+        return self.add_record(resource_type='AAAA',
+                               name=name,
+                               value=value,
+                               ttl=ttl,
+                               identifier=identifier,
+                               comment=comment)
+
     def add_mx(self, name, records, ttl=None, identifier=None, comment=""):
         """
         Add a new MX record to this Zone.  See _new_record for
@@ -288,6 +302,18 @@ class Zone(object):
         """
         return self.find_records(name, 'A', all=all)
 
+    def get_aaaa(self, name, all=False):
+        """
+        Search this Zone for AAAA (IPv6) records that match name.
+
+        Returns a ResourceRecord.
+
+        If there is more than one match return all as a
+        ResourceRecordSets if all is True, otherwise throws
+        TooManyRecordsException.
+        """
+        return self.find_records(name, 'AAAA', all=all)
+
     def get_mx(self, name, all=False):
         """
         Search this Zone for MX records that match name.
@@ -328,6 +354,23 @@ class Zone(object):
         """
         name = self.route53connection._make_qualified(name)
         old_record = self.get_a(name)
+        ttl = ttl or old_record.ttl
+        return self.update_record(old_record,
+                                  new_value=value,
+                                  new_ttl=ttl,
+                                  new_identifier=identifier,
+                                  comment=comment)
+
+    def update_aaaa(self, name, value, ttl=None, identifier=None, comment=""):
+        """
+        Update the given AAAA (IPv6) record in this Zone to a new value, ttl,
+        and identifier.  Returns a Status object.
+
+        Will throw TooManyRecordsException is name, value does not match
+        a single record.
+        """
+        name = self.route53connection._make_qualified(name)
+        old_record = self.get_aaaa(name)
         ttl = ttl or old_record.ttl
         return self.update_record(old_record,
                                   new_value=value,
@@ -376,6 +419,19 @@ class Zone(object):
         """
         name = self.route53connection._make_qualified(name)
         record = self.find_records(name, 'A', identifier=identifier,
+                                   all=all)
+        return self.delete_record(record)
+
+    def delete_aaaa(self, name, identifier=None, all=False):
+        """
+        Delete an AAAA (IPv6) record matching name and identifier from this
+        Zone.  Returns a Status object.
+
+        If there is more than one match delete all matching records if
+        all is True, otherwise throws TooManyRecordsException.
+        """
+        name = self.route53connection._make_qualified(name)
+        record = self.find_records(name, 'AAAA', identifier=identifier,
                                    all=all)
         return self.delete_record(record)
 
