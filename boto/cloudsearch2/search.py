@@ -261,7 +261,7 @@ class SearchConnection(object):
                                  return_fields=return_fields,
                                  size=size, start=start, facet=facet,
                                  highlight=highlight, sort=sort,
-                                 options=options)
+                                 partial=partial, options=options)
         return self(query)
 
     def __call__(self, query):
