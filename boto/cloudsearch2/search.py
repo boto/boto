@@ -273,7 +273,10 @@ class SearchConnection(object):
         :rtype: :class:`boto.cloudsearch2.search.SearchResults`
         :return: search results
         """
-        url = "http://%s/%s/search" % (self.endpoint, self.domain.layer1.APIVersion)
+        api_version = '2013-01-01'
+        if self.domain:
+            api_version = self.domain.layer1.APIVersion
+        url = "http://%s/%s/search" % (self.endpoint, api_version)
         params = query.to_params()
 
         r = requests.get(url, params=params)

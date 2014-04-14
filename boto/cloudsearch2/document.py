@@ -189,7 +189,10 @@ class DocumentServiceConnection(object):
             index = sdf.index(': null')
             boto.log.error(sdf[index - 100:index + 100])
 
-        url = "http://%s/%s/documents/batch" % (self.endpoint, self.domain.layer1.APIVersion)
+        api_version = '2013-01-01'
+        if self.domain:
+            api_version = self.domain.layer1.APIVersion
+        url = "http://%s/%s/documents/batch" % (self.endpoint, api_version)
 
         # Keep-alive is automatic in a post-1.0 requests world.
         session = requests.Session()
