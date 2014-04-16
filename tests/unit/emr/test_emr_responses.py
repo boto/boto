@@ -447,7 +447,7 @@ class TestEMRResponses(unittest.TestCase):
         self.assertEquals("2014-04-10T08:08:41Z",
                           step.status.timeline.enddatetime)
 
-    def test_list_step_response(self):
+    def test_list_steps_response(self):
         [steps] = self._parse_xml(LIST_STEPS,
                                   [('ListStepsResult', emrobject.StepSummaryList)])
         summary = steps.steps[0]
