@@ -320,6 +320,66 @@ JOB_FLOW_COMPLETED = """
 </DescribeJobFlowsResponse>
 """
 
+DESCRIBE_STEP = """
+<DescribeStepResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+  <DescribeStepResult>
+    <Step>
+      <Id>s-3NI20LLUAX13D</Id>
+      <Status>
+        <StateChangeReason/>
+        <State>COMPLETED</State>
+        <Timeline>
+          <CreationDateTime>2014-04-10T08:02:01Z</CreationDateTime>
+          <StartDateTime>2014-04-10T08:08:16Z</StartDateTime>
+          <EndDateTime>2014-04-10T08:08:41Z</EndDateTime>
+        </Timeline>
+      </Status>
+      <Name>Install Pig</Name>
+      <Config>
+        <Jar>s3n://us-east-1.elasticmapreduce/libs/script-runner/script-runner.jar</Jar>
+        <Args>
+          <member>s3n://us-east-1.elasticmapreduce/libs/pig/pig-script</member>
+          <member>--base-path</member>
+          <member>s3n://us-east-1.elasticmapreduce/libs/pig/</member>
+          <member>--install-pig</member>
+          <member>--pig-versions</member>
+          <member>latest</member>
+        </Args>
+        <Properties/>
+      </Config>
+      <ActionOnFailure>TERMINATE_CLUSTER</ActionOnFailure>
+    </Step>
+  </DescribeStepResult>
+  <ResponseMetadata>
+    <RequestId>a560e959-c564-11e3-be57-270e2b702778</RequestId>
+  </ResponseMetadata>
+</DescribeStepResponse>
+"""
+
+LIST_STEPS = """
+<ListStepsResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+  <ListStepsResult>
+    <Steps>
+      <member>
+        <Id>s-3NI20LLUAX13D</Id>
+        <Status>
+          <StateChangeReason/>
+          <State>COMPLETED</State>
+          <Timeline>
+            <CreationDateTime>2014-04-10T08:02:01Z</CreationDateTime>
+            <StartDateTime>2014-04-10T08:08:16Z</StartDateTime>
+            <EndDateTime>2014-04-10T08:08:41Z</EndDateTime>
+          </Timeline>
+        </Status>
+        <Name>Install Pig</Name>
+      </member>
+    </Steps>
+  </ListStepsResult>
+  <ResponseMetadata>
+    <RequestId>e38d0c33-c564-11e3-acdb-1f4611226308</RequestId>
+  </ResponseMetadata>
+</ListStepsResponse>
+"""
 
 class TestEMRResponses(unittest.TestCase):
     def _parse_xml(self, body, markers):
@@ -371,3 +431,34 @@ class TestEMRResponses(unittest.TestCase):
         self.assertEquals(6, len(jobflow.steps))
         self.assertEquals(2, len(jobflow.instancegroups))
 
+    def test_describe_step_response(self):
+        [step] = self._parse_xml(DESCRIBE_STEP,
+                                 [('Step', emrobject.HadoopStep)])
+
+        self._assert_fields(step,
+                            id="s-3NI20LLUAX13D",
+                            actiononfailure="TERMINATE_CLUSTER",
+                            name="Install Pig")
+
+        self.assertEquals("2014-04-10T08:02:01Z",
+                          step.status.timeline.creationdatetime)
+        self.assertEquals("2014-04-10T08:08:16Z",
+                          step.status.timeline.startdatetime)
+        self.assertEquals("2014-04-10T08:08:41Z",
+                          step.status.timeline.enddatetime)
+
+    def test_list_step_response(self):
+        [steps] = self._parse_xml(LIST_STEPS,
+                                  [('ListStepsResult', emrobject.StepSummaryList)])
+        summary = steps.steps[0]
+
+        self._assert_fields(summary,
+                            id="s-3NI20LLUAX13D",
+                            name="Install Pig")
+
+        self.assertEquals("2014-04-10T08:02:01Z",
+                          summary.status.timeline.creationdatetime)
+        self.assertEquals("2014-04-10T08:08:16Z",
+                          summary.status.timeline.startdatetime)
+        self.assertEquals("2014-04-10T08:08:41Z",
+                          summary.status.timeline.enddatetime)
