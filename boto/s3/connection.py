@@ -303,7 +303,7 @@ class S3Connection(AWSAuthConnection):
                            'value': server_side_encryption})
             conditions.append('{"x-amz-server-side-encryption": "%s"}' % server_side_encryption)
 
-        policy = self.build_post_policy(expiration, conditions)
+        policy = self.build_post_policy(expiration, conditions).encode()
 
         # Add the base64-encoded policy document as the 'policy' field
         policy_b64 = base64.b64encode(policy)
