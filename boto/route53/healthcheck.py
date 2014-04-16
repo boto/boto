@@ -56,13 +56,15 @@ class HealthCheck(object):
             <IPAddress>%(ip_addr)s</IPAddress>
             <Port>%(port)s</Port>
             <Type>%(type)s</Type>
-            <ResourcePath>%(resource_path)s</ResourcePath>
+            %(resource_path)s
             %(fqdn_part)s
             %(string_match_part)s
             %(request_interval)s
             <FailureThreshold>%(failure_threshold)s</FailureThreshold>
         </HealthCheckConfig>
     """
+
+    XMLResourcePathPart = """<ResourcePath>%(resource_path)s</ResourcePath>"""
 
     XMLFQDNPart = """<FullyQualifiedDomainName>%(fqdn)s</FullyQualifiedDomainName>"""
 
@@ -125,7 +127,7 @@ class HealthCheck(object):
             'ip_addr': self.ip_addr,
             'port': self.port,
             'type': self.hc_type,
-            'resource_path': self.resource_path,
+            'resource_path': "",
             'fqdn_part': "",
             'string_match_part': "",
             'request_interval': (self.XMLRequestIntervalPart %
@@ -137,5 +139,8 @@ class HealthCheck(object):
 
         if self.string_match is not None:
             params['string_match_part'] = self.XMLStringMatchPart % {'string_match' : self.string_match}
+
+        if self.resource_path is not None:
+            params['resource_path'] = self.XMLResourcePathPart % {'resource_path' : self.resource_path}
 
         return self.POSTXMLBody % params
