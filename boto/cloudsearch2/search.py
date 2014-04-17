@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import json
 from math import ceil
 import boto
 from boto.compat import json
@@ -43,13 +44,10 @@ class CommitMismatchError(Exception):
 class SearchResults(object):
     def __init__(self, **attrs):
         self.rid = attrs['status']['rid']
-        # self.doc_coverage_pct = attrs['info']['doc-coverage-pct']
         self.time_ms = attrs['status']['time-ms']
         self.hits = attrs['hits']['found']
         self.docs = attrs['hits']['hit']
         self.start = attrs['hits']['start']
-        #self.rank = attrs['rank']
-        #self.match_expression = attrs['match-expr']
         self.query = attrs['query']
         self.search_service = attrs['search_service']
 
@@ -57,7 +55,7 @@ class SearchResults(object):
         if 'facets' in attrs:
             for (facet, values) in attrs['facets'].iteritems():
                 if 'buckets' in values:
-                    self.facets[facet] = dict((k, v) for (k, v) in map(lambda x: (x['value'], x['count']), values['buckets']))
+                    self.facets[facet] = dict((k, v) for (k, v) in map(lambda x: (x['value'], x['count']), values.get('buckets', [])))
 
         self.num_pages_needed = ceil(self.hits / self.query.real_size)
 
@@ -131,6 +129,8 @@ class Query(object):
 
         if self.facet:
             for k, v in self.facet.iteritems():
+                if type(v) not in [str, unicode]:
+                    v = json.dumps(v)
                 params['facet.%s' % k] = v
 
         if self.highlight:

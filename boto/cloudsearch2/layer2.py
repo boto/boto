@@ -22,7 +22,7 @@
 # IN THE SOFTWARE.
 #
 
-from .layer1 import Layer1
+from .layer1 import CloudSearchConnection
 from .domain import Domain
 
 
@@ -32,7 +32,15 @@ class Layer2(object):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  host=None, debug=0, session_token=None, region=None,
                  validate_certs=True):
-        self.layer1 = Layer1(
+
+        if type(region) in [str, unicode]:
+            import boto.cloudsearch2
+            for region_info in boto.cloudsearch2.regions():
+                if region_info.name == region:
+                    region = region_info
+                    break
+
+        self.layer1 = CloudSearchConnection(
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             is_secure=is_secure,
@@ -52,6 +60,11 @@ class Layer2(object):
         :rtype: list of :class:`boto.cloudsearch2.domain.Domain`
         """
         domain_data = self.layer1.describe_domains(domain_names)
+
+        domain_data = (domain_data['DescribeDomainsResponse']
+                                  ['DescribeDomainsResult']
+                                  ['DomainStatusList'])
+
         return [Domain(self.layer1, data) for data in domain_data]
 
     def create_domain(self, domain_name):
@@ -61,7 +74,9 @@ class Layer2(object):
         :rtype: :class:`boto.cloudsearch2.domain.Domain`
         """
         data = self.layer1.create_domain(domain_name)
-        return Domain(self.layer1, data)
+        return Domain(self.layer1, data['CreateDomainResponse']
+                                       ['CreateDomainResult']
+                                       ['DomainStatus'])
 
     def lookup(self, domain_name):
         """
