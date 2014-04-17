@@ -1,6 +1,4 @@
-# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
-# All Rights Reserved
+# Copyright (c) 2014 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -22,7 +20,6 @@
 # IN THE SOFTWARE.
 #
 
-import boto
 from .optionstatus import IndexFieldStatus
 from .optionstatus import ServicePoliciesStatus
 from .optionstatus import ExpressionStatus
@@ -90,18 +87,18 @@ class Domain(object):
         self.update_from_data(data)
 
     def update_from_data(self, data):
-        self.created = data['created']
-        self.deleted = data['deleted']
-        self.processing = data['processing']
-        self.requires_index_documents = data['requires_index_documents']
-        self.domain_id = data['domain_id']
-        self.domain_name = data['domain_name']
-        self.search_instance_count = data['search_instance_count']
-        self.search_instance_type = data.get('search_instance_type', None)
-        self.search_partition_count = data['search_partition_count']
-        self._doc_service = data['doc_service']
-        self._service_arn = data['arn']
-        self._search_service = data['search_service']
+        self.created = data['Created']
+        self.deleted = data['Deleted']
+        self.processing = data['Processing']
+        self.requires_index_documents = data['RequiresIndexDocuments']
+        self.domain_id = data['DomainId']
+        self.domain_name = data['DomainName']
+        self.search_instance_count = data['SearchInstanceCount']
+        self.search_instance_type = data.get('SearchInstanceType', None)
+        self.search_partition_count = data['SearchPartitionCount']
+        self._doc_service = data['DocService']
+        self._service_arn = data['ARN']
+        self._search_service = data['SearchService']
 
     @property
     def service_arn(self):
@@ -109,11 +106,11 @@ class Domain(object):
 
     @property
     def doc_service_endpoint(self):
-        return self._doc_service['endpoint']
+        return self._doc_service['Endpoint']
 
     @property
     def search_service_endpoint(self):
-        return self._search_service['endpoint']
+        return self._search_service['Endpoint']
 
     @property
     def created(self):
@@ -189,11 +186,15 @@ class Domain(object):
         object representing the currently defined availability options for
         the domain.
         :return: OptionsStatus object
-        :rtype: :class:`boto.cloudsearch2.option.AvailabilityOptionsStatus` object
+        :rtype: :class:`boto.cloudsearch2.option.AvailabilityOptionsStatus`
+            object
         """
         return AvailabilityOptionsStatus(
-            self, None, self.layer1.describe_availability_options,
-            self.layer1.update_availability_options)
+            self, refresh_fn=self.layer1.describe_availability_options,
+            refresh_key=['DescribeAvailabilityOptionsResponse',
+                         'DescribeAvailabilityOptionsResult',
+                         'AvailabilityOptions'],
+            save_fn=self.layer1.update_availability_options)
 
     def get_scaling_options(self):
         """
@@ -201,12 +202,15 @@ class Domain(object):
         object representing the currently defined scaling options for the
         domain.
         :return: ScalingParametersStatus object
-        :rtype: :class:`boto.cloudsearch2.option.ScalingParametersStatus` object
+        :rtype: :class:`boto.cloudsearch2.option.ScalingParametersStatus`
+            object
         """
         return ScalingParametersStatus(
-            self, None,
-            self.layer1.describe_scaling_parameters,
-            self.layer1.update_scaling_parameters)
+            self, refresh_fn=self.layer1.describe_scaling_parameters,
+            refresh_key=['DescribeScalingParametersResponse',
+                         'DescribeScalingParametersResult',
+                         'ScalingParameters'],
+            save_fn=self.layer1.update_scaling_parameters)
 
     def get_access_policies(self):
         """
@@ -216,9 +220,12 @@ class Domain(object):
         :return: ServicePoliciesStatus object
         :rtype: :class:`boto.cloudsearch2.option.ServicePoliciesStatus` object
         """
-        return ServicePoliciesStatus(self, None,
-                                     self.layer1.describe_service_access_policies,
-                                     self.layer1.update_service_access_policies)
+        return ServicePoliciesStatus(
+            self, refresh_fn=self.layer1.describe_service_access_policies,
+            refresh_key=['DescribeServiceAccessPoliciesResponse',
+                         'DescribeServiceAccessPoliciesResult',
+                         'AccessPolicies'],
+            save_fn=self.layer1.update_service_access_policies)
 
     def index_documents(self):
         """
@@ -234,9 +241,15 @@ class Domain(object):
         """
         Return a list of index fields defined for this domain.
         :return: list of IndexFieldStatus objects
-        :rtype: list of :class:`boto.cloudsearch2.option.IndexFieldStatus` object
+        :rtype: list of :class:`boto.cloudsearch2.option.IndexFieldStatus`
+            object
         """
         data = self.layer1.describe_index_fields(self.name, field_names)
+
+        data = (data['DescribeIndexFieldsResponse']
+                    ['DescribeIndexFieldsResult']
+                    ['IndexFields'])
+
         return [IndexFieldStatus(self, d) for d in data]
 
     def create_index_field(self, field_name, field_type,
@@ -308,14 +321,141 @@ class Domain(object):
         :raises: BaseException, InternalException, LimitExceededException,
             InvalidTypeException, ResourceNotFoundException
         """
-        data = self.layer1.define_index_field(self.name, field_name, field_type,
-                                              default=default, facet=facet,
-                                              returnable=returnable,
-                                              searchable=searchable,
-                                              sortable=sortable,
-                                              highlight=highlight,
-                                              source_field=source_field,
-                                              analysis_scheme=analysis_scheme)
+        index = {
+            'IndexFieldName': field_name,
+            'IndexFieldType': field_type
+        }
+        if field_type == 'literal':
+            index['LiteralOptions'] = {
+                'FacetEnabled': facet,
+                'ReturnEnabled': returnable,
+                'SearchEnabled': searchable,
+                'SortEnabled': sortable
+            }
+            if default:
+                index['LiteralOptions']['DefaultValue'] = default
+            if source_field:
+                index['LiteralOptions']['SourceField'] = source_field
+        elif field_type == 'literal-array':
+            index['LiteralArrayOptions'] = {
+                'FacetEnabled': facet,
+                'ReturnEnabled': returnable,
+                'SearchEnabled': searchable
+            }
+            if default:
+                index['LiteralArrayOptions']['DefaultValue'] = default
+            if source_field:
+                index['LiteralArrayOptions']['SourceFields'] = \
+                    ','.join(source_field)
+        elif field_type == 'int':
+            index['IntOptions'] = {
+                'DefaultValue': default,
+                'FacetEnabled': facet,
+                'ReturnEnabled': returnable,
+                'SearchEnabled': searchable,
+                'SortEnabled': sortable
+            }
+            if default:
+                index['IntOptions']['DefaultValue'] = default
+            if source_field:
+                index['IntOptions']['SourceField'] = source_field
+        elif field_type == 'int-array':
+            index['IntArrayOptions'] = {
+                'FacetEnabled': facet,
+                'ReturnEnabled': returnable,
+                'SearchEnabled': searchable
+            }
+            if default:
+                index['IntArrayOptions']['DefaultValue'] = default
+            if source_field:
+                index['IntArrayOptions']['SourceFields'] = \
+                    ','.join(source_field)
+        elif field_type == 'date':
+            index['DateOptions'] = {
+                'FacetEnabled': facet,
+                'ReturnEnabled': returnable,
+                'SearchEnabled': searchable,
+                'SortEnabled': sortable
+            }
+            if default:
+                index['DateOptions']['DefaultValue'] = default
+            if source_field:
+                index['DateOptions']['SourceField'] = source_field
+        elif field_type == 'date-array':
+            index['DateArrayOptions'] = {
+                'FacetEnabled': facet,
+                'ReturnEnabled': returnable,
+                'SearchEnabled': searchable
+            }
+            if default:
+                index['DateArrayOptions']['DefaultValue'] = default
+            if source_field:
+                index['DateArrayOptions']['SourceFields'] = \
+                    ','.join(source_field)
+        elif field_type == 'double':
+            index['DoubleOptions'] = {
+                'FacetEnabled': facet,
+                'ReturnEnabled': returnable,
+                'SearchEnabled': searchable,
+                'SortEnabled': sortable
+            }
+            if default:
+                index['DoubleOptions']['DefaultValue'] = default
+            if source_field:
+                index['DoubleOptions']['SourceField'] = source_field
+        elif field_type == 'double-array':
+            index['DoubleArrayOptions'] = {
+                'FacetEnabled': facet,
+                'ReturnEnabled': returnable,
+                'SearchEnabled': searchable
+            }
+            if default:
+                index['DoubleArrayOptions']['DefaultValue'] = default
+            if source_field:
+                index['DoubleArrayOptions']['SourceFields'] = \
+                    ','.join(source_field)
+        elif field_type == 'text':
+            index['TextOptions'] = {
+                'ReturnEnabled': returnable,
+                'HighlightEnabled': highlight,
+                'SortEnabled': sortable
+            }
+            if default:
+                index['TextOptions']['DefaultValue'] = default
+            if source_field:
+                index['TextOptions']['SourceField'] = source_field
+            if analysis_scheme:
+                index['TextOptions']['AnalysisScheme'] = analysis_scheme
+        elif field_type == 'text-array':
+            index['TextArrayOptions'] = {
+                'ReturnEnabled': returnable,
+                'HighlightEnabled': highlight
+            }
+            if default:
+                index['TextArrayOptions']['DefaultValue'] = default
+            if source_field:
+                index['TextArrayOptions']['SourceFields'] = \
+                    ','.join(source_field)
+            if analysis_scheme:
+                index['TextArrayOptions']['AnalysisScheme'] = analysis_scheme
+        elif field_type == 'latlon':
+            index['LatLonOptions'] = {
+                'FacetEnabled': facet,
+                'ReturnEnabled': returnable,
+                'SearchEnabled': searchable,
+                'SortEnabled': sortable
+            }
+            if default:
+                index['LatLonOptions']['DefaultValue'] = default
+            if source_field:
+                index['LatLonOptions']['SourceField'] = source_field
+
+        data = self.layer1.define_index_field(self.name, index)
+
+        data = (data['DefineIndexFieldResponse']
+                    ['DefineIndexFieldResult']
+                    ['IndexField'])
+
         return IndexFieldStatus(self, data,
                                 self.layer1.describe_index_fields)
 
@@ -323,10 +463,16 @@ class Domain(object):
         """
         Return a list of rank expressions defined for this domain.
         :return: list of ExpressionStatus objects
-        :rtype: list of :class:`boto.cloudsearch2.option.ExpressionStatus` object
+        :rtype: list of :class:`boto.cloudsearch2.option.ExpressionStatus`
+            object
         """
         fn = self.layer1.describe_expressions
         data = fn(self.name, names)
+
+        data = (data['DescribeExpressionsResponse']
+                    ['DescribeExpressionsResult']
+                    ['Expressions'])
+
         return [ExpressionStatus(self, d, fn) for d in data]
 
     def create_expression(self, name, value):
@@ -345,7 +491,8 @@ class Domain(object):
 
             * Single value, sort enabled numeric fields (int, double, date)
             * Other expressions
-            * The _score variable, which references a document's relevance score
+            * The _score variable, which references a document's relevance
+              score
             * The _time variable, which references the current epoch time
             * Integer, floating point, hex, and octal literals
             * Arithmetic operators: + - * / %
@@ -361,10 +508,10 @@ class Domain(object):
             Expressions always return an integer value from 0 to the maximum
             64-bit signed integer value (2^63 - 1). Intermediate results are
             calculated as double-precision floating point values and the return
-            value is rounded to the nearest integer. If the expression is invalid
-            or evaluates to a negative value, it returns 0. If the expression
-            evaluates to a value greater than the maximum, it returns the maximum
-            value.
+            value is rounded to the nearest integer. If the expression is
+            invalid or evaluates to a negative value, it returns 0. If the
+            expression evaluates to a value greater than the maximum, it
+            returns the maximum value.
 
             The source data for an Expression can be the name of an
             IndexField of type int or double, another Expression or the
@@ -386,6 +533,11 @@ class Domain(object):
             InvalidTypeException, ResourceNotFoundException
         """
         data = self.layer1.define_expression(self.name, name, value)
+
+        data = (data['DefineExpressionResponse']
+                    ['DefineExpressionResult']
+                    ['Expression'])
+
         return ExpressionStatus(self, data,
                                 self.layer1.describe_expressions)
 

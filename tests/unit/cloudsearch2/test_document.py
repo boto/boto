@@ -41,13 +41,12 @@ class CloudSearchDocumentSingleTest(CloudSearchDocumentTest):
         """
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
-        document.add("1234", 10, {"id": "1234", "title": "Title 1",
-                                  "category": ["cat_a", "cat_b", "cat_c"]})
+        document.add("1234", {"id": "1234", "title": "Title 1",
+                              "category": ["cat_a", "cat_b", "cat_c"]})
         document.commit()
 
         args = json.loads(HTTPretty.last_request.body)[0]
 
-        self.assertEqual(args['lang'], 'en')
         self.assertEqual(args['type'], 'add')
 
     def test_cloudsearch_add_single_basic(self):
@@ -57,14 +56,13 @@ class CloudSearchDocumentSingleTest(CloudSearchDocumentTest):
         """
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
-        document.add("1234", 10, {"id": "1234", "title": "Title 1",
-                                  "category": ["cat_a", "cat_b", "cat_c"]})
+        document.add("1234", {"id": "1234", "title": "Title 1",
+                              "category": ["cat_a", "cat_b", "cat_c"]})
         document.commit()
 
         args = json.loads(HTTPretty.last_request.body)[0]
 
         self.assertEqual(args['id'], '1234')
-        self.assertEqual(args['version'], 10)
         self.assertEqual(args['type'], 'add')
 
     def test_cloudsearch_add_single_fields(self):
@@ -73,8 +71,8 @@ class CloudSearchDocumentSingleTest(CloudSearchDocumentTest):
         """
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
-        document.add("1234", 10, {"id": "1234", "title": "Title 1",
-                                  "category": ["cat_a", "cat_b", "cat_c"]})
+        document.add("1234", {"id": "1234", "title": "Title 1",
+                              "category": ["cat_a", "cat_b", "cat_c"]})
         document.commit()
 
         args = json.loads(HTTPretty.last_request.body)[0]
@@ -90,8 +88,8 @@ class CloudSearchDocumentSingleTest(CloudSearchDocumentTest):
         """
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
-        document.add("1234", 10, {"id": "1234", "title": "Title 1",
-                                  "category": ["cat_a", "cat_b", "cat_c"]})
+        document.add("1234", {"id": "1234", "title": "Title 1",
+                              "category": ["cat_a", "cat_b", "cat_c"]})
         doc = document.commit()
 
         self.assertEqual(doc.status, 'success')
@@ -111,17 +109,15 @@ class CloudSearchDocumentMultipleAddTest(CloudSearchDocumentTest):
 
     objs = {
         '1234': {
-            'version': 10, 'fields': {"id": "1234", "title": "Title 1",
-                                      "category": ["cat_a", "cat_b",
-                                                   "cat_c"]}},
+            'fields': {"id": "1234", "title": "Title 1",
+                       "category": ["cat_a", "cat_b", "cat_c"]}},
         '1235': {
-            'version': 11, 'fields': {"id": "1235", "title": "Title 2",
+            'fields': {"id": "1235", "title": "Title 2",
                                       "category": ["cat_b", "cat_c",
                                                    "cat_d"]}},
         '1236': {
-            'version': 12, 'fields': {"id": "1236", "title": "Title 3",
-                                      "category": ["cat_e", "cat_f",
-                                                   "cat_g"]}},
+            'fields': {"id": "1236", "title": "Title 3",
+                       "category": ["cat_e", "cat_f", "cat_g"]}},
         }
 
 
@@ -130,14 +126,13 @@ class CloudSearchDocumentMultipleAddTest(CloudSearchDocumentTest):
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
         for (key, obj) in self.objs.items():
-            document.add(key, obj['version'], obj['fields'])
+            document.add(key, obj['fields'])
         document.commit()
 
         args = json.loads(HTTPretty.last_request.body)
 
         for arg in args:
             self.assertTrue(arg['id'] in self.objs)
-            self.assertEqual(arg['version'], self.objs[arg['id']]['version'])
             self.assertEqual(arg['fields']['id'],
                              self.objs[arg['id']]['fields']['id'])
             self.assertEqual(arg['fields']['title'],
@@ -153,7 +148,7 @@ class CloudSearchDocumentMultipleAddTest(CloudSearchDocumentTest):
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
         for (key, obj) in self.objs.items():
-            document.add(key, obj['version'], obj['fields'])
+            document.add(key, obj['fields'])
         doc = document.commit()
 
         self.assertEqual(doc.status, 'success')
@@ -175,11 +170,10 @@ class CloudSearchDocumentDelete(CloudSearchDocumentTest):
         """
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
-        document.delete("5", "10")
+        document.delete("5")
         document.commit()
         args = json.loads(HTTPretty.last_request.body)[0]
 
-        self.assertEqual(args['version'], '10')
         self.assertEqual(args['type'], 'delete')
         self.assertEqual(args['id'], '5')
 
@@ -189,7 +183,7 @@ class CloudSearchDocumentDelete(CloudSearchDocumentTest):
         """
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
-        document.delete("5", "10")
+        document.delete("5")
         doc = document.commit()
 
         self.assertEqual(doc.status, 'success')
@@ -207,21 +201,14 @@ class CloudSearchDocumentDeleteMultiple(CloudSearchDocumentTest):
     def test_cloudsearch_delete_multiples(self):
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
-        document.delete("5", "10")
-        document.delete("6", "11")
+        document.delete("5")
+        document.delete("6")
         document.commit()
         args = json.loads(HTTPretty.last_request.body)
 
         self.assertEqual(len(args), 2)
         for arg in args:
             self.assertEqual(arg['type'], 'delete')
-
-            if arg['id'] == '5':
-                self.assertEqual(arg['version'], '10')
-            elif arg['id'] == '6':
-                self.assertEqual(arg['version'], '11')
-            else: # Unknown result out of AWS that shouldn't be there
-                self.assertTrue(False)
 
 
 class CloudSearchSDFManipulation(CloudSearchDocumentTest):
@@ -242,8 +229,8 @@ class CloudSearchSDFManipulation(CloudSearchDocumentTest):
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
 
-        document.add("1234", 10, {"id": "1234", "title": "Title 1",
-                                  "category": ["cat_a", "cat_b", "cat_c"]})
+        document.add("1234", {"id": "1234", "title": "Title 1",
+                              "category": ["cat_a", "cat_b", "cat_c"]})
 
         self.assertNotEqual(document.get_sdf(), '[]')
 
@@ -264,8 +251,8 @@ class CloudSearchBadSDFTesting(CloudSearchDocumentTest):
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
 
-        document.add("1234", 10, {"id": "1234", "title": None,
-                                  "category": ["cat_a", "cat_b", "cat_c"]})
+        document.add("1234", {"id": "1234", "title": None,
+                              "category": ["cat_a", "cat_b", "cat_c"]})
 
         document.commit()
         self.assertNotEqual(len(boto.log.error.call_args_list), 1)
@@ -284,8 +271,8 @@ class CloudSearchDocumentErrorBadUnicode(CloudSearchDocumentTest):
     def test_fake_bad_unicode(self):
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
-        document.add("1234", 10, {"id": "1234", "title": "Title 1",
-                                  "category": ["cat_a", "cat_b", "cat_c"]})
+        document.add("1234", {"id": "1234", "title": "Title 1",
+                              "category": ["cat_a", "cat_b", "cat_c"]})
         self.assertRaises(EncodingError, document.commit)
 
 
@@ -300,8 +287,8 @@ class CloudSearchDocumentErrorDocsTooBig(CloudSearchDocumentTest):
     def test_fake_docs_too_big(self):
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
-        document.add("1234", 10, {"id": "1234", "title": "Title 1",
-                                  "category": ["cat_a", "cat_b", "cat_c"]})
+        document.add("1234", {"id": "1234", "title": "Title 1",
+                              "category": ["cat_a", "cat_b", "cat_c"]})
 
         self.assertRaises(ContentTooLongError, document.commit)
 
@@ -318,7 +305,7 @@ class CloudSearchDocumentErrorMismatch(CloudSearchDocumentTest):
         document = DocumentServiceConnection(
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
 
-        document.add("1234", 10, {"id": "1234", "title": "Title 1",
-                                  "category": ["cat_a", "cat_b", "cat_c"]})
+        document.add("1234", {"id": "1234", "title": "Title 1",
+                              "category": ["cat_a", "cat_b", "cat_c"]})
 
         self.assertRaises(CommitMismatchError, document.commit)

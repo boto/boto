@@ -51,21 +51,23 @@ class OptionStatus(dict):
         option was last updated.
     """
 
-    def __init__(self, domain, data=None, refresh_fn=None, save_fn=None):
+    def __init__(self, domain, data=None, refresh_fn=None, refresh_key=None,
+                 save_fn=None):
         self.domain = domain
         self.refresh_fn = refresh_fn
+        self.refresh_key = refresh_key
         self.save_fn = save_fn
         self.refresh(data)
 
     def _update_status(self, status):
-        self.creation_date = status['creation_date']
-        self.status = status['state']
-        self.update_date = status['update_date']
-        self.update_version = int(status['update_version'])
+        self.creation_date = status['CreationDate']
+        self.status = status['State']
+        self.update_date = status['UpdateDate']
+        self.update_version = int(status['UpdateVersion'])
 
     def _update_options(self, options):
         if options:
-            self.update(json.loads(options))
+            self.update(options)
 
     def refresh(self, data=None):
         """
@@ -76,32 +78,20 @@ class OptionStatus(dict):
         if not data:
             if self.refresh_fn:
                 data = self.refresh_fn(self.domain.name)
+
+                if data and self.refresh_key:
+                    # Attempt to pull out the right nested bag of data
+                    for key in self.refresh_key:
+                        data = data[key]
         if data:
-            self._update_status(data['status'])
-            self._update_options(data['options'])
+            self._update_status(data['Status'])
+            self._update_options(data['Options'])
 
     def to_json(self):
         """
         Return the JSON representation of the options as a string.
         """
         return json.dumps(self)
-
-    def startElement(self, name, attrs, connection):
-        return None
-
-    def endElement(self, name, value, connection):
-        if name == 'CreationDate':
-            self.created = value
-        elif name == 'State':
-            self.state = value
-        elif name == 'UpdateDate':
-            self.updated = value
-        elif name == 'UpdateVersion':
-            self.update_version = int(value)
-        elif name == 'Options':
-            self.update_from_json_doc(value)
-        else:
-            setattr(self, name, value)
 
     def save(self):
         """
@@ -123,30 +113,20 @@ class OptionStatus(dict):
 
 
 class IndexFieldStatus(OptionStatus):
-
-    def _update_options(self, options):
-        self.update(options)
-
     def save(self):
         pass
 
 
 class AvailabilityOptionsStatus(OptionStatus):
-
-    def _update_options(self, options):
-        self.update(MultiAZ=json.loads(options))
-
     def save(self):
         pass
 
 
 class ScalingParametersStatus(IndexFieldStatus):
-
     pass
 
 
 class ExpressionStatus(IndexFieldStatus):
-
     pass
 
 

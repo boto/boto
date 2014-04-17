@@ -1,6 +1,4 @@
-# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
-# All Rights Reserved
+# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,897 +18,767 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+#
+
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 import boto
-import boto.jsonresponse
-from boto.compat import json
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
-
-#boto.set_stream_logger('cloudsearch')
-
-
-def do_bool(val):
-    return 'true' if val in [True, 1, '1', 'true'] else 'false'
+from boto.exception import JSONResponseError
+from boto.cloudsearch2 import exceptions
 
 
-class Layer1(AWSQueryConnection):
+class CloudSearchConnection(AWSQueryConnection):
+    """
+    Amazon CloudSearch Configuration Service
+    You use the Amazon CloudSearch configuration service to create,
+    configure, and manage search domains. Configuration service
+    requests are submitted using the AWS Query protocol. AWS Query
+    requests are HTTP or HTTPS requests submitted via HTTP GET or POST
+    with a query parameter named Action.
 
-    APIVersion = '2013-01-01'
-    #AuthServiceName = 'sqs'
-    DefaultRegionName = boto.config.get('Boto', 'cs_region_name', 'us-east-1')
-    DefaultRegionEndpoint = boto.config.get('Boto', 'cs_region_endpoint',
-                                            'cloudsearch.us-east-1.amazonaws.com')
+    The endpoint for configuration service requests is region-
+    specific: cloudsearch. region .amazonaws.com. For example,
+    cloudsearch.us-east-1.amazonaws.com. For a current list of
+    supported regions and endpoints, see `Regions and Endpoints`_.
+    """
+    APIVersion = "2013-01-01"
+    DefaultRegionName = "us-east-1"
+    DefaultRegionEndpoint = "cloudsearch.us-east-1.amazonaws.com"
+    ResponseError = JSONResponseError
 
-    def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=True, host=None, port=None,
-                 proxy=None, proxy_port=None,
-                 proxy_user=None, proxy_pass=None, debug=0,
-                 https_connection_factory=None, region=None, path='/',
-                 api_version=None, security_token=None,
-                 validate_certs=True, profile_name=None):
+    _faults = {
+        "InvalidTypeException": exceptions.InvalidTypeException,
+        "LimitExceededException": exceptions.LimitExceededException,
+        "InternalException": exceptions.InternalException,
+        "DisabledOperationException": exceptions.DisabledOperationException,
+        "ResourceNotFoundException": exceptions.ResourceNotFoundException,
+        "BaseException": exceptions.BaseException,
+    }
+
+
+    def __init__(self, **kwargs):
+        region = kwargs.pop('region', None)
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
+
+        if 'host' not in kwargs or kwargs['host'] is None:
+            kwargs['host'] = region.endpoint
+
+        super(CloudSearchConnection, self).__init__(**kwargs)
         self.region = region
-        AWSQueryConnection.__init__(
-            self,
-            host=self.region.endpoint,
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            is_secure=is_secure,
-            port=port,
-            proxy=proxy,
-            proxy_port=proxy_port,
-            proxy_user=proxy_user,
-            proxy_pass=proxy_pass,
-            debug=debug,
-            https_connection_factory=https_connection_factory,
-            path=path,
-            security_token=security_token,
-            validate_certs=validate_certs,
-            profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
 
-    def get_response(self, doc_path, action, params, path='/',
-                     parent=None, verb='GET', list_marker=None):
-        if not parent:
-            parent = self
-        response = self.make_request(action, params, path, verb)
-        body = response.read()
-        boto.log.debug(body)
-        if response.status == 200:
-            e = boto.jsonresponse.Element(
-                list_marker=list_marker if list_marker else 'Set',
-                pythonize_name=True)
-            h = boto.jsonresponse.XmlHandler(e, parent)
-            h.parse(body)
-            inner = e
-            for p in doc_path:
-                inner = inner.get(p)
-            if not inner:
-                return None if list_marker is None else []
-            if isinstance(inner, list):
-                return inner
-            else:
-                return dict(**inner)
-        else:
-            raise self.ResponseError(response.status, response.reason, body)
+    def build_suggesters(self, domain_name):
+        """
+        Indexes the search suggestions.
+
+        :type domain_name: string
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
+
+        """
+        params = {'DomainName': domain_name, }
+        return self._make_request(
+            action='BuildSuggesters',
+            verb='POST',
+            path='/', params=params)
 
     def create_domain(self, domain_name):
         """
-        Create a new search domain.
+        Creates a new search domain. For more information, see
+        `Creating a Search Domain`_ in the Amazon CloudSearch
+        Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A name for the domain you are creating. Allowed
+            characters are a-z (lower-case letters), 0-9, and hyphen (-).
+            Domain names must start with a letter or number and be at least 3
+            and no more than 28 characters long.
 
-        :raises: BaseException, InternalException, LimitExceededException
         """
-        doc_path = ('create_domain_response',
-                    'create_domain_result',
-                    'domain_status')
-        params = {'DomainName': domain_name}
-        return self.get_response(doc_path, 'CreateDomain',
-                                 params, verb='POST')
+        params = {'DomainName': domain_name, }
+        return self._make_request(
+            action='CreateDomain',
+            verb='POST',
+            path='/', params=params)
 
-    def define_analysis_scheme(self, domain_name, name, language,
-                               algorithmic_stemming="none", stemming_dictionary=None,
-                               stopwords=None, synonyms=None):
+    def define_analysis_scheme(self, domain_name, analysis_scheme):
         """
-        Updates stemming options used by indexing for the search domain.
+        Configures an analysis scheme for a domain. An analysis scheme
+        defines language-specific text processing options for a `text`
+        field. For more information, see `Configuring Analysis
+        Schemes`_ in the Amazon CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
-        :type name: str
-        :param name: Name of the analysis scheme
+        :type analysis_scheme: dict
+        :param analysis_scheme: Configuration information for an analysis
+            scheme. Each analysis scheme has a unique name and specifies the
+            language of the text to be processed. The following options can be
+            configured for an analysis scheme: `Synonyms`, `Stopwords`,
+            `StemmingDictionary`, and `AlgorithmicStemming`.
 
-        :type language: str
-        :param language:  IETF RFC 4646 lang code or 'mul' for multiple
-            languages.
-
-        :type algorithmic_stemming: str
-        :param algorithmic_stemming: Which type of stemming to use.
-            one of ``none | minimal | light | full``
-
-        :type stemming_dictionary: dict
-        :param stemming_dictionary: dict of stemming words
-            ``{"running": "run", "jumping": "jump"}``
-
-        :type stopwords: list of strings
-        :param stopwords: list of stopwords
-
-        :type synonyms: dict
-        :param synonyms: dict of Array of words to use as synonyms
-            ``{"aliases": {"running": ["run", "ran"], "jumping": ["jump", "jumped"]},
-               "groups": [["sit", "sitting", "sat"], ["hit", "hitting"]]}``
-
-        :raises: BaseException, InternalException, InvalidTypeException,
-            LimitExceededException, ResourceNotFoundException
         """
-        doc_path = ('define_analysis_scheme_response',
-                    'define_analysis_scheme_result',
-                    'analysis_scheme')
-        params = {'DomainName': domain_name, 'AnalysisScheme.AnalysisSchemeName': name,
-                  'AnalysisScheme.AnalysisSchemeLanguage': language,
-                  'AnalysisScheme.AnalysisOptions.AlgorithmicStemming': algorithmic_stemming,
-                  'AnalysisScheme.AnalysisOptions.StemmingDictionary':
-                      json.dumps(stemming_dictionary) if stemming_dictionary else dict(),
-                  'AnalysisScheme.AnalysisOptions.Stopwords':
-                      json.dumps(stopwords) if stopwords else list(),
-                  'AnalysisScheme.AnalysisOptions.Synonyms':
-                      json.dumps(synonyms) if synonyms else dict(),
-                  }
+        params = {'DomainName': domain_name, }
+        self.build_complex_param(params, 'AnalysisScheme',
+                                 analysis_scheme)
+        return self._make_request(
+            action='DefineAnalysisScheme',
+            verb='POST',
+            path='/', params=params)
 
-        return self.get_response(doc_path, 'DefineAnalysisScheme',
-                                 params, verb='POST')
-
-    def define_expression(self, domain_name, name, value):
+    def define_expression(self, domain_name, expression):
         """
-        Defines an Expression, either replacing an existing
-        definition or creating a new one.
+        Configures an `Expression` for the search domain. Used to
+        create new expressions and modify existing ones. If the
+        expression exists, the new configuration replaces the old one.
+        For more information, see `Configuring Expressions`_ in the
+        Amazon CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
-        :type name: string
-        :param name: The name of an expression.
+        :type expression: dict
+        :param expression: A named expression that can be evaluated at search
+            time. Can be used for sorting and filtering search results and
+            constructing other expressions.
 
-        :type value: string
-        :param value: The expression to evaluate for ranking or
-            thresholding while processing a search request. The
-            Expression syntax is based on JavaScript and supports:
-
-            * Single value, sort enabled numeric fields (int, double, date)
-            * Other expressions
-            * The _score variable, which references a document's relevance score
-            * The _time variable, which references the current epoch time
-            * Integer, floating point, hex, and octal literals
-            * Arithmetic operators: + - * / %
-            * Bitwise operators: | & ^ ~ << >> >>>
-            * Boolean operators (including the ternary operator): && || ! ?:
-            * Comparison operators: < <= == >= >
-            * Mathematical functions: abs ceil exp floor ln log2 log10 logn
-             max min pow sqrt pow
-            * Trigonometric functions: acos acosh asin asinh atan atan2 atanh
-             cos cosh sin sinh tanh tan
-            * The haversin distance function
-
-            Expressions always return an integer value from 0 to the maximum
-            64-bit signed integer value (2^63 - 1). Intermediate results are
-            calculated as double-precision floating point values and the return
-            value is rounded to the nearest integer. If the expression is invalid
-            or evaluates to a negative value, it returns 0. If the expression
-            evaluates to a value greater than the maximum, it returns the maximum
-            value.
-
-            The source data for an Expression can be the name of an
-            IndexField of type int or double, another Expression or the
-            reserved name _score, or the functions above. The _score source is
-            defined to return as a double with a floor of 0 to
-            indicate how relevant a document is to the search request,
-            taking into account repetition of search terms in the
-            document and proximity of search terms to each other in
-            each matching IndexField in the document.
-
-            For more information about using expressions to customize results,
-            see the Amazon CloudSearch Developer Guide.
-
-        :raises: BaseException, InternalException, LimitExceededException,
-            InvalidTypeException, ResourceNotFoundException
         """
-        doc_path = ('define_expression_response',
-                    'define_expression_result',
-                    'expression')
-        params = {'DomainName': domain_name,
-                  'Expression.ExpressionValue': value,
-                  'Expression.ExpressionName': name}
-        return self.get_response(doc_path, 'DefineExpression',
-                                 params, verb='POST')
+        params = {'DomainName': domain_name, }
+        self.build_complex_param(params, 'Expression',
+                                 expression)
+        return self._make_request(
+            action='DefineExpression',
+            verb='POST',
+            path='/', params=params)
 
-    def define_index_field(self, domain_name, field_name, field_type,
-                           default=None, facet=False, returnable=False,
-                           searchable=False, sortable=False,
-                           highlight=False, source_field=None,
-                           analysis_scheme=None):
+    def define_index_field(self, domain_name, index_field):
         """
-        Defines an ``IndexField``, either replacing an existing
-        definition or creating a new one.
+        Configures an `IndexField` for the search domain. Used to
+        create new fields and modify existing ones. You must specify
+        the name of the domain you are configuring and an index field
+        configuration. The index field configuration specifies a
+        unique name, the index field type, and the options you want to
+        configure for the field. The options you can specify depend on
+        the `IndexFieldType`. If the field exists, the new
+        configuration replaces the old one. For more information, see
+        `Configuring Index Fields`_ in the Amazon CloudSearch
+        Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
-        :type field_name: string
-        :param field_name: The name of a field in the search index.
+        :type index_field: dict
+        :param index_field: The index field and field options you want to
+            configure.
 
-        :type field_type: string
-        :param field_type: The type of field.  Valid values are
-            int | double | literal | text | date | latlon |
-            int-array | double-array | literal-array | text-array | date-array
-
-        :type default: string or int
-        :param default: The default value for the field.  If the
-            field is of type ``int`` this should be an integer value.
-            Otherwise, it's a string.
-
-        :type facet: bool
-        :param facet: A boolean to indicate whether facets
-            are enabled for this field or not.  Does not apply to
-            fields of type ``int, int-array, text, text-array``.
-
-        :type returnable: bool
-        :param returnable: A boolean to indicate whether values
-            of this field can be returned in search results or
-            used in ranking.
-
-        :type searchable: bool
-        :param searchable: A boolean to indicate whether search
-            is enabled for this field or not.
-
-        :type sortable: bool
-        :param sortable: A boolean to indicate whether sorting
-            is enabled for this field or not. Does not apply to
-            fields of array types.
-
-        :type highlight: bool
-        :param highlight: A boolean to indicate whether highlighting
-            is enabled for this field or not. Does not apply to
-            fields of type ``double, int, date, latlon``
-
-        :type source_field: list of strings or string
-        :param source_field: For array types, this is the list of fields
-            to treat as the source. For singular types, pass a string only.
-
-        :type analysis_scheme: string
-        :param analysis_scheme: The analysis scheme to use for this field.
-            Only applies to ``text | text-array`` field types
-
-        :raises: BaseException, InternalException, LimitExceededException,
-            InvalidTypeException, ResourceNotFoundException
         """
-        doc_path = ('define_index_field_response',
-                    'define_index_field_result',
-                    'index_field')
-        params = {'DomainName': domain_name,
-                  'IndexField.IndexFieldName': field_name,
-                  'IndexField.IndexFieldType': field_type}
-        if field_type == 'literal':
-            if default:
-                params['IndexField.LiteralOptions.DefaultValue'] = default
-            params['IndexField.LiteralOptions.FacetEnabled'] = do_bool(facet)
-            params['IndexField.LiteralOptions.ReturnEnabled'] = do_bool(returnable)
-            params['IndexField.LiteralOptions.SearchEnabled'] = do_bool(searchable)
-            params['IndexField.LiteralOptions.SortEnabled'] = do_bool(sortable)
-            if source_field:
-                params['IndexField.LiteralOptions.SourceField'] = source_field
-        elif field_type == 'literal-array':
-            if default:
-                params['IndexField.LiteralArrayOptions.DefaultValue'] = default
-            params['IndexField.LiteralArrayOptions.FacetEnabled'] = do_bool(facet)
-            params['IndexField.LiteralArrayOptions.ReturnEnabled'] = do_bool(returnable)
-            params['IndexField.LiteralArrayOptions.SearchEnabled'] = do_bool(searchable)
-            if source_field:
-                params['IndexField.LiteralArrayOptions.SourceFields'] = ','.join(source_field)
-        elif field_type == 'int':
-            if default:
-                params['IndexField.IntOptions.DefaultValue'] = default
-            params['IndexField.IntOptions.FacetEnabled'] = do_bool(facet)
-            params['IndexField.IntOptions.ReturnEnabled'] = do_bool(returnable)
-            params['IndexField.IntOptions.SearchEnabled'] = do_bool(searchable)
-            params['IndexField.IntOptions.SortEnabled'] = do_bool(sortable)
-            if source_field:
-                params['IndexField.IntOptions.SourceField'] = source_field
-        elif field_type == 'int-array':
-            if default:
-                params['IndexField.IntArrayOptions.DefaultValue'] = default
-            params['IndexField.IntArrayOptions.FacetEnabled'] = do_bool(facet)
-            params['IndexField.IntArrayOptions.ReturnEnabled'] = do_bool(returnable)
-            params['IndexField.IntArrayOptions.SearchEnabled'] = do_bool(searchable)
-            if source_field:
-                params['IndexField.IntArrayOptions.SourceFields'] = ','.join(source_field)
-        elif field_type == 'date':
-            if default:
-                params['IndexField.DateOptions.DefaultValue'] = default
-            params['IndexField.DateOptions.FacetEnabled'] = do_bool(facet)
-            params['IndexField.DateOptions.ReturnEnabled'] = do_bool(returnable)
-            params['IndexField.DateOptions.SearchEnabled'] = do_bool(searchable)
-            params['IndexField.DateOptions.SortEnabled'] = do_bool(sortable)
-            if source_field:
-                params['IndexField.DateOptions.SourceField'] = source_field
-        elif field_type == 'date-array':
-            if default:
-                params['IndexField.DateArrayOptions.DefaultValue'] = default
-            params['IndexField.DateArrayOptions.FacetEnabled'] = do_bool(facet)
-            params['IndexField.DateArrayOptions.ReturnEnabled'] = do_bool(returnable)
-            params['IndexField.DateArrayOptions.SearchEnabled'] = do_bool(searchable)
-            if source_field:
-                params['IndexField.DateArrayOptions.SourceFields'] = ','.join(source_field)
-        elif field_type == 'double':
-            if default:
-                params['IndexField.DoubleOptions.DefaultValue'] = default
-            params['IndexField.DoubleOptions.FacetEnabled'] = do_bool(facet)
-            params['IndexField.DoubleOptions.ReturnEnabled'] = do_bool(returnable)
-            params['IndexField.DoubleOptions.SearchEnabled'] = do_bool(searchable)
-            params['IndexField.DoubleOptions.SortEnabled'] = do_bool(sortable)
-            if source_field:
-                params['IndexField.DoubleOptions.SourceField'] = source_field
-        elif field_type == 'double-array':
-            if default:
-                params['IndexField.DoubleArrayOptions.DefaultValue'] = default
-            params['IndexField.DoubleArrayOptions.FacetEnabled'] = do_bool(facet)
-            params['IndexField.DoubleArrayOptions.ReturnEnabled'] = do_bool(returnable)
-            params['IndexField.DoubleArrayOptions.SearchEnabled'] = do_bool(searchable)
-            if source_field:
-                params['IndexField.DoubleArrayOptions.SourceFields'] = ','.join(source_field)
-        elif field_type == 'text':
-            if default:
-                params['IndexField.TextOptions.DefaultValue'] = default
-            params['IndexField.TextOptions.ReturnEnabled'] = do_bool(returnable)
-            params['IndexField.TextOptions.HighlightEnabled'] = do_bool(highlight)
-            params['IndexField.TextOptions.SortEnabled'] = do_bool(sortable)
-            if source_field:
-                params['IndexField.TextOptions.SourceField'] = source_field
-            if analysis_scheme:
-                params['IndexField.TextOptions.AnalysisScheme'] = analysis_scheme
-        elif field_type == 'text-array':
-            if default:
-                params['IndexField.TextArrayOptions.DefaultValue'] = default
-            params['IndexField.TextArrayOptions.ReturnEnabled'] = do_bool(returnable)
-            params['IndexField.TextArrayOptions.HighlightEnabled'] = do_bool(highlight)
-            if source_field:
-                params['IndexField.TextArrayOptions.SourceFields'] = ','.join(source_field)
-            if analysis_scheme:
-                params['IndexField.TextArrayOptions.AnalysisScheme'] = analysis_scheme
-        elif field_type == 'latlon':
-            if default:
-                params['IndexField.LatLonOptions.DefaultValue'] = default
-            params['IndexField.LatLonOptions.FacetEnabled'] = do_bool(facet)
-            params['IndexField.LatLonOptions.ReturnEnabled'] = do_bool(returnable)
-            params['IndexField.LatLonOptions.SearchEnabled'] = do_bool(searchable)
-            params['IndexField.LatLonOptions.SortEnabled'] = do_bool(sortable)
-            if source_field:
-                params['IndexField.LatLonOptions.SourceField'] = source_field
+        params = {'DomainName': domain_name, }
+        self.build_complex_param(params, 'IndexField',
+                                 index_field)
+        return self._make_request(
+            action='DefineIndexField',
+            verb='POST',
+            path='/', params=params)
 
-        return self.get_response(doc_path, 'DefineIndexField',
-                                 params, verb='POST')
-
-    def define_suggester(self, domain_name, name, source_field,
-                         fuzzy_matching=None, sort_expression=None):
+    def define_suggester(self, domain_name, suggester):
         """
-        Defines an Expression, either replacing an existing
-        definition or creating a new one.
+        Configures a suggester for a domain. A suggester enables you
+        to display possible matches before users finish typing their
+        queries. When you configure a suggester, you must specify the
+        name of the text field you want to search for possible matches
+        and a unique name for the suggester. For more information, see
+        `Getting Search Suggestions`_ in the Amazon CloudSearch
+        Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
-        :type name: string
-        :param name: The name of an suggester to use.
+        :type suggester: dict
+        :param suggester: Configuration information for a search suggester.
+            Each suggester has a unique name and specifies the text field you
+            want to use for suggestions. The following options can be
+            configured for a suggester: `FuzzyMatching`, `SortExpression`.
 
-        :type source_field: string
-        :param source_field: The source field name to use for the ``Suggester``
-
-        :type fuzzy_matching: string or None
-        :param fuzzy_matching: The optional type of fuzzy matching to use. One of
-            none | low | high
-
-        :type sort_expression: string or None
-        :param sort_expression: The optional sort expression to use
-
-        :raises: BaseException, InternalException, LimitExceededException,
-            InvalidTypeException, ResourceNotFoundException
         """
-        doc_path = ('define_expression_response',
-                    'define_expression_result',
-                    'expression')
-        params = {'DomainName': domain_name,
-                  'Suggester.SuggesterName': name,
-                  'Suggester.DocumentSuggesterOptions.SourceField': source_field}
-        if fuzzy_matching is not None:
-            params['Suggester.DocumentSuggesterOptions.FuzzyMatching'] = fuzzy_matching
-        if sort_expression is not None:
-            params['Suggester.DocumentSuggesterOptions.SortExpression'] = sort_expression
+        params = {'DomainName': domain_name, }
+        self.build_complex_param(params, 'Suggester',
+                                 suggester)
+        return self._make_request(
+            action='DefineSuggester',
+            verb='POST',
+            path='/', params=params)
 
-        return self.get_response(doc_path, 'DefineExpression', params,
-                                 verb='POST')
-
-    def delete_analysis_scheme(self, domain_name, scheme_name):
+    def delete_analysis_scheme(self, domain_name, analysis_scheme_name):
         """
-        Deletes an existing ``AnalysisScheme`` from the search domain.
+        Deletes an analysis scheme. For more information, see
+        `Configuring Analysis Schemes`_ in the Amazon CloudSearch
+        Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
-        :type scheme_name: string
-        :param scheme_name: The analysis scheme name to delete
+        :type analysis_scheme_name: string
+        :param analysis_scheme_name: The name of the analysis scheme you want
+            to delete.
 
-        :raises: BaseException, InternalException, ResourceNotFoundException
         """
-        doc_path = ('delete_analysis_scheme_response',
-                    'delete_analysis_scheme_result',
-                    'analysis_scheme')
-        params = {'DomainName': domain_name,
-                  'AnalysisSchemeName': scheme_name}
-        return self.get_response(doc_path, 'DeleteAnalysisScheme',
-                                 params, verb='POST')
+        params = {
+            'DomainName': domain_name,
+            'AnalysisSchemeName': analysis_scheme_name,
+        }
+        return self._make_request(
+            action='DeleteAnalysisScheme',
+            verb='POST',
+            path='/', params=params)
 
     def delete_domain(self, domain_name):
         """
-        Delete a search domain.
+        Permanently deletes a search domain and all of its data. Once
+        a domain has been deleted, it cannot be recovered. For more
+        information, see `Deleting a Search Domain`_ in the Amazon
+        CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: The name of the domain you want to permanently
+            delete.
 
-        :raises: BaseException, InternalException
         """
-        doc_path = ('delete_domain_response',
-                    'delete_domain_result',
-                    'domain_status')
-        params = {'DomainName': domain_name}
-        return self.get_response(doc_path, 'DeleteDomain',
-                                 params, verb='POST')
+        params = {'DomainName': domain_name, }
+        return self._make_request(
+            action='DeleteDomain',
+            verb='POST',
+            path='/', params=params)
 
-    def delete_index_field(self, domain_name, field_name):
+    def delete_expression(self, domain_name, expression_name):
         """
-        Deletes an existing ``IndexField`` from the search domain.
+        Removes an `Expression` from the search domain. For more
+        information, see `Configuring Expressions`_ in the Amazon
+        CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
-        :type field_name: string
-        :param field_name: A string that represents the name of
-            an index field. Field names must begin with a letter and
-            can contain the following characters: a-z (lowercase),
-            0-9, and _ (underscore). Uppercase letters and hyphens are
-            not allowed. The names "body", "docid", and
-            "text_relevance" are reserved and cannot be specified as
-            field or rank expression names.
+        :type expression_name: string
+        :param expression_name: The name of the `Expression` to delete.
 
-        :raises: BaseException, InternalException, ResourceNotFoundException
         """
-        doc_path = ('delete_index_field_response',
-                    'delete_index_field_result',
-                    'index_field')
-        params = {'DomainName': domain_name,
-                  'IndexFieldName': field_name}
-        return self.get_response(doc_path, 'DeleteIndexField',
-                                 params, verb='POST')
+        params = {
+            'DomainName': domain_name,
+            'ExpressionName': expression_name,
+        }
+        return self._make_request(
+            action='DeleteExpression',
+            verb='POST',
+            path='/', params=params)
 
-    def delete_expression(self, domain_name, name):
+    def delete_index_field(self, domain_name, index_field_name):
         """
-        Deletes an existing ``Expression`` from the search domain.
+        Removes an `IndexField` from the search domain. For more
+        information, see `Configuring Index Fields`_ in the Amazon
+        CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
-        :type name: string
-        :param name: Name of the ``Expression`` to delete.
+        :type index_field_name: string
+        :param index_field_name: The name of the index field your want to
+            remove from the domain's indexing options.
 
-        :raises: BaseException, InternalException, ResourceNotFoundException
         """
-        doc_path = ('delete_expression_response',
-                    'delete_expression_result',
-                    'expression')
-        params = {'DomainName': domain_name, 'ExpressionName': name}
-        return self.get_response(doc_path, 'DeleteExpression',
-                                 params, verb='POST')
+        params = {
+            'DomainName': domain_name,
+            'IndexFieldName': index_field_name,
+        }
+        return self._make_request(
+            action='DeleteIndexField',
+            verb='POST',
+            path='/', params=params)
 
-    def delete_suggester(self, domain_name, name):
+    def delete_suggester(self, domain_name, suggester_name):
         """
-        Deletes an existing ``Suggester`` from the search domain.
+        Deletes a suggester. For more information, see `Getting Search
+        Suggestions`_ in the Amazon CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
-        :type name: string
-        :param name: Name of the ``Suggester`` to delete.
+        :type suggester_name: string
+        :param suggester_name: Specifies the name of the suggester you want to
+            delete.
 
-        :raises: BaseException, InternalException, ResourceNotFoundException
         """
-        doc_path = ('delete_suggester_response',
-                    'delete_suggester_result',
-                    'suggester')
-        params = {'DomainName': domain_name, 'SuggesterName': name}
-        return self.get_response(doc_path, 'DeleteSuggester',
-                                 params, verb='POST')
+        params = {
+            'DomainName': domain_name,
+            'SuggesterName': suggester_name,
+        }
+        return self._make_request(
+            action='DeleteSuggester',
+            verb='POST',
+            path='/', params=params)
 
-    def describe_analysis_schemes(self, domain_name):
+    def describe_analysis_schemes(self, domain_name,
+                                  analysis_scheme_names=None, deployed=None):
         """
-        Describes analysis schemes used by indexing for the search domain.
+        Gets the analysis schemes configured for a domain. An analysis
+        scheme defines language-specific text processing options for a
+        `text` field. Can be limited to specific analysis schemes by
+        name. By default, shows all analysis schemes and includes any
+        pending changes to the configuration. Set the `Deployed`
+        option to `True` to show the active configuration and exclude
+        pending changes. For more information, see `Configuring
+        Analysis Schemes`_ in the Amazon CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: The name of the domain you want to describe.
 
-        :raises: BaseException, InternalException, ResourceNotFoundException
-        """
-        doc_path = ('describe_analysis_schemes_response',
-                    'describe_analysis_schemes_result',
-                    'analysis_schemes')
-        params = {'DomainName': domain_name}
-        return self.get_response(doc_path, 'DescribeAnalysisSchemes',
-                                 params, verb='POST')
+        :type analysis_scheme_names: list
+        :param analysis_scheme_names: The analysis schemes you want to
+            describe.
 
-    def describe_availability_options(self, domain_name):
+        :type deployed: boolean
+        :param deployed: Whether to display the deployed configuration (
+            `True`) or include any pending changes ( `False`). Defaults to
+            `False`.
+
         """
-        Describes the availability options for the search domain.
+        params = {'DomainName': domain_name, }
+        if analysis_scheme_names is not None:
+            self.build_list_params(params,
+                                   analysis_scheme_names,
+                                   'AnalysisSchemeNames.member')
+        if deployed is not None:
+            params['Deployed'] = str(
+                deployed).lower()
+        return self._make_request(
+            action='DescribeAnalysisSchemes',
+            verb='POST',
+            path='/', params=params)
+
+    def describe_availability_options(self, domain_name, deployed=None):
+        """
+        Gets the availability options configured for a domain. By
+        default, shows the configuration with any pending changes. Set
+        the `Deployed` option to `True` to show the active
+        configuration and exclude pending changes. For more
+        information, see `Configuring Availability Options`_ in the
+        Amazon CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: The name of the domain you want to describe.
 
-        :raises: BaseException, InternalException, ResourceNotFoundException
+        :type deployed: boolean
+        :param deployed: Whether to display the deployed configuration (
+            `True`) or include any pending changes ( `False`). Defaults to
+            `False`.
+
         """
-        doc_path = ('describe_availability_options_response',
-                    'describe_availability_options_result',
-                    'availability_options')
-        params = {'DomainName': domain_name}
-        return self.get_response(doc_path, 'DescribeAvailabilityOptions',
-                                 params, verb='POST')
+        params = {'DomainName': domain_name, }
+        if deployed is not None:
+            params['Deployed'] = str(
+                deployed).lower()
+        return self._make_request(
+            action='DescribeAvailabilityOptions',
+            verb='POST',
+            path='/', params=params)
 
     def describe_domains(self, domain_names=None):
         """
-        Describes the domains (optionally limited to one or more
-        domains by name) owned by this account.
+        Gets information about the search domains owned by this
+        account. Can be limited to specific domains. Shows all domains
+        by default. For more information, see `Getting Information
+        about a Search Domain`_ in the Amazon CloudSearch Developer
+        Guide .
 
         :type domain_names: list
-        :param domain_names: Limits the response to the specified domains.
+        :param domain_names: The names of the domains you want to include in
+            the response.
 
-        :raises: BaseException, InternalException
         """
-        doc_path = ('describe_domains_response',
-                    'describe_domains_result',
-                    'domain_status_list')
         params = {}
-        if domain_names:
-            for i, domain_name in enumerate(domain_names, 1):
-                params['DomainNames.member.%d' % i] = domain_name
-        return self.get_response(doc_path, 'DescribeDomains',
-                                 params, verb='POST',
-                                 list_marker='DomainStatusList')
+        if domain_names is not None:
+            self.build_list_params(params,
+                                   domain_names,
+                                   'DomainNames.member')
+        return self._make_request(
+            action='DescribeDomains',
+            verb='POST',
+            path='/', params=params)
 
-    def describe_expressions(self, domain_name, names=None):
+    def describe_expressions(self, domain_name, expression_names=None,
+                             deployed=None):
         """
-        Describes RankExpressions in the search domain, optionally
-        limited to a single expression.
+        Gets the expressions configured for the search domain. Can be
+        limited to specific expressions by name. By default, shows all
+        expressions and includes any pending changes to the
+        configuration. Set the `Deployed` option to `True` to show the
+        active configuration and exclude pending changes. For more
+        information, see `Configuring Expressions`_ in the Amazon
+        CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: The name of the domain you want to describe.
 
-        :type names: list
-        :param names: Limit response to the specified names.
+        :type expression_names: list
+        :param expression_names: Limits the `DescribeExpressions` response to
+            the specified expressions. If not specified, all expressions are
+            shown.
 
-        :raises: BaseException, InternalException, ResourceNotFoundException
+        :type deployed: boolean
+        :param deployed: Whether to display the deployed configuration (
+            `True`) or include any pending changes ( `False`). Defaults to
+            `False`.
+
         """
-        doc_path = ('describe_expressions_response',
-                    'describe_expressions_result',
-                    'expressions')
-        params = {'DomainName': domain_name}
-        if names:
-            for i, expr_name in enumerate(names, 1):
-                params['ExpressionNames.member.%d' % i] = expr_name
-        return self.get_response(doc_path, 'DescribeExpressions',
-                                 params, verb='POST',
-                                 list_marker='Expressions')
+        params = {'DomainName': domain_name, }
+        if expression_names is not None:
+            self.build_list_params(params,
+                                   expression_names,
+                                   'ExpressionNames.member')
+        if deployed is not None:
+            params['Deployed'] = str(
+                deployed).lower()
+        return self._make_request(
+            action='DescribeExpressions',
+            verb='POST',
+            path='/', params=params)
 
-    def describe_index_fields(self, domain_name, field_names=None):
+    def describe_index_fields(self, domain_name, field_names=None,
+                              deployed=None):
         """
-        Describes index fields in the search domain, optionally
-        limited to a single ``IndexField``.
+        Gets information about the index fields configured for the
+        search domain. Can be limited to specific fields by name. By
+        default, shows all fields and includes any pending changes to
+        the configuration. Set the `Deployed` option to `True` to show
+        the active configuration and exclude pending changes. For more
+        information, see `Getting Domain Information`_ in the Amazon
+        CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: The name of the domain you want to describe.
 
         :type field_names: list
-        :param field_names: Limits the response to the specified fields.
+        :param field_names: A list of the index fields you want to describe. If
+            not specified, information is returned for all configured index
+            fields.
 
-        :raises: BaseException, InternalException, ResourceNotFoundException
+        :type deployed: boolean
+        :param deployed: Whether to display the deployed configuration (
+            `True`) or include any pending changes ( `False`). Defaults to
+            `False`.
+
         """
-        doc_path = ('describe_index_fields_response',
-                    'describe_index_fields_result',
-                    'index_fields')
-        params = {'DomainName': domain_name}
-        if field_names:
-            for i, field_name in enumerate(field_names, 1):
-                params['FieldNames.member.%d' % i] = field_name
-        return self.get_response(doc_path, 'DescribeIndexFields',
-                                 params, verb='POST',
-                                 list_marker='IndexFields')
+        params = {'DomainName': domain_name, }
+        if field_names is not None:
+            self.build_list_params(params,
+                                   field_names,
+                                   'FieldNames.member')
+        if deployed is not None:
+            params['Deployed'] = str(
+                deployed).lower()
+        return self._make_request(
+            action='DescribeIndexFields',
+            verb='POST',
+            path='/', params=params)
 
     def describe_scaling_parameters(self, domain_name):
         """
-        Describes the scaling parameters for the search domain.
+        Gets the scaling parameters configured for a domain. A
+        domain's scaling parameters specify the desired search
+        instance type and replication count. For more information, see
+        `Configuring Scaling Options`_ in the Amazon CloudSearch
+        Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
-        :raises: BaseException, InternalException, ResourceNotFoundException
         """
-        doc_path = ('describe_scaling_parameters_response',
-                    'describe_scaling_parameters_result',
-                    'scaling_parameters')
-        params = {'DomainName': domain_name}
-        return self.get_response(doc_path, 'DescribeScalingParameters',
-                                 params, verb='POST')
+        params = {'DomainName': domain_name, }
+        return self._make_request(
+            action='DescribeScalingParameters',
+            verb='POST',
+            path='/', params=params)
 
-    def describe_service_access_policies(self, domain_name):
+    def describe_service_access_policies(self, domain_name, deployed=None):
         """
-        Describes the resource-based policies controlling access to
-        the services in this search domain.
+        Gets information about the access policies that control access
+        to the domain's document and search endpoints. By default,
+        shows the configuration with any pending changes. Set the
+        `Deployed` option to `True` to show the active configuration
+        and exclude pending changes. For more information, see
+        `Configuring Access for a Search Domain`_ in the Amazon
+        CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: The name of the domain you want to describe.
 
-        :raises: BaseException, InternalException, ResourceNotFoundException
-        """
-        doc_path = ('describe_service_access_policies_response',
-                    'describe_service_access_policies_result',
-                    'access_policies')
-        params = {'DomainName': domain_name}
-        return self.get_response(doc_path, 'DescribeServiceAccessPolicies',
-                                 params, verb='POST')
+        :type deployed: boolean
+        :param deployed: Whether to display the deployed configuration (
+            `True`) or include any pending changes ( `False`). Defaults to
+            `False`.
 
-    def describe_suggesters(self, domain_name, names=None):
         """
-        Describes the suggesters for the search domain.
+        params = {'DomainName': domain_name, }
+        if deployed is not None:
+            params['Deployed'] = str(
+                deployed).lower()
+        return self._make_request(
+            action='DescribeServiceAccessPolicies',
+            verb='POST',
+            path='/', params=params)
+
+    def describe_suggesters(self, domain_name, suggester_names=None,
+                            deployed=None):
+        """
+        Gets the suggesters configured for a domain. A suggester
+        enables you to display possible matches before users finish
+        typing their queries. Can be limited to specific suggesters by
+        name. By default, shows all suggesters and includes any
+        pending changes to the configuration. Set the `Deployed`
+        option to `True` to show the active configuration and exclude
+        pending changes. For more information, see `Getting Search
+        Suggestions`_ in the Amazon CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: The name of the domain you want to describe.
 
-        :type names: list
-        :param names: Limit response to the specified names.
+        :type suggester_names: list
+        :param suggester_names: The suggesters you want to describe.
 
-        :raises: BaseException, InternalException, ResourceNotFoundException
+        :type deployed: boolean
+        :param deployed: Whether to display the deployed configuration (
+            `True`) or include any pending changes ( `False`). Defaults to
+            `False`.
+
         """
-        doc_path = ('describe_suggesters_response',
-                    'describe_suggesters_result',
-                    'suggesters')
-        params = {'DomainName': domain_name}
-        if names:
-            for i, suggester_name in enumerate(names, 1):
-                params['SuggesterNames.member.%d' % i] = suggester_name
-
-        return self.get_response(doc_path, 'DescribeSuggesters',
-                                 params, verb='POST', list_marker="Suggesters")
+        params = {'DomainName': domain_name, }
+        if suggester_names is not None:
+            self.build_list_params(params,
+                                   suggester_names,
+                                   'SuggesterNames.member')
+        if deployed is not None:
+            params['Deployed'] = str(
+                deployed).lower()
+        return self._make_request(
+            action='DescribeSuggesters',
+            verb='POST',
+            path='/', params=params)
 
     def index_documents(self, domain_name):
         """
-        Tells the search domain to start scanning its documents using
-        the latest text processing options and ``IndexFields``.  This
-        operation must be invoked to make visible in searches any
-        options whose <a>OptionStatus</a> has ``OptionState`` of
-        ``RequiresIndexDocuments``.
+        Tells the search domain to start indexing its documents using
+        the latest indexing options. This operation must be invoked to
+        activate options whose OptionStatus is
+        `RequiresIndexDocuments`.
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
-        :raises: BaseException, InternalException, ResourceNotFoundException
         """
-        doc_path = ('index_documents_response',
-                    'index_documents_result',
-                    'field_names')
-        params = {'DomainName': domain_name}
-        return self.get_response(doc_path, 'IndexDocuments', params,
-                                 verb='POST', list_marker='FieldNames')
+        params = {'DomainName': domain_name, }
+        return self._make_request(
+            action='IndexDocuments',
+            verb='POST',
+            path='/', params=params)
+
+    def list_domain_names(self):
+        """
+        Lists all search domains owned by an account.
+
+
+        """
+        params = {}
+        return self._make_request(
+            action='ListDomainNames',
+            verb='POST',
+            path='/', params=params)
 
     def update_availability_options(self, domain_name, multi_az):
         """
-        Updates availability options for the search domain.
+        Configures the availability options for a domain. Enabling the
+        Multi-AZ option expands an Amazon CloudSearch domain to an
+        additional Availability Zone in the same Region to increase
+        fault tolerance in the event of a service disruption. Changes
+        to the Multi-AZ option can take about half an hour to become
+        active. For more information, see `Configuring Availability
+        Options`_ in the Amazon CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
-        :type multi_az: bool
-        :param multi_az: Should the domain be setup in multiple
-            Availability Zones
+        :type multi_az: boolean
+        :param multi_az: You expand an existing search domain to a second
+            Availability Zone by setting the Multi-AZ option to true.
+            Similarly, you can turn off the Multi-AZ option to downgrade the
+            domain to a single Availability Zone by setting the Multi-AZ option
+            to `False`.
 
-        :raises: BaseException, InternalException, InvalidTypeException,
-            LimitExceededException, ResourceNotFoundException
         """
-        doc_path = ('update_availability_options_response',
-                    'update_availability_options_result',
-                    'availability_options')
-        params = {'DomainName': domain_name,
-                  'MultiAZ': do_bool(multi_az)}
-        return self.get_response(doc_path, 'UpdateAvailabilityOptions',
-                                 params, verb='POST')
+        params = {'DomainName': domain_name, 'MultiAZ': multi_az, }
+        return self._make_request(
+            action='UpdateAvailabilityOptions',
+            verb='POST',
+            path='/', params=params)
 
-    def update_scaling_parameters(self, domain_name, instance_type=None,
-                                  replication_count=0):
+    def update_scaling_parameters(self, domain_name, scaling_parameters):
         """
-        Updates scaling parameters for the search domain.
+        Configures scaling parameters for a domain. A domain's scaling
+        parameters specify the desired search instance type and
+        replication count. Amazon CloudSearch will still automatically
+        scale your domain based on the volume of data and traffic, but
+        not below the desired instance type and replication count. If
+        the Multi-AZ option is enabled, these values control the
+        resources used per Availability Zone. For more information,
+        see `Configuring Scaling Options`_ in the Amazon CloudSearch
+        Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
-        :type instance_type: str or None
-        :param instance_type: The type of instance to use. One of
-            None | search.m1.small | search.m1.large | search.m2.xlarge | search.m2.2xlarge
+        :type scaling_parameters: dict
+        :param scaling_parameters: The desired instance type and desired number
+            of replicas of each index partition.
 
-        :type replication_count: int
-        :param replication_count: The desired number of replicas. A
-            value of 0 will reset to the default.
-
-        :raises: BaseException, InternalException, InvalidTypeException,
-            LimitExceededException, ResourceNotFoundException
         """
-        doc_path = ('update_scaling_parameters_response',
-                    'update_scaling_parameters_result',
-                    'scaling_parameters')
-        params = {'DomainName': domain_name}
-        if instance_type is not None:
-            params["ScalingParameters.DesiredInstanceType"] = instance_type
-        if replication_count is not None:
-            params["ScalingParameters.DesiredReplicationCount"] = replication_count
-        return self.get_response(doc_path, 'UpdateScalingParameters',
-                                 params, verb='POST')
+        params = {'DomainName': domain_name, }
+        self.build_complex_param(params, 'ScalingParameters',
+                                 scaling_parameters)
+        return self._make_request(
+            action='UpdateScalingParameters',
+            verb='POST',
+            path='/', params=params)
 
     def update_service_access_policies(self, domain_name, access_policies):
         """
-        Updates the policies controlling access to the services in
-        this search domain.
+        Configures the access rules that control access to the
+        domain's document and search endpoints. For more information,
+        see ` Configuring Access for an Amazon CloudSearch Domain`_.
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a
-            domain. Domain names must be unique across the domains
-            owned by an account within an AWS region. Domain names
-            must start with a letter or number and can contain the
-            following characters: a-z (lowercase), 0-9, and -
-            (hyphen). Uppercase letters and underscores are not
-            allowed.
+        :param domain_name: A string that represents the name of a domain.
+            Domain names are unique across the domains owned by an account
+            within an AWS region. Domain names start with a letter or number
+            and can contain the following characters: a-z (lowercase), 0-9, and
+            - (hyphen).
 
         :type access_policies: string
-        :param access_policies: An IAM access policy as described in
-            The Access Policy Language in Using AWS Identity and
-            Access Management. The maximum size of an access policy
-            document is 100KB.
+        :param access_policies: The access rules you want to configure. These
+            rules replace any existing rules.
 
-        :raises: BaseException, InternalException, LimitExceededException,
-            ResourceNotFoundException, InvalidTypeException
         """
-        doc_path = ('update_service_access_policies_response',
-                    'update_service_access_policies_result',
-                    'access_policies')
-        params = {'AccessPolicies': access_policies,
-                  'DomainName': domain_name}
-        return self.get_response(doc_path, 'UpdateServiceAccessPolicies',
-                                 params, verb='POST')
+        params = {
+            'DomainName': domain_name,
+            'AccessPolicies': access_policies,
+        }
+        return self._make_request(
+            action='UpdateServiceAccessPolicies',
+            verb='POST',
+            path='/', params=params)
+
+    def build_complex_param(self, params, label, value):
+        """Serialize a structure.
+
+        For example::
+
+            param_type = 'structure'
+            label = 'IndexField'
+            value = {'IndexFieldName': 'a', 'IntOptions': {'DefaultValue': 5}}
+
+        would result in the params dict being updated with these params::
+
+            IndexField.IndexFieldName = a
+            IndexField.IntOptions.DefaultValue = 5
+
+        :type params: dict
+        :param params: The params dict.  The complex list params
+            will be added to this dict.
+
+        :type label: str
+        :param label: String label for param key
+
+        :type value: any
+        :param value: The value to serialize
+        """
+        for k, v in value.items():
+            if type(v) in [dict]:
+                for k2, v2 in v.items():
+                    self.build_complex_param(params, label + '.' + k, v)
+            elif type(v) in [bool]:
+                params['%s.%s' % (label, k)] = v and 'true' or 'false'
+            else:
+                params['%s.%s' % (label, k)] = v
+
+    def _make_request(self, action, verb, path, params):
+        params['ContentType'] = 'JSON'
+        response = self.make_request(action=action, verb='POST',
+                                     path='/', params=params)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            return json.loads(body)
+        else:
+            json_body = json.loads(body)
+            fault_name = json_body.get('Error', {}).get('Code', None)
+            exception_class = self._faults.get(fault_name, self.ResponseError)
+            raise exception_class(response.status, response.reason,
+                                  body=json_body)

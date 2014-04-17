@@ -26,7 +26,7 @@ Tests for Layer1 of Cloudsearch
 import time
 
 from tests.unit import unittest
-from boto.cloudsearch2.layer1 import Layer1
+from boto.cloudsearch2.layer1 import CloudSearchConnection
 from boto.cloudsearch2.layer2 import Layer2
 from boto.regioninfo import RegionInfo
 
@@ -36,13 +36,18 @@ class CloudSearchLayer1Test(unittest.TestCase):
 
     def setUp(self):
         super(CloudSearchLayer1Test, self).setUp()
-        self.layer1 = Layer1()
+        self.layer1 = CloudSearchConnection()
         self.domain_name = 'test-%d' % int(time.time())
 
     def test_create_domain(self):
         resp = self.layer1.create_domain(self.domain_name)
+
+        resp = (resp['CreateDomainResponse']
+                    ['CreateDomainResult']
+                    ['DomainStatus'])
+
         self.addCleanup(self.layer1.delete_domain, self.domain_name)
-        self.assertTrue(resp.get('created', False))
+        self.assertTrue(resp.get('Created', False))
 
 
 class CloudSearchLayer2Test(unittest.TestCase):

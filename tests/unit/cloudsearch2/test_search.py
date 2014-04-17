@@ -19,31 +19,52 @@ class CloudSearchSearchBaseTest(unittest.TestCase):
     hits = [
         {
             'id': '12341',
-            'title': 'Document 1',
+            'fields': {
+                'title': 'Document 1',
+                'rank': 1
+            }
         },
         {
             'id': '12342',
-            'title': 'Document 2',
+            'fields': {
+                'title': 'Document 2',
+                'rank': 2
+            }
         },
         {
             'id': '12343',
-            'title': 'Document 3',
+            'fields': {
+                'title': 'Document 3',
+                'rank': 3
+            }
         },
         {
             'id': '12344',
-            'title': 'Document 4',
+            'fields': {
+                'title': 'Document 4',
+                'rank': 4
+            }
         },
         {
             'id': '12345',
-            'title': 'Document 5',
+            'fields': {
+                'title': 'Document 5',
+                'rank': 5
+            }
         },
         {
             'id': '12346',
-            'title': 'Document 6',
+            'fields': {
+                'title': 'Document 6',
+                'rank': 6
+            }
         },
         {
             'id': '12347',
-            'title': 'Document 7',
+            'fields': {
+                'title': 'Document 7',
+                'rank': 7
+            }
         },
     ]
 
@@ -80,7 +101,7 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
             'start': 0,
             'hit':CloudSearchSearchBaseTest.hits
             },
-        'info': {
+        'status': {
             'rid':'b7c167f6c2da6d93531b9a7b314ad030b3a74803b4b7797edb905ba5a6a08',
             'time-ms': 2,
             'cpu-time-ms': 0
@@ -99,14 +120,6 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
         self.assertEqual(args['start'], ["0"])
         self.assertEqual(args['size'], ["10"])
 
-    def test_cloudsearch_bqsearch(self):
-        search = SearchConnection(endpoint=HOSTNAME)
-
-        search.search(bq="'Test'")
-
-        args = self.get_args(HTTPretty.last_request.raw_requestline)
-
-        self.assertEqual(args['bq'], ["'Test'"])
 
     def test_cloudsearch_search_details(self):
         search = SearchConnection(endpoint=HOSTNAME)
@@ -119,34 +132,16 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
         self.assertEqual(args['size'], ["50"])
         self.assertEqual(args['start'], ["20"])
 
-    def test_cloudsearch_facet_single(self):
-        search = SearchConnection(endpoint=HOSTNAME)
-
-        search.search(q='Test', facet=["Author"])
-
-        args = self.get_args(HTTPretty.last_request.raw_requestline)
-
-        self.assertEqual(args['facet'], ["Author"])
-
-    def test_cloudsearch_facet_multiple(self):
-        search = SearchConnection(endpoint=HOSTNAME)
-
-        search.search(q='Test', facet=["author", "cat"])
-
-        args = self.get_args(HTTPretty.last_request.raw_requestline)
-
-        self.assertEqual(args['facet'], ["author,cat"])
-
     def test_cloudsearch_facet_constraint_single(self):
         search = SearchConnection(endpoint=HOSTNAME)
 
         search.search(
             q='Test',
-            facet_constraints={'author': "'John Smith','Mark Smith'"})
+            facet={'author': "'John Smith','Mark Smith'"})
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['facet-author-constraints'],
+        self.assertEqual(args['facet.author'],
                          ["'John Smith','Mark Smith'"])
 
     def test_cloudsearch_facet_constraint_multiple(self):
@@ -154,72 +149,37 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
 
         search.search(
             q='Test',
-            facet_constraints={'author': "'John Smith','Mark Smith'",
-                               'category': "'News','Reviews'"})
+            facet={'author': "'John Smith','Mark Smith'",
+                   'category': "'News','Reviews'"})
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['facet-author-constraints'],
+        self.assertEqual(args['facet.author'],
                          ["'John Smith','Mark Smith'"])
-        self.assertEqual(args['facet-category-constraints'],
+        self.assertEqual(args['facet.category'],
                          ["'News','Reviews'"])
 
     def test_cloudsearch_facet_sort_single(self):
         search = SearchConnection(endpoint=HOSTNAME)
 
-        search.search(q='Test', facet_sort={'author': 'alpha'})
+        search.search(q='Test', facet={'author': {'sort':'alpha'}})
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['facet-author-sort'], ['alpha'])
+        print args
+
+        self.assertEqual(args['facet.author'], ['{"sort": "alpha"}'])
 
     def test_cloudsearch_facet_sort_multiple(self):
         search = SearchConnection(endpoint=HOSTNAME)
 
-        search.search(q='Test', facet_sort={'author': 'alpha',
-                                            'cat': 'count'})
+        search.search(q='Test', facet={'author': {'sort': 'alpha'},
+                                       'cat': {'sort': 'count'}})
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['facet-author-sort'], ['alpha'])
-        self.assertEqual(args['facet-cat-sort'], ['count'])
-
-    def test_cloudsearch_top_n_single(self):
-        search = SearchConnection(endpoint=HOSTNAME)
-
-        search.search(q='Test', facet_top_n={'author': 5})
-
-        args = self.get_args(HTTPretty.last_request.raw_requestline)
-
-        self.assertEqual(args['facet-author-top-n'], ['5'])
-
-    def test_cloudsearch_top_n_multiple(self):
-        search = SearchConnection(endpoint=HOSTNAME)
-
-        search.search(q='Test', facet_top_n={'author': 5, 'cat': 10})
-
-        args = self.get_args(HTTPretty.last_request.raw_requestline)
-
-        self.assertEqual(args['facet-author-top-n'], ['5'])
-        self.assertEqual(args['facet-cat-top-n'], ['10'])
-
-    def test_cloudsearch_rank_single(self):
-        search = SearchConnection(endpoint=HOSTNAME)
-
-        search.search(q='Test', rank=["date"])
-
-        args = self.get_args(HTTPretty.last_request.raw_requestline)
-
-        self.assertEqual(args['rank'], ['date'])
-
-    def test_cloudsearch_rank_multiple(self):
-        search = SearchConnection(endpoint=HOSTNAME)
-
-        search.search(q='Test', rank=["date", "score"])
-
-        args = self.get_args(HTTPretty.last_request.raw_requestline)
-
-        self.assertEqual(args['rank'], ['date,score'])
+        self.assertEqual(args['facet.author'], ['{"sort": "alpha"}'])
+        self.assertEqual(args['facet.cat'], ['{"sort": "count"}'])
 
     def test_cloudsearch_result_fields_single(self):
         search = SearchConnection(endpoint=HOSTNAME)
@@ -228,7 +188,7 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['return-fields'], ['author'])
+        self.assertEqual(args['return'], ['author'])
 
     def test_cloudsearch_result_fields_multiple(self):
         search = SearchConnection(endpoint=HOSTNAME)
@@ -237,28 +197,7 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['return-fields'], ['author,title'])
-
-
-    def test_cloudsearch_t_field_single(self):
-        search = SearchConnection(endpoint=HOSTNAME)
-
-        search.search(q='Test', t={'year':'2001..2007'})
-
-        args = self.get_args(HTTPretty.last_request.raw_requestline)
-
-        self.assertEqual(args['t-year'], ['2001..2007'])
-
-    def test_cloudsearch_t_field_multiple(self):
-        search = SearchConnection(endpoint=HOSTNAME)
-
-        search.search(q='Test', t={'year':'2001..2007', 'score':'10..50'})
-
-        args = self.get_args(HTTPretty.last_request.raw_requestline)
-
-        self.assertEqual(args['t-year'], ['2001..2007'])
-        self.assertEqual(args['t-score'], ['10..50'])
-
+        self.assertEqual(args['return'], ['author,title'])
 
     def test_cloudsearch_results_meta(self):
         """Check returned metadata is parsed correctly"""
@@ -267,8 +206,8 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
         results = search.search(q='Test')
 
         # These rely on the default response which is fed into HTTPretty
-        self.assertEqual(results.rank, "-text_relevance")
-        self.assertEqual(results.match_expression, "Test")
+        self.assertEqual(results.hits, 30)
+        self.assertEqual(results.docs[0]['fields']['rank'], 1)
 
     def test_cloudsearch_results_info(self):
         """Check num_pages_needed is calculated correctly"""
@@ -345,14 +284,14 @@ class CloudSearchSearchFacetTest(CloudSearchSearchBaseTest):
             'start': 0,
             'hit':CloudSearchSearchBaseTest.hits
             },
-        'info': {
+        'status': {
             'rid':'b7c167f6c2da6d93531b9a7b314ad030b3a74803b4b7797edb905ba5a6a08',
             'time-ms': 2,
             'cpu-time-ms': 0
         },
         'facets': {
             'tags': {},
-            'animals': {'constraints': [{'count': '2', 'value': 'fish'}, {'count': '1', 'value':'lions'}]},
+            'animals': {'buckets': [{'count': '2', 'value': 'fish'}, {'count': '1', 'value':'lions'}]},
         }
     }
 
@@ -361,7 +300,7 @@ class CloudSearchSearchFacetTest(CloudSearchSearchBaseTest):
 
         search = SearchConnection(endpoint=HOSTNAME)
 
-        results = search.search(q='Test', facet=['tags'])
+        results = search.search(q='Test', facet={'tags': {}})
 
         self.assertTrue('tags' not in results.facets)
         self.assertEqual(results.facets['animals'], {u'lions': u'1', u'fish': u'2'})
