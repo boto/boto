@@ -143,12 +143,12 @@ class TableGenerator(object):
 class Layer2(object):
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=True, port=None, proxy=None, proxy_port=None,
+                 is_secure=True, host=None, port=None, proxy=None, proxy_port=None,
                  debug=0, security_token=None, region=None,
                  validate_certs=True, dynamizer=LossyFloatDynamizer,
                  profile_name=None):
         self.layer1 = Layer1(aws_access_key_id, aws_secret_access_key,
-                             is_secure, port, proxy, proxy_port,
+                             is_secure, host, port, proxy, proxy_port,
                              debug, security_token, region,
                              validate_certs=validate_certs,
                              profile_name=profile_name)

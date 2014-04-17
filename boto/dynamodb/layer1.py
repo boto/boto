@@ -72,7 +72,7 @@ class Layer1(AWSAuthConnection):
     """The number of times an error is retried."""
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=True, port=None, proxy=None, proxy_port=None,
+                 is_secure=True, host=None, port=None, proxy=None, proxy_port=None,
                  debug=0, security_token=None, region=None,
                  validate_certs=True, validate_checksums=True, profile_name=None):
         if not region:
@@ -83,14 +83,13 @@ class Layer1(AWSAuthConnection):
                     region = reg
                     break
 
-        self.region = region
-        super(Layer1, self).__init__(self.region.endpoint,
-                                   aws_access_key_id,
-                                   aws_secret_access_key,
-                                   is_secure, port, proxy, proxy_port,
-                                   debug=debug, security_token=security_token,
-                                   validate_certs=validate_certs,
-                                   profile_name=profile_name)
+        super(Layer1, self).__init__(host or region.endpoint,
+                                     aws_access_key_id,
+                                     aws_secret_access_key,
+                                     is_secure, port, proxy, proxy_port,
+                                     debug=debug, security_token=security_token,
+                                     validate_certs=validate_certs,
+                                     profile_name=profile_name)
         self.throughput_exceeded_events = 0
         self._validate_checksums = boto.config.getbool(
             'DynamoDB', 'validate_checksums', validate_checksums)
@@ -108,7 +107,7 @@ class Layer1(AWSAuthConnection):
         """
         headers = {'X-Amz-Target': '%s_%s.%s' % (self.ServiceName,
                                                  self.Version, action),
-                   'Host': self.region.endpoint,
+                   'Host': self.host,  # inherited from parent class
                    'Content-Type': 'application/x-amz-json-1.0',
                    'Content-Length': str(len(body))}
         http_request = self.build_base_http_request('POST', '/', '/',

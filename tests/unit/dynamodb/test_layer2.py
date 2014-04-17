@@ -115,5 +115,17 @@ class TestSchemaEquality(unittest.TestCase):
         self.assertNotEqual(s3, s4)
 
 
+class TestDynamoDBLayer2(unittest.TestCase):
+
+    def test_dynamodb_local_settings(self):
+        host, port, is_secure = 'localhost', 8000, False
+        layer2 = Layer2('access_key', 'secret_key',
+                        host=host, port=port, is_secure=is_secure)
+
+        self.assertEqual(layer2.layer1.host, host)
+        self.assertEqual(layer2.layer1.port, port)
+        self.assertEqual(layer2.layer1.is_secure, is_secure)
+
+
 if __name__ == '__main__':
     unittest.main()
