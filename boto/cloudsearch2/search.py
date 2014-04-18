@@ -1,5 +1,4 @@
-# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.
 # All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
