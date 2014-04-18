@@ -81,11 +81,7 @@ class CloudSearchConnection(AWSQueryConnection):
         Indexes the search suggestions.
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to update.
 
         """
         params = {'DomainName': domain_name, }
@@ -121,11 +117,7 @@ class CloudSearchConnection(AWSQueryConnection):
         Schemes`_ in the Amazon CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to update.
 
         :type analysis_scheme: dict
         :param analysis_scheme: Configuration information for an analysis
@@ -152,11 +144,7 @@ class CloudSearchConnection(AWSQueryConnection):
         Amazon CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to update.
 
         :type expression: dict
         :param expression: A named expression that can be evaluated at search
@@ -186,11 +174,7 @@ class CloudSearchConnection(AWSQueryConnection):
         Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to update.
 
         :type index_field: dict
         :param index_field: The index field and field options you want to
@@ -216,11 +200,7 @@ class CloudSearchConnection(AWSQueryConnection):
         Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to update.
 
         :type suggester: dict
         :param suggester: Configuration information for a search suggester.
@@ -244,11 +224,7 @@ class CloudSearchConnection(AWSQueryConnection):
         Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to update.
 
         :type analysis_scheme_name: string
         :param analysis_scheme_name: The name of the analysis scheme you want
@@ -289,11 +265,7 @@ class CloudSearchConnection(AWSQueryConnection):
         CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to update.
 
         :type expression_name: string
         :param expression_name: The name of the `Expression` to delete.
@@ -315,11 +287,7 @@ class CloudSearchConnection(AWSQueryConnection):
         CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to update.
 
         :type index_field_name: string
         :param index_field_name: The name of the index field your want to
@@ -341,11 +309,7 @@ class CloudSearchConnection(AWSQueryConnection):
         Suggestions`_ in the Amazon CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to delete.
 
         :type suggester_name: string
         :param suggester_name: Specifies the name of the suggester you want to
@@ -534,11 +498,7 @@ class CloudSearchConnection(AWSQueryConnection):
         Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to describe.
 
         """
         params = {'DomainName': domain_name, }
@@ -620,11 +580,7 @@ class CloudSearchConnection(AWSQueryConnection):
         `RequiresIndexDocuments`.
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to index.
 
         """
         params = {'DomainName': domain_name, }
@@ -656,11 +612,7 @@ class CloudSearchConnection(AWSQueryConnection):
         Options`_ in the Amazon CloudSearch Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to update.
 
         :type multi_az: boolean
         :param multi_az: You expand an existing search domain to a second
@@ -689,11 +641,7 @@ class CloudSearchConnection(AWSQueryConnection):
         Developer Guide .
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to update.
 
         :type scaling_parameters: dict
         :param scaling_parameters: The desired instance type and desired number
@@ -715,11 +663,7 @@ class CloudSearchConnection(AWSQueryConnection):
         see ` Configuring Access for an Amazon CloudSearch Domain`_.
 
         :type domain_name: string
-        :param domain_name: A string that represents the name of a domain.
-            Domain names are unique across the domains owned by an account
-            within an AWS region. Domain names start with a letter or number
-            and can contain the following characters: a-z (lowercase), 0-9, and
-            - (hyphen).
+        :param domain_name: The name of the domain you want to update.
 
         :type access_policies: string
         :param access_policies: The access rules you want to configure. These

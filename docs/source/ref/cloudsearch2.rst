@@ -4,58 +4,51 @@
 Cloudsearch
 ===========
 
-boto.cloudsearch
-----------------
+boto.cloudsearch2
+-----------------
 
-.. automodule:: boto.cloudsearch
+.. automodule:: boto.cloudsearch2
    :members:
    :undoc-members:
 
-boto.cloudsearch.domain
------------------------
+boto.cloudsearch2.domain
+------------------------
 
-.. automodule:: boto.cloudsearch.domain
+.. automodule:: boto.cloudsearch2.domain
    :members:
    :undoc-members:
 
-boto.cloudsearch.exceptions
------------------------
+boto.cloudsearch2.layer1
+------------------------
 
-.. automodule:: boto.cloudsearch.exceptions
+.. automodule:: boto.cloudsearch2.layer1
    :members:
    :undoc-members:
 
-boto.cloudsearch.layer1
------------------------
+boto.cloudsearch2.layer2
+------------------------
 
-.. automodule:: boto.cloudsearch.layer1
+.. automodule:: boto.cloudsearch2.layer2
    :members:
    :undoc-members:
 
-boto.cloudsearch.layer2
------------------------
+boto.cloudsearch2.optionstatus
+------------------------------
 
-.. automodule:: boto.cloudsearch.layer2
+.. automodule:: boto.cloudsearch2.optionstatus
    :members:
    :undoc-members:
 
-boto.cloudsearch.optionstatus
------------------------------
+boto.cloudsearch2.search
+------------------------
 
-.. automodule:: boto.cloudsearch.optionstatus
+.. automodule:: boto.cloudsearch2.search
    :members:
    :undoc-members:
 
-boto.cloudsearch.search
------------------------
+boto.cloudsearch2.document
+--------------------------
 
-.. automodule:: boto.cloudsearch.search
-   :members:
-   :undoc-members:
-
-boto.cloudsearch.document
--------------------------
-
-.. automodule:: boto.cloudsearch.document
+.. automodule:: boto.cloudsearch2.document
    :members:
    :undoc-members:
