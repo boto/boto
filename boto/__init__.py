@@ -653,10 +653,28 @@ def connect_cloudsearch(aws_access_key_id=None,
     :type aws_secret_access_key: string
     :param aws_secret_access_key: Your AWS Secret Access Key
 
-    :rtype: :class:`boto.ec2.autoscale.CloudSearchConnection`
+    :rtype: :class:`boto.cloudsearch.layer2.Layer2`
     :return: A connection to Amazon's CloudSearch service
     """
     from boto.cloudsearch.layer2 import Layer2
+    return Layer2(aws_access_key_id, aws_secret_access_key,
+                  **kwargs)
+
+
+def connect_cloudsearch2(aws_access_key_id=None,
+                         aws_secret_access_key=None,
+                         **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.cloudsearch2.layer2.Layer2`
+    :return: A connection to Amazon's CloudSearch2 service
+    """
+    from boto.cloudsearch2.layer2 import Layer2
     return Layer2(aws_access_key_id, aws_secret_access_key,
                   **kwargs)
 
