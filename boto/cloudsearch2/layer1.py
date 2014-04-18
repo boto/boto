@@ -704,10 +704,10 @@ class CloudSearchConnection(AWSQueryConnection):
         :param value: The value to serialize
         """
         for k, v in value.items():
-            if type(v) in [dict]:
+            if isinstance(v, dict):
                 for k2, v2 in v.items():
                     self.build_complex_param(params, label + '.' + k, v)
-            elif type(v) in [bool]:
+            elif isinstance(v, bool):
                 params['%s.%s' % (label, k)] = v and 'true' or 'false'
             else:
                 params['%s.%s' % (label, k)] = v
