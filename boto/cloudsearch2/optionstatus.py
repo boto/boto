@@ -22,7 +22,6 @@
 # IN THE SOFTWARE.
 #
 
-import time
 from boto.compat import json
 
 
@@ -101,15 +100,6 @@ class OptionStatus(dict):
         if self.save_fn:
             data = self.save_fn(self.domain.name, self.to_json())
             self.refresh(data)
-
-    def wait_for_state(self, state):
-        """
-        Performs polling of CloudSearch to wait for the ``state``
-        of this object to change to the provided state.
-        """
-        while self.state != state:
-            time.sleep(5)
-            self.refresh()
 
 
 class IndexFieldStatus(OptionStatus):
