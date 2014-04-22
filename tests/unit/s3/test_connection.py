@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import mock
+from mock import patch
 import time
 
 from tests.unit import unittest
@@ -172,6 +172,42 @@ class TestHeadBucket(AWSMockServiceTestCase):
         # We don't have special-cases for this error status.
         self.assertEqual(err.error_code, None)
         self.assertEqual(err.message, '')
+
+class TestLookup(AWSMockServiceTestCase):
+    connection_class = S3Connection
+
+    def test_lookup_bucket_success(self):
+        self.set_http_response(status_code=200)
+        buck = self.service_connection.lookup('my-test-bucket')
+        self.assertTrue(isinstance(buck, Bucket))
+        self.assertEqual(buck.name, 'my-test-bucket')
+
+    def test_lookup_bucket_notfound(self):
+        self.set_http_response(status_code=404)
+        buck = self.service_connection.lookup('doesnt-exist')
+        self.assertEqual(buck, None)
+
+    @patch.object(S3Connection, 'lookup')
+    def test_lookup_bucket_exception(self, mock_lookup):
+        # Any exception that's not a storage response error should be re-raised
+        mock_lookup.side_effect = Exception('Something went wrong')
+
+        with self.assertRaises(Exception) as cm:
+            self.service_connection.lookup('doesnt-matter')
+
+        err = cm.exception
+        self.assertEqual(err.message, 'Something went wrong')
+
+        # Any storage response error with status != 404 should be re-raised
+        mock_lookup.reset_mock()
+        mock_lookup.side_effect = S3ResponseError(403, 'Forbidden')
+
+        with self.assertRaises(S3ResponseError) as cm:
+            self.service_connection.lookup('doesnt-matter')
+
+        err = cm.exception
+        self.assertEqual(err.status, 403)
+        self.assertEqual(err.reason, 'Forbidden')
 
 
 if __name__ == "__main__":
