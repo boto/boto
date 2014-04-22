@@ -198,6 +198,34 @@ class Zone(object):
                                identifier=identifier,
                                comment=comment)
 
+    def add_txt(self, name, records, ttl=None, identifier=None, comment=""):
+        """
+        Add a new TXT record to this Zone.  See _new_record for
+        parameter documentation.  Returns a Status object.
+        """
+        ttl = ttl or default_ttl
+        records = self.route53connection._make_qualified(records)
+        return self.add_record(resource_type='TXT',
+                               name=name,
+                               value=records,
+                               ttl=ttl,
+                               identifier=identifier,
+                               comment=comment)
+
+    def add_aaaa(self, name, records, ttl=None, identifier=None, comment=""):
+        """
+        Add a new AAAA record to this Zone.  See _new_record for
+        parameter documentation.  Returns a Status object.
+        """
+        ttl = ttl or default_ttl
+        records = self.route53connection._make_qualified(records)
+        return self.add_record(resource_type='AAAA',
+                               name=name,
+                               value=records,
+                               ttl=ttl,
+                               identifier=identifier,
+                               comment=comment)
+
     def find_records(self, name, type, desired=1, all=False, identifier=None):
         """
         Search this Zone for records that match given parameters.
@@ -300,6 +328,30 @@ class Zone(object):
         """
         return self.find_records(name, 'MX', all=all)
 
+    def get_txt(self, name, all=False):
+        """
+        Search this Zone for TXT records that match name.
+
+        Returns a ResourceRecord.
+
+        If there is more than one match return all as a
+        ResourceRecordSets if all is True, otherwise throws
+        TooManyRecordsException.
+        """
+        return self.find_records(name, 'TXT', all=all)
+
+    def get_aaaa(self, name, all=False):
+        """
+        Search this Zone for AAAA records that match name.
+
+        Returns a ResourceRecord.
+
+        If there is more than one match return all as a
+        ResourceRecordSets if all is True, otherwise throws
+        TooManyRecordsException.
+        """
+        return self.find_records(name, 'AAAA', all=all)
+
     def update_cname(self, name, value, ttl=None, identifier=None, comment=""):
         """
         Update the given CNAME record in this Zone to a new value, ttl,
@@ -353,6 +405,42 @@ class Zone(object):
                                   new_identifier=identifier,
                                   comment=comment)
 
+    def update_txt(self, name, value, ttl=None, identifier=None, comment=""):
+        """
+        Update the given TXT record in this Zone to a new value, ttl,
+        and identifier.  Returns a Status object.
+
+        Will throw TooManyRecordsException is name, value does not match
+        a single record.
+        """
+        name = self.route53connection._make_qualified(name)
+        value = self.route53connection._make_qualified(value)
+        old_record = self.get_txt(name)
+        ttl = ttl or old_record.ttl
+        return self.update_record(old_record,
+                                  new_value=value,
+                                  new_ttl=ttl,
+                                  new_identifier=identifier,
+                                  comment=comment)
+
+    def update_aaaa(self, name, value, ttl=None, identifier=None, comment=""):
+        """
+        Update the given AAAA record in this Zone to a new value, ttl,
+        and identifier.  Returns a Status object.
+
+        Will throw TooManyRecordsException is name, value does not match
+        a single record.
+        """
+        name = self.route53connection._make_qualified(name)
+        value = self.route53connection._make_qualified(value)
+        old_record = self.get_aaaa(name)
+        ttl = ttl or old_record.ttl
+        return self.update_record(old_record,
+                                  new_value=value,
+                                  new_ttl=ttl,
+                                  new_identifier=identifier,
+                                  comment=comment)
+
     def delete_cname(self, name, identifier=None, all=False):
         """
         Delete a CNAME record matching name and identifier from
@@ -389,6 +477,32 @@ class Zone(object):
         """
         name = self.route53connection._make_qualified(name)
         record = self.find_records(name, 'MX', identifier=identifier,
+                                   all=all)
+        return self.delete_record(record)
+
+    def delete_txt(self, name, identifier=None, all=False):
+        """
+        Delete an TXT record matching name and identifier from this
+        Zone.  Returns a Status object.
+
+        If there is more than one match delete all matching records if
+        all is True, otherwise throws TooManyRecordsException.
+        """
+        name = self.route53connection._make_qualified(name)
+        record = self.find_records(name, 'TXT', identifier=identifier,
+                                   all=all)
+        return self.delete_record(record)
+
+    def delete_aaaa(self, name, identifier=None, all=False):
+        """
+        Delete an AAAA record matching name and identifier from this
+        Zone.  Returns a Status object.
+
+        If there is more than one match delete all matching records if
+        all is True, otherwise throws TooManyRecordsException.
+        """
+        name = self.route53connection._make_qualified(name)
+        record = self.find_records(name, 'TXT', identifier=identifier,
                                    all=all)
         return self.delete_record(record)
 
