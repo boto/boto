@@ -75,7 +75,7 @@ class Job(object):
         downloaded is the correct data.
 
         :type byte_range: tuple
-        :param range: A tuple of integer specifying the slice (in bytes)
+        :param byte_range: A tuple of integer specifying the slice (in bytes)
             of the archive you want to receive
 
         :type validate_checksum: bool
