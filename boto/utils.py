@@ -46,6 +46,9 @@ import imp
 import subprocess
 import StringIO
 import time
+import iso8601
+from iso8601 import ParseError
+import dateutil.parser
 import logging.handlers
 import boto
 import boto.provider
@@ -457,15 +460,11 @@ def get_ts(ts=None):
 def parse_ts(ts):
     ts = ts.strip()
     try:
-        dt = datetime.datetime.strptime(ts, ISO8601)
+        dt = iso8601.parse_date(ts)
         return dt
-    except ValueError:
-        try:
-            dt = datetime.datetime.strptime(ts, ISO8601_MS)
-            return dt
-        except ValueError:
-            dt = datetime.datetime.strptime(ts, RFC1123)
-            return dt
+    except ParseError:
+        dt = dateutil.parser.parse(ts)
+        return dt
 
 
 def find_class(module_name, class_name=None):

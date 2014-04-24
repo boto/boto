@@ -10,3 +10,5 @@ unittest2==0.5.1
 httpretty>=0.7.0
 paramiko>=1.10.0
 PyYAML>=3.10
+iso8601==0.1.10
+python-dateutil==2.2

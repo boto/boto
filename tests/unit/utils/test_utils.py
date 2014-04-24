@@ -28,6 +28,7 @@ import hashlib
 import hmac
 import mock
 import thread
+import datetime
 import time
 
 import boto.utils
@@ -53,6 +54,47 @@ class TestThreadImport(unittest.TestCase):
             thread.start_new_thread(f, ())
 
         time.sleep(3)
+
+
+class TestTimestampParsing(unittest.TestCase):
+    def test_iso8601(self):
+        dt = boto.utils.parse_ts('2014-01-01T01:05:03Z')
+        self.assertEquals(dt.tzname(), 'UTC')
+
+        dt = boto.utils.parse_ts('2014-01-01T01:05:03+01')
+        self.assertEquals(dt.tzname(), '+01:00')
+
+    def test_iso8601_no_tz(self):
+        dt = boto.utils.parse_ts('2014-01-01T01:05:03')
+        self.assertEquals(dt.tzname(), 'UTC')
+
+    def test_iso8601_ms(self):
+        dt = boto.utils.parse_ts('2014-01-01T01:05:00.685000Z')
+        self.assertEquals(dt.tzname(), 'UTC')
+
+        dt = boto.utils.parse_ts('2014-01-01T01:05:00.685000+01')
+        self.assertEquals(dt.tzname(), '+01:00')
+
+    def test_iso8601_ms_no_tz(self):
+        dt = boto.utils.parse_ts('2014-01-01T01:05:00.685000')
+        self.assertEquals(dt.tzname(), 'UTC')
+
+    def test_rfc1123(self):
+        dt = boto.utils.parse_ts('Thu, 24 Apr 2014 11:44:31 UTC')
+        self.assertEquals(dt.tzname(), 'UTC')
+
+        dt = boto.utils.parse_ts('Thu, 24 Apr 2014 11:44:31 BST')
+        self.assertEquals(dt.tzname(), 'BST')
+
+        dt = boto.utils.parse_ts('Thu, 24 Apr 2014 11:44:31 +0100')
+        self.assertEquals(dt.strftime('%z'), '+0100')
+
+        dt = boto.utils.parse_ts('Thu, 24 Apr 2014 11:44:31 +0000')
+        self.assertEquals(dt.strftime('%z'), '+0000')
+
+    def test_invalid_date(self):
+        with self.assertRaises(ValueError):
+            dt = boto.utils.parse_ts('0')
 
 
 class TestPassword(unittest.TestCase):
