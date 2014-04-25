@@ -239,3 +239,15 @@ class EC2ConnectionTest(unittest.TestCase):
 
         # And kill it.
         rs.instances[0].terminate()
+            
+    def test_get_image(self):
+        c = EC2Connection()
+        image = c.get_image('ami-fb8e9292')
+        assert image
+        assert image.id == 'ami-fb8e9292'
+        image = c.get_image('ami-c2492bf3')
+        assert image == None
+
+
+
+
