@@ -250,7 +250,7 @@ class LazyLoadMetadata(dict):
         self._dicts = []
         data = boto.utils.retry_url(self._url, num_retries=self._num_retries)
         if data:
-            fields = data.split('\n')
+            fields = data.split('\n'.encode('utf8'))
             for field in fields:
                 if field.endswith('/'):
                     key = field[0:-1]
