@@ -927,7 +927,7 @@ class Table(object):
             ...     last_name__eq='Doe',
             ...     reverse=True,
             ...     query_filter={
-            ...         first_name__beginswith='A'
+            ...         'first_name__beginswith': 'A'
             ...     }
             ... )
             >>> for res in results:
