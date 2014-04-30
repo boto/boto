@@ -210,6 +210,11 @@ class Record(object):
         <Region>%(region)s</Region>
     """
 
+    FailoverBody = """
+        <SetIdentifier>%(identifier)s</SetIdentifier>
+        <Failover>%(failover)s</Failover>
+    """
+
     ResourceRecordsBody = """
         <TTL>%(ttl)s</TTL>
         <ResourceRecords>
@@ -228,11 +233,13 @@ class Record(object):
 
     EvaluateTargetHealth = """<EvaluateTargetHealth>%s</EvaluateTargetHealth>"""
 
+    valid_failover_roles = ['PRIMARY', 'SECONDARY']
+
 
     def __init__(self, name=None, type=None, ttl=600, resource_records=None,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
             weight=None, region=None, alias_evaluate_target_health=None,
-            health_check=None):
+            health_check=None, failover_role=None):
         self.name = name
         self.type = type
         self.ttl = ttl
@@ -246,6 +253,13 @@ class Record(object):
         self.region = region
         self.alias_evaluate_target_health = alias_evaluate_target_health
         self.health_check = health_check
+        if failover_role in self.valid_failover_roles or failover_role is None:
+            self.failover_role = failover_role
+        else:
+            raise AttributeError(
+                "Valid values for failover_role are: %s" %
+                ",".join(self.valid_failover_roles))
+
 
     def __repr__(self):
         return '<Record:%s:%s:%s>' % (self.name, self.type, self.to_print())
@@ -293,6 +307,9 @@ class Record(object):
         elif self.identifier is not None and self.region is not None:
             weight = self.RRRBody % {"identifier": self.identifier, "region":
                     self.region}
+        elif self.identifier is not None and self.failover_role is not None:
+            weight = self.FailoverBody % {"identifier": self.identifier, "failover":
+                    self.failover_role}
 
         health_check = ""
         if self.health_check is not None:
