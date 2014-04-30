@@ -139,13 +139,13 @@ def canonical_string(method, path, headers, expires=None,
 
     sorted_header_keys = sorted(interesting_headers.keys())
 
-    buf = "%s\n" % method
+    buf = u"{0:s}\n".format(method)
     for key in sorted_header_keys:
         val = interesting_headers[key]
         if key.startswith(provider.header_prefix):
-            buf += "%s:%s\n" % (key, val)
+            buf += u"{0:s}:{1:s}\n".format(key, val)
         else:
-            buf += "%s\n" % val
+            buf += u"{0:s}\n".format(val)
 
     # don't include anything after the first ? in the resource...
     # unless it is one of the QSA of interest, defined above
@@ -252,14 +252,14 @@ class LazyLoadMetadata(dict):
         if data:
             fields = data.split('\n'.encode('utf8'))
             for field in fields:
-                if field.endswith('/'):
+                if field.endswith('/'.encode('utf8')):
                     key = field[0:-1]
                     self._dicts.append(key)
                 else:
-                    p = field.find('=')
+                    p = field.find('='.encode('utf8'))
                     if p > 0:
                         key = field[p + 1:]
-                        resource = field[0:p] + '/openssh-key'
+                        resource = field[0:p] + '/openssh-key'.encode('utf-8')
                     else:
                         key = resource = field
                     self._leaves[key] = resource
@@ -287,9 +287,9 @@ class LazyLoadMetadata(dict):
             if val and val[0] == '{':
                 val = json.loads(val)
             else:
-                p = val.find('\n')
+                p = val.find('\n'.encode('utf8'))
                 if p > 0:
-                    val = val.split('\n')
+                    val = val.split('\n'.encode('utf8'))
             self[key] = val
         elif key in self._dicts:
             self[key] = LazyLoadMetadata(self._url + key + '/',
@@ -332,7 +332,7 @@ def _build_instance_metadata_url(url, version, path):
         http://169.254.169.254/latest/meta-data/
 
     """
-    return '%s/%s/%s/' % (url, version, path)
+    return u'{0:s}/{1:s}/{2:s}/'.format(url, version, path)
 
 
 def get_instance_metadata(version='latest', url='http://169.254.169.254',
@@ -373,7 +373,7 @@ def get_instance_identity(version='latest', url='http://169.254.169.254',
         socket.setdefaulttimeout(timeout)
     try:
         data = retry_url(base_url, num_retries=num_retries)
-        fields = data.split('\n')
+        fields = data.split('\n'.encode('utf8'))
         for field in fields:
             val = retry_url(base_url + '/' + field + '/')
             if val[0] == '{':
@@ -397,7 +397,7 @@ def get_instance_userdata(version='latest', sep=None,
             l = user_data.split(sep)
             user_data = {}
             for nvpair in l:
-                t = nvpair.split('=')
+                t = nvpair.split('='.encode('utf8'))
                 user_data[t[0].strip()] = t[1].strip()
     return user_data
 
@@ -426,8 +426,8 @@ def parse_ts(ts):
 
 def find_class(module_name, class_name=None):
     if class_name:
-        module_name = "%s.%s" % (module_name, class_name)
-    modules = module_name.split('.')
+        module_name = u"{0:s}.{1:s}".format(module_name, class_name)
+    modules = module_name.split('.'.encode('utf8'))
     c = None
 
     try:
@@ -458,12 +458,12 @@ def fetch_file(uri, file=None, username=None, password=None):
     retrieved is returned.
     The URI can be either an HTTP url, or "s3://bucket_name/key_name"
     """
-    boto.log.info('Fetching %s' % uri)
+    boto.log.info(u'Fetching {0:s}'.format(uri))
     if file == None:
         file = tempfile.NamedTemporaryFile()
     try:
         if uri.startswith('s3://'):
-            bucket_name, key_name = uri[len('s3://'):].split('/', 1)
+            bucket_name, key_name = uri[len('s3://'):].split('/'.encode('utf8'), 1)
             c = boto.connect_s3(aws_access_key_id=username,
                                 aws_secret_access_key=password)
             bucket = c.get_bucket(bucket_name)
@@ -481,7 +481,7 @@ def fetch_file(uri, file=None, username=None, password=None):
         file.seek(0)
     except:
         raise
-        boto.log.exception('Problem Retrieving file: %s' % uri)
+        boto.log.exception(u'Problem Retrieving file: {0:s}'.format(uri))
         file = None
     return file
 
@@ -497,7 +497,7 @@ class ShellCommand(object):
         self.run(cwd=cwd)
 
     def run(self, cwd=None):
-        boto.log.info('running:%s' % self.command)
+        boto.log.info(u'running:{0:s}'.format(self.command))
         self.process = subprocess.Popen(self.command, shell=True,
                                         stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE,
@@ -573,11 +573,8 @@ class AuthSMTPHandler(logging.handlers.SMTPHandler):
             smtp = smtplib.SMTP(self.mailhost, port)
             smtp.login(self.username, self.password)
             msg = self.format(record)
-            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
-                            self.fromaddr,
-                            ','.join(self.toaddrs),
-                            self.getSubject(record),
-                            email.utils.formatdate(), msg)
+            msg = u"From: {0:s}\r\nTo: {1:s}\r\nSubject: {2:s}\r\nDate: {3:s}\r\n\r\n{4:s}".format(self.fromaddr,
+                       ','.join(self.toaddrs), self.getSubject(record), email.utils.formatdate(), msg)
             smtp.sendmail(self.fromaddr, self.toaddrs, msg)
             smtp.quit()
         except (KeyboardInterrupt, SystemExit):
@@ -745,7 +742,7 @@ def notify(subject, body=None, html_body=None, to_string=None,
            attachments=None, append_instance_id=True):
     attachments = attachments or []
     if append_instance_id:
-        subject = "[%s] %s" % (boto.config.get_value("Instance", "instance-id"), subject)
+        subject = u"[{0:s}] {1:s}".format(boto.config.get_value("Instance", "instance-id"), subject)
     if not to_string:
         to_string = boto.config.get_value('Notification', 'smtp_to', None)
     if to_string:
