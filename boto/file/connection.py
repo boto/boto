@@ -21,7 +21,7 @@
 
 # File representation of connection, for use with "file://" URIs.
 
-from bucket import Bucket
+from .bucket import Bucket
 
 class FileConnection(object):
 

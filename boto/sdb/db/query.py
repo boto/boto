@@ -38,10 +38,10 @@ class Query(object):
     def __iter__(self):
         return iter(self.manager.query(self))
 
-    def next(self):
+    def __next__(self):
         if self.__local_iter__ == None:
             self.__local_iter__ = self.__iter__()
-        return self.__local_iter__.next()
+        return next(self.__local_iter__)
 
     def filter(self, property_operator, value):
         self.filters.append((property_operator, value))

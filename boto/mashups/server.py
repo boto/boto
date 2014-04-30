@@ -30,7 +30,8 @@ from boto.mashups.interactive import interactive_shell
 from boto.sdb.db.model import Model
 from boto.sdb.db.property import StringProperty
 import os
-import StringIO
+import io
+import collections
 
 
 class ServerSet(list):
@@ -41,7 +42,7 @@ class ServerSet(list):
         for server in self:
             try:
                 val = getattr(server, name)
-                if callable(val):
+                if isinstance(val, collections.Callable):
                     is_callable = True
                 results.append(val)
             except:
@@ -228,7 +229,7 @@ class Server(Model):
             self._config.set('Pyami', 'server_sdb_domain', self._manager.domain.name)
             self._config.set("Pyami", 'server_sdb_name', self.name)
 
-        cfg = StringIO.StringIO()
+        cfg = io.StringIO()
         self._config.write(cfg)
         cfg = cfg.getvalue()
         r = ami.run(min_count=1,
@@ -252,7 +253,7 @@ class Server(Model):
                        uname='root'):
         import paramiko
         if not self.instance:
-            print 'No instance yet!'
+            print('No instance yet!')
             return
         if not self._ssh_client:
             if not key_file:
@@ -288,53 +289,53 @@ class Server(Model):
         interactive_shell(channel)
 
     def bundle_image(self, prefix, key_file, cert_file, size):
-        print 'bundling image...'
-        print '\tcopying cert and pk over to /mnt directory on server'
+        print('bundling image...')
+        print('\tcopying cert and pk over to /mnt directory on server')
         ssh_client = self.get_ssh_client()
         sftp_client = ssh_client.open_sftp()
         path, name = os.path.split(key_file)
-        remote_key_file = '/mnt/%s' % name
+        remote_key_file = '/mnt/{0:s}'.format(name)
         self.put_file(key_file, remote_key_file)
         path, name = os.path.split(cert_file)
-        remote_cert_file = '/mnt/%s' % name
+        remote_cert_file = '/mnt/{0:s}'.format(name)
         self.put_file(cert_file, remote_cert_file)
-        print '\tdeleting %s' % BotoConfigPath
+        print('\tdeleting {0:s}'.format(BotoConfigPath))
         # delete the metadata.ini file if it exists
         try:
             sftp_client.remove(BotoConfigPath)
         except:
             pass
         command = 'sudo ec2-bundle-vol '
-        command += '-c %s -k %s ' % (remote_cert_file, remote_key_file)
-        command += '-u %s ' % self._reservation.owner_id
-        command += '-p %s ' % prefix
-        command += '-s %d ' % size
+        command += '-c {0:s} -k {1:s} '.format(remote_cert_file, remote_key_file)
+        command += '-u {0:s} '.format(self._reservation.owner_id)
+        command += '-p {0:s} '.format(prefix)
+        command += '-s {0:d} '.format(size)
         command += '-d /mnt '
         if self.instance.instance_type == 'm1.small' or self.instance_type == 'c1.medium':
             command += '-r i386'
         else:
             command += '-r x86_64'
-        print '\t%s' % command
+        print('\t{0:s}'.format(command))
         t = ssh_client.exec_command(command)
         response = t[1].read()
-        print '\t%s' % response
-        print '\t%s' % t[2].read()
-        print '...complete!'
+        print('\t{0:s}'.format(response))
+        print('\t{0:s}'.format)
+        print('...complete!')
 
     def upload_bundle(self, bucket, prefix):
-        print 'uploading bundle...'
+        print('uploading bundle...')
         command = 'ec2-upload-bundle '
-        command += '-m /mnt/%s.manifest.xml ' % prefix
-        command += '-b %s ' % bucket
-        command += '-a %s ' % self.ec2.aws_access_key_id
-        command += '-s %s ' % self.ec2.aws_secret_access_key
-        print '\t%s' % command
+        command += '-m /mnt/{0:s}.manifest.xml '.format(prefix)
+        command += '-b {0:s} '.format(bucket)
+        command += '-a {0:s} '.format(self.ec2.aws_access_key_id)
+        command += '-s {0:s} '.format(self.ec2.aws_secret_access_key)
+        print('\t{0:s}'.format(command))
         ssh_client = self.get_ssh_client()
         t = ssh_client.exec_command(command)
         response = t[1].read()
-        print '\t%s' % response
-        print '\t%s' % t[2].read()
-        print '...complete!'
+        print('\t{0:s}'.format(response))
+        print('\t{0:s}'.format)
+        print('...complete!')
 
     def create_image(self, bucket=None, prefix=None, key_file=None, cert_file=None, size=None):
         iobject = IObject()
@@ -350,7 +351,7 @@ class Server(Model):
             size = iobject.get_int('Size (in MB) of bundled image')
         self.bundle_image(prefix, key_file, cert_file, size)
         self.upload_bundle(bucket, prefix)
-        print 'registering image...'
+        print('registering image...')
         self.image_id = self.ec2.register_image('%s/%s.manifest.xml' % (bucket, prefix))
         return self.image_id
 
@@ -384,12 +385,12 @@ class Server(Model):
         return self.ec2.detach_volume(volume_id=volume_id, instance_id=self.instance_id)
 
     def install_package(self, package_name):
-        print 'installing %s...' % package_name
-        command = 'yum -y install %s' % package_name
-        print '\t%s' % command
+        print('installing {0:s}...'.format(package_name))
+        command = 'yum -y install {0:s}'.format(package_name)
+        print('\t{0:s}'.format(command))
         ssh_client = self.get_ssh_client()
         t = ssh_client.exec_command(command)
         response = t[1].read()
-        print '\t%s' % response
-        print '\t%s' % t[2].read()
-        print '...complete!'
+        print('\t{0:s}'.format(response))
+        print('\t{0:s}'.format)
+        print('...complete!' )

@@ -22,8 +22,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import user
-import key
+from . import user
+from . import key
 from boto import handler
 import xml.sax
 

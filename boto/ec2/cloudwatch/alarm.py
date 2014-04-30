@@ -57,7 +57,7 @@ class MetricAlarm(object):
                     '<':  'LessThanThreshold',
                     '<=': 'LessThanOrEqualToThreshold',
                }
-    _rev_cmp_map = dict((v, k) for (k, v) in _cmp_map.iteritems())
+    _rev_cmp_map = dict((v, k) for (k, v) in _cmp_map.items())
 
     def __init__(self, connection=None, name=None, metric=None,
                  namespace=None, statistic=None, comparison=None,

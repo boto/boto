@@ -66,7 +66,7 @@ class Item(object):
             self._data = data
             self._is_dirty = True
 
-            for key in data.keys():
+            for key in list(data.keys()):
                 self._orig_data[key] = NEWVALUE
 
     def __getitem__(self, key):
@@ -94,13 +94,13 @@ class Item(object):
         self._is_dirty = True
 
     def keys(self):
-        return self._data.keys()
+        return list(self._data.keys())
 
     def values(self):
-        return self._data.values()
+        return list(self._data.values())
 
     def items(self):
-        return self._data.items()
+        return list(self._data.items())
 
     def get(self, key, default=None):
         return self._data.get(key, default)
@@ -172,7 +172,7 @@ class Item(object):
         """
         self._data = {}
 
-        for field_name, field_value in data.get('Item', {}).items():
+        for field_name, field_value in list(data.get('Item', {}).items()):
             self[field_name] = self._dynamizer.decode(field_value)
 
         self.mark_clean()
@@ -199,7 +199,7 @@ class Item(object):
         """
         raw_key_data = {}
 
-        for key, value in self.get_keys().items():
+        for key, value in list(self.get_keys().items()):
             raw_key_data[key] = self._dynamizer.encode(value)
 
         return raw_key_data
@@ -213,7 +213,7 @@ class Item(object):
         expects = {}
 
         if fields is None:
-            fields = self._data.keys() + self._orig_data.keys()
+            fields = list(self._data.keys()) + list(self._orig_data.keys())
 
         # Only uniques.
         fields = set(fields)
@@ -264,7 +264,7 @@ class Item(object):
         # and hand-off to the table to handle creation/update.
         final_data = {}
 
-        for key, value in self._data.items():
+        for key, value in list(self._data.items()):
             final_data[key] = self._dynamizer.encode(value)
 
         return final_data
@@ -282,7 +282,7 @@ class Item(object):
         final_data = {}
 
         # Loop over ``_orig_data`` so that we only build up data that's changed.
-        for key, value in self._orig_data.items():
+        for key, value in list(self._orig_data.items()):
             if key in self._data:
                 # It changed.
                 final_data[key] = {
@@ -323,7 +323,7 @@ class Item(object):
         # Build a new dict of only the data we're changing.
         final_data = self.prepare_partial()
         # Build expectations of only the fields we're planning to update.
-        expects = self.build_expects(fields=self._orig_data.keys())
+        expects = self.build_expects(fields=list(self._orig_data.keys()))
         returned = self.table._update_item(key, final_data, expects=expects)
         # Mark the object as clean.
         self.mark_clean()

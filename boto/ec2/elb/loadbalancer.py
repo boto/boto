@@ -157,7 +157,7 @@ class LoadBalancer(object):
         :param zones: The name of the zone(s) to add.
 
         """
-        if isinstance(zones, str) or isinstance(zones, unicode):
+        if isinstance(zones, str) or isinstance(zones, str):
             zones = [zones]
         new_zones = self.connection.enable_availability_zones(self.name, zones)
         self.availability_zones = new_zones
@@ -170,7 +170,7 @@ class LoadBalancer(object):
         :param zones: The name of the zone(s) to add.
 
         """
-        if isinstance(zones, str) or isinstance(zones, unicode):
+        if isinstance(zones, str) or isinstance(zones, str):
             zones = [zones]
         new_zones = self.connection.disable_availability_zones(self.name, zones)
         self.availability_zones = new_zones
@@ -185,7 +185,7 @@ class LoadBalancer(object):
             to add to this load balancer.
 
         """
-        if isinstance(instances, str) or isinstance(instances, unicode):
+        if isinstance(instances, str) or isinstance(instances, str):
             instances = [instances]
         new_instances = self.connection.register_instances(self.name,
                                                            instances)
@@ -200,7 +200,7 @@ class LoadBalancer(object):
             to remove from this load balancer.
 
         """
-        if isinstance(instances, str) or isinstance(instances, unicode):
+        if isinstance(instances, str) or isinstance(instances, str):
             instances = [instances]
         new_instances = self.connection.deregister_instances(self.name,
                                                              instances)
@@ -290,7 +290,7 @@ class LoadBalancer(object):
         :param subnets: The name of the subnet(s) to add.
 
         """
-        if isinstance(subnets, str) or isinstance(subnets, unicode):
+        if isinstance(subnets, str) or isinstance(subnets, str):
             subnets = [subnets]
         new_subnets = self.connection.attach_lb_to_subnets(self.name, subnets)
         self.subnets = new_subnets
@@ -303,7 +303,7 @@ class LoadBalancer(object):
         :param subnets: The name of the subnet(s) to detach.
 
         """
-        if isinstance(subnets, str) or isinstance(subnets, unicode):
+        if isinstance(subnets, str) or isinstance(subnets, str):
             subnets = [subnets]
         new_subnets = self.connection.detach_lb_to_subnets(self.name, subnets)
         self.subnets = new_subnets
@@ -319,7 +319,7 @@ class LoadBalancer(object):
 
         """
         if isinstance(security_groups, str) or \
-              isinstance(security_groups, unicode):
+              isinstance(security_groups, str):
             security_groups = [security_groups]
         new_sgs = self.connection.apply_security_groups_to_lb(
                                          self.name, security_groups)

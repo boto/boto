@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 
 import errno
-import httplib
+import http.client
 import os
 import re
 import socket
@@ -93,7 +93,7 @@ class ResumableDownloadHandler(object):
 
     MIN_ETAG_LEN = 5
 
-    RETRYABLE_EXCEPTIONS = (httplib.HTTPException, IOError, socket.error,
+    RETRYABLE_EXCEPTIONS = (http.client.HTTPException, IOError, socket.error,
                             socket.gaierror)
 
     def __init__(self, tracker_file_name=None, num_retries=None):
@@ -133,17 +133,14 @@ class ResumableDownloadHandler(object):
             # read correctly. Since ETags need not be MD5s, we now do a simple
             # length sanity check instead.
             if len(self.etag_value_for_current_download) < self.MIN_ETAG_LEN:
-                print('Couldn\'t read etag in tracker file (%s). Restarting '
-                      'download from scratch.' % self.tracker_file_name)
-        except IOError, e:
+                print('Couldn\'t read etag in tracker file ({0:s}). Restarting ')
+        except IOError as e:
             # Ignore non-existent file (happens first time a download
             # is attempted on an object), but warn user for other errors.
             if e.errno != errno.ENOENT:
                 # Will restart because
                 # self.etag_value_for_current_download == None.
-                print('Couldn\'t read URI tracker file (%s): %s. Restarting '
-                      'download from scratch.' %
-                      (self.tracker_file_name, e.strerror))
+                print('Couldn\'t read URI tracker file ({0:s}): {1:s}. Restarting ')
         finally:
             if f:
                 f.close()
@@ -156,13 +153,13 @@ class ResumableDownloadHandler(object):
         try:
             f = open(self.tracker_file_name, 'w')
             f.write('%s\n' % self.etag_value_for_current_download)
-        except IOError, e:
+        except IOError as e:
             raise ResumableDownloadException(
-                'Couldn\'t write tracker file (%s): %s.\nThis can happen'
-                'if you\'re using an incorrectly configured download tool\n'
-                '(e.g., gsutil configured to save tracker files to an '
-                'unwritable directory)' %
-                (self.tracker_file_name, e.strerror),
+                'Couldn\'t write tracker file ({0:s}): {1:s}.\nThis can happen' \
+                'if you\'re using an incorrectly configured download tool\n' \
+                '(e.g., gsutil configured to save tracker files to an ' \
+                'unwritable directory)' \
+                .format(self.tracker_file_name, e.strerror),
                 ResumableTransferDisposition.ABORT)
         finally:
             if f:
@@ -188,23 +185,23 @@ class ResumableDownloadHandler(object):
             # Try to resume existing transfer.
             if cur_file_size > key.size:
               raise ResumableDownloadException(
-                  '%s is larger (%d) than %s (%d).\nDeleting tracker file, so '
-                  'if you re-try this download it will start from scratch' %
-                  (fp.name, cur_file_size, str(storage_uri_for_key(key)),
-                   key.size), ResumableTransferDisposition.ABORT)
+                  '{0:s} is larger ({1:d}) than {2:s} ({3:d}).\nDeleting tracker file, so ' \
+                  'if you re-try this download it will start from scratch' \
+                  .format(fp.name, cur_file_size, str(storage_uri_for_key(key)),
+                          key.size), ResumableTransferDisposition.ABORT)
             elif cur_file_size == key.size:
                 if key.bucket.connection.debug >= 1:
-                    print 'Download complete.'
+                    print('Download complete.')
                 return
             if key.bucket.connection.debug >= 1:
-                print 'Resuming download.'
+                print('Resuming download.')
             headers = headers.copy()
-            headers['Range'] = 'bytes=%d-%d' % (cur_file_size, key.size - 1)
+            headers['Range'] = 'bytes={0:d}-{1:d}'.format(cur_file_size, key.size - 1)
             cb = ByteTranslatingCallbackHandler(cb, cur_file_size).call
             self.download_start_point = cur_file_size
         else:
             if key.bucket.connection.debug >= 1:
-                print 'Starting new resumable download.'
+                print('Starting new resumable download.')
             self._save_tracker_info(key)
             self.download_start_point = 0
             # Truncate the file, in case a new resumable download is being
@@ -285,11 +282,11 @@ class ResumableDownloadHandler(object):
                 # non-resumable downloads, this call was removed. Checksum
                 # validation of file contents should be done by the caller.
                 if debug >= 1:
-                    print 'Resumable download complete.'
+                    print('Resumable download complete.')
                 return
-            except self.RETRYABLE_EXCEPTIONS, e:
+            except self.RETRYABLE_EXCEPTIONS as e:
                 if debug >= 1:
-                    print('Caught exception (%s)' % e.__repr__())
+                    print('Caught exception ({0:s})'.format)
                 if isinstance(e, IOError) and e.errno == errno.EPIPE:
                     # Broken pipe error causes httplib to immediately
                     # close the socket (http://bugs.python.org/issue5542),
@@ -301,25 +298,25 @@ class ResumableDownloadHandler(object):
                     else:
                       key.get_file(fp, headers, cb, num_cb, torrent, version_id,
                                    override_num_retries=0)
-            except ResumableDownloadException, e:
+            except ResumableDownloadException as e:
                 if (e.disposition ==
                     ResumableTransferDisposition.ABORT_CUR_PROCESS):
                     if debug >= 1:
-                        print('Caught non-retryable ResumableDownloadException '
-                              '(%s)' % e.message)
+                        print('Caught non-retryable ResumableDownloadException ' \
+                              '({0:s})'.format(e.message))
                     raise
                 elif (e.disposition ==
                     ResumableTransferDisposition.ABORT):
                     if debug >= 1:
-                        print('Caught non-retryable ResumableDownloadException '
-                              '(%s); aborting and removing tracker file' %
-                              e.message)
+                        print('Caught non-retryable ResumableDownloadException ' \
+                              '({0:s}); aborting and removing tracker file' \
+                              .format(e.message))
                     self._remove_tracker_file()
                     raise
                 else:
                     if debug >= 1:
-                        print('Caught ResumableDownloadException (%s) - will '
-                              'retry' % e.message)
+                        print('Caught ResumableDownloadException ({0:s}) - will ' \
+                              'retry'.format(e.message))
 
             # At this point we had a re-tryable failure; see if made progress.
             if get_cur_file_size(fp) > had_file_bytes_before_attempt:
@@ -329,9 +326,9 @@ class ResumableDownloadHandler(object):
 
             if progress_less_iterations > self.num_retries:
                 # Don't retry any longer in the current process.
-                raise ResumableDownloadException(
-                    'Too many resumable download attempts failed without '
-                    'progress. You might try this download again later',
+                raise ResumableDownloadException(                            \
+                    'Too many resumable download attempts failed without ' \
+                    'progress. You might try this download again later',    \
                     ResumableTransferDisposition.ABORT_CUR_PROCESS)
 
             # Close the key, in case a previous download died partway
@@ -342,12 +339,12 @@ class ResumableDownloadHandler(object):
             # which we can safely ignore.
             try:
                 key.close()
-            except httplib.IncompleteRead:
+            except http.client.IncompleteRead as e:
                 pass
 
             sleep_time_secs = 2**progress_less_iterations
             if debug >= 1:
-                print('Got retryable failure (%d progress-less in a row).\n'
-                      'Sleeping %d seconds before re-trying' %
-                      (progress_less_iterations, sleep_time_secs))
+                print('Got retryable failure ({0:d} progress-less in a row).\n' \
+                      'Sleeping {0:d} seconds before re-trying' \
+                      .format(progress_less_iterations, sleep_time_secs))
             time.sleep(sleep_time_secs)

@@ -7,7 +7,7 @@ class BaseObject(object):
     def __repr__(self):
         result = self.__class__.__name__ + '{ '
         counter = 0
-        for key, value in self.__dict__.iteritems():
+        for key, value in self.__dict__.items():
             # first iteration no comma
             counter += 1
             if counter > 1:

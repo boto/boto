@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import uuid
 from boto.connection import AWSQueryConnection
 from boto.fps.exception import ResponseErrorFactory
@@ -59,8 +59,8 @@ def requires(*groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if 1 != len(filter(hasgroup, groups)):
+            hasgroup = lambda x: len(x) == len(list(filter(kw.has_key, x)))
+            if 1 != len(list(filter(hasgroup, groups))):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires {1} argument(s)" \
                           "".format(getattr(func, 'action', 'Method'), message)
@@ -86,7 +86,7 @@ def needs_caller_reference(func):
 def api_action(*api):
 
     def decorator(func):
-        action = ''.join(api or map(str.capitalize, func.func_name.split('_')))
+        action = ''.join(api or list(map(str.capitalize, func.__name__.split('_'))))
         response = ResponseFactory(action)
         if hasattr(boto.fps.response, action + 'Response'):
             response = getattr(boto.fps.response, action + 'Response')
@@ -212,8 +212,8 @@ class FPSConnection(AWSQueryConnection):
         kw.setdefault('callerKey', self.aws_access_key_id)
 
         safestr = lambda x: x is not None and str(x) or ''
-        safequote = lambda x: urllib.quote(safestr(x), safe='~')
-        payload = sorted([(k, safequote(v)) for k, v in kw.items()])
+        safequote = lambda x: urllib.parse.quote(safestr(x), safe='~')
+        payload = sorted([(k, safequote(v)) for k, v in list(kw.items())])
 
         encoded = lambda p: '&'.join([k + '=' + v for k, v in p])
         canonical = '\n'.join(['GET', endpoint, base, encoded(payload)])

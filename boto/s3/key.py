@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from __future__ import with_statement
+
 import errno
 import mimetypes
 import os
@@ -30,11 +30,11 @@ try:
     import rfc822
 except ImportError:
     import email.utils as rfc822
-import StringIO
+import io
 import base64
 import binascii
 import math
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import boto.utils
 from boto.exception import BotoClientError
 from boto.exception import StorageDataError
@@ -276,7 +276,7 @@ class Key(object):
             response_headers = self.resp.msg
             self.metadata = boto.utils.get_aws_metadata(response_headers,
                                                         provider)
-            for name, value in response_headers.items():
+            for name, value in list(response_headers.items()):
                 # To get correct size for Range GETs, use Content-Range
                 # header if one was returned. If not, use Content-Length
                 # header.
@@ -355,7 +355,7 @@ class Key(object):
         self.mode = None
         self.closed = True
 
-    def next(self):
+    def __next__(self):
         """
         By providing a next method, the key object supports use as an iterator.
         For example, you can now say:
@@ -1352,14 +1352,14 @@ class Key(object):
             be encrypted on the server-side by S3 and will be stored
             in an encrypted form while at rest in S3.
         """
-        if isinstance(s, unicode):
+        if isinstance(s, str):
             s = s.encode("utf-8")
         if hasattr(s, 'decode') and not hasattr(s, 'encode'):
             # python3
             import io
             fp = io.BytesIO(s)
         else:
-            fp = StringIO.StringIO(s)
+            fp = io.StringIO(s)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5, reduced_redundancy,
                                         encrypt_key=encrypt_key)
@@ -1439,7 +1439,7 @@ class Key(object):
         if response_headers:
             for key in response_headers:
                 query_args.append('%s=%s' % (
-                    key, urllib.quote(response_headers[key])))
+                    key, urllib.parse.quote(response_headers[key])))
         query_args = '&'.join(query_args)
         self.open('r', headers, query_args=query_args,
                   override_num_retries=override_num_retries)
@@ -1475,7 +1475,7 @@ class Key(object):
                     if i == cb_count or cb_count == -1:
                         cb(data_len, cb_size)
                         i = 0
-        except IOError, e:
+        except IOError as e:
             if e.errno == errno.ENOSPC:
                 raise StorageDataError('Out of space for destination file '
                                        '%s' % fp.name)
@@ -1680,7 +1680,7 @@ class Key(object):
         :returns: The contents of the file as a string
         """
         if hasattr("", 'decode'):
-            fp = StringIO.StringIO()
+            fp = io.StringIO()
         else:
             import io
             fp = io.BytesIO()

@@ -88,5 +88,5 @@ class SelectResultSet(object):
                 raise StopIteration
             more_results = self.next_token != None
 
-    def next(self):
-        return self.__iter__().next()
+    def __next__(self):
+        return next(self.__iter__())

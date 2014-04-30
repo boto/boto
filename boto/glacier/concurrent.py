@@ -25,7 +25,7 @@ import threading
 import hashlib
 import time
 import logging
-from Queue import Queue, Empty
+from queue import Queue, Empty
 import binascii
 
 from .utils import DEFAULT_PART_SIZE, minimum_part_size, chunk_hashes, \
@@ -66,9 +66,9 @@ class ConcurrentTransferer(object):
 
     def _add_work_items_to_queue(self, total_parts, worker_queue, part_size):
         log.debug("Adding work items to queue.")
-        for i in xrange(total_parts):
+        for i in range(total_parts):
             worker_queue.put((i, part_size))
-        for i in xrange(self._num_threads):
+        for i in range(self._num_threads):
             worker_queue.put(_END_SENTINEL)
 
 
@@ -144,7 +144,7 @@ class ConcurrentUploader(ConcurrentTransferer):
         try:
             self._wait_for_upload_threads(hash_chunks, result_queue,
                                           total_parts)
-        except UploadArchiveError, e:
+        except UploadArchiveError as e:
             log.debug("An error occurred while uploading an archive, "
                       "aborting multipart upload.")
             self._api.abort_multipart_upload(self._vault_name, upload_id)
@@ -157,7 +157,7 @@ class ConcurrentUploader(ConcurrentTransferer):
         return response['ArchiveId']
 
     def _wait_for_upload_threads(self, hash_chunks, result_queue, total_parts):
-        for _ in xrange(total_parts):
+        for _ in range(total_parts):
             result = result_queue.get()
             if isinstance(result, Exception):
                 log.debug("An error was found in the result queue, terminating "
@@ -175,7 +175,7 @@ class ConcurrentUploader(ConcurrentTransferer):
     def _start_upload_threads(self, result_queue, upload_id, worker_queue,
                               filename):
         log.debug("Starting threads.")
-        for _ in xrange(self._num_threads):
+        for _ in range(self._num_threads):
             thread = UploadWorkerThread(self._api, self._vault_name, filename,
                                         upload_id, worker_queue, result_queue)
             time.sleep(0.2)
@@ -229,11 +229,11 @@ class UploadWorkerThread(TransferThread):
 
     def _process_chunk(self, work):
         result = None
-        for i in xrange(self._num_retries + 1):
+        for i in range(self._num_retries + 1):
             try:
                 result = self._upload_chunk(work)
                 break
-            except self._retry_exceptions, e:
+            except self._retry_exceptions as e:
                 log.error("Exception caught uploading part number %s for "
                           "vault %s, attempt: (%s / %s), filename: %s, "
                           "exception: %s, msg: %s",
@@ -304,7 +304,7 @@ class ConcurrentDownloader(ConcurrentTransferer):
         self._start_download_threads(result_queue, worker_queue)
         try:
             self._wait_for_download_threads(filename, result_queue, total_parts)
-        except DownloadArchiveError, e:
+        except DownloadArchiveError as e:
             log.debug("An error occurred while downloading an archive: %s", e)
             raise e
         log.debug("Download completed.")
@@ -322,7 +322,7 @@ class ConcurrentDownloader(ConcurrentTransferer):
         """
         hash_chunks = [None] * total_parts
         with open(filename, "wb") as f:
-            for _ in xrange(total_parts):
+            for _ in range(total_parts):
                 result = result_queue.get()
                 if isinstance(result, Exception):
                     log.debug("An error was found in the result queue, "
@@ -350,7 +350,7 @@ class ConcurrentDownloader(ConcurrentTransferer):
 
     def _start_download_threads(self, result_queue, worker_queue):
         log.debug("Starting threads.")
-        for _ in xrange(self._num_threads):
+        for _ in range(self._num_threads):
             thread = DownloadWorkerThread(self._job, worker_queue, result_queue)
             time.sleep(0.2)
             thread.start()
@@ -391,11 +391,11 @@ class DownloadWorkerThread(TransferThread):
         :param work:
         """
         result = None
-        for _ in xrange(self._num_retries):
+        for _ in range(self._num_retries):
             try:
                 result = self._download_chunk(work)
                 break
-            except self._retry_exceptions, e:
+            except self._retry_exceptions as e:
                 log.error("Exception caught downloading part number %s for "
                           "job %s", work[0], self._job,)
                 time.sleep(self._time_between_retries)

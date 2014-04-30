@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import xml.sax
 
 import boto
@@ -97,8 +97,8 @@ class Bucket(S3Bucket):
         if generation:
             query_args_l.append('generation=%s' % generation)
         if response_headers:
-            for rk, rv in response_headers.iteritems():
-                query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
+            for rk, rv in response_headers.items():
+                query_args_l.append('%s=%s' % (rk, urllib.parse.quote(rv)))
 
         key, resp = self._get_key_internal(key_name, headers,
                                            query_args_l=query_args_l)

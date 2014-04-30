@@ -77,12 +77,12 @@ class Submitter:
                 for file in files:
                     fullpath = os.path.join(root, file)
                     if status:
-                        print 'Submitting %s' % fullpath
+                        print('Submitting {0:s}'.format(fullpath))
                     self.submit_file(fullpath, metadata, cb, num_cb, prefix)
                     total += 1
         elif os.path.isfile(path):
             self.submit_file(path, metadata, cb, num_cb)
             total += 1
         else:
-            print 'problem with %s' % path
+            print('problem with {0:s}'.format(path))
         return (metadata['Batch'], total)

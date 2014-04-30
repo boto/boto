@@ -43,7 +43,7 @@ class Installer(boto.pyami.installers.Installer):
             hour = str(random.randrange(24))
         fp = open('/etc/cron.d/%s' % name, "w")
         if env:
-            for key, value in env.items():
+            for key, value in list(env.items()):
                 fp.write('%s=%s\n' % (key, value))
         fp.write('%s %s %s %s %s %s %s\n' % (minute, hour, mday, month, wday, who, command))
         fp.close()

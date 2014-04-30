@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from __future__ import with_statement
+
 from .exceptions import UploadArchiveError
 from .job import Job
 from .writer import compute_hashes_from_fileobj, resume_file_upload, Writer
@@ -54,7 +54,7 @@ class Vault(object):
         if response_data:
             for response_name, attr_name, default in self.ResponseDataElements:
                 value = response_data[response_name]
-                if isinstance(value, unicode) and hasattr(value, 'decode'):
+                if isinstance(value, str) and hasattr(value, 'decode'):
                     # python2 unicode strings only
                     value = value.encode('utf8')
                 setattr(self, attr_name, value)

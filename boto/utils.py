@@ -40,11 +40,11 @@ Some handy utility functions used by several classes.
 """
 
 import socket
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 import imp
 import subprocess
-import StringIO
+import io
 import time
 import logging.handlers
 import boto
@@ -105,7 +105,7 @@ def unquote_v(nv):
     if len(nv) == 1:
         return nv
     else:
-        return (nv[0], urllib.unquote(nv[1]))
+        return (nv[0], urllib.parse.unquote(nv[1]))
 
 
 def canonical_string(method, path, headers, expires=None,
@@ -175,7 +175,7 @@ def merge_meta(headers, metadata, provider=None):
         provider = boto.provider.get_default()
     metadata_prefix = provider.metadata_prefix
     final_headers = headers.copy()
-    for k in metadata.keys():
+    for k in list(metadata.keys()):
         if k.lower() in ['cache-control', 'content-md5', 'content-type',
                          'content-encoding', 'content-disposition',
                          'expires']:
@@ -191,9 +191,9 @@ def get_aws_metadata(headers, provider=None):
         provider = boto.provider.get_default()
     metadata_prefix = provider.metadata_prefix
     metadata = {}
-    for hkey in headers.keys():
+    for hkey in list(headers.keys()):
         if hkey.lower().startswith(metadata_prefix):
-            val = urllib.unquote_plus(headers[hkey])
+            val = urllib.parse.unquote_plus(headers[hkey])
             if hasattr(val, 'decode'):
               try:
                   metadata[hkey[len(metadata_prefix):]] = val.decode('utf-8')
@@ -214,13 +214,13 @@ def retry_url(url, retry_on_404=True, num_retries=10):
     """
     for i in range(0, num_retries):
         try:
-            proxy_handler = urllib2.ProxyHandler({})
-            opener = urllib2.build_opener(proxy_handler)
-            req = urllib2.Request(url)
+            proxy_handler = urllib.request.ProxyHandler({})
+            opener = urllib.request.build_opener(proxy_handler)
+            req = urllib.request.Request(url)
             r = opener.open(req)
             result = r.read()
             return result
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             # in 2.6 you use getcode(), in 2.5 and earlier you use code
             if hasattr(e, 'getcode'):
                 code = e.getcode()
@@ -228,7 +228,7 @@ def retry_url(url, retry_on_404=True, num_retries=10):
                 code = e.code
             if code == 404 and not retry_on_404:
                 return ''
-        except Exception, e:
+        except Exception as e:
             pass
         boto.log.exception('Caught exception reading instance data')
         # If not on the last iteration of the loop then sleep.
@@ -281,7 +281,7 @@ class LazyLoadMetadata(dict):
 
         if key in self._leaves:
             resource = self._leaves[key]
-            val = boto.utils.retry_url(self._url + urllib.quote(resource,
+            val = boto.utils.retry_url(self._url + urllib.parse.quote(resource,
                                                                 safe="/:"),
                                        num_retries=self._num_retries)
             if val and val[0] == '{':
@@ -305,11 +305,11 @@ class LazyLoadMetadata(dict):
 
     def values(self):
         self._materialize()
-        return super(LazyLoadMetadata, self).values()
+        return list(super(LazyLoadMetadata, self).values())
 
     def items(self):
         self._materialize()
-        return super(LazyLoadMetadata, self).items()
+        return list(super(LazyLoadMetadata, self).items())
 
     def __str__(self):
         self._materialize()
@@ -354,7 +354,7 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254',
     try:
         metadata_url = _build_instance_metadata_url(url, version, data)
         return _get_instance_metadata(metadata_url, num_retries=num_retries)
-    except urllib2.URLError, e:
+    except urllib.error.URLError as e:
         return None
     finally:
         if timeout is not None:
@@ -381,7 +381,7 @@ def get_instance_identity(version='latest', url='http://169.254.169.254',
             if field:
                 iid[field] = val
         return iid
-    except urllib2.URLError, e:
+    except urllib.error.URLError as e:
         return None
     finally:
         if timeout is not None:
@@ -447,7 +447,7 @@ def update_dme(username, password, dme_id, ip_address):
     """
     dme_url = 'https://www.dnsmadeeasy.com/servlet/updateip'
     dme_url += '?username=%s&password=%s&id=%s&ip=%s'
-    s = urllib2.urlopen(dme_url % (username, password, dme_id, ip_address))
+    s = urllib.request.urlopen(dme_url % (username, password, dme_id, ip_address))
     return s.read()
 
 
@@ -471,12 +471,12 @@ def fetch_file(uri, file=None, username=None, password=None):
             key.get_contents_to_file(file)
         else:
             if username and password:
-                passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+                passman = urllib.request.HTTPPasswordMgrWithDefaultRealm()
                 passman.add_password(None, uri, username, password)
-                authhandler = urllib2.HTTPBasicAuthHandler(passman)
-                opener = urllib2.build_opener(authhandler)
-                urllib2.install_opener(opener)
-            s = urllib2.urlopen(uri)
+                authhandler = urllib.request.HTTPBasicAuthHandler(passman)
+                opener = urllib.request.build_opener(authhandler)
+                urllib.request.install_opener(opener)
+            s = urllib.request.urlopen(uri)
             file.write(s.read())
         file.seek(0)
     except:
@@ -491,7 +491,7 @@ class ShellCommand(object):
     def __init__(self, command, wait=True, fail_fast=False, cwd=None):
         self.exit_code = 0
         self.command = command
-        self.log_fp = StringIO.StringIO()
+        self.log_fp = io.StringIO()
         self.wait = wait
         self.fail_fast = fail_fast
         self.run(cwd=cwd)
@@ -626,7 +626,7 @@ class LRUCache(dict):
 
     class _Item(object):
         def __init__(self, key, value):
-            self.previous = self.next = None
+            self.previous = self.__next__ = None
             self.key = key
             self.value = value
 
@@ -646,7 +646,7 @@ class LRUCache(dict):
         cur = self.head
         while cur:
             yield cur.key
-            cur = cur.next
+            cur = cur.__next__
 
     def __len__(self):
         return len(self._dict)
@@ -694,8 +694,8 @@ class LRUCache(dict):
             return
 
         previous = item.previous
-        previous.next = item.next
-        if item.next is not None:
+        previous.next = item.__next__
+        if item.__next__ is not None:
             item.next.previous = previous
         else:
             self.tail = previous
@@ -794,9 +794,9 @@ def notify(subject, body=None, html_body=None, to_string=None,
 
 
 def get_utf8_value(value):
-    if not isinstance(value, str) and not isinstance(value, unicode):
+    if not isinstance(value, str) and not isinstance(value, str):
         value = str(value)
-    if isinstance(value, unicode):
+    if isinstance(value, str):
         return value.encode('utf-8')
     else:
         return value
@@ -863,7 +863,7 @@ def write_mime_multipart(content, compress=False, deftype='text/plain', delimite
     rcontent = wrapper.as_string()
 
     if compress:
-        buf = StringIO.StringIO()
+        buf = io.StringIO()
         gz = gzip.GzipFile(mode='wb', fileobj=buf)
         try:
             gz.write(rcontent)
@@ -895,7 +895,7 @@ def guess_mime_type(content, deftype):
         '#cloud-boothook': 'text/cloud-boothook'
     }
     rtype = deftype
-    for possible_type, mimetype in starts_with_mappings.items():
+    for possible_type, mimetype in list(starts_with_mappings.items()):
         if content.startswith(possible_type):
             rtype = mimetype
             break

@@ -505,7 +505,7 @@ class SupportConnection(AWSQueryConnection):
 
     def make_request(self, action, body):
         headers = {
-            'X-Amz-Target': '%s.%s' % (self.TargetPrefix, action),
+            'X-Amz-Target': '{0:s}.{1:s}'.format(self.TargetPrefix, action),
             'Host': self.region.endpoint,
             'Content-Type': 'application/x-amz-json-1.1',
             'Content-Length': str(len(body)),

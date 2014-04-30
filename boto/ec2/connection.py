@@ -2152,7 +2152,7 @@ class EC2Connection(AWSQueryConnection):
         """
         try:
             return self.get_all_key_pairs(keynames=[keyname])[0]
-        except self.ResponseError, e:
+        except self.ResponseError as e:
             if e.code == 'InvalidKeyPair.NotFound':
                 return None
             else:

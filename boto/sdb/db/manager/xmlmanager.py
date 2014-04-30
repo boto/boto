@@ -43,7 +43,7 @@ class XMLConverter:
         self.manager = manager
         self.type_map = { bool : (self.encode_bool, self.decode_bool),
                           int : (self.encode_int, self.decode_int),
-                          long : (self.encode_long, self.decode_long),
+                          int : (self.encode_long, self.decode_long),
                           Model : (self.encode_reference, self.decode_reference),
                           Key : (self.encode_reference, self.decode_reference),
                           Password : (self.encode_password, self.decode_password),
@@ -114,12 +114,12 @@ class XMLConverter:
         return value
 
     def encode_long(self, value):
-        value = long(value)
+        value = int(value)
         return '%d' % value
 
     def decode_long(self, value):
         value = self.get_text_value(value)
-        return long(value)
+        return int(value)
 
     def encode_bool(self, value):
         if value == True:
@@ -145,7 +145,7 @@ class XMLConverter:
             return None
 
     def encode_reference(self, value):
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, str) or isinstance(value, str):
             return value
         if value == None:
             return ''
@@ -209,9 +209,9 @@ class XMLManager(object):
     def _connect(self):
         if self.db_host:
             if self.enable_ssl:
-                from httplib import HTTPSConnection as Connection
+                from http.client import HTTPSConnection as Connection
             else:
-                from httplib import HTTPConnection as Connection
+                from http.client import HTTPConnection as Connection
 
             self.connection = Connection(self.db_host, self.db_port)
 
@@ -347,7 +347,7 @@ class XMLManager(object):
         if not self.connection:
             raise NotImplementedError("Can't query without a database connection")
 
-        from urllib import urlencode
+        from urllib.parse import urlencode
 
         query = str(self._build_query(cls, filters, limit, order_by))
         if query:
@@ -373,7 +373,7 @@ class XMLManager(object):
             for property in properties:
                 if property.name == name:
                     found = True
-                    if types.TypeType(value) == types.ListType:
+                    if types.TypeType(value) == list:
                         filter_parts = []
                         for val in value:
                             val = self.encode_value(property, val)
@@ -459,14 +459,14 @@ class XMLManager(object):
                 elif isinstance(value, Node):
                     prop_node.appendChild(value)
                 else:
-                    text_node = doc.createTextNode(unicode(value).encode("ascii", "ignore"))
+                    text_node = doc.createTextNode(str(value).encode("ascii", "ignore"))
                     prop_node.appendChild(text_node)
             obj_node.appendChild(prop_node)
 
         return doc
 
     def unmarshal_object(self, fp, cls=None, id=None):
-        if isinstance(fp, str) or isinstance(fp, unicode):
+        if isinstance(fp, str) or isinstance(fp, str):
             doc = parseString(fp)
         else:
             doc = parse(fp)
@@ -477,7 +477,7 @@ class XMLManager(object):
         Same as unmarshalling an object, except it returns
         from "get_props_from_doc"
         """
-        if isinstance(fp, str) or isinstance(fp, unicode):
+        if isinstance(fp, str) or isinstance(fp, str):
             doc = parseString(fp)
         else:
             doc = parse(fp)

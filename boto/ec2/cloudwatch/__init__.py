@@ -124,7 +124,7 @@ class CloudWatchConnection(AWSQueryConnection):
         for dim_name in dimension:
             dim_value = dimension[dim_name]
             if dim_value:
-                if isinstance(dim_value, basestring):
+                if isinstance(dim_value, str):
                     dim_value = [dim_value]
                 for value in dim_value:
                     params['%s.%d.Name' % (prefix, i+1)] = dim_name
@@ -135,12 +135,12 @@ class CloudWatchConnection(AWSQueryConnection):
                 i += 1
 
     def build_list_params(self, params, items, label):
-        if isinstance(items, basestring):
+        if isinstance(items, str):
             items = [items]
         for index, item in enumerate(items):
             i = index + 1
             if isinstance(item, dict):
-                for k, v in item.iteritems():
+                for k, v in item.items():
                     params[label % (i, 'Name')] = k
                     if v is not None:
                         params[label % (i, 'Value')] = v
@@ -150,7 +150,7 @@ class CloudWatchConnection(AWSQueryConnection):
     def build_put_params(self, params, name, value=None, timestamp=None,
                         unit=None, dimensions=None, statistics=None):
         args = (name, value, unit, dimensions, statistics, timestamp)
-        length = max(map(lambda a: len(a) if isinstance(a, list) else 1, args))
+        length = max([len(a) if isinstance(a, list) else 1 for a in args])
 
         def aslist(a):
             if isinstance(a, list):
@@ -159,7 +159,7 @@ class CloudWatchConnection(AWSQueryConnection):
                 return a
             return [a] * length
 
-        for index, (n, v, u, d, s, t) in enumerate(zip(*map(aslist, args))):
+        for index, (n, v, u, d, s, t) in enumerate(zip(*list(map(aslist, args)))):
             metric_data = {'MetricName': n}
 
             if timestamp:
@@ -185,7 +185,7 @@ class CloudWatchConnection(AWSQueryConnection):
             else:
                 raise Exception('Must specify a value or statistics to put.')
 
-            for key, val in metric_data.iteritems():
+            for key, val in metric_data.items():
                 params['MetricData.member.%d.%s' % (index + 1, key)] = val
 
     def get_metric_statistics(self, period, start_time, end_time, metric_name,

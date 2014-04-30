@@ -39,18 +39,18 @@ class Startup(ScriptBase):
                         mod_name = script[0:pos]
                         cls_name = script[pos+1:]
                         cls = find_class(mod_name, cls_name)
-                        boto.log.info('Running Script: %s' % script)
+                        boto.log.info('Running Script: {0:s}'.format(script))
                         s = cls()
                         s.main()
                     else:
-                        boto.log.warning('Trouble parsing script: %s' % script)
-                except Exception, e:
-                    boto.log.exception('Problem Running Script: %s. Startup process halting.' % script)
+                        boto.log.warning('Trouble parsing script: {0:s}'.format(script))
+                except Exception as e:
+                    boto.log.exception('Problem Running Script: {0:s}. Startup process halting.'.format(script))
                     raise e
 
     def main(self):
         self.run_scripts()
-        self.notify('Startup Completed for %s' % config.get('Instance', 'instance-id'))
+        self.notify('Startup Completed for {0:s}'.format(config.get('Instance', 'instance-id')))
 
 if __name__ == "__main__":
     if not config.has_section('loggers'):

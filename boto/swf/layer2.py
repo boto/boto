@@ -44,7 +44,7 @@ class SWFBase(object):
         rep_str = str(self.name)
         if hasattr(self, 'version'):
             rep_str += '-' + str(getattr(self, 'version'))
-        return '<%s %r at 0x%x>' % (self.__class__.__name__, rep_str, id(self))
+        return '<{0:s} {1!r:s} at 0x{2:x}>'.format(self.__class__.__name__, rep_str, id(self))
 
 class Domain(SWFBase):
 
@@ -261,7 +261,7 @@ class WorkflowType(SWFBase):
             workflow_id = kwargs['workflow_id']
             del kwargs['workflow_id']
         else:
-            workflow_id = '%s-%s-%i' % (self.name, self.version, time.time())
+            workflow_id = '{0:s}-{1:s}-{2:d}'.format(self.name, self.version, time.time())
 
         for def_attr in ('task_list', 'child_policy'):
             kwargs[def_attr] = kwargs.get(def_attr, getattr(self, def_attr))

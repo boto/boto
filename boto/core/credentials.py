@@ -68,7 +68,7 @@ def search_metadata(**kwargs):
     metadata = _search_md()
     # Assuming there's only one role on the instance profile.
     if metadata:
-        metadata = metadata['iam']['security-credentials'].values()[0]
+        metadata = list(metadata['iam']['security-credentials'].values())[0]
         credentials = Credentials(metadata['AccessKeyId'],
                                   metadata['SecretAccessKey'],
                                   metadata['Token'])
