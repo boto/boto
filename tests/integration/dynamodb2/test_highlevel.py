@@ -254,6 +254,18 @@ class DynamoDBv2Test(unittest.TestCase):
         for res in c_results:
             self.assertTrue(res['username'] in ['johndoe',])
 
+        # Test a query with query filters
+        results = users.query_2(
+            username__eq='johndoe',
+            query_filter={
+                'first_name__beginswith': 'J'
+            },
+            attributes=('first_name',)
+        )
+
+        for res in results:
+            self.assertTrue(res['first_name'] in ['John'])
+
         # Test scans without filters.
         all_users = users.scan(limit=7)
         self.assertEqual(all_users.next()['username'], 'bob')
