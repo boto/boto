@@ -572,7 +572,7 @@ class EC2Connection(AWSQueryConnection):
             items per response.
 
         :rtype: list
-        :return: A list of  :class:`boto.ec2.instance.Reservation`
+        :return: A :class:`boto.resultset.ResultSet` instance
 
         """
         warnings.warn(('The current get_all_instances implementation will be '
@@ -641,7 +641,7 @@ class EC2Connection(AWSQueryConnection):
             items per response.
 
         :rtype: list
-        :return: A list of  :class:`boto.ec2.instance.Reservation`
+        :return: A :class:`boto.resultset.ResultSet` instance
         """
         params = {}
         if instance_ids:
