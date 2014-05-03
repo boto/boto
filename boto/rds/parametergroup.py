@@ -157,7 +157,7 @@ class Parameter(object):
         if isinstance(value, bool):
             self._value = value
         elif isinstance(value, basestring):
-            if value.lower() == 'true':
+            if value.lower() in ['true', '1']:
                 self._value = True
             else:
                 self._value = False
