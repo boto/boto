@@ -421,3 +421,17 @@ Example::
     [DynamoDB]
     region = us-west-2
     validate_checksums = True
+
+Redshift
+^^^^^^^^
+
+This section is used to configure Redshift
+
+:master_user_name: Name of master user for your cluster
+:master_user_password: Password for the master user account
+
+Example::
+
+    [Redshift]
+    master_user_name = jane.doe
+    master_user_password = p4ssw0rd
