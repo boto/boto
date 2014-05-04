@@ -2444,10 +2444,6 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         snapshot = self.get_object('CreateSnapshot', params,
                                    Snapshot, verb='POST')
-        volume = self.get_all_volumes([volume_id], dry_run=dry_run)[0]
-        volume_name = volume.tags.get('Name')
-        if volume_name:
-            snapshot.add_tag('Name', volume_name)
         return snapshot
 
     def delete_snapshot(self, snapshot_id, dry_run=False):
