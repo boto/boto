@@ -47,10 +47,6 @@ class UploadConcurrentS3Error(ConcurrentS3Error):
     pass
 
 
-class DownloadConcurrentS3Error(ConcurrentS3Error):
-    pass
-
-
 class ConcurrentTransferer(object):
     def __init__(self, part_size=DEFAULT_PART_SIZE, num_threads=DEFAULT_NUM_THREADS):
         if part_size < 5 * 1024 * 1024:
