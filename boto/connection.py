@@ -49,6 +49,7 @@ from datetime import datetime
 import errno
 import httplib
 import os
+import pkg_resources
 import Queue
 import random
 import re
@@ -96,7 +97,7 @@ ON_APP_ENGINE = all(key in os.environ for key in (
 PORTS_BY_SECURITY = {True: 443,
                      False: 80}
 
-DEFAULT_CA_CERTS_FILE = os.path.join(os.path.dirname(os.path.abspath(boto.cacerts.__file__ )), "cacerts.txt")
+DEFAULT_CA_CERTS_FILE = pkg_resources.resource_filename('boto', "cacerts.txt")
 
 
 class HostConnectionPool(object):
