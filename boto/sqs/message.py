@@ -66,6 +66,7 @@ in the format in which it would be stored in SQS.
 import base64
 import StringIO
 from boto.sqs.attributes import Attributes
+from boto.sqs.messageattributes import MessageAttributes
 from boto.exception import SQSDecodeError
 import boto
 
@@ -84,6 +85,8 @@ class RawMessage(object):
         self.receipt_handle = None
         self.md5 = None
         self.attributes = Attributes(self)
+        self.message_attributes = MessageAttributes(self)
+        self.md5_message_attributes = None
 
     def __len__(self):
         return len(self.encode(self._body))
@@ -91,6 +94,8 @@ class RawMessage(object):
     def startElement(self, name, attrs, connection):
         if name == 'Attribute':
             return self.attributes
+        if name == 'MessageAttribute':
+            return self.message_attributes
         return None
 
     def endElement(self, name, value, connection):
@@ -100,8 +105,10 @@ class RawMessage(object):
             self.id = value
         elif name == 'ReceiptHandle':
             self.receipt_handle = value
-        elif name == 'MD5OfMessageBody':
+        elif name == 'MD5OfBody':
             self.md5 = value
+        elif name == 'MD5OfMessageAttributes':
+            self.md5_message_attributes = value
         else:
             setattr(self, name, value)
 
