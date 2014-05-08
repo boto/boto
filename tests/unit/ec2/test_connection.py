@@ -1253,6 +1253,44 @@ class TestRegisterImage(TestEC2ConnectionBase):
             'SignatureVersion', 'Timestamp',
             'Version'
         ])
+    
+    def test_volume_delete_on_termination_on(self):
+        self.set_http_response(status_code=200)
+        self.ec2.register_image('name', 'description',
+                                snapshot_id='snap-12345678',
+                                delete_root_volume_on_termination=True)
+        
+        self.assert_request_parameters({
+            'Action': 'RegisterImage',
+            'Name': 'name',
+            'Description': 'description',
+            'BlockDeviceMapping.1.DeviceName': None,
+            'BlockDeviceMapping.1.Ebs.DeleteOnTermination' : 'true',
+            'BlockDeviceMapping.1.Ebs.SnapshotId': 'snap-12345678',
+        }, ignore_params_values=[
+            'AWSAccessKeyId', 'SignatureMethod',
+            'SignatureVersion', 'Timestamp',
+            'Version'
+        ])
+        
+
+    def test_volume_delete_on_termination_default(self):
+        self.set_http_response(status_code=200)
+        self.ec2.register_image('name', 'description',
+                                snapshot_id='snap-12345678')
+        
+        self.assert_request_parameters({
+            'Action': 'RegisterImage',
+            'Name': 'name',
+            'Description': 'description',
+            'BlockDeviceMapping.1.DeviceName': None,
+            'BlockDeviceMapping.1.Ebs.DeleteOnTermination' : 'false',
+            'BlockDeviceMapping.1.Ebs.SnapshotId': 'snap-12345678',
+        }, ignore_params_values=[
+            'AWSAccessKeyId', 'SignatureMethod',
+            'SignatureVersion', 'Timestamp',
+            'Version'
+        ])
 
 
 class TestTerminateInstances(TestEC2ConnectionBase):

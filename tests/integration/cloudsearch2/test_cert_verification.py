@@ -1,6 +1,6 @@
 # Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
-# All Rights Reserved
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,4 +20,20 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-#
+
+"""
+Check that all of the certs on all service endpoints validate.
+"""
+import unittest
+
+from tests.integration import ServiceCertVerificationTest
+
+import boto.cloudsearch2
+
+
+class CloudSearchCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
+    cloudsearch = True
+    regions = boto.cloudsearch2.regions()
+
+    def sample_service_call(self, conn):
+        conn.describe_domains()

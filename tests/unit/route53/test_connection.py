@@ -21,6 +21,8 @@
 # IN THE SOFTWARE.
 #
 import mock
+import re
+import xml.dom.minidom
 
 from boto.exception import BotoServerError
 from boto.route53.connection import Route53Connection
@@ -31,7 +33,6 @@ from boto.route53.zone import Zone
 from nose.plugins.attrib import attr
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
-
 
 @attr(route53=True)
 class TestRoute53Connection(AWSMockServiceTestCase):
@@ -87,7 +88,7 @@ class TestRoute53Connection(AWSMockServiceTestCase):
         # Unpatch.
         self.service_connection._retry_handler = orig_retry
 
-
+@attr(route53=True)
 class TestCreateZoneRoute53(AWSMockServiceTestCase):
     connection_class = Route53Connection
 
@@ -137,7 +138,7 @@ class TestCreateZoneRoute53(AWSMockServiceTestCase):
         self.assertEqual(response['CreateHostedZoneResponse']['DelegationSet']['NameServers'],
                          ['ns-100.awsdns-01.com', 'ns-1000.awsdns-01.co.uk', 'ns-1000.awsdns-01.org', 'ns-900.awsdns-01.net'])
 
-
+@attr(route53=True)
 class TestGetZoneRoute53(AWSMockServiceTestCase):
     connection_class = Route53Connection
 
@@ -194,7 +195,7 @@ class TestGetZoneRoute53(AWSMockServiceTestCase):
         self.assertTrue(isinstance(response, Zone))
         self.assertEqual(response.name, "example.com.")
 
-
+@attr(route53=True)
 class TestGetHostedZoneRoute53(AWSMockServiceTestCase):
     connection_class = Route53Connection
 
@@ -231,7 +232,7 @@ class TestGetHostedZoneRoute53(AWSMockServiceTestCase):
         self.assertEqual(response['GetHostedZoneResponse']['DelegationSet']['NameServers'],
                          ['ns-1000.awsdns-40.org', 'ns-200.awsdns-30.com', 'ns-900.awsdns-50.net', 'ns-1000.awsdns-00.co.uk'])
 
-
+@attr(route53=True)
 class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
     connection_class = Route53Connection
 
@@ -240,7 +241,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
 
     def default_body(self):
         return """
-<ListResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
+<ListResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
     <ResourceRecordSets>
         <ResourceRecordSet>
             <Name>test.example.com.</Name>
@@ -263,15 +264,38 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
             </ResourceRecords>
         </ResourceRecordSet>
         <ResourceRecordSet>
-            <Name>us-west-2.example.com.</Name>
+            <Name>us-west-2-evaluate-health.example.com.</Name>
             <Type>A</Type>
-            <SetIdentifier>latency-example-us-west-2</SetIdentifier>
+            <SetIdentifier>latency-example-us-west-2-evaluate-health</SetIdentifier>
             <Region>us-west-2</Region>
             <AliasTarget>
                 <HostedZoneId>ABCDEFG123456</HostedZoneId>
                 <EvaluateTargetHealth>true</EvaluateTargetHealth>
-                <DNSName>example-123456.us-west-2.elb.amazonaws.com.</DNSName>
+                <DNSName>example-123456-evaluate-health.us-west-2.elb.amazonaws.com.</DNSName>
             </AliasTarget>
+        </ResourceRecordSet>
+        <ResourceRecordSet>
+            <Name>us-west-2-no-evaluate-health.example.com.</Name>
+            <Type>A</Type>
+            <SetIdentifier>latency-example-us-west-2-no-evaluate-health</SetIdentifier>
+            <Region>us-west-2</Region>
+            <AliasTarget>
+                <HostedZoneId>ABCDEFG567890</HostedZoneId>
+                <EvaluateTargetHealth>false</EvaluateTargetHealth>
+                <DNSName>example-123456-no-evaluate-health.us-west-2.elb.amazonaws.com.</DNSName>
+            </AliasTarget>
+        </ResourceRecordSet>
+        <ResourceRecordSet>
+            <Name>failover.example.com.</Name>
+            <Type>A</Type>
+            <SetIdentifier>failover-primary</SetIdentifier>
+            <Failover>PRIMARY</Failover>
+            <TTL>60</TTL>
+            <ResourceRecords>
+                <ResourceRecord>
+                    <Value>10.0.0.4</Value>
+                </ResourceRecord>
+            </ResourceRecords>
         </ResourceRecordSet>
     </ResourceRecordSets>
     <IsTruncated>false</IsTruncated>
@@ -294,11 +318,147 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.assertTrue(response[0].ttl, "60")
         self.assertTrue(response[0].type, "A")
 
-        latency_record = response[2]
-        self.assertEqual(latency_record.name, 'us-west-2.example.com.')
-        self.assertEqual(latency_record.type, 'A')
-        self.assertEqual(latency_record.identifier, 'latency-example-us-west-2')
-        self.assertEqual(latency_record.region, 'us-west-2')
-        self.assertEqual(latency_record.alias_hosted_zone_id, 'ABCDEFG123456')
-        self.assertEqual(latency_record.alias_evaluate_target_health, 'true')
-        self.assertEqual(latency_record.alias_dns_name, 'example-123456.us-west-2.elb.amazonaws.com.')
+        evaluate_record = response[2]
+        self.assertEqual(evaluate_record.name, 'us-west-2-evaluate-health.example.com.')
+        self.assertEqual(evaluate_record.type, 'A')
+        self.assertEqual(evaluate_record.identifier, 'latency-example-us-west-2-evaluate-health')
+        self.assertEqual(evaluate_record.region, 'us-west-2')
+        self.assertEqual(evaluate_record.alias_hosted_zone_id, 'ABCDEFG123456')
+        self.assertTrue(evaluate_record.alias_evaluate_target_health)
+        self.assertEqual(evaluate_record.alias_dns_name, 'example-123456-evaluate-health.us-west-2.elb.amazonaws.com.')
+        evaluate_xml = evaluate_record.to_xml()
+        self.assertTrue('<EvaluateTargetHealth>true</EvaluateTargetHealth>' in evaluate_xml)
+
+        no_evaluate_record = response[3]
+        self.assertEqual(no_evaluate_record.name, 'us-west-2-no-evaluate-health.example.com.')
+        self.assertEqual(no_evaluate_record.type, 'A')
+        self.assertEqual(no_evaluate_record.identifier, 'latency-example-us-west-2-no-evaluate-health')
+        self.assertEqual(no_evaluate_record.region, 'us-west-2')
+        self.assertEqual(no_evaluate_record.alias_hosted_zone_id, 'ABCDEFG567890')
+        self.assertFalse(no_evaluate_record.alias_evaluate_target_health)
+        self.assertEqual(no_evaluate_record.alias_dns_name, 'example-123456-no-evaluate-health.us-west-2.elb.amazonaws.com.')
+        no_evaluate_xml = no_evaluate_record.to_xml()
+        self.assertTrue('<EvaluateTargetHealth>false</EvaluateTargetHealth>' in no_evaluate_xml)
+        
+        failover_record = response[4]
+        self.assertEqual(failover_record.name, 'failover.example.com.')
+        self.assertEqual(failover_record.type, 'A')
+        self.assertEqual(failover_record.identifier, 'failover-primary')
+        self.assertEqual(failover_record.failover, 'PRIMARY')
+        self.assertEqual(failover_record.ttl, '60')
+
+@attr(route53=True)
+class TestChangeResourceRecordSetsRoute53(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestChangeResourceRecordSetsRoute53, self).setUp()
+
+    def default_body(self):
+        return """
+<ChangeResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+    <ChangeInfo>
+        <Id>/change/C1111111111111</Id>
+        <Status>PENDING</Status>
+        <SubmittedAt>2014-05-05T10:11:12.123Z</SubmittedAt>
+    </ChangeInfo>
+</ChangeResourceRecordSetsResponse>
+        """
+
+    def test_record_commit(self):
+        rrsets = ResourceRecordSets(self.service_connection)
+        rrsets.add_change_record('CREATE', Record('vanilla.example.com', 'A', 60, ['1.2.3.4']))
+        rrsets.add_change_record('CREATE', Record('alias.example.com', 'AAAA', alias_hosted_zone_id='Z123OTHER', alias_dns_name='target.other', alias_evaluate_target_health=True))
+        rrsets.add_change_record('CREATE', Record('wrr.example.com', 'CNAME', 60, ['cname.target'], weight=10, identifier='weight-1'))
+        rrsets.add_change_record('CREATE', Record('lbr.example.com', 'TXT', 60, ['text record'], region='us-west-2', identifier='region-1'))
+        rrsets.add_change_record('CREATE', Record('failover.example.com', 'A', 60, ['2.2.2.2'], health_check='hc-1234', failover='PRIMARY', identifier='primary'))
+        
+        changes_xml = rrsets.to_xml()
+        
+        # the whitespacing doesn't match exactly, so we'll pretty print and drop all new lines
+        # not the best, but 
+        actual_xml = re.sub(r"\s*[\r\n]+", "\n", xml.dom.minidom.parseString(changes_xml).toprettyxml())
+        expected_xml = re.sub(r"\s*[\r\n]+", "\n", xml.dom.minidom.parseString("""
+<ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+    <ChangeBatch>
+        <Comment>None</Comment>
+        <Changes>
+            <Change>
+                <Action>CREATE</Action>
+                <ResourceRecordSet>
+                    <Name>vanilla.example.com</Name>
+                    <Type>A</Type>
+                    <TTL>60</TTL>
+                    <ResourceRecords>
+                        <ResourceRecord>
+                            <Value>1.2.3.4</Value>
+                        </ResourceRecord>
+                    </ResourceRecords>
+                </ResourceRecordSet>
+            </Change>
+            <Change>
+                <Action>CREATE</Action>
+                <ResourceRecordSet>
+                    <Name>alias.example.com</Name>
+                    <Type>AAAA</Type>
+                    <AliasTarget>
+                        <HostedZoneId>Z123OTHER</HostedZoneId>
+                        <DNSName>target.other</DNSName>
+                        <EvaluateTargetHealth>true</EvaluateTargetHealth>
+                    </AliasTarget>
+                </ResourceRecordSet>
+            </Change>
+            <Change>
+                <Action>CREATE</Action>
+                <ResourceRecordSet>
+                    <Name>wrr.example.com</Name>
+                    <Type>CNAME</Type>
+                    <SetIdentifier>weight-1</SetIdentifier>
+                    <Weight>10</Weight>
+                    <TTL>60</TTL>
+                    <ResourceRecords>
+                        <ResourceRecord>
+                            <Value>cname.target</Value>
+                        </ResourceRecord>
+                    </ResourceRecords>
+                </ResourceRecordSet>
+            </Change>
+            <Change>
+                <Action>CREATE</Action>
+                <ResourceRecordSet>
+                    <Name>lbr.example.com</Name>
+                    <Type>TXT</Type>
+                    <SetIdentifier>region-1</SetIdentifier>
+                    <Region>us-west-2</Region>
+                    <TTL>60</TTL>
+                    <ResourceRecords>
+                        <ResourceRecord>
+                            <Value>text record</Value>
+                        </ResourceRecord>
+                    </ResourceRecords>
+                </ResourceRecordSet>
+            </Change>
+            <Change>
+                <Action>CREATE</Action>
+                <ResourceRecordSet>
+                    <Name>failover.example.com</Name>
+                    <Type>A</Type>
+                    <SetIdentifier>primary</SetIdentifier>
+                    <Failover>PRIMARY</Failover>
+                    <TTL>60</TTL>
+                    <ResourceRecords>
+                        <ResourceRecord>
+                            <Value>2.2.2.2</Value>
+                        </ResourceRecord>
+                    </ResourceRecords>
+                    <HealthCheckId>hc-1234</HealthCheckId>
+                </ResourceRecordSet>
+            </Change>
+        </Changes>
+    </ChangeBatch>
+</ChangeResourceRecordSetsRequest>
+        """).toprettyxml())
+        
+        # Note: the alias XML should not include the TTL, even if it's specified in the object model
+        self.assertEqual(actual_xml, expected_xml)
+

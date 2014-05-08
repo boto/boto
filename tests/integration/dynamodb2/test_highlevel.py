@@ -219,7 +219,7 @@ class DynamoDBv2Test(unittest.TestCase):
         self.assertEqual(serverside_sadie['first_name'], 'Sadie')
 
         # Test the eventually consistent query.
-        results = users.query(
+        results = users.query_2(
             username__eq='johndoe',
             last_name__eq='Doe',
             index='LastNameIndex',
@@ -232,7 +232,7 @@ class DynamoDBv2Test(unittest.TestCase):
             self.assertEqual(res.keys(), ['username'])
 
         # Ensure that queries with attributes don't return the hash key.
-        results = users.query(
+        results = users.query_2(
             username__eq='johndoe',
             friend_count__eq=4,
             attributes=('first_name',)
@@ -243,7 +243,7 @@ class DynamoDBv2Test(unittest.TestCase):
             self.assertEqual(res.keys(), ['first_name'])
 
         # Test the strongly consistent query.
-        c_results = users.query(
+        c_results = users.query_2(
             username__eq='johndoe',
             last_name__eq='Doe',
             index='LastNameIndex',
@@ -253,6 +253,18 @@ class DynamoDBv2Test(unittest.TestCase):
 
         for res in c_results:
             self.assertTrue(res['username'] in ['johndoe',])
+
+        # Test a query with query filters
+        results = users.query_2(
+            username__eq='johndoe',
+            query_filter={
+                'first_name__beginswith': 'J'
+            },
+            attributes=('first_name',)
+        )
+
+        for res in results:
+            self.assertTrue(res['first_name'] in ['John'])
 
         # Test scans without filters.
         all_users = users.scan(limit=7)
@@ -322,7 +334,7 @@ class DynamoDBv2Test(unittest.TestCase):
             username__eq='johndoe'
         )
         # But it shouldn't break on more complex tables.
-        res = users.query(username__eq='johndoe')
+        res = users.query_2(username__eq='johndoe')
 
         # Test putting with/without sets.
         mau5_created = users.put_item(data={
@@ -458,14 +470,14 @@ class DynamoDBv2Test(unittest.TestCase):
         })
 
         # Try the main key. Should be fine.
-        rs = users.query(
+        rs = users.query_2(
             user_id__eq='24'
         )
         results = sorted([user['username'] for user in rs])
         self.assertEqual(results, ['alice'])
 
         # Now try the GSI. Also should work.
-        rs = users.query(
+        rs = users.query_2(
             username__eq='johndoe',
             index='UsernameIndex'
         )
@@ -504,7 +516,7 @@ class DynamoDBv2Test(unittest.TestCase):
         time.sleep(5)
 
         # Test the reduced page size.
-        results = posts.query(
+        results = posts.query_2(
             thread__eq='Favorite chiptune band?',
             posted_on__gte='2013-12-24T00:00:00',
             max_page_size=2
@@ -515,4 +527,117 @@ class DynamoDBv2Test(unittest.TestCase):
             [post['posted_by'] for post in all_posts],
             ['joe', 'jane', 'joe', 'joe', 'jane', 'joe']
         )
-        self.assertEqual(results._fetches, 3)
+        self.assertTrue(results._fetches >= 3)
+
+    def test_query_with_reverse(self):
+        posts = Table.create('more-posts', schema=[
+            HashKey('thread'),
+            RangeKey('posted_on')
+        ], throughput={
+            'read': 5,
+            'write': 5,
+        })
+        self.addCleanup(posts.delete)
+
+        # Wait for it.
+        time.sleep(60)
+
+        # Add some data.
+        test_data_path = os.path.join(
+            os.path.dirname(__file__),
+            'forum_test_data.json'
+        )
+        with open(test_data_path, 'r') as test_data:
+            data = json.load(test_data)
+
+            with posts.batch_write() as batch:
+                for post in data:
+                    batch.put_item(post)
+
+        time.sleep(5)
+
+        # Test the default order (ascending).
+        results = posts.query_2(
+            thread__eq='Favorite chiptune band?',
+            posted_on__gte='2013-12-24T00:00:00'
+        )
+        self.assertEqual(
+            [post['posted_on'] for post in results],
+            [
+                '2013-12-24T12:30:54',
+                '2013-12-24T12:35:40',
+                '2013-12-24T13:45:30',
+                '2013-12-24T14:15:14',
+                '2013-12-24T14:25:33',
+                '2013-12-24T15:22:22',
+            ]
+        )
+
+        # Test the explicit ascending order.
+        results = posts.query_2(
+            thread__eq='Favorite chiptune band?',
+            posted_on__gte='2013-12-24T00:00:00',
+            reverse=False
+        )
+        self.assertEqual(
+            [post['posted_on'] for post in results],
+            [
+                '2013-12-24T12:30:54',
+                '2013-12-24T12:35:40',
+                '2013-12-24T13:45:30',
+                '2013-12-24T14:15:14',
+                '2013-12-24T14:25:33',
+                '2013-12-24T15:22:22',
+            ]
+        )
+
+        # Test the explicit descending order.
+        results = posts.query_2(
+            thread__eq='Favorite chiptune band?',
+            posted_on__gte='2013-12-24T00:00:00',
+            reverse=True
+        )
+        self.assertEqual(
+            [post['posted_on'] for post in results],
+            [
+                '2013-12-24T15:22:22',
+                '2013-12-24T14:25:33',
+                '2013-12-24T14:15:14',
+                '2013-12-24T13:45:30',
+                '2013-12-24T12:35:40',
+                '2013-12-24T12:30:54',
+            ]
+        )
+
+        # Test the old, broken style.
+        results = posts.query(
+            thread__eq='Favorite chiptune band?',
+            posted_on__gte='2013-12-24T00:00:00'
+        )
+        self.assertEqual(
+            [post['posted_on'] for post in results],
+            [
+                '2013-12-24T15:22:22',
+                '2013-12-24T14:25:33',
+                '2013-12-24T14:15:14',
+                '2013-12-24T13:45:30',
+                '2013-12-24T12:35:40',
+                '2013-12-24T12:30:54',
+            ]
+        )
+        results = posts.query(
+            thread__eq='Favorite chiptune band?',
+            posted_on__gte='2013-12-24T00:00:00',
+            reverse=True
+        )
+        self.assertEqual(
+            [post['posted_on'] for post in results],
+            [
+                '2013-12-24T12:30:54',
+                '2013-12-24T12:35:40',
+                '2013-12-24T13:45:30',
+                '2013-12-24T14:15:14',
+                '2013-12-24T14:25:33',
+                '2013-12-24T15:22:22',
+            ]
+        )

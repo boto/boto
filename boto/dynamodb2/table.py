@@ -7,7 +7,8 @@ from boto.dynamodb2.fields import (HashKey, RangeKey,
 from boto.dynamodb2.items import Item
 from boto.dynamodb2.layer1 import DynamoDBConnection
 from boto.dynamodb2.results import ResultSet, BatchGetResultSet
-from boto.dynamodb2.types import Dynamizer, FILTER_OPERATORS, QUERY_OPERATORS
+from boto.dynamodb2.types import (Dynamizer, FILTER_OPERATORS, QUERY_OPERATORS,
+                                  STRING)
 from boto.exception import JSONResponseError
 
 
@@ -232,18 +233,29 @@ class Table(object):
         )
         return table
 
-    def _introspect_schema(self, raw_schema):
+    def _introspect_schema(self, raw_schema, raw_attributes=None):
         """
         Given a raw schema structure back from a DynamoDB response, parse
         out & build the high-level Python objects that represent them.
         """
         schema = []
+        sane_attributes = {}
+
+        if raw_attributes:
+            for field in raw_attributes:
+                sane_attributes[field['AttributeName']] = field['AttributeType']
 
         for field in raw_schema:
+            data_type = sane_attributes.get(field['AttributeName'], STRING)
+
             if field['KeyType'] == 'HASH':
-                schema.append(HashKey(field['AttributeName']))
+                schema.append(
+                    HashKey(field['AttributeName'], data_type=data_type)
+                )
             elif field['KeyType'] == 'RANGE':
-                schema.append(RangeKey(field['AttributeName']))
+                schema.append(
+                    RangeKey(field['AttributeName'], data_type=data_type)
+                )
             else:
                 raise exceptions.UnknownSchemaFieldError(
                     "%s was seen, but is unknown. Please report this at "
@@ -280,7 +292,7 @@ class Table(object):
                 )
 
             name = field['IndexName']
-            kwargs['parts'] = self._introspect_schema(field['KeySchema'])
+            kwargs['parts'] = self._introspect_schema(field['KeySchema'], None)
             indexes.append(index_klass(name, **kwargs))
 
         return indexes
@@ -319,7 +331,8 @@ class Table(object):
         if not self.schema:
             # Since we have the data, build the schema.
             raw_schema = result['Table'].get('KeySchema', [])
-            self.schema = self._introspect_schema(raw_schema)
+            raw_attributes = result['Table'].get('AttributeDefinitions', [])
+            self.schema = self._introspect_schema(raw_schema, raw_attributes)
 
         if not self.indexes:
             # Build the index information as well.
@@ -744,6 +757,9 @@ class Table(object):
         An internal method for taking query/scan-style ``**kwargs`` & turning
         them into the raw structure DynamoDB expects for filtering.
         """
+        if filter_kwargs is None:
+            return
+
         filters = {}
 
         for field_and_op, value in filter_kwargs.items():
@@ -803,17 +819,34 @@ class Table(object):
     def query(self, limit=None, index=None, reverse=False, consistent=False,
               attributes=None, max_page_size=None, **filter_kwargs):
         """
+        **WARNING:** This method is provided **strictly** for
+        backward-compatibility. It returns results in an incorrect order.
+
+        If you are writing new code, please use ``Table.query_2``.
+        """
+        reverse = not reverse
+        return self.query_2(limit=limit, index=index, reverse=reverse,
+                            consistent=consistent, attributes=attributes,
+                            max_page_size=max_page_size, **filter_kwargs)
+
+    def query_2(self, limit=None, index=None, reverse=False,
+                consistent=False, attributes=None, max_page_size=None,
+                query_filter=None, conditional_operator=None,
+                **filter_kwargs):
+        """
         Queries for a set of matching items in a DynamoDB table.
 
         Queries can be performed against a hash key, a hash+range key or
-        against any data stored in your local secondary indexes.
+        against any data stored in your local secondary indexes. Query filters
+        can be used to filter on arbitrary fields.
 
         **Note** - You can not query against arbitrary fields within the data
-        stored in DynamoDB.
+        stored in DynamoDB unless you specify ``query_filter`` values.
 
         To specify the filters of the items you'd like to get, you can specify
         the filters as kwargs. Each filter kwarg should follow the pattern
-        ``<fieldname>__<filter_operation>=<value_to_look_for>``.
+        ``<fieldname>__<filter_operation>=<value_to_look_for>``. Query filters
+        are specified in the same way.
 
         Optionally accepts a ``limit`` parameter, which should be an integer
         count of the total number of items to return. (Default: ``None`` -
@@ -824,7 +857,7 @@ class Table(object):
         (Default: ``None``)
 
         Optionally accepts a ``reverse`` parameter, which will present the
-        results in reverse order. (Default: ``None`` - normal order)
+        results in reverse order. (Default: ``False`` - normal order)
 
         Optionally accepts a ``consistent`` parameter, which should be a
         boolean. If you provide ``True``, it will force a consistent read of
@@ -841,6 +874,15 @@ class Table(object):
         **per-request**. This is useful in making faster requests & prevent
         the scan from drowning out other queries. (Default: ``None`` -
         fetch as many as DynamoDB will return)
+
+        Optionally accepts a ``query_filter`` which is a dictionary of filter
+        conditions against any arbitrary field in the returned data.
+
+        Optionally accepts a ``conditional_operator`` which applies to the
+        query filter conditions:
+
+        + `AND` - True if all filter conditions evaluate to true (default)
+        + `OR` - True if at least one filter condition evaluates to true
 
         Returns a ``ResultSet``, which transparently handles the pagination of
         results you get back.
@@ -880,6 +922,18 @@ class Table(object):
             'John'
             'Fred'
 
+            # Filter by non-indexed field(s)
+            >>> results = users.query(
+            ...     last_name__eq='Doe',
+            ...     reverse=True,
+            ...     query_filter={
+            ...         'first_name__beginswith': 'A'
+            ...     }
+            ... )
+            >>> for res in results:
+            ...     print res['first_name'] + ' ' + res['last_name']
+            'Alice Doe'
+
         """
         if self.schema:
             if len(self.schema) == 1:
@@ -908,20 +962,25 @@ class Table(object):
             'consistent': consistent,
             'select': select,
             'attributes_to_get': attributes,
+            'query_filter': query_filter,
+            'conditional_operator': conditional_operator,
         })
         results.to_call(self._query, **kwargs)
         return results
 
-    def query_count(self, index=None, consistent=False, **filter_kwargs):
+    def query_count(self, index=None, consistent=False, conditional_operator=None,
+                    query_filter=None, **filter_kwargs):
         """
         Queries the exact count of matching items in a DynamoDB table.
 
         Queries can be performed against a hash key, a hash+range key or
-        against any data stored in your local secondary indexes.
+        against any data stored in your local secondary indexes. Query filters
+        can be used to filter on arbitrary fields.
 
         To specify the filters of the items you'd like to get, you can specify
         the filters as kwargs. Each filter kwarg should follow the pattern
-        ``<fieldname>__<filter_operation>=<value_to_look_for>``.
+        ``<fieldname>__<filter_operation>=<value_to_look_for>``. Query filters
+        are specified in the same way.
 
         Optionally accepts an ``index`` parameter, which should be a string of
         name of the local secondary index you want to query against.
@@ -931,6 +990,15 @@ class Table(object):
         boolean. If you provide ``True``, it will force a consistent read of
         the data (more expensive). (Default: ``False`` - use eventually
         consistent reads)
+
+        Optionally accepts a ``query_filter`` which is a dictionary of filter
+        conditions against any arbitrary field in the returned data.
+
+        Optionally accepts a ``conditional_operator`` which applies to the
+        query filter conditions:
+
+        + `AND` - True if all filter conditions evaluate to true (default)
+        + `OR` - True if at least one filter condition evaluates to true
 
         Returns an integer which represents the exact amount of matched
         items.
@@ -956,18 +1024,25 @@ class Table(object):
             using=QUERY_OPERATORS
         )
 
+        built_query_filter = self._build_filters(
+            query_filter,
+            using=FILTER_OPERATORS
+        )
+
         raw_results = self.connection.query(
             self.table_name,
             index_name=index,
             consistent_read=consistent,
             select='COUNT',
             key_conditions=key_conditions,
+            query_filter=built_query_filter,
+            conditional_operator=conditional_operator,
         )
         return int(raw_results.get('Count', 0))
 
     def _query(self, limit=None, index=None, reverse=False, consistent=False,
                exclusive_start_key=None, select=None, attributes_to_get=None,
-               **filter_kwargs):
+               query_filter=None, conditional_operator=None, **filter_kwargs):
         """
         The internal method that performs the actual queries. Used extensively
         by ``ResultSet`` to perform each (paginated) request.
@@ -975,11 +1050,14 @@ class Table(object):
         kwargs = {
             'limit': limit,
             'index_name': index,
-            'scan_index_forward': reverse,
             'consistent_read': consistent,
             'select': select,
-            'attributes_to_get': attributes_to_get
+            'attributes_to_get': attributes_to_get,
+            'conditional_operator': conditional_operator,
         }
+
+        if reverse:
+            kwargs['scan_index_forward'] = False
 
         if exclusive_start_key:
             kwargs['exclusive_start_key'] = {}
@@ -992,6 +1070,11 @@ class Table(object):
         kwargs['key_conditions'] = self._build_filters(
             filter_kwargs,
             using=QUERY_OPERATORS
+        )
+
+        kwargs['query_filter'] = self._build_filters(
+            query_filter,
+            using=FILTER_OPERATORS
         )
 
         raw_results = self.connection.query(
@@ -1020,13 +1103,14 @@ class Table(object):
         }
 
     def scan(self, limit=None, segment=None, total_segments=None,
-             max_page_size=None, attributes=None, **filter_kwargs):
+             max_page_size=None, attributes=None, conditional_operator=None,
+             **filter_kwargs):
         """
         Scans across all items within a DynamoDB table.
 
         Scans can be performed against a hash key or a hash+range key. You can
         additionally filter the results after the table has been read but
-        before the response is returned.
+        before the response is returned by using query filters.
 
         To specify the filters of the items you'd like to get, you can specify
         the filters as kwargs. Each filter kwarg should follow the pattern
@@ -1091,12 +1175,14 @@ class Table(object):
             'segment': segment,
             'total_segments': total_segments,
             'attributes': attributes,
+            'conditional_operator': conditional_operator,
         })
         results.to_call(self._scan, **kwargs)
         return results
 
     def _scan(self, limit=None, exclusive_start_key=None, segment=None,
-              total_segments=None, attributes=None, **filter_kwargs):
+              total_segments=None, attributes=None, conditional_operator=None,
+              **filter_kwargs):
         """
         The internal method that performs the actual scan. Used extensively
         by ``ResultSet`` to perform each (paginated) request.
@@ -1106,6 +1192,7 @@ class Table(object):
             'segment': segment,
             'total_segments': total_segments,
             'attributes_to_get': attributes,
+            'conditional_operator': conditional_operator,
         }
 
         if exclusive_start_key:
