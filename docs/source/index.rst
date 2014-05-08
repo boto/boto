@@ -55,6 +55,7 @@ Currently Supported Services
 
 * **Application Services**
 
+  * Cloudsearch 2 -- (:doc:`API Reference <ref/cloudsearch2>`)
   * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
   * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
   * :doc:`Simple Workflow Service (SWF) <swf_tut>` -- (:doc:`API Reference <ref/swf>`)

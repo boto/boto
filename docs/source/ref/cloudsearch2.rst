@@ -1,4 +1,4 @@
-.. ref-cloudsearch
+.. ref-cloudsearch2
 
 ===========
 Cloudsearch
