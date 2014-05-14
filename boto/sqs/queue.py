@@ -24,6 +24,7 @@ Represents an SQS Queue
 """
 
 import urlparse
+import io
 from boto.sqs.message import Message
 
 
@@ -468,25 +469,26 @@ class Queue(object):
     def load_from_file(self, fp, sep='\n'):
         """Utility function to load messages from a file-like object to a queue"""
         n = 0
-        body = ''
-        l = fp.readline()
-        while l:
-            if l == sep:
-                m = Message(self, body)
-                self.write(m)
-                n += 1
-                print 'writing message %d' % n
-                body = ''
-            else:
-                body = body + l
-            l = fp.readline()
+	body = []
+	with io.FileIO(fp.name) as io_fp:
+	    buffer = io.BufferedReader(io_fp)
+	    l = buffer.read(1)
+	    while l:
+		if l == sep:
+		    m = Message(self, ''.join(body))
+		    self.write(m)
+		    n += 1
+		    print 'writing message %d' % n
+		    body = []
+		else:
+		    body.append(l)
+		l = buffer.read(1)
         return n
 
     def load_from_filename(self, file_name, sep='\n'):
         """Utility function to load messages from a local filename to a queue"""
-        fp = open(file_name, 'rb')
-        n = self.load_from_file(fp, sep)
-        fp.close()
+        with open(file_name, 'rb') as fp:
+	    n = self.load_from_file(fp, sep)
         return n
 
     # for backward compatibility
