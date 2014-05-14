@@ -102,10 +102,23 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
         self.assert_request_parameters({
             'Action': 'CreateStack',
             'ContentType': 'JSON',
-            'DisableRollback': 'false',
             'StackName': 'stack_name',
             'Version': '2010-05-15',
         })
+
+    def test_create_stack_with_on_failure(self):
+        # This will fail in practice, but the API docs only require stack_name.
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.create_stack('stack_name', on_failure='DELETE')
+        self.assertEqual(api_response, self.stack_id)
+        self.assert_request_parameters({
+            'Action': 'CreateStack',
+            'ContentType': 'JSON',
+            'StackName': 'stack_name',
+            'OnFailure': 'DELETE',
+            'Version': '2010-05-15',
+        })
+
 
     def test_create_stack_fails(self):
         self.set_http_response(status_code=400, reason='Bad Request',
@@ -170,7 +183,6 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
         self.assert_request_parameters({
             'Action': 'UpdateStack',
             'ContentType': 'JSON',
-            'DisableRollback': 'false',
             'StackName': 'stack_name',
             'Version': '2010-05-15',
         })
