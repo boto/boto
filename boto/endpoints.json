@@ -40,7 +40,10 @@
         "us-west-2": "cloudsearch.us-west-2.amazonaws.com"
     },
     "cloudtrail": {
+        "ap-southeast-2": "cloudtrail.ap-southeast-2.amazonaws.com",
+        "eu-west-1": "cloudtrail.eu-west-1.amazonaws.com",
         "us-east-1": "cloudtrail.us-east-1.amazonaws.com",
+        "us-west-1": "cloudtrail.us-west-1.amazonaws.com",
         "us-west-2": "cloudtrail.us-west-2.amazonaws.com"
     },
     "cloudwatch": {
