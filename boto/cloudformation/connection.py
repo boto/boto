@@ -211,8 +211,7 @@ class CloudFormationConnection(AWSQueryConnection):
         :rtype: dict
         :return: JSON parameters represented as a Python dict.
         """
-        params = {'ContentType': "JSON", 'StackName': stack_name,
-                'DisableRollback': self.encode_bool(disable_rollback)}
+        params = {'ContentType': "JSON", 'StackName': stack_name}
         if template_body:
             params['TemplateBody'] = template_body
         if template_url:
@@ -381,7 +380,7 @@ class CloudFormationConnection(AWSQueryConnection):
         return body['CreateStackResponse']['CreateStackResult']['StackId']
 
     def update_stack(self, stack_name, template_body=None, template_url=None,
-            parameters=None, notification_arns=None, disable_rollback=False,
+            parameters=None, notification_arns=None, disable_rollback=None,
             timeout_in_minutes=None, capabilities=None, tags=None,
             stack_policy_during_update_body=None,
             stack_policy_during_update_url=None,
