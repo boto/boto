@@ -667,7 +667,7 @@ class EC2Connection(AWSQueryConnection):
                                 max_results=None, next_token=None,
                                 filters=None, dry_run=False):
         """
-        Retrieve all the instances in your account scheduled for maintenance.
+        Retrieve status of all running instances, including any scheduled events.
 
         :type instance_ids: list
         :param instance_ids: A list of strings of instance IDs
@@ -694,7 +694,7 @@ class EC2Connection(AWSQueryConnection):
         :param dry_run: Set to True if the operation should not actually run.
 
         :rtype: list
-        :return: A list of instances that have maintenance scheduled.
+        :return: A list of :class:`boto.ec2.instancestatus.InstanceStatus`
         """
         params = {}
         if instance_ids:
