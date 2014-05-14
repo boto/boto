@@ -475,7 +475,7 @@ class Queue(object):
 	    l = buffer.read(1)
 	    while l:
 		if l == sep:
-		    m = Message(self, ''.join(body))
+		    m = self.message_class(self, ''.join(body))
 		    self.write(m)
 		    n += 1
 		    print 'writing message %d' % n
