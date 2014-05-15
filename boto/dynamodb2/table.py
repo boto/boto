@@ -1270,7 +1270,7 @@ class Table(object):
         # We pass the keys to the constructor instead, so it can maintain it's
         # own internal state as to what keys have been processed.
         results = BatchGetResultSet(keys=keys, max_batch_get=self.max_batch_get)
-        results.to_call(self._batch_get, consistent=False)
+        results.to_call(self._batch_get, consistent=consistent)
         return results
 
     def _batch_get(self, keys, consistent=False):
