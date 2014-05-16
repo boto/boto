@@ -1233,7 +1233,7 @@ class Table(object):
             'last_key': last_key,
         }
 
-    def batch_get(self, keys, consistent=False):
+    def batch_get(self, keys, consistent=False, attributes=None):
         """
         Fetches many specific items in batch from a table.
 
@@ -1243,6 +1243,10 @@ class Table(object):
         Optionally accepts a ``consistent`` parameter, which should be a
         boolean. If you provide ``True``, a strongly consistent read will be
         used. (Default: False)
+
+        Optionally accepts an ``attributes`` parameter, which should be a
+        tuple. If you provide any attributes only these will be fetched
+        from DynamoDB.
 
         Returns a ``ResultSet``, which transparently handles the pagination of
         results you get back.
@@ -1270,10 +1274,10 @@ class Table(object):
         # We pass the keys to the constructor instead, so it can maintain it's
         # own internal state as to what keys have been processed.
         results = BatchGetResultSet(keys=keys, max_batch_get=self.max_batch_get)
-        results.to_call(self._batch_get, consistent=consistent)
+        results.to_call(self._batch_get, consistent=consistent, attributes=attributes)
         return results
 
-    def _batch_get(self, keys, consistent=False):
+    def _batch_get(self, keys, consistent=False, attributes=None):
         """
         The internal method that performs the actual batch get. Used extensively
         by ``BatchGetResultSet`` to perform each (paginated) request.
@@ -1286,6 +1290,9 @@ class Table(object):
 
         if consistent:
             items[self.table_name]['ConsistentRead'] = True
+
+        if attributes is not None:
+            items[self.table_name]['AttributesToGet'] = attributes
 
         for key_data in keys:
             raw_key = {}
