@@ -97,7 +97,8 @@ ON_APP_ENGINE = all(key in os.environ for key in (
 PORTS_BY_SECURITY = {True: 443,
                      False: 80}
 
-DEFAULT_CA_CERTS_FILE = pkg_resources.resource_filename('boto', "cacerts.txt")
+DEFAULT_CA_CERTS_FILE = pkg_resources.resource_filename('boto',
+                                                        "cacerts/cacerts.txt")
 
 
 class HostConnectionPool(object):
