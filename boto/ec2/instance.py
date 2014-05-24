@@ -482,13 +482,10 @@ class Instance(TaggedEC2Object):
         :return: True if successful
         """
 
-        if isinstance(ip_address, Address):
-            ip_address = ip_address.public_ip
-        return self.connection.associate_address(
-            self.id,
-            ip_address,
-            dry_run=dry_run
-        )
+        if not isinstance(ip_address, Address):
+            ip_address = Address(public_ip=ip_address, connection=self.connection)
+
+        return ip_address.associate(self.id, dry_run=dry_run)
 
     def monitor(self, dry_run=False):
         return self.connection.monitor_instance(self.id, dry_run=dry_run)
