@@ -9,7 +9,7 @@ Released: 8-May-2014
         :target: https://travis-ci.org/boto/boto
 
 .. image:: https://pypip.in/d/boto/badge.png
-        :target: https://crate.io/packages/boto/
+        :target: https://pypi.python.org/pypi/boto/
 
 ************
 Introduction
