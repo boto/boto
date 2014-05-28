@@ -2060,7 +2060,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
     def create_volume(self, size, zone, snapshot=None,
-                      volume_type=None, iops=None, dry_run=False):
+                      volume_type=None, iops=None, encrypted=False, dry_run=False):
         """
         Create a new EBS Volume.
 
@@ -2082,6 +2082,9 @@ class EC2Connection(AWSQueryConnection):
         :param iops: The provisioned IOPs you want to associate with
             this volume. (optional)
 
+        :type encrypted: bool
+        :param encrypted: Set to True if the volume should be encrypted.
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -2099,6 +2102,8 @@ class EC2Connection(AWSQueryConnection):
             params['VolumeType'] = volume_type
         if iops:
             params['Iops'] = str(iops)
+        if encrypted:
+            params['Encrypted'] = 'true'
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateVolume', params, Volume, verb='POST')
