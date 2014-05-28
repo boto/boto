@@ -122,9 +122,23 @@ class TestProvider(unittest.TestCase):
         q = provider.Provider('aws', profile_name='dev')
         self.assertEqual(q.access_key, 'dev_access_key')
         self.assertEqual(q.secret_key, 'dev_secret_key')
-        r = provider.Provider('aws', profile_name='doesntexist')
-        self.assertEqual(r.access_key, 'default_access_key')
-        self.assertEqual(r.secret_key, 'default_secret_key')
+
+    def test_config_missing_profile(self):
+        # None of these default profiles should be loaded!
+        self.shared_config = {
+            'default': {
+                'aws_access_key_id': 'shared_access_key',
+                'aws_secret_access_key': 'shared_secret_key',
+            }
+        }
+        self.config = {
+            'Credentials': {
+                'aws_access_key_id': 'default_access_key',
+                'aws_secret_access_key': 'default_secret_key'
+            }
+        }
+        with self.assertRaises(provider.ProfileNotFoundError):
+            provider.Provider('aws', profile_name='doesntexist')
 
     def test_config_values_are_used(self):
         self.config = {

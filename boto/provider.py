@@ -68,6 +68,9 @@ STORAGE_PERMISSIONS_ERROR = 'StoragePermissionsError'
 STORAGE_RESPONSE_ERROR = 'StorageResponseError'
 
 
+class ProfileNotFoundError(ValueError): pass
+
+
 class Provider(object):
 
     CredentialMap = {
@@ -271,16 +274,23 @@ class Provider(object):
         elif access_key_name.upper() in os.environ:
             self.access_key = os.environ[access_key_name.upper()]
             boto.log.debug("Using access key found in environment variable.")
-        elif shared.has_option(profile_name, access_key_name):
-            self.access_key = shared.get(profile_name, access_key_name)
-            boto.log.debug("Using access key found in shared credential "
-                           "file for profile %s." % profile_name)
+        elif profile_name is not None:
+            if shared.has_option(profile_name, access_key_name):
+                self.access_key = shared.get(profile_name, access_key_name)
+                boto.log.debug("Using access key found in shared credential "
+                               "file for profile %s." % profile_name)
+            elif config.has_option("profile %s" % profile_name,
+                 access_key_name):
+                self.access_key = config.get("profile %s" % profile_name,
+                                             access_key_name)
+                boto.log.debug("Using access key found in config file: "
+                               "profile %s." % profile_name)
+            else:
+                raise ProfileNotFoundError('Profile "%s" not found!' %
+                                           profile_name)
         elif shared.has_option('default', access_key_name):
             self.access_key = shared.get('default', access_key_name)
             boto.log.debug("Using access key found in shared credential file.")
-        elif config.has_option("profile %s" % profile_name, access_key_name):
-            self.access_key = config.get("profile %s" % profile_name, access_key_name)
-            boto.log.debug("Using access key found in config file: profile %s." % profile_name)
         elif config.has_option('Credentials', access_key_name):
             self.access_key = config.get('Credentials', access_key_name)
             boto.log.debug("Using access key found in config file.")
@@ -291,16 +301,20 @@ class Provider(object):
         elif secret_key_name.upper() in os.environ:
             self.secret_key = os.environ[secret_key_name.upper()]
             boto.log.debug("Using secret key found in environment variable.")
-        elif shared.has_option(profile_name, secret_key_name):
-            self.secret_key = shared.get(profile_name, secret_key_name)
-            boto.log.debug("Using secret key found in shared credential "
-                           "file for profile %s." % profile_name)
+        elif profile_name is not None:
+            if shared.has_option(profile_name, secret_key_name):
+                self.secret_key = shared.get(profile_name, secret_key_name)
+                boto.log.debug("Using secret key found in shared credential "
+                               "file for profile %s." % profile_name)
+            elif config.has_option("profile %s" % profile_name, secret_key_name):
+                self.secret_key = config.get("profile %s" % profile_name, secret_key_name)
+                boto.log.debug("Using secret key found in config file: profile %s." % profile_name)
+            else:
+                raise ProfileNotFoundError('Profile "%s" not found!' %
+                                           profile_name)
         elif shared.has_option('default', secret_key_name):
             self.secret_key = shared.get('default', secret_key_name)
             boto.log.debug("Using secret key found in shared credential file.")
-        elif config.has_option("profile %s" % profile_name, secret_key_name):
-            self.secret_key = config.get("profile %s" % profile_name, secret_key_name)
-            boto.log.debug("Using secret key found in config file: profile %s." % profile_name)
         elif config.has_option('Credentials', secret_key_name):
             self.secret_key = config.get('Credentials', secret_key_name)
             boto.log.debug("Using secret key found in config file.")
