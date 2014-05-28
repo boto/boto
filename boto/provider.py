@@ -67,10 +67,6 @@ STORAGE_DATA_ERROR = 'StorageDataError'
 STORAGE_PERMISSIONS_ERROR = 'StoragePermissionsError'
 STORAGE_RESPONSE_ERROR = 'StorageResponseError'
 
-# Load shared credentials file if it exists
-shared_credentials = Config(do_load=True,
-    path=os.path.join(expanduser('~'), '.aws', 'credentials'))
-
 
 class Provider(object):
 
@@ -188,9 +184,15 @@ class Provider(object):
         self.acl_class = self.AclClassMap[self.name]
         self.canned_acls = self.CannedAclsMap[self.name]
         self._credential_expiry_time = None
+
+        # Load shared credentials file if it exists
+        self.shared_credentials = Config(do_load=True,
+            path=os.path.join(expanduser('~'), '.aws', 'credentials'))
+
         self.get_credentials(access_key, secret_key, security_token, profile_name)
         self.configure_headers()
         self.configure_errors()
+
         # Allow config file to override default host and port.
         host_opt_name = '%s_host' % self.HostKeyMap[self.name]
         if config.has_option('Credentials', host_opt_name):
@@ -261,7 +263,7 @@ class Provider(object):
         if profile_name is None and profile_name_name.upper() in os.environ:
             profile_name = os.environ[profile_name_name.upper()]
 
-        shared = shared_credentials
+        shared = self.shared_credentials
 
         if access_key is not None:
             self.access_key = access_key

@@ -31,19 +31,18 @@ class TestProvider(unittest.TestCase):
                                        self.get_config)
         self.has_config_patch = mock.patch('boto.provider.config.has_option',
                                            self.has_config)
-        self.shared_config_patch = mock.patch(
-            'boto.provider.shared_credentials.get', self.get_shared_config)
-        self.has_shared_config_patch = mock.patch(
-            'boto.provider.shared_credentials.has_option',
-            self.has_shared_config)
+        self.config_object_patch = mock.patch.object(
+            provider.Config, 'get', self.get_shared_config)
+        self.has_config_object_patch = mock.patch.object(
+            provider.Config, 'has_option', self.has_shared_config)
         self.environ_patch = mock.patch('os.environ', self.environ)
 
         self.get_instance_metadata = self.metadata_patch.start()
         self.get_instance_metadata.return_value = None
         self.config_patch.start()
         self.has_config_patch.start()
-        self.shared_config_patch.start()
-        self.has_shared_config_patch.start()
+        self.config_object_patch.start()
+        self.has_config_object_patch.start()
         self.environ_patch.start()
 
 
@@ -51,8 +50,8 @@ class TestProvider(unittest.TestCase):
         self.metadata_patch.stop()
         self.config_patch.stop()
         self.has_config_patch.stop()
-        self.shared_config_patch.stop()
-        self.has_shared_config_patch.stop()
+        self.config_object_patch.stop()
+        self.has_config_object_patch.stop()
         self.environ_patch.stop()
 
     def has_config(self, section_name, key):
