@@ -273,6 +273,13 @@ class TestProvider(unittest.TestCase):
         self.environ['AWS_ACCESS_KEY_ID'] = 'env_access_key'
         self.environ['AWS_SECRET_ACCESS_KEY'] = 'env_secret_key'
         self.environ['AWS_SECURITY_TOKEN'] = 'env_security_token'
+        self.shared_config = {
+            'default': {
+                'aws_access_key_id': 'shared_access_key',
+                'aws_secret_access_key': 'shared_secret_key',
+                'aws_security_token': 'shared_security_token',
+            }
+        }
         self.config = {
             'Credentials': {
                 'aws_access_key_id': 'cfg_access_key',
@@ -284,6 +291,14 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.access_key, 'env_access_key')
         self.assertEqual(p.secret_key, 'env_secret_key')
         self.assertEqual(p.security_token, 'env_security_token')
+
+        self.environ.clear()
+        p = provider.Provider('aws')
+        self.assertEqual(p.security_token, 'shared_security_token')
+
+        self.shared_config.clear()
+        p = provider.Provider('aws')
+        self.assertEqual(p.security_token, 'cfg_security_token')
 
     def test_metadata_server_credentials(self):
         self.get_instance_metadata.return_value = INSTANCE_CONFIG

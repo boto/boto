@@ -11,8 +11,8 @@ There is a growing list of configuration options for the boto library. Many of
 these options can be passed into the constructors for top-level objects such as
 connections. Some options, such as credentials, can also be read from
 environment variables (e.g. ``AWS_ACCESS_KEY_ID``, ``AWS_SECRET_ACCESS_KEY``,
-and ``AWS_PROFILE``). It is also possible to manage these options in a central
-place through the use of boto config files.
+``AWS_SECURITY_TOKEN`` and ``AWS_PROFILE``). It is also possible to manage
+these options in a central place through the use of boto config files.
 
 Details
 -------
@@ -98,6 +98,11 @@ different format. For example::
     [name_goes_here]
     aws_access_key_id = <access key for this profile>
     aws_secret_access_key = <secret key for this profile>
+
+    [another_profile]
+    aws_access_key_id = <access key for this profile>
+    aws_secret_access_key = <secret key for this profile>
+    aws_security_token = <optional security token for this profile>
 
 For greater security, the secret key can be stored in a keyring and
 retrieved via the keyring package.  To use a keyring, use ``keyring``,

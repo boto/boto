@@ -328,6 +328,12 @@ class Provider(object):
                 self.security_token = os.environ[security_token_name.upper()]
                 boto.log.debug("Using security token found in environment"
                                " variable.")
+            elif shared.has_option(profile_name or 'default',
+                                   security_token_name):
+                self.security_token = shared.get(profile_name or 'default',
+                                                 security_token_name)
+                boto.log.debug("Using security token found in shared "
+                               "credential file.")
             elif config.has_option('Credentials', security_token_name):
                 self.security_token = config.get('Credentials',
                                                  security_token_name)
