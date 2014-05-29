@@ -20,20 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import StringIO, os, re
-import warnings
 import ConfigParser
-import boto
+import os
+import re
+import StringIO
+import warnings
 
-# If running in Google App Engine there is no "user" and
-# os.path.expanduser() will fail. Attempt to detect this case and use a
-# no-op expanduser function in this case.
-try:
-  os.path.expanduser('~')
-  expanduser = os.path.expanduser
-except (AttributeError, ImportError):
-  # This is probably running on App Engine.
-  expanduser = (lambda x: x)
+import boto
+from boto.compat import expanduser
+
 
 # By default we use two locations for the boto configurations,
 # /etc/boto.cfg and ~/.boto (which works on Windows and Unix).

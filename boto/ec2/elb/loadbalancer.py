@@ -82,6 +82,7 @@ class LoadBalancer(object):
             check policy for this load balancer.
         :ivar boto.ec2.elb.policies.Policies policies: Cookie stickiness and
             other policies.
+        :ivar str name: The name of the Load Balancer.
         :ivar str dns_name: The external DNS name for the balancer.
         :ivar str created_time: A date+time string showing when the
             load balancer was created.

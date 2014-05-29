@@ -78,10 +78,11 @@ class VolumeTests(unittest.TestCase):
         retval = volume.startElement("not tagSet or attachmentSet", None, None)
         self.assertEqual(retval, None)
 
-    def check_that_attribute_has_been_set(self, name, value, attribute):
+    def check_that_attribute_has_been_set(self, name, value, attribute, obj_value=None):
         volume = Volume()
         volume.endElement(name, value, None)
-        self.assertEqual(getattr(volume, attribute), value)
+        expected_value = obj_value if obj_value is not None else value
+        self.assertEqual(getattr(volume, attribute), expected_value)
 
     def test_endElement_sets_correct_attributes_with_values(self):
         for arguments in [("volumeId", "some value", "id"),
@@ -90,8 +91,9 @@ class VolumeTests(unittest.TestCase):
                           ("size", 5, "size"),
                           ("snapshotId", 1, "snapshot_id"),
                           ("availabilityZone", "some zone", "zone"),
-                          ("someName", "some value", "someName")]:
-            self.check_that_attribute_has_been_set(arguments[0], arguments[1], arguments[2])
+                          ("someName", "some value", "someName"),
+                          ("encrypted", "true", "encrypted", True)]:
+            self.check_that_attribute_has_been_set(*arguments)
 
     def test_endElement_with_name_status_and_empty_string_value_doesnt_set_status(self):
         volume = Volume()
