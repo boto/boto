@@ -87,8 +87,8 @@ def load_regions():
     # Try the ENV var. If not, check the config file.
     if os.environ.get('BOTO_ENDPOINTS'):
         additional_path = os.environ['BOTO_ENDPOINTS']
-    elif boto.config.get('boto', 'endpoints_path'):
-        additional_path = boto.config.get('boto', 'endpoints_path')
+    elif boto.config.get('Boto', 'endpoints_path'):
+        additional_path = boto.config.get('Boto', 'endpoints_path')
 
     # If there's a file provided, we'll load it & additively merge it into
     # the endpoints.
