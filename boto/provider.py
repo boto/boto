@@ -189,8 +189,10 @@ class Provider(object):
         self._credential_expiry_time = None
 
         # Load shared credentials file if it exists
-        self.shared_credentials = Config(do_load=True,
-            path=os.path.join(expanduser('~'), '.aws', 'credentials'))
+        shared_path = os.path.join(expanduser('~'), '.aws', 'credentials')
+        self.shared_credentials = Config(do_load=False)
+        if os.path.exists(shared_path):
+            self.shared_credentials.load_from_path(shared_path)
 
         self.get_credentials(access_key, secret_key, security_token, profile_name)
         self.configure_headers()
