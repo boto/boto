@@ -280,7 +280,7 @@ class Provider(object):
                 boto.log.debug("Using access key found in shared credential "
                                "file for profile %s." % profile_name)
             elif config.has_option("profile %s" % profile_name,
-                 access_key_name):
+                                   access_key_name):
                 self.access_key = config.get("profile %s" % profile_name,
                                              access_key_name)
                 boto.log.debug("Using access key found in config file: "
@@ -307,8 +307,10 @@ class Provider(object):
                 boto.log.debug("Using secret key found in shared credential "
                                "file for profile %s." % profile_name)
             elif config.has_option("profile %s" % profile_name, secret_key_name):
-                self.secret_key = config.get("profile %s" % profile_name, secret_key_name)
-                boto.log.debug("Using secret key found in config file: profile %s." % profile_name)
+                self.secret_key = config.get("profile %s" % profile_name,
+                                             secret_key_name)
+                boto.log.debug("Using secret key found in config file: "
+                               "profile %s." % profile_name)
             else:
                 raise ProfileNotFoundError('Profile "%s" not found!' %
                                            profile_name)
