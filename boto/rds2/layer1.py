@@ -1011,7 +1011,7 @@ class RDSConnection(AWSQueryConnection):
         :param subnet_ids: The EC2 Subnet IDs for the DB subnet group.
 
         :type tags: list
-        :param tags: A list of tags.
+        :param tags: A list of tags into tuples.
 
         """
         params = {
