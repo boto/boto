@@ -71,7 +71,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2013-10-15')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2014-05-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -2231,8 +2231,8 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
-    def create_volume(self, size, zone, snapshot=None,
-                      volume_type=None, iops=None, dry_run=False):
+    def create_volume(self, size, zone, snapshot=None, volume_type=None,
+                      iops=None, encrypted=False, dry_run=False):
         """
         Create a new EBS Volume.
 
@@ -2254,6 +2254,10 @@ class EC2Connection(AWSQueryConnection):
         :param iops: The provisioned IOPs you want to associate with
             this volume. (optional)
 
+        :type encrypted: bool
+        :param encrypted: Specifies whether the volume should be encrypted.
+            (optional)
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -2271,6 +2275,8 @@ class EC2Connection(AWSQueryConnection):
             params['VolumeType'] = volume_type
         if iops:
             params['Iops'] = str(iops)
+        if encrypted:
+            params['Encrypted'] = 'true'
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateVolume', params, Volume, verb='POST')
