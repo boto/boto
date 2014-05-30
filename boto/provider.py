@@ -265,7 +265,7 @@ class Provider(object):
 
         # Load profile from shared environment variable if it was not
         # already passed in and the environment variable exists
-        if profile_name is None and profile_name_name.upper() in os.environ:
+        if profile_name is not None and profile_name_name.upper() in os.environ:
             profile_name = os.environ[profile_name_name.upper()]
 
         shared = self.shared_credentials
