@@ -3,8 +3,10 @@ from datetime import datetime, timedelta
 
 from tests.unit import unittest
 import mock
+import os
 
 from boto import provider
+from boto.compat import expanduser
 
 
 INSTANCE_CONFIG = {
@@ -370,6 +372,51 @@ class TestProvider(unittest.TestCase):
         self.get_instance_metadata.assert_called_with(
             timeout=4.0, num_retries=10,
             data='meta-data/iam/security-credentials/')
+
+    def test_provider_google(self):
+        self.environ['GS_ACCESS_KEY_ID'] = 'env_access_key'
+        self.environ['GS_SECRET_ACCESS_KEY'] = 'env_secret_key'
+        self.shared_config = {
+            'default': {
+                'gs_access_key_id': 'shared_access_key',
+                'gs_secret_access_key': 'shared_secret_key',
+            }
+        }
+        self.config = {
+            'Credentials': {
+                'gs_access_key_id': 'cfg_access_key',
+                'gs_secret_access_key': 'cfg_secret_key',
+            }
+        }
+        p = provider.Provider('google')
+        self.assertEqual(p.access_key, 'env_access_key')
+        self.assertEqual(p.secret_key, 'env_secret_key')
+
+        self.environ.clear()
+        p = provider.Provider('google')
+        self.assertEqual(p.access_key, 'shared_access_key')
+        self.assertEqual(p.secret_key, 'shared_secret_key')
+
+        self.shared_config.clear()
+        p = provider.Provider('google')
+        self.assertEqual(p.access_key, 'cfg_access_key')
+        self.assertEqual(p.secret_key, 'cfg_secret_key')
+
+    @mock.patch('os.path.exists', return_value=True)
+    @mock.patch.object(provider.Config, 'load_from_path')
+    def test_shared_config_loading(self, load_from_path, exists):
+        provider.Provider('aws')
+        path = os.path.join(expanduser('~'), '.aws', 'credentials')
+        exists.assert_called_once_with(path)
+        load_from_path.assert_called_once_with(path)
+
+        exists.reset_mock()
+        load_from_path.reset_mock()
+
+        provider.Provider('google')
+        path = os.path.join(expanduser('~'), '.google', 'credentials')
+        exists.assert_called_once_with(path)
+        load_from_path.assert_called_once_with(path)
 
 
 if __name__ == '__main__':
