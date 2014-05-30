@@ -350,7 +350,7 @@ class CloudSearchConnectionTest(unittest.TestCase):
         fake.content = 'Nopenopenope'
 
         # First, in the case of a non-JSON, non-403 error.
-        with mpo(requests, 'get', return_value=fake) as mock_request:
+        with mpo(self.conn.session, 'get', return_value=fake) as mock_request:
             with self.assertRaises(SearchServiceException) as cm:
                 self.conn.search(q='not_gonna_happen')
 
@@ -362,7 +362,7 @@ class CloudSearchConnectionTest(unittest.TestCase):
             'error': "Something went wrong. Oops."
         })
 
-        with mpo(requests, 'get', return_value=fake) as mock_request:
+        with mpo(self.conn.session, 'get', return_value=fake) as mock_request:
             with self.assertRaises(SearchServiceException) as cm:
                 self.conn.search(q='no_luck_here')
 
