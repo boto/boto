@@ -189,7 +189,7 @@ class Provider(object):
         self._credential_expiry_time = None
 
         # Load shared credentials file if it exists
-        shared_path = os.path.join(expanduser('~'), '.aws', 'credentials')
+        shared_path = os.path.join(expanduser('~'), '.' + name, 'credentials')
         self.shared_credentials = Config(do_load=False)
         if os.path.exists(shared_path):
             self.shared_credentials.load_from_path(shared_path)
@@ -265,7 +265,8 @@ class Provider(object):
 
         # Load profile from shared environment variable if it was not
         # already passed in and the environment variable exists
-        if profile_name is None and profile_name_name.upper() in os.environ:
+        if profile_name is None and profile_name_name is not None and \
+           profile_name_name.upper() in os.environ:
             profile_name = os.environ[profile_name_name.upper()]
 
         shared = self.shared_credentials
