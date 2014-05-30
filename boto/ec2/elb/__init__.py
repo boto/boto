@@ -615,7 +615,7 @@ class ELBConnection(AWSQueryConnection):
 
     def create_lb_policy(self, lb_name, policy_name, policy_type, policy_attributes):
         """
-        Creates a new policy that contais the necessary attributes depending on
+        Creates a new policy that contains the necessary attributes depending on
         the policy type. Policies are settings that are saved for your load
         balancer and that can be applied to the front-end listener, or
         the back-end application server.

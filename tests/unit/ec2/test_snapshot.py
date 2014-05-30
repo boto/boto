@@ -28,12 +28,13 @@ class TestDescribeSnapshots(AWSMockServiceTestCase):
                            <value>demo_db_14_backup</value>
                         </item>
                      </tagSet>
+                     <encrypted>false</encrypted>
                   </item>
                </snapshotSet>
             </DescribeSnapshotsResponse>
         """
 
-    def test_cancel_spot_instance_requests(self):
+    def test_describe_snapshots(self):
         self.set_http_response(status_code=200)
         response = self.service_connection.get_all_snapshots(['snap-1a2b3c4d', 'snap-9f8e7d6c'],
                                                              owner=['self', '111122223333'],

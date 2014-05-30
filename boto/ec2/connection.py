@@ -71,7 +71,7 @@ from boto.exception import EC2ResponseError
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2013-10-15')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2014-05-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -266,7 +266,8 @@ class EC2Connection(AWSQueryConnection):
                        root_device_name=None, block_device_map=None,
                        dry_run=False, virtualization_type=None,
                        sriov_net_support=None,
-                       snapshot_id=None):
+                       snapshot_id=None, 
+                       delete_root_volume_on_termination=False):
         """
         Register an image.
 
@@ -315,6 +316,12 @@ class EC2Connection(AWSQueryConnection):
             as root device for the image. Mutually exclusive with
             block_device_map, requires root_device_name
 
+        :type delete_root_volume_on_termination: bool
+        :param delete_root_volume_on_termination: Whether to delete the root
+            volume of the image after instance termination. Only applies when
+            creating image from snapshot_id. Defaults to False.  Note that 
+            leaving volumes behind after instance termination is not free.
+
         :rtype: string
         :return: The new image id
         """
@@ -334,7 +341,8 @@ class EC2Connection(AWSQueryConnection):
         if root_device_name:
             params['RootDeviceName'] = root_device_name
         if snapshot_id:
-            root_vol = BlockDeviceType(snapshot_id=snapshot_id)
+            root_vol = BlockDeviceType(snapshot_id=snapshot_id, 
+              delete_on_termination=delete_root_volume_on_termination)
             block_device_map = BlockDeviceMapping()
             block_device_map[root_device_name] = root_vol
         if block_device_map:
@@ -2223,8 +2231,8 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
-    def create_volume(self, size, zone, snapshot=None,
-                      volume_type=None, iops=None, dry_run=False):
+    def create_volume(self, size, zone, snapshot=None, volume_type=None,
+                      iops=None, encrypted=False, dry_run=False):
         """
         Create a new EBS Volume.
 
@@ -2246,6 +2254,10 @@ class EC2Connection(AWSQueryConnection):
         :param iops: The provisioned IOPs you want to associate with
             this volume. (optional)
 
+        :type encrypted: bool
+        :param encrypted: Specifies whether the volume should be encrypted.
+            (optional)
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -2263,6 +2275,8 @@ class EC2Connection(AWSQueryConnection):
             params['VolumeType'] = volume_type
         if iops:
             params['Iops'] = str(iops)
+        if encrypted:
+            params['Encrypted'] = 'true'
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateVolume', params, Volume, verb='POST')

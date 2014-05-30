@@ -113,6 +113,25 @@ The write method will return the ``Message`` object.  The ``id`` and
 ``md5`` attribute of the ``Message`` object will be updated with the
 values of the message that was written to the queue.
 
+Arbitrary message attributes can be defined by setting a simple dictionary
+of values on the message object::
+
+>>> m = Message()
+>>> m.message_attributes = {
+    "name1": {
+        "data_type": "String",
+        "string_value": "I am a string"
+    },
+    "name2": {
+        "data_type": "Number",
+        "string_value": "12"
+    }
+}
+
+Note that by default, these arbitrary attributes are not returned when
+you request messages from a queue. Instead, you must request them via
+the ``message_attributes`` parameter (see below).
+
 If the message cannot be written an ``SQSError`` exception will be raised.
 
 Writing Messages (Custom Format)
@@ -205,6 +224,19 @@ a visibility_timeout parameter to read, if you desire:
 >>> m = q.read(60)
 >>> m.get_body()
 u'This is my first message'
+
+Reading Message Attributes
+--------------------------
+By default, no arbitrary message attributes are returned when requesting
+messages. You can change this behavior by specifying the names of attributes
+you wish to have returned::
+
+>>> rs = queue.get_messages(message_attributes=['name1', 'name2'])
+>>> print rs[0].message_attributes['name1']['string_value']
+'I am a string'
+
+A special value of ``All`` or ``.*`` may be passed to return all available
+message attributes.
 
 Deleting Messages and Queues
 ----------------------------

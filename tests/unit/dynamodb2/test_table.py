@@ -2206,7 +2206,9 @@ class TableTestCase(unittest.TestCase):
                     'ComparisonOperator': 'BETWEEN',
                 }
             },
-            select=None
+            select=None,
+            query_filter=None,
+            conditional_operator=None
         )
 
         # Now alter the expected.
@@ -2227,7 +2229,9 @@ class TableTestCase(unittest.TestCase):
                 exclusive_start_key={
                     'username': 'adam',
                 },
-                consistent=True
+                consistent=True,
+                query_filter=None,
+                conditional_operator='AND'
             )
             usernames = [res['username'] for res in results['results']]
             self.assertEqual(usernames, ['johndoe', 'jane', 'alice', 'bob'])
@@ -2251,7 +2255,9 @@ class TableTestCase(unittest.TestCase):
                 },
             },
             consistent_read=True,
-            select=None
+            select=None,
+            query_filter=None,
+            conditional_operator='AND'
         )
 
     def test_private_scan(self):
@@ -2313,7 +2319,8 @@ class TableTestCase(unittest.TestCase):
             limit=2,
             segment=None,
             attributes_to_get=None,
-            total_segments=None
+            total_segments=None,
+            conditional_operator=None
         )
 
         # Now alter the expected.
@@ -2356,7 +2363,8 @@ class TableTestCase(unittest.TestCase):
             },
             segment=None,
             attributes_to_get=None,
-            total_segments=None
+            total_segments=None,
+            conditional_operator=None
         )
 
     def test_query(self):

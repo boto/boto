@@ -1,15 +1,15 @@
 ####
 boto
 ####
-boto 2.27.0
+boto 2.29.0
 
-Released: 6-March-2014
+Released: 29-May-2014
 
 .. image:: https://travis-ci.org/boto/boto.png?branch=develop
         :target: https://travis-ci.org/boto/boto
 
 .. image:: https://pypip.in/d/boto/badge.png
-        :target: https://crate.io/packages/boto/
+        :target: https://pypi.python.org/pypi/boto/
 
 ************
 Introduction

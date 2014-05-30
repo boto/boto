@@ -24,17 +24,25 @@ class TestProvider(unittest.TestCase):
     def setUp(self):
         self.environ = {}
         self.config = {}
+        self.shared_config = {}
 
         self.metadata_patch = mock.patch('boto.utils.get_instance_metadata')
         self.config_patch = mock.patch('boto.provider.config.get',
                                        self.get_config)
         self.has_config_patch = mock.patch('boto.provider.config.has_option',
                                            self.has_config)
+        self.config_object_patch = mock.patch.object(
+            provider.Config, 'get', self.get_shared_config)
+        self.has_config_object_patch = mock.patch.object(
+            provider.Config, 'has_option', self.has_shared_config)
         self.environ_patch = mock.patch('os.environ', self.environ)
 
         self.get_instance_metadata = self.metadata_patch.start()
+        self.get_instance_metadata.return_value = None
         self.config_patch.start()
         self.has_config_patch.start()
+        self.config_object_patch.start()
+        self.has_config_object_patch.start()
         self.environ_patch.start()
 
 
@@ -42,6 +50,8 @@ class TestProvider(unittest.TestCase):
         self.metadata_patch.stop()
         self.config_patch.stop()
         self.has_config_patch.stop()
+        self.config_object_patch.stop()
+        self.has_config_object_patch.stop()
         self.environ_patch.stop()
 
     def has_config(self, section_name, key):
@@ -54,6 +64,19 @@ class TestProvider(unittest.TestCase):
     def get_config(self, section_name, key):
         try:
             return self.config[section_name][key]
+        except KeyError:
+            return None
+
+    def has_shared_config(self, section_name, key):
+        try:
+            self.shared_config[section_name][key]
+            return True
+        except KeyError:
+            return False
+
+    def get_shared_config(self, section_name, key):
+        try:
+            return self.shared_config[section_name][key]
         except KeyError:
             return None
 
@@ -99,9 +122,23 @@ class TestProvider(unittest.TestCase):
         q = provider.Provider('aws', profile_name='dev')
         self.assertEqual(q.access_key, 'dev_access_key')
         self.assertEqual(q.secret_key, 'dev_secret_key')
-        r = provider.Provider('aws', profile_name='doesntexist')
-        self.assertEqual(r.access_key, 'default_access_key')
-        self.assertEqual(r.secret_key, 'default_secret_key')
+
+    def test_config_missing_profile(self):
+        # None of these default profiles should be loaded!
+        self.shared_config = {
+            'default': {
+                'aws_access_key_id': 'shared_access_key',
+                'aws_secret_access_key': 'shared_secret_key',
+            }
+        }
+        self.config = {
+            'Credentials': {
+                'aws_access_key_id': 'default_access_key',
+                'aws_secret_access_key': 'default_secret_key'
+            }
+        }
+        with self.assertRaises(provider.ProfileNotFoundError):
+            provider.Provider('aws', profile_name='doesntexist')
 
     def test_config_values_are_used(self):
         self.config = {
@@ -164,13 +201,13 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.secret_key, 'secret_key')
         self.assertEqual(p.security_token, None)
 
-    def test_env_vars_beat_config_values(self):
+    def test_env_vars_beat_shared_creds_values(self):
         self.environ['AWS_ACCESS_KEY_ID'] = 'env_access_key'
         self.environ['AWS_SECRET_ACCESS_KEY'] = 'env_secret_key'
-        self.config = {
-            'Credentials': {
-                'aws_access_key_id': 'cfg_access_key',
-                'aws_secret_access_key': 'cfg_secret_key',
+        self.shared_config = {
+            'default': {
+                'aws_access_key_id': 'shared_access_key',
+                'aws_secret_access_key': 'shared_secret_key',
             }
         }
         p = provider.Provider('aws')
@@ -178,10 +215,84 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.secret_key, 'env_secret_key')
         self.assertIsNone(p.security_token)
 
+    def test_shared_creds_beat_config_values(self):
+        self.shared_config = {
+            'default': {
+                'aws_access_key_id': 'shared_access_key',
+                'aws_secret_access_key': 'shared_secret_key',
+            }
+        }
+        self.config = {
+            'Credentials': {
+                'aws_access_key_id': 'cfg_access_key',
+                'aws_secret_access_key': 'cfg_secret_key',
+            }
+        }
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'shared_access_key')
+        self.assertEqual(p.secret_key, 'shared_secret_key')
+        self.assertIsNone(p.security_token)
+
+    def test_shared_creds_profile_beats_defaults(self):
+        self.shared_config = {
+            'default': {
+                'aws_access_key_id': 'shared_access_key',
+                'aws_secret_access_key': 'shared_secret_key',
+            },
+            'foo': {
+                'aws_access_key_id': 'foo_access_key',
+                'aws_secret_access_key': 'foo_secret_key',
+            }
+        }
+        p = provider.Provider('aws', profile_name='foo')
+        self.assertEqual(p.access_key, 'foo_access_key')
+        self.assertEqual(p.secret_key, 'foo_secret_key')
+        self.assertIsNone(p.security_token)
+
+    def test_env_profile_loads_profile(self):
+        self.environ['AWS_PROFILE'] = 'foo'
+        self.shared_config = {
+            'default': {
+                'aws_access_key_id': 'shared_access_key',
+                'aws_secret_access_key': 'shared_secret_key',
+            },
+            'foo': {
+                'aws_access_key_id': 'shared_access_key_foo',
+                'aws_secret_access_key': 'shared_secret_key_foo',
+            }
+        }
+        self.config = {
+            'profile foo': {
+                'aws_access_key_id': 'cfg_access_key_foo',
+                'aws_secret_access_key': 'cfg_secret_key_foo',
+            },
+            'Credentials': {
+                'aws_access_key_id': 'cfg_access_key',
+                'aws_secret_access_key': 'cfg_secret_key',
+            }
+        }
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'shared_access_key_foo')
+        self.assertEqual(p.secret_key, 'shared_secret_key_foo')
+        self.assertIsNone(p.security_token)
+
+        self.shared_config = {}
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'cfg_access_key_foo')
+        self.assertEqual(p.secret_key, 'cfg_secret_key_foo')
+        self.assertIsNone(p.security_token)
+
     def test_env_vars_security_token_beats_config_values(self):
         self.environ['AWS_ACCESS_KEY_ID'] = 'env_access_key'
         self.environ['AWS_SECRET_ACCESS_KEY'] = 'env_secret_key'
         self.environ['AWS_SECURITY_TOKEN'] = 'env_security_token'
+        self.shared_config = {
+            'default': {
+                'aws_access_key_id': 'shared_access_key',
+                'aws_secret_access_key': 'shared_secret_key',
+                'aws_security_token': 'shared_security_token',
+            }
+        }
         self.config = {
             'Credentials': {
                 'aws_access_key_id': 'cfg_access_key',
@@ -193,6 +304,14 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.access_key, 'env_access_key')
         self.assertEqual(p.secret_key, 'env_secret_key')
         self.assertEqual(p.security_token, 'env_security_token')
+
+        self.environ.clear()
+        p = provider.Provider('aws')
+        self.assertEqual(p.security_token, 'shared_security_token')
+
+        self.shared_config.clear()
+        p = provider.Provider('aws')
+        self.assertEqual(p.security_token, 'cfg_security_token')
 
     def test_metadata_server_credentials(self):
         self.get_instance_metadata.return_value = INSTANCE_CONFIG
