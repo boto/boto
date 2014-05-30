@@ -156,6 +156,8 @@ class SearchConnection(object):
     def __init__(self, domain=None, endpoint=None):
         self.domain = domain
         self.endpoint = endpoint
+        self.session = requests.Session()
+
         if not endpoint:
             self.endpoint = domain.search_service_endpoint
 
@@ -278,7 +280,7 @@ class SearchConnection(object):
         url = "http://%s/%s/search" % (self.endpoint, api_version)
         params = query.to_params()
 
-        r = requests.get(url, params=params)
+        r = self.session.get(url, params=params)
         try:
             data = json.loads(r.content)
         except ValueError, e:
