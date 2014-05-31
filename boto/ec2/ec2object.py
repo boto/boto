@@ -123,7 +123,7 @@ class TaggedEC2Object(EC2Object):
                       NOTE: There is an important distinction between
                       a value of '' and a value of None.
         """
-        if value:
+        if value is not None:
             tags = {key : value}
         else:
             tags = [key]
