@@ -340,7 +340,6 @@ class Domain(object):
                     ','.join(source_field)
         elif field_type == 'int':
             index['IntOptions'] = {
-                'DefaultValue': default,
                 'FacetEnabled': facet,
                 'ReturnEnabled': returnable,
                 'SearchEnabled': searchable,
