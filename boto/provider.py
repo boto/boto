@@ -191,7 +191,7 @@ class Provider(object):
         # Load shared credentials file if it exists
         shared_path = os.path.join(expanduser('~'), '.' + name, 'credentials')
         self.shared_credentials = Config(do_load=False)
-        if os.path.exists(shared_path):
+        if os.path.isfile(shared_path):
             self.shared_credentials.load_from_path(shared_path)
 
         self.get_credentials(access_key, secret_key, security_token, profile_name)
