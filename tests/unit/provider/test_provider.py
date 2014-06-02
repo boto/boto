@@ -402,7 +402,7 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.access_key, 'cfg_access_key')
         self.assertEqual(p.secret_key, 'cfg_secret_key')
 
-    @mock.patch('os.path.exists', return_value=True)
+    @mock.patch('os.path.isfile', return_value=True)
     @mock.patch.object(provider.Config, 'load_from_path')
     def test_shared_config_loading(self, load_from_path, exists):
         provider.Provider('aws')
