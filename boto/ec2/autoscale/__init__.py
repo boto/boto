@@ -698,6 +698,8 @@ class AutoScaleConnection(AWSQueryConnection):
         params = {'PolicyName': policy_name}
         if as_group:
             params['AutoScalingGroupName'] = as_group
+        if isinstance(honor_cooldown, bool):
+            honor_cooldown = 'true' if honor_cooldown else 'false'
         if honor_cooldown:
             params['HonorCooldown'] = honor_cooldown
         return self.get_status('ExecutePolicy', params)
