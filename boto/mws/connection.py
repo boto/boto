@@ -363,10 +363,10 @@ class MWSConnection(AWSQueryConnection):
             response = more(NextToken=response._result.NextToken)
             yield response
 
+    @requires(['FeedType'])
     @boolean_arguments('PurgeAndReplace')
     @http_body('FeedContent')
     @structured_lists('MarketplaceIdList.Id')
-    @requires(['FeedType'])
     @api_action('Feeds', 15, 120)
     def submit_feed(self, request, response, headers=None, body='', **kw):
         """Uploads a feed for processing by Amazon MWS.
@@ -422,9 +422,9 @@ class MWSConnection(AWSQueryConnection):
                   "{1}".format(self.__class__.__name__, sections)
         raise AttributeError(message)
 
+    @requires(['ReportType'])
     @structured_lists('MarketplaceIdList.Id')
     @boolean_arguments('ReportOptions=ShowSalesChannel')
-    @requires(['ReportType'])
     @api_action('Reports', 15, 60)
     def request_report(self, request, response, **kw):
         """Creates a report request and submits the request to Amazon MWS.
@@ -535,8 +535,8 @@ class MWSConnection(AWSQueryConnection):
         """
         return self._post_request(request, kw, response)
 
-    @boolean_arguments('Acknowledged')
     @requires(['ReportIdList'])
+    @boolean_arguments('Acknowledged')
     @structured_lists('ReportIdList.Id')
     @api_action('Reports', 10, 45)
     def update_report_acknowledgements(self, request, response, **kw):
@@ -642,8 +642,8 @@ class MWSConnection(AWSQueryConnection):
         """
         return self._post_request(request, kw, response)
 
-    @structured_objects('Address', 'Items')
     @requires(['Address', 'Items'])
+    @structured_objects('Address', 'Items')
     @api_action('Outbound', 30, 0.5)
     def get_fulfillment_preview(self, request, response, **kw):
         """Returns a list of fulfillment order previews based on items
@@ -651,11 +651,11 @@ class MWSConnection(AWSQueryConnection):
         """
         return self._post_request(request, kw, response)
 
-    @structured_objects('DestinationAddress', 'Items')
     @requires(['SellerFulfillmentOrderId', 'DisplayableOrderId',
                'ShippingSpeedCategory',    'DisplayableOrderDateTime',
                'DestinationAddress',       'DisplayableOrderComment',
                'Items'])
+    @structured_objects('DestinationAddress', 'Items')
     @api_action('Outbound', 30, 0.5)
     def create_fulfillment_order(self, request, response, **kw):
         """Requests that Amazon ship items from the seller's inventory
