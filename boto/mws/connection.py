@@ -77,7 +77,7 @@ def http_body(field):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            if filter(lambda x: not x in kw, (field, 'content_type')):
+            if [x for x in (field, 'content_type') if not x in kw]:
                 message = "{0} requires {1} and content_type arguments for " \
                           "building HTTP body".format(func.action, field)
                 raise KeyError(message)
@@ -95,11 +95,11 @@ def http_body(field):
 
 def destructure_object(value, into={}, prefix=''):
     if isinstance(value, ResponseElement):
-        for name, attr in value.__dict__.items():
+        for name, attr in list(value.__dict__.items()):
             if name.startswith('_'):
                 continue
             destructure_object(attr, into=into, prefix=prefix + '.' + name)
-    elif filter(lambda x: isinstance(value, x), (list, set, tuple)):
+    elif [x for x in (list, set, tuple) if isinstance(value, x)]:
         for index, element in [(prefix + '.' + str(i + 1), value[i])
                                     for i in range(len(value))]:
             destructure_object(element, into=into, prefix=index)
@@ -128,8 +128,8 @@ def requires(*groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if 1 != len(filter(hasgroup, groups)):
+            hasgroup = lambda x: len(x) == len(list(filter(kw.has_key, x)))
+            if 1 != len(list(filter(hasgroup, groups))):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires {1} argument(s)" \
                           "".format(func.action, message)
@@ -147,8 +147,8 @@ def exclusive(*groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if len(filter(hasgroup, groups)) not in (0, 1):
+            hasgroup = lambda x: len(x) == len(list(filter(kw.has_key, x)))
+            if len(list(filter(hasgroup, groups))) not in (0, 1):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires either {1}" \
                           "".format(func.action, message)
@@ -166,8 +166,8 @@ def dependent(field, *groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if field in kw and 1 > len(filter(hasgroup, groups)):
+            hasgroup = lambda x: len(x) == len(list(filter(kw.has_key, x)))
+            if field in kw and 1 > len(list(filter(hasgroup, groups))):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} argument {1} requires {2}" \
                           "".format(func.action, field, message)
@@ -186,7 +186,7 @@ def requires_some_of(*fields):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            if not filter(kw.has_key, fields):
+            if not list(filter(kw.has_key, fields)):
                 message = "{0} requires at least one of {1} argument(s)" \
                           "".format(func.action, ', '.join(fields))
                 raise KeyError(message)
@@ -202,7 +202,7 @@ def boolean_arguments(*fields):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            for field in filter(lambda x: isinstance(kw.get(x), bool), fields):
+            for field in [x for x in fields if isinstance(kw.get(x), bool)]:
                 kw[field] = str(kw[field]).lower()
             return func(*args, **kw)
         wrapper.__doc__ = "{0}\nBooleans: {1}".format(func.__doc__,
@@ -215,7 +215,7 @@ def api_action(section, quota, restore, *api):
 
     def decorator(func, quota=int(quota), restore=float(restore)):
         version, accesskey, path = api_version_path[section]
-        action = ''.join(api or map(str.capitalize, func.func_name.split('_')))
+        action = ''.join(api or list(map(str.capitalize, func.__name__.split('_'))))
         if hasattr(boto.mws.response, action + 'Response'):
             response = getattr(boto.mws.response, action + 'Response')
         else:
@@ -290,7 +290,7 @@ class MWSConnection(AWSQueryConnection):
         attribs = [getattr(self, m) for m in dir(self)]
         ismethod = lambda m: type(m) is type(self.method_for)
         ismatch = lambda m: getattr(m, 'action', None) == action
-        method = filter(ismatch, filter(ismethod, attribs))
+        method = list(filter(ismatch, list(filter(ismethod, attribs))))
         return method and method[0] or None
 
     def iter_call(self, call, *args, **kw):
@@ -368,7 +368,7 @@ class MWSConnection(AWSQueryConnection):
         message = "Use {0}.get_(section)_service_status(), " \
                   "where (section) is one of the following: " \
                   "{1}".format(self.__class__.__name__,
-                      ', '.join(map(str.lower, api_version_path.keys())))
+                      ', '.join(map(str.lower, list(api_version_path.keys()))))
         raise AttributeError(message)
 
     @structured_lists('MarketplaceIdList.Id')
@@ -661,11 +661,11 @@ class MWSConnection(AWSQueryConnection):
         toggle = set(('FulfillmentChannel.Channel.1',
              'OrderStatus.Status.1', 'PaymentMethod.1',
              'LastUpdatedAfter', 'LastUpdatedBefore'))
-        for do, dont in {
+        for do, dont in list({
             'BuyerEmail': toggle.union(['SellerOrderId']),
             'SellerOrderId': toggle.union(['BuyerEmail']),
-        }.items():
-            if do in kw and filter(kw.has_key, dont):
+        }.items()):
+            if do in kw and list(filter(kw.has_key, dont)):
                 message = "Don't include {0} when specifying " \
                           "{1}".format(' or '.join(dont), do)
                 raise AssertionError(message)

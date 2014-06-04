@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 #
 
-from regioninfo import SQSRegionInfo
+from .regioninfo import SQSRegionInfo
 
 
 def regions():

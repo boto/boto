@@ -38,7 +38,7 @@ from email.utils import formatdate
 import hmac
 import sys
 import time
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import posixpath
 
 from boto.auth_handler import AuthHandler
@@ -274,7 +274,7 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         """
         headers_to_sign = {}
         headers_to_sign = {'Host': self.host}
-        for name, value in http_request.headers.items():
+        for name, value in list(http_request.headers.items()):
             lname = name.lower()
             if lname.startswith('x-amz'):
                 headers_to_sign[name] = value
@@ -364,7 +364,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         host_header_value = self.host_header(self.host, http_request)
         headers_to_sign = {}
         headers_to_sign = {'Host': host_header_value}
-        for name, value in http_request.headers.items():
+        for name, value in list(http_request.headers.items()):
             lname = name.lower()
             if lname.startswith('x-amz'):
                 headers_to_sign[name] = value
@@ -382,8 +382,8 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         pairs = []
         for pname in parameter_names:
             pval = str(http_request.params[pname]).encode('utf-8')
-            pairs.append(urllib.quote(pname, safe='') + '=' +
-                         urllib.quote(pval, safe='-_~'))
+            pairs.append(urllib.parse.quote(pname, safe='') + '=' +
+                         urllib.parse.quote(pval, safe='-_~'))
         return '&'.join(pairs)
 
     def canonical_query_string(self, http_request):
@@ -394,8 +394,8 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         l = []
         for param in sorted(http_request.params):
             value = str(http_request.params[param])
-            l.append('%s=%s' % (urllib.quote(param, safe='-_.~'),
-                                urllib.quote(value, safe='-_.~')))
+            l.append('%s=%s' % (urllib.parse.quote(param, safe='-_.~'),
+                                urllib.parse.quote(value, safe='-_.~')))
         return '&'.join(l)
 
     def canonical_headers(self, headers_to_sign):
@@ -421,7 +421,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         # in windows normpath('/') will be '\\' so we chane it back to '/'
         normalized = posixpath.normpath(path).replace('\\','/')
         # Then urlencode whatever's left.
-        encoded = urllib.quote(normalized)
+        encoded = urllib.parse.quote(normalized)
         if len(path) > 1 and path.endswith('/'):
             encoded += '/'
         return encoded
@@ -561,7 +561,7 @@ class QuerySignatureHelper(HmacKeys):
         boto.log.debug('query_string: %s Signature: %s' % (qs, signature))
         if http_request.method == 'POST':
             headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
-            http_request.body = qs + '&Signature=' + urllib.quote_plus(signature)
+            http_request.body = qs + '&Signature=' + urllib.parse.quote_plus(signature)
             http_request.headers['Content-Length'] = str(len(http_request.body))
         else:
             http_request.body = ''
@@ -569,7 +569,7 @@ class QuerySignatureHelper(HmacKeys):
             # already be there, we need to get rid of that and rebuild it
             http_request.path = http_request.path.split('?')[0]
             http_request.path = (http_request.path + '?' + qs +
-                                 '&Signature=' + urllib.quote_plus(signature))
+                                 '&Signature=' + urllib.parse.quote_plus(signature))
 
 
 class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
@@ -583,12 +583,12 @@ class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
         hmac = self._get_hmac()
         s = params['Action'] + params['Timestamp']
         hmac.update(s)
-        keys = params.keys()
+        keys = list(params.keys())
         keys.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
         pairs = []
         for key in keys:
             val = boto.utils.get_utf8_value(params[key])
-            pairs.append(key + '=' + urllib.quote(val))
+            pairs.append(key + '=' + urllib.parse.quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
 
@@ -609,14 +609,14 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')
         hmac = self._get_hmac()
-        keys = params.keys()
+        keys = list(params.keys())
         keys.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
         pairs = []
         for key in keys:
             hmac.update(key)
             val = boto.utils.get_utf8_value(params[key])
             hmac.update(val)
-            pairs.append(key + '=' + urllib.quote(val))
+            pairs.append(key + '=' + urllib.parse.quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
 
@@ -639,8 +639,8 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
         pairs = []
         for key in keys:
             val = boto.utils.get_utf8_value(params[key])
-            pairs.append(urllib.quote(key, safe='') + '=' +
-                         urllib.quote(val, safe='-_~'))
+            pairs.append(urllib.parse.quote(key, safe='') + '=' +
+                         urllib.parse.quote(val, safe='-_~'))
         qs = '&'.join(pairs)
         boto.log.debug('query string: %s' % qs)
         string_to_sign += qs
@@ -678,7 +678,7 @@ class POSTPathQSV2AuthHandler(QuerySignatureV2AuthHandler, AuthHandler):
         # already be there, we need to get rid of that and rebuild it
         req.path = req.path.split('?')[0]
         req.path = (req.path + '?' + qs +
-                             '&Signature=' + urllib.quote_plus(signature))
+                             '&Signature=' + urllib.parse.quote_plus(signature))
 
 
 def get_auth_handler(host, config, provider, requested_capability=None):

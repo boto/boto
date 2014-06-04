@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from __future__ import with_statement
+
 import math
 import socket
 
@@ -121,7 +121,7 @@ class Job(object):
 
     def _download_to_fileob(self, fileobj, num_chunks, chunk_size, verify_hashes,
                             retry_exceptions):
-        for i in xrange(num_chunks):
+        for i in range(num_chunks):
             byte_range = ((i * chunk_size), ((i + 1) * chunk_size) - 1)
             data, expected_tree_hash = self._download_byte_range(
                 byte_range, retry_exceptions)
@@ -138,13 +138,13 @@ class Job(object):
         # You can occasionally get socket.errors when downloading
         # chunks from Glacier, so each chunk can be retried up
         # to 5 times.
-        for _ in xrange(5):
+        for _ in range(5):
             try:
                 response = self.get_output(byte_range)
                 data = response.read()
                 expected_tree_hash = response['TreeHash']
                 return data, expected_tree_hash
-            except retry_exceptions, e:
+            except retry_exceptions as e:
                 continue
         else:
             raise DownloadArchiveError("There was an error downloading"

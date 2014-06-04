@@ -47,16 +47,16 @@ class TableBatchGenerator(object):
         self.consistent_read = consistent_read
 
     def _queue_unprocessed(self, res):
-        if not u'UnprocessedKeys' in res:
+        if not 'UnprocessedKeys' in res:
             return
-        if not self.table.name in res[u'UnprocessedKeys']:
+        if not self.table.name in res['UnprocessedKeys']:
             return
 
-        keys = res[u'UnprocessedKeys'][self.table.name][u'Keys']
+        keys = res['UnprocessedKeys'][self.table.name]['Keys']
 
         for key in keys:
-            h = key[u'HashKeyElement']
-            r = key[u'RangeKeyElement'] if u'RangeKeyElement' in key else None
+            h = key['HashKeyElement']
+            r = key['RangeKeyElement'] if 'RangeKeyElement' in key else None
             self.keys.append((h, r))
 
     def __iter__(self):
@@ -68,10 +68,10 @@ class TableBatchGenerator(object):
             res = batch.submit()
 
             # parse the results
-            if not self.table.name in res[u'Responses']:
+            if not self.table.name in res['Responses']:
                 continue
-            self.consumed_units += res[u'Responses'][self.table.name][u'ConsumedCapacityUnits']
-            for elem in res[u'Responses'][self.table.name][u'Items']:
+            self.consumed_units += res['Responses'][self.table.name]['ConsumedCapacityUnits']
+            for elem in res['Responses'][self.table.name]['Items']:
                 yield elem
 
             # re-queue un processed keys

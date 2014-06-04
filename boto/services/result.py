@@ -66,7 +66,7 @@ class ResultProcessor:
         for key in keys:
             value = msg[key]
             if value.find(',') > 0:
-                value = '"%s"' % value
+                value = '"{0:s}"'.format(value)
             values.append(value)
         line = ','.join(values)
         self.log_fp.write(line+'\n')
@@ -84,7 +84,7 @@ class ResultProcessor:
                 key_name = output.split(';')[0]
                 key = bucket.lookup(key_name)
                 file_name = os.path.join(path, key_name)
-                print 'retrieving file: %s to %s' % (key_name, file_name)
+                print('retrieving file: {0:s} to {1:s}'.format(key_name, file_name))
                 key.get_contents_to_filename(file_name)
             self.num_files += 1
 
@@ -98,17 +98,17 @@ class ResultProcessor:
             m = self.queue.read()
 
     def get_results_from_domain(self, path, get_file=True):
-        rs = self.domain.query("['Batch'='%s']" % self.batch)
+        rs = self.domain.query("['Batch'='{0:s}']".format(self.batch))
         for item in rs:
             self.process_record(item, path, get_file)
 
     def get_results_from_bucket(self, path):
         bucket = self.sd.get_obj('output_bucket')
         if bucket:
-            print 'No output queue or domain, just retrieving files from output_bucket'
+            print('No output queue or domain, just retrieving files from output_bucket')
             for key in bucket:
                 file_name = os.path.join(path, key)
-                print 'retrieving file: %s to %s' % (key, file_name)
+                print('retrieving file: {0:s} to {1:s}'.format(key, file_name))
                 key.get_contents_to_filename(file_name)
                 self.num_files + 1
 
@@ -123,14 +123,14 @@ class ResultProcessor:
             self.get_results_from_bucket(path)
         if self.log_fp:
             self.log_fp.close()
-        print '%d results successfully retrieved.' % self.num_files
+        print('{0:d} results successfully retrieved.'.format(self.num_files))
         if self.num_files > 0:
             self.avg_time = float(self.total_time)/self.num_files
-            print 'Minimum Processing Time: %d' % self.min_time.seconds
-            print 'Maximum Processing Time: %d' % self.max_time.seconds
-            print 'Average Processing Time: %f' % self.avg_time
+            print('Minimum Processing Time: {0:d}'.format(self.min_time.seconds))
+            print('Maximum Processing Time: {0:d}'.format(self.max_time.seconds))
+            print('Average Processing Time: {0:f}'.format(self.avg_time))
             self.elapsed_time = self.latest_time-self.earliest_time
-            print 'Elapsed Time: %d' % self.elapsed_time.seconds
+            print('Elapsed Time: {0:d}'.format(self.elapsed_time.seconds))
             tput = 1.0 / ((self.elapsed_time.seconds/60.0) / self.num_files)
-            print 'Throughput: %f transactions / minute' % tput
+            print('Throughput: {0:f} transactions / minute'.format(tput))
         

@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 #
 
-import urllib
+import urllib.request, urllib.parse, urllib.error
 from boto.connection import AWSQueryConnection
 from boto.rds.dbinstance import DBInstance
 from boto.rds.dbsecuritygroup import DBSecurityGroup
@@ -423,7 +423,7 @@ class RDSConnection(AWSQueryConnection):
             self.build_list_params(params, l, 'DBSecurityGroups.member')
 
         # Remove any params set to None
-        for k, v in params.items():
+        for k, v in list(params.items()):
           if not v: del(params[k])
 
         return self.get_object('CreateDBInstance', params, DBInstance)
@@ -904,7 +904,7 @@ class RDSConnection(AWSQueryConnection):
         if ec2_security_group_owner_id:
             params['EC2SecurityGroupOwnerId'] = ec2_security_group_owner_id
         if cidr_ip:
-            params['CIDRIP'] = urllib.quote(cidr_ip)
+            params['CIDRIP'] = urllib.parse.quote(cidr_ip)
         return self.get_object('AuthorizeDBSecurityGroupIngress', params,
                                DBSecurityGroup)
 

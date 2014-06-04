@@ -24,7 +24,7 @@ from boto.services.servicedef import ServiceDef
 from boto.services.submit import Submitter
 from boto.services.result import ResultProcessor
 import boto
-import sys, os, StringIO
+import sys, os, io
 
 class BS(object):
 
@@ -62,43 +62,43 @@ class BS(object):
                                help="batch identifier required by the retrieve command")
 
     def print_command_help(self):
-        print '\nCommands:'
-        for key in self.Commands.keys():
-            print '  %s\t\t%s' % (key, self.Commands[key])
+        print('\nCommands:')
+        for key in list(self.Commands.keys()):
+            print('  {0:s}\t\t{1:s}'.format(key, self.Commands[key]))
 
     def do_reset(self):
         iq = self.sd.get_obj('input_queue')
         if iq:
-            print 'clearing out input queue'
+            print('clearing out input queue')
             i = 0
             m = iq.read()
             while m:
                 i += 1
                 iq.delete_message(m)
                 m = iq.read()
-            print 'deleted %d messages' % i
+            print('deleted {0:d} messages'.format(i))
         ob = self.sd.get_obj('output_bucket')
         ib = self.sd.get_obj('input_bucket')
         if ob:
             if ib and ob.name == ib.name:
                 return
-            print 'delete generated files in output bucket'
+            print('delete generated files in output bucket')
             i = 0
             for k in ob:
                 i += 1
                 k.delete()
-            print 'deleted %d keys' % i
+            print('deleted {0:d} keys'.format(i))
 
     def do_submit(self):
         if not self.options.path:
             self.parser.error('No path provided')
         if not os.path.exists(self.options.path):
-            self.parser.error('Invalid path (%s)' % self.options.path)
+            self.parser.error('Invalid path ({0:s})'.format(self.options.path))
         s = Submitter(self.sd)
         t = s.submit_path(self.options.path, None, self.options.ignore, None,
                           None, True, self.options.path)
-        print 'A total of %d files were submitted' % t[1]
-        print 'Batch Identifier: %s' % t[0]
+        print('A total of {0:d} files were submitted'.format(t[1]))
+        print('Batch Identifier: {0:s}'.format(t[0]))
 
     def do_start(self):
         ami_id = self.sd.get('ami_id')
@@ -111,7 +111,7 @@ class BS(object):
             self.sd.add_section('Credentials')
             self.sd.set('Credentials', 'aws_access_key_id', ec2.aws_access_key_id)
             self.sd.set('Credentials', 'aws_secret_access_key', ec2.aws_secret_access_key)
-        s = StringIO.StringIO()
+        s = io.StringIO()
         self.sd.write(s)
         rs = ec2.get_all_images([ami_id])
         img = rs[0]
@@ -119,15 +119,15 @@ class BS(object):
                     max_count=self.options.num_instances,
                     instance_type=instance_type,
                     security_groups=[security_group])
-        print 'Starting AMI: %s' % ami_id
-        print 'Reservation %s contains the following instances:' % r.id
+        print('Starting AMI: {0:s}'.format(ami_id))
+        print('Reservation {0:s} contains the following instances:'.format(r.id))
         for i in r.instances:
-            print '\t%s' % i.id
+            print('\t{0:s}'.format(i.id))
 
     def do_status(self):
         iq = self.sd.get_obj('input_queue')
         if iq:
-            print 'The input_queue (%s) contains approximately %s messages' % (iq.id, iq.count())
+            print('The input_queue ({0:s}) contains approximately {1:s} messages'.format(iq.id, iq.count()))
         ob = self.sd.get_obj('output_bucket')
         ib = self.sd.get_obj('input_bucket')
         if ob:
@@ -136,13 +136,13 @@ class BS(object):
             total = 0
             for k in ob:
                 total += 1
-            print 'The output_bucket (%s) contains %d keys' % (ob.name, total)
+            print('The output_bucket ({0:s}) contains {1:d} keys'.format(ob.name, total))
 
     def do_retrieve(self):
         if not self.options.path:
             self.parser.error('No path provided')
         if not os.path.exists(self.options.path):
-            self.parser.error('Invalid path (%s)' % self.options.path)
+            self.parser.error('Invalid path ({0:s})'.format(self.options.path))
         if not self.options.batch:
             self.parser.error('batch identifier is required for retrieve command')
         s = ResultProcessor(self.options.batch, self.sd)
@@ -151,10 +151,10 @@ class BS(object):
     def do_batches(self):
         d = self.sd.get_obj('output_domain')
         if d:
-            print 'Available Batches:'
+            print('Available Batches:')
             rs = d.query("['type'='Batch']")
             for item in rs:
-                print '  %s' % item.name
+                print('  {0:s}'.format(item.name))
         else:
             self.parser.error('No output_domain specified for service')
             
@@ -168,11 +168,11 @@ class BS(object):
         self.config_file = self.args[0]
         self.sd = ServiceDef(self.config_file)
         self.command = self.args[1]
-        if hasattr(self, 'do_%s' % self.command):
-            method = getattr(self, 'do_%s' % self.command)
+        if hasattr(self, 'do_{0:s}'.format(self.command)):
+            method = getattr(self, 'do_{0:s}'.format(self.command))
             method()
         else:
-            self.parser.error('command (%s) not recognized' % self.command)
+            self.parser.error('command ({0:s}) not recognized'.format(self.command))
 
 if __name__ == "__main__":
     bs = BS()

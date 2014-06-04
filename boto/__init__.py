@@ -33,7 +33,7 @@ import re
 import sys
 import logging
 import logging.config
-import urlparse
+import urllib.parse
 from boto.exception import InvalidUriError
 
 vfile = os.path.join(os.path.dirname(os.path.abspath(boto.__file__ )), "version.txt")
@@ -461,7 +461,7 @@ def connect_ec2_endpoint(url, aws_access_key_id=None,
     """
     from boto.ec2.regioninfo import RegionInfo
 
-    purl = urlparse.urlparse(url)
+    purl = urllib.parse.urlparse(url)
     kwargs['port'] = purl.port
     kwargs['host'] = purl.hostname
     kwargs['path'] = purl.path

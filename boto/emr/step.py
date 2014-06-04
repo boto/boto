@@ -73,7 +73,7 @@ class JarStep(Step):
         self._main_class = main_class
         self.action_on_failure = action_on_failure
 
-        if isinstance(step_args, basestring):
+        if isinstance(step_args, str):
             step_args = [step_args]
 
         self.step_args = step_args
@@ -143,7 +143,7 @@ class StreamingStep(Step):
         self.output = output
         self._jar = jar
 
-        if isinstance(step_args, basestring):
+        if isinstance(step_args, str):
             step_args = [step_args]
 
         self.step_args = step_args

@@ -96,7 +96,7 @@ class Layer1(AWSAuthConnection):
         :type data: dict
         :param data: Specifies request parameters with default values to be removed.
         """
-        for item in data.keys():
+        for item in list(data.keys()):
             if isinstance(data[item], dict):
                 cls._normalize_request_dict(data[item])
             if data[item] in (None, {}):
@@ -121,7 +121,7 @@ class Layer1(AWSAuthConnection):
         """
         :raises: ``SWFResponseError`` if response status is not 200.
         """
-        headers = {'X-Amz-Target': '%s.%s' % (self.ServiceName, action),
+        headers = {'X-Amz-Target': '{0:s}.{1:s}'.format(self.ServiceName, action),
                    'Host': self.region.endpoint,
                    'Content-Type': 'application/json; charset=UTF-8',
                    'Content-Encoding': 'amz-1.0',

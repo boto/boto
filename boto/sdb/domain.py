@@ -32,10 +32,10 @@ class Domain:
         self._metadata = None
 
     def __repr__(self):
-        return 'Domain:%s' % self.name
+        return 'Domain:{0:s}'.format(self.name)
 
     def __iter__(self):
-        return iter(self.select("SELECT * FROM `%s`" % self.name))
+        return iter(self.select("SELECT * FROM `{0:s}`".format(self.name)))
 
     def startElement(self, name, attrs, connection):
         return None
@@ -241,20 +241,20 @@ class Domain:
             from tempfile import TemporaryFile
             f = TemporaryFile()
         print >> f, '<?xml version="1.0" encoding="UTF-8"?>'
-        print >> f, '<Domain id="%s">' % self.name
+        print >> f, '<Domain id="{0:s}">'.format(self.name)
         for item in self:
-            print >> f, '\t<Item id="%s">' % item.name
+            print >> f, '\t<Item id="{0:s}">'.format(item.name)
             for k in item:
-                print >> f, '\t\t<attribute id="%s">' % k
+                print >> f, '\t\t<attribute id="{0:s}">'.format(k)
                 values = item[k]
                 if not isinstance(values, list):
                     values = [values]
                 for value in values:
                     print >> f, '\t\t\t<value><![CDATA[',
-                    if isinstance(value, unicode):
+                    if isinstance(value, str):
                         value = value.encode('utf-8', 'replace')
                     else:
-                        value = unicode(value, errors='replace').encode('utf-8', 'replace')
+                        value = str(value, errors='replace').encode('utf-8', 'replace')
                     f.write(value)
                     print >> f, ']]></value>'
                 print >> f, '\t\t</attribute>'
@@ -370,8 +370,8 @@ class UploaderThread(Thread):
         try:
             self.db.batch_put_attributes(self.items)
         except:
-            print "Exception using batch put, trying regular put instead"
+            print("Exception using batch put, trying regular put instead")
             for item_name in self.items:
                 self.db.put_attributes(item_name, self.items[item_name])
-        print ".",
+        print(".",)
         sys.stdout.flush()

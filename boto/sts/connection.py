@@ -23,8 +23,8 @@
 
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
-from credentials import Credentials, FederationToken, AssumedRole
-from credentials import DecodeAuthorizationMessage
+from .credentials import Credentials, FederationToken, AssumedRole
+from .credentials import DecodeAuthorizationMessage
 import boto
 import boto.utils
 import datetime
@@ -94,7 +94,7 @@ class STSConnection(AWSQueryConnection):
             expires = boto.utils.parse_ts(token.expiration)
             delta = expires - now
             if delta < datetime.timedelta(seconds=window_seconds):
-                msg = 'Cached session token %s is expired' % token_key
+                msg = 'Cached session token {0:s} is expired'.format(token_key)
                 boto.log.debug(msg)
                 token = None
         return token
@@ -145,10 +145,10 @@ class STSConnection(AWSQueryConnection):
         :param mfa_token: The 6 digit token associated with the
             MFA device.
         """
-        token_key = '%s:%s' % (self.region.name, self.provider.access_key)
+        token_key = '{0:s}:{1:s}'.format(self.region.name, self.provider.access_key)
         token = self._check_token_cache(token_key, duration)
         if force_new or not token:
-            boto.log.debug('fetching a new token for %s' % token_key)
+            boto.log.debug('fetching a new token for {0:s}'.format(token_key))
             try:
                 self._mutex.acquire()
                 token = self._get_session_token(duration,

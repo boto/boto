@@ -25,7 +25,7 @@ class BootstrapAction(object):
         self.name = name
         self.path = path
 
-        if isinstance(bootstrap_action_args, basestring):
+        if isinstance(bootstrap_action_args, str):
             bootstrap_action_args = [bootstrap_action_args]
 
         self.bootstrap_action_args = bootstrap_action_args

@@ -26,14 +26,14 @@
 
 import xml.sax
 import uuid
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import boto
 from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.route53.record import ResourceRecordSets
 from boto.route53.zone import Zone
 import boto.jsonresponse
-import exception
+from . import exception
 
 HZXML = """<?xml version="1.0" encoding="UTF-8"?>
 <CreateHostedZoneRequest xmlns="%(xmlns)s">
@@ -73,10 +73,10 @@ class Route53Connection(AWSAuthConnection):
     def make_request(self, action, path, headers=None, data='', params=None):
         if params:
             pairs = []
-            for key, val in params.iteritems():
+            for key, val in params.items():
                 if val is None:
                     continue
-                pairs.append(key + '=' + urllib.quote(str(val)))
+                pairs.append(key + '=' + urllib.parse.quote(str(val)))
             path += '?' + '&'.join(pairs)
         return AWSAuthConnection.make_request(self, action, path,
                                               headers, data)

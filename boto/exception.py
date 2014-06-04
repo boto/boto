@@ -30,13 +30,13 @@ from boto import handler
 from boto.resultset import ResultSet
 
 
-class BotoClientError(StandardError):
+class BotoClientError(Exception):
     """
     General Boto Client error (error accessing AWS)
     """
 
     def __init__(self, reason, *args):
-        StandardError.__init__(self, reason, *args)
+        Exception.__init__(self, reason, *args)
         self.reason = reason
 
     def __repr__(self):
@@ -45,7 +45,7 @@ class BotoClientError(StandardError):
     def __str__(self):
         return 'BotoClientError: %s' % self.reason
 
-class SDBPersistenceError(StandardError):
+class SDBPersistenceError(Exception):
 
     pass
 
@@ -67,10 +67,10 @@ class GSPermissionsError(StoragePermissionsError):
     """
     pass
 
-class BotoServerError(StandardError):
+class BotoServerError(Exception):
 
     def __init__(self, status, reason, body=None, *args):
-        StandardError.__init__(self, status, reason, body, *args)
+        Exception.__init__(self, status, reason, body, *args)
         self.status = status
         self.reason = reason
         self.body = body or ''
@@ -85,7 +85,7 @@ class BotoServerError(StandardError):
             try:
                 h = handler.XmlHandlerWrapper(self, self)
                 h.parseString(self.body)
-            except (TypeError, xml.sax.SAXParseException), pe:
+            except (TypeError, xml.sax.SAXParseException) as pe:
                 # Remove unparsable message body so we don't include garbage
                 # in exception. But first, save self.body in self.error_message
                 # because occasionally we get error messages from Eucalyptus

@@ -26,7 +26,7 @@ class ResponseElement(object):
     def __repr__(self):
         render = lambda pair: '{!s}: {!r}'.format(*pair)
         do_show = lambda pair: not pair[0].startswith('_')
-        attrs = filter(do_show, self.__dict__.items())
+        attrs = list(filter(do_show, list(self.__dict__.items())))
         return '{0}({1})'.format(self.__class__.__name__,
                                ', '.join(map(render, attrs)))
 

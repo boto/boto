@@ -23,7 +23,7 @@
 Represents an SQS Queue
 """
 
-import urlparse
+import urllib.parse
 from boto.sqs.message import Message
 
 
@@ -36,11 +36,11 @@ class Queue:
         self.visibility_timeout = None
 
     def __repr__(self):
-        return 'Queue(%s)' % self.url
+        return 'Queue({0:s})'.format(self.url)
 
     def _id(self):
         if self.url:
-            val = urlparse.urlparse(self.url)[2]
+            val = urllib.parse.urlparse(self.url)[2]
         else:
             val = self.url
         return val
@@ -48,7 +48,7 @@ class Queue:
 
     def _name(self):
         if self.url:
-            val = urlparse.urlparse(self.url)[2].split('/')[2]
+            val = urllib.parse.urlparse(self.url)[2].split('/')[2]
         else:
             val = self.url
         return  val
@@ -56,8 +56,7 @@ class Queue:
 
     def _arn(self):
         parts = self.id.split('/')
-        return 'arn:aws:sqs:%s:%s:%s' % (
-            self.connection.region.name, parts[1], parts[2])
+        return 'arn:aws:sqs:{0:s}:{1:s}:{2:s}'.format(self.connection.region.name, parts[1], parts[2])
     arn = property(_arn)
 
     def startElement(self, name, attrs, connection):
@@ -427,7 +426,7 @@ class Queue:
         m = self.read()
         while m:
             n += 1
-            key = bucket.new_key('%s/%s' % (self.id, m.id))
+            key = bucket.new_key('{0:s}/{1:s}'.format(self.id, m.id))
             key.set_contents_from_string(m.get_body())
             self.delete_message(m)
             m = self.read()
@@ -439,9 +438,9 @@ class Queue:
         """
         n = 0
         if prefix:
-            prefix = '%s/' % prefix
+            prefix = '{0:s}/'.format(prefix)
         else:
-            prefix = '%s/' % self.id[1:]
+            prefix = '{0:s}/'.format(self.id[1:])
         rs = bucket.list(prefix=prefix)
         for key in rs:
             n += 1
@@ -459,7 +458,7 @@ class Queue:
                 m = Message(self, body)
                 self.write(m)
                 n += 1
-                print 'writing message %d' % n
+                print('writing message {0:d}'.format(n))
                 body = ''
             else:
                 body = body + l

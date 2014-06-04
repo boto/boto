@@ -52,7 +52,7 @@ class CloudFrontConnection(AWSAuthConnection):
 
     def get_etag(self, response):
         response_headers = response.msg
-        for key in response_headers.keys():
+        for key in list(response_headers.keys()):
             if key.lower() == 'etag':
                 return response_headers[key]
         return None
@@ -88,7 +88,7 @@ class CloudFrontConnection(AWSAuthConnection):
             raise CloudFrontServerError(response.status, response.reason, body)
         d = dist_class(connection=self)
         response_headers = response.msg
-        for key in response_headers.keys():
+        for key in list(response_headers.keys()):
             if key.lower() == 'etag':
                 d.etag = response_headers[key]
         h = handler.XmlHandler(d, self)
@@ -314,7 +314,7 @@ class CloudFrontConnection(AWSAuthConnection):
             params['MaxItems'] = max_items
         if params:
             uri += '?%s=%s' % params.popitem()
-            for k, v in params.items():
+            for k, v in list(params.items()):
                 uri += '&%s=%s' % (k, v)
         tags=[('InvalidationSummary', InvalidationSummary)]
         rs_class = InvalidationListResultSet

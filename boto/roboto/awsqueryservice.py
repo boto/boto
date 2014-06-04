@@ -1,10 +1,10 @@
 import os
-import urlparse
+import urllib.parse
 import boto
 import boto.connection
 import boto.jsonresponse
 import boto.exception
-import awsqueryrequest
+from . import awsqueryrequest
 
 class NoCredentialsError(boto.exception.BotoClientError):
 
@@ -77,7 +77,7 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
                                     value = value.strip()
                                     self.args['aws_secret_access_key'] = value
             else:
-                print 'Warning: unable to read AWS_CREDENTIAL_FILE'
+                print('Warning: unable to read AWS_CREDENTIAL_FILE')
 
     def check_for_env_url(self):
         """
@@ -95,7 +95,7 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
         if not url and self.EnvURL in os.environ:
             url = os.environ[self.EnvURL]
         if url:
-            rslt = urlparse.urlparse(url)
+            rslt = urllib.parse.urlparse(url)
             if 'is_secure' not in self.args:
                 if rslt.scheme == 'https':
                     self.args['is_secure'] = True

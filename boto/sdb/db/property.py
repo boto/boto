@@ -20,13 +20,14 @@
 # IN THE SOFTWARE.
 
 import datetime
-from key import Key
+from .key import Key
 from boto.utils import Password
 from boto.sdb.db.query import Query
 import re
 import boto
 import boto.s3.key
 from boto.sdb.db.blob import Blob
+import collections
 
 
 class Property(object):
@@ -76,7 +77,7 @@ class Property(object):
         self.slot_name = '_' + self.name
 
     def default_validator(self, value):
-        if isinstance(value, basestring) or value == self.default_value():
+        if isinstance(value, str) or value == self.default_value():
             return
         if not isinstance(value, self.data_type):
             raise TypeError('Validation Error, %s.%s expecting %s, got %s' % (self.model_class.__name__, self.name, self.data_type, type(value)))
@@ -105,7 +106,7 @@ class Property(object):
         return value
 
     def get_choices(self):
-        if callable(self.choices):
+        if isinstance(self.choices, collections.Callable):
             return self.choices()
         return self.choices
 
@@ -113,7 +114,7 @@ class Property(object):
 def validate_string(value):
     if value == None:
         return
-    elif isinstance(value, str) or isinstance(value, unicode):
+    elif isinstance(value, str) or isinstance(value, str):
         if len(value) > 1024:
             raise ValueError('Length of value greater than maxlength')
     else:
@@ -144,7 +145,7 @@ class TextProperty(Property):
 
     def validate(self, value):
         value = super(TextProperty, self).validate(value)
-        if not isinstance(value, str) and not isinstance(value, unicode):
+        if not isinstance(value, str) and not isinstance(value, str):
             raise TypeError('Expecting Text, got %s' % type(value))
         if self.max_length and len(value) > self.max_length:
             raise ValueError('Length of value greater than maxlength %s' % self.max_length)
@@ -335,7 +336,7 @@ class IntegerProperty(Property):
 
 class LongProperty(Property):
 
-    data_type = long
+    data_type = int
     type_name = 'Long'
 
     def __init__(self, verbose_name=None, name=None, default=0, required=False,
@@ -343,7 +344,7 @@ class LongProperty(Property):
         Property.__init__(self, verbose_name, name, default, required, validator, choices, unique)
 
     def validate(self, value):
-        value = long(value)
+        value = int(value)
         value = Property.validate(self, value)
         min = -9223372036854775808
         max = 9223372036854775807
@@ -493,7 +494,7 @@ class ReferenceProperty(Property):
             # If the value is still the UUID for the referenced object, we need to create
             # the object now that is the attribute has actually been accessed.  This lazy
             # instantiation saves unnecessary roundtrips to SimpleDB
-            if isinstance(value, str) or isinstance(value, unicode):
+            if isinstance(value, str) or isinstance(value, str):
                 value = self.reference_class(value)
                 setattr(obj, self.name, value)
             return value
@@ -537,7 +538,7 @@ class ReferenceProperty(Property):
             raise ValueError('%s is a required property' % self.name)
         if value == self.default_value():
             return
-        if not isinstance(value, str) and not isinstance(value, unicode):
+        if not isinstance(value, str) and not isinstance(value, str):
             self.check_instance(value)
 
 
@@ -626,16 +627,16 @@ class ListProperty(Property):
             if not isinstance(value, list):
                 value = [value]
 
-        if self.item_type in (int, long):
-            item_type = (int, long)
-        elif self.item_type in (str, unicode):
-            item_type = (str, unicode)
+        if self.item_type in (int, int):
+            item_type = (int, int)
+        elif self.item_type in (str, str):
+            item_type = (str, str)
         else:
             item_type = self.item_type
 
         for item in value:
             if not isinstance(item, item_type):
-                if item_type == (int, long):
+                if item_type == (int, int):
                     raise ValueError('Items in the %s list must all be integers.' % self.name)
                 else:
                     raise ValueError('Items in the %s list must all be %s instances' %
@@ -650,10 +651,10 @@ class ListProperty(Property):
 
     def __set__(self, obj, value):
         """Override the set method to allow them to set the property to an instance of the item_type instead of requiring a list to be passed in"""
-        if self.item_type in (int, long):
-            item_type = (int, long)
-        elif self.item_type in (str, unicode):
-            item_type = (str, unicode)
+        if self.item_type in (int, int):
+            item_type = (int, int)
+        elif self.item_type in (str, str):
+            item_type = (str, str)
         else:
             item_type = self.item_type
         if isinstance(value, item_type):
@@ -680,16 +681,16 @@ class MapProperty(Property):
             if not isinstance(value, dict):
                 raise ValueError('Value must of type dict')
 
-        if self.item_type in (int, long):
-            item_type = (int, long)
-        elif self.item_type in (str, unicode):
-            item_type = (str, unicode)
+        if self.item_type in (int, int):
+            item_type = (int, int)
+        elif self.item_type in (str, str):
+            item_type = (str, str)
         else:
             item_type = self.item_type
 
         for key in value:
             if not isinstance(value[key], item_type):
-                if item_type == (int, long):
+                if item_type == (int, int):
                     raise ValueError('Values in the %s Map must all be integers.' % self.name)
                 else:
                     raise ValueError('Values in the %s Map must all be %s instances' %

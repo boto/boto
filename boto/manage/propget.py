@@ -1,3 +1,4 @@
+import collections
 # Copyright (c) 2006-2009 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +26,7 @@ def get(prop, choices=None):
     if not prompt:
         prompt = prop.name
     if choices:
-        if callable(choices):
+        if isinstance(choices, collections.Callable):
             choices = choices()
     else:
         choices = prop.get_choices()
@@ -38,8 +39,8 @@ def get(prop, choices=None):
                 value = choices[i-1]
                 if isinstance(value, tuple):
                     value = value[0]
-                print '[%d] %s' % (i, value)
-            value = raw_input('%s [%d-%d]: ' % (prompt, min, max))
+                print('[{0:d}] {1:s}'.format(i, value))
+            value = input('{0:s} [{1:d}-{2:d}]: '.format(prompt, min, max))
             try:
                 int_value = int(value)
                 value = choices[int_value-1]
@@ -47,18 +48,18 @@ def get(prop, choices=None):
                     value = value[1]
                 valid = True
             except ValueError:
-                print '%s is not a valid choice' % value
+                print('{0:s} is not a valid choice'.format(value))
             except IndexError:
-                print '%s is not within the range[%d-%d]' % (min, max)
+                print('{0:s} is not within the range[{1:d}-{2:d}]'.format(min, max))
         else:
-            value = raw_input('%s: ' % prompt)
+            value = input('{0:s}: '.format(prompt))
             try:
                 value = prop.validate(value)
                 if prop.empty(value) and prop.required:
-                    print 'A value is required'
+                    print('A value is required')
                 else:
                     valid = True
             except:
-                print 'Invalid value: %s' % value
+                print('Invalid value: {0:s}'.format(value))
     return value
         
