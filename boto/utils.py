@@ -61,6 +61,7 @@ import email.utils
 import email.encoders
 import gzip
 import base64
+import locale
 try:
     from hashlib import md5
 except ImportError:
@@ -464,6 +465,14 @@ def parse_ts(ts):
             dt = datetime.datetime.strptime(ts, ISO8601_MS)
             return dt
         except ValueError:
+            try:
+                locale.setlocale(locale.LC_TIME, 'en_US')
+            except locale.Error:
+                try:
+                    locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
+                except locale.Error:
+                    pass
+
             dt = datetime.datetime.strptime(ts, RFC1123)
             return dt
 

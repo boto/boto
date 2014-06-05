@@ -29,6 +29,7 @@ import hmac
 import mock
 import thread
 import time
+import locale
 
 import boto.utils
 from boto.utils import Password
@@ -53,6 +54,18 @@ class TestThreadImport(unittest.TestCase):
             thread.start_new_thread(f, ())
 
         time.sleep(3)
+
+
+class TestStringToDatetimeParsing(unittest.TestCase):
+    """ Test string to datetime parsing """
+
+    def test_nonus_locale(self):
+        locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
+        test_string = 'Thu, 15 May 2014 09:06:03 GMT'
+
+        result = boto.utils.parse_ts(test_string)
+        self.assertEqual("Thu, 15 May 2014 09:06:03",
+                         result.strftime("%a, %d %b %Y %H:%M:%S"))
 
 
 class TestPassword(unittest.TestCase):
