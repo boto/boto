@@ -1026,6 +1026,23 @@ def merge_headers_by_name(name, headers):
     return ','.join(str(headers[h]) for h in matching_headers
                     if headers[h] is not None)
 
+def set_socket_opts(sock):
+    """
+    Takes a socket, parses the config looking for socket options.
+    If found, they are applied and the socket is returned.
+
+    """
+    socket_options = {}
+    valid_options = {opt: getattr(socket, opt) for opt in dir(socket) if opt.startswith('SO_')}
+    if boto.config.has_section('Socket'):
+        for option in boto.config.items('Socket'):
+            opt_code = valid_options.get(option[0].upper(), None)
+            if opt_code is not None:
+                socket_options[opt_code] = option[1]
+        for sock_opt_code, value in socket_options.items():
+            sock.setsockopt(socket.SOL_SOCKET, sock_opt_code, value)
+    return sock
+
 class RequestHook(object):
     """
     This can be extended and supplied to the connection object

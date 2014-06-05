@@ -789,6 +789,7 @@ class AWSAuthConnection(object):
         else:
             host = '%s:%d' % (self.host, self.port)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock = boto.utils.set_socket_opts(sock)
         try:
             sock.connect((self.proxy, int(self.proxy_port)))
             if "timeout" in self.http_connection_kwargs:

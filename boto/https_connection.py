@@ -25,6 +25,7 @@ import socket
 import ssl
 
 import boto
+import boto.utils
 
 class InvalidCertificateException(httplib.HTTPException):
   """Raised when a certificate is provided with an invalid hostname."""
@@ -106,6 +107,7 @@ class CertValidatingHTTPSConnection(httplib.HTTPConnection):
   def connect(self):
     "Connect to a host on a given (SSL) port."
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock = boto.utils.set_socket_opts(sock)
     if hasattr(self, "timeout") and self.timeout is not socket._GLOBAL_DEFAULT_TIMEOUT:
         sock.settimeout(self.timeout)
     sock.connect((self.host, self.port))
