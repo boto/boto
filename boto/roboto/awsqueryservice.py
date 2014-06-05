@@ -48,7 +48,7 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
 
     def check_for_credential_file(self):
         """
-        Checks for the existance of an AWS credential file.
+        Checks for the existence of an AWS credential file.
         If the environment variable AWS_CREDENTIAL_FILE is
         set and points to a file, that file will be read and
         will be searched credentials.
