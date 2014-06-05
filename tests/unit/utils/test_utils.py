@@ -264,9 +264,14 @@ class TestLazyLoadMetadata(unittest.TestCase):
 
 class TestStringToDatetimeParsing(unittest.TestCase):
     """ Test string to datetime parsing """
+    def setUp(self):
+        self._saved = locale.setlocale(locale.LC_ALL)
+        locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
+
+    def tearDown(self):
+        locale.setlocale(locale.LC_ALL, self._saved)
 
     def test_nonus_locale(self):
-        locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
         test_string = 'Thu, 15 May 2014 09:06:03 GMT'
 
         # Default strptime shoudl fail
