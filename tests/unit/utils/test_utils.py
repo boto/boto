@@ -24,8 +24,10 @@ try:
 except ImportError:
     import unittest
 
+import datetime
 import hashlib
 import hmac
+import locale
 import mock
 import thread
 import time
@@ -258,6 +260,28 @@ class TestLazyLoadMetadata(unittest.TestCase):
         boto.utils.retry_url.assert_called_with(
             'http://169.254.169.254/latest/user-data',
             retry_on_404=False)
+
+
+class TestStringToDatetimeParsing(unittest.TestCase):
+    """ Test string to datetime parsing """
+
+    def test_nonus_locale(self):
+        locale.setlocale(locale.LC_TIME, 'de_DE.UTF-8')
+        test_string = 'Thu, 15 May 2014 09:06:03 GMT'
+
+        # Default strptime shoudl fail
+        with self.assertRaises(ValueError):
+            datetime.datetime.strptime(test_string, boto.utils.RFC1123)
+
+        # Our parser should succeed
+        result = boto.utils.parse_ts(test_string)
+
+        self.assertEqual(2014, result.year)
+        self.assertEqual(5, result.month)
+        self.assertEqual(15, result.day)
+        self.assertEqual(9, result.hour)
+        self.assertEqual(6, result.minute)
+
 
 if __name__ == '__main__':
     unittest.main()
