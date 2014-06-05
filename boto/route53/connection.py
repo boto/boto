@@ -213,6 +213,13 @@ class Route53Connection(AWSAuthConnection):
                                            body)
 
     def delete_hosted_zone(self, hosted_zone_id):
+        """
+        Delete the hosted zone specified by the given id.
+
+        :type hosted_zone_id: str
+        :param hosted_zone_id: The hosted zone's id
+
+        """
         uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
         response = self.make_request('DELETE', uri)
         body = response.read()
@@ -480,6 +487,10 @@ class Route53Connection(AWSAuthConnection):
         """
         Returns a list of Zone objects, one for each of the Hosted
         Zones defined for the AWS account.
+
+        :rtype: list
+        :returns: A list of Zone objects.
+
         """
         zones = self.get_all_hosted_zones()
         return [Zone(self, zone) for zone in
