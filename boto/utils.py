@@ -75,6 +75,7 @@ except ImportError:
     _hashfn = md5.md5
 
 from boto.compat import json
+from collections import defaultdict
 
 try:
     from boto.compat.json import JSONDecodeError
@@ -1032,16 +1033,29 @@ def set_socket_opts(sock):
     If found, they are applied and the socket is returned.
 
     """
-    socket_options = {}
-    valid_options = {opt: getattr(socket, opt) for opt in dir(socket) if opt.startswith('SO_')}
     if boto.config.has_section('Socket'):
+        socket_options = defaultdict(lambda: defaultdict(int))
+        valid_options = {opt: (getattr(socket, opt), _get_opt_type(sock.family, opt)) for opt in dir(socket) if re.match("^SO_|^IP_", opt)}
         for option in boto.config.items('Socket'):
-            opt_code = valid_options.get(option[0].upper(), None)
+            opt_code, opt_type_code = valid_options.get(option[0].upper(), (None, None))
             if opt_code is not None:
-                socket_options[opt_code] = option[1]
-        for sock_opt_code, value in socket_options.items():
-            sock.setsockopt(socket.SOL_SOCKET, sock_opt_code, value)
+                try:
+                    socket_options[opt_type_code][opt_code] = int(option[1])
+                except ValueError, e:
+                    boto.log.error("Error casting %s as Int for %s! (%s) Defaulting to String." % (option[1], option[0].upper(), e))
+                    socket_options[opt_type_code][opt_code] = option[1]
+        for sock_opt_type, sock_opt in socket_options.items():
+            for sock_opt_code, sock_opt_value in sock_opt.items():
+                sock.setsockopt(sock_opt_type, sock_opt_code, sock_opt_value)
     return sock
+
+def _get_opt_type(sock_family, socket_option):
+    ip_sock_type = socket.IPPROTO_IP if sock_family == socket.AF_INET else socket.IPPROTO_IPV6
+    prefix_to_type_code = {re.compile("^SO_"): socket.SOL_SOCKET, re.compile("^IP_"): ip_sock_type}
+    for prefix_regex, type_code in prefix_to_type_code.items():
+        if prefix_regex.match(socket_option):
+            return type_code
+    return None
 
 class RequestHook(object):
     """
