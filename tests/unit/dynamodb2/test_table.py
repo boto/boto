@@ -2619,7 +2619,6 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(False, mock_query.call_args[1]['scan_index_forward'])
         self.assertIn('limit', mock_query.call_args[1])
         self.assertEqual(10, mock_query.call_args[1]['limit'])
-        self.assertEqual(mock_query.call_count, 1)
 
     def test_private_batch_get(self):
         expected = {
