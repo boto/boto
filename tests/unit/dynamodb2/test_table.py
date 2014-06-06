@@ -1,5 +1,5 @@
 import mock
-import unittest
+from tests.unit import unittest
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
                                    AllIndex, KeysOnlyIndex, IncludeIndex,
