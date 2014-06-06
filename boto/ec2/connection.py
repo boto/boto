@@ -4198,11 +4198,14 @@ class EC2Connection(AWSQueryConnection):
 
     # Network Interface methods
 
-    def get_all_network_interfaces(self, filters=None, dry_run=False):
+    def get_all_network_interfaces(self, network_interface_ids=None, filters=None, dry_run=False):
         """
         Retrieve all of the Elastic Network Interfaces (ENI's)
         associated with your account.
 
+        :type network_interface_ids: list
+        :param network_interface_ids: a list of strings representing ENI IDs
+        
         :type filters: dict
         :param filters: Optional filters that can be used to limit
                         the results returned.  Filters are provided
@@ -4220,6 +4223,8 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of :class:`boto.ec2.networkinterface.NetworkInterface`
         """
         params = {}
+        if network_interface_ids:
+            self.build_list_params(params, network_interface_ids, 'NetworkInterfaceId')
         if filters:
             self.build_filter_params(params, filters)
         if dry_run:
