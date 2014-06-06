@@ -969,7 +969,8 @@ class Table(object):
         return results
 
     def query_count(self, index=None, consistent=False, conditional_operator=None,
-                    query_filter=None, **filter_kwargs):
+                    query_filter=None, scan_index_forward=True, limit=None,
+                    **filter_kwargs):
         """
         Queries the exact count of matching items in a DynamoDB table.
 
@@ -1002,6 +1003,22 @@ class Table(object):
 
         Returns an integer which represents the exact amount of matched
         items.
+
+        :type scan_index_forward: boolean
+        :param scan_index_forward: Specifies ascending (true) or descending
+            (false) traversal of the index. DynamoDB returns results reflecting
+            the requested order determined by the range key. If the data type
+            is Number, the results are returned in numeric order. For String,
+            the results are returned in order of ASCII character code values.
+            For Binary, DynamoDB treats each byte of the binary data as
+            unsigned when it compares binary values.
+
+        If ScanIndexForward is not specified, the results are returned in
+            ascending order.
+
+        :type limit: integer
+        :param limit: The maximum number of items to evaluate (not necessarily
+            the number of matching items).
 
         Example::
 
@@ -1037,6 +1054,8 @@ class Table(object):
             key_conditions=key_conditions,
             query_filter=built_query_filter,
             conditional_operator=conditional_operator,
+            limit=limit,
+            scan_index_forward=scan_index_forward,
         )
         return int(raw_results.get('Count', 0))
 
