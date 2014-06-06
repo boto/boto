@@ -64,14 +64,14 @@ class Route53Connection(AWSAuthConnection):
                  port=None, proxy=None, proxy_port=None,
                  host=DefaultHost, debug=0, security_token=None,
                  validate_certs=True, https_connection_factory=None,
-                 profile_name=None):
+                 profile_name=None, provider='aws'):
         super(Route53Connection, self).__init__(host,
                                    aws_access_key_id, aws_secret_access_key,
                                    True, port, proxy, proxy_port, debug=debug,
                                    security_token=security_token,
                                    validate_certs=validate_certs,
                                    https_connection_factory=https_connection_factory,
-                                   profile_name=profile_name)
+                                   profile_name=profile_name, provider=provider)
 
     def _required_auth_capability(self):
         return ['route53']

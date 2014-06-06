@@ -1062,7 +1062,7 @@ class AWSQueryConnection(AWSAuthConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host=None, debug=0,
                  https_connection_factory=None, path='/', security_token=None,
-                 validate_certs=True, profile_name=None):
+                 validate_certs=True, profile_name=None, provider='aws'):
         super(AWSQueryConnection, self).__init__(host, aws_access_key_id,
                                    aws_secret_access_key,
                                    is_secure, port, proxy,
@@ -1070,7 +1070,7 @@ class AWSQueryConnection(AWSAuthConnection):
                                    debug, https_connection_factory, path,
                                    security_token=security_token,
                                    validate_certs=validate_certs,
-                                   profile_name=profile_name)
+                                   profile_name=profile_name, provider=provider)
 
     def _required_auth_capability(self):
         return []
