@@ -99,7 +99,7 @@ class CertValidatingHTTPSConnection(httplib.HTTPConnection):
       strict: When true, causes BadStatusLine to be raised if the status line
           can't be parsed as a valid HTTP/1.0 or 1.1 status line.
     """
-    httplib.HTTPConnection.__init__(self, host, port, strict, **kwargs)
+    httplib.HTTPConnection.__init__(self, host, port, strict=strict, **kwargs)
     self.key_file = key_file
     self.cert_file = cert_file
     self.ca_certs = ca_certs
