@@ -309,6 +309,21 @@ class MTurkConnection(AWSQueryConnection):
         pages = total_records / page_size + bool(total_records % page_size)
         return range(1, pages + 1)
 
+    def _get_paginated_results(self, result):
+        """
+        Given a function, result, that takes the parameters page_size and
+        page_number and returns a ResultSet _get_paginated_results returns the
+        result of calling result multiple times and returning the combined
+        sets.
+        """
+        page_size = 100
+        rs = result()
+        total_records = int(rs.TotalNumResults)
+        get_pages = lambda page: result(page_size=page_size, page_number=page)
+        page_nums = self._get_pages(page_size, total_records)
+        sets = itertools.imap(get_pages, page_nums)
+        return itertools.chain.from_iterable(sets)
+
     def get_all_hits(self):
         """
         Return all of a Requester's HITs
@@ -318,13 +333,9 @@ class MTurkConnection(AWSQueryConnection):
         from the server 100 at a time, but will yield the results
         iteratively, so subsequent requests are made on demand.
         """
-        page_size = 100
-        search_rs = self.search_hits(page_size=page_size)
-        total_records = int(search_rs.TotalNumResults)
-        get_page_hits = lambda page: self.search_hits(page_size=page_size, page_number=page)
-        page_nums = self._get_pages(page_size, total_records)
-        hit_sets = itertools.imap(get_page_hits, page_nums)
-        return itertools.chain.from_iterable(hit_sets)
+        result = lambda page_size=10, page_number=1: self.search_hits(
+            page_size=page_size, page_number=page_number)
+        return self._get_paginated_results(result)
 
     def search_hits(self, sort_by='CreationTime', sort_direction='Ascending',
                     page_size=10, page_number=1, response_groups=None):
@@ -374,6 +385,22 @@ class MTurkConnection(AWSQueryConnection):
         return self._process_request('GetAssignment', params,
                                      [('Assignment', Assignment),
                                       ('HIT', HIT)])
+
+    def get_all_assignments(self, hit_id, status=None,
+                                sort_by='SubmitTime',
+                                sort_direction='Ascending', page_size=10,
+                                page_number=1, response_groups=None):
+        """
+        Return all of a HITs assignments.
+
+        Same as get_assignments but returns all assignments not just one page
+        of assignments.
+        """
+        result = lambda page_size=10, page_number=1: self.get_assignments(
+            hit_id, status=status, sort_by=sort_by,
+            sort_direction=sort_direction, page_size=page_size,
+            page_number=page_number, response_groups=response_groups)
+        return self._get_paginated_results(result)
 
     def get_assignments(self, hit_id, status=None,
                             sort_by='SubmitTime', sort_direction='Ascending',
