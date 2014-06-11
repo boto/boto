@@ -204,6 +204,8 @@ class FakeServer(object):
         self.instance = instance
         self.ssh_key_file = ssh_key_file
         self.hostname = instance.dns_name
+        if not self.hostname:
+            self.hostname = instance.private_dns_name
         self.instance_id = self.instance.id
 
 def start(server):
