@@ -27,6 +27,7 @@ Represents a connection to the EC2 service.
 
 import base64
 import warnings
+import time
 from datetime import datetime
 from datetime import timedelta
 
@@ -725,7 +726,7 @@ class EC2Connection(AWSQueryConnection):
                       additional_info=None, instance_profile_name=None,
                       instance_profile_arn=None, tenancy=None,
                       ebs_optimized=False, network_interfaces=None,
-                      dry_run=False):
+                      wait_for_instances=False, dry_run=False):
         """
         Runs an image on EC2.
 
@@ -868,6 +869,10 @@ class EC2Connection(AWSQueryConnection):
         :param network_interfaces: A list of
             :class:`boto.ec2.networkinterface.NetworkInterfaceSpecification`
 
+        :type wait_for_instances: bool
+        :param wait_for_instances: Indicates wheather the call will wait for
+            the instances to reach 'running' state before return
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -939,8 +944,25 @@ class EC2Connection(AWSQueryConnection):
             network_interfaces.build_list_params(params)
         if dry_run:
             params['DryRun'] = 'true'
-        return self.get_object('RunInstances', params, Reservation,
-                               verb='POST')
+
+        reservation = self.get_object('RunInstances', params,
+                                      Reservation, verb='POST')
+
+        def _poll_state(reservation):
+            running_instances = 0
+            while len(reservation.instances) != running_instances:
+                time.sleep(5)
+                running_instances = 0
+                for instance in reservation.instances:
+                    instance.update()
+                    if instance.state == 'running':
+                        running_instances += 1
+                    else:
+                        break
+
+        if wait_for_instances:
+            _poll_state(reservation)
+        return reservation
 
     def terminate_instances(self, instance_ids=None, dry_run=False):
         """
