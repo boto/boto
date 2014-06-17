@@ -339,6 +339,11 @@ class Table(object):
             raw_indexes = result['Table'].get('LocalSecondaryIndexes', [])
             self.indexes = self._introspect_indexes(raw_indexes)
 
+        if not self.global_indexes:
+            # Build the global secondary index information if it's there.
+            raw_global_indexes = result['Table'].get('GlobalSecondaryIndexes', [])
+            self.global_indexes = self._introspect_indexes(raw_global_indexes)
+
         # This is leaky.
         return result
 
