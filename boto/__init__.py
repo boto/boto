@@ -29,7 +29,6 @@ from boto.storage_uri import BucketStorageUri, FileStorageUri
 import boto.plugin
 import datetime
 import os
-import pkg_resources
 import platform
 import re
 import sys
@@ -59,7 +58,13 @@ TOO_LONG_DNS_NAME_COMP = re.compile(r'[-_a-z0-9]{64}')
 GENERATION_RE = re.compile(r'(?P<versionless_uri_str>.+)'
                            r'#(?P<generation>[0-9]+)$')
 VERSION_RE = re.compile('(?P<versionless_uri_str>.+)#(?P<version_id>.+)$')
-ENDPOINTS_PATH = pkg_resources.resource_filename('boto', 'endpoints.json')
+
+# Find endpoints.json within an egg if pkg_resources is available
+try:
+    import pkg_resources
+    ENDPOINTS_PATH = pkg_resources.resource_filename('boto', 'endpoints.json')
+except ImportError:
+    ENDPOINTS_PATH = os.path.join(os.path.dirname(__file__), 'endpoints.json')
 
 
 def init_logging():
