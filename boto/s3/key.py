@@ -166,7 +166,7 @@ class Key(object):
 
     def _set_md5(self, value):
         if value:
-            self.local_hashes['md5'] = binascii.a2b_hex(value)
+            self.local_hashes['md5'] = binascii.a2b_hex(value.encode('ascii'))
         elif 'md5' in self.local_hashes:
             self.local_hashes.pop('md5', None)
 
@@ -178,7 +178,7 @@ class Key(object):
 
     def _set_base64md5(self, value):
         if value:
-            self.local_hashes['md5'] = binascii.a2b_base64(value)
+            self.local_hashes['md5'] = binascii.a2b_base64(value.encode('ascii'))
         elif 'md5' in self.local_hashes:
             del self.local_hashes['md5']
 
