@@ -1440,7 +1440,7 @@ class IAMConnection(AWSQueryConnection):
         Lists the SAML providers in the account.
         This operation requires `Signature Version 4`_.
         """
-        return self.get_response('ListSAMLProviders', {})
+        return self.get_response('ListSAMLProviders', {}, list_marker='SAMLProviderList')
 
     def get_saml_provider(self, saml_provider_arn):
         """
