@@ -61,6 +61,7 @@ import email.encoders
 import gzip
 import base64
 import functools
+import sys
 try:
     from hashlib import md5
 except ImportError:
@@ -229,8 +230,8 @@ def retry_url(url, retry_on_404=True, num_retries=10):
             if code == 404 and not retry_on_404:
                 return ''
         except Exception, e:
+            boto.log.exception('Caught exception reading instance data')
             pass
-        boto.log.exception('Caught exception reading instance data')
         # If not on the last iteration of the loop then sleep.
         if i + 1 != num_retries:
             time.sleep(2 ** i)
@@ -250,16 +251,16 @@ class LazyLoadMetadata(dict):
         self._dicts = []
         data = boto.utils.retry_url(self._url, num_retries=self._num_retries)
         if data:
-            fields = data.split('\n')
+            fields = data.split(b'\n')
             for field in fields:
-                if field.endswith('/'):
+                if field.endswith(b'/'):
                     key = field[0:-1]
                     self._dicts.append(key)
                 else:
-                    p = field.find('=')
+                    p = field.find(b'=')
                     if p > 0:
                         key = field[p + 1:]
-                        resource = field[0:p] + '/openssh-key'
+                        resource = field[0:p] + b'/openssh-key'
                     else:
                         key = resource = field
                     self._leaves[key] = resource
@@ -284,15 +285,17 @@ class LazyLoadMetadata(dict):
             val = boto.utils.retry_url(self._url + urllib.quote(resource,
                                                                 safe="/:"),
                                        num_retries=self._num_retries)
-            if val and val[0] == '{':
+            if sys.version_info.major == 2 and val and val[0] == '{':
+                val = json.loads(val)
+            elif sys.version_info.major == 3 and val and val[0] == ord('{'):
                 val = json.loads(val)
             else:
-                p = val.find('\n')
+                p = val.find(b'\n')
                 if p > 0:
-                    val = val.split('\n')
+                    val = val.split(b'\n')
             self[key] = val
         elif key in self._dicts:
-            self[key] = LazyLoadMetadata(self._url + key + '/',
+            self[key] = LazyLoadMetadata(self._url + key.decode('ascii') + '/',
                                          self._num_retries)
 
         return super(LazyLoadMetadata, self).__getitem__(key)
