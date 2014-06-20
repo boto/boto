@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+from __future__ import print_function
+
 import mock
 import re
 import xml.dom.minidom
@@ -181,9 +183,9 @@ class TestGetZoneRoute53(AWSMockServiceTestCase):
         response = self.service_connection.get_all_hosted_zones()
 
         domains = ['example2.com.', 'example1.com.', 'example.com.']
-        print response['ListHostedZonesResponse']['HostedZones'][0]
+        print(response['ListHostedZonesResponse']['HostedZones'][0])
         for d in response['ListHostedZonesResponse']['HostedZones']:
-            print "Removing: %s" % d['Name']
+            print("Removing: %s" % d['Name'])
             domains.remove(d['Name'])
 
         self.assertEqual(domains, [])

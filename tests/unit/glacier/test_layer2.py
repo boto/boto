@@ -224,8 +224,8 @@ class TestVault(GlacierLayer2Base):
                 return timedelta(0)
 
         self.mock_layer1.initiate_job.return_value = {'JobId': 'job-id'}
-        self.vault.retrieve_inventory(start_date=datetime(2014, 01, 01, tzinfo=UTC()),
-                                      end_date=datetime(2014, 01, 02, tzinfo=UTC()),
+        self.vault.retrieve_inventory(start_date=datetime(2014, 0o1, 0o1, tzinfo=UTC()),
+                                      end_date=datetime(2014, 0o1, 0o2, tzinfo=UTC()),
                                       limit=100)
         self.mock_layer1.initiate_job.assert_called_with(
             'examplevault', {

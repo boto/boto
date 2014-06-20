@@ -30,6 +30,7 @@ import time
 from boto.s3.connection import S3Connection
 from boto.exception import S3ResponseError
 from boto.s3.deletemarker import DeleteMarker
+from boto.compat import six
 
 class S3VersionTest (unittest.TestCase):
 
@@ -126,7 +127,7 @@ class S3VersionTest (unittest.TestCase):
         kv1.set_contents_from_string("v1")
         
         # read list which should contain latest v1
-        listed_kv1 = iter(self.bucket.get_all_versions()).next()
+        listed_kv1 = six.advance_iterator(iter(self.bucket.get_all_versions()))
         self.assertEqual(listed_kv1.name, key_name)
         self.assertEqual(listed_kv1.version_id, kv1.version_id)
         self.assertEqual(listed_kv1.is_latest, True)
@@ -137,8 +138,8 @@ class S3VersionTest (unittest.TestCase):
 
         # read 2 versions, confirm v2 is latest
         i = iter(self.bucket.get_all_versions())
-        listed_kv2 = i.next()
-        listed_kv1 = i.next()
+        listed_kv2 = six.advance_iterator(i)
+        listed_kv1 = six.advance_iterator(i)
         self.assertEqual(listed_kv2.version_id, kv2.version_id)
         self.assertEqual(listed_kv1.version_id, kv1.version_id)
         self.assertEqual(listed_kv2.is_latest, True)
@@ -147,9 +148,9 @@ class S3VersionTest (unittest.TestCase):
         # delete key, which creates a delete marker as latest
         self.bucket.delete_key(key_name)
         i = iter(self.bucket.get_all_versions())
-        listed_kv3 = i.next()
-        listed_kv2 = i.next()
-        listed_kv1 = i.next()
+        listed_kv3 = six.advance_iterator(i)
+        listed_kv2 = six.advance_iterator(i)
+        listed_kv1 = six.advance_iterator(i)
         self.assertNotEqual(listed_kv3.version_id, None)
         self.assertEqual(listed_kv2.version_id, kv2.version_id)
         self.assertEqual(listed_kv1.version_id, kv1.version_id)

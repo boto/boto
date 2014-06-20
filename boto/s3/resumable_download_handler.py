@@ -18,6 +18,7 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from __future__ import print_function
 
 import errno
 import httplib
@@ -133,17 +134,17 @@ class ResumableDownloadHandler(object):
             # read correctly. Since ETags need not be MD5s, we now do a simple
             # length sanity check instead.
             if len(self.etag_value_for_current_download) < self.MIN_ETAG_LEN:
-                print('Couldn\'t read etag in tracker file (%s). Restarting '
-                      'download from scratch.' % self.tracker_file_name)
-        except IOError, e:
+                print(('Couldn\'t read etag in tracker file (%s). Restarting '
+                      'download from scratch.' % self.tracker_file_name))
+        except IOError as e:
             # Ignore non-existent file (happens first time a download
             # is attempted on an object), but warn user for other errors.
             if e.errno != errno.ENOENT:
                 # Will restart because
                 # self.etag_value_for_current_download is None.
-                print('Couldn\'t read URI tracker file (%s): %s. Restarting '
+                print(('Couldn\'t read URI tracker file (%s): %s. Restarting '
                       'download from scratch.' %
-                      (self.tracker_file_name, e.strerror))
+                      (self.tracker_file_name, e.strerror)))
         finally:
             if f:
                 f.close()
@@ -156,7 +157,7 @@ class ResumableDownloadHandler(object):
         try:
             f = open(self.tracker_file_name, 'w')
             f.write('%s\n' % self.etag_value_for_current_download)
-        except IOError, e:
+        except IOError as e:
             raise ResumableDownloadException(
                 'Couldn\'t write tracker file (%s): %s.\nThis can happen'
                 'if you\'re using an incorrectly configured download tool\n'
@@ -194,17 +195,17 @@ class ResumableDownloadHandler(object):
                    key.size), ResumableTransferDisposition.ABORT)
             elif cur_file_size == key.size:
                 if key.bucket.connection.debug >= 1:
-                    print 'Download complete.'
+                    print('Download complete.')
                 return
             if key.bucket.connection.debug >= 1:
-                print 'Resuming download.'
+                print('Resuming download.')
             headers = headers.copy()
             headers['Range'] = 'bytes=%d-%d' % (cur_file_size, key.size - 1)
             cb = ByteTranslatingCallbackHandler(cb, cur_file_size).call
             self.download_start_point = cur_file_size
         else:
             if key.bucket.connection.debug >= 1:
-                print 'Starting new resumable download.'
+                print('Starting new resumable download.')
             self._save_tracker_info(key)
             self.download_start_point = 0
             # Truncate the file, in case a new resumable download is being
@@ -285,11 +286,11 @@ class ResumableDownloadHandler(object):
                 # non-resumable downloads, this call was removed. Checksum
                 # validation of file contents should be done by the caller.
                 if debug >= 1:
-                    print 'Resumable download complete.'
+                    print('Resumable download complete.')
                 return
-            except self.RETRYABLE_EXCEPTIONS, e:
+            except self.RETRYABLE_EXCEPTIONS as e:
                 if debug >= 1:
-                    print('Caught exception (%s)' % e.__repr__())
+                    print(('Caught exception (%s)' % e.__repr__()))
                 if isinstance(e, IOError) and e.errno == errno.EPIPE:
                     # Broken pipe error causes httplib to immediately
                     # close the socket (http://bugs.python.org/issue5542),
@@ -301,25 +302,25 @@ class ResumableDownloadHandler(object):
                     else:
                       key.get_file(fp, headers, cb, num_cb, torrent, version_id,
                                    override_num_retries=0)
-            except ResumableDownloadException, e:
+            except ResumableDownloadException as e:
                 if (e.disposition ==
                     ResumableTransferDisposition.ABORT_CUR_PROCESS):
                     if debug >= 1:
-                        print('Caught non-retryable ResumableDownloadException '
-                              '(%s)' % e.message)
+                        print(('Caught non-retryable ResumableDownloadException '
+                              '(%s)' % e.message))
                     raise
                 elif (e.disposition ==
                     ResumableTransferDisposition.ABORT):
                     if debug >= 1:
-                        print('Caught non-retryable ResumableDownloadException '
+                        print(('Caught non-retryable ResumableDownloadException '
                               '(%s); aborting and removing tracker file' %
-                              e.message)
+                              e.message))
                     self._remove_tracker_file()
                     raise
                 else:
                     if debug >= 1:
-                        print('Caught ResumableDownloadException (%s) - will '
-                              'retry' % e.message)
+                        print(('Caught ResumableDownloadException (%s) - will '
+                              'retry' % e.message))
 
             # At this point we had a re-tryable failure; see if made progress.
             if get_cur_file_size(fp) > had_file_bytes_before_attempt:
@@ -347,7 +348,7 @@ class ResumableDownloadHandler(object):
 
             sleep_time_secs = 2**progress_less_iterations
             if debug >= 1:
-                print('Got retryable failure (%d progress-less in a row).\n'
+                print(('Got retryable failure (%d progress-less in a row).\n'
                       'Sleeping %d seconds before re-trying' %
-                      (progress_less_iterations, sleep_time_secs))
+                      (progress_less_iterations, sleep_time_secs)))
             time.sleep(sleep_time_secs)

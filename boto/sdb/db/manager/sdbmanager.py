@@ -28,6 +28,7 @@ from boto.sdb.db.blob import Blob
 from boto.sdb.db.property import ListProperty, MapProperty
 from datetime import datetime, date, time
 from boto.exception import SDBPersistenceError, S3ResponseError
+from boto.compat import map, six
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -285,7 +286,7 @@ class SDBConverter(object):
             else:
                 value = value.split("-")
                 return date(int(value[0]), int(value[1]), int(value[2]))
-        except Exception, e:
+        except Exception as e:
             return None
 
     def encode_date(self, value):
@@ -364,7 +365,7 @@ class SDBConverter(object):
             bucket = s3.get_bucket(match.group(1), validate=False)
             try:
                 key = bucket.get_key(match.group(2))
-            except S3ResponseError, e:
+            except S3ResponseError as e:
                 if e.reason != "Forbidden":
                     raise
                 return None
@@ -490,7 +491,7 @@ class SDBManager(object):
                         value = prop.make_value_from_datastore(value)
                         try:
                             setattr(obj, prop.name, value)
-                        except Exception, e:
+                        except Exception as e:
                             boto.log.exception(e)
             obj._loaded = True
 
@@ -600,7 +601,7 @@ class SDBManager(object):
                 property = cls.find_property(name)
                 if name == order_by:
                     order_by_filtered = True
-                if types.TypeType(value) == types.ListType:
+                if types.TypeType(value) == list:
                     filter_parts_sub = []
                     for val in value:
                         val = self.encode_value(property, val)
@@ -674,7 +675,7 @@ class SDBManager(object):
             if property.unique:
                 try:
                     args = {property.name: value}
-                    obj2 = obj.find(**args).next()
+                    obj2 = six.advance_iterator(obj.find(**args))
                     if obj2.id != obj.id:
                         raise SDBPersistenceError("Error: %s must be unique!" % property.name)
                 except(StopIteration):
@@ -701,7 +702,7 @@ class SDBManager(object):
         if prop.unique:
             try:
                 args = {prop.name: value}
-                obj2 = obj.find(**args).next()
+                obj2 = six.advance_iterator(obj.find(**args))
                 if obj2.id != obj.id:
                     raise SDBPersistenceError("Error: %s must be unique!" % prop.name)
             except(StopIteration):

@@ -45,6 +45,7 @@ from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.tag import Tag
 from boto.ec2.autoscale.limits import AccountLimits
+from boto.compat import six
 
 RegionData = load_regions().get('autoscaling', {})
 
@@ -134,11 +135,11 @@ class AutoScaleConnection(AWSQueryConnection):
             ['us-east-1b',...]
         """
         # different from EC2 list params
-        for i in xrange(1, len(items) + 1):
+        for i in range(1, len(items) + 1):
             if isinstance(items[i - 1], dict):
-                for k, v in items[i - 1].iteritems():
+                for k, v in six.iteritems(items[i - 1]):
                     if isinstance(v, dict):
-                        for kk, vv in v.iteritems():
+                        for kk, vv in six.iteritems(v):
                             params['%s.member.%d.%s.%s' % (label, i, k, kk)] = vv
                     else:
                         params['%s.member.%d.%s' % (label, i, k)] = v

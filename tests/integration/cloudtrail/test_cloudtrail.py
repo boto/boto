@@ -1,7 +1,7 @@
 import boto
 
 from time import time
-from unittest import TestCase
+from boto.compat import unittest
 
 DEFAULT_S3_POLICY = """{
     "Version": "2012-10-17",
@@ -38,7 +38,7 @@ DEFAULT_S3_POLICY = """{
     ]
 }"""
 
-class TestCloudTrail(TestCase):
+class TestCloudTrail(unittest.TestCase):
     def test_cloudtrail(self):
         cloudtrail = boto.connect_cloudtrail()
 

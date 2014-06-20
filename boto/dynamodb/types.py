@@ -27,7 +27,8 @@ Python types and vice-versa.
 import base64
 from decimal import (Decimal, DecimalException, Context,
                      Clamped, Overflow, Inexact, Underflow, Rounded)
-from exceptions import DynamoDBNumberError
+from .exceptions import DynamoDBNumberError
+from boto.compat import filter, map
 
 
 DYNAMODB_CONTEXT = Context(
@@ -124,7 +125,7 @@ def dynamize_value(val):
     elif dynamodb_type == 'S':
         val = {dynamodb_type: val}
     elif dynamodb_type == 'NS':
-        val = {dynamodb_type: map(serialize_num, val)}
+        val = {dynamodb_type: list(map(serialize_num, val))}
     elif dynamodb_type == 'SS':
         val = {dynamodb_type: [n for n in val]}
     elif dynamodb_type == 'B':
@@ -244,10 +245,10 @@ class Dynamizer(object):
                 n = str(float_to_decimal(attr))
             else:
                 n = str(DYNAMODB_CONTEXT.create_decimal(attr))
-            if filter(lambda x: x in n, ('Infinity', 'NaN')):
+            if list(filter(lambda x: x in n, ('Infinity', 'NaN'))):
                 raise TypeError('Infinity and NaN not supported')
             return n
-        except (TypeError, DecimalException), e:
+        except (TypeError, DecimalException) as e:
             msg = '{0} numeric for `{1}`\n{2}'.format(
                 e.__class__.__name__, attr, str(e) or '')
         raise DynamoDBNumberError(msg)
@@ -260,7 +261,7 @@ class Dynamizer(object):
         return attr
 
     def _encode_ns(self, attr):
-        return map(self._encode_n, attr)
+        return list(map(self._encode_n, attr))
 
     def _encode_ss(self, attr):
         return [self._encode_s(n) for n in attr]

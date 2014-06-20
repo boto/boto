@@ -23,8 +23,8 @@
 
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
-from credentials import Credentials, FederationToken, AssumedRole
-from credentials import DecodeAuthorizationMessage
+from .credentials import Credentials, FederationToken, AssumedRole
+from .credentials import DecodeAuthorizationMessage
 import boto
 import boto.utils
 import datetime

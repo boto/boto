@@ -21,7 +21,6 @@
 #
 import os
 
-
 # This allows boto modules to say "from boto.compat import json".  This is
 # preferred so that all modules don't have to repeat this idiom.
 try:
@@ -39,3 +38,19 @@ try:
 except (AttributeError, ImportError):
     # This is probably running on App Engine.
     expanduser = (lambda x: x)
+
+# Use unittest2 for older versions of Python
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+
+from .vendored import six
+
+from .vendored.six import BytesIO, StringIO
+from .vendored.six.moves import filter, http_client, map, _thread, urllib, \
+                                zip
+from .vendored.six.moves.configparser import SafeConfigParser
+from .vendored.six.moves.urllib.parse import parse_qs, quote, unquote, \
+                                             urlparse, urlsplit
+from .vendored.six.moves.urllib.request import urlopen

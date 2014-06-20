@@ -18,6 +18,7 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from __future__ import print_function
 
 import errno
 import httplib
@@ -98,20 +99,20 @@ class ResumableUploadHandler(object):
             f = open(self.tracker_file_name, 'r')
             uri = f.readline().strip()
             self._set_tracker_uri(uri)
-        except IOError, e:
+        except IOError as e:
             # Ignore non-existent file (happens first time an upload
             # is attempted on a file), but warn user for other errors.
             if e.errno != errno.ENOENT:
                 # Will restart because self.tracker_uri is None.
-                print('Couldn\'t read URI tracker file (%s): %s. Restarting '
+                print(('Couldn\'t read URI tracker file (%s): %s. Restarting '
                       'upload from scratch.' %
-                      (self.tracker_file_name, e.strerror))
-        except InvalidUriError, e:
+                      (self.tracker_file_name, e.strerror)))
+        except InvalidUriError as e:
             # Warn user, but proceed (will restart because
             # self.tracker_uri is None).
-            print('Invalid tracker URI (%s) found in URI tracker file '
+            print(('Invalid tracker URI (%s) found in URI tracker file '
                   '(%s). Restarting upload from scratch.' %
-                  (uri, self.tracker_file_name))
+                  (uri, self.tracker_file_name)))
         finally:
             if f:
                 f.close()
@@ -125,9 +126,9 @@ class ResumableUploadHandler(object):
         f = None
         try:
             with os.fdopen(os.open(self.tracker_file_name,
-                                   os.O_WRONLY | os.O_CREAT, 0600), 'w') as f:
+                                   os.O_WRONLY | os.O_CREAT, 0o600), 'w') as f:
               f.write(self.tracker_uri)
-        except IOError, e:
+        except IOError as e:
             raise ResumableUploadException(
                 'Couldn\'t write URI tracker file (%s): %s.\nThis can happen'
                 'if you\'re using an incorrectly configured upload tool\n'
@@ -256,7 +257,7 @@ class ResumableUploadHandler(object):
                 'Couldn\'t parse upload server state query response (%s)' %
                 str(resp.getheaders()), ResumableTransferDisposition.START_OVER)
         if conn.debug >= 1:
-            print 'Server has: Range: %d - %d.' % (server_start, server_end)
+            print('Server has: Range: %d - %d.' % (server_start, server_end))
         return (server_start, server_end)
 
     def _start_new_resumable_upload(self, key, headers=None):
@@ -267,7 +268,7 @@ class ResumableUploadHandler(object):
         """
         conn = key.bucket.connection
         if conn.debug >= 1:
-            print 'Starting new resumable upload.'
+            print('Starting new resumable upload.')
         self.server_has_bytes = 0
 
         # Start a new resumable upload by sending a POST request with an
@@ -433,7 +434,7 @@ class ResumableUploadHandler(object):
                   # If the server already has some of the content, we need to
                   # update the digesters with the bytes that have already been
                   # uploaded to ensure we get a complete hash in the end.
-                  print 'Catching up hash digest(s) for resumed upload'
+                  print('Catching up hash digest(s) for resumed upload')
                   fp.seek(0)
                   # Read local file's bytes through position server has. For
                   # example, if server has (0, 3) we want to read 3-0+1=4 bytes.
@@ -453,10 +454,10 @@ class ResumableUploadHandler(object):
                       bytes_to_go -= len(chunk)
 
                 if conn.debug >= 1:
-                    print 'Resuming transfer.'
-            except ResumableUploadException, e:
+                    print('Resuming transfer.')
+            except ResumableUploadException as e:
                 if conn.debug >= 1:
-                    print 'Unable to resume transfer (%s).' % e.message
+                    print('Unable to resume transfer (%s).' % e.message)
                 self._start_new_resumable_upload(key, headers)
         else:
             self._start_new_resumable_upload(key, headers)
@@ -513,7 +514,7 @@ class ResumableUploadHandler(object):
         change some of the file and not realize they have inconsistent data.
         """
         if key.bucket.connection.debug >= 1:
-            print 'Checking md5 against etag.'
+            print('Checking md5 against etag.')
         if key.md5 != etag.strip('"\''):
             # Call key.open_read() before attempting to delete the
             # (incorrect-content) key, so we perform that request on a
@@ -531,19 +532,19 @@ class ResumableUploadHandler(object):
     def handle_resumable_upload_exception(self, e, debug):
         if (e.disposition == ResumableTransferDisposition.ABORT_CUR_PROCESS):
             if debug >= 1:
-                print('Caught non-retryable ResumableUploadException (%s); '
-                      'aborting but retaining tracker file' % e.message)
+                print(('Caught non-retryable ResumableUploadException (%s); '
+                      'aborting but retaining tracker file' % e.message))
             raise
         elif (e.disposition == ResumableTransferDisposition.ABORT):
             if debug >= 1:
-                print('Caught non-retryable ResumableUploadException (%s); '
-                      'aborting and removing tracker file' % e.message)
+                print(('Caught non-retryable ResumableUploadException (%s); '
+                      'aborting and removing tracker file' % e.message))
             self._remove_tracker_file()
             raise
         else:
             if debug >= 1:
-                print('Caught ResumableUploadException (%s) - will retry' %
-                      e.message)
+                print(('Caught ResumableUploadException (%s) - will retry' %
+                      e.message))
 
     def track_progress_less_iterations(self, server_had_bytes_before_attempt,
                                        roll_back_md5=True, debug=0):
@@ -567,9 +568,9 @@ class ResumableUploadHandler(object):
         # Use binary exponential backoff to desynchronize client requests.
         sleep_time_secs = random.random() * (2**self.progress_less_iterations)
         if debug >= 1:
-            print ('Got retryable failure (%d progress-less in a row).\n'
+            print(('Got retryable failure (%d progress-less in a row).\n'
                    'Sleeping %3.1f seconds before re-trying' %
-                   (self.progress_less_iterations, sleep_time_secs))
+                   (self.progress_less_iterations, sleep_time_secs)))
         time.sleep(sleep_time_secs)
 
     def send_file(self, key, fp, headers, cb=None, num_cb=10, hash_algs=None):
@@ -664,11 +665,11 @@ class ResumableUploadHandler(object):
                 self._check_final_md5(key, etag)
                 key.generation = self.generation
                 if debug >= 1:
-                    print 'Resumable upload complete.'
+                    print('Resumable upload complete.')
                 return
-            except self.RETRYABLE_EXCEPTIONS, e:
+            except self.RETRYABLE_EXCEPTIONS as e:
                 if debug >= 1:
-                    print('Caught exception (%s)' % e.__repr__())
+                    print(('Caught exception (%s)' % e.__repr__()))
                 if isinstance(e, IOError) and e.errno == errno.EPIPE:
                     # Broken pipe error causes httplib to immediately
                     # close the socket (http://bugs.python.org/issue5542),
@@ -676,7 +677,7 @@ class ResumableUploadHandler(object):
                     # the upload (which will cause a new connection to be
                     # opened the next time an HTTP request is sent).
                     key.bucket.connection.connection.close()
-            except ResumableUploadException, e:
+            except ResumableUploadException as e:
                 self.handle_resumable_upload_exception(e, debug)
 
             self.track_progress_less_iterations(server_had_bytes_before_attempt,

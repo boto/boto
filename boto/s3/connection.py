@@ -23,8 +23,8 @@
 # IN THE SOFTWARE.
 
 import xml.sax
-import urllib
 import base64
+from boto.compat import six, urllib
 import time
 
 from boto.auth import detect_potential_s3sigv4
@@ -92,11 +92,11 @@ class _CallingFormat(object):
         path = ''
         if bucket != '':
             path = '/' + bucket
-        return path + '/%s' % urllib.quote(key)
+        return path + '/%s' % urllib.parse.quote(key)
 
     def build_path_base(self, bucket, key=''):
         key = boto.utils.get_utf8_value(key)
-        return '/%s' % urllib.quote(key)
+        return '/%s' % urllib.parse.quote(key)
 
 
 class SubdomainCallingFormat(_CallingFormat):
@@ -123,7 +123,7 @@ class OrdinaryCallingFormat(_CallingFormat):
         path_base = '/'
         if bucket:
             path_base += "%s/" % bucket
-        return path_base + urllib.quote(key)
+        return path_base + urllib.parse.quote(key)
 
 
 class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
@@ -176,7 +176,7 @@ class S3Connection(AWSAuthConnection):
         if host is NoHostProvided:
             no_host_provided = True
             host = self.DefaultHost
-        if isinstance(calling_format, basestring):
+        if isinstance(calling_format, six.string_types):
             calling_format=boto.utils.find_class(calling_format)()
         self.calling_format = calling_format
         self.bucket_class = bucket_class
@@ -392,7 +392,7 @@ class S3Connection(AWSAuthConnection):
             extra_qp.append("versionId=%s" % version_id)
         if response_headers:
             for k, v in response_headers.items():
-                extra_qp.append("%s=%s" % (k, urllib.quote(v)))
+                extra_qp.append("%s=%s" % (k, urllib.parse.quote(v)))
         if self.provider.security_token:
             headers['x-amz-security-token'] = self.provider.security_token
         if extra_qp:
@@ -401,7 +401,7 @@ class S3Connection(AWSAuthConnection):
         c_string = boto.utils.canonical_string(method, auth_path, headers,
                                                expires, self.provider)
         b64_hmac = self._auth_handler.sign_string(c_string)
-        encoded_canonical = urllib.quote(b64_hmac, safe='')
+        encoded_canonical = urllib.parse.quote(b64_hmac, safe='')
         self.calling_format.build_path_base(bucket, key)
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
@@ -414,7 +414,7 @@ class S3Connection(AWSAuthConnection):
                 if k.startswith(hdr_prefix):
                     # headers used for sig generation must be
                     # included in the url also.
-                    extra_qp.append("%s=%s" % (k, urllib.quote(v)))
+                    extra_qp.append("%s=%s" % (k, urllib.parse.quote(v)))
         if extra_qp:
             delimiter = '?' if not query_part else '&'
             query_part += delimiter + '&'.join(extra_qp)
@@ -436,6 +436,8 @@ class S3Connection(AWSAuthConnection):
                 response.status, response.reason, body)
         rs = ResultSet([('Bucket', self.bucket_class)])
         h = handler.XmlHandler(rs, self)
+        if not isinstance(body, bytes):
+            body = body.encode('utf-8')
         xml.sax.parseString(body, h)
         return rs
 

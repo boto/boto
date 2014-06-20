@@ -7,6 +7,17 @@ boto: A Python interface to Amazon Web Services
 An integrated interface to current and future infrastructural services
 offered by `Amazon Web Services`_.
 
+Currently, all features work with Python 2.6 and 2.7. Work is under way to
+support Python 3.3+ in the same codebase. Modules are being ported one at
+a time with the help of the open source community, so please check below
+for compatibility with Python 3.3+.
+
+To port a module to Python 3.3+, please view our
+:doc:`Contributing Guidelines <contributing>` and the
+:doc:`Porting Guide <porting_guide>`. If you would like, you can open an
+issue to let others know about your work in progress. Tests **must** pass
+on Python 2.6, 2.7, 3.3, and 3.4 for pull requests to be accepted.
+
 .. _Amazon Web Services: http://aws.amazon.com/
 
 Getting Started
@@ -24,7 +35,7 @@ Currently Supported Services
   * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
   * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
   * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
-  * Kinesis -- (:doc:`API Reference <ref/kinesis>`)
+  * Kinesis -- (:doc:`API Reference <ref/kinesis>`) (Python 3)
 
 * **Content Delivery**
 
@@ -46,7 +57,7 @@ Currently Supported Services
   * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
   * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
   * Opsworks -- (:doc:`API Reference <ref/opsworks>`)
-  * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`)
+  * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`) (Python 3)
 
 * **Identity & Access**
 
@@ -59,7 +70,7 @@ Currently Supported Services
   * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
   * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
   * :doc:`Simple Workflow Service (SWF) <swf_tut>` -- (:doc:`API Reference <ref/swf>`)
-  * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`)
+  * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`) (Python 3)
   * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`)
   * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`)
 
@@ -79,7 +90,7 @@ Currently Supported Services
 
 * **Storage**
 
-  * :doc:`Simple Storage Service (S3) <s3_tut>` -- (:doc:`API Reference <ref/s3>`)
+  * :doc:`Simple Storage Service (S3) <s3_tut>` -- (:doc:`API Reference <ref/s3>`) (Python 3)
   * Amazon Glacier -- (:doc:`API Reference <ref/glacier>`)
   * Google Cloud Storage -- (:doc:`API Reference <ref/gs>`)
 

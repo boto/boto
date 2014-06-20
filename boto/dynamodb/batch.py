@@ -1,3 +1,4 @@
+from boto.compat import six
 # Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
@@ -176,7 +177,7 @@ class BatchList(list):
         if not self.unprocessed:
             return None
 
-        for table_name, table_req in self.unprocessed.iteritems():
+        for table_name, table_req in six.iteritems(self.unprocessed):
             table_keys = table_req['Keys']
             table = self.layer2.get_table(table_name)
 

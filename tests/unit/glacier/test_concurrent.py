@@ -40,7 +40,7 @@ class FakeThreadedConcurrentUploader(ConcurrentUploader):
         self.upload_id = upload_id
 
     def _wait_for_upload_threads(self, hash_chunks, result_queue, total_parts):
-        for i in xrange(total_parts):
+        for i in range(total_parts):
             hash_chunks[i] = 'foo'
 
 
@@ -88,7 +88,7 @@ class TestConcurrentUploader(unittest.TestCase):
                                                   'vault_name')
         uploader.upload('foofile')
         q = uploader.worker_queue
-        items = [q.get() for i in xrange(q.qsize())]
+        items = [q.get() for i in range(q.qsize())]
         self.assertEqual(items[0], (0, 4 * 1024 * 1024))
         self.assertEqual(items[1], (1, 4 * 1024 * 1024))
         # 2 for the parts, 10 for the end sentinels (10 threads).
@@ -111,7 +111,7 @@ class TestConcurrentUploader(unittest.TestCase):
         downloader = FakeThreadedConcurrentDownloader(job)
         downloader.download('foofile')
         q = downloader.worker_queue
-        items = [q.get() for i in xrange(q.qsize())]
+        items = [q.get() for i in range(q.qsize())]
         self.assertEqual(items[0], (0, 4 * 1024 * 1024))
         self.assertEqual(items[1], (1, 4 * 1024 * 1024))
         # 2 for the parts, 10 for the end sentinels (10 threads).

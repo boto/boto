@@ -20,14 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import ConfigParser
+from __future__ import print_function
+
 import os
 import re
-import StringIO
 import warnings
 
 import boto
-from boto.compat import expanduser
+
+from boto.compat import expanduser, SafeConfigParser, StringIO
 
 
 # By default we use two locations for the boto configurations,
@@ -50,12 +51,12 @@ elif 'BOTO_PATH' in os.environ:
         BotoConfigLocations.append(expanduser(path))
 
 
-class Config(ConfigParser.SafeConfigParser):
+class Config(SafeConfigParser):
 
     def __init__(self, path=None, fp=None, do_load=True):
         # We don't use ``super`` here, because ``ConfigParser`` still uses
         # old-style classes.
-        ConfigParser.SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami',
+        SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami',
                                                       'debug' : '0'})
         if do_load:
             if path:
@@ -96,7 +97,7 @@ class Config(ConfigParser.SafeConfigParser):
         Replace any previous value.  If the path doesn't exist, create it.
         Also add the option the the in-memory config.
         """
-        config = ConfigParser.SafeConfigParser()
+        config = SafeConfigParser()
         config.read(path)
         if not config.has_section(section):
             config.add_section(section)
@@ -140,21 +141,21 @@ class Config(ConfigParser.SafeConfigParser):
 
     def get(self, section, name, default=None):
         try:
-            val = ConfigParser.SafeConfigParser.get(self, section, name)
+            val = SafeConfigParser.get(self, section, name)
         except:
             val = default
         return val
 
     def getint(self, section, name, default=0):
         try:
-            val = ConfigParser.SafeConfigParser.getint(self, section, name)
+            val = SafeConfigParser.getint(self, section, name)
         except:
             val = int(default)
         return val
 
     def getfloat(self, section, name, default=0.0):
         try:
-            val = ConfigParser.SafeConfigParser.getfloat(self, section, name)
+            val = SafeConfigParser.getfloat(self, section, name)
         except:
             val = float(default)
         return val
@@ -179,7 +180,7 @@ class Config(ConfigParser.SafeConfigParser):
     def dump(self):
         s = StringIO.StringIO()
         self.write(s)
-        print s.getvalue()
+        print(s.getvalue())
 
     def dump_safe(self, fp=None):
         if not fp:

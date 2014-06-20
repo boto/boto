@@ -18,6 +18,7 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from __future__ import print_function
 
 
 def get(prop, choices=None):
@@ -38,7 +39,7 @@ def get(prop, choices=None):
                 value = choices[i-1]
                 if isinstance(value, tuple):
                     value = value[0]
-                print '[%d] %s' % (i, value)
+                print('[%d] %s' % (i, value))
             value = raw_input('%s [%d-%d]: ' % (prompt, min, max))
             try:
                 int_value = int(value)
@@ -47,18 +48,18 @@ def get(prop, choices=None):
                     value = value[1]
                 valid = True
             except ValueError:
-                print '%s is not a valid choice' % value
+                print('%s is not a valid choice' % value)
             except IndexError:
-                print '%s is not within the range[%d-%d]' % (min, max)
+                print('%s is not within the range[%d-%d]' % (min, max))
         else:
             value = raw_input('%s: ' % prompt)
             try:
                 value = prop.validate(value)
                 if prop.empty(value) and prop.required:
-                    print 'A value is required'
+                    print('A value is required')
                 else:
                     valid = True
             except:
-                print 'Invalid value: %s' % value
+                print('Invalid value: %s' % value)
     return value
         

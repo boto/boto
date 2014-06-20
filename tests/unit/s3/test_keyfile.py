@@ -56,7 +56,7 @@ class KeyfileTest(unittest.TestCase):
         self.keyfile.close()
         try:
             self.keyfile.tell()
-        except ValueError, e:
+        except ValueError as e:
             self.assertEqual(str(e), 'I/O operation on closed file')
 
     def testSeek(self):
@@ -69,7 +69,7 @@ class KeyfileTest(unittest.TestCase):
         # Seeking negative should raise.
         try:
             self.keyfile.seek(-5)
-        except IOError, e:
+        except IOError as e:
             self.assertEqual(str(e), 'Invalid argument')
 
         # Reading past end of file is supposed to return empty string.
@@ -91,7 +91,7 @@ class KeyfileTest(unittest.TestCase):
         # Test attempt to seek backwards past the start from the end.
         try:
             self.keyfile.seek(-100, os.SEEK_END)
-        except IOError, e:
+        except IOError as e:
             self.assertEqual(str(e), 'Invalid argument')
 
     def testSeekCur(self):

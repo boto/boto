@@ -33,6 +33,7 @@ from boto.ec2.elb.healthcheck import HealthCheck
 from boto.ec2.elb.listelement import ListElement
 from boto.regioninfo import RegionInfo, get_regions, load_regions
 import boto
+from boto.compat import six
 
 RegionData = load_regions().get('elasticloadbalancing', {})
 
@@ -623,7 +624,7 @@ class ELBConnection(AWSQueryConnection):
         params = {'LoadBalancerName': lb_name,
                   'PolicyName': policy_name,
                   'PolicyTypeName': policy_type}
-        for index, (name, value) in enumerate(policy_attributes.iteritems(), 1):
+        for index, (name, value) in enumerate(six.iteritems(policy_attributes), 1):
             params['PolicyAttributes.member.%d.AttributeName' % index] = name
             params['PolicyAttributes.member.%d.AttributeValue' % index] = value
         else:

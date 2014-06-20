@@ -22,15 +22,11 @@
 #
 from __future__ import with_statement
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
 import mock
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
+from boto.compat import StringIO
 from boto.exception import BotoServerError
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket

@@ -58,7 +58,7 @@ class TestEncodeMessage(unittest.TestCase):
         rs = ResultSet([('Message', DecodeExceptionRaisingMessage)])
         h = XmlHandler(rs, None)
         with self.assertRaises(SQSDecodeError) as context:
-            xml.sax.parseString(body, h)
+            xml.sax.parseString(body.encode('utf-8'), h)
         message = context.exception.message
         self.assertEquals(message.id, sample_value)
         self.assertEquals(message.receipt_handle, sample_value)

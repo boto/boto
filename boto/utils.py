@@ -40,11 +40,8 @@ Some handy utility functions used by several classes.
 """
 
 import socket
-import urllib
-import urllib2
 import imp
 import subprocess
-import StringIO
 import time
 import logging.handlers
 import boto
@@ -63,6 +60,7 @@ import gzip
 import base64
 import threading
 import locale
+from boto.compat import six, StringIO, urllib
 
 from contextlib import contextmanager
 
@@ -116,7 +114,7 @@ def unquote_v(nv):
     if len(nv) == 1:
         return nv
     else:
-        return (nv[0], urllib.unquote(nv[1]))
+        return (nv[0], urllib.parse.unquote(nv[1]))
 
 
 def canonical_string(method, path, headers, expires=None,
@@ -169,7 +167,7 @@ def canonical_string(method, path, headers, expires=None,
         qsa = [a.split('=', 1) for a in qsa]
         qsa = [unquote_v(a) for a in qsa if a[0] in qsa_of_interest]
         if len(qsa) > 0:
-            qsa.sort(cmp=lambda x, y: cmp(x[0], y[0]))
+            qsa.sort(key=lambda x: x[0])
             qsa = ['='.join(a) for a in qsa]
             buf += '?'
             buf += '&'.join(qsa)
@@ -200,11 +198,14 @@ def get_aws_metadata(headers, provider=None):
     metadata = {}
     for hkey in headers.keys():
         if hkey.lower().startswith(metadata_prefix):
-            val = urllib.unquote(headers[hkey])
-            try:
-                metadata[hkey[len(metadata_prefix):]] = unicode(val, 'utf-8')
-            except UnicodeDecodeError:
-                metadata[hkey[len(metadata_prefix):]] = val
+            val = urllib.parse.unquote(headers[hkey])
+            if isinstance(val, bytes):
+                try:
+                    val = val.decode('utf-8')
+                except UnicodeDecodeError:
+                    # Just leave the value as-is
+                    pass
+            metadata[hkey[len(metadata_prefix):]] = val
             del headers[hkey]
     return metadata
 
@@ -218,13 +219,13 @@ def retry_url(url, retry_on_404=True, num_retries=10):
     """
     for i in range(0, num_retries):
         try:
-            proxy_handler = urllib2.ProxyHandler({})
-            opener = urllib2.build_opener(proxy_handler)
-            req = urllib2.Request(url)
+            proxy_handler = urllib.request.ProxyHandler({})
+            opener = urllib.request.build_opener(proxy_handler)
+            req = urllib.request.Request(url)
             r = opener.open(req)
             result = r.read()
             return result
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             # in 2.6 you use getcode(), in 2.5 and earlier you use code
             if hasattr(e, 'getcode'):
                 code = e.getcode()
@@ -232,7 +233,7 @@ def retry_url(url, retry_on_404=True, num_retries=10):
                 code = e.code
             if code == 404 and not retry_on_404:
                 return ''
-        except Exception, e:
+        except Exception as e:
             pass
         boto.log.exception('Caught exception reading instance data')
         # If not on the last iteration of the loop then sleep.
@@ -286,12 +287,13 @@ class LazyLoadMetadata(dict):
 
         if key in self._leaves:
             resource = self._leaves[key]
+            last_exception = None
 
             for i in range(0, self._num_retries):
                 try:
                     val = boto.utils.retry_url(
-                        self._url + urllib.quote(resource,
-                                                 safe="/:"),
+                        self._url + urllib.parse.quote(resource,
+                                                       safe="/:"),
                         num_retries=self._num_retries)
                     if val and val[0] == '{':
                         val = json.loads(val)
@@ -302,17 +304,19 @@ class LazyLoadMetadata(dict):
                             val = val.split('\n')
                         break
 
-                except JSONDecodeError, e:
+                except JSONDecodeError as e:
                     boto.log.debug(
                         "encountered '%s' exception: %s" % (
                             e.__class__.__name__, e))
                     boto.log.debug(
                         'corrupted JSON data found: %s' % val)
+                    last_exception = e
 
-                except Exception, e:
+                except Exception as e:
                     boto.log.debug("encountered unretryable" +
                                    " '%s' exception, re-raising" % (
                                        e.__class__.__name__))
+                    last_exception = e
                     raise
 
                 boto.log.error("Caught exception reading meta data" +
@@ -327,8 +331,8 @@ class LazyLoadMetadata(dict):
                 boto.log.error('Unable to read meta data, giving up')
                 boto.log.error(
                     "encountered '%s' exception: %s" % (
-                        e.__class__.__name__, e))
-                raise
+                        last_exception.__class__.__name__, last_exception))
+                raise last_exception
 
             self[key] = val
         elif key in self._dicts:
@@ -403,7 +407,7 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254',
     try:
         metadata_url = _build_instance_metadata_url(url, version, data)
         return _get_instance_metadata(metadata_url, num_retries=num_retries)
-    except urllib2.URLError, e:
+    except urllib.error.URLError as e:
         return None
     finally:
         if timeout is not None:
@@ -431,7 +435,7 @@ def get_instance_identity(version='latest', url='http://169.254.169.254',
             if field:
                 iid[field] = val
         return iid
-    except urllib2.URLError, e:
+    except urllib.error.URLError as e:
         return None
     finally:
         if timeout is not None:
@@ -513,7 +517,7 @@ def update_dme(username, password, dme_id, ip_address):
     """
     dme_url = 'https://www.dnsmadeeasy.com/servlet/updateip'
     dme_url += '?username=%s&password=%s&id=%s&ip=%s'
-    s = urllib2.urlopen(dme_url % (username, password, dme_id, ip_address))
+    s = urllib.request.urlopen(dme_url % (username, password, dme_id, ip_address))
     return s.read()
 
 
@@ -537,12 +541,12 @@ def fetch_file(uri, file=None, username=None, password=None):
             key.get_contents_to_file(file)
         else:
             if username and password:
-                passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+                passman = urllib.request.HTTPPasswordMgrWithDefaultRealm()
                 passman.add_password(None, uri, username, password)
-                authhandler = urllib2.HTTPBasicAuthHandler(passman)
-                opener = urllib2.build_opener(authhandler)
-                urllib2.install_opener(opener)
-            s = urllib2.urlopen(uri)
+                authhandler = urllib.request.HTTPBasicAuthHandler(passman)
+                opener = urllib.request.build_opener(authhandler)
+                urllib.request.install_opener(opener)
+            s = urllib.request.urlopen(uri)
             file.write(s.read())
         file.seek(0)
     except:
@@ -557,7 +561,7 @@ class ShellCommand(object):
     def __init__(self, command, wait=True, fail_fast=False, cwd=None):
         self.exit_code = 0
         self.command = command
-        self.log_fp = StringIO.StringIO()
+        self.log_fp = StringIO()
         self.wait = wait
         self.fail_fast = fail_fast
         self.run(cwd=cwd)
@@ -791,6 +795,8 @@ class Password(object):
             self.hashfunc = hashfunc
 
     def set(self, value):
+        if not isinstance(value, bytes):
+            value = value.encode('utf-8')
         self.str = self.hashfunc(value).hexdigest()
 
     def __str__(self):
@@ -799,6 +805,8 @@ class Password(object):
     def __eq__(self, other):
         if other is None:
             return False
+        if not isinstance(other, bytes):
+            other = other.encode('utf-8')
         return str(self.hashfunc(other).hexdigest()) == str(self.str)
 
     def __len__(self):
@@ -865,12 +873,16 @@ def notify(subject, body=None, html_body=None, to_string=None,
 
 
 def get_utf8_value(value):
-    if not isinstance(value, basestring):
-        value = str(value)
-    if isinstance(value, unicode):
-        return value.encode('utf-8')
-    else:
+    if not six.PY2 and isinstance(value, bytes):
         return value
+
+    if not isinstance(value, six.string_types):
+        value = six.text_type(value)
+
+    if isinstance(value, six.text_type):
+        value = value.encode('utf-8')
+
+    return value
 
 
 def mklist(value):
@@ -934,7 +946,7 @@ def write_mime_multipart(content, compress=False, deftype='text/plain', delimite
     rcontent = wrapper.as_string()
 
     if compress:
-        buf = StringIO.StringIO()
+        buf = StringIO()
         gz = gzip.GzipFile(mode='wb', fileobj=buf)
         try:
             gz.write(rcontent)
@@ -1009,6 +1021,8 @@ def compute_hash(fp, buf_size=8192, size=None, hash_algorithm=md5):
     else:
         s = fp.read(buf_size)
     while s:
+        if not isinstance(s, bytes):
+            s = s.encode('utf-8')
         hash_obj.update(s)
         if size:
             size -= len(s)
@@ -1019,7 +1033,7 @@ def compute_hash(fp, buf_size=8192, size=None, hash_algorithm=md5):
         else:
             s = fp.read(buf_size)
     hex_digest = hash_obj.hexdigest()
-    base64_digest = base64.encodestring(hash_obj.digest())
+    base64_digest = base64.encodestring(hash_obj.digest()).decode('utf-8')
     if base64_digest[-1] == '\n':
         base64_digest = base64_digest[0:-1]
     # data_size based on bytes read.

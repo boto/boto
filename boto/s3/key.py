@@ -20,20 +20,20 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
 from __future__ import with_statement
+
+import email.utils
 import errno
 import hashlib
 import mimetypes
 import os
 import re
-import rfc822
-import StringIO
 import base64
 import binascii
 import math
-import urllib
 import boto.utils
+from boto.compat import BytesIO, six, urllib
+
 from boto.exception import BotoClientError
 from boto.exception import StorageDataError
 from boto.exception import PleaseRetryException
@@ -44,6 +44,7 @@ from boto import UserAgent
 from boto.utils import compute_md5, compute_hash
 from boto.utils import find_matching_headers
 from boto.utils import merge_headers_by_name
+
 try:
     from hashlib import md5
 except ImportError:
@@ -171,10 +172,15 @@ class Key(object):
 
     def _get_base64md5(self):
         if 'md5' in self.local_hashes and self.local_hashes['md5']:
-            return binascii.b2a_base64(self.local_hashes['md5']).rstrip('\n')
+            md5 = self.local_hashes['md5']
+            if not isinstance(md5, bytes):
+                md5 = md5.encode('utf-8')
+            return binascii.b2a_base64(md5).decode('utf-8').rstrip('\n')
 
     def _set_base64md5(self, value):
         if value:
+            if not isinstance(value, six.string_types):
+                value = value.decode('utf-8')
             self.local_hashes['md5'] = binascii.a2b_base64(value)
         elif 'md5' in self.local_hashes:
             del self.local_hashes['md5']
@@ -370,6 +376,9 @@ class Key(object):
             self.close()
             raise StopIteration
         return data
+
+    # Python 3 iterator support
+    __next__ = next
 
     def read(self, size=0):
         self.open_read()
@@ -801,6 +810,10 @@ class Key(object):
                 chunk = fp.read(bytes_togo)
             else:
                 chunk = fp.read(self.BufferSize)
+
+            if not isinstance(chunk, bytes):
+                chunk = chunk.encode('utf-8')
+
             if spos is None:
                 # read at least something from a non-seekable fp.
                 self.read_from_stream = True
@@ -828,6 +841,9 @@ class Key(object):
                     chunk = fp.read(bytes_togo)
                 else:
                     chunk = fp.read(self.BufferSize)
+
+                if not isinstance(chunk, bytes):
+                    chunk = chunk.encode('utf-8')
 
             self.size = data_len
 
@@ -931,9 +947,10 @@ class Key(object):
         if 200 <= response.status <= 299:
             self.etag = response.getheader('etag')
 
-            if self.etag != '"%s"' % self.md5:
+            if self.etag != '"%s"' % self.md5.decode('utf-8'):
                 raise provider.storage_data_error(
-                    'ETag from S3 did not match computed MD5')
+                    'ETag from S3 did not match computed MD5. '
+                    '%s vs. %s' % (self.etag, self.md5))
 
             return True
 
@@ -1371,9 +1388,9 @@ class Key(object):
             be encrypted on the server-side by S3 and will be stored
             in an encrypted form while at rest in S3.
         """
-        if isinstance(string_data, unicode):
+        if not isinstance(string_data, bytes):
             string_data = string_data.encode("utf-8")
-        fp = StringIO.StringIO(string_data)
+        fp = BytesIO(string_data)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5, reduced_redundancy,
                                         encrypt_key=encrypt_key)
@@ -1461,7 +1478,7 @@ class Key(object):
         if response_headers:
             for key in response_headers:
                 query_args.append('%s=%s' % (
-                    key, urllib.quote(response_headers[key])))
+                    key, urllib.parse.quote(response_headers[key])))
         query_args = '&'.join(query_args)
         self.open('r', headers, query_args=query_args,
                   override_num_retries=override_num_retries)
@@ -1497,7 +1514,7 @@ class Key(object):
                     if i == cb_count or cb_count == -1:
                         cb(data_len, cb_size)
                         i = 0
-        except IOError, e:
+        except IOError as e:
             if e.errno == errno.ENOSPC:
                 raise StorageDataError('Out of space for destination file '
                                        '%s' % fp.name)
@@ -1669,17 +1686,72 @@ class Key(object):
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified is not None:
             try:
-                modified_tuple = rfc822.parsedate_tz(self.last_modified)
-                modified_stamp = int(rfc822.mktime_tz(modified_tuple))
+                modified_tuple = email.utils.parsedate_tz(self.last_modified)
+                modified_stamp = int(email.utils.mktime_tz(modified_tuple))
                 os.utime(fp.name, (modified_stamp, modified_stamp))
             except Exception:
                 pass
+
+    def get_contents_as_bytes(self, headers=None,
+                               cb=None, num_cb=10,
+                               torrent=False,
+                               version_id=None,
+                               response_headers=None):
+        """
+        Retrieve an object from S3 using the name of the Key object as the
+        key in S3.  Return the contents of the object as bytes.
+        See get_contents_to_file method for details about the
+        parameters.
+
+        :type headers: dict
+        :param headers: Any additional headers to send in the request
+
+        :type cb: function
+        :param cb: a callback function that will be called to report
+            progress on the upload.  The callback should accept two
+            integer parameters, the first representing the number of
+            bytes that have been successfully transmitted to S3 and
+            the second representing the size of the to be transmitted
+            object.
+
+        :type cb: int
+        :param num_cb: (optional) If a callback is specified with the
+            cb parameter this parameter determines the granularity of
+            the callback by defining the maximum number of times the
+            callback will be called during the file transfer.
+
+        :type torrent: bool
+        :param torrent: If True, returns the contents of a torrent file
+            as a string.
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP
+            headers/values that will override any headers associated
+            with the stored object in the response.  See
+            http://goo.gl/EWOPb for details.
+
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
+
+        :rtype: bytes
+        :returns: The contents of the file as bytes
+        """
+        fp = BytesIO()
+        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
+                                  version_id=version_id,
+                                  response_headers=response_headers)
+        return fp.getvalue()
 
     def get_contents_as_string(self, headers=None,
                                cb=None, num_cb=10,
                                torrent=False,
                                version_id=None,
-                               response_headers=None):
+                               response_headers=None, encoding='utf-8'):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Return the contents of the object as a string.
@@ -1721,14 +1793,16 @@ class Key(object):
             ``version_id`` attribute to None to always grab the latest
             version from a version-enabled bucket.
 
+        :type encoding: str
+        :param encoding: The text encoding to use, such as ``utf-8``
+            or ``iso-8859-1``. Defaults to UTF-8 strings.
+
         :rtype: string
         :returns: The contents of the file as a string
         """
-        fp = StringIO.StringIO()
-        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
-                                  version_id=version_id,
-                                  response_headers=response_headers)
-        return fp.getvalue()
+        return self.get_contents_as_bytes(headers=headers, cb=cb,
+            num_cb=num_cb, torrent=torrent, version_id=version_id,
+            response_headers=response_headers).decode(encoding)
 
     def add_email_grant(self, permission, email_address, headers=None):
         """

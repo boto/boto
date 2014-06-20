@@ -18,6 +18,7 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from __future__ import print_function
 
 import xml.sax
 import threading
@@ -235,9 +236,9 @@ class SDBConnection(AWSQueryConnection):
             requests made on this specific connection instance. It is by
             no means an account-wide estimate.
         """
-        print 'Total Usage: %f compute seconds' % self.box_usage
+        print('Total Usage: %f compute seconds' % self.box_usage)
         cost = self.box_usage * 0.14
-        print 'Approximate Cost: $%f' % cost
+        print('Approximate Cost: $%f' % cost)
 
     def get_domain(self, domain_name, validate=True):
         """
@@ -614,6 +615,6 @@ class SDBConnection(AWSQueryConnection):
         try:
             return self.get_list('Select', params, [('Item', self.item_cls)],
                              parent=domain)
-        except SDBResponseError, e:
+        except SDBResponseError as e:
             e.body = "Query: %s\n%s" % (query, e.body)
             raise e
