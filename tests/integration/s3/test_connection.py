@@ -217,7 +217,7 @@ class S3ConnectionTest (unittest.TestCase):
         anon_con = S3Connection(anon=True)
         anon_bucket = Bucket(anon_con, bucket_name)
         try:
-            six.advance_iterator(iter(anon_bucket.list()))
+            next(iter(anon_bucket.list()))
             self.fail("anon bucket list should fail")
         except S3ResponseError:
             pass
@@ -226,7 +226,7 @@ class S3ConnectionTest (unittest.TestCase):
         auth_bucket.set_acl('public-read')
         time.sleep(5)
         try:
-            six.advance_iterator(iter(anon_bucket.list()))
+            next(iter(anon_bucket.list()))
             self.fail("not expecting contents")
         except S3ResponseError as e:
             self.fail("We should have public-read access, but received "

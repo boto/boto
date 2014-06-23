@@ -671,7 +671,7 @@ class Bucket(object):
             count = 0
             while count < 1000:
                 try:
-                    key = six.advance_iterator(ikeys)
+                    key = next(ikeys)
                 except StopIteration:
                     break
                 if isinstance(key, six.string_types):

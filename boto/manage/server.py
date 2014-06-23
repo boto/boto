@@ -383,7 +383,7 @@ class Server(Model):
             for reservation in rs:
                 for instance in reservation.instances:
                     try:
-                        six.advance_iterator(Server.find(instance_id=instance.id))
+                        next(Server.find(instance_id=instance.id))
                         boto.log.info('Server for %s already exists' % instance.id)
                     except StopIteration:
                         s = cls()

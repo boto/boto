@@ -675,7 +675,7 @@ class SDBManager(object):
             if property.unique:
                 try:
                     args = {property.name: value}
-                    obj2 = six.advance_iterator(obj.find(**args))
+                    obj2 = next(obj.find(**args))
                     if obj2.id != obj.id:
                         raise SDBPersistenceError("Error: %s must be unique!" % property.name)
                 except(StopIteration):
@@ -702,7 +702,7 @@ class SDBManager(object):
         if prop.unique:
             try:
                 args = {prop.name: value}
-                obj2 = six.advance_iterator(obj.find(**args))
+                obj2 = next(obj.find(**args))
                 if obj2.id != obj.id:
                     raise SDBPersistenceError("Error: %s must be unique!" % prop.name)
             except(StopIteration):

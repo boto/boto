@@ -935,55 +935,55 @@ class ResultSetTestCase(unittest.TestCase):
 
     def test_iteration(self):
         # First page.
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #0')
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #1')
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #2')
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #3')
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #4')
+        self.assertEqual(next(self.results), 'Hello john #0')
+        self.assertEqual(next(self.results), 'Hello john #1')
+        self.assertEqual(next(self.results), 'Hello john #2')
+        self.assertEqual(next(self.results), 'Hello john #3')
+        self.assertEqual(next(self.results), 'Hello john #4')
         self.assertEqual(self.results._limit, 15)
         # Second page.
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #5')
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #6')
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #7')
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #8')
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #9')
+        self.assertEqual(next(self.results), 'Hello john #5')
+        self.assertEqual(next(self.results), 'Hello john #6')
+        self.assertEqual(next(self.results), 'Hello john #7')
+        self.assertEqual(next(self.results), 'Hello john #8')
+        self.assertEqual(next(self.results), 'Hello john #9')
         self.assertEqual(self.results._limit, 10)
         # Third page.
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #10')
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #11')
-        self.assertEqual(six.advance_iterator(self.results), 'Hello john #12')
+        self.assertEqual(next(self.results), 'Hello john #10')
+        self.assertEqual(next(self.results), 'Hello john #11')
+        self.assertEqual(next(self.results), 'Hello john #12')
         self.assertRaises(StopIteration, self.results.next)
         self.assertEqual(self.results._limit, 7)
 
     def test_limit_smaller_than_first_page(self):
         results = ResultSet()
         results.to_call(fake_results, 'john', greeting='Hello', limit=2)
-        self.assertEqual(six.advance_iterator(results), 'Hello john #0')
-        self.assertEqual(six.advance_iterator(results), 'Hello john #1')
+        self.assertEqual(next(results), 'Hello john #0')
+        self.assertEqual(next(results), 'Hello john #1')
         self.assertRaises(StopIteration, results.next)
 
     def test_limit_equals_page(self):
         results = ResultSet()
         results.to_call(fake_results, 'john', greeting='Hello', limit=5)
         # First page
-        self.assertEqual(six.advance_iterator(results), 'Hello john #0')
-        self.assertEqual(six.advance_iterator(results), 'Hello john #1')
-        self.assertEqual(six.advance_iterator(results), 'Hello john #2')
-        self.assertEqual(six.advance_iterator(results), 'Hello john #3')
-        self.assertEqual(six.advance_iterator(results), 'Hello john #4')
+        self.assertEqual(next(results), 'Hello john #0')
+        self.assertEqual(next(results), 'Hello john #1')
+        self.assertEqual(next(results), 'Hello john #2')
+        self.assertEqual(next(results), 'Hello john #3')
+        self.assertEqual(next(results), 'Hello john #4')
         self.assertRaises(StopIteration, results.next)
 
     def test_limit_greater_than_page(self):
         results = ResultSet()
         results.to_call(fake_results, 'john', greeting='Hello', limit=6)
         # First page
-        self.assertEqual(six.advance_iterator(results), 'Hello john #0')
-        self.assertEqual(six.advance_iterator(results), 'Hello john #1')
-        self.assertEqual(six.advance_iterator(results), 'Hello john #2')
-        self.assertEqual(six.advance_iterator(results), 'Hello john #3')
-        self.assertEqual(six.advance_iterator(results), 'Hello john #4')
+        self.assertEqual(next(results), 'Hello john #0')
+        self.assertEqual(next(results), 'Hello john #1')
+        self.assertEqual(next(results), 'Hello john #2')
+        self.assertEqual(next(results), 'Hello john #3')
+        self.assertEqual(next(results), 'Hello john #4')
         # Second page
-        self.assertEqual(six.advance_iterator(results), 'Hello john #5')
+        self.assertEqual(next(results), 'Hello john #5')
         self.assertRaises(StopIteration, results.next)
 
     def test_iteration_noresults(self):
@@ -1039,15 +1039,15 @@ class ResultSetTestCase(unittest.TestCase):
         results = ResultSet()
         results.to_call(sporadic(), limit=20)
         # First page
-        self.assertEqual(six.advance_iterator(results), 'Result #0')
-        self.assertEqual(six.advance_iterator(results), 'Result #1')
-        self.assertEqual(six.advance_iterator(results), 'Result #2')
-        self.assertEqual(six.advance_iterator(results), 'Result #3')
+        self.assertEqual(next(results), 'Result #0')
+        self.assertEqual(next(results), 'Result #1')
+        self.assertEqual(next(results), 'Result #2')
+        self.assertEqual(next(results), 'Result #3')
         # Second page (misses!)
         # Moves on to the third page
-        self.assertEqual(six.advance_iterator(results), 'Result #4')
-        self.assertEqual(six.advance_iterator(results), 'Result #5')
-        self.assertEqual(six.advance_iterator(results), 'Result #6')
+        self.assertEqual(next(results), 'Result #4')
+        self.assertEqual(next(results), 'Result #5')
+        self.assertEqual(next(results), 'Result #6')
         self.assertRaises(StopIteration, results.next)
 
     def test_list(self):
@@ -1128,10 +1128,10 @@ class BatchGetResultSetTestCase(unittest.TestCase):
 
     def test_iteration(self):
         # First page.
-        self.assertEqual(six.advance_iterator(self.results), 'hello alice')
-        self.assertEqual(six.advance_iterator(self.results), 'hello bob')
-        self.assertEqual(six.advance_iterator(self.results), 'hello jane')
-        self.assertEqual(six.advance_iterator(self.results), 'hello johndoe')
+        self.assertEqual(next(self.results), 'hello alice')
+        self.assertEqual(next(self.results), 'hello bob')
+        self.assertEqual(next(self.results), 'hello jane')
+        self.assertEqual(next(self.results), 'hello johndoe')
         self.assertRaises(StopIteration, self.results.next)
 
 
@@ -2394,11 +2394,11 @@ class TableTestCase(unittest.TestCase):
                 results,
                 'the_callable',
                 return_value=items_1) as mock_query:
-            res_1 = six.advance_iterator(results)
+            res_1 = next(results)
             # Now it should be populated.
             self.assertEqual(len(results._results), 2)
             self.assertEqual(res_1['username'], 'johndoe')
-            res_2 = six.advance_iterator(results)
+            res_2 = next(results)
             self.assertEqual(res_2['username'], 'jane')
 
         self.assertEqual(mock_query.call_count, 1)
@@ -2417,7 +2417,7 @@ class TableTestCase(unittest.TestCase):
                 results,
                 'the_callable',
                 return_value=items_2) as mock_query_2:
-            res_3 = six.advance_iterator(results)
+            res_3 = next(results)
             # New results should have been found.
             self.assertEqual(len(results._results), 1)
             self.assertEqual(res_3['username'], 'foodoe')
@@ -2449,12 +2449,12 @@ class TableTestCase(unittest.TestCase):
                 results,
                 'the_callable',
                 return_value=items_1) as mock_query:
-            res_1 = six.advance_iterator(results)
+            res_1 = next(results)
             # Now it should be populated.
             self.assertEqual(len(results._results), 2)
             self.assertEqual(res_1['username'], 'johndoe')
             self.assertEqual(res_1.keys(), ['username'])
-            res_2 = six.advance_iterator(results)
+            res_2 = next(results)
             self.assertEqual(res_2['username'], 'jane')
 
         self.assertEqual(mock_query.call_count, 1)
@@ -2485,11 +2485,11 @@ class TableTestCase(unittest.TestCase):
                 results,
                 'the_callable',
                 return_value=items_1) as mock_scan:
-            res_1 = six.advance_iterator(results)
+            res_1 = next(results)
             # Now it should be populated.
             self.assertEqual(len(results._results), 2)
             self.assertEqual(res_1['username'], 'johndoe')
-            res_2 = six.advance_iterator(results)
+            res_2 = next(results)
             self.assertEqual(res_2['username'], 'jane')
 
         self.assertEqual(mock_scan.call_count, 1)
@@ -2508,7 +2508,7 @@ class TableTestCase(unittest.TestCase):
                 results,
                 'the_callable',
                 return_value=items_2) as mock_scan_2:
-            res_3 = six.advance_iterator(results)
+            res_3 = next(results)
             # New results should have been found.
             self.assertEqual(len(results._results), 1)
             self.assertEqual(res_3['username'], 'zoeydoe')
@@ -2539,12 +2539,12 @@ class TableTestCase(unittest.TestCase):
                 results,
                 'the_callable',
                 return_value=items_1) as mock_query:
-            res_1 = six.advance_iterator(results)
+            res_1 = next(results)
             # Now it should be populated.
             self.assertEqual(len(results._results), 2)
             self.assertEqual(res_1['username'], 'johndoe')
             self.assertEqual(res_1.keys(), ['username'])
-            res_2 = six.advance_iterator(results)
+            res_2 = next(results)
             self.assertEqual(res_2['username'], 'jane')
 
         self.assertEqual(mock_query.call_count, 1)
@@ -2774,11 +2774,11 @@ class TableTestCase(unittest.TestCase):
                 results,
                 'the_callable',
                 return_value=items_1) as mock_batch_get:
-            res_1 = six.advance_iterator(results)
+            res_1 = next(results)
             # Now it should be populated.
             self.assertEqual(len(results._results), 2)
             self.assertEqual(res_1['username'], 'johndoe')
-            res_2 = six.advance_iterator(results)
+            res_2 = next(results)
             self.assertEqual(res_2['username'], 'jane')
 
         self.assertEqual(mock_batch_get.call_count, 1)
@@ -2798,7 +2798,7 @@ class TableTestCase(unittest.TestCase):
                 results,
                 'the_callable',
                 return_value=items_2) as mock_batch_get_2:
-            res_3 = six.advance_iterator(results)
+            res_3 = next(results)
             # New results should have been found.
             self.assertEqual(len(results._results), 1)
             self.assertEqual(res_3['username'], 'zoeydoe')

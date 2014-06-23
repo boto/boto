@@ -61,7 +61,7 @@ class Blob(object):
         return self.file.readline()
 
     def next(self):
-        return six.advance_iterator(self.file)
+        return next(self.file)
 
     def __iter__(self):
         return iter(self.file)

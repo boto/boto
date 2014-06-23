@@ -42,7 +42,7 @@ class Query(object):
     def next(self):
         if self.__local_iter__ is None:
             self.__local_iter__ = self.__iter__()
-        return six.advance_iterator(self.__local_iter__)
+        return next(self.__local_iter__)
 
     def filter(self, property_operator, value):
         self.filters.append((property_operator, value))

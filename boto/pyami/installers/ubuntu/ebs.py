@@ -115,7 +115,7 @@ class EBSInstaller(Installer):
         if self.logical_volume_name:
             # if a logical volume was specified, override the specified volume_id
             # (if there was one) with the current AWS volume for the logical volume:
-            logical_volume = six.advance_iterator(Volume.find(name = self.logical_volume_name))
+            logical_volume = next(Volume.find(name = self.logical_volume_name))
             self.volume_id = logical_volume._volume_id
         volume = ec2.get_all_volumes([self.volume_id])[0]
         # wait for the volume to be available. The volume may still be being created

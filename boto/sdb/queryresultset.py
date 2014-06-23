@@ -90,4 +90,4 @@ class SelectResultSet(object):
             more_results = self.next_token is not None
 
     def next(self):
-        return six.advance_iterator(self.__iter__())
+        return next(self.__iter__())

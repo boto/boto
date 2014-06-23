@@ -314,7 +314,7 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
         results_correct = iter(["12341", "12342", "12343", "12344",
                                 "12345", "12346", "12347"])
         for x in results:
-            self.assertEqual(x['id'], six.advance_iterator(results_correct))
+            self.assertEqual(x['id'], next(results_correct))
 
 
     def test_cloudsearch_results_internal_consistancy(self):

@@ -142,14 +142,14 @@ class ItemSet(ResponseGroup):
         if self.iter is None:
             self.iter = iter(self.objs)
         try:
-            return six.advance_iterator(self.iter)
+            return next(self.iter)
         except StopIteration:
             self.iter = None
             self.objs = []
             if int(self.page) < int(self.total_pages):
                 self.page += 1
                 self._connection.get_response(self.action, self.params, self.page, self)
-                return six.advance_iterator(self)
+                return next(self)
             else:
                 raise
 

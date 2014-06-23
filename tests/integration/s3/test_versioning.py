@@ -127,7 +127,7 @@ class S3VersionTest (unittest.TestCase):
         kv1.set_contents_from_string("v1")
         
         # read list which should contain latest v1
-        listed_kv1 = six.advance_iterator(iter(self.bucket.get_all_versions()))
+        listed_kv1 = next(iter(self.bucket.get_all_versions()))
         self.assertEqual(listed_kv1.name, key_name)
         self.assertEqual(listed_kv1.version_id, kv1.version_id)
         self.assertEqual(listed_kv1.is_latest, True)
@@ -138,8 +138,8 @@ class S3VersionTest (unittest.TestCase):
 
         # read 2 versions, confirm v2 is latest
         i = iter(self.bucket.get_all_versions())
-        listed_kv2 = six.advance_iterator(i)
-        listed_kv1 = six.advance_iterator(i)
+        listed_kv2 = next(i)
+        listed_kv1 = next(i)
         self.assertEqual(listed_kv2.version_id, kv2.version_id)
         self.assertEqual(listed_kv1.version_id, kv1.version_id)
         self.assertEqual(listed_kv2.is_latest, True)
@@ -148,9 +148,9 @@ class S3VersionTest (unittest.TestCase):
         # delete key, which creates a delete marker as latest
         self.bucket.delete_key(key_name)
         i = iter(self.bucket.get_all_versions())
-        listed_kv3 = six.advance_iterator(i)
-        listed_kv2 = six.advance_iterator(i)
-        listed_kv1 = six.advance_iterator(i)
+        listed_kv3 = next(i)
+        listed_kv2 = next(i)
+        listed_kv1 = next(i)
         self.assertNotEqual(listed_kv3.version_id, None)
         self.assertEqual(listed_kv2.version_id, kv2.version_id)
         self.assertEqual(listed_kv1.version_id, kv1.version_id)
