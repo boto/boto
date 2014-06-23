@@ -53,6 +53,10 @@ Please follow the following steps when porting a module:
   as supporting Python 3
 * Submit a pull request!
 
+Note: We try our best to clean up resources after a test runs, but you should
+double check that no resources are left after integration tests run. If they
+are, then you will be charged for them!
+
 .. _Six documentation: http://pythonhosted.org/six/
 .. _Porting to Python 3 An in-depth guide: http://python3porting.com/
 .. _Porting to Python 3 Redux: http://lucumr.pocoo.org/2013/5/21/porting-to-python-3-redux/
