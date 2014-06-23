@@ -143,6 +143,24 @@ guessing.  The other thing to note is that boto does stream the content
 to and from S3 so you should be able to send and receive large files without
 any problem.
 
+When fetching a key that has already exists, you have two options. If you're
+uncertain whether a key exists (or if you need the metadata set on it, you can
+call ``Bucket.get_key(key_name_here)``. However, if you're sure a key already
+exists within a bucket, you can skip the check for a key on the server.
+
+::
+
+    >>> import boto
+    >>> c = boto.connect_s3()
+    >>> b = c.get_bucket('mybucket') # substitute your bucket name here
+
+    # Will hit the API to check if it exists.
+    >>> possible_key = b.get_key('mykey') # substitute your key name here
+
+    # Won't hit the API.
+    >>> key_we_know_is_there = b.get_key('mykey', validate=False)
+
+
 Accessing A Bucket
 ------------------
 
@@ -150,12 +168,32 @@ Once a bucket exists, you can access it by getting the bucket. For example::
 
     >>> mybucket = conn.get_bucket('mybucket') # Substitute in your bucket name
     >>> mybucket.list()
-    <listing of keys in the bucket)
+    ...listing of keys in the bucket...
 
 By default, this method tries to validate the bucket's existence. You can
 override this behavior by passing ``validate=False``.::
 
     >>> nonexistent = conn.get_bucket('i-dont-exist-at-all', validate=False)
+
+.. versionchanged:: 2.25.0
+.. warning::
+
+    If ``validate=False`` is passed, no request is made to the service (no
+    charge/communication delay). This is only safe to do if you are **sure**
+    the bucket exists.
+
+    If the default ``validate=True`` is passed, a request is made to the
+    service to ensure the bucket exists. Prior to Boto v2.25.0, this fetched
+    a list of keys (but with a max limit set to ``0``, always returning an empty
+    list) in the bucket (& included better error messages), at an
+    increased expense. As of Boto v2.25.0, this now performs a HEAD request
+    (less expensive but worse error messages).
+
+    If you were relying on parsing the error message before, you should call
+    something like::
+
+        bucket = conn.get_bucket('<bucket_name>', validate=False)
+        bucket.get_all_keys(maxkeys=0)
 
 If the bucket does not exist, a ``S3ResponseError`` will commonly be thrown. If
 you'd rather not deal with any exceptions, you can use the ``lookup`` method.::
@@ -165,6 +203,7 @@ you'd rather not deal with any exceptions, you can use the ``lookup`` method.::
     ...     print "No such bucket!"
     ...
     No such bucket!
+
 
 Deleting A Bucket
 -----------------

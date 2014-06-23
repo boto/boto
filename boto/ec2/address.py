@@ -37,7 +37,7 @@ class Address(EC2Object):
     """
 
     def __init__(self, connection=None, public_ip=None, instance_id=None):
-        EC2Object.__init__(self, connection)
+        super(Address, self).__init__(connection)
         self.connection = connection
         self.public_ip = public_ip
         self.instance_id = instance_id
@@ -89,14 +89,23 @@ class Address(EC2Object):
 
     delete = release
 
-    def associate(self, instance_id, dry_run=False):
+    def associate(self, instance_id, allow_reassociation=False, dry_run=False):
         """
         Associate this Elastic IP address with a currently running instance.
         :see: :meth:`boto.ec2.connection.EC2Connection.associate_address`
         """
+        if self.allocation_id:
+            return self.connection.associate_address(
+                instance_id,
+                self.public_ip,
+                allocation_id=self.allocation_id,
+                allow_reassociation=allow_reassociation,
+                dry_run=dry_run
+            )
         return self.connection.associate_address(
             instance_id,
             self.public_ip,
+            allow_reassociation=allow_reassociation,
             dry_run=dry_run
         )
 

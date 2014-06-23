@@ -31,6 +31,8 @@ from datetime import datetime
 
 import boto
 from boto import config
+from boto.compat import expanduser
+from boto.pyami.config import Config
 from boto.gs.acl import ACL
 from boto.gs.acl import CannedACLStrings as CannedGSACLStrings
 from boto.s3.acl import CannedACLStrings as CannedS3ACLStrings
@@ -57,6 +59,7 @@ STORAGE_CLASS_HEADER_KEY = 'storage-class'
 MFA_HEADER_KEY = 'mfa-header'
 SERVER_SIDE_ENCRYPTION_KEY = 'server-side-encryption-header'
 VERSION_ID_HEADER_KEY = 'version-id-header'
+RESTORE_HEADER_KEY = 'restore-header'
 
 STORAGE_COPY_ERROR = 'StorageCopyError'
 STORAGE_CREATE_ERROR = 'StorageCreateError'
@@ -65,11 +68,16 @@ STORAGE_PERMISSIONS_ERROR = 'StoragePermissionsError'
 STORAGE_RESPONSE_ERROR = 'StorageResponseError'
 
 
+class ProfileNotFoundError(ValueError): pass
+
+
 class Provider(object):
 
     CredentialMap = {
-        'aws':    ('aws_access_key_id', 'aws_secret_access_key'),
-        'google': ('gs_access_key_id',  'gs_secret_access_key'),
+        'aws':    ('aws_access_key_id', 'aws_secret_access_key',
+                   'aws_security_token', 'aws_profile'),
+        'google': ('gs_access_key_id',  'gs_secret_access_key',
+                   None, None),
     }
 
     AclClassMap = {
@@ -122,6 +130,7 @@ class Provider(object):
             VERSION_ID_HEADER_KEY: AWS_HEADER_PREFIX + 'version-id',
             STORAGE_CLASS_HEADER_KEY: AWS_HEADER_PREFIX + 'storage-class',
             MFA_HEADER_KEY: AWS_HEADER_PREFIX + 'mfa',
+            RESTORE_HEADER_KEY: AWS_HEADER_PREFIX + 'restore',
         },
         'google': {
             HEADER_PREFIX_KEY: GOOG_HEADER_PREFIX,
@@ -144,6 +153,7 @@ class Provider(object):
             VERSION_ID_HEADER_KEY: GOOG_HEADER_PREFIX + 'version-id',
             STORAGE_CLASS_HEADER_KEY: None,
             MFA_HEADER_KEY: None,
+            RESTORE_HEADER_KEY: None,
         }
     }
 
@@ -165,20 +175,29 @@ class Provider(object):
     }
 
     def __init__(self, name, access_key=None, secret_key=None,
-                 security_token=None):
+                 security_token=None, profile_name=None):
         self.host = None
         self.port = None
         self.host_header = None
         self.access_key = access_key
         self.secret_key = secret_key
         self.security_token = security_token
+        self.profile_name = profile_name
         self.name = name
         self.acl_class = self.AclClassMap[self.name]
         self.canned_acls = self.CannedAclsMap[self.name]
         self._credential_expiry_time = None
-        self.get_credentials(access_key, secret_key)
+
+        # Load shared credentials file if it exists
+        shared_path = os.path.join(expanduser('~'), '.' + name, 'credentials')
+        self.shared_credentials = Config(do_load=False)
+        if os.path.exists(shared_path):
+            self.shared_credentials.load_from_path(shared_path)
+
+        self.get_credentials(access_key, secret_key, security_token, profile_name)
         self.configure_headers()
         self.configure_errors()
+
         # Allow config file to override default host and port.
         host_opt_name = '%s_host' % self.HostKeyMap[self.name]
         if config.has_option('Credentials', host_opt_name):
@@ -239,14 +258,42 @@ class Provider(object):
             else:
                 return False
 
-    def get_credentials(self, access_key=None, secret_key=None):
-        access_key_name, secret_key_name = self.CredentialMap[self.name]
+    def get_credentials(self, access_key=None, secret_key=None,
+                        security_token=None, profile_name=None):
+        access_key_name, secret_key_name, security_token_name, \
+            profile_name_name = self.CredentialMap[self.name]
+
+        # Load profile from shared environment variable if it was not
+        # already passed in and the environment variable exists
+        if profile_name is None and profile_name_name is not None and \
+           profile_name_name.upper() in os.environ:
+            profile_name = os.environ[profile_name_name.upper()]
+
+        shared = self.shared_credentials
+
         if access_key is not None:
             self.access_key = access_key
             boto.log.debug("Using access key provided by client.")
         elif access_key_name.upper() in os.environ:
             self.access_key = os.environ[access_key_name.upper()]
             boto.log.debug("Using access key found in environment variable.")
+        elif profile_name is not None:
+            if shared.has_option(profile_name, access_key_name):
+                self.access_key = shared.get(profile_name, access_key_name)
+                boto.log.debug("Using access key found in shared credential "
+                               "file for profile %s." % profile_name)
+            elif config.has_option("profile %s" % profile_name,
+                                   access_key_name):
+                self.access_key = config.get("profile %s" % profile_name,
+                                             access_key_name)
+                boto.log.debug("Using access key found in config file: "
+                               "profile %s." % profile_name)
+            else:
+                raise ProfileNotFoundError('Profile "%s" not found!' %
+                                           profile_name)
+        elif shared.has_option('default', access_key_name):
+            self.access_key = shared.get('default', access_key_name)
+            boto.log.debug("Using access key found in shared credential file.")
         elif config.has_option('Credentials', access_key_name):
             self.access_key = config.get('Credentials', access_key_name)
             boto.log.debug("Using access key found in config file.")
@@ -257,6 +304,22 @@ class Provider(object):
         elif secret_key_name.upper() in os.environ:
             self.secret_key = os.environ[secret_key_name.upper()]
             boto.log.debug("Using secret key found in environment variable.")
+        elif profile_name is not None:
+            if shared.has_option(profile_name, secret_key_name):
+                self.secret_key = shared.get(profile_name, secret_key_name)
+                boto.log.debug("Using secret key found in shared credential "
+                               "file for profile %s." % profile_name)
+            elif config.has_option("profile %s" % profile_name, secret_key_name):
+                self.secret_key = config.get("profile %s" % profile_name,
+                                             secret_key_name)
+                boto.log.debug("Using secret key found in config file: "
+                               "profile %s." % profile_name)
+            else:
+                raise ProfileNotFoundError('Profile "%s" not found!' %
+                                           profile_name)
+        elif shared.has_option('default', secret_key_name):
+            self.secret_key = shared.get('default', secret_key_name)
+            boto.log.debug("Using secret key found in shared credential file.")
         elif config.has_option('Credentials', secret_key_name):
             self.secret_key = config.get('Credentials', secret_key_name)
             boto.log.debug("Using secret key found in config file.")
@@ -272,6 +335,30 @@ class Provider(object):
             self.secret_key = keyring.get_password(
                 keyring_name, self.access_key)
             boto.log.debug("Using secret key found in keyring.")
+
+        if security_token is not None:
+            self.security_token = security_token
+            boto.log.debug("Using security token provided by client.")
+        elif ((security_token_name is not None) and
+              (access_key is None) and (secret_key is None)):
+            # Only provide a token from the environment/config if the
+            # caller did not specify a key and secret.  Otherwise an
+            # environment/config token could be paired with a
+            # different set of credentials provided by the caller
+            if security_token_name.upper() in os.environ:
+                self.security_token = os.environ[security_token_name.upper()]
+                boto.log.debug("Using security token found in environment"
+                               " variable.")
+            elif shared.has_option(profile_name or 'default',
+                                   security_token_name):
+                self.security_token = shared.get(profile_name or 'default',
+                                                 security_token_name)
+                boto.log.debug("Using security token found in shared "
+                               "credential file.")
+            elif config.has_option('Credentials', security_token_name):
+                self.security_token = config.get('Credentials',
+                                                 security_token_name)
+                boto.log.debug("Using security token found in config file.")
 
         if ((self._access_key is None or self._secret_key is None) and
                 self.MetadataServiceSupport[self.name]):
@@ -290,7 +377,7 @@ class Provider(object):
         # clear to users.
         metadata = get_instance_metadata(
             timeout=timeout, num_retries=attempts,
-            data='meta-data/iam/security-credentials')
+            data='meta-data/iam/security-credentials/')
         if metadata:
             # I'm assuming there's only one role on the instance profile.
             security = metadata.values()[0]
@@ -332,6 +419,7 @@ class Provider(object):
         self.storage_class_header = header_info_map[STORAGE_CLASS_HEADER_KEY]
         self.version_id = header_info_map[VERSION_ID_HEADER_KEY]
         self.mfa_header = header_info_map[MFA_HEADER_KEY]
+        self.restore_header = header_info_map[RESTORE_HEADER_KEY]
 
     def configure_errors(self):
         error_map = self.ErrorMap[self.name]

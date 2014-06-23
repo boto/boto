@@ -33,6 +33,8 @@ from boto.glacier.vault import Job
 
 from StringIO import StringIO
 
+from datetime import datetime, tzinfo, timedelta
+
 # Some fixture data from the Glacier docs
 FIXTURE_VAULT = {
   "CreationDate" : "2012-02-20T17:01:45.198Z",
@@ -207,6 +209,33 @@ class TestVault(GlacierLayer2Base):
         self.vault.delete_archive("archive")
         self.mock_layer1.delete_archive.assert_called_with("examplevault",
                                                            "archive")
+
+    def test_initiate_job(self):
+        class UTC(tzinfo):
+            """UTC"""
+
+            def utcoffset(self, dt):
+                return timedelta(0)
+
+            def tzname(self, dt):
+                return "Z"
+
+            def dst(self, dt):
+                return timedelta(0)
+
+        self.mock_layer1.initiate_job.return_value = {'JobId': 'job-id'}
+        self.vault.retrieve_inventory(start_date=datetime(2014, 01, 01, tzinfo=UTC()),
+                                      end_date=datetime(2014, 01, 02, tzinfo=UTC()),
+                                      limit=100)
+        self.mock_layer1.initiate_job.assert_called_with(
+            'examplevault', {
+                'Type': 'inventory-retrieval',
+                'InventoryRetrievalParameters': {
+                    'StartDate': '2014-01-01T00:00:00Z',
+                    'EndDate': '2014-01-02T00:00:00Z',
+                    'Limit': 100
+                }
+            })
 
     def test_get_job(self):
         self.mock_layer1.describe_job.return_value = FIXTURE_ARCHIVE_JOB

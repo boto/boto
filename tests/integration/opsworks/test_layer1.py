@@ -20,13 +20,15 @@
 # IN THE SOFTWARE.
 #
 import unittest
-import time
 
+from boto.exception import JSONResponseError
+from boto.opsworks import connect_to_region, regions, RegionInfo
 from boto.opsworks.layer1 import OpsWorksConnection
-from boto.opsworks.exceptions import ValidationException
 
 
 class TestOpsWorksConnection(unittest.TestCase):
+    opsworks = True
+
     def setUp(self):
         self.api = OpsWorksConnection()
 
@@ -35,6 +37,18 @@ class TestOpsWorksConnection(unittest.TestCase):
         self.assertIn('Stacks', response)
 
     def test_validation_errors(self):
-        with self.assertRaises(ValidationException):
+        with self.assertRaises(JSONResponseError):
             self.api.create_stack('testbotostack', 'us-east-1',
                                   'badarn', 'badarn2')
+
+
+class TestOpsWorksHelpers(unittest.TestCase):
+    opsworks = True
+
+    def test_regions(self):
+        response = regions()
+        self.assertIsInstance(response[0], RegionInfo)
+
+    def test_connect_to_region(self):
+        connection = connect_to_region('us-east-1')
+        self.assertIsInstance(connection, OpsWorksConnection)

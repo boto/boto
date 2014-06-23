@@ -12,10 +12,10 @@ boto.route53.connection
    :members:   
    :undoc-members:
 
-boto.route53.hostedzone
-------------------------
+boto.route53.exception
+----------------------
 
-.. automodule:: boto.route53.hostedzone
+.. automodule:: boto.route53.exception
    :members:   
    :undoc-members:
 
@@ -26,9 +26,9 @@ boto.route53.record
    :members:   
    :undoc-members:
 
-boto.route53.exception
-----------------------
+boto.route53.zone
+-----------------
 
-.. automodule:: boto.route53.exception
+.. automodule:: boto.route53.zone
    :members:   
    :undoc-members:

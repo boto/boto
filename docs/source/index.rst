@@ -24,6 +24,7 @@ Currently Supported Services
   * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
   * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
   * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
+  * Kinesis -- (:doc:`API Reference <ref/kinesis>`)
 
 * **Content Delivery**
 
@@ -33,6 +34,7 @@ Currently Supported Services
 
   * :doc:`DynamoDB2 <dynamodb2_tut>` -- (:doc:`API Reference <ref/dynamodb2>`) -- (:doc:`Migration Guide from v1 <migrations/dynamodb_v1_to_v2>`)
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
+  * Relational Data Services 2 (RDS) -- (:doc:`API Reference <ref/rds2>`) -- (:doc:`Migration Guide from v1 <migrations/rds_v1_to_v2>`)
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
   * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
   * Redshift -- (:doc:`API Reference <ref/redshift>`)
@@ -44,6 +46,7 @@ Currently Supported Services
   * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
   * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
   * Opsworks -- (:doc:`API Reference <ref/opsworks>`)
+  * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`)
 
 * **Identity & Access**
 
@@ -52,6 +55,7 @@ Currently Supported Services
 
 * **Application Services**
 
+  * Cloudsearch 2 -- (:doc:`API Reference <ref/cloudsearch2>`)
   * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
   * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
   * :doc:`Simple Workflow Service (SWF) <swf_tut>` -- (:doc:`API Reference <ref/swf>`)
@@ -65,7 +69,7 @@ Currently Supported Services
 
 * **Networking**
 
-  * Route 53 -- (:doc:`API Reference <ref/route53>`)
+  * :doc:`Route 53 <route53_tut>` -- (:doc:`API Reference <ref/route53>`)
   * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`)
   * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:doc:`API Reference <ref/elb>`)
 
@@ -95,6 +99,7 @@ Additional Resources
 * :doc:`Command Line Utilities <commandline>`
 * :doc:`Boto Config Tutorial <boto_config_tut>`
 * :doc:`Contributing to Boto <contributing>`
+* :doc:`Evaluating Application performance with Boto logging <request_hook_tut>`
 * `Boto Source Repository`_
 * `Boto Issue Tracker`_
 * `Boto Twitter`_
@@ -114,6 +119,26 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.29.1
+   releasenotes/v2.29.0
+   releasenotes/v2.28.0
+   releasenotes/v2.27.0
+   releasenotes/v2.26.1
+   releasenotes/v2.26.0
+   releasenotes/v2.25.0
+   releasenotes/v2.24.0
+   releasenotes/v2.23.0
+   releasenotes/v2.22.1
+   releasenotes/v2.22.0
+   releasenotes/v2.21.2
+   releasenotes/v2.21.1
+   releasenotes/v2.21.0
+   releasenotes/v2.20.1
+   releasenotes/v2.20.0
+   releasenotes/v2.19.0
+   releasenotes/v2.18.0
+   releasenotes/v2.17.0
+   releasenotes/v2.16.0
    releasenotes/v2.15.0
    releasenotes/v2.14.0
    releasenotes/v2.13.3
@@ -170,6 +195,7 @@ Release Notes
    vpc_tut
    elb_tut
    s3_tut
+   route53_tut
    boto_config_tut
    documentation
    contributing
@@ -177,6 +203,7 @@ Release Notes
    support_tut
    dynamodb2_tut
    migrations/dynamodb_v1_to_v2
+   migrations/rds_v1_to_v2
    apps_built_on_boto
    ref/*
    releasenotes/*

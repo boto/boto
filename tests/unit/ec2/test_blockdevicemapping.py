@@ -65,7 +65,7 @@ class BlockDeviceMappingTests(unittest.TestCase):
         retval = self.block_device_mapping.startElement("virtualName", None, None)
         assert self.block_device_type_eq(retval, BlockDeviceType(self.block_device_mapping))
 
-    def test_endElement_with_name_device_sets_current_name(self):
+    def test_endElement_with_name_device_sets_current_name_dev_null(self):
         self.block_device_mapping.endElement("device", "/dev/null", None)
         self.assertEqual(self.block_device_mapping.current_name, "/dev/null")
 
@@ -96,7 +96,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
         # Autoscaling).
         self.set_http_response(status_code=200)
         dev_sdf = BlockDeviceType(snapshot_id='snap-12345')
-        dev_sdg = BlockDeviceType(snapshot_id='snap-12346')
+        dev_sdg = BlockDeviceType(snapshot_id='snap-12346', delete_on_termination=True)
 
         bdm = BlockDeviceMapping()
         bdm['/dev/sdf'] = dev_sdf
@@ -115,7 +115,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'BlockDeviceMapping.1.Ebs.DeleteOnTermination': 'false',
             'BlockDeviceMapping.1.Ebs.SnapshotId': 'snap-12345',
             'BlockDeviceMapping.2.DeviceName': '/dev/sdg',
-            'BlockDeviceMapping.2.Ebs.DeleteOnTermination': 'false',
+            'BlockDeviceMapping.2.Ebs.DeleteOnTermination': 'true',
             'BlockDeviceMapping.2.Ebs.SnapshotId': 'snap-12346',
             'ImageId': '123456',
             'InstanceType': 'm1.large',

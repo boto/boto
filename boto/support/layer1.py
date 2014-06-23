@@ -20,7 +20,11 @@
 # IN THE SOFTWARE.
 #
 
-import json
+try:
+    import json
+except ImportError:
+    import simplejson as json
+
 import boto
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
@@ -33,56 +37,56 @@ class SupportConnection(AWSQueryConnection):
     AWS Support
     The AWS Support API reference is intended for programmers who need
     detailed information about the AWS Support actions and data types.
-    This service enables you to manage with your AWS Support cases
-    programmatically. It is built on the AWS Query API programming
-    model and provides HTTP methods that take parameters and return
-    results in JSON format.
+    This service enables you to manage your AWS Support cases
+    programmatically. It uses HTTP methods that return results in JSON
+    format.
 
     The AWS Support service also exposes a set of `Trusted Advisor`_
-    features. You can retrieve a list of checks you can run on your
-    resources, specify checks to run and refresh, and check the status
-    of checks you have submitted.
+    features. You can retrieve a list of checks and their
+    descriptions, get check results, specify checks to refresh, and
+    get the refresh status of checks.
 
     The following list describes the AWS Support case management
     actions:
 
 
     + **Service names, issue categories, and available severity
-      levels. **The actions `DescribeServices`_ and
-      `DescribeSeverityLevels`_ enable you to obtain AWS service names,
-      service codes, service categories, and problem severity levels.
-      You use these values when you call the `CreateCase`_ action.
-    + **Case Creation, case details, and case resolution**. The
-      actions `CreateCase`_, `DescribeCases`_, and `ResolveCase`_ enable
-      you to create AWS Support cases, retrieve them, and resolve them.
-    + **Case communication**. The actions
-      `DescribeCaseCommunications`_ and `AddCommunicationToCase`_ enable
-      you to retrieve and add communication to AWS Support cases.
+      levels. **The actions DescribeServices and DescribeSeverityLevels
+      enable you to obtain AWS service names, service codes, service
+      categories, and problem severity levels. You use these values when
+      you call the CreateCase action.
+    + **Case creation, case details, and case resolution.** The
+      actions CreateCase, DescribeCases, and ResolveCase enable you to
+      create AWS Support cases, retrieve them, and resolve them.
+    + **Case communication.** The actions DescribeCommunications and
+      AddCommunicationToCase enable you to retrieve and add
+      communication to AWS Support cases.
 
 
     The following list describes the actions available from the AWS
     Support service for Trusted Advisor:
 
 
-    + `DescribeTrustedAdviserChecks`_    returns the list of checks that you can run against your AWS
-    resources.
+    + DescribeTrustedAdvisorChecks returns the list of checks that run
+      against your AWS resources.
     + Using the CheckId for a specific check returned by
-      DescribeTrustedAdviserChecks, you can call
-      `DescribeTrustedAdvisorCheckResult`_    and obtain a new result for the check you specified.
-    + Using `DescribeTrustedAdvisorCheckSummaries`_, you can get
-      summaries for a set of Trusted Advisor checks.
-    + `RefreshTrustedAdvisorCheck`_ enables you to request that
-      Trusted Advisor run the check again.
-    + ``_ gets statuses on the checks you are running.
+      DescribeTrustedAdvisorChecks, you can call
+      DescribeTrustedAdvisorCheckResult to obtain the results for the
+      check you specified.
+    + DescribeTrustedAdvisorCheckSummaries returns summarized results
+      for one or more Trusted Advisor checks.
+    + RefreshTrustedAdvisorCheck requests that Trusted Advisor rerun a
+      specified check.
+    + DescribeTrustedAdvisorCheckRefreshStatuses reports the refresh
+      status of one or more checks.
 
 
-    For authentication of requests, the AWS Support uses `Signature
+    For authentication of requests, AWS Support uses `Signature
     Version 4 Signing Process`_.
 
-    See the AWS Support Developer Guide for information about how to
-    use this service to manage create and manage your support cases,
-    and how to call Trusted Advisor for results of checks on your
-    resources.
+    See the AWS Support `User Guide`_ for information about how to use
+    this service to create and manage your support cases, and how to
+    call Trusted Advisor for results of checks on your resources.
     """
     APIVersion = "2013-04-15"
     DefaultRegionName = "us-east-1"
@@ -104,7 +108,7 @@ class SupportConnection(AWSQueryConnection):
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         kwargs['host'] = region.endpoint
-        AWSQueryConnection.__init__(self, **kwargs)
+        super(SupportConnection, self).__init__(**kwargs)
         self.region = region
 
     def _required_auth_capability(self):
@@ -113,27 +117,30 @@ class SupportConnection(AWSQueryConnection):
     def add_communication_to_case(self, communication_body, case_id=None,
                                   cc_email_addresses=None):
         """
-        This action adds additional customer communication to an AWS
-        Support case. You use the CaseId value to identify the case to
-        which you want to add communication. You can list a set of
-        email addresses to copy on the communication using the
-        CcEmailAddresses value. The CommunicationBody value contains
-        the text of the communication.
+        Adds additional customer communication to an AWS Support case.
+        You use the `CaseId` value to identify the case to add
+        communication to. You can list a set of email addresses to
+        copy on the communication using the `CcEmailAddresses` value.
+        The `CommunicationBody` value contains the text of the
+        communication.
 
-        This action's response indicates the success or failure of the
-        request.
+        The response indicates the success or failure of the request.
 
-        This action implements a subset of the behavior on the AWS
+        This operation implements a subset of the behavior on the AWS
         Support `Your Support Cases`_ web form.
 
         :type case_id: string
-        :param case_id:
+        :param case_id: The AWS Support case ID requested or returned in the
+            call. The case ID is an alphanumeric string formatted as shown in
+            this example: case- 12345678910-2013-c4c1d2bf33c5cf47
 
         :type communication_body: string
-        :param communication_body:
+        :param communication_body: The body of an email communication to add to
+            the support case.
 
         :type cc_email_addresses: list
-        :param cc_email_addresses:
+        :param cc_email_addresses: The email addresses in the CC line of an
+            email to be added to the support case.
 
         """
         params = {'communicationBody': communication_body, }
@@ -144,84 +151,105 @@ class SupportConnection(AWSQueryConnection):
         return self.make_request(action='AddCommunicationToCase',
                                  body=json.dumps(params))
 
-    def create_case(self, subject, service_code, category_code,
-                    communication_body, severity_code=None,
+    def create_case(self, subject, communication_body, service_code=None,
+                    severity_code=None, category_code=None,
                     cc_email_addresses=None, language=None, issue_type=None):
         """
-        Creates a new case in the AWS Support Center. This action is
-        modeled on the behavior of the AWS Support Center `Open a new
-        case`_ page. Its parameters require you to specify the
+        Creates a new case in the AWS Support Center. This operation
+        is modeled on the behavior of the AWS Support Center `Open a
+        new case`_ page. Its parameters require you to specify the
         following information:
 
 
-        #. **ServiceCode.** Represents a code for an AWS service. You
-           obtain the ServiceCode by calling `DescribeServices`_.
-        #. **CategoryCode**. Represents a category for the service
-           defined for the ServiceCode value. You also obtain the
-           cateogory code for a service by calling `DescribeServices`_.
-           Each AWS service defines its own set of category codes.
-        #. **SeverityCode**. Represents a value that specifies the
-           urgency of the case, and the time interval in which your
-           service level agreement specifies a response from AWS Support.
-           You obtain the SeverityCode by calling
-           `DescribeSeverityLevels`_.
-        #. **Subject**. Represents the **Subject** field on the AWS
+        #. **ServiceCode.** The code for an AWS service. You obtain
+           the `ServiceCode` by calling DescribeServices.
+        #. **CategoryCode.** The category for the service defined for
+           the `ServiceCode` value. You also obtain the category code for
+           a service by calling DescribeServices. Each AWS service
+           defines its own set of category codes.
+        #. **SeverityCode.** A value that indicates the urgency of the
+           case, which in turn determines the response time according to
+           your service level agreement with AWS Support. You obtain the
+           SeverityCode by calling DescribeSeverityLevels.
+        #. **Subject.** The **Subject** field on the AWS Support
+           Center `Open a new case`_ page.
+        #. **CommunicationBody.** The **Description** field on the AWS
            Support Center `Open a new case`_ page.
-        #. **CommunicationBody**. Represents the **Description** field
-           on the AWS Support Center `Open a new case`_ page.
-        #. **Language**. Specifies the human language in which AWS
-           Support handles the case. The API currently supports English
-           and Japanese.
-        #. **CcEmailAddresses**. Represents the AWS Support Center
-           **CC** field on the `Open a new case`_ page. You can list
-           email addresses to be copied on any correspondence about the
-           case. The account that opens the case is already identified by
-           passing the AWS Credentials in the HTTP POST method or in a
-           method or function call from one of the programming languages
-           supported by an `AWS SDK`_.
+        #. **Language.** The human language in which AWS Support
+           handles the case. English and Japanese are currently
+           supported.
+        #. **CcEmailAddresses.** The AWS Support Center **CC** field
+           on the `Open a new case`_ page. You can list email addresses
+           to be copied on any correspondence about the case. The account
+           that opens the case is already identified by passing the AWS
+           Credentials in the HTTP POST method or in a method or function
+           call from one of the programming languages supported by an
+           `AWS SDK`_.
+        #. **IssueType.** The type of issue for the case. You can
+           specify either "customer-service" or "technical." If you do
+           not indicate a value, the default is "technical."
+
 
 
         The AWS Support API does not currently support the ability to
         add attachments to cases. You can, however, call
-        `AddCommunicationToCase`_ to add information to an open case.
+        AddCommunicationToCase to add information to an open case.
 
-        A successful `CreateCase`_ request returns an AWS Support case
-        number. Case numbers are used by `DescribeCases`_ request to
-        retrieve existing AWS Support support cases.
+
+        A successful CreateCase request returns an AWS Support case
+        number. Case numbers are used by the DescribeCases action to
+        retrieve existing AWS Support cases.
 
         :type subject: string
-        :param subject:
+        :param subject: The title of the AWS Support case.
 
         :type service_code: string
-        :param service_code:
+        :param service_code: The code for the AWS service returned by the call
+            to DescribeServices.
 
         :type severity_code: string
         :param severity_code:
+        The code for the severity level returned by the call to
+            DescribeSeverityLevels.
+
+
+        The availability of severity levels depends on each customer's support
+            subscription. In other words, your subscription may not necessarily
+            require the urgent level of response time.
 
         :type category_code: string
-        :param category_code:
+        :param category_code: The category of problem for the AWS Support case.
 
         :type communication_body: string
-        :param communication_body:
+        :param communication_body: The communication body text when you create
+            an AWS Support case by calling CreateCase.
 
         :type cc_email_addresses: list
-        :param cc_email_addresses:
+        :param cc_email_addresses: A list of email addresses that AWS Support
+            copies on case correspondence.
 
         :type language: string
-        :param language:
+        :param language: The ISO 639-1 code for the language in which AWS
+            provides support. AWS Support currently supports English ("en") and
+            Japanese ("ja"). Language parameters must be passed explicitly for
+            operations that take them.
 
         :type issue_type: string
-        :param issue_type:
+        :param issue_type: The type of issue for the case. You can specify
+            either "customer-service" or "technical." If you do not indicate a
+            value, the default is "technical."
 
         """
         params = {
             'subject': subject,
-            'serviceCode': service_code,
-            'categoryCode': category_code,
             'communicationBody': communication_body,
         }
+        if service_code is not None:
+            params['serviceCode'] = service_code
         if severity_code is not None:
             params['severityCode'] = severity_code
+        if category_code is not None:
+            params['categoryCode'] = category_code
         if cc_email_addresses is not None:
             params['ccEmailAddresses'] = cc_email_addresses
         if language is not None:
@@ -236,39 +264,51 @@ class SupportConnection(AWSQueryConnection):
                        include_resolved_cases=None, next_token=None,
                        max_results=None, language=None):
         """
-        This action returns a list of cases that you specify by
-        passing one or more CaseIds. In addition, you can filter the
-        cases by date by setting values for the AfterTime and
-        BeforeTime request parameters.
+        Returns a list of cases that you specify by passing one or
+        more case IDs. In addition, you can filter the cases by date
+        by setting values for the `AfterTime` and `BeforeTime` request
+        parameters.
+
         The response returns the following in JSON format:
 
-        #. One or more `CaseDetails`_ data types.
-        #. One or more NextToken objects, strings that specifies where
-           to paginate the returned records represented by CaseDetails .
+
+        #. One or more CaseDetails data types.
+        #. One or more `NextToken` values, which specify where to
+           paginate the returned records represented by the `CaseDetails`
+           objects.
 
         :type case_id_list: list
-        :param case_id_list:
+        :param case_id_list: A list of ID numbers of the support cases you want
+            returned. The maximum number of cases is 100.
 
         :type display_id: string
-        :param display_id:
+        :param display_id: The ID displayed for a case in the AWS Support
+            Center user interface.
 
         :type after_time: string
-        :param after_time:
+        :param after_time: The start date for a filtered date search on support
+            case communications.
 
         :type before_time: string
-        :param before_time:
+        :param before_time: The end date for a filtered date search on support
+            case communications.
 
         :type include_resolved_cases: boolean
-        :param include_resolved_cases:
+        :param include_resolved_cases: Specifies whether resolved support cases
+            should be included in the DescribeCases results.
 
         :type next_token: string
-        :param next_token:
+        :param next_token: A resumption point for pagination.
 
         :type max_results: integer
-        :param max_results:
+        :param max_results: The maximum number of results to return before
+            paginating.
 
         :type language: string
-        :param language:
+        :param language: The ISO 639-1 code for the language in which AWS
+            provides support. AWS Support currently supports English ("en") and
+            Japanese ("ja"). Language parameters must be passed explicitly for
+            operations that take them.
 
         """
         params = {}
@@ -295,30 +335,35 @@ class SupportConnection(AWSQueryConnection):
                                 after_time=None, next_token=None,
                                 max_results=None):
         """
-        This action returns communications regarding the support case.
-        You can use the AfterTime and BeforeTime parameters to filter
-        by date. The CaseId parameter enables you to identify a
-        specific case by its CaseId number.
+        Returns communications regarding the support case. You can use
+        the `AfterTime` and `BeforeTime` parameters to filter by date.
+        The `CaseId` parameter enables you to identify a specific case
+        by its `CaseId` value.
 
-        The MaxResults and NextToken parameters enable you to control
-        the pagination of the result set. Set MaxResults to the number
-        of cases you want displayed on each page, and use NextToken to
-        specify the resumption of pagination.
+        The `MaxResults` and `NextToken` parameters enable you to
+        control the pagination of the result set. Set `MaxResults` to
+        the number of cases you want displayed on each page, and use
+        `NextToken` to specify the resumption of pagination.
 
         :type case_id: string
-        :param case_id:
+        :param case_id: The AWS Support case ID requested or returned in the
+            call. The case ID is an alphanumeric string formatted as shown in
+            this example: case- 12345678910-2013-c4c1d2bf33c5cf47
 
         :type before_time: string
-        :param before_time:
+        :param before_time: The end date for a filtered date search on support
+            case communications.
 
         :type after_time: string
-        :param after_time:
+        :param after_time: The start date for a filtered date search on support
+            case communications.
 
         :type next_token: string
-        :param next_token:
+        :param next_token: A resumption point for pagination.
 
         :type max_results: integer
-        :param max_results:
+        :param max_results: The maximum number of results to return before
+            paginating.
 
         """
         params = {'caseId': case_id, }
@@ -337,7 +382,7 @@ class SupportConnection(AWSQueryConnection):
         """
         Returns the current list of AWS services and a list of service
         categories that applies to each one. You then use service
-        names and categories in your `CreateCase`_ requests. Each AWS
+        names and categories in your CreateCase requests. Each AWS
         service has its own set of categories.
 
         The service codes and category codes correspond to the values
@@ -351,10 +396,14 @@ class SupportConnection(AWSQueryConnection):
         category codes.
 
         :type service_code_list: list
-        :param service_code_list:
+        :param service_code_list: A JSON-formatted list of service codes
+            available for AWS services.
 
         :type language: string
-        :param language:
+        :param language: The ISO 639-1 code for the language in which AWS
+            provides support. AWS Support currently supports English ("en") and
+            Japanese ("ja"). Language parameters must be passed explicitly for
+            operations that take them.
 
         """
         params = {}
@@ -367,13 +416,16 @@ class SupportConnection(AWSQueryConnection):
 
     def describe_severity_levels(self, language=None):
         """
-        This action returns the list of severity levels that you can
-        assign to an AWS Support case. The severity level for a case
-        is also a field in the `CaseDetails`_ data type included in
-        any `CreateCase`_ request.
+        Returns the list of severity levels that you can assign to an
+        AWS Support case. The severity level for a case is also a
+        field in the CaseDetails data type included in any CreateCase
+        request.
 
         :type language: string
-        :param language:
+        :param language: The ISO 639-1 code for the language in which AWS
+            provides support. AWS Support currently supports English ("en") and
+            Japanese ("ja"). Language parameters must be passed explicitly for
+            operations that take them.
 
         """
         params = {}
@@ -382,29 +434,14 @@ class SupportConnection(AWSQueryConnection):
         return self.make_request(action='DescribeSeverityLevels',
                                  body=json.dumps(params))
 
-    def resolve_case(self, case_id=None):
-        """
-        Takes a CaseId and returns the initial state of the case along
-        with the state of the case after the call to `ResolveCase`_
-        completed.
-
-        :type case_id: string
-        :param case_id:
-
-        """
-        params = {}
-        if case_id is not None:
-            params['caseId'] = case_id
-        return self.make_request(action='ResolveCase',
-                                 body=json.dumps(params))
-
     def describe_trusted_advisor_check_refresh_statuses(self, check_ids):
         """
-        Returns the status of all refresh requests Trusted Advisor
-        checks called using `RefreshTrustedAdvisorCheck`_.
+        Returns the refresh status of the Trusted Advisor checks that
+        have the specified check IDs. Check IDs can be obtained by
+        calling DescribeTrustedAdvisorChecks.
 
         :type check_ids: list
-        :param check_ids:
+        :param check_ids: The IDs of the Trusted Advisor checks.
 
         """
         params = {'checkIds': check_ids, }
@@ -413,37 +450,35 @@ class SupportConnection(AWSQueryConnection):
 
     def describe_trusted_advisor_check_result(self, check_id, language=None):
         """
-        This action responds with the results of a Trusted Advisor
-        check. Once you have obtained the list of available Trusted
-        Advisor checks by calling `DescribeTrustedAdvisorChecks`_, you
-        specify the CheckId for the check you want to retrieve from
-        AWS Support.
+        Returns the results of the Trusted Advisor check that has the
+        specified check ID. Check IDs can be obtained by calling
+        DescribeTrustedAdvisorChecks.
 
-        The response for this action contains a JSON-formatted
-        `TrustedAdvisorCheckResult`_ object
-        , which is a container for the following three objects:
+        The response contains a TrustedAdvisorCheckResult object,
+        which contains these three objects:
 
 
-
-        #. `TrustedAdvisorCategorySpecificSummary`_
-        #. `TrustedAdvisorResourceDetail`_
-        #. `TrustedAdvisorResourcesSummary`_
-
-
-        In addition, the response contains the following fields:
+        + TrustedAdvisorCategorySpecificSummary
+        + TrustedAdvisorResourceDetail
+        + TrustedAdvisorResourcesSummary
 
 
-        #. **Status**. Overall status of the check.
-        #. **Timestamp**. Time at which Trusted Advisor last ran the
-           check.
-        #. **CheckId**. Unique identifier for the specific check
-           returned by the request.
+        In addition, the response contains these fields:
+
+
+        + **Status.** The alert status of the check: "ok" (green),
+          "warning" (yellow), "error" (red), or "not_available".
+        + **Timestamp.** The time of the last refresh of the check.
+        + **CheckId.** The unique identifier for the check.
 
         :type check_id: string
-        :param check_id:
+        :param check_id: The unique identifier for the Trusted Advisor check.
 
         :type language: string
-        :param language:
+        :param language: The ISO 639-1 code for the language in which AWS
+            provides support. AWS Support currently supports English ("en") and
+            Japanese ("ja"). Language parameters must be passed explicitly for
+            operations that take them.
 
         """
         params = {'checkId': check_id, }
@@ -454,17 +489,15 @@ class SupportConnection(AWSQueryConnection):
 
     def describe_trusted_advisor_check_summaries(self, check_ids):
         """
-        This action enables you to get the latest summaries for
-        Trusted Advisor checks that you specify in your request. You
-        submit the list of Trusted Advisor checks for which you want
-        summaries. You obtain these CheckIds by submitting a
-        `DescribeTrustedAdvisorChecks`_ request.
+        Returns the summaries of the results of the Trusted Advisor
+        checks that have the specified check IDs. Check IDs can be
+        obtained by calling DescribeTrustedAdvisorChecks.
 
-        The response body contains an array of
-        `TrustedAdvisorCheckSummary`_ objects.
+        The response contains an array of TrustedAdvisorCheckSummary
+        objects.
 
         :type check_ids: list
-        :param check_ids:
+        :param check_ids: The IDs of the Trusted Advisor checks.
 
         """
         params = {'checkIds': check_ids, }
@@ -473,14 +506,17 @@ class SupportConnection(AWSQueryConnection):
 
     def describe_trusted_advisor_checks(self, language):
         """
-        This action enables you to get a list of the available Trusted
-        Advisor checks. You must specify a language code. English
-        ("en") and Japanese ("jp") are currently supported. The
-        response contains a list of `TrustedAdvisorCheckDescription`_
-        objects.
+        Returns information about all available Trusted Advisor
+        checks, including name, ID, category, description, and
+        metadata. You must specify a language code; English ("en") and
+        Japanese ("ja") are currently supported. The response contains
+        a TrustedAdvisorCheckDescription for each check.
 
         :type language: string
-        :param language:
+        :param language: The ISO 639-1 code for the language in which AWS
+            provides support. AWS Support currently supports English ("en") and
+            Japanese ("ja"). Language parameters must be passed explicitly for
+            operations that take them.
 
         """
         params = {'language': language, }
@@ -489,18 +525,44 @@ class SupportConnection(AWSQueryConnection):
 
     def refresh_trusted_advisor_check(self, check_id):
         """
-        This action enables you to query the service to request a
-        refresh for a specific Trusted Advisor check. Your request
-        body contains a CheckId for which you are querying. The
-        response body contains a `RefreshTrustedAdvisorCheckResult`_
-        object containing Status and TimeUntilNextRefresh fields.
+        Requests a refresh of the Trusted Advisor check that has the
+        specified check ID. Check IDs can be obtained by calling
+        DescribeTrustedAdvisorChecks.
+
+        The response contains a RefreshTrustedAdvisorCheckResult
+        object, which contains these fields:
+
+
+        + **Status.** The refresh status of the check: "none",
+          "enqueued", "processing", "success", or "abandoned".
+        + **MillisUntilNextRefreshable.** The amount of time, in
+          milliseconds, until the check is eligible for refresh.
+        + **CheckId.** The unique identifier for the check.
 
         :type check_id: string
-        :param check_id:
+        :param check_id: The unique identifier for the Trusted Advisor check.
 
         """
         params = {'checkId': check_id, }
         return self.make_request(action='RefreshTrustedAdvisorCheck',
+                                 body=json.dumps(params))
+
+    def resolve_case(self, case_id=None):
+        """
+        Takes a `CaseId` and returns the initial state of the case
+        along with the state of the case after the call to ResolveCase
+        completed.
+
+        :type case_id: string
+        :param case_id: The AWS Support case ID requested or returned in the
+            call. The case ID is an alphanumeric string formatted as shown in
+            this example: case- 12345678910-2013-c4c1d2bf33c5cf47
+
+        """
+        params = {}
+        if case_id is not None:
+            params['caseId'] = case_id
+        return self.make_request(action='ResolveCase',
                                  body=json.dumps(params))
 
     def make_request(self, action, body):

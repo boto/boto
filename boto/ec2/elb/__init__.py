@@ -31,20 +31,10 @@ from boto.ec2.elb.loadbalancer import LoadBalancer, LoadBalancerZones
 from boto.ec2.elb.instancestate import InstanceState
 from boto.ec2.elb.healthcheck import HealthCheck
 from boto.ec2.elb.listelement import ListElement
-from boto.regioninfo import RegionInfo
+from boto.regioninfo import RegionInfo, get_regions, load_regions
 import boto
 
-RegionData = {
-    'us-east-1': 'elasticloadbalancing.us-east-1.amazonaws.com',
-    'us-gov-west-1': 'elasticloadbalancing.us-gov-west-1.amazonaws.com',
-    'us-west-1': 'elasticloadbalancing.us-west-1.amazonaws.com',
-    'us-west-2': 'elasticloadbalancing.us-west-2.amazonaws.com',
-    'sa-east-1': 'elasticloadbalancing.sa-east-1.amazonaws.com',
-    'eu-west-1': 'elasticloadbalancing.eu-west-1.amazonaws.com',
-    'ap-northeast-1': 'elasticloadbalancing.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1': 'elasticloadbalancing.ap-southeast-1.amazonaws.com',
-    'ap-southeast-2': 'elasticloadbalancing.ap-southeast-2.amazonaws.com',
-}
+RegionData = load_regions().get('elasticloadbalancing', {})
 
 
 def regions():
@@ -54,13 +44,7 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.RegionInfo` instances
     """
-    regions = []
-    for region_name in RegionData:
-        region = RegionInfo(name=region_name,
-                            endpoint=RegionData[region_name],
-                            connection_cls=ELBConnection)
-        regions.append(region)
-    return regions
+    return get_regions('elasticloadbalancing', connection_cls=ELBConnection)
 
 
 def connect_to_region(region_name, **kw_params):
@@ -91,7 +75,7 @@ class ELBConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True):
+                 security_token=None, validate_certs=True, profile_name=None):
         """
         Init method to create a new connection to EC2 Load Balancing Service.
 
@@ -102,20 +86,21 @@ class ELBConnection(AWSQueryConnection):
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id,
+        super(ELBConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
                                     security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['ec2']
 
     def build_list_params(self, params, items, label):
-        if isinstance(items, str):
+        if isinstance(items, basestring):
             items = [items]
         for index, item in enumerate(items):
             params[label % (index + 1)] = item
@@ -159,7 +144,7 @@ class ELBConnection(AWSQueryConnection):
             [SSLCertificateId]) where LoadBalancerPortNumber and
             InstancePortNumber are integer values between 1 and 65535,
             Protocol is a string containing either 'TCP', 'SSL', HTTP', or
-            'HTTPS'; SSLCertificateID is the ARN of a AWS AIM
+            'HTTPS'; SSLCertificateID is the ARN of a AWS IAM
             certificate, and must be specified when doing HTTPS.
 
         :type subnets: list of strings
@@ -264,7 +249,7 @@ class ELBConnection(AWSQueryConnection):
             [SSLCertificateId]) where LoadBalancerPortNumber and
             InstancePortNumber are integer values between 1 and 65535,
             Protocol is a string containing either 'TCP', 'SSL', HTTP', or
-            'HTTPS'; SSLCertificateID is the ARN of a AWS AIM
+            'HTTPS'; SSLCertificateID is the ARN of a AWS IAM
             certificate, and must be specified when doing HTTPS.
 
         :type complex_listeners: List of tuples
@@ -389,6 +374,98 @@ class ELBConnection(AWSQueryConnection):
         obj = self.get_object('DisableAvailabilityZonesForLoadBalancer',
                                params, LoadBalancerZones)
         return obj.zones
+
+    def modify_lb_attribute(self, load_balancer_name, attribute, value):
+        """Changes an attribute of a Load Balancer
+
+        :type load_balancer_name: string
+        :param load_balancer_name: The name of the Load Balancer
+
+        :type attribute: string
+        :param attribute: The attribute you wish to change.
+
+        * crossZoneLoadBalancing - Boolean (true)
+        * accessLog - :py:class:`AccessLogAttribute` instance
+        * connectionDraining - :py:class:`ConnectionDrainingAttribute` instance
+
+        :type value: string
+        :param value: The new value for the attribute
+
+        :rtype: bool
+        :return: Whether the operation succeeded or not
+        """
+
+        bool_reqs = ('crosszoneloadbalancing',)
+        if attribute.lower() in bool_reqs:
+            if isinstance(value, bool):
+                if value:
+                    value = 'true'
+                else:
+                    value = 'false'
+
+        params = {'LoadBalancerName': load_balancer_name}
+        if attribute.lower() == 'crosszoneloadbalancing':
+            params['LoadBalancerAttributes.CrossZoneLoadBalancing.Enabled'
+                   ] = value
+        elif attribute.lower() == 'accesslog':
+            params['LoadBalancerAttributes.AccessLog.Enabled'] = \
+                value.enabled and 'true' or 'false'
+            params['LoadBalancerAttributes.AccessLog.S3BucketName'] = \
+                value.s3_bucket_name
+            params['LoadBalancerAttributes.AccessLog.S3BucketPrefix'] = \
+                value.s3_bucket_prefix
+            params['LoadBalancerAttributes.AccessLog.EmitInterval'] = \
+                value.emit_interval
+        elif attribute.lower() == 'connectiondraining':
+            params['LoadBalancerAttributes.ConnectionDraining.Enabled'] = \
+                value.enabled and 'true' or 'false'
+            params['LoadBalancerAttributes.ConnectionDraining.Timeout'] = \
+                value.timeout
+        else:
+            raise ValueError('InvalidAttribute', attribute)
+        return self.get_status('ModifyLoadBalancerAttributes', params,
+                               verb='GET')
+
+    def get_all_lb_attributes(self, load_balancer_name):
+        """Gets all Attributes of a Load Balancer
+
+        :type load_balancer_name: string
+        :param load_balancer_name: The name of the Load Balancer
+
+        :rtype: boto.ec2.elb.attribute.LbAttributes
+        :return: The attribute object of the ELB.
+        """
+        from boto.ec2.elb.attributes import LbAttributes
+        params = {'LoadBalancerName': load_balancer_name}
+        return self.get_object('DescribeLoadBalancerAttributes',
+                               params, LbAttributes)
+
+    def get_lb_attribute(self, load_balancer_name, attribute):
+        """Gets an attribute of a Load Balancer
+
+        This will make an EC2 call for each method call.
+
+        :type load_balancer_name: string
+        :param load_balancer_name: The name of the Load Balancer
+
+        :type attribute: string
+        :param attribute: The attribute you wish to see.
+
+          * accessLog - :py:class:`AccessLogAttribute` instance
+          * crossZoneLoadBalancing - Boolean
+          * connectionDraining - :py:class:`ConnectionDrainingAttribute` instance
+
+        :rtype: Attribute dependent
+        :return: The new value for the attribute
+        """
+        attributes = self.get_all_lb_attributes(load_balancer_name)
+        if attribute.lower() == 'accesslog':
+            return attributes.access_log
+        if attribute.lower() == 'crosszoneloadbalancing':
+            return attributes.cross_zone_load_balancing.enabled
+        if attribute.lower() == 'connectiondraining':
+            return attributes.connection_draining
+        return None
 
     def register_instances(self, load_balancer_name, instances):
         """
@@ -538,7 +615,7 @@ class ELBConnection(AWSQueryConnection):
 
     def create_lb_policy(self, lb_name, policy_name, policy_type, policy_attributes):
         """
-        Creates a new policy that contais the necessary attributes depending on
+        Creates a new policy that contains the necessary attributes depending on
         the policy type. Policies are settings that are saved for your load
         balancer and that can be applied to the front-end listener, or
         the back-end application server.
@@ -570,7 +647,10 @@ class ELBConnection(AWSQueryConnection):
         """
         params = {'LoadBalancerName': lb_name,
                   'LoadBalancerPort': lb_port}
-        self.build_list_params(params, policies, 'PolicyNames.member.%d')
+        if len(policies):
+            self.build_list_params(params, policies, 'PolicyNames.member.%d')
+        else:
+            params['PolicyNames'] = ''
         return self.get_status('SetLoadBalancerPoliciesOfListener', params)
 
     def set_lb_policies_of_backend_server(self, lb_name, instance_port, policies):

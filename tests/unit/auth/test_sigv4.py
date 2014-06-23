@@ -19,11 +19,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import copy
+import mock
 from mock import Mock
-from tests.unit import unittest
+import os
+from tests.unit import unittest, MockServiceWithConfigTestCase
 
 from boto.auth import HmacAuthV4Handler
+from boto.auth import S3HmacAuthV4Handler
+from boto.auth import detect_potential_s3sigv4
+from boto.auth import detect_potential_sigv4
 from boto.connection import HTTPRequest
+from boto.regioninfo import RegionInfo
 
 
 class TestSigV4Handler(unittest.TestCase):
@@ -36,19 +43,29 @@ class TestSigV4Handler(unittest.TestCase):
             '/-/vaults/foo/archives', None, {},
             {'x-amz-glacier-version': '2012-06-01'}, '')
 
+    def test_not_adding_empty_qs(self):
+        self.provider.security_token = None
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com', Mock(), self.provider)
+        req = copy.copy(self.request)
+        auth.add_auth(req)
+        self.assertEqual(req.path, '/-/vaults/foo/archives')
+
     def test_inner_whitespace_is_collapsed(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
                                  Mock(), self.provider)
         self.request.headers['x-amz-archive-description'] = 'two  spaces'
+        self.request.headers['x-amz-quoted-string'] = '  "a   b   c" '
         headers = auth.headers_to_sign(self.request)
         self.assertEqual(headers, {'Host': 'glacier.us-east-1.amazonaws.com',
                                    'x-amz-archive-description': 'two  spaces',
-                                   'x-amz-glacier-version': '2012-06-01'})
+                                   'x-amz-glacier-version': '2012-06-01',
+                                   'x-amz-quoted-string': '  "a   b   c" '})
         # Note the single space between the "two spaces".
         self.assertEqual(auth.canonical_headers(headers),
                          'host:glacier.us-east-1.amazonaws.com\n'
                          'x-amz-archive-description:two spaces\n'
-                         'x-amz-glacier-version:2012-06-01')
+                         'x-amz-glacier-version:2012-06-01\n'
+                         'x-amz-quoted-string:"a   b   c"')
 
     def test_canonical_query_string(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
@@ -61,6 +78,18 @@ class TestSigV4Handler(unittest.TestCase):
         request.params['Foo.10'] = 'zzz'
         query_string = auth.canonical_query_string(request)
         self.assertEqual(query_string, 'Foo.1=aaa&Foo.10=zzz')
+
+    def test_query_string(self):
+        auth = HmacAuthV4Handler('sns.us-east-1.amazonaws.com',
+                                 Mock(), self.provider)
+        params = {
+            'Message': u'We \u2665 utf-8'.encode('utf-8'),
+        }
+        request = HTTPRequest(
+            'POST', 'https', 'sns.us-east-1.amazonaws.com', 443,
+            '/', None, params, {}, '')
+        query_string = auth.query_string(request)
+        self.assertEqual(query_string, 'Message=We%20%E2%99%A5%20utf-8')
 
     def test_canonical_uri(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
@@ -208,3 +237,319 @@ class TestSigV4Handler(unittest.TestCase):
         auth.service_name = 'sqs'
         scope = auth.credential_scope(self.request)
         self.assertEqual(scope, '20121121/us-west-2/sqs/aws4_request')
+
+
+class TestS3HmacAuthV4Handler(unittest.TestCase):
+    def setUp(self):
+        self.provider = Mock()
+        self.provider.access_key = 'access_key'
+        self.provider.secret_key = 'secret_key'
+        self.provider.security_token = 'sekret_tokens'
+        self.request = HTTPRequest(
+            'GET', 'https', 's3-us-west-2.amazonaws.com', 443,
+            '/awesome-bucket/?max-keys=0', None, {},
+            {}, ''
+        )
+        self.awesome_bucket_request = HTTPRequest(
+            method='GET',
+            protocol='https',
+            host='awesome-bucket.s3-us-west-2.amazonaws.com',
+            port=443,
+            path='/',
+            auth_path=None,
+            params={
+                'max-keys': 0,
+            },
+            headers={
+                'User-Agent': 'Boto',
+                'X-AMZ-Content-sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+                'X-AMZ-Date': '20130605T193245Z',
+            },
+            body=''
+        )
+        self.auth = S3HmacAuthV4Handler(
+            host='awesome-bucket.s3-us-west-2.amazonaws.com',
+            config=Mock(),
+            provider=self.provider,
+            region_name='s3-us-west-2'
+        )
+
+    def test_clean_region_name(self):
+        # Untouched.
+        cleaned = self.auth.clean_region_name('us-west-2')
+        self.assertEqual(cleaned, 'us-west-2')
+
+        # Stripped of the ``s3-`` prefix.
+        cleaned = self.auth.clean_region_name('s3-us-west-2')
+        self.assertEqual(cleaned, 'us-west-2')
+
+        # Untouched (classic).
+        cleaned = self.auth.clean_region_name('s3.amazonaws.com')
+        self.assertEqual(cleaned, 's3.amazonaws.com')
+
+        # Untouched.
+        cleaned = self.auth.clean_region_name('something-s3-us-west-2')
+        self.assertEqual(cleaned, 'something-s3-us-west-2')
+
+    def test_region_stripping(self):
+        auth = S3HmacAuthV4Handler(
+            host='s3-us-west-2.amazonaws.com',
+            config=Mock(),
+            provider=self.provider
+        )
+        self.assertEqual(auth.region_name, None)
+
+        # What we wish we got.
+        auth = S3HmacAuthV4Handler(
+            host='s3-us-west-2.amazonaws.com',
+            config=Mock(),
+            provider=self.provider,
+            region_name='us-west-2'
+        )
+        self.assertEqual(auth.region_name, 'us-west-2')
+
+        # What we actually get (i.e. ``s3-us-west-2``).
+        self.assertEqual(self.auth.region_name, 'us-west-2')
+
+    def test_determine_region_name(self):
+        name = self.auth.determine_region_name('s3-us-west-2.amazonaws.com')
+        self.assertEqual(name, 'us-west-2')
+
+    def test_canonical_uri(self):
+        request = HTTPRequest(
+            'GET', 'https', 's3-us-west-2.amazonaws.com', 443,
+            'x/./././x .html', None, {},
+            {}, ''
+        )
+        canonical_uri = self.auth.canonical_uri(request)
+        # S3 doesn't canonicalize the way other SigV4 services do.
+        # This just urlencoded, no normalization of the path.
+        self.assertEqual(canonical_uri, 'x/./././x%20.html')
+
+    def test_determine_service_name(self):
+        # What we wish we got.
+        name = self.auth.determine_service_name(
+            's3.us-west-2.amazonaws.com'
+        )
+        self.assertEqual(name, 's3')
+
+        # What we actually get.
+        name = self.auth.determine_service_name(
+            's3-us-west-2.amazonaws.com'
+        )
+        self.assertEqual(name, 's3')
+
+        # What we wish we got with virtual hosting.
+        name = self.auth.determine_service_name(
+            'bucket.s3.us-west-2.amazonaws.com'
+        )
+        self.assertEqual(name, 's3')
+
+        # What we actually get with virtual hosting.
+        name = self.auth.determine_service_name(
+            'bucket.s3-us-west-2.amazonaws.com'
+        )
+        self.assertEqual(name, 's3')
+
+    def test_add_auth(self):
+        # The side-effects sideshow.
+        self.assertFalse('x-amz-content-sha256' in self.request.headers)
+        self.auth.add_auth(self.request)
+        self.assertTrue('x-amz-content-sha256' in self.request.headers)
+        the_sha = self.request.headers['x-amz-content-sha256']
+        self.assertEqual(
+            the_sha,
+            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+        )
+
+    def test_host_header(self):
+        host = self.auth.host_header(
+            self.awesome_bucket_request.host,
+            self.awesome_bucket_request
+        )
+        self.assertEqual(host, 'awesome-bucket.s3-us-west-2.amazonaws.com')
+
+    def test_canonical_query_string(self):
+        qs = self.auth.canonical_query_string(self.awesome_bucket_request)
+        self.assertEqual(qs, 'max-keys=0')
+
+    def test_correct_handling_of_plus_sign(self):
+        request = HTTPRequest(
+            'GET', 'https', 's3-us-west-2.amazonaws.com', 443,
+            'hello+world.txt', None, {},
+            {}, ''
+        )
+        canonical_uri = self.auth.canonical_uri(request)
+        # Ensure that things are properly quoted.
+        self.assertEqual(canonical_uri, 'hello%2Bworld.txt')
+
+        request = HTTPRequest(
+            'GET', 'https', 's3-us-west-2.amazonaws.com', 443,
+            'hello%2Bworld.txt', None, {},
+            {}, ''
+        )
+        canonical_uri = self.auth.canonical_uri(request)
+        # Verify double escaping hasn't occurred.
+        self.assertEqual(canonical_uri, 'hello%2Bworld.txt')
+
+    def test_mangle_path_and_params(self):
+        request = HTTPRequest(
+            method='GET',
+            protocol='https',
+            host='awesome-bucket.s3-us-west-2.amazonaws.com',
+            port=443,
+            # LOOK AT THIS PATH. JUST LOOK AT IT.
+            path='/?delete&max-keys=0',
+            auth_path=None,
+            params={
+                'key': 'why hello there',
+                # This gets overwritten, to make sure back-compat is maintained.
+                'max-keys': 1,
+            },
+            headers={
+                'User-Agent': 'Boto',
+                'X-AMZ-Content-sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+                'X-AMZ-Date': '20130605T193245Z',
+            },
+            body=''
+        )
+
+        mod_req = self.auth.mangle_path_and_params(request)
+        self.assertEqual(mod_req.path, '/?delete&max-keys=0')
+        self.assertEqual(mod_req.auth_path, '/')
+        self.assertEqual(mod_req.params, {
+            'max-keys': '0',
+            'key': 'why hello there',
+            'delete': ''
+        })
+
+    def test_canonical_request(self):
+        expected = """GET
+/
+max-keys=0
+host:awesome-bucket.s3-us-west-2.amazonaws.com
+user-agent:Boto
+x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+x-amz-date:20130605T193245Z
+
+host;user-agent;x-amz-content-sha256;x-amz-date
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
+
+        authed_req = self.auth.canonical_request(self.awesome_bucket_request)
+        self.assertEqual(authed_req, expected)
+
+        # Now the way ``boto.s3`` actually sends data.
+        request = copy.copy(self.awesome_bucket_request)
+        request.path = request.auth_path = '/?max-keys=0'
+        request.params = {}
+        expected = """GET
+/
+max-keys=0
+host:awesome-bucket.s3-us-west-2.amazonaws.com
+user-agent:Boto
+x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+x-amz-date:20130605T193245Z
+
+host;user-agent;x-amz-content-sha256;x-amz-date
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
+
+        # Pre-mangle it. In practice, this happens as part of ``add_auth``,
+        # but that's a side-effect that's hard to test.
+        request = self.auth.mangle_path_and_params(request)
+        authed_req = self.auth.canonical_request(request)
+        self.assertEqual(authed_req, expected)
+
+
+class FakeS3Connection(object):
+    def __init__(self, *args, **kwargs):
+        self.host = kwargs.pop('host', None)
+
+    @detect_potential_s3sigv4
+    def _required_auth_capability(self):
+        return ['nope']
+
+    def _mexe(self, *args, **kwargs):
+        pass
+
+
+class FakeEC2Connection(object):
+    def __init__(self, *args, **kwargs):
+        self.region = kwargs.pop('region', None)
+
+    @detect_potential_sigv4
+    def _required_auth_capability(self):
+        return ['nope']
+
+    def _mexe(self, *args, **kwargs):
+        pass
+
+
+class TestS3SigV4OptIn(MockServiceWithConfigTestCase):
+    connection_class = FakeS3Connection
+
+    def test_sigv4_opt_out(self):
+        # Default is opt-out.
+        fake = FakeS3Connection(host='s3.amazonaws.com')
+        self.assertEqual(fake._required_auth_capability(), ['nope'])
+
+    def test_sigv4_non_optional(self):
+        # Requires SigV4.
+        fake = FakeS3Connection(host='s3.cn-north-1.amazonaws.com.cn')
+        self.assertEqual(fake._required_auth_capability(), ['hmac-v4-s3'])
+
+    def test_sigv4_opt_in_config(self):
+        # Opt-in via the config.
+        self.config = {
+            's3': {
+                'use-sigv4': True,
+            },
+        }
+        fake = FakeS3Connection()
+        self.assertEqual(fake._required_auth_capability(), ['hmac-v4-s3'])
+
+    def test_sigv4_opt_in_env(self):
+        # Opt-in via the ENV.
+        self.environ['S3_USE_SIGV4'] = True
+        fake = FakeS3Connection(host='s3.amazonaws.com')
+        self.assertEqual(fake._required_auth_capability(), ['hmac-v4-s3'])
+
+
+class TestSigV4OptIn(MockServiceWithConfigTestCase):
+    connection_class = FakeEC2Connection
+
+    def setUp(self):
+        super(TestSigV4OptIn, self).setUp()
+        self.standard_region = RegionInfo(
+            name='us-west-2',
+            endpoint='ec2.us-west-2.amazonaws.com'
+        )
+        self.sigv4_region = RegionInfo(
+            name='cn-north-1',
+            endpoint='ec2.cn-north-1.amazonaws.com.cn'
+        )
+
+    def test_sigv4_opt_out(self):
+        # Default is opt-out.
+        fake = FakeEC2Connection(region=self.standard_region)
+        self.assertEqual(fake._required_auth_capability(), ['nope'])
+
+    def test_sigv4_non_optional(self):
+        # Requires SigV4.
+        fake = FakeEC2Connection(region=self.sigv4_region)
+        self.assertEqual(fake._required_auth_capability(), ['hmac-v4'])
+
+    def test_sigv4_opt_in_config(self):
+        # Opt-in via the config.
+        self.config = {
+            'ec2': {
+                'use-sigv4': True,
+            },
+        }
+        fake = FakeEC2Connection(region=self.standard_region)
+        self.assertEqual(fake._required_auth_capability(), ['hmac-v4'])
+
+    def test_sigv4_opt_in_env(self):
+        # Opt-in via the ENV.
+        self.environ['EC2_USE_SIGV4'] = True
+        fake = FakeEC2Connection(region=self.standard_region)
+        self.assertEqual(fake._required_auth_capability(), ['hmac-v4'])

@@ -60,8 +60,8 @@ Before workflows and activities can be used, they have to be registered with SWF
     
     registerables = []
     registerables.append(swf.Domain(name=DOMAIN))
-    registerables.append(swf.WorkflowType(domain=DOMAIN, name='HelloWorkflow', version=VERSION, task_list='default'))
-    registerables.append(swf.WorkflowType(domain=DOMAIN, name='SerialWorkflow', version=VERSION, task_list='default'))
+    for workflow_type in ('HelloWorkflow', 'SerialWorkflow', 'ParallelWorkflow'):
+        registerables.append(swf.WorkflowType(domain=DOMAIN, name=workflow_type, version=VERSION, task_list='default'))
     
     for activity_type in ('HelloWorld', 'ActivityA', 'ActivityB', 'ActivityC'):
         registerables.append(swf.ActivityType(domain=DOMAIN, name=activity_type, version=VERSION, task_list='default'))
@@ -82,6 +82,7 @@ Execution of the above should produce no errors.
     Domain boto_tutorial already exists
     WorkflowType HelloWorkflow already exists
     SerialWorkflow registered successfully
+    ParallelWorkflow registered successfully
     ActivityType HelloWorld already exists
     ActivityA registered successfully
     ActivityB registered successfully
@@ -362,7 +363,6 @@ The workers only need to know which task lists to poll.
             self.complete()
 
 
-
 Spin up a workflow execution and run the decider:
 
 .. code-block:: bash
@@ -427,6 +427,106 @@ Looks good. Now, do the following to inspect the state and history of the execut
       'openTimers': 0}}
     >>> execution.history()
     ...
+
+Parallel Activity Execution
+---------------------------
+
+When activities are independent from one another, their execution may be scheduled in parallel.
+
+The decider schedules all activities at once and marks progress until all activities are completed, at which point the workflow is completed.
+
+.. code-block:: python
+
+    # parallel_decider.py
+
+    import boto.swf.layer2 as swf
+    import time
+    
+    SCHED_COUNT = 5
+    
+    class ParallelDecider(swf.Decider):
+    
+        domain = 'boto_tutorial'
+        task_list = 'default'
+        def run(self):
+            decision_task = self.poll()
+            if 'events' in decision_task:
+                decisions = swf.Layer1Decisions()
+                # Decision* events are irrelevant here and can be ignored.
+                workflow_events = [e for e in decision_task['events'] 
+                                   if not e['eventType'].startswith('Decision')]
+                # Record latest non-decision event.
+                last_event = workflow_events[-1]
+                last_event_type = last_event['eventType']
+                if last_event_type == 'WorkflowExecutionStarted':
+                    # At start, kickoff SCHED_COUNT activities in parallel.
+                    for i in range(SCHED_COUNT):
+                        decisions.schedule_activity_task('activity%i' % i, 'ActivityA', '1.0',
+                                                         task_list=self.task_list)
+                elif last_event_type == 'ActivityTaskCompleted':
+                    # Monitor progress. When all activities complete, complete workflow.
+                    completed_count = sum([1 for a in decision_task['events']
+                                           if a['eventType'] == 'ActivityTaskCompleted'])
+                    print '%i/%i' % (completed_count, SCHED_COUNT)
+                    if completed_count == SCHED_COUNT:
+                        decisions.complete_workflow_execution()
+                self.complete(decisions=decisions)
+                return True
+
+Again, the only bit of information a worker needs is which task list to poll.
+
+.. code-block:: python
+
+    # parallel_worker.py
+    import time
+    import boto.swf.layer2 as swf
+    
+    class ParallelWorker(swf.ActivityWorker):
+    
+        domain = 'boto_tutorial'
+        task_list = 'default'
+    
+        def run(self):
+            """Report current time."""
+            activity_task = self.poll()
+            if 'activityId' in activity_task:
+                print 'working on', activity_task['activityId']
+                self.complete(result=str(time.time()))
+                return True
+
+Spin up a workflow execution and run the decider:
+
+.. code-block:: bash
+
+    $ python -i parallel_decider.py 
+    >>> execution = swf.WorkflowType(name='ParallelWorkflow', domain='boto_tutorial', version='1.0', task_list='default').start()
+    >>> while ParallelDecider().run(): pass
+    ... 
+    1/5
+    2/5
+    4/5
+    5/5
+
+Run two or more workers to see how the service partitions work execution in parallel.
+
+.. code-block:: bash
+
+    $ python -i parallel_worker.py 
+    >>> while ParallelWorker().run(): pass
+    ... 
+    working on activity1
+    working on activity3
+    working on activity4
+    
+.. code-block:: bash
+
+    $ python -i parallel_worker.py 
+    >>> while ParallelWorker().run(): pass
+    ... 
+    working on activity2
+    working on activity0
+
+As seen above, the work was partitioned between the two running workers.
 
 .. _Amazon SWF API Reference: http://docs.aws.amazon.com/amazonswf/latest/apireference/Welcome.html
 .. _StackOverflow questions: http://stackoverflow.com/questions/tagged/amazon-swf

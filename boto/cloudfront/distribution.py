@@ -103,6 +103,9 @@ class DistributionConfig(object):
         self.logging = logging
         self.default_root_object = default_root_object
 
+    def __repr__(self):
+        return "DistributionConfig:%s" % self.origin
+
     def to_xml(self):
         s = '<?xml version="1.0" encoding="UTF-8"?>\n'
         s += '<DistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-07-15/">\n'
@@ -176,7 +179,7 @@ class StreamingDistributionConfig(DistributionConfig):
     def __init__(self, connection=None, origin='', enabled=False,
                  caller_reference='', cnames=None, comment='',
                  trusted_signers=None, logging=None):
-        DistributionConfig.__init__(self, connection=connection,
+        super(StreamingDistributionConfig, self).__init__(connection=connection,
                                     origin=origin, enabled=enabled,
                                     caller_reference=caller_reference,
                                     cnames=cnames, comment=comment,
@@ -233,6 +236,9 @@ class DistributionSummary(object):
         self.trusted_signers = None
         self.etag = None
         self.streaming = False
+
+    def __repr__(self):
+        return "DistributionSummary:%s" % self.domain_name
 
     def startElement(self, name, attrs, connection):
         if name == 'TrustedSigners':
@@ -295,6 +301,9 @@ class Distribution(object):
         self._bucket = None
         self._object_class = Object
 
+    def __repr__(self):
+        return "Distribution:%s" % self.domain_name
+
     def startElement(self, name, attrs, connection):
         if name == 'DistributionConfig':
             self.config = DistributionConfig()
@@ -350,11 +359,11 @@ class Distribution(object):
                                         self.config.cnames, self.config.comment,
                                         self.config.trusted_signers,
                                         self.config.default_root_object)
-        if enabled != None:
+        if enabled is not None:
             new_config.enabled = enabled
-        if cnames != None:
+        if cnames is not None:
             new_config.cnames = cnames
-        if comment != None:
+        if comment is not None:
             new_config.comment = comment
         self.etag = self.connection.set_distribution_config(self.id, self.etag, new_config)
         self.config = new_config
@@ -684,8 +693,8 @@ class StreamingDistribution(Distribution):
 
     def __init__(self, connection=None, config=None, domain_name='',
                  id='', last_modified_time=None, status=''):
-        Distribution.__init__(self, connection, config, domain_name,
-                              id, last_modified_time, status)
+        super(StreamingDistribution, self).__init__(connection, config,
+                              domain_name, id, last_modified_time, status)
         self._object_class = StreamingObject
 
     def startElement(self, name, attrs, connection):
@@ -693,7 +702,8 @@ class StreamingDistribution(Distribution):
             self.config = StreamingDistributionConfig()
             return self.config
         else:
-            return Distribution.startElement(self, name, attrs, connection)
+            return super(StreamingDistribution, self).startElement(name, attrs,
+                connection)
 
     def update(self, enabled=None, cnames=None, comment=None):
         """
@@ -729,11 +739,11 @@ class StreamingDistribution(Distribution):
                                                  self.config.cnames,
                                                  self.config.comment,
                                                  self.config.trusted_signers)
-        if enabled != None:
+        if enabled is not None:
             new_config.enabled = enabled
-        if cnames != None:
+        if cnames is not None:
             new_config.cnames = cnames
-        if comment != None:
+        if comment is not None:
             new_config.comment = comment
         self.etag = self.connection.set_streaming_distribution_config(self.id,
                                                                       self.etag,

@@ -26,12 +26,12 @@ Represents an EC2 Elastic Block Store Snapshot
 from boto.ec2.ec2object import TaggedEC2Object
 from boto.ec2.zone import Zone
 
-class Snapshot(TaggedEC2Object):
 
+class Snapshot(TaggedEC2Object):
     AttrName = 'createVolumePermission'
 
     def __init__(self, connection=None):
-        TaggedEC2Object.__init__(self, connection)
+        super(Snapshot, self).__init__(connection)
         self.id = None
         self.volume_id = None
         self.status = None
@@ -41,6 +41,7 @@ class Snapshot(TaggedEC2Object):
         self.owner_alias = None
         self.volume_size = None
         self.description = None
+        self.encrypted = None
 
     def __repr__(self):
         return 'Snapshot:%s' % self.id
@@ -65,6 +66,8 @@ class Snapshot(TaggedEC2Object):
                 self.volume_size = value
         elif name == 'description':
             self.description = value
+        elif name == 'encrypted':
+            self.encrypted = (value.lower() == 'true')
         else:
             setattr(self, name, value)
 
@@ -152,12 +155,12 @@ class Snapshot(TaggedEC2Object):
             self.id,
             volume_type,
             iops,
+            self.encrypted,
             dry_run=dry_run
         )
 
 
-class SnapshotAttribute:
-
+class SnapshotAttribute(object):
     def __init__(self, parent=None):
         self.snapshot_id = None
         self.attrs = {}

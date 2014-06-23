@@ -26,11 +26,32 @@ from boto.resultset import ResultSet
 from boto.iam.summarymap import SummaryMap
 from boto.connection import AWSQueryConnection
 
-
-ASSUME_ROLE_POLICY_DOCUMENT = json.dumps({
-    'Statement': [{'Principal': {'Service': ['ec2.amazonaws.com']},
-                   'Effect': 'Allow',
-                   'Action': ['sts:AssumeRole']}]})
+DEFAULT_POLICY_DOCUMENTS = {
+    'default': {
+        'Statement': [
+            {
+                'Principal': {
+                    'Service': ['ec2.amazonaws.com']
+                },
+                'Effect': 'Allow',
+                'Action': ['sts:AssumeRole']
+            }
+        ]
+    },
+    'amazonaws.com.cn': {
+        'Statement': [
+            {
+                'Principal': {
+                    'Service': ['ec2.amazonaws.com.cn']
+                },
+                'Effect': 'Allow',
+                'Action': ['sts:AssumeRole']
+            }
+        ]
+    },
+}
+# For backward-compatibility, we'll preserve this here.
+ASSUME_ROLE_POLICY_DOCUMENT = json.dumps(DEFAULT_POLICY_DOCUMENTS['default'])
 
 
 class IAMConnection(AWSQueryConnection):
@@ -40,18 +61,18 @@ class IAMConnection(AWSQueryConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, host='iam.amazonaws.com',
-                 debug=0, https_connection_factory=None,
-                 path='/', security_token=None, validate_certs=True):
-        AWSQueryConnection.__init__(self, aws_access_key_id,
+                 debug=0, https_connection_factory=None, path='/',
+                 security_token=None, validate_certs=True, profile_name=None):
+        super(IAMConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy,
                                     proxy_port, proxy_user, proxy_pass,
                                     host, debug, https_connection_factory,
                                     path, security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    profile_name=profile_name)
 
     def _required_auth_capability(self):
-        #return ['iam']
         return ['hmac-v4']
 
     def get_response(self, action, params, path='/', parent=None,
@@ -65,11 +86,16 @@ class IAMConnection(AWSQueryConnection):
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
-            e = boto.jsonresponse.Element(list_marker=list_marker,
-                                          pythonize_name=True)
-            h = boto.jsonresponse.XmlHandler(e, parent)
-            h.parse(body)
-            return e
+            if body:
+                e = boto.jsonresponse.Element(list_marker=list_marker,
+                                              pythonize_name=True)
+                h = boto.jsonresponse.XmlHandler(e, parent)
+                h.parse(body)
+                return e
+            else:
+                # Support empty responses, e.g. deleting a SAML provider
+                # according to the official documentation.
+                return {}
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
@@ -836,7 +862,7 @@ class IAMConnection(AWSQueryConnection):
         :param user_name: The username of the user
 
         :type serial_number: string
-        :param seriasl_number: The serial number which uniquely identifies
+        :param serial_number: The serial number which uniquely identifies
             the MFA device.
 
         :type auth_code_1: string
@@ -862,7 +888,7 @@ class IAMConnection(AWSQueryConnection):
         :param user_name: The username of the user
 
         :type serial_number: string
-        :param seriasl_number: The serial number which uniquely identifies
+        :param serial_number: The serial number which uniquely identifies
             the MFA device.
 
         """
@@ -879,7 +905,7 @@ class IAMConnection(AWSQueryConnection):
         :param user_name: The username of the user
 
         :type serial_number: string
-        :param seriasl_number: The serial number which uniquely identifies
+        :param serial_number: The serial number which uniquely identifies
             the MFA device.
 
         :type auth_code_1: string
@@ -1001,13 +1027,35 @@ class IAMConnection(AWSQueryConnection):
         :param service: Default service to go to in the console.
         """
         alias = self.get_account_alias()
+
         if not alias:
             raise Exception('No alias associated with this account.  Please use iam.create_account_alias() first.')
 
+        resp = alias.get('list_account_aliases_response', {})
+        result = resp.get('list_account_aliases_result', {})
+        aliases = result.get('account_aliases', [])
+
+        if not len(aliases):
+            raise Exception('No alias associated with this account.  Please use iam.create_account_alias() first.')
+
+        # We'll just use the first one we find.
+        alias = aliases[0]
+
         if self.host == 'iam.us-gov.amazonaws.com':
-            return "https://%s.signin.amazonaws-us-gov.com/console/%s" % (alias, service)
+            return "https://%s.signin.amazonaws-us-gov.com/console/%s" % (
+                alias,
+                service
+            )
+        elif self.host.endswith('amazonaws.com.cn'):
+            return "https://%s.signin.amazonaws.cn/console/%s" % (
+                alias,
+                service
+            )
         else:
-            return "https://%s.signin.aws.amazon.com/console/%s" % (alias, service)
+            return "https://%s.signin.aws.amazon.com/console/%s" % (
+                alias,
+                service
+            )
 
     def get_account_summary(self):
         """
@@ -1054,6 +1102,30 @@ class IAMConnection(AWSQueryConnection):
             params['Path'] = path
         return self.get_response('CreateInstanceProfile', params)
 
+    def _build_policy(self, assume_role_policy_document=None):
+        if assume_role_policy_document is not None:
+            if isinstance(assume_role_policy_document, basestring):
+                # Historically, they had to pass a string. If it's a string,
+                # assume the user has already handled it.
+                return assume_role_policy_document
+        else:
+
+            for tld, policy in DEFAULT_POLICY_DOCUMENTS.items():
+                if tld is 'default':
+                    # Skip the default. We'll fall back to it if we don't find
+                    # anything.
+                    continue
+
+                if self.host and self.host.endswith(tld):
+                    assume_role_policy_document = policy
+                    break
+
+            if not assume_role_policy_document:
+                assume_role_policy_document = DEFAULT_POLICY_DOCUMENTS['default']
+
+        # Dump the policy (either user-supplied ``dict`` or one of the defaults)
+        return json.dumps(assume_role_policy_document)
+
     def create_role(self, role_name, assume_role_policy_document=None, path=None):
         """
         Creates a new role for your AWS account.
@@ -1065,21 +1137,19 @@ class IAMConnection(AWSQueryConnection):
         :type role_name: string
         :param role_name: Name of the role to create.
 
-        :type assume_role_policy_document: string
+        :type assume_role_policy_document: ``string`` or ``dict``
         :param assume_role_policy_document: The policy that grants an entity
             permission to assume the role.
 
         :type path: string
         :param path: The path to the instance profile.
         """
-        params = {'RoleName': role_name}
-        if assume_role_policy_document is None:
-            # This is the only valid assume_role_policy_document currently, so
-            # this is used as a default value if no assume_role_policy_document
-            # is provided.
-            params['AssumeRolePolicyDocument'] =  ASSUME_ROLE_POLICY_DOCUMENT
-        else:
-            params['AssumeRolePolicyDocument'] =  assume_role_policy_document
+        params = {
+            'RoleName': role_name,
+            'AssumeRolePolicyDocument': self._build_policy(
+                assume_role_policy_document
+            ),
+        }
         if path is not None:
             params['Path'] = path
         return self.get_response('CreateRole', params)
@@ -1318,3 +1388,113 @@ class IAMConnection(AWSQueryConnection):
         return self.get_response('UpdateAssumeRolePolicy',
                                  {'RoleName': role_name,
                                   'PolicyDocument': policy_document})
+
+    def create_saml_provider(self, saml_metadata_document, name):
+        """
+        Creates an IAM entity to describe an identity provider (IdP)
+        that supports SAML 2.0.
+
+        The SAML provider that you create with this operation can be
+        used as a principal in a role's trust policy to establish a
+        trust relationship between AWS and a SAML identity provider.
+        You can create an IAM role that supports Web-based single
+        sign-on (SSO) to the AWS Management Console or one that
+        supports API access to AWS.
+
+        When you create the SAML provider, you upload an a SAML
+        metadata document that you get from your IdP and that includes
+        the issuer's name, expiration information, and keys that can
+        be used to validate the SAML authentication response
+        (assertions) that are received from the IdP. You must generate
+        the metadata document using the identity management software
+        that is used as your organization's IdP.
+        This operation requires `Signature Version 4`_.
+        For more information, see `Giving Console Access Using SAML`_
+        and `Creating Temporary Security Credentials for SAML
+        Federation`_ in the Using Temporary Credentials guide.
+
+        :type saml_metadata_document: string
+        :param saml_metadata_document: An XML document generated by an identity
+            provider (IdP) that supports SAML 2.0. The document includes the
+            issuer's name, expiration information, and keys that can be used to
+            validate the SAML authentication response (assertions) that are
+            received from the IdP. You must generate the metadata document
+            using the identity management software that is used as your
+            organization's IdP.
+        For more information, see `Creating Temporary Security Credentials for
+            SAML Federation`_ in the Using Temporary Security Credentials
+            guide.
+
+        :type name: string
+        :param name: The name of the provider to create.
+
+        """
+        params = {
+            'SAMLMetadataDocument': saml_metadata_document,
+            'Name': name,
+        }
+        return self.get_response('CreateSAMLProvider', params)
+
+    def list_saml_providers(self):
+        """
+        Lists the SAML providers in the account.
+        This operation requires `Signature Version 4`_.
+        """
+        return self.get_response('ListSAMLProviders', {})
+
+    def get_saml_provider(self, saml_provider_arn):
+        """
+        Returns the SAML provider metadocument that was uploaded when
+        the provider was created or updated.
+        This operation requires `Signature Version 4`_.
+
+        :type saml_provider_arn: string
+        :param saml_provider_arn: The Amazon Resource Name (ARN) of the SAML
+            provider to get information about.
+
+        """
+        params = {'SAMLProviderArn': saml_provider_arn }
+        return self.get_response('GetSAMLProvider', params)
+
+    def update_saml_provider(self, saml_provider_arn, saml_metadata_document):
+        """
+        Updates the metadata document for an existing SAML provider.
+        This operation requires `Signature Version 4`_.
+
+        :type saml_provider_arn: string
+        :param saml_provider_arn: The Amazon Resource Name (ARN) of the SAML
+            provider to update.
+
+        :type saml_metadata_document: string
+        :param saml_metadata_document: An XML document generated by an identity
+            provider (IdP) that supports SAML 2.0. The document includes the
+            issuer's name, expiration information, and keys that can be used to
+            validate the SAML authentication response (assertions) that are
+            received from the IdP. You must generate the metadata document
+            using the identity management software that is used as your
+            organization's IdP.
+
+        """
+        params = {
+            'SAMLMetadataDocument': saml_metadata_document,
+            'SAMLProviderArn': saml_provider_arn,
+        }
+        return self.get_response('UpdateSAMLProvider', params)
+
+    def delete_saml_provider(self, saml_provider_arn):
+        """
+        Deletes a SAML provider.
+
+        Deleting the provider does not update any roles that reference
+        the SAML provider as a principal in their trust policies. Any
+        attempt to assume a role that references a SAML provider that
+        has been deleted will fail.
+        This operation requires `Signature Version 4`_.
+
+        :type saml_provider_arn: string
+        :param saml_provider_arn: The Amazon Resource Name (ARN) of the SAML
+            provider to delete.
+
+        """
+        params = {'SAMLProviderArn': saml_provider_arn }
+        return self.get_response('DeleteSAMLProvider', params)

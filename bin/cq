@@ -57,6 +57,9 @@ def main():
             region = a
     if region:
         c = boto.sqs.connect_to_region(region)
+    if c is None:
+        print 'Invalid region (%s)' % region
+        sys.exit(1)
     else:
         c = SQSConnection()
     if queue_name:

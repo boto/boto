@@ -48,7 +48,7 @@ class ItemThread(threading.Thread):
             :class:`Domain <boto.sdb.domain.Domain>`.
         :ivar list items: A list of items retrieved. Starts as empty list.
         """
-        threading.Thread.__init__(self, name=name)
+        super(ItemThread, self).__init__(name=name)
         #print 'starting %s with %d items' % (name, len(item_names))
         self.domain_name = domain_name
         self.conn = SDBConnection()
@@ -86,7 +86,8 @@ class SDBConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 converter=None, security_token=None, validate_certs=True):
+                 converter=None, security_token=None, validate_certs=True,
+                 profile_name=None):
         """
         For any keywords that aren't documented, refer to the parent class,
         :py:class:`boto.connection.AWSAuthConnection`. You can avoid having
@@ -111,14 +112,15 @@ class SDBConnection(AWSQueryConnection):
                     break
 
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id,
+        super(SDBConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy,
                                     proxy_port, proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
                                     security_token=security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    profile_name=profile_name)
         self.box_usage = 0.0
         self.converter = converter
         self.item_cls = Item
@@ -493,7 +495,7 @@ class SDBConnection(AWSQueryConnection):
         response = self.make_request('GetAttributes', params)
         body = response.read()
         if response.status == 200:
-            if item == None:
+            if item is None:
                 item = self.item_cls(domain, item_name)
             h = handler.XmlHandler(item, self)
             xml.sax.parseString(body, h)

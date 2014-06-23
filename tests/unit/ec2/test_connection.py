@@ -2,7 +2,7 @@
 import httplib
 
 from datetime import datetime, timedelta
-from mock import MagicMock, Mock, patch
+from mock import MagicMock, Mock
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
@@ -968,7 +968,9 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
         """
         snaps = []
 
-        # Generate some dates offset by days, weeks, months
+        # Generate some dates offset by days, weeks, months.
+        # This is to validate the various types of snapshot logic handled by
+        # ``trim_snapshots``.
         now = datetime.now()
         dates = [
             now,
@@ -976,9 +978,14 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
             now - timedelta(days=2),
             now - timedelta(days=7),
             now - timedelta(days=14),
-            datetime(now.year, now.month, 1) - timedelta(days=30),
-            datetime(now.year, now.month, 1) - timedelta(days=60),
-            datetime(now.year, now.month, 1) - timedelta(days=90)
+            # We want to simulate 30/60/90-day snapshots, but February is
+            # short (only 28 days), so we decrease the delta by 2 days apiece.
+            # This prevents the ``delete_snapshot`` code below from being
+            # called, since they don't fall outside the allowed timeframes
+            # for the snapshots.
+            datetime(now.year, now.month, 1) - timedelta(days=28),
+            datetime(now.year, now.month, 1) - timedelta(days=58),
+            datetime(now.year, now.month, 1) - timedelta(days=88)
         ]
 
         for date in dates:
@@ -1229,6 +1236,62 @@ class TestRegisterImage(TestEC2ConnectionBase):
             'Version'
         ])
 
+    def test_sriov_net_support_simple(self):
+        self.set_http_response(status_code=200)
+        self.ec2.register_image('name', 'description',
+                                image_location='s3://foo',
+                                sriov_net_support='simple')
+
+        self.assert_request_parameters({
+            'Action': 'RegisterImage',
+            'ImageLocation': 's3://foo',
+            'Name': 'name',
+            'Description': 'description',
+            'SriovNetSupport': 'simple'
+        }, ignore_params_values=[
+            'AWSAccessKeyId', 'SignatureMethod',
+            'SignatureVersion', 'Timestamp',
+            'Version'
+        ])
+    
+    def test_volume_delete_on_termination_on(self):
+        self.set_http_response(status_code=200)
+        self.ec2.register_image('name', 'description',
+                                snapshot_id='snap-12345678',
+                                delete_root_volume_on_termination=True)
+        
+        self.assert_request_parameters({
+            'Action': 'RegisterImage',
+            'Name': 'name',
+            'Description': 'description',
+            'BlockDeviceMapping.1.DeviceName': None,
+            'BlockDeviceMapping.1.Ebs.DeleteOnTermination' : 'true',
+            'BlockDeviceMapping.1.Ebs.SnapshotId': 'snap-12345678',
+        }, ignore_params_values=[
+            'AWSAccessKeyId', 'SignatureMethod',
+            'SignatureVersion', 'Timestamp',
+            'Version'
+        ])
+        
+
+    def test_volume_delete_on_termination_default(self):
+        self.set_http_response(status_code=200)
+        self.ec2.register_image('name', 'description',
+                                snapshot_id='snap-12345678')
+        
+        self.assert_request_parameters({
+            'Action': 'RegisterImage',
+            'Name': 'name',
+            'Description': 'description',
+            'BlockDeviceMapping.1.DeviceName': None,
+            'BlockDeviceMapping.1.Ebs.DeleteOnTermination' : 'false',
+            'BlockDeviceMapping.1.Ebs.SnapshotId': 'snap-12345678',
+        }, ignore_params_values=[
+            'AWSAccessKeyId', 'SignatureMethod',
+            'SignatureVersion', 'Timestamp',
+            'Version'
+        ])
+
 
 class TestTerminateInstances(TestEC2ConnectionBase):
     def default_body(self):
@@ -1255,6 +1318,306 @@ class TestTerminateInstances(TestEC2ConnectionBase):
         self.set_http_response(status_code=200)
         self.ec2.terminate_instances('foo')
 
+
+class TestDescribeInstances(TestEC2ConnectionBase):
+
+    def default_body(self):
+        return """
+            <DescribeInstancesResponse>
+            </DescribeInstancesResponse>
+        """
+
+    def test_default_behavior(self):
+        self.set_http_response(status_code=200)
+        self.ec2.get_all_instances()
+        self.assert_request_parameters({
+            'Action': 'DescribeInstances'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
+        self.ec2.get_all_reservations()
+        self.assert_request_parameters({
+            'Action': 'DescribeInstances'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
+        self.ec2.get_only_instances()
+        self.assert_request_parameters({
+            'Action': 'DescribeInstances'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
+    def test_max_results(self):
+        self.set_http_response(status_code=200)
+        self.ec2.get_all_instances(
+            max_results=10
+        )
+        self.assert_request_parameters({
+            'Action': 'DescribeInstances',
+            'MaxResults': 10},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
+    def test_next_token(self):
+        self.set_http_response(status_code=200)
+        self.ec2.get_all_reservations(
+            next_token='abcdefgh',
+        )
+        self.assert_request_parameters({
+            'Action': 'DescribeInstances',
+            'NextToken': 'abcdefgh'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
+class TestDescribeTags(TestEC2ConnectionBase):
+
+    def default_body(self):
+        return """
+            <DescribeTagsResponse>
+            </DescribeTagsResponse>
+        """
+
+    def test_default_behavior(self):
+        self.set_http_response(status_code=200)
+        self.ec2.get_all_tags()
+        self.assert_request_parameters({
+            'Action': 'DescribeTags'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
+    def test_max_results(self):
+        self.set_http_response(status_code=200)
+        self.ec2.get_all_tags(
+            max_results=10
+        )
+        self.assert_request_parameters({
+            'Action': 'DescribeTags',
+            'MaxResults': 10},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp', 'Version'])
+
+
+class TestSignatureAlteration(TestEC2ConnectionBase):
+    def test_unchanged(self):
+        self.assertEqual(
+            self.service_connection._required_auth_capability(),
+            ['ec2']
+        )
+
+    def test_switched(self):
+        region = RegionInfo(
+            name='cn-north-1',
+            endpoint='ec2.cn-north-1.amazonaws.com.cn',
+            connection_cls=EC2Connection
+        )
+
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more',
+            region=region
+        )
+        self.assertEqual(
+            conn._required_auth_capability(),
+            ['hmac-v4']
+        )
+
+
+class TestAssociateAddress(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+            <AssociateAddressResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+               <return>true</return>
+               <associationId>eipassoc-fc5ca095</associationId>
+            </AssociateAddressResponse>
+        """
+
+    def test_associate_address(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.associate_address(instance_id='i-1234',
+                                            public_ip='192.0.2.1')
+        self.assertEqual(True, result)
+
+    def test_associate_address_object(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.associate_address_object(instance_id='i-1234',
+                                                   public_ip='192.0.2.1')
+        self.assertEqual('eipassoc-fc5ca095', result.association_id)
+
+
+class TestAssociateAddressFail(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+            <Response>
+                <Errors>
+                     <Error>
+                       <Code>InvalidInstanceID.NotFound</Code>
+                       <Message>The instance ID 'i-4cbc822a' does not exist</Message>
+                     </Error>
+                </Errors>
+                <RequestID>ea966190-f9aa-478e-9ede-cb5432daacc0</RequestID>
+                <StatusCode>Failure</StatusCode>
+            </Response>
+        """
+
+    def test_associate_address(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.associate_address(instance_id='i-1234',
+                                            public_ip='192.0.2.1')
+        self.assertEqual(False, result)
+
+
+class TestDescribeVolumes(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+            <DescribeVolumesResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId> 
+               <volumeSet>
+                  <item>
+                     <volumeId>vol-1a2b3c4d</volumeId>
+                     <size>80</size>
+                     <snapshotId/>
+                     <availabilityZone>us-east-1a</availabilityZone>
+                     <status>in-use</status>
+                     <createTime>YYYY-MM-DDTHH:MM:SS.SSSZ</createTime>
+                     <attachmentSet>
+                        <item>
+                           <volumeId>vol-1a2b3c4d</volumeId>
+                           <instanceId>i-1a2b3c4d</instanceId>
+                           <device>/dev/sdh</device>
+                           <status>attached</status>
+                           <attachTime>YYYY-MM-DDTHH:MM:SS.SSSZ</attachTime>
+                           <deleteOnTermination>false</deleteOnTermination>
+                        </item>
+                     </attachmentSet>
+                     <volumeType>standard</volumeType>
+                     <encrypted>true</encrypted>
+                  </item>
+                  <item>
+                     <volumeId>vol-5e6f7a8b</volumeId>
+                     <size>80</size>
+                     <snapshotId/>
+                     <availabilityZone>us-east-1a</availabilityZone>
+                     <status>in-use</status>
+                     <createTime>YYYY-MM-DDTHH:MM:SS.SSSZ</createTime>
+                     <attachmentSet>
+                        <item>
+                           <volumeId>vol-5e6f7a8b</volumeId>
+                           <instanceId>i-5e6f7a8b</instanceId>
+                           <device>/dev/sdz</device>
+                           <status>attached</status>
+                           <attachTime>YYYY-MM-DDTHH:MM:SS.SSSZ</attachTime>
+                           <deleteOnTermination>false</deleteOnTermination>
+                        </item>
+                     </attachmentSet>
+                     <volumeType>standard</volumeType>
+                     <encrypted>false</encrypted>
+                  </item>
+               </volumeSet>
+            </DescribeVolumesResponse>
+        """
+
+    def test_get_all_volumes(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.get_all_volumes(volume_ids=['vol-1a2b3c4d', 'vol-5e6f7a8b'])
+        self.assert_request_parameters({
+            'Action': 'DescribeVolumes',
+            'VolumeId.1': 'vol-1a2b3c4d',
+            'VolumeId.2': 'vol-5e6f7a8b'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].id, 'vol-1a2b3c4d')
+        self.assertTrue(result[0].encrypted)
+        self.assertEqual(result[1].id, 'vol-5e6f7a8b')
+        self.assertFalse(result[1].encrypted)
+
+
+class TestDescribeSnapshots(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+            <DescribeSnapshotsResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
+               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId> 
+               <snapshotSet>
+                  <item>
+                     <snapshotId>snap-1a2b3c4d</snapshotId>
+                     <volumeId>vol-1a2b3c4d</volumeId>
+                     <status>pending</status>
+                     <startTime>YYYY-MM-DDTHH:MM:SS.SSSZ</startTime>
+                     <progress>80%</progress>
+                     <ownerId>111122223333</ownerId>
+                     <volumeSize>15</volumeSize>
+                     <description>Daily Backup</description>
+                     <tagSet/>
+                     <encrypted>true</encrypted>
+                  </item>
+               </snapshotSet>
+               <snapshotSet>
+                  <item>
+                     <snapshotId>snap-5e6f7a8b</snapshotId>
+                     <volumeId>vol-5e6f7a8b</volumeId>
+                     <status>completed</status>
+                     <startTime>YYYY-MM-DDTHH:MM:SS.SSSZ</startTime>
+                     <progress>100%</progress>
+                     <ownerId>111122223333</ownerId>
+                     <volumeSize>15</volumeSize>
+                     <description>Daily Backup</description>
+                     <tagSet/>
+                     <encrypted>false</encrypted>
+                  </item>
+               </snapshotSet>
+           </DescribeSnapshotsResponse>
+        """
+
+    def test_get_all_snapshots(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.get_all_snapshots(snapshot_ids=['snap-1a2b3c4d', 'snap-5e6f7a8b'])
+        self.assert_request_parameters({
+            'Action': 'DescribeSnapshots',
+            'SnapshotId.1': 'snap-1a2b3c4d',
+            'SnapshotId.2': 'snap-5e6f7a8b'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].id, 'snap-1a2b3c4d')
+        self.assertTrue(result[0].encrypted)
+        self.assertEqual(result[1].id, 'snap-5e6f7a8b')
+        self.assertFalse(result[1].encrypted)
+
+
+class TestCreateVolume(TestEC2ConnectionBase):
+    def default_body(self):
+        return """
+            <CreateVolumeResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
+              <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId> 
+              <volumeId>vol-1a2b3c4d</volumeId>
+              <size>80</size>
+              <snapshotId/>
+              <availabilityZone>us-east-1a</availabilityZone>
+              <status>creating</status>
+              <createTime>YYYY-MM-DDTHH:MM:SS.000Z</createTime>
+              <volumeType>standard</volumeType>
+              <encrypted>true</encrypted>
+            </CreateVolumeResponse>
+        """
+
+    def test_create_volume(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.create_volume(80, 'us-east-1e', snapshot='snap-1a2b3c4d',
+                                        encrypted=True)
+        self.assert_request_parameters({
+            'Action': 'CreateVolume',
+            'AvailabilityZone': 'us-east-1e',
+            'Size': 80,
+            'SnapshotId': 'snap-1a2b3c4d',
+            'Encrypted': 'true'},
+             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+        self.assertEqual(result.id, 'vol-1a2b3c4d')
+        self.assertTrue(result.encrypted)
 
 if __name__ == '__main__':
     unittest.main()

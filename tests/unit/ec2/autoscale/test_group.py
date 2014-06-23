@@ -33,7 +33,7 @@ from boto.ec2.autoscale.tag import Tag
 
 from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 
-from boto.ec2.autoscale import launchconfig
+from boto.ec2.autoscale import launchconfig, LaunchConfiguration
 
 class TestAutoScaleGroup(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
@@ -55,7 +55,8 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
         autoscale = AutoScalingGroup(
             name='foo', launch_config='lauch_config',
             min_size=1, max_size=2,
-            termination_policies=['OldestInstance', 'OldestLaunchConfiguration'])
+            termination_policies=['OldestInstance', 'OldestLaunchConfiguration'],
+            instance_id='test-id')
         self.service_connection.create_auto_scaling_group(autoscale)
         self.assert_request_parameters({
             'Action': 'CreateAutoScalingGroup',
@@ -65,6 +66,66 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
             'MinSize': 1,
             'TerminationPolicies.member.1': 'OldestInstance',
             'TerminationPolicies.member.2': 'OldestLaunchConfiguration',
+            'InstanceId': 'test-id',
+        }, ignore_params_values=['Version'])
+
+    def test_autoscaling_group_single_vpc_zone_identifier(self):
+        self.set_http_response(status_code=200)
+        autoscale = AutoScalingGroup(
+            name='foo',
+            vpc_zone_identifier='vpc_zone_1')
+        self.service_connection.create_auto_scaling_group(autoscale)
+        self.assert_request_parameters({
+            'Action': 'CreateAutoScalingGroup',
+            'AutoScalingGroupName': 'foo',
+            'VPCZoneIdentifier': 'vpc_zone_1',
+            }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
+
+    def test_autoscaling_group_vpc_zone_identifier_list(self):
+        self.set_http_response(status_code=200)
+        autoscale = AutoScalingGroup(
+            name='foo',
+            vpc_zone_identifier=['vpc_zone_1', 'vpc_zone_2'])
+        self.service_connection.create_auto_scaling_group(autoscale)
+        self.assert_request_parameters({
+            'Action': 'CreateAutoScalingGroup',
+            'AutoScalingGroupName': 'foo',
+            'VPCZoneIdentifier': 'vpc_zone_1,vpc_zone_2',
+            }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
+
+    def test_autoscaling_group_vpc_zone_identifier_multi(self):
+        self.set_http_response(status_code=200)
+        autoscale = AutoScalingGroup(
+            name='foo',
+            vpc_zone_identifier='vpc_zone_1,vpc_zone_2')
+        self.service_connection.create_auto_scaling_group(autoscale)
+        self.assert_request_parameters({
+            'Action': 'CreateAutoScalingGroup',
+            'AutoScalingGroupName': 'foo',
+            'VPCZoneIdentifier': 'vpc_zone_1,vpc_zone_2',
+            }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
+
+
+class TestAutoScaleGroupHonorCooldown(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def default_body(self):
+        return """
+            <SetDesiredCapacityResponse>
+              <ResponseMetadata>
+                <RequestId>9fb7e2db-6998-11e2-a985-57c82EXAMPLE</RequestId>
+              </ResponseMetadata>
+            </SetDesiredCapacityResponse>
+        """
+
+    def test_honor_cooldown(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.set_desired_capacity('foo', 10, True)
+        self.assert_request_parameters({
+            'Action': 'SetDesiredCapacity',
+            'AutoScalingGroupName': 'foo',
+            'DesiredCapacity': 10,
+            'HonorCooldown': 'true',
         }, ignore_params_values=['Version'])
 
 class TestScheduledGroup(AWSMockServiceTestCase):
@@ -144,6 +205,7 @@ class TestParseAutoScaleGroupResponse(AWSMockServiceTestCase):
                    <member>OldestLaunchConfiguration</member>
                  </TerminationPolicies>
                  <MaxSize>2</MaxSize>
+                 <InstanceId>Something</InstanceId>
                </member>
              </AutoScalingGroups>
           </DescribeAutoScalingGroupsResult>
@@ -169,6 +231,7 @@ class TestParseAutoScaleGroupResponse(AWSMockServiceTestCase):
         self.assertEqual(as_group.tags, [])
         self.assertEqual(as_group.termination_policies,
                          ['OldestInstance', 'OldestLaunchConfiguration'])
+        self.assertEqual(as_group.instance_id, 'Something')
 
 
 class TestDescribeTerminationPolicies(AWSMockServiceTestCase):
@@ -200,6 +263,74 @@ class TestDescribeTerminationPolicies(AWSMockServiceTestCase):
             ['ClosestToNextInstanceHour', 'Default',
              'NewestInstance', 'OldestInstance', 'OldestLaunchConfiguration'])
 
+class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def default_body(self):
+        # This is a dummy response
+        return """
+        <DescribeLaunchConfigurationsResponse>
+          <DescribeLaunchConfigurationsResult>
+            <LaunchConfigurations>
+              <member>
+                <AssociatePublicIpAddress>true</AssociatePublicIpAddress>
+                <SecurityGroups/>
+                <CreatedTime>2013-01-21T23:04:42.200Z</CreatedTime>
+                <KernelId/>
+                <LaunchConfigurationName>my-test-lc</LaunchConfigurationName>
+                <UserData/>
+                <InstanceType>m1.small</InstanceType>
+                <LaunchConfigurationARN>arn:aws:autoscaling:us-east-1:803981987763:launchConfiguration:9dbbbf87-6141-428a-a409-0752edbe6cad:launchConfigurationName/my-test-lc</LaunchConfigurationARN>
+                <BlockDeviceMappings/>
+                <ImageId>ami-514ac838</ImageId>
+                <KeyName/>
+                <RamdiskId/>
+                <InstanceMonitoring>
+                  <Enabled>true</Enabled>
+                </InstanceMonitoring>
+                <EbsOptimized>false</EbsOptimized>
+              </member>
+            </LaunchConfigurations>
+          </DescribeLaunchConfigurationsResult>
+          <ResponseMetadata>
+            <RequestId>d05a22f8-b690-11e2-bf8e-2113fEXAMPLE</RequestId>
+          </ResponseMetadata>
+        </DescribeLaunchConfigurationsResponse>
+        """
+
+    def test_get_all_launch_configurations(self):
+        self.set_http_response(status_code=200)
+
+        response = self.service_connection.get_all_launch_configurations()
+        self.assertTrue(isinstance(response, list))
+        self.assertEqual(len(response), 1)
+        self.assertTrue(isinstance(response[0], LaunchConfiguration))
+
+        self.assertEqual(response[0].associate_public_ip_address, True)
+        self.assertEqual(response[0].name, "my-test-lc")
+        self.assertEqual(response[0].instance_type, "m1.small")
+        self.assertEqual(response[0].launch_configuration_arn, "arn:aws:autoscaling:us-east-1:803981987763:launchConfiguration:9dbbbf87-6141-428a-a409-0752edbe6cad:launchConfigurationName/my-test-lc")
+        self.assertEqual(response[0].image_id, "ami-514ac838")
+        self.assertTrue(isinstance(response[0].instance_monitoring, launchconfig.InstanceMonitoring))
+        self.assertEqual(response[0].instance_monitoring.enabled, 'true')
+        self.assertEqual(response[0].ebs_optimized, False)
+        self.assertEqual(response[0].block_device_mappings, [])
+
+        self.assert_request_parameters({
+            'Action': 'DescribeLaunchConfigurations',
+        }, ignore_params_values=['Version'])
+
+    def test_get_all_configuration_limited(self):
+        self.set_http_response(status_code=200)
+
+        response = self.service_connection.get_all_launch_configurations(max_records=10, names=["my-test1", "my-test2"])
+        self.assert_request_parameters({
+            'Action': 'DescribeLaunchConfigurations',
+            'MaxRecords': 10,
+            'LaunchConfigurationNames.member.1': 'my-test1',
+            'LaunchConfigurationNames.member.2': 'my-test2'
+        }, ignore_params_values=['Version'])
+
 class TestLaunchConfiguration(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
@@ -227,7 +358,11 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
                 instance_type = 'm1.large',
                 security_groups = ['group1', 'group2'],
                 spot_price='price',
-                block_device_mappings = [bdm]
+                block_device_mappings = [bdm],
+                associate_public_ip_address = True,
+                volume_type='atype',
+                delete_on_termination=False,
+                iops=3000
                 )
 
         response = self.service_connection.create_launch_configuration(lc)
@@ -248,6 +383,10 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'SecurityGroups.member.1': 'group1',
             'SecurityGroups.member.2': 'group2',
             'SpotPrice': 'price',
+            'AssociatePublicIpAddress' : 'true',
+            'VolumeType': 'atype',
+            'DeleteOnTermination': 'false',
+            'Iops': 3000,
         }, ignore_params_values=['Version'])
 
 
@@ -416,7 +555,7 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
                 resource_type='auto-scaling-group',
                 propagate_at_launch=False
                 )]
-               
+
 
         response = self.service_connection.create_or_update_tags(tags)
 
@@ -442,8 +581,8 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
             ('ResourceId', 'sg-01234567', 'resource_id'),
             ('PropagateAtLaunch', 'true', 'propagate_at_launch')]:
                 self.check_tag_attributes_set(i[0], i[1], i[2])
-            
-             
+
+
     def check_tag_attributes_set(self, name, value, attr):
         tag = Tag()
         tag.endElement(name, value, None)
@@ -451,6 +590,215 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
             self.assertEqual(getattr(tag, attr), True)
         else:
             self.assertEqual(getattr(tag, attr), value)
+
+
+class TestAttachInstances(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def setUp(self):
+        super(TestAttachInstances, self).setUp()
+
+    def default_body(self):
+        return """
+            <AttachInstancesResponse>
+              <ResponseMetadata>
+                <RequestId>requestid</RequestId>
+              </ResponseMetadata>
+            </AttachInstancesResponse>
+        """
+
+    def test_attach_instances(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.attach_instances(
+          'autoscale',
+          ['inst2', 'inst1', 'inst4']
+        )
+        self.assert_request_parameters({
+            'Action': 'AttachInstances',
+            'AutoScalingGroupName': 'autoscale',
+            'InstanceIds.member.1': 'inst2',
+            'InstanceIds.member.2': 'inst1',
+            'InstanceIds.member.3': 'inst4',
+        }, ignore_params_values=['Version'])
+
+
+class TestGetAccountLimits(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def setUp(self):
+        super(TestGetAccountLimits, self).setUp()
+
+    def default_body(self):
+        return """
+            <DescribeAccountLimitsAnswer>
+              <MaxNumberOfAutoScalingGroups>6</MaxNumberOfAutoScalingGroups>
+              <MaxNumberOfLaunchConfigurations>3</MaxNumberOfLaunchConfigurations>
+              <ResponseMetadata>
+                <RequestId>requestid</RequestId>
+              </ResponseMetadata>
+            </DescribeAccountLimitsAnswer>
+        """
+
+    def test_autoscaling_group_put_notification_configuration(self):
+        self.set_http_response(status_code=200)
+        limits = self.service_connection.get_account_limits()
+        self.assert_request_parameters({
+            'Action': 'DescribeAccountLimits',
+        }, ignore_params_values=['Version'])
+        self.assertEqual(limits.max_autoscaling_groups, 6)
+        self.assertEqual(limits.max_launch_configurations, 3)
+
+class TestGetAdjustmentTypes(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def setUp(self):
+        super(TestGetAdjustmentTypes, self).setUp()
+
+    def default_body(self):
+        return """
+            <DescribeAdjustmentTypesResponse xmlns="http://autoscaling.amazonaws.com/doc/201-01-01/">
+              <DescribeAdjustmentTypesResult>
+                <AdjustmentTypes>
+                  <member>
+                    <AdjustmentType>ChangeInCapacity</AdjustmentType>
+                  </member>
+                  <member>
+                    <AdjustmentType>ExactCapacity</AdjustmentType>
+                  </member>
+                  <member>
+                    <AdjustmentType>PercentChangeInCapacity</AdjustmentType>
+                  </member>
+                </AdjustmentTypes>
+              </DescribeAdjustmentTypesResult>
+              <ResponseMetadata>
+                <RequestId>requestId</RequestId>
+              </ResponseMetadata>
+            </DescribeAdjustmentTypesResponse>
+        """
+    def test_autoscaling_adjustment_types(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_all_adjustment_types()
+        self.assert_request_parameters({
+            'Action': 'DescribeAdjustmentTypes'
+        }, ignore_params_values=['Version'])
+
+        self.assertTrue(isinstance(response, list))
+        self.assertEqual(response[0].adjustment_type, "ChangeInCapacity")
+        self.assertEqual(response[1].adjustment_type, "ExactCapacity")
+        self.assertEqual(response[2].adjustment_type, "PercentChangeInCapacity")
+
+
+class TestLaunchConfigurationDescribeWithBlockDeviceTypes(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def default_body(self):
+        # This is a dummy response
+        return """
+        <DescribeLaunchConfigurationsResponse>
+          <DescribeLaunchConfigurationsResult>
+            <LaunchConfigurations>
+              <member>
+                <AssociatePublicIpAddress>true</AssociatePublicIpAddress>
+                <SecurityGroups/>
+                <CreatedTime>2013-01-21T23:04:42.200Z</CreatedTime>
+                <KernelId/>
+                <LaunchConfigurationName>my-test-lc</LaunchConfigurationName>
+                <UserData/>
+                <InstanceType>m1.small</InstanceType>
+                <LaunchConfigurationARN>arn:aws:autoscaling:us-east-1:803981987763:launchConfiguration:9dbbbf87-6141-428a-a409-0752edbe6cad:launchConfigurationName/my-test-lc</LaunchConfigurationARN>
+                <BlockDeviceMappings>
+                  <member>
+                    <DeviceName>/dev/xvdp</DeviceName>
+                    <Ebs>
+                      <SnapshotId>snap-1234abcd</SnapshotId>
+                      <Iops>1000</Iops>
+                      <DeleteOnTermination>true</DeleteOnTermination>
+                      <VolumeType>io1</VolumeType>
+                      <VolumeSize>100</VolumeSize>
+                    </Ebs>
+                  </member>
+                  <member>
+                    <VirtualName>ephemeral1</VirtualName>
+                    <DeviceName>/dev/xvdc</DeviceName>
+                  </member>
+                  <member>
+                    <VirtualName>ephemeral0</VirtualName>
+                    <DeviceName>/dev/xvdb</DeviceName>
+                  </member>
+                  <member>
+                    <DeviceName>/dev/xvdh</DeviceName>
+                    <Ebs>
+                      <Iops>2000</Iops>
+                      <DeleteOnTermination>false</DeleteOnTermination>
+                      <VolumeType>io1</VolumeType>
+                      <VolumeSize>200</VolumeSize>
+                    </Ebs>
+                  </member>
+                </BlockDeviceMappings>
+                <ImageId>ami-514ac838</ImageId>
+                <KeyName/>
+                <RamdiskId/>
+                <InstanceMonitoring>
+                  <Enabled>true</Enabled>
+                </InstanceMonitoring>
+                <EbsOptimized>false</EbsOptimized>
+              </member>
+            </LaunchConfigurations>
+          </DescribeLaunchConfigurationsResult>
+          <ResponseMetadata>
+            <RequestId>d05a22f8-b690-11e2-bf8e-2113fEXAMPLE</RequestId>
+          </ResponseMetadata>
+        </DescribeLaunchConfigurationsResponse>
+        """
+
+    def test_get_all_launch_configurations_with_block_device_types(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.use_block_device_types = True
+
+        response = self.service_connection.get_all_launch_configurations()
+        self.assertTrue(isinstance(response, list))
+        self.assertEqual(len(response), 1)
+        self.assertTrue(isinstance(response[0], LaunchConfiguration))
+
+        self.assertEqual(response[0].associate_public_ip_address, True)
+        self.assertEqual(response[0].name, "my-test-lc")
+        self.assertEqual(response[0].instance_type, "m1.small")
+        self.assertEqual(response[0].launch_configuration_arn, "arn:aws:autoscaling:us-east-1:803981987763:launchConfiguration:9dbbbf87-6141-428a-a409-0752edbe6cad:launchConfigurationName/my-test-lc")
+        self.assertEqual(response[0].image_id, "ami-514ac838")
+        self.assertTrue(isinstance(response[0].instance_monitoring, launchconfig.InstanceMonitoring))
+        self.assertEqual(response[0].instance_monitoring.enabled, 'true')
+        self.assertEqual(response[0].ebs_optimized, False)
+
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdb'].ephemeral_name, 'ephemeral0')
+
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdc'].ephemeral_name, 'ephemeral1')
+
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdp'].snapshot_id, 'snap-1234abcd')
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdp'].delete_on_termination, True)
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdp'].iops, 1000)
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdp'].size, 100)
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdp'].volume_type, 'io1')
+
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdh'].delete_on_termination, False)
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdh'].iops, 2000)
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdh'].size, 200)
+        self.assertEqual(response[0].block_device_mappings['/dev/xvdh'].volume_type, 'io1')
+
+        self.assert_request_parameters({
+            'Action': 'DescribeLaunchConfigurations',
+        }, ignore_params_values=['Version'])
+
+    def test_get_all_configuration_limited(self):
+        self.set_http_response(status_code=200)
+
+        response = self.service_connection.get_all_launch_configurations(max_records=10, names=["my-test1", "my-test2"])
+        self.assert_request_parameters({
+            'Action': 'DescribeLaunchConfigurations',
+            'MaxRecords': 10,
+            'LaunchConfigurationNames.member.1': 'my-test1',
+            'LaunchConfigurationNames.member.2': 'my-test2'
+        }, ignore_params_values=['Version'])
+
 
 if __name__ == '__main__':
     unittest.main()

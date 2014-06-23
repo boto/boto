@@ -31,7 +31,7 @@ import base64
 
 import boto
 from boto.connection import AWSQueryConnection
-from boto.ec2.regioninfo import RegionInfo
+from boto.regioninfo import RegionInfo, get_regions, load_regions
 from boto.ec2.autoscale.request import Request
 from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 from boto.ec2.autoscale.group import AutoScalingGroup
@@ -44,18 +44,9 @@ from boto.ec2.autoscale.policy import TerminationPolicies
 from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.tag import Tag
+from boto.ec2.autoscale.limits import AccountLimits
 
-RegionData = {
-    'us-east-1': 'autoscaling.us-east-1.amazonaws.com',
-    'us-gov-west-1': 'autoscaling.us-gov-west-1.amazonaws.com',
-    'us-west-1': 'autoscaling.us-west-1.amazonaws.com',
-    'us-west-2': 'autoscaling.us-west-2.amazonaws.com',
-    'sa-east-1': 'autoscaling.sa-east-1.amazonaws.com',
-    'eu-west-1': 'autoscaling.eu-west-1.amazonaws.com',
-    'ap-northeast-1': 'autoscaling.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1': 'autoscaling.ap-southeast-1.amazonaws.com',
-    'ap-southeast-2': 'autoscaling.ap-southeast-2.amazonaws.com',
-}
+RegionData = load_regions().get('autoscaling', {})
 
 
 def regions():
@@ -65,13 +56,7 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.RegionInfo` instances
     """
-    regions = []
-    for region_name in RegionData:
-        region = RegionInfo(name=region_name,
-                            endpoint=RegionData[region_name],
-                            connection_cls=AutoScaleConnection)
-        regions.append(region)
-    return regions
+    return get_regions('autoscaling', connection_cls=AutoScaleConnection)
 
 
 def connect_to_region(region_name, **kw_params):
@@ -102,26 +87,31 @@ class AutoScaleConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True):
+                 security_token=None, validate_certs=True, profile_name=None,
+                 use_block_device_types=False):
         """
         Init method to create a new connection to the AutoScaling service.
 
         B{Note:} The host argument is overridden by the host specified in the
                  boto configuration file.
+
+
         """
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint,
                                 AutoScaleConnection)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id,
+        self.use_block_device_types = use_block_device_types
+        super(AutoScaleConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path=path,
                                     security_token=security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
@@ -163,7 +153,7 @@ class AutoScaleConnection(AWSQueryConnection):
         # get availability zone information (required param)
         zones = as_group.availability_zones
         self.build_list_params(params, zones, 'AvailabilityZones')
-        if as_group.desired_capacity:
+        if as_group.desired_capacity is not None:
             params['DesiredCapacity'] = as_group.desired_capacity
         if as_group.vpc_zone_identifier:
             params['VPCZoneIdentifier'] = as_group.vpc_zone_identifier
@@ -175,6 +165,8 @@ class AutoScaleConnection(AWSQueryConnection):
             params['DefaultCooldown'] = as_group.default_cooldown
         if as_group.placement_group:
             params['PlacementGroup'] = as_group.placement_group
+        if as_group.instance_id:
+            params['InstanceId'] = as_group.instance_id
         if as_group.termination_policies:
             self.build_list_params(params, as_group.termination_policies,
                                    'TerminationPolicies')
@@ -188,6 +180,16 @@ class AutoScaleConnection(AWSQueryConnection):
                 for i, tag in enumerate(as_group.tags):
                     tag.build_params(params, i + 1)
         return self.get_object(op, params, Request)
+
+    def attach_instances(self, name, instance_ids):
+        """
+        Attach instances to an autoscaling group.
+        """
+        params = {
+            'AutoScalingGroupName': name,
+        }
+        self.build_list_params(params, instance_ids, 'InstanceIds')
+        return self.get_status('AttachInstances', params)
 
     def create_auto_scaling_group(self, as_group):
         """
@@ -241,8 +243,28 @@ class AutoScaleConnection(AWSQueryConnection):
             params['EbsOptimized'] = 'true'
         else:
             params['EbsOptimized'] = 'false'
+        if launch_config.associate_public_ip_address is True:
+            params['AssociatePublicIpAddress'] = 'true'
+        elif launch_config.associate_public_ip_address is False:
+            params['AssociatePublicIpAddress'] = 'false'
+        if launch_config.volume_type:
+            params['VolumeType'] = launch_config.volume_type
+        if launch_config.delete_on_termination:
+            params['DeleteOnTermination'] = 'true'
+        else:
+            params['DeleteOnTermination'] = 'false'
+        if launch_config.iops:
+            params['Iops'] = launch_config.iops
         return self.get_object('CreateLaunchConfiguration', params,
                                Request, verb='POST')
+
+    def get_account_limits(self):
+        """
+        Returns the limits for the Auto Scaling resources currently granted for
+        your AWS account.
+        """
+        params = {}
+        return self.get_object('DescribeAccountLimits', params, AccountLimits)
 
     def create_scaling_policy(self, scaling_policy):
         """
@@ -696,7 +718,12 @@ class AutoScaleConnection(AWSQueryConnection):
 
         :type notification_types: list
         :param notification_types: The type of events that will trigger
-            the notification.
+            the notification. Valid types are:
+            'autoscaling:EC2_INSTANCE_LAUNCH',
+            'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
+            'autoscaling:EC2_INSTANCE_TERMINATE',
+            'autoscaling:EC2_INSTANCE_TERMINATE_ERROR',
+            'autoscaling:TEST_NOTIFICATION'
         """
 
         name = autoscale_group
@@ -776,7 +803,7 @@ class AutoScaleConnection(AWSQueryConnection):
         params = {'AutoScalingGroupName': group_name,
                   'DesiredCapacity': desired_capacity}
         if honor_cooldown:
-            params['HonorCooldown'] = json.dumps('True')
+            params['HonorCooldown'] = 'true'
 
         return self.get_status('SetDesiredCapacity', params)
 

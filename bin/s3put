@@ -173,6 +173,10 @@ def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
 
     _upload()
 
+def check_valid_region(conn, region):
+    if conn is None:
+        print 'Invalid region (%s)' % region
+        sys.exit(1)
 
 def multipart_upload(bucketname, aws_key, aws_secret, source_path, keyname,
                      reduced, debug, cb, num_cb, acl='private', headers={},
@@ -183,6 +187,7 @@ def multipart_upload(bucketname, aws_key, aws_secret, source_path, keyname,
     """
     conn = boto.s3.connect_to_region(region, aws_access_key_id=aws_key,
                                      aws_secret_access_key=aws_secret)
+    check_valid_region(conn, region)
     conn.debug = debug
     bucket = conn.get_bucket(bucketname)
 
@@ -298,18 +303,18 @@ def main():
             aws_secret_access_key = a
         if o in ('-r', '--reduced'):
             reduced = True
-        if o in ('--header'):
+        if o == '--header':
             (k, v) = a.split("=", 1)
             headers[k] = v
-        if o in ('--host'):
+        if o == '--host':
             host = a
-        if o in ('--multipart'):
+        if o == '--multipart':
             if multipart_capable:
                 multipart_requested = True
             else:
                 print "multipart upload requested but not capable"
                 sys.exit(4)
-        if o in ('--region'):
+        if o == '--region':
             regions = boto.s3.regions()
             for region_info in regions:
                 if region_info.name == a:
@@ -334,6 +339,7 @@ def main():
         connect_args['host'] = host
 
     c = boto.s3.connect_to_region(region or DEFAULT_REGION, **connect_args)
+    check_valid_region(c, region or DEFAULT_REGION)
     c.debug = debug
     b = c.get_bucket(bucket_name, validate=False)
 

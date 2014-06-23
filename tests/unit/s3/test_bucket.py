@@ -4,8 +4,13 @@ from mock import patch
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
+from boto.exception import BotoClientError
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
+from boto.s3.deletemarker import DeleteMarker
+from boto.s3.key import Key
+from boto.s3.multipart import MultiPartUpload
+from boto.s3.prefix import Prefix
 
 
 class TestS3Bucket(AWSMockServiceTestCase):
@@ -50,6 +55,13 @@ class TestS3Bucket(AWSMockServiceTestCase):
 
         with self.assertRaises(ValueError):
             key = bucket.delete_key('')
+
+    def test_bucket_kwargs_misspelling(self):
+        self.set_http_response(status_code=200)
+        bucket = self.service_connection.create_bucket('mybucket')
+
+        with self.assertRaises(TypeError):
+            bucket.get_all_keys(delimeter='foo')
 
     def test__get_all_query_args(self):
         bukket = Bucket()
@@ -101,20 +113,85 @@ class TestS3Bucket(AWSMockServiceTestCase):
             'initial=1&bar=%E2%98%83&max-keys=0&foo=true&some-other=thing'
         )
 
-    @patch.object(Bucket, 'get_all_keys')
-    def test_bucket_copy_key_no_validate(self, mock_get_all_keys):
+    @patch.object(S3Connection, 'head_bucket')
+    def test_bucket_copy_key_no_validate(self, mock_head_bucket):
         self.set_http_response(status_code=200)
         bucket = self.service_connection.create_bucket('mybucket')
 
-        self.assertFalse(mock_get_all_keys.called)
+        self.assertFalse(mock_head_bucket.called)
         self.service_connection.get_bucket('mybucket', validate=True)
-        self.assertTrue(mock_get_all_keys.called)
+        self.assertTrue(mock_head_bucket.called)
 
-        mock_get_all_keys.reset_mock()
-        self.assertFalse(mock_get_all_keys.called)
+        mock_head_bucket.reset_mock()
+        self.assertFalse(mock_head_bucket.called)
         try:
             bucket.copy_key('newkey', 'srcbucket', 'srckey', preserve_acl=True)
         except:
             # Will throw because of empty response.
             pass
-        self.assertFalse(mock_get_all_keys.called)
+        self.assertFalse(mock_head_bucket.called)
+
+    @patch.object(Bucket, '_get_all')
+    def test_bucket_encoding(self, mock_get_all):
+        self.set_http_response(status_code=200)
+        bucket = self.service_connection.get_bucket('mybucket')
+
+        # First, without the encoding.
+        mock_get_all.reset_mock()
+        bucket.get_all_keys()
+        mock_get_all.assert_called_with(
+            [
+                ('Contents', Key),
+                ('CommonPrefixes', Prefix)
+            ], '', None
+        )
+
+        # Now the variants with the encoding.
+        mock_get_all.reset_mock()
+        bucket.get_all_keys(encoding_type='url')
+        mock_get_all.assert_called_with(
+            [
+                ('Contents', Key),
+                ('CommonPrefixes', Prefix)
+            ], '', None,
+            encoding_type='url'
+        )
+
+        mock_get_all.reset_mock()
+        bucket.get_all_versions(encoding_type='url')
+        mock_get_all.assert_called_with(
+            [
+                ('Version', Key),
+                ('CommonPrefixes', Prefix),
+                ('DeleteMarker', DeleteMarker),
+            ], 'versions', None,
+            encoding_type='url'
+        )
+
+        mock_get_all.reset_mock()
+        bucket.get_all_multipart_uploads(encoding_type='url')
+        mock_get_all.assert_called_with(
+            [
+                ('Upload', MultiPartUpload),
+                ('CommonPrefixes', Prefix)
+            ], 'uploads', None,
+            encoding_type='url'
+        )
+
+    @patch.object(Bucket, 'get_all_keys')
+    @patch.object(Bucket, '_get_key_internal')
+    def test_bucket_get_key_no_validate(self, mock_gki, mock_gak):
+        self.set_http_response(status_code=200)
+        bucket = self.service_connection.get_bucket('mybucket')
+        key = bucket.get_key('mykey', validate=False)
+
+        self.assertEqual(len(mock_gki.mock_calls), 0)
+        self.assertTrue(isinstance(key, Key))
+        self.assertEqual(key.name, 'mykey')
+
+        with self.assertRaises(BotoClientError):
+            bucket.get_key(
+                'mykey',
+                version_id='something',
+                validate=False
+            )

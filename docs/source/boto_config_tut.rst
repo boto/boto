@@ -10,30 +10,35 @@ Introduction
 There is a growing list of configuration options for the boto library. Many of
 these options can be passed into the constructors for top-level objects such as
 connections. Some options, such as credentials, can also be read from
-environment variables (e.g. ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``).
-It is also possible to manage these options in a central place through the use
-of boto config files.
+environment variables (e.g. ``AWS_ACCESS_KEY_ID``, ``AWS_SECRET_ACCESS_KEY``,
+``AWS_SECURITY_TOKEN`` and ``AWS_PROFILE``). It is also possible to manage
+these options in a central place through the use of boto config files.
 
 Details
 -------
 
-A boto config file is simply a .ini format configuration file that specifies
-values for options that control the behavior of the boto library. Upon startup,
-the boto library looks for configuration files in the following locations
+A boto config file is a text file formatted like an .ini configuration file that specifies
+values for options that control the behavior of the boto library. In Unix/Linux systems,
+on startup, the boto library looks for configuration files in the following locations
 and in the following order:
 
 * /etc/boto.cfg - for site-wide settings that all users on this machine will use
 * ~/.boto - for user-specific settings
+* ~/.aws/credentials - for credentials shared between SDKs
 
-The options are merged into a single, in-memory configuration that is
-available as :py:mod:`boto.config`. The :py:class:`boto.pyami.config.Config`
+In Windows, create a text file that has any name (e.g. boto.config). It's
+recommended that you put this file in your user folder. Then set 
+a user environment variable named BOTO_CONFIG to the full path of that file.
+
+The options in the config file are merged into a single, in-memory configuration 
+that is available as :py:mod:`boto.config`. The :py:class:`boto.pyami.config.Config`
 class is a subclass of the standard Python
 :py:class:`ConfigParser.SafeConfigParser` object and inherits all of the
 methods of that object. In addition, the boto
 :py:class:`Config <boto.pyami.config.Config>` class defines additional
 methods that are described on the PyamiConfigMethods page.
 
-An example ``~/.boto`` file should look like::
+An example boto config file might look like::
 
     [Credentials]
     aws_access_key_id = <your_access_key_here>
@@ -52,9 +57,12 @@ Credentials
 The Credentials section is used to specify the AWS credentials used for all
 boto requests. The order of precedence for authentication credentials is:
 
-* Credentials passed into Connection class constructor.
+* Credentials passed into the Connection class constructor.
 * Credentials specified by environment variables
-* Credentials specified as options in the config file.
+* Credentials specified as named profiles in the shared credential file.
+* Credentials specified by default in the shared credential file.
+* Credentials specified as named profiles in the config file.
+* Credentials specified by default in the config file.
 
 This section defines the following options: ``aws_access_key_id`` and
 ``aws_secret_access_key``. The former being your AWS key id and the latter
@@ -62,12 +70,39 @@ being the secret key.
 
 For example::
 
+    [profile name_goes_here]
+    aws_access_key_id = <access key for this profile>
+    aws_secret_access_key = <secret key for this profile>
+
     [Credentials]
-    aws_access_key_id = <your access key>
-    aws_secret_access_key = <your secret key>
+    aws_access_key_id = <your default access key>
+    aws_secret_access_key = <your default secret key>
 
 Please notice that quote characters are not used to either side of the '='
-operator even when both your AWS access key id and secret key are strings.
+operator even when both your AWS access key ID and secret key are strings.
+
+If you have multiple AWS keypairs that you use for different purposes,
+use the ``profile`` style shown above. You can set an arbitrary number
+of profiles within your configuration files and then reference them by name
+when you instantiate your connection. If you specify a profile that does not
+exist in the configuration, the keys used under the ``[Credentials]`` heading
+will be applied by default.
+
+The shared credentials file in ``~/.aws/credentials`` uses a slightly
+different format. For example::
+
+    [default]
+    aws_access_key_id = <your default access key>
+    aws_secret_access_key = <your default secret key>
+
+    [name_goes_here]
+    aws_access_key_id = <access key for this profile>
+    aws_secret_access_key = <secret key for this profile>
+
+    [another_profile]
+    aws_access_key_id = <access key for this profile>
+    aws_secret_access_key = <secret key for this profile>
+    aws_security_token = <optional security token for this profile>
 
 For greater security, the secret key can be stored in a keyring and
 retrieved via the keyring package.  To use a keyring, use ``keyring``,
@@ -135,11 +170,18 @@ For example::
 :is_secure: Is the connection over SSL. This setting will overide passed in
   values.
 :https_validate_certificates: Validate HTTPS certificates. This is on by default
-:ca_certificates_file: Location of CA certificates
+:ca_certificates_file: Location of CA certificates or the keyword "system".
+  Using the system keyword lets boto get out of the way and makes the
+  SSL certificate validation the responsibility the underlying SSL
+  implementation provided by the system.
 :http_socket_timeout: Timeout used to overwrite the system default socket
   timeout for httplib .
 :send_crlf_after_proxy_auth_headers: Change line ending behaviour with proxies.
   For more details see this `discussion <https://groups.google.com/forum/?fromgroups=#!topic/boto-dev/teenFvOq2Cc>`_
+:endpoints_path: Allows customizing the regions/endpoints available in Boto.
+  Provide an absolute path to a custom JSON file, which gets merged into the
+  defaults. (This can also be specified with the ``BOTO_ENDPOINTS``
+  environment variable instead.)
 
 These settings will default to::
 
@@ -150,6 +192,7 @@ These settings will default to::
     ca_certificates_file = cacerts.txt
     http_socket_timeout = 60
     send_crlf_after_proxy_auth_headers = False
+    endpoints_path = /path/to/my/boto/endpoints.json
 
 You can control the timeouts and number of retries used when retrieving
 information from the Metadata Service (this is used for retrieving credentials

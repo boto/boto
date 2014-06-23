@@ -27,6 +27,7 @@
 from boto.pyami.config import Config, BotoConfigLocations
 from boto.storage_uri import BucketStorageUri, FileStorageUri
 import boto.plugin
+import datetime
 import os
 import platform
 import re
@@ -36,8 +37,11 @@ import logging.config
 import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.15.0'
+__version__ = '2.29.1'
 Version = __version__  # for backware compatibility
+
+# http://bugs.python.org/issue7980
+datetime.datetime.strptime('', '')
 
 UserAgent = 'Boto/%s Python/%s %s/%s' % (
     __version__,
@@ -54,6 +58,7 @@ TOO_LONG_DNS_NAME_COMP = re.compile(r'[-_a-z0-9]{64}')
 GENERATION_RE = re.compile(r'(?P<versionless_uri_str>.+)'
                            r'#(?P<generation>[0-9]+)$')
 VERSION_RE = re.compile('(?P<versionless_uri_str>.+)#(?P<version_id>.+)$')
+ENDPOINTS_PATH = os.path.join(os.path.dirname(__file__), 'endpoints.json')
 
 
 def init_logging():
@@ -191,6 +196,11 @@ def connect_autoscale(aws_access_key_id=None, aws_secret_access_key=None,
 
     :rtype: :class:`boto.ec2.autoscale.AutoScaleConnection`
     :return: A connection to Amazon's Auto Scaling Service
+
+    :type use_block_device_types bool
+    :param use_block_device_types: Specifies whether to return described Launch Configs with block device mappings containing
+        block device types, or a list of old style block device mappings (deprecated).  This defaults to false for compatability
+        with the old incorrect style.
     """
     from boto.ec2.autoscale import AutoScaleConnection
     return AutoScaleConnection(aws_access_key_id, aws_secret_access_key,
@@ -305,6 +315,25 @@ def connect_rds(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
     """
     from boto.rds import RDSConnection
     return RDSConnection(aws_access_key_id, aws_secret_access_key, **kwargs)
+
+
+def connect_rds2(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.rds2.layer1.RDSConnection`
+    :return: A connection to RDS
+    """
+    from boto.rds2.layer1 import RDSConnection
+    return RDSConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
 
 
 def connect_emr(aws_access_key_id=None, aws_secret_access_key=None, **kwargs):
@@ -624,10 +653,28 @@ def connect_cloudsearch(aws_access_key_id=None,
     :type aws_secret_access_key: string
     :param aws_secret_access_key: Your AWS Secret Access Key
 
-    :rtype: :class:`boto.ec2.autoscale.CloudSearchConnection`
+    :rtype: :class:`boto.cloudsearch.layer2.Layer2`
     :return: A connection to Amazon's CloudSearch service
     """
     from boto.cloudsearch.layer2 import Layer2
+    return Layer2(aws_access_key_id, aws_secret_access_key,
+                  **kwargs)
+
+
+def connect_cloudsearch2(aws_access_key_id=None,
+                         aws_secret_access_key=None,
+                         **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.cloudsearch2.layer2.Layer2`
+    :return: A connection to Amazon's CloudSearch2 service
+    """
+    from boto.cloudsearch2.layer2 import Layer2
     return Layer2(aws_access_key_id, aws_secret_access_key,
                   **kwargs)
 
@@ -720,6 +767,73 @@ def connect_support(aws_access_key_id=None,
         **kwargs
     )
 
+
+def connect_cloudtrail(aws_access_key_id=None,
+                    aws_secret_access_key=None,
+                    **kwargs):
+    """
+    Connect to AWS CloudTrail
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.cloudtrail.layer1.CloudtrailConnection`
+    :return: A connection to the AWS Cloudtrail service
+    """
+    from boto.cloudtrail.layer1 import CloudTrailConnection
+    return CloudTrailConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_directconnect(aws_access_key_id=None,
+                          aws_secret_access_key=None,
+                          **kwargs):
+    """
+    Connect to AWS DirectConnect
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.directconnect.layer1.DirectConnectConnection`
+    :return: A connection to the AWS DirectConnect service
+    """
+    from boto.directconnect.layer1 import DirectConnectConnection
+    return DirectConnectConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+def connect_kinesis(aws_access_key_id=None,
+                    aws_secret_access_key=None,
+                    **kwargs):
+    """
+    Connect to Amazon Kinesis
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.kinesis.layer1.KinesisConnection`
+    :return: A connection to the Amazon Kinesis service
+    """
+    from boto.kinesis.layer1 import KinesisConnection
+    return KinesisConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
 
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
                 bucket_storage_uri_class=BucketStorageUri,

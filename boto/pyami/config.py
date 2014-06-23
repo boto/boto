@@ -20,20 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import StringIO, os, re
-import warnings
 import ConfigParser
-import boto
+import os
+import re
+import StringIO
+import warnings
 
-# If running in Google App Engine there is no "user" and
-# os.path.expanduser() will fail. Attempt to detect this case and use a
-# no-op expanduser function in this case.
-try:
-  os.path.expanduser('~')
-  expanduser = os.path.expanduser
-except (AttributeError, ImportError):
-  # This is probably running on App Engine.
-  expanduser = (lambda x: x)
+import boto
+from boto.compat import expanduser
+
 
 # By default we use two locations for the boto configurations,
 # /etc/boto.cfg and ~/.boto (which works on Windows and Unix).
@@ -42,7 +37,7 @@ BotoConfigLocations = [BotoConfigPath]
 UserConfigPath = os.path.join(expanduser('~'), '.boto')
 BotoConfigLocations.append(UserConfigPath)
 
-# If there's a BOTO_CONFIG variable set, we load ONLY 
+# If there's a BOTO_CONFIG variable set, we load ONLY
 # that variable
 if 'BOTO_CONFIG' in os.environ:
     BotoConfigLocations = [expanduser(os.environ['BOTO_CONFIG'])]
@@ -58,6 +53,8 @@ elif 'BOTO_PATH' in os.environ:
 class Config(ConfigParser.SafeConfigParser):
 
     def __init__(self, path=None, fp=None, do_load=True):
+        # We don't use ``super`` here, because ``ConfigParser`` still uses
+        # old-style classes.
         ConfigParser.SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami',
                                                       'debug' : '0'})
         if do_load:
@@ -147,14 +144,14 @@ class Config(ConfigParser.SafeConfigParser):
         except:
             val = default
         return val
-    
+
     def getint(self, section, name, default=0):
         try:
             val = ConfigParser.SafeConfigParser.getint(self, section, name)
         except:
             val = int(default)
         return val
-    
+
     def getfloat(self, section, name, default=0.0):
         try:
             val = ConfigParser.SafeConfigParser.getfloat(self, section, name)
@@ -172,13 +169,13 @@ class Config(ConfigParser.SafeConfigParser):
         else:
             val = default
         return val
-    
+
     def setbool(self, section, name, value):
         if value:
             self.set(section, name, 'true')
         else:
             self.set(section, name, 'false')
-    
+
     def dump(self):
         s = StringIO.StringIO()
         self.write(s)
@@ -194,7 +191,7 @@ class Config(ConfigParser.SafeConfigParser):
                     fp.write('%s = xxxxxxxxxxxxxxxxxx\n' % option)
                 else:
                     fp.write('%s = %s\n' % (option, self.get(section, option)))
-    
+
     def dump_to_sdb(self, domain_name, item_name):
         from boto.compat import json
         sdb = boto.connect_sdb()
@@ -221,7 +218,7 @@ class Config(ConfigParser.SafeConfigParser):
             d = json.loads(item[section])
             for attr_name in d.keys():
                 attr_value = d[attr_name]
-                if attr_value == None:
+                if attr_value is None:
                     attr_value = 'None'
                 if isinstance(attr_value, bool):
                     self.setbool(section, attr_name, attr_value)

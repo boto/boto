@@ -82,7 +82,7 @@ class MockAWSService(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  api_version=None, security_token=None,
-                 validate_certs=True):
+                 validate_certs=True, profile_name=None):
         self.region = region
         if host is None:
             host = self.region.endpoint
@@ -93,7 +93,8 @@ class MockAWSService(AWSQueryConnection):
                                     host, debug,
                                     https_connection_factory, path,
                                     security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    profile_name=profile_name)
 
 class TestAWSAuthConnection(unittest.TestCase):
     def test_get_path(self):
@@ -114,6 +115,64 @@ class TestAWSAuthConnection(unittest.TestCase):
         self.assertEqual(conn.get_path('/folder//image.jpg'), '/folder//image.jpg')
         self.assertEqual(conn.get_path('/folder////image.jpg'), '/folder////image.jpg')
         self.assertEqual(conn.get_path('///folder////image.jpg'), '///folder////image.jpg')
+        
+    def test_connection_behind_proxy(self):
+        os.environ['http_proxy'] = "http://john.doe:p4ssw0rd@127.0.0.1:8180"
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False
+        )        
+        self.assertEqual(conn.proxy, '127.0.0.1')
+        self.assertEqual(conn.proxy_user, 'john.doe')
+        self.assertEqual(conn.proxy_pass, 'p4ssw0rd')
+        self.assertEqual(conn.proxy_port, '8180')
+        del os.environ['http_proxy']
+        
+    def test_connection_behind_proxy_without_explicit_port(self):
+        os.environ['http_proxy'] = "http://127.0.0.1"
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False,
+            port=8180
+        )        
+        self.assertEqual(conn.proxy, '127.0.0.1')
+        self.assertEqual(conn.proxy_port, 8180)
+        del os.environ['http_proxy']
+
+    # this tests the proper setting of the host_header in v4 signing
+    def test_host_header_with_nonstandard_port(self):
+        # test standard port first
+        conn = V4AuthConnection(
+            'testhost',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret')
+        request = conn.build_base_http_request(method='POST', path='/',
+            auth_path=None, params=None, headers=None, data='', host=None)
+        conn.set_host_header(request)
+        self.assertEqual(request.headers['Host'], 'testhost')
+
+        # next, test non-standard port
+        conn = V4AuthConnection(
+            'testhost',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            port=8773)
+        request = conn.build_base_http_request(method='POST', path='/',
+            auth_path=None, params=None, headers=None, data='', host=None)
+        conn.set_host_header(request)
+        self.assertEqual(request.headers['Host'], 'testhost:8773')
+
+class V4AuthConnection(AWSAuthConnection):
+    def __init__(self, host, aws_access_key_id, aws_secret_access_key, port=443):
+        AWSAuthConnection.__init__(self, host, aws_access_key_id,
+            aws_secret_access_key, port=port)
+
+    def _required_auth_capability(self):
+        return ['hmac-v4']
 
 
 class TestAWSQueryConnection(unittest.TestCase):

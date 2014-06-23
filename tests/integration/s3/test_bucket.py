@@ -34,10 +34,10 @@ from boto.s3.connection import S3Connection
 from boto.s3.bucketlogging import BucketLogging
 from boto.s3.lifecycle import Lifecycle
 from boto.s3.lifecycle import Transition
+from boto.s3.lifecycle import Expiration
 from boto.s3.lifecycle import Rule
 from boto.s3.acl import Grant
 from boto.s3.tagging import Tags, TagSet
-from boto.s3.lifecycle import Lifecycle, Expiration, Transition
 from boto.s3.website import RedirectLocation
 
 
@@ -261,3 +261,22 @@ class S3BucketTest (unittest.TestCase):
             self.assertEqual(rule.expiration.days, days)
             #Note: Boto seems correct? AWS seems broken?
             #self.assertEqual(rule.prefix, prefix)
+
+    def test_lifecycle_with_defaults(self):
+        lifecycle = Lifecycle()
+        lifecycle.add_rule(expiration=30)
+        self.assertTrue(self.bucket.configure_lifecycle(lifecycle))
+        response = self.bucket.get_lifecycle_config()
+        self.assertEqual(len(response), 1)
+        actual_lifecycle = response[0]
+        self.assertNotEqual(len(actual_lifecycle.id), 0)
+        self.assertEqual(actual_lifecycle.prefix, '')
+
+    def test_lifecycle_rule_xml(self):
+        # create a rule directly with id, prefix defaults
+        rule = Rule(status='Enabled', expiration=30)
+        s = rule.to_xml()
+        # Confirm no ID is set in the rule.
+        self.assertEqual(s.find("<ID>"), -1)
+        # Confirm Prefix is '' and not set to 'None'
+        self.assertNotEqual(s.find("<Prefix></Prefix>"), -1)

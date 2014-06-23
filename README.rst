@@ -1,15 +1,15 @@
 ####
 boto
 ####
-boto 2.13.3
+boto 2.29.1
 
-Released: 16-September-2013
+Released: 30-May-2014
 
 .. image:: https://travis-ci.org/boto/boto.png?branch=develop
         :target: https://travis-ci.org/boto/boto
 
 .. image:: https://pypip.in/d/boto/badge.png
-        :target: https://crate.io/packages/boto/
+        :target: https://pypi.python.org/pypi/boto/
 
 ************
 Introduction
@@ -23,6 +23,7 @@ At the moment, boto supports:
   * Amazon Elastic Compute Cloud (EC2)
   * Amazon Elastic Map Reduce (EMR)
   * AutoScaling
+  * Amazon Kinesis
 
 * Content Delivery
 
@@ -42,6 +43,7 @@ At the moment, boto supports:
   * AWS CloudFormation
   * AWS Data Pipeline
   * AWS Opsworks
+  * AWS CloudTrail
 
 * Identity & Access
 
@@ -65,6 +67,7 @@ At the moment, boto supports:
   * Amazon Route53
   * Amazon Virtual Private Cloud (VPC)
   * Elastic Load Balancing (ELB)
+  * AWS Direct Connect
 
 * Payments and Billing
 
@@ -105,22 +108,22 @@ Install via `pip`_:
 
 ::
 
-	$ pip install boto
+    $ pip install boto
 
 Install from source:
 
 ::
 
-	$ git clone git://github.com/boto/boto.git
-	$ cd boto
-	$ python setup.py install
+    $ git clone git://github.com/boto/boto.git
+    $ cd boto
+    $ python setup.py install
 
 **********
 ChangeLogs
 **********
 
 To see what has changed over time in boto, you can check out the
-`release notes`_ in the wiki.
+release notes at `http://docs.pythonboto.org/en/latest/#release-notes`
 
 ***************************
 Finding Out More About Boto

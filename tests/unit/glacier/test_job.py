@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+from StringIO import StringIO
 from tests.unit import unittest
 import mock
 
@@ -54,6 +55,27 @@ class TestJob(unittest.TestCase):
                 self.job.get_output(byte_range=(1, 1024), validate_checksum=True)
             # With validate_checksum set to False, this call succeeds.
             self.job.get_output(byte_range=(1, 1024), validate_checksum=False)
+
+    def test_download_to_fileobj(self):
+        http_response=mock.Mock(read=mock.Mock(return_value='xyz'))
+        response = GlacierResponse(http_response, None)
+        response['TreeHash'] = 'tree_hash'
+        self.api.get_job_output.return_value = response
+        fileobj = StringIO()
+        self.job.archive_size = 3
+        with mock.patch('boto.glacier.job.tree_hash_from_str') as t:
+            t.return_value = 'tree_hash'
+            self.job.download_to_fileobj(fileobj)
+        fileobj.seek(0)
+        self.assertEqual(http_response.read.return_value, fileobj.read())
+
+    def test_calc_num_chunks(self):
+        self.job.archive_size = 0
+        self.assertEqual(self.job._calc_num_chunks(self.job.DefaultPartSize), 0)
+        self.job.archive_size = 1
+        self.assertEqual(self.job._calc_num_chunks(self.job.DefaultPartSize), 1)
+        self.job.archive_size = self.job.DefaultPartSize + 1
+        self.assertEqual(self.job._calc_num_chunks(self.job.DefaultPartSize), 2)
 
 
 if __name__ == '__main__':

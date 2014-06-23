@@ -23,6 +23,7 @@
 
 from __future__ import with_statement
 import errno
+import hashlib
 import mimetypes
 import os
 import re
@@ -40,7 +41,7 @@ from boto.provider import Provider
 from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
 from boto import UserAgent
-from boto.utils import compute_md5
+from boto.utils import compute_md5, compute_hash
 from boto.utils import find_matching_headers
 from boto.utils import merge_headers_by_name
 try:
@@ -216,7 +217,8 @@ class Key(object):
             self.delete_marker = False
 
     def handle_restore_headers(self, response):
-        header = response.getheader('x-amz-restore')
+        provider = self.bucket.connection.provider
+        header = response.getheader(provider.restore_header)
         if header is None:
             return
         parts = header.split(',', 1)
@@ -257,7 +259,7 @@ class Key(object):
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
         """
-        if self.resp == None:
+        if self.resp is None:
             self.mode = 'r'
 
             provider = self.bucket.connection.provider
@@ -298,6 +300,7 @@ class Key(object):
                     self.content_disposition = value
             self.handle_version_headers(self.resp)
             self.handle_encryption_headers(self.resp)
+            self.handle_restore_headers(self.resp)
             self.handle_addl_headers(self.resp.getheaders())
 
     def open_write(self, headers=None, override_num_retries=None):
@@ -537,19 +540,19 @@ class Key(object):
 
     # convenience methods for setting/getting ACL
     def set_acl(self, acl_str, headers=None):
-        if self.bucket != None:
+        if self.bucket is not None:
             self.bucket.set_acl(acl_str, self.name, headers=headers)
 
     def get_acl(self, headers=None):
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.get_acl(self.name, headers=headers)
 
     def get_xml_acl(self, headers=None):
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.get_xml_acl(self.name, headers=headers)
 
     def set_xml_acl(self, acl_str, headers=None):
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.set_xml_acl(acl_str, self.name, headers=headers)
 
     def set_canned_acl(self, acl_str, headers=None):
@@ -881,7 +884,7 @@ class Key(object):
                     'Content-Type', headers)
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
-            if self.content_type == None:
+            if self.content_type is None:
                 self.content_type = self.DefaultContentType
             headers['Content-Type'] = self.content_type
         else:
@@ -894,6 +897,12 @@ class Key(object):
             #    headers['Trailer'] = "Content-MD5"
         else:
             headers['Content-Length'] = str(self.size)
+        # This is terrible. We need a SHA256 of the body for SigV4, but to do
+        # the chunked ``sender`` behavior above, the ``fp`` isn't available to
+        # the auth mechanism (because closures). Detect if it's SigV4 & embelish
+        # while we can before the auth calculations occur.
+        if 'hmac-v4-s3' in self.bucket.connection._required_auth_capability():
+            headers['_sha256'] = compute_hash(fp, hash_algorithm=hashlib.sha256)[0]
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
         resp = self.bucket.connection.make_request(
@@ -1053,7 +1062,7 @@ class Key(object):
             if provider.storage_class_header:
                 headers[provider.storage_class_header] = self.storage_class
 
-        if self.bucket != None:
+        if self.bucket is not None:
             if not replace:
                 if self.bucket.lookup(self.name):
                     return
@@ -1187,7 +1196,7 @@ class Key(object):
                 # What if different providers provide different classes?
         if hasattr(fp, 'name'):
             self.path = fp.name
-        if self.bucket != None:
+        if self.bucket is not None:
             if not md5 and provider.supports_chunked_transfer():
                 # defer md5 calculation to on the fly and
                 # we don't know anything about size yet.
@@ -1226,7 +1235,7 @@ class Key(object):
                 self.md5 = md5[0]
                 self.base64md5 = md5[1]
 
-            if self.name == None:
+            if self.name is None:
                 self.name = self.md5
             if not replace:
                 if self.bucket.lookup(self.name):
@@ -1305,7 +1314,7 @@ class Key(object):
                                                reduced_redundancy,
                                                encrypt_key=encrypt_key)
 
-    def set_contents_from_string(self, s, headers=None, replace=True,
+    def set_contents_from_string(self, string_data, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None, md5=None,
                                  reduced_redundancy=False,
                                  encrypt_key=False):
@@ -1362,9 +1371,9 @@ class Key(object):
             be encrypted on the server-side by S3 and will be stored
             in an encrypted form while at rest in S3.
         """
-        if isinstance(s, unicode):
-            s = s.encode("utf-8")
-        fp = StringIO.StringIO(s)
+        if isinstance(string_data, unicode):
+            string_data = string_data.encode("utf-8")
+        fp = StringIO.StringIO(string_data)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5, reduced_redundancy,
                                         encrypt_key=encrypt_key)
@@ -1409,6 +1418,14 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
+            
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
         """
         self._get_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
                                 torrent=torrent, version_id=version_id,
@@ -1566,8 +1583,16 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
+
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             if res_download_handler:
                 res_download_handler.get_file(self, fp, headers, cb, num_cb,
                                               torrent=torrent,
@@ -1622,20 +1647,27 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
+            
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
         """
-        fp = open(filename, 'wb')
         try:
-            self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
-                                      version_id=version_id,
-                                      res_download_handler=res_download_handler,
-                                      response_headers=response_headers)
+            with open(filename, 'wb') as fp:
+                self.get_contents_to_file(fp, headers, cb, num_cb,
+                                          torrent=torrent,
+                                          version_id=version_id,
+                                          res_download_handler=res_download_handler,
+                                          response_headers=response_headers)
         except Exception:
             os.remove(filename)
             raise
-        finally:
-            fp.close()
         # if last_modified date was sent from s3, try to set file's timestamp
-        if self.last_modified != None:
+        if self.last_modified is not None:
             try:
                 modified_tuple = rfc822.parsedate_tz(self.last_modified)
                 modified_stamp = int(rfc822.mktime_tz(modified_tuple))
@@ -1680,6 +1712,14 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
+
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
 
         :rtype: string
         :returns: The contents of the file as a string

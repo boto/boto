@@ -35,7 +35,7 @@ class ResourceRecordSets(ResultSet):
     """
 
     ChangeResourceRecordSetsBody = """<?xml version="1.0" encoding="UTF-8"?>
-    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
+    <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
             <ChangeBatch>
                 <Comment>%(comment)s</Comment>
                 <Changes>%(changes)s</Changes>
@@ -54,7 +54,7 @@ class ResourceRecordSets(ResultSet):
         self.changes = []
         self.next_record_name = None
         self.next_record_type = None
-        ResultSet.__init__(self, [('ResourceRecordSet', Record)])
+        super(ResourceRecordSets, self).__init__([('ResourceRecordSet', Record)])
 
     def __repr__(self):
         if self.changes:
@@ -66,12 +66,13 @@ class ResourceRecordSets(ResultSet):
 
     def add_change(self, action, name, type, ttl=600,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
-            weight=None, region=None):
+            weight=None, region=None, alias_evaluate_target_health=None,
+            health_check=None, failover=None):
         """
         Add a change request to the set.
 
         :type action: str
-        :param action: The action to perform ('CREATE'|'DELETE')
+        :param action: The action to perform ('CREATE'|'DELETE'|'UPSERT')
 
         :type name: str
         :param name: The name of the domain you want to perform the action on.
@@ -118,11 +119,26 @@ class ResourceRecordSets(ResultSet):
             record sets that have the same combination of DNS name and type,
             a value that determines which region this should be associated with
             for the latency-based routing
+
+        :type alias_evaluate_target_health: Boolean
+        :param alias_evaluate_target_health: *Required for alias resource record sets* Indicates
+        whether this Resource Record Set should respect the health status of
+        any health checks associated with the ALIAS target record which it is
+        linked to.
+
+        :type health_check: str
+        :param health_check: Health check to associate with this record
+        
+        :type failover: str
+        :param failover: *Failover resource record sets only* Whether this is the
+        primary or secondary resource record set. 
         """
         change = Record(name, type, ttl,
                 alias_hosted_zone_id=alias_hosted_zone_id,
                 alias_dns_name=alias_dns_name, identifier=identifier,
-                weight=weight, region=region)
+                weight=weight, region=region,
+                alias_evaluate_target_health=alias_evaluate_target_health,
+                health_check=health_check, failover=failover)
         self.changes.append([action, change])
         return change
 
@@ -156,11 +172,11 @@ class ResourceRecordSets(ResultSet):
         elif name == 'NextRecordType':
             self.next_record_type = value
         else:
-            return ResultSet.endElement(self, name, value, connection)
+            return super(ResourceRecordSets, self).endElement(name, value, connection)
 
     def __iter__(self):
         """Override the next function to support paging"""
-        results = ResultSet.__iter__(self)
+        results = super(ResourceRecordSets, self).__iter__()
         truncated = self.is_truncated
         while results:
             for obj in results:
@@ -178,11 +194,14 @@ class ResourceRecordSets(ResultSet):
 class Record(object):
     """An individual ResourceRecordSet"""
 
+    HealthCheckBody = """<HealthCheckId>%s</HealthCheckId>"""
+
     XMLBody = """<ResourceRecordSet>
         <Name>%(name)s</Name>
         <Type>%(type)s</Type>
         %(weight)s
         %(body)s
+        %(health_check)s
     </ResourceRecordSet>"""
 
     WRRBody = """
@@ -193,6 +212,11 @@ class Record(object):
     RRRBody = """
         <SetIdentifier>%(identifier)s</SetIdentifier>
         <Region>%(region)s</Region>
+    """
+    
+    FailoverBody = """
+        <SetIdentifier>%(identifier)s</SetIdentifier>
+        <Failover>%(failover)s</Failover>
     """
 
     ResourceRecordsBody = """
@@ -206,19 +230,22 @@ class Record(object):
     </ResourceRecord>"""
 
     AliasBody = """<AliasTarget>
-        <HostedZoneId>%s</HostedZoneId>
-        <DNSName>%s</DNSName>
+        <HostedZoneId>%(hosted_zone_id)s</HostedZoneId>
+        <DNSName>%(dns_name)s</DNSName>
+        %(eval_target_health)s
     </AliasTarget>"""
 
+    EvaluateTargetHealth = """<EvaluateTargetHealth>%s</EvaluateTargetHealth>"""
 
 
     def __init__(self, name=None, type=None, ttl=600, resource_records=None,
             alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
-            weight=None, region=None):
+            weight=None, region=None, alias_evaluate_target_health=None,
+            health_check=None, failover=None):
         self.name = name
         self.type = type
         self.ttl = ttl
-        if resource_records == None:
+        if resource_records is None:
             resource_records = []
         self.resource_records = resource_records
         self.alias_hosted_zone_id = alias_hosted_zone_id
@@ -226,6 +253,9 @@ class Record(object):
         self.identifier = identifier
         self.weight = weight
         self.region = region
+        self.alias_evaluate_target_health = alias_evaluate_target_health
+        self.health_check = health_check
+        self.failover = failover
 
     def __repr__(self):
         return '<Record:%s:%s:%s>' % (self.name, self.type, self.to_print())
@@ -234,16 +264,25 @@ class Record(object):
         """Add a resource record value"""
         self.resource_records.append(value)
 
-    def set_alias(self, alias_hosted_zone_id, alias_dns_name):
+    def set_alias(self, alias_hosted_zone_id, alias_dns_name,
+                  alias_evaluate_target_health=False):
         """Make this an alias resource record set"""
         self.alias_hosted_zone_id = alias_hosted_zone_id
         self.alias_dns_name = alias_dns_name
+        self.alias_evaluate_target_health = alias_evaluate_target_health
 
     def to_xml(self):
         """Spit this resource record set out as XML"""
-        if self.alias_hosted_zone_id != None and self.alias_dns_name != None:
+        if self.alias_hosted_zone_id is not None and self.alias_dns_name is not None:
             # Use alias
-            body = self.AliasBody % (self.alias_hosted_zone_id, self.alias_dns_name)
+            if self.alias_evaluate_target_health is not None:
+                eval_target_health = self.EvaluateTargetHealth % ('true' if self.alias_evaluate_target_health else 'false')
+            else:
+                eval_target_health = ""
+
+            body = self.AliasBody % { "hosted_zone_id": self.alias_hosted_zone_id,
+                                      "dns_name": self.alias_dns_name,
+                                      "eval_target_health": eval_target_health }
         else:
             # Use resource record(s)
             records = ""
@@ -258,34 +297,46 @@ class Record(object):
 
         weight = ""
 
-        if self.identifier != None and self.weight != None:
+        if self.identifier is not None and self.weight is not None:
             weight = self.WRRBody % {"identifier": self.identifier, "weight":
                     self.weight}
-        elif self.identifier != None and self.region != None:
+        elif self.identifier is not None and self.region is not None:
             weight = self.RRRBody % {"identifier": self.identifier, "region":
                     self.region}
+        elif self.identifier is not None and self.failover is not None:
+            weight = self.FailoverBody % {"identifier": self.identifier, "failover":
+                    self.failover}
+
+        health_check = ""
+        if self.health_check is not None:
+            health_check = self.HealthCheckBody % (self.health_check)
 
         params = {
             "name": self.name,
             "type": self.type,
             "weight": weight,
             "body": body,
+            "health_check": health_check
         }
         return self.XMLBody % params
 
     def to_print(self):
         rr = ""
-        if self.alias_hosted_zone_id != None and self.alias_dns_name != None:
+        if self.alias_hosted_zone_id is not None and self.alias_dns_name is not None:
             # Show alias
             rr = 'ALIAS ' + self.alias_hosted_zone_id + ' ' + self.alias_dns_name
+            if self.alias_evaluate_target_health is not None:
+                rr += ' (EvalTarget %s)' % self.alias_evaluate_target_health
         else:
             # Show resource record(s)
             rr =  ",".join(self.resource_records)
 
-        if self.identifier != None and self.weight != None:
+        if self.identifier is not None and self.weight is not None:
             rr += ' (WRR id=%s, w=%s)' % (self.identifier, self.weight)
-        elif self.identifier != None and self.region != None:
+        elif self.identifier is not None and self.region is not None:
             rr += ' (LBR id=%s, region=%s)' % (self.identifier, self.region)
+        elif self.identifier is not None and self.failover is not None:
+            rr += ' (FAILOVER id=%s, failover=%s)' % (self.identifier, self.failover)
 
         return rr
 
@@ -304,10 +355,14 @@ class Record(object):
             self.alias_dns_name = value
         elif name == 'SetIdentifier':
             self.identifier = value
+        elif name == 'EvaluateTargetHealth':
+            self.alias_evaluate_target_health = value.lower() == 'true'
         elif name == 'Weight':
             self.weight = value
         elif name == 'Region':
             self.region = value
+        elif name == 'Failover':
+            self.failover = value
 
     def startElement(self, name, attrs, connection):
         return None

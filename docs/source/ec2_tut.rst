@@ -176,3 +176,40 @@ If you no longer need a snapshot, you can also easily delete it::
    True
 
 
+Working With Launch Configurations
+----------------------------------
+
+Launch Configurations allow you to create a re-usable set of properties for an
+instance.  These are used with AutoScaling groups to produce consistent repeatable
+instances sets.
+
+Creating a Launch Configuration is easy:
+
+   >>> conn = boto.connect_autoscale()
+   >>> config = LaunchConfig(name='foo', image_id='ami-abcd1234', key_name='foo.pem')
+   >>> conn.create_launch_configuration(config)
+
+Once you have a launch configuration, you can list you current configurations:
+
+   >>> conn = boto.connect_autoscale()
+   >>> config = conn.get_all_launch_configurations(names=['foo'])
+
+If you no longer need a launch configuration, you can delete it:
+
+   >>> conn = boto.connect_autoscale()
+   >>> conn.delete_launch_configuration('foo')
+
+.. versionchanged:: 2.27.0
+.. Note::
+
+    If ``use_block_device_types=True`` is passed to the connection it will deserialize
+    Launch Configurations with Block Device Mappings into a re-usable format with
+    BlockDeviceType objects, similar to how AMIs are deserialized currently.  Legacy
+    behavior is to put them into a format that is incompatabile with creating new Launch
+    Configurations. This switch is in place to preserve backwards compatability, but
+    its usage is the preferred format going forward.
+
+    If you would like to use the new format, you should use something like:
+
+      >>> conn = boto.connect_autoscale(use_block_device_types=True)
+      >>> config = conn.get_all_launch_configurations(names=['foo'])

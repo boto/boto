@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -26,7 +26,7 @@ from StringIO import StringIO
 
 class ResponseGroup(xml.sax.ContentHandler):
     """A Generic "Response Group", which can
-    be anything from the entire list of Items to 
+    be anything from the entire list of Items to
     specific response elements within an item"""
 
     def __init__(self, connection=None, nodename=None):
@@ -45,7 +45,7 @@ class ResponseGroup(xml.sax.ContentHandler):
     #
     def get(self, name):
         return self.__dict__.get(name)
-    
+
     def set(self, name, value):
         self.__dict__[name] = value
 
@@ -106,11 +106,13 @@ class ItemSet(ResponseGroup):
         self.curItem = None
         self.total_results = 0
         self.total_pages = 0
+        self.is_valid = False
+        self.errors = []
 
     def startElement(self, name, attrs, connection):
         if name == "Item":
             self.curItem = Item(self._connection)
-        elif self.curItem != None:
+        elif self.curItem is not None:
             self.curItem.startElement(name, attrs, connection)
         return None
 
@@ -119,17 +121,24 @@ class ItemSet(ResponseGroup):
             self.total_results = value
         elif name == 'TotalPages':
             self.total_pages = value
-        elif name == "Item":
+        elif name == 'IsValid':
+            if value == 'True':
+                self.is_valid = True
+        elif name == 'Code':
+            self.errors.append({'Code': value, 'Message': None})
+        elif name == 'Message':
+            self.errors[-1]['Message'] = value
+        elif name == 'Item':
             self.objs.append(self.curItem)
             self._xml.write(self.curItem.to_xml())
             self.curItem = None
-        elif self.curItem != None:
+        elif self.curItem is not None:
             self.curItem.endElement(name, value, connection)
         return None
 
     def next(self):
         """Special paging functionality"""
-        if self.iter == None:
+        if self.iter is None:
             self.iter = iter(self.objs)
         try:
             return self.iter.next()
