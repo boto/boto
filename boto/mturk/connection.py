@@ -388,8 +388,8 @@ class MTurkConnection(AWSQueryConnection):
 
     def get_all_assignments(self, hit_id, status=None,
                                 sort_by='SubmitTime',
-                                sort_direction='Ascending', page_size=10,
-                                page_number=1, response_groups=None):
+                                sort_direction='Ascending',
+                                response_groups=None):
         """
         Return all of a HITs assignments.
 
