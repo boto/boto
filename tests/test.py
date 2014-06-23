@@ -74,7 +74,8 @@ def main(whitelist=[]):
         for i, arg in enumerate(remaining_args):
             if arg == 'default':
                 if sys.version_info[0] == 3:
-                    remaining_args = PY3_WHITELIST
+                    del remaining_args[i]
+                    remaining_args += PY3_WHITELIST
                 else:
                     remaining_args[i] = 'tests/unit'
 
