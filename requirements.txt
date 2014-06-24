@@ -9,3 +9,4 @@ argparse==1.2.1
 httpretty>=0.7.0
 paramiko>=1.10.0
 PyYAML>=3.10
+coverage==3.7.1

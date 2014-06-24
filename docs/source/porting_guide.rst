@@ -48,7 +48,12 @@ Please follow the following steps when porting a module:
 
 * Fix any failing tests. This is the fun part!
 * If code you modified is not covered by tests, try to cover it with
-  existing tests or write new tests.
+  existing tests or write new tests. Here is how you can generate a
+  coverage report in ``cover/index.html``::
+
+    # Run a test with coverage
+    tox -e py33 -- default --with-coverage --cover-html --cover-package boto
+
 * Update ``README.rst`` and ``docs/source/index.rst`` to label your module
   as supporting Python 3
 * Submit a pull request!
