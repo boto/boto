@@ -83,7 +83,7 @@ class HealthCheck(object):
         :param port: Port to check
 
         :type hc_type: str
-        :param ip_addr: One of HTTP | HTTPS | HTTP_STR_MATCH | HTTPS_STR_MATCH | TCP
+        :param hc_type: One of HTTP | HTTPS | HTTP_STR_MATCH | HTTPS_STR_MATCH | TCP
 
         :type resource_path: str
         :param resource_path: Path to check
