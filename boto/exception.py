@@ -30,13 +30,8 @@ import xml.sax
 import boto
 
 from boto import handler
-from boto.compat import json, six
+from boto.compat import json, six, StandardError
 from boto.resultset import ResultSet
-
-
-if six.PY3:
-    # StandardError was removed, so use the base exception type instead
-    StandardError = Exception
 
 class BotoClientError(StandardError):
     """
