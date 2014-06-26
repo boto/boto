@@ -19,8 +19,6 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-from __future__ import print_function
-
 from optparse import OptionParser
 from boto.services.servicedef import ServiceDef
 from boto.services.submit import Submitter

@@ -18,8 +18,6 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-from __future__ import print_function
-
 import errno
 import httplib
 import os
@@ -104,15 +102,15 @@ class ResumableUploadHandler(object):
             # is attempted on a file), but warn user for other errors.
             if e.errno != errno.ENOENT:
                 # Will restart because self.tracker_uri is None.
-                print(('Couldn\'t read URI tracker file (%s): %s. Restarting '
+                print('Couldn\'t read URI tracker file (%s): %s. Restarting '
                       'upload from scratch.' %
-                      (self.tracker_file_name, e.strerror)))
+                      (self.tracker_file_name, e.strerror))
         except InvalidUriError as e:
             # Warn user, but proceed (will restart because
             # self.tracker_uri is None).
-            print(('Invalid tracker URI (%s) found in URI tracker file '
+            print('Invalid tracker URI (%s) found in URI tracker file '
                   '(%s). Restarting upload from scratch.' %
-                  (uri, self.tracker_file_name)))
+                  (uri, self.tracker_file_name))
         finally:
             if f:
                 f.close()
@@ -532,19 +530,19 @@ class ResumableUploadHandler(object):
     def handle_resumable_upload_exception(self, e, debug):
         if (e.disposition == ResumableTransferDisposition.ABORT_CUR_PROCESS):
             if debug >= 1:
-                print(('Caught non-retryable ResumableUploadException (%s); '
-                      'aborting but retaining tracker file' % e.message))
+                print('Caught non-retryable ResumableUploadException (%s); '
+                      'aborting but retaining tracker file' % e.message)
             raise
         elif (e.disposition == ResumableTransferDisposition.ABORT):
             if debug >= 1:
-                print(('Caught non-retryable ResumableUploadException (%s); '
-                      'aborting and removing tracker file' % e.message))
+                print('Caught non-retryable ResumableUploadException (%s); '
+                      'aborting and removing tracker file' % e.message)
             self._remove_tracker_file()
             raise
         else:
             if debug >= 1:
-                print(('Caught ResumableUploadException (%s) - will retry' %
-                      e.message))
+                print('Caught ResumableUploadException (%s) - will retry' %
+                      e.message)
 
     def track_progress_less_iterations(self, server_had_bytes_before_attempt,
                                        roll_back_md5=True, debug=0):
@@ -568,9 +566,9 @@ class ResumableUploadHandler(object):
         # Use binary exponential backoff to desynchronize client requests.
         sleep_time_secs = random.random() * (2**self.progress_less_iterations)
         if debug >= 1:
-            print(('Got retryable failure (%d progress-less in a row).\n'
+            print('Got retryable failure (%d progress-less in a row).\n'
                    'Sleeping %3.1f seconds before re-trying' %
-                   (self.progress_less_iterations, sleep_time_secs)))
+                   (self.progress_less_iterations, sleep_time_secs))
         time.sleep(sleep_time_secs)
 
     def send_file(self, key, fp, headers, cb=None, num_cb=10, hash_algs=None):
@@ -669,7 +667,7 @@ class ResumableUploadHandler(object):
                 return
             except self.RETRYABLE_EXCEPTIONS as e:
                 if debug >= 1:
-                    print(('Caught exception (%s)' % e.__repr__()))
+                    print('Caught exception (%s)' % e.__repr__())
                 if isinstance(e, IOError) and e.errno == errno.EPIPE:
                     # Broken pipe error causes httplib to immediately
                     # close the socket (http://bugs.python.org/issue5542),

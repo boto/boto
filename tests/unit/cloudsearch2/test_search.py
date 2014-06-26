@@ -1,4 +1,3 @@
-from __future__ import print_function
 #!/usr/bin env python
 
 from tests.unit import unittest

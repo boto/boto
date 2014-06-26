@@ -22,8 +22,6 @@
 """
 Represents an SQS Queue
 """
-from __future__ import print_function
-
 from boto.compat import urllib
 from boto.sqs.message import Message
 

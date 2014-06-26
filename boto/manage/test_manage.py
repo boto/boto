@@ -1,4 +1,3 @@
-from __future__ import print_function
 from boto.manage.server import Server
 from boto.manage.volume import Volume
 import time

@@ -24,8 +24,6 @@
 """
 Some unit tests for the S3 Encryption
 """
-from __future__ import print_function
-
 import unittest
 import time
 from boto.s3.connection import S3Connection

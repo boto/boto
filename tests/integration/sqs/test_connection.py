@@ -24,8 +24,6 @@
 """
 Some unit tests for the SQSConnection
 """
-from __future__ import print_function, with_statement
-
 import time
 from threading import Timer
 from tests.unit import unittest
