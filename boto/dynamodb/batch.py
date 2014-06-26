@@ -1,4 +1,3 @@
-from boto.compat import six
 # Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
@@ -21,6 +20,7 @@ from boto.compat import six
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+from boto.compat import six
 
 
 class Batch(object):
