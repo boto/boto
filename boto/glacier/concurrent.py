@@ -30,10 +30,11 @@ import logging
 from Queue import Queue, Empty
 import binascii
 
-from .utils import DEFAULT_PART_SIZE, minimum_part_size, chunk_hashes, \
-        tree_hash, bytes_to_hex
-from .exceptions import UploadArchiveError, DownloadArchiveError, \
-        TreeHashDoesNotMatchError
+from boto.glacier.utils import DEFAULT_PART_SIZE, minimum_part_size, \
+                               chunk_hashes, tree_hash, bytes_to_hex
+from boto.glacier.exceptions import UploadArchiveError, \
+                                    DownloadArchiveError, \
+                                    TreeHashDoesNotMatchError
 
 
 _END_SENTINEL = object()

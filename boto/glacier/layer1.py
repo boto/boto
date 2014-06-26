@@ -27,9 +27,9 @@ import os
 import boto.glacier
 from boto.compat import json
 from boto.connection import AWSAuthConnection
-from .exceptions import UnexpectedHTTPResponseError
-from .response import GlacierResponse
-from .utils import ResettingFileSender
+from boto.glacier.exceptions import UnexpectedHTTPResponseError
+from boto.glacier.response import GlacierResponse
+from boto.glacier.utils import ResettingFileSender
 
 
 class Layer1(AWSAuthConnection):

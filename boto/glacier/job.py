@@ -24,8 +24,9 @@ from __future__ import with_statement
 import math
 import socket
 
-from .exceptions import TreeHashDoesNotMatchError, DownloadArchiveError
-from .utils import tree_hash_from_str
+from boto.glacier.exceptions import TreeHashDoesNotMatchError, \
+                                    DownloadArchiveError
+from boto.glacier.utils import tree_hash_from_str
 
 
 class Job(object):

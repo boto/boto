@@ -2,7 +2,8 @@ import mock
 from boto.compat import json
 from tests.unit import unittest
 
-from .test_search import HOSTNAME, CloudSearchSearchBaseTest
+from tests.unit.cloudsearch2.test_search import HOSTNAME, \
+                                                CloudSearchSearchBaseTest
 from boto.cloudsearch2.search import SearchConnection, SearchServiceException
 
 

@@ -21,7 +21,7 @@
 # IN THE SOFTWARE.
 
 import xml.sax
-from . import utils
+from boto import utils
 
 class XmlHandler(xml.sax.ContentHandler):
 

@@ -56,8 +56,8 @@ import time
 import xml.sax
 import copy
 
-from . import auth
-from . import auth_handler
+from boto import auth
+from boto import auth_handler
 import boto
 import boto.utils
 import boto.handler

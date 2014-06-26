@@ -5,7 +5,7 @@ import boto
 import boto.connection
 import boto.jsonresponse
 import boto.exception
-from . import awsqueryrequest
+from boto.roboto import awsqueryrequest
 
 class NoCredentialsError(boto.exception.BotoClientError):
 

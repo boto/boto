@@ -27,7 +27,7 @@ Python types and vice-versa.
 import base64
 from decimal import (Decimal, DecimalException, Context,
                      Clamped, Overflow, Inexact, Underflow, Rounded)
-from .exceptions import DynamoDBNumberError
+from boto.dynamodb.exceptions import DynamoDBNumberError
 from boto.compat import filter, map
 
 

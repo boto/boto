@@ -24,7 +24,7 @@
 # IN THE SOFTWARE.
 #
 
-from . import exception
+from boto.route53 import exception
 import random
 import urllib
 import uuid
