@@ -88,7 +88,7 @@ class BotoServerError(StandardError):
         if isinstance(self.body, bytes):
             try:
                 self.body = self.body.decode('utf-8')
-            except:
+            except UnicodeDecodeError:
                 boto.log.debug('Unable to decode body from bytes!')
 
         # Attempt to parse the error response. If body isn't present,
