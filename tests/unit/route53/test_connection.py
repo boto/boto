@@ -298,6 +298,18 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
                 </ResourceRecord>
             </ResourceRecords>
         </ResourceRecordSet>
+        <ResourceRecordSet>
+            <Name>us-west-2-evaluate-health-healthcheck.example.com.</Name>
+            <Type>A</Type>
+            <SetIdentifier>latency-example-us-west-2-evaluate-health-healthcheck</SetIdentifier>
+            <Region>us-west-2</Region>
+            <AliasTarget>
+                <HostedZoneId>ABCDEFG123456</HostedZoneId>
+                <EvaluateTargetHealth>true</EvaluateTargetHealth>
+                <DNSName>example-123456-evaluate-health-healthcheck.us-west-2.elb.amazonaws.com.</DNSName>
+            </AliasTarget>
+            <HealthCheckId>076a32f8-86f7-4c9e-9fa2-c163d5be67d9</HealthCheckId>
+        </ResourceRecordSet>
     </ResourceRecordSets>
     <IsTruncated>false</IsTruncated>
     <MaxItems>100</MaxItems>
@@ -347,6 +359,12 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.assertEqual(failover_record.identifier, 'failover-primary')
         self.assertEqual(failover_record.failover, 'PRIMARY')
         self.assertEqual(failover_record.ttl, '60')
+
+        healthcheck_record = response[5]
+        self.assertEqual(healthcheck_record.health_check, '076a32f8-86f7-4c9e-9fa2-c163d5be67d9')
+        self.assertEqual(healthcheck_record.name, 'us-west-2-evaluate-health-healthcheck.example.com.')
+        self.assertEqual(healthcheck_record.identifier, 'latency-example-us-west-2-evaluate-health-healthcheck')
+        self.assertEqual(healthcheck_record.alias_dns_name, 'example-123456-evaluate-health-healthcheck.us-west-2.elb.amazonaws.com.')
 
 @attr(route53=True)
 class TestCreateHealthCheckRoute53IpAddress(AWSMockServiceTestCase):
