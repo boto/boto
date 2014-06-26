@@ -122,16 +122,16 @@ class ResourceRecordSets(ResultSet):
 
         :type alias_evaluate_target_health: Boolean
         :param alias_evaluate_target_health: *Required for alias resource record sets* Indicates
-        whether this Resource Record Set should respect the health status of
-        any health checks associated with the ALIAS target record which it is
-        linked to.
+            whether this Resource Record Set should respect the health status of
+            any health checks associated with the ALIAS target record which it is
+            linked to.
 
         :type health_check: str
         :param health_check: Health check to associate with this record
-        
+
         :type failover: str
         :param failover: *Failover resource record sets only* Whether this is the
-        primary or secondary resource record set. 
+            primary or secondary resource record set.
         """
         change = Record(name, type, ttl,
                 alias_hosted_zone_id=alias_hosted_zone_id,
@@ -213,7 +213,7 @@ class Record(object):
         <SetIdentifier>%(identifier)s</SetIdentifier>
         <Region>%(region)s</Region>
     """
-    
+
     FailoverBody = """
         <SetIdentifier>%(identifier)s</SetIdentifier>
         <Failover>%(failover)s</Failover>
@@ -363,6 +363,8 @@ class Record(object):
             self.region = value
         elif name == 'Failover':
             self.failover = value
+        elif name == 'HealthCheckId':
+            self.health_check = value
 
     def startElement(self, name, attrs, connection):
         return None
