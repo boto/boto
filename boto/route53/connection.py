@@ -530,7 +530,8 @@ class Route53Connection(AWSAuthConnection):
                     'PriorRequestNotComplete',
                     i
                 )
-                next_sleep = random.random() * (2 ** i)
+                next_sleep = min(random.random() * (2 ** i),
+                                 boto.config.get('Boto', 'max_retry_delay', 60))
                 i += 1
                 status = (msg, i, next_sleep)
 
