@@ -722,7 +722,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         req.params['X-Amz-Signature'] = signature
 
         return 'https://%s%s?%s' % (req.host, req.path,
-                                    urllib.urlencode(req.params))
+                                    urllib.parse.urlencode(req.params))
 
 
 class QueryAuthHandler(AuthHandler):

@@ -358,6 +358,10 @@ class S3Connection(AWSAuthConnection):
         auth_path = self.calling_format.build_auth_path(bucket, key)
         host = self.calling_format.build_host(self.server_name(), bucket)
 
+        # For presigned URLs we should ignore the port if it's HTTPS
+        if host.endswith(':443'):
+            host = host[:-4]
+
         params = {}
         if version_id is not None:
             params['VersionId'] = version_id
