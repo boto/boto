@@ -602,6 +602,11 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
                     if part == 's3':
                         # If it's by itself, the region is the previous part.
                         region_name = parts[-offset]
+
+                        # Unless it's Vhosted classic
+                        if region_name == 'amazonaws':
+                            region_name = 'us-east-1'
+
                         break
                     elif part.startswith('s3-'):
                         region_name = self.clean_region_name(part)
@@ -665,6 +670,54 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
 
         req = self.mangle_path_and_params(req)
         return super(S3HmacAuthV4Handler, self).add_auth(req, **kwargs)
+
+    def presign(self, req, expires, iso_date=None):
+        """
+        Presign a request using SigV4 query params. Takes in an HTTP request
+        and an expiration time in seconds and returns a URL.
+
+        http://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
+        """
+        if iso_date is None:
+            iso_date = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+
+        region = self.determine_region_name(req.host)
+        service = self.determine_service_name(req.host)
+
+        params = {
+            'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+            'X-Amz-Credential': '%s/%s/%s/%s/aws4_request' % (
+                self._provider.access_key,
+                iso_date[:8],
+                region,
+                service
+            ),
+            'X-Amz-Date': iso_date,
+            'X-Amz-Expires': expires,
+            'X-Amz-SignedHeaders': 'host'
+        }
+
+        if self._provider.security_token:
+            params['X-Amz-Security-Token'] = self._provider.security_token
+
+        req.params.update(params)
+
+        cr = self.canonical_request(req)
+
+        # We need to replace the payload SHA with a constant
+        cr = '\n'.join(cr.split('\n')[:-1]) + '\nUNSIGNED-PAYLOAD'
+
+        # Date header is expected for string_to_sign, but unused otherwise
+        req.headers['X-Amz-Date'] = iso_date
+
+        sts = self.string_to_sign(req, cr)
+        signature = self.signature(req, sts)
+
+        # Add signature to params now that we have it
+        req.params['X-Amz-Signature'] = signature
+
+        return 'https://%s%s?%s' % (req.host, req.path,
+                                    urllib.urlencode(req.params))
 
 
 class QueryAuthHandler(AuthHandler):
