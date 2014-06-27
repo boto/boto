@@ -2096,7 +2096,7 @@ class EC2Connection(AWSQueryConnection):
                         as the value.  The set of allowable filter
                         names/values is dependent on the request
                         being performed.  Check the EC2 API guide
-                        for details.
+                        for details at http://goo.gl/bYK8w
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
