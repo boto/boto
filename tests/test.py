@@ -31,6 +31,9 @@ from nose.core import run
 # When porting a new module to Python 3, please update this
 # list so that its tests will run by default. See the
 # `default` target below for more information.
+# We use this instead of test attributes/tags because in
+# order to filter on tags nose must load each test - many
+# will fail to import with Python 3.
 PY3_WHITELIST = [
     'tests/unit/auth',
     'tests/unit/beanstalk',
