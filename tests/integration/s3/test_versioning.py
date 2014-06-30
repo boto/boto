@@ -63,7 +63,7 @@ class S3VersionTest (unittest.TestCase):
         v1 = k.version_id
         
         # now get the contents from s3 
-        o1 = k.get_contents_as_string()
+        o1 = k.get_contents_as_string().decode('utf-8')
         
         # check to make sure content read from k is identical to original
         self.assertEqual(s1, o1)
@@ -75,12 +75,12 @@ class S3VersionTest (unittest.TestCase):
         
         # now retrieve latest contents as a string and compare
         k2 = self.bucket.new_key("foobar")
-        o2 = k2.get_contents_as_string()
+        o2 = k2.get_contents_as_string().decode('utf-8')
         self.assertEqual(s2, o2)
 
         # next retrieve explicit versions and compare
-        o1 = k.get_contents_as_string(version_id=v1)
-        o2 = k.get_contents_as_string(version_id=v2)
+        o1 = k.get_contents_as_string(version_id=v1).decode('utf-8')
+        o2 = k.get_contents_as_string(version_id=v2).decode('utf-8')
         self.assertEqual(s1, o1)
         self.assertEqual(s2, o2)
         

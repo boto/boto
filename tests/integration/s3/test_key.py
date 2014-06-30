@@ -64,7 +64,7 @@ class S3KeyTest(unittest.TestCase):
         self.assertEqual(k.size, 5)
         # check actual contents by getting it.
         kn = self.bucket.new_key("k")
-        ks = kn.get_contents_as_string()
+        ks = kn.get_contents_as_string().decode('utf-8')
         self.assertEqual(ks, content)
 
         # finally, try with a 0 length string
@@ -74,7 +74,7 @@ class S3KeyTest(unittest.TestCase):
         self.assertEqual(k.size, 0)
         # check actual contents by getting it.
         kn = self.bucket.new_key("k")
-        ks = kn.get_contents_as_string()
+        ks = kn.get_contents_as_string().decode('utf-8')
         self.assertEqual(ks, "")
 
     def test_set_contents_as_file(self):
@@ -87,7 +87,7 @@ class S3KeyTest(unittest.TestCase):
         k.set_contents_from_file(sfp)
         self.assertEqual(k.size, 20)
         kn = self.bucket.new_key("k")
-        ks = kn.get_contents_as_string()
+        ks = kn.get_contents_as_string().decode('utf-8')
         self.assertEqual(ks, content)
 
         # set fp to 5 and set contents. this should
@@ -97,7 +97,7 @@ class S3KeyTest(unittest.TestCase):
         k.set_contents_from_file(sfp)
         self.assertEqual(k.size, 15)
         kn = self.bucket.new_key("k")
-        ks = kn.get_contents_as_string()
+        ks = kn.get_contents_as_string().decode('utf-8')
         self.assertEqual(ks, content[5:])
 
         # set fp to 5 and only set 5 bytes. this should
@@ -108,7 +108,7 @@ class S3KeyTest(unittest.TestCase):
         self.assertEqual(k.size, 5)
         self.assertEqual(sfp.tell(), 10)
         kn = self.bucket.new_key("k")
-        ks = kn.get_contents_as_string()
+        ks = kn.get_contents_as_string().decode('utf-8')
         self.assertEqual(ks, content[5:10])
 
     def test_set_contents_with_md5(self):
@@ -121,7 +121,7 @@ class S3KeyTest(unittest.TestCase):
         good_md5 = k.compute_md5(sfp)
         k.set_contents_from_file(sfp, md5=good_md5)
         kn = self.bucket.new_key("k")
-        ks = kn.get_contents_as_string()
+        ks = kn.get_contents_as_string().decode('utf-8')
         self.assertEqual(ks, content)
 
         # set fp to 5 and only set 5 bytes. this should
@@ -132,7 +132,7 @@ class S3KeyTest(unittest.TestCase):
         k.set_contents_from_file(sfp, size=5, md5=good_md5)
         self.assertEqual(sfp.tell(), 10)
         kn = self.bucket.new_key("k")
-        ks = kn.get_contents_as_string()
+        ks = kn.get_contents_as_string().decode('utf-8')
         self.assertEqual(ks, content[5:10])
 
         # let's try a wrong md5 by just altering it.
@@ -153,7 +153,7 @@ class S3KeyTest(unittest.TestCase):
         k = self.bucket.new_key("k")
         k.set_contents_from_file(sfp)
         kn = self.bucket.new_key("k")
-        s = kn.get_contents_as_string()
+        s = kn.get_contents_as_string().decode('utf-8')
         self.assertEqual(kn.md5, k.md5)
         self.assertEqual(s, content)
 
@@ -195,7 +195,7 @@ class S3KeyTest(unittest.TestCase):
         # Read back all bytes => 2 calls
         self.my_cb_cnt = 0
         self.my_cb_last = None
-        s = k.get_contents_as_string(cb=callback)
+        s = k.get_contents_as_string(cb=callback).decode('utf-8')
         self.assertEqual(self.my_cb_cnt, 2)
         self.assertEqual(self.my_cb_last, 20)
         self.assertEqual(s, content)
@@ -214,7 +214,7 @@ class S3KeyTest(unittest.TestCase):
         # Read back all bytes => 11 calls
         self.my_cb_cnt = 0
         self.my_cb_last = None
-        s = k.get_contents_as_string(cb=callback, num_cb=-1)
+        s = k.get_contents_as_string(cb=callback, num_cb=-1).decode('utf-8')
         self.assertEqual(self.my_cb_cnt, 11)
         self.assertEqual(self.my_cb_last, 20)
         self.assertEqual(s, content)
@@ -233,7 +233,7 @@ class S3KeyTest(unittest.TestCase):
         # no more than 1 times => 2 times
         self.my_cb_cnt = 0
         self.my_cb_last = None
-        s = k.get_contents_as_string(cb=callback, num_cb=1)
+        s = k.get_contents_as_string(cb=callback, num_cb=1).decode('utf-8')
         self.assertTrue(self.my_cb_cnt <= 2)
         self.assertEqual(self.my_cb_last, 20)
         self.assertEqual(s, content)
@@ -252,7 +252,7 @@ class S3KeyTest(unittest.TestCase):
         # no more than 2 times
         self.my_cb_cnt = 0
         self.my_cb_last = None
-        s = k.get_contents_as_string(cb=callback, num_cb=2)
+        s = k.get_contents_as_string(cb=callback, num_cb=2).decode('utf-8')
         self.assertTrue(self.my_cb_cnt <= 2)
         self.assertEqual(self.my_cb_last, 20)
         self.assertEqual(s, content)
@@ -271,7 +271,7 @@ class S3KeyTest(unittest.TestCase):
         # no more than 3 times
         self.my_cb_cnt = 0
         self.my_cb_last = None
-        s = k.get_contents_as_string(cb=callback, num_cb=3)
+        s = k.get_contents_as_string(cb=callback, num_cb=3).decode('utf-8')
         self.assertTrue(self.my_cb_cnt <= 3)
         self.assertEqual(self.my_cb_last, 20)
         self.assertEqual(s, content)
@@ -290,7 +290,7 @@ class S3KeyTest(unittest.TestCase):
         # no more than 4 times
         self.my_cb_cnt = 0
         self.my_cb_last = None
-        s = k.get_contents_as_string(cb=callback, num_cb=4)
+        s = k.get_contents_as_string(cb=callback, num_cb=4).decode('utf-8')
         self.assertTrue(self.my_cb_cnt <= 4)
         self.assertEqual(self.my_cb_last, 20)
         self.assertEqual(s, content)
@@ -309,7 +309,7 @@ class S3KeyTest(unittest.TestCase):
         # no more than 6 times
         self.my_cb_cnt = 0
         self.my_cb_last = None
-        s = k.get_contents_as_string(cb=callback, num_cb=6)
+        s = k.get_contents_as_string(cb=callback, num_cb=6).decode('utf-8')
         self.assertTrue(self.my_cb_cnt <= 6)
         self.assertEqual(self.my_cb_last, 20)
         self.assertEqual(s, content)
@@ -328,7 +328,7 @@ class S3KeyTest(unittest.TestCase):
         # no more than 10 times
         self.my_cb_cnt = 0
         self.my_cb_last = None
-        s = k.get_contents_as_string(cb=callback, num_cb=10)
+        s = k.get_contents_as_string(cb=callback, num_cb=10).decode('utf-8')
         self.assertTrue(self.my_cb_cnt <= 10)
         self.assertEqual(self.my_cb_last, 20)
         self.assertEqual(s, content)
@@ -347,7 +347,7 @@ class S3KeyTest(unittest.TestCase):
         # no more than 1000 times
         self.my_cb_cnt = 0
         self.my_cb_last = None
-        s = k.get_contents_as_string(cb=callback, num_cb=1000)
+        s = k.get_contents_as_string(cb=callback, num_cb=1000).decode('utf-8')
         self.assertTrue(self.my_cb_cnt <= 1000)
         self.assertEqual(self.my_cb_last, 20)
         self.assertEqual(s, content)

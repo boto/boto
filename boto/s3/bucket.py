@@ -919,8 +919,10 @@ class Bucket(object):
                     query_args='acl'):
         if version_id:
             query_args += '&versionId=%s' % version_id
+        if not isinstance(acl_str, bytes):
+            acl_str = acl_str.encode('utf-8')
         response = self.connection.make_request('PUT', self.name, key_name,
-                                                data=acl_str.encode('UTF-8'),
+                                                data=acl_str,
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()
@@ -981,8 +983,10 @@ class Bucket(object):
         query_args = subresource
         if version_id:
             query_args += '&versionId=%s' % version_id
+        if not isinstance(value, bytes):
+            value = value.encode('utf-8')
         response = self.connection.make_request('PUT', self.name, key_name,
-                                                data=value.encode('UTF-8'),
+                                                data=value,
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()
@@ -1144,7 +1148,9 @@ class Bucket(object):
         :rtype: bool
         :return: True if ok or raises an exception.
         """
-        body = logging_str.encode('utf-8')
+        body = logging_str
+        if not isinstance(body, bytes):
+            body = body.encode('utf-8')
         response = self.connection.make_request('PUT', self.name, data=body,
                 query_args='logging', headers=headers)
         body = response.read()
@@ -1828,8 +1834,10 @@ class Bucket(object):
         md5 = boto.utils.compute_md5(StringIO(tag_str))
         headers['Content-MD5'] = md5[1]
         headers['Content-Type'] = 'text/xml'
+        if not isinstance(tag_str, bytes):
+            tag_str = tag_str.encode('utf-8')
         response = self.connection.make_request('PUT', self.name,
-                                                data=tag_str.encode('utf-8'),
+                                                data=tag_str,
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()

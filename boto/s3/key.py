@@ -946,8 +946,11 @@ class Key(object):
 
         if 200 <= response.status <= 299:
             self.etag = response.getheader('etag')
+            md5 = self.md5
+            if isinstance(md5, bytes):
+                md5 = md5.decode('utf-8')
 
-            if self.etag != '"%s"' % self.md5.decode('utf-8'):
+            if self.etag != '"%s"' % md5:
                 raise provider.storage_data_error(
                     'ETag from S3 did not match computed MD5. '
                     '%s vs. %s' % (self.etag, self.md5))
@@ -1692,66 +1695,11 @@ class Key(object):
             except Exception:
                 pass
 
-    def get_contents_as_bytes(self, headers=None,
-                               cb=None, num_cb=10,
-                               torrent=False,
-                               version_id=None,
-                               response_headers=None):
-        """
-        Retrieve an object from S3 using the name of the Key object as the
-        key in S3.  Return the contents of the object as bytes.
-        See get_contents_to_file method for details about the
-        parameters.
-
-        :type headers: dict
-        :param headers: Any additional headers to send in the request
-
-        :type cb: function
-        :param cb: a callback function that will be called to report
-            progress on the upload.  The callback should accept two
-            integer parameters, the first representing the number of
-            bytes that have been successfully transmitted to S3 and
-            the second representing the size of the to be transmitted
-            object.
-
-        :type cb: int
-        :param num_cb: (optional) If a callback is specified with the
-            cb parameter this parameter determines the granularity of
-            the callback by defining the maximum number of times the
-            callback will be called during the file transfer.
-
-        :type torrent: bool
-        :param torrent: If True, returns the contents of a torrent file
-            as a string.
-
-        :type response_headers: dict
-        :param response_headers: A dictionary containing HTTP
-            headers/values that will override any headers associated
-            with the stored object in the response.  See
-            http://goo.gl/EWOPb for details.
-
-        :type version_id: str
-        :param version_id: The ID of a particular version of the object.
-            If this parameter is not supplied but the Key object has
-            a ``version_id`` attribute, that value will be used when
-            retrieving the object.  You can set the Key object's
-            ``version_id`` attribute to None to always grab the latest
-            version from a version-enabled bucket.
-
-        :rtype: bytes
-        :returns: The contents of the file as bytes
-        """
-        fp = BytesIO()
-        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
-                                  version_id=version_id,
-                                  response_headers=response_headers)
-        return fp.getvalue()
-
     def get_contents_as_string(self, headers=None,
                                cb=None, num_cb=10,
                                torrent=False,
                                version_id=None,
-                               response_headers=None, encoding='utf-8'):
+                               response_headers=None, encoding=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Return the contents of the object as a string.
@@ -1795,14 +1743,22 @@ class Key(object):
 
         :type encoding: str
         :param encoding: The text encoding to use, such as ``utf-8``
-            or ``iso-8859-1``. Defaults to UTF-8 strings.
+            or ``iso-8859-1``. If set, then a string will be returned.
+            Defaults to ``None`` and returns bytes.
 
-        :rtype: string
-        :returns: The contents of the file as a string
+        :rtype: bytes or str
+        :returns: The contents of the file as bytes or a string
         """
-        return self.get_contents_as_bytes(headers=headers, cb=cb,
-            num_cb=num_cb, torrent=torrent, version_id=version_id,
-            response_headers=response_headers).decode(encoding)
+        fp = BytesIO()
+        self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
+                                  version_id=version_id,
+                                  response_headers=response_headers)
+        value = fp.getvalue()
+
+        if encoding is not None:
+            value = value.decode(encoding)
+
+        return value
 
     def add_email_grant(self, permission, email_address, headers=None):
         """

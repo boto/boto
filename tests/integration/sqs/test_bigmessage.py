@@ -71,7 +71,7 @@ class TestBigMessage(unittest.TestCase):
         self.assertTrue(bucket.lookup(s3_object_name))
         
         m = queue.read()
-        self.assertEqual(m.get_body(), msg_body)
+        self.assertEqual(m.get_body().decode('utf-8'), msg_body)
 
         m.delete()
         time.sleep(30)

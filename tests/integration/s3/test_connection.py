@@ -88,7 +88,7 @@ class S3ConnectionTest (unittest.TestCase):
         con.request("PUT", up.path + '?' + up.query, body="hello there")
         resp = con.getresponse()
         assert 200 == resp.status
-        assert "hello there" == k.get_contents_as_string()
+        assert b"hello there" == k.get_contents_as_string()
         bucket.delete_key(k)
         # test a few variations on get_all_keys - first load some data
         # for the first one, let's override the content type

@@ -1159,7 +1159,7 @@ class AWSQueryConnection(AWSAuthConnection):
         elif response.status == 200:
             rs = ResultSet(markers)
             h = boto.handler.XmlHandler(rs, parent)
-            if isinstance(body, str):
+            if isinstance(body, six.text_type):
                 body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return rs
@@ -1181,7 +1181,7 @@ class AWSQueryConnection(AWSAuthConnection):
         elif response.status == 200:
             obj = cls(parent)
             h = boto.handler.XmlHandler(obj, parent)
-            if isinstance(body, str):
+            if isinstance(body, six.text_type):
                 body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return obj

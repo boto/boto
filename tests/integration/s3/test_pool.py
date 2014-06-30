@@ -44,7 +44,7 @@ def put_object(bucket, name):
     bucket.new_key(name).set_contents_from_string(name)
 
 def get_object(bucket, name):
-    assert bucket.get_key(name).get_contents_as_string() == name
+    assert bucket.get_key(name).get_contents_as_string().decode('utf-8') == name
 
 def test_close_connections():
     """
@@ -144,7 +144,7 @@ class LittleQuerier(object):
             key = self.bucket.get_key(self.small_names[i])
             expected = str(i)
             rh = { 'response-content-type' : 'small/' + str(i) }
-            actual = key.get_contents_as_string(response_headers = rh)
+            actual = key.get_contents_as_string(response_headers = rh).decode('utf-8')
             if expected != actual:
                 print("AHA:", repr(expected), repr(actual))
             assert expected == actual
