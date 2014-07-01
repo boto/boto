@@ -1,5 +1,5 @@
 import mock
-import unittest
+from tests.unit import unittest
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
                                    AllIndex, KeysOnlyIndex, IncludeIndex,
@@ -1774,7 +1774,40 @@ class TableTestCase(unittest.TestCase):
             'date_joined': {
                 'N': '23456'
             }
-        })
+        }, expected=None, conditional_operator=None)
+
+    def test_delete_item_conditionally(self):
+        with mock.patch.object(
+                self.users.connection,
+                'delete_item',
+                return_value={}) as mock_delete_item:
+            self.assertTrue(self.users.delete_item(expected={'balance__eq': 0},
+                                                   username='johndoe', date_joined=23456))
+
+        mock_delete_item.assert_called_once_with('users', {
+            'username': {
+                'S': 'johndoe'
+            },
+            'date_joined': {
+                'N': '23456'
+            }
+        },
+        expected={
+            'balance': {
+                'ComparisonOperator': 'EQ', 'AttributeValueList': [{'N': '0'}]
+                },
+            },
+        conditional_operator=None)
+
+        def side_effect(*args, **kwargs):
+            raise exceptions.ConditionalCheckFailedException(400, '', {})
+
+        with mock.patch.object(
+                self.users.connection,
+                'delete_item',
+                side_effect=side_effect) as mock_delete_item:
+            self.assertFalse(self.users.delete_item(expected={'balance__eq': 0},
+                                                    username='johndoe', date_joined=23456))
 
     def test_get_key_fields_no_schema_populated(self):
         expected = {
@@ -2592,6 +2625,41 @@ class TableTestCase(unittest.TestCase):
                 'describe',
                 return_value=expected) as mock_count:
             self.assertEqual(self.users.count(), 5)
+
+    def test_query_count_simple(self):
+        expected_0 = {
+            'Count': 0.0,
+        }
+
+        expected_1 = {
+            'Count': 10.0,
+        }
+
+        with mock.patch.object(
+                self.users.connection,
+                'query',
+                return_value=expected_0) as mock_query:
+            results = self.users.query_count(username__eq='notmyname')
+            self.assertTrue(isinstance(results, int))
+            self.assertEqual(results, 0)
+        self.assertEqual(mock_query.call_count, 1)
+        self.assertIn('scan_index_forward', mock_query.call_args[1])
+        self.assertEqual(True, mock_query.call_args[1]['scan_index_forward'])
+        self.assertIn('limit', mock_query.call_args[1])
+        self.assertEqual(None, mock_query.call_args[1]['limit'])
+
+        with mock.patch.object(
+                self.users.connection,
+                'query',
+                return_value=expected_1) as mock_query:
+            results = self.users.query_count(username__gt='somename', consistent=True, scan_index_forward=False, limit=10)
+            self.assertTrue(isinstance(results, int))
+            self.assertEqual(results, 10)
+        self.assertEqual(mock_query.call_count, 1)
+        self.assertIn('scan_index_forward', mock_query.call_args[1])
+        self.assertEqual(False, mock_query.call_args[1]['scan_index_forward'])
+        self.assertIn('limit', mock_query.call_args[1])
+        self.assertEqual(10, mock_query.call_args[1]['limit'])
 
     def test_private_batch_get(self):
         expected = {

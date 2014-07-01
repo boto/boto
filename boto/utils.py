@@ -61,6 +61,11 @@ import email.utils
 import email.encoders
 import gzip
 import base64
+import threading
+import locale
+
+from contextlib import contextmanager
+
 try:
     from hashlib import md5
 except ImportError:
@@ -232,7 +237,8 @@ def retry_url(url, retry_on_404=True, num_retries=10):
         boto.log.exception('Caught exception reading instance data')
         # If not on the last iteration of the loop then sleep.
         if i + 1 != num_retries:
-            time.sleep(2 ** i)
+            time.sleep(min(2 ** i,
+                           boto.config.get('Boto', 'max_retry_delay', 60)))
     boto.log.error('Unable to read instance data, giving up')
     return ''
 
@@ -313,7 +319,9 @@ class LazyLoadMetadata(dict):
                                " for the '%s' try" % (i + 1))
 
                 if i + 1 != self._num_retries:
-                    next_sleep = random.random() * (2 ** i)
+                    next_sleep = min(
+                        random.random() * 2 ** i,
+                        boto.config.get('Boto', 'max_retry_delay', 60))
                     time.sleep(next_sleep)
             else:
                 boto.log.error('Unable to read meta data, giving up')
@@ -446,7 +454,20 @@ def get_instance_userdata(version='latest', sep=None,
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 ISO8601_MS = '%Y-%m-%dT%H:%M:%S.%fZ'
 RFC1123 = '%a, %d %b %Y %H:%M:%S %Z'
+LOCALE_LOCK = threading.Lock()
 
+@contextmanager
+def setlocale(name):
+    """
+    A context manager to set the locale in a threadsafe manner.
+    """
+    with LOCALE_LOCK:
+        saved = locale.setlocale(locale.LC_ALL)
+
+        try:
+            yield locale.setlocale(locale.LC_ALL, name)
+        finally:
+            locale.setlocale(locale.LC_ALL, saved)
 
 def get_ts(ts=None):
     if not ts:
@@ -455,17 +476,18 @@ def get_ts(ts=None):
 
 
 def parse_ts(ts):
-    ts = ts.strip()
-    try:
-        dt = datetime.datetime.strptime(ts, ISO8601)
-        return dt
-    except ValueError:
+    with setlocale('C'):
+        ts = ts.strip()
         try:
-            dt = datetime.datetime.strptime(ts, ISO8601_MS)
+            dt = datetime.datetime.strptime(ts, ISO8601)
             return dt
         except ValueError:
-            dt = datetime.datetime.strptime(ts, RFC1123)
-            return dt
+            try:
+                dt = datetime.datetime.strptime(ts, ISO8601_MS)
+                return dt
+            except ValueError:
+                dt = datetime.datetime.strptime(ts, RFC1123)
+                return dt
 
 
 def find_class(module_name, class_name=None):

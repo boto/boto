@@ -161,6 +161,61 @@ exists within a bucket, you can skip the check for a key on the server.
     >>> key_we_know_is_there = b.get_key('mykey', validate=False)
 
 
+Storing Large Data
+------------------
+
+At times the data you may want to store will be hundreds of megabytes or
+more in size. S3 allows you to split such files into smaller components.
+You upload each component in turn and then S3 combines them into the final
+object. While this is fairly straightforward, it requires a few extra steps
+to be taken. The example below makes use of the FileChunkIO module, so
+``pip install FileChunkIO`` if it isn't already installed.
+
+::
+
+    >>> import math, os
+    >>> import boto
+    >>> from filechunkio import FileChunkIO
+
+    # Connect to S3
+    >>> c = boto.connect_s3()
+    >>> b = c.get_bucket('mybucket')
+
+    # Get file info
+    >>> source_path = 'path/to/your/file.ext'
+    >>> source_size = os.stat(source_path).st_size
+
+    # Create a multipart upload request
+    >>> mp = b.initiate_multipart_upload(os.path.basename(source_path))
+
+    # Use a chunk size of 50 MiB (feel free to change this)
+    >>> chunk_size = 52428800
+    >>> chunk_count = int(math.ceil(source_size / chunk_size))
+
+    # Send the file parts, using FileChunkIO to create a file-like object
+    # that points to a certain byte range within the original file. We
+    # set bytes to never exceed the original file size.
+    >>> for i in range(chunk_count + 1):
+    >>>     offset = chunk_size * i
+    >>>     bytes = min(chunk_size, source_size - offset)
+    >>>     with FileChunkIO(source_path, 'r', offset=offset,
+                             bytes=bytes) as fp:
+    >>>         mp.upload_part_from_file(fp, part_num=i + 1)
+
+    # Finish the upload
+    >>> mp.complete_upload()
+
+It is also possible to upload the parts in parallel using threads. The
+``s3put`` script that ships with Boto provides an example of doing so
+using a thread pool.
+
+Note that if you forget to call either ``mp.complete_upload()`` or
+``mp.cancel_upload()`` you will be left with an incomplete upload and
+charged for the storage consumed by the uploaded parts. A call to
+``bucket.get_all_multipart_uploads()`` can help to show lost multipart
+upload parts.
+
+
 Accessing A Bucket
 ------------------
 

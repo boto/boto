@@ -146,7 +146,7 @@ class Bucket(object):
                 response_headers=None, validate=True):
         """
         Check to see if a particular key exists within the bucket.  This
-        method uses a HEAD request to check for the existance of the key.
+        method uses a HEAD request to check for the existence of the key.
         Returns: An instance of a Key object or None
 
         :param key_name: The name of the key to retrieve

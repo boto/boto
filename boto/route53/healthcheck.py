@@ -53,7 +53,7 @@ class HealthCheck(object):
 
     POSTXMLBody = """
         <HealthCheckConfig>
-            <IPAddress>%(ip_addr)s</IPAddress>
+            %(ip_addr_part)s
             <Port>%(port)s</Port>
             <Type>%(type)s</Type>
             <ResourcePath>%(resource_path)s</ResourcePath>
@@ -63,6 +63,8 @@ class HealthCheck(object):
             <FailureThreshold>%(failure_threshold)s</FailureThreshold>
         </HealthCheckConfig>
     """
+
+    XMLIpAddrPart = """<IPAddress>%(ip_addr)s</IPAddress>"""
 
     XMLFQDNPart = """<FullyQualifiedDomainName>%(fqdn)s</FullyQualifiedDomainName>"""
 
@@ -77,13 +79,13 @@ class HealthCheck(object):
         HealthCheck object
 
         :type ip_addr: str
-        :param ip_addr: IP Address
+        :param ip_addr: Optional IP Address
 
         :type port: int
         :param port: Port to check
 
         :type hc_type: str
-        :param ip_addr: One of HTTP | HTTPS | HTTP_STR_MATCH | HTTPS_STR_MATCH | TCP
+        :param hc_type: One of HTTP | HTTPS | HTTP_STR_MATCH | HTTPS_STR_MATCH | TCP
 
         :type resource_path: str
         :param resource_path: Path to check
@@ -122,7 +124,7 @@ class HealthCheck(object):
 
     def to_xml(self):
         params = {
-            'ip_addr': self.ip_addr,
+            'ip_addr_part': '',
             'port': self.port,
             'type': self.hc_type,
             'resource_path': self.resource_path,
@@ -134,6 +136,9 @@ class HealthCheck(object):
         }
         if self.fqdn is not None:
             params['fqdn_part'] = self.XMLFQDNPart % {'fqdn': self.fqdn}
+
+        if self.ip_addr:
+            params['ip_addr_part'] = self.XMLIpAddrPart % {'ip_addr': self.ip_addr}
 
         if self.string_match is not None:
             params['string_match_part'] = self.XMLStringMatchPart % {'string_match' : self.string_match}

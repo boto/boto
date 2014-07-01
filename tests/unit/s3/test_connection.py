@@ -93,6 +93,49 @@ class TestSigV4HostError(MockServiceWithConfigTestCase):
         )
 
 
+class TestSigV4Presigned(MockServiceWithConfigTestCase):
+    connection_class = S3Connection
+
+    def test_sigv4_presign(self):
+        self.config = {
+            's3': {
+                'use-sigv4': True,
+            }
+        }
+
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more',
+            host='s3.amazonaws.com'
+        )
+
+        # Here we force an input iso_date to ensure we always get the
+        # same signature.
+        url = conn.generate_url_sigv4(86400, 'GET', bucket='examplebucket',
+            key='test.txt', iso_date='20140625T000000Z')
+
+        self.assertIn('a937f5fbc125d98ac8f04c49e0204ea1526a7b8ca058000a54c192457be05b7d', url)
+
+    def test_sigv4_presign_optional_params(self):
+        self.config = {
+            's3': {
+                'use-sigv4': True,
+            }
+        }
+
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more',
+            security_token='token',
+            host='s3.amazonaws.com'
+        )
+
+        url = conn.generate_url_sigv4(86400, 'GET', bucket='examplebucket',
+            key='test.txt', version_id=2)
+
+        self.assertIn('VersionId=2', url)
+        self.assertIn('X-Amz-Security-Token=token', url)
+
 
 class TestUnicodeCallingFormat(AWSMockServiceTestCase):
     connection_class = S3Connection

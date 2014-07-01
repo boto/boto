@@ -702,6 +702,18 @@ class TestGetAllNetworkInterfaces(TestEC2ConnectionBase):
     </networkInterfaceSet>
 </DescribeNetworkInterfacesResponse>"""
 
+    def test_get_all_network_interfaces(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.get_all_network_interfaces(network_interface_ids=['eni-0f62d866'])
+        self.assert_request_parameters({
+            'Action': 'DescribeNetworkInterfaces',
+            'NetworkInterfaceId.1': 'eni-0f62d866'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                   'SignatureVersion', 'Timestamp',
+                                   'Version'])
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].id, 'eni-0f62d866')
+
     def test_attachment_has_device_index(self):
         self.set_http_response(status_code=200)
         parsed = self.ec2.get_all_network_interfaces()

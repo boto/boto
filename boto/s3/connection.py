@@ -350,9 +350,34 @@ class S3Connection(AWSAuthConnection):
 
         return {"action": url, "fields": fields}
 
+    def generate_url_sigv4(self, expires_in, method, bucket='', key='',
+                            headers=None, force_http=False,
+                            response_headers=None, version_id=None,
+                            iso_date=None):
+        path = self.calling_format.build_path_base(bucket, key)
+        auth_path = self.calling_format.build_auth_path(bucket, key)
+        host = self.calling_format.build_host(self.server_name(), bucket)
+
+        params = {}
+        if version_id is not None:
+            params['VersionId'] = version_id
+
+        http_request = self.build_base_http_request(method, path, auth_path,
+                                                    headers=headers, host=host,
+                                                    params=params)
+
+        return self._auth_handler.presign(http_request, expires_in,
+                                          iso_date=iso_date)
+
     def generate_url(self, expires_in, method, bucket='', key='', headers=None,
                      query_auth=True, force_http=False, response_headers=None,
                      expires_in_absolute=False, version_id=None):
+        if self._auth_handler.capability[0] == 'hmac-v4-s3':
+            # Handle the special sigv4 case
+            return self.generate_url_sigv4(expires_in, method, bucket=bucket,
+                key=key, headers=headers, force_http=force_http,
+                response_headers=response_headers, version_id=version_id)
+
         headers = headers or {}
         if expires_in_absolute:
             expires = int(expires_in)
