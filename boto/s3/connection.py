@@ -92,7 +92,7 @@ class _CallingFormat(object):
         path = ''
         if bucket != '':
             path = '/' + bucket
-        return path + '/%s' % urllib.quote(key)
+        return path + '/%s' % urllib.quote(key, safe='~')
 
     def build_path_base(self, bucket, key=''):
         key = boto.utils.get_utf8_value(key)
