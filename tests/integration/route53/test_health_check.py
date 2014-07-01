@@ -38,16 +38,28 @@ class TestRoute53HealthCheck(Route53TestCase):
         self.conn.delete_health_check(result['CreateHealthCheckResponse']['HealthCheck']['Id'])
 
     def test_create_https_health_check(self):
-        hc = HealthCheck(ip_addr="54.217.7.118", port=80, hc_type="HTTPS", resource_path="/testing")
+        hc = HealthCheck(ip_addr="54.217.7.118", port=443, hc_type="HTTPS", resource_path="/testing")
         result = self.conn.create_health_check(hc)
         self.assertEquals(result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'][u'Type'], 'HTTPS')
         self.assertEquals(result[u'CreateHealthCheckResponse'][
                           u'HealthCheck'][u'HealthCheckConfig'][u'IPAddress'], '54.217.7.118')
-        self.assertEquals(result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'][u'Port'], '80')
+        self.assertEquals(result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'][u'Port'], '443')
         self.assertEquals(result[u'CreateHealthCheckResponse'][
                           u'HealthCheck'][u'HealthCheckConfig'][u'ResourcePath'], '/testing')
+        self.assertFalse('FullyQualifiedDomainName' in result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'])
         self.conn.delete_health_check(result['CreateHealthCheckResponse']['HealthCheck']['Id'])
 
+    def test_create_https_health_check_fqdn(self):
+        hc = HealthCheck(ip_addr=None, port=443, hc_type="HTTPS", resource_path="/", fqdn="google.com")
+        result = self.conn.create_health_check(hc)
+        self.assertEquals(result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'][u'Type'], 'HTTPS')
+        self.assertEquals(result[u'CreateHealthCheckResponse'][
+                          u'HealthCheck'][u'HealthCheckConfig'][u'FullyQualifiedDomainName'], 'google.com')
+        self.assertEquals(result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'][u'Port'], '443')
+        self.assertEquals(result[u'CreateHealthCheckResponse'][
+                          u'HealthCheck'][u'HealthCheckConfig'][u'ResourcePath'], '/')
+        self.assertFalse('IPAddress' in result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'])
+        self.conn.delete_health_check(result['CreateHealthCheckResponse']['HealthCheck']['Id'])
 
     def test_create_and_list_health_check(self):
         hc = HealthCheck(ip_addr="54.217.7.118", port=80, hc_type="HTTP", resource_path="/testing")
