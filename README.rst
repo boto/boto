@@ -16,6 +16,16 @@ Introduction
 ************
 
 Boto is a Python package that provides interfaces to Amazon Web Services.
+Currently, all features work with Python 2.6 and 2.7. Work is under way to
+support Python 3.3+ in the same codebase. Modules are being ported one at
+a time with the help of the open source community, so please check below
+for compatibility with Python 3.3+.
+
+To port a module to Python 3.3+, please view our `Contributing Guidelines`_
+and the `Porting Guide`_. If you would like, you can open an issue to let
+others know about your work in progress. Tests **must** pass on Python
+2.6, 2.7, 3.3, and 3.4 for pull requests to be accepted.
+
 At the moment, boto supports:
 
 * Compute
@@ -23,7 +33,7 @@ At the moment, boto supports:
   * Amazon Elastic Compute Cloud (EC2)
   * Amazon Elastic Map Reduce (EMR)
   * AutoScaling
-  * Amazon Kinesis
+  * Amazon Kinesis (Python 3)
 
 * Content Delivery
 
@@ -43,7 +53,7 @@ At the moment, boto supports:
   * AWS CloudFormation
   * AWS Data Pipeline
   * AWS Opsworks
-  * AWS CloudTrail
+  * AWS CloudTrail (Python 3)
 
 * Identity & Access
 
@@ -54,7 +64,7 @@ At the moment, boto supports:
   * Amazon CloudSearch
   * Amazon Elastic Transcoder
   * Amazon Simple Workflow Service (SWF)
-  * Amazon Simple Queue Service (SQS)
+  * Amazon Simple Queue Service (SQS) (Python 3)
   * Amazon Simple Notification Server (SNS)
   * Amazon Simple Email Service (SES)
 
@@ -75,7 +85,7 @@ At the moment, boto supports:
 
 * Storage
 
-  * Amazon Simple Storage Service (S3)
+  * Amazon Simple Storage Service (S3) (Python 3)
   * Amazon Glacier
   * Amazon Elastic Block Store (EBS)
   * Google Cloud Storage
@@ -158,6 +168,8 @@ following environment variables to ascertain your credentials:
 Credentials and other boto-related settings can also be stored in a
 boto config file.  See `this`_ for details.
 
+.. _Contributing Guidelines: https://github.com/boto/boto/blob/develop/CONTRIBUTING
+.. _Porting Guide: http://boto.readthedocs.org/en/latest/porting_guide.html
 .. _pip: http://www.pip-installer.org/
 .. _release notes: https://github.com/boto/boto/wiki
 .. _github.com: http://github.com/boto/boto

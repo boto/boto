@@ -22,11 +22,12 @@
 # IN THE SOFTWARE.
 #
 from __future__ import with_statement
-from .exceptions import UploadArchiveError
-from .job import Job
-from .writer import compute_hashes_from_fileobj, resume_file_upload, Writer
-from .concurrent import ConcurrentUploader
-from .utils import minimum_part_size, DEFAULT_PART_SIZE
+from boto.glacier.exceptions import UploadArchiveError
+from boto.glacier.job import Job
+from boto.glacier.writer import compute_hashes_from_fileobj, \
+                                resume_file_upload, Writer
+from boto.glacier.concurrent import ConcurrentUploader
+from boto.glacier.utils import minimum_part_size, DEFAULT_PART_SIZE
 import os.path
 
 

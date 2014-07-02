@@ -19,16 +19,42 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from __future__ import print_function
 
-import logging
+import argparse
+import os
 import sys
-import unittest
 
 from nose.core import run
-import argparse
 
 
-def main():
+# This is a whitelist of unit tests that support Python 3.
+# When porting a new module to Python 3, please update this
+# list so that its tests will run by default. See the
+# `default` target below for more information.
+# We use this instead of test attributes/tags because in
+# order to filter on tags nose must load each test - many
+# will fail to import with Python 3.
+PY3_WHITELIST = (
+    'tests/unit/auth',
+    'tests/unit/beanstalk',
+    'tests/unit/cloudtrail',
+    'tests/unit/directconnect',
+    'tests/unit/elasticache',
+    'tests/unit/manage',
+    'tests/unit/provider',
+    'tests/unit/rds2',
+    'tests/unit/s3',
+    'tests/unit/sqs',
+    'tests/unit/sts',
+    'tests/unit/swf',
+    'tests/unit/utils',
+    'tests/unit/test_connection.py',
+    'tests/unit/test_exception.py',
+    'tests/unit/test_regioninfo.py',
+)
+
+def main(whitelist=[]):
     description = ("Runs boto unit and/or integration tests. "
                    "Arguments will be passed on to nosetests. "
                    "See nosetests --help for more information.")
@@ -45,8 +71,23 @@ def main():
         # If the user did not specify any filtering criteria, we at least
         # will filter out any test tagged 'notdefault'.
         attribute_args = ['-a', '!notdefault']
+
+    # Set default tests used by e.g. tox. For Py2 this means all unit
+    # tests, while for Py3 it's just whitelisted ones.
+    if 'default' in remaining_args:
+        # Run from the base project directory
+        os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+        for i, arg in enumerate(remaining_args):
+            if arg == 'default':
+                if sys.version_info[0] == 3:
+                    del remaining_args[i]
+                    remaining_args += PY3_WHITELIST
+                else:
+                    remaining_args[i] = 'tests/unit'
+
     all_args = [__file__] + attribute_args + remaining_args
-    print "nose command:", ' '.join(all_args)
+    print("nose command:", ' '.join(all_args))
     if run(argv=all_args):
         # run will return True is all the tests pass.  We want
         # this to equal a 0 rc

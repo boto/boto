@@ -23,7 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 
 try:
     from setuptools import setup
@@ -36,9 +36,9 @@ import sys
 
 from boto import __version__
 
-if sys.version_info <= (2, 4):
-    error = "ERROR: boto requires Python Version 2.5 or above...exiting."
-    print >> sys.stderr, error
+if sys.version_info <= (2, 5):
+    error = "ERROR: boto requires Python Version 2.6 or above...exiting."
+    print(error, file=sys.stderr)
     sys.exit(1)
 
 def readme():
@@ -76,7 +76,7 @@ setup(name = "boto",
                   "boto.elastictranscoder", "boto.opsworks", "boto.redshift",
                   "boto.dynamodb2", "boto.support", "boto.cloudtrail",
                   "boto.directconnect", "boto.kinesis", "boto.rds2",
-                  "boto.cloudsearch2"],
+                  "boto.cloudsearch2", "boto.vendored"],
       package_data = {
           "boto.cacerts": ["cacerts.txt"],
           "boto": ["endpoints.json"],

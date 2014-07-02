@@ -18,16 +18,16 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
 from boto.mashups.interactive import interactive_shell
 import boto
 import os
 import time
 import shutil
-import StringIO
 import paramiko
 import socket
 import subprocess
+
+from boto.compat import StringIO
 
 
 class SSHClient(object):
@@ -56,23 +56,24 @@ class SSHClient(object):
                                          pkey=self._pkey,
                                          timeout=self._timeout)
                 return
-            except socket.error, (value, message):
+            except socket.error as xxx_todo_changeme:
+                (value, message) = xxx_todo_changeme.args
                 if value in (51, 61, 111):
-                    print 'SSH Connection refused, will retry in 5 seconds'
+                    print('SSH Connection refused, will retry in 5 seconds')
                     time.sleep(5)
                     retry += 1
                 else:
                     raise
             except paramiko.BadHostKeyException:
-                print "%s has an entry in ~/.ssh/known_hosts and it doesn't match" % self.server.hostname
-                print 'Edit that file to remove the entry and then hit return to try again'
+                print("%s has an entry in ~/.ssh/known_hosts and it doesn't match" % self.server.hostname)
+                print('Edit that file to remove the entry and then hit return to try again')
                 raw_input('Hit Enter when ready')
                 retry += 1
             except EOFError:
-                print 'Unexpected Error from SSH Connection, retry in 5 seconds'
+                print('Unexpected Error from SSH Connection, retry in 5 seconds')
                 time.sleep(5)
                 retry += 1
-        print 'Could not establish SSH connection'
+        print('Could not establish SSH connection')
 
     def open_sftp(self):
         return self._ssh_client.open_sftp()
@@ -179,7 +180,7 @@ class LocalClient(object):
 
     def run(self):
         boto.log.info('running:%s' % self.command)
-        log_fp = StringIO.StringIO()
+        log_fp = StringIO()
         process = subprocess.Popen(self.command, shell=True, stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while process.poll() is None:

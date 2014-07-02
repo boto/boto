@@ -9,6 +9,7 @@ import mock
 import requests
 
 from boto.cloudsearch.search import SearchConnection, SearchServiceException
+from boto.compat import six, map
 
 HOSTNAME = "search-demo-userdomain.us-east-1.cloudsearch.amazonaws.com"
 FULL_URL = 'http://%s/2011-02-01/search' % HOSTNAME
@@ -298,7 +299,7 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
 
         results = search.search(q='Test')
 
-        hits = map(lambda x: x['id'], results.docs)
+        hits = list(map(lambda x: x['id'], results.docs))
 
         # This relies on the default response which is fed into HTTPretty
         self.assertEqual(
@@ -313,7 +314,7 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
         results_correct = iter(["12341", "12342", "12343", "12344",
                                 "12345", "12346", "12347"])
         for x in results:
-            self.assertEqual(x['id'], results_correct.next())
+            self.assertEqual(x['id'], next(results_correct))
 
 
     def test_cloudsearch_results_internal_consistancy(self):

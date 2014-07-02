@@ -182,9 +182,9 @@ class TestGetZoneRoute53(AWSMockServiceTestCase):
         response = self.service_connection.get_all_hosted_zones()
 
         domains = ['example2.com.', 'example1.com.', 'example.com.']
-        print response['ListHostedZonesResponse']['HostedZones'][0]
+        print(response['ListHostedZonesResponse']['HostedZones'][0])
         for d in response['ListHostedZonesResponse']['HostedZones']:
-            print "Removing: %s" % d['Name']
+            print("Removing: %s" % d['Name'])
             domains.remove(d['Name'])
 
         self.assertEqual(domains, [])

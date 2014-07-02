@@ -20,7 +20,7 @@
 # IN THE SOFTWARE.
 
 import datetime
-from key import Key
+from boto.sdb.db.key import Key
 from boto.utils import Password
 from boto.sdb.db.query import Query
 import re

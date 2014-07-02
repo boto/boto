@@ -23,6 +23,7 @@
 import xml.sax
 import cgi
 from StringIO import StringIO
+from boto.compat import six
 
 class ResponseGroup(xml.sax.ContentHandler):
     """A Generic "Response Group", which can
@@ -141,14 +142,14 @@ class ItemSet(ResponseGroup):
         if self.iter is None:
             self.iter = iter(self.objs)
         try:
-            return self.iter.next()
+            return next(self.iter)
         except StopIteration:
             self.iter = None
             self.objs = []
             if int(self.page) < int(self.total_pages):
                 self.page += 1
                 self._connection.get_response(self.action, self.params, self.page, self)
-                return self.next()
+                return next(self)
             else:
                 raise
 

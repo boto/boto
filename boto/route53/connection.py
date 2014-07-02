@@ -24,7 +24,7 @@
 # IN THE SOFTWARE.
 #
 
-import exception
+from boto.route53 import exception
 import random
 import urllib
 import uuid
@@ -36,6 +36,7 @@ from boto import handler
 import boto.jsonresponse
 from boto.route53.record import ResourceRecordSets
 from boto.route53.zone import Zone
+from boto.compat import six
 
 
 HZXML = """<?xml version="1.0" encoding="UTF-8"?>
@@ -79,7 +80,7 @@ class Route53Connection(AWSAuthConnection):
     def make_request(self, action, path, headers=None, data='', params=None):
         if params:
             pairs = []
-            for key, val in params.iteritems():
+            for key, val in six.iteritems(params):
                 if val is None:
                     continue
                 pairs.append(key + '=' + urllib.quote(str(val)))

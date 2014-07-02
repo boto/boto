@@ -23,7 +23,7 @@
 This module provides an interface to the Elastic Compute Cloud (EC2)
 CloudWatch service from AWS.
 """
-from boto.compat import json
+from boto.compat import json, map, six, zip
 from boto.connection import AWSQueryConnection
 from boto.ec2.cloudwatch.metric import Metric
 from boto.ec2.cloudwatch.alarm import MetricAlarm, MetricAlarms, AlarmHistoryItem
@@ -126,7 +126,7 @@ class CloudWatchConnection(AWSQueryConnection):
         for index, item in enumerate(items):
             i = index + 1
             if isinstance(item, dict):
-                for k, v in item.iteritems():
+                for k, v in six.iteritems(item):
                     params[label % (i, 'Name')] = k
                     if v is not None:
                         params[label % (i, 'Value')] = v
@@ -171,7 +171,7 @@ class CloudWatchConnection(AWSQueryConnection):
             else:
                 raise Exception('Must specify a value or statistics to put.')
 
-            for key, val in metric_data.iteritems():
+            for key, val in six.iteritems(metric_data):
                 params['MetricData.member.%d.%s' % (index + 1, key)] = val
 
     def get_metric_statistics(self, period, start_time, end_time, metric_name,

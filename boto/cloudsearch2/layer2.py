@@ -22,8 +22,8 @@
 # IN THE SOFTWARE.
 #
 
-from .layer1 import CloudSearchConnection
-from .domain import Domain
+from boto.cloudsearch2.layer1 import CloudSearchConnection
+from boto.cloudsearch2.domain import Domain
 
 
 class Layer2(object):

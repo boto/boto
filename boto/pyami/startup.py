@@ -44,7 +44,7 @@ class Startup(ScriptBase):
                         s.main()
                     else:
                         boto.log.warning('Trouble parsing script: %s' % script)
-                except Exception, e:
+                except Exception as e:
                     boto.log.exception('Problem Running Script: %s. Startup process halting.' % script)
                     raise e
 

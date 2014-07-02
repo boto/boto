@@ -123,7 +123,7 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
             api_response = self.service_connection.create_stack(
                 'stack_name', template_body=SAMPLE_TEMPLATE,
                 parameters=[('KeyName', 'myKeyName')])
-        except BotoServerError, e:
+        except BotoServerError as e:
             self.assertEqual('abc', e.request_id)
             self.assertEqual(1, e.error_code)
             self.assertEqual('Invalid arg.', e.message)

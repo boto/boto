@@ -20,10 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import json
 from math import ceil
-import boto
-from boto.compat import json
+from boto.compat import json, map, six
 import requests
 
 SIMPLE = 'simple'
@@ -52,7 +50,7 @@ class SearchResults(object):
 
         self.facets = {}
         if 'facets' in attrs:
-            for (facet, values) in attrs['facets'].iteritems():
+            for (facet, values) in attrs['facets'].items():
                 if 'buckets' in values:
                     self.facets[facet] = dict((k, v) for (k, v) in map(lambda x: (x['value'], x['count']), values.get('buckets', [])))
 
@@ -123,17 +121,17 @@ class Query(object):
             params['fq'] = self.fq
 
         if self.expr:
-            for k, v in self.expr.iteritems():
+            for k, v in six.iteritems(self.expr):
                 params['expr.%s' % k] = v
 
         if self.facet:
-            for k, v in self.facet.iteritems():
+            for k, v in six.iteritems(self.facet):
                 if type(v) not in [str, unicode]:
                     v = json.dumps(v)
                 params['facet.%s' % k] = v
 
         if self.highlight:
-            for k, v in self.highlight.iteritems():
+            for k, v in six.iteritems(self.highlight):
                 params['highlight.%s' % k] = v
 
         if self.options:
@@ -283,7 +281,7 @@ class SearchConnection(object):
         r = self.session.get(url, params=params)
         try:
             data = json.loads(r.content)
-        except ValueError, e:
+        except ValueError as e:
             if r.status_code == 403:
                 msg = ''
                 import re

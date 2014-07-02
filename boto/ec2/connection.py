@@ -2810,7 +2810,7 @@ class EC2Connection(AWSQueryConnection):
                 keynames=[keyname],
                 dry_run=dry_run
             )[0]
-        except self.ResponseError, e:
+        except self.ResponseError as e:
             if e.code == 'InvalidKeyPair.NotFound':
                 return None
             else:

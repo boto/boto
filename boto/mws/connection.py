@@ -28,6 +28,7 @@ from boto.exception import BotoServerError
 import boto.mws.exception
 import boto.mws.response
 from boto.handler import XmlHandler
+from boto.compat import filter, map
 
 __all__ = ['MWSConnection']
 
@@ -235,7 +236,7 @@ def api_action(section, quota, restore, *api):
 
     def decorator(func, quota=int(quota), restore=float(restore)):
         version, accesskey, path = api_version_path[section]
-        action = ''.join(api or map(str.capitalize, func.func_name.split('_')))
+        action = ''.join(api or map(str.capitalize, func.__name__.split('_')))
 
         def wrapper(self, *args, **kw):
             kw.setdefault(accesskey, getattr(self, accesskey, None))
@@ -254,7 +255,7 @@ def api_action(section, quota, restore, *api):
         wrapper.__doc__ = "MWS {0}/{1} API call; quota={2} restore={3:.2f}\n" \
                           "{4}".format(action, version, quota, restore,
                                        func.__doc__)
-        api_call_map[action] = func.func_name
+        api_call_map[action] = func.__name__
         return wrapper
     return decorator
 
@@ -307,7 +308,7 @@ class MWSConnection(AWSQueryConnection):
                                                host=self.host)
         try:
             response = self._mexe(request, override_num_retries=None)
-        except BotoServerError, bs:
+        except BotoServerError as bs:
             raise self._response_error_factor(bs.status, bs.reason, bs.body)
         body = response.read()
         boto.log.debug(body)

@@ -6,6 +6,7 @@ from boto.mws.response import (ResponseFactory, ResponseElement, Element,
 
 
 from tests.unit import AWSMockServiceTestCase
+from boto.compat import filter, map
 
 
 class TestMWSResponse(AWSMockServiceTestCase):
@@ -62,11 +63,11 @@ class TestMWSResponse(AWSMockServiceTestCase):
                   </Test8Result></Test8Response>"""
         obj = self.check_issue(Test8Result, text)
         self.assertSequenceEqual(
-            map(int, obj._result.Item),
-            range(4),
+            list(map(int, obj._result.Item)),
+            list(range(4)),
         )
         self.assertSequenceEqual(
-            map(lambda x: map(int, x.Foo), obj._result.Extra),
+            list(map(lambda x: list(map(int, x.Foo)), obj._result.Extra)),
             [[4, 5], [], [6, 7]],
         )
 
@@ -193,7 +194,7 @@ class TestMWSResponse(AWSMockServiceTestCase):
         obj = self.check_issue(Test1Result, text)
         self.assertTrue(len(obj._result.Item) == 3)
         elements = lambda x: getattr(x, 'Foo', getattr(x, 'Zip', '?'))
-        elements = map(elements, obj._result.Item)
+        elements = list(map(elements, obj._result.Item))
         self.assertSequenceEqual(elements, ['Bar', 'Bif', 'Baz'])
 
     def test_parsing_missing_lists(self):

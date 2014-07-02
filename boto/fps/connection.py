@@ -23,6 +23,7 @@
 
 import urllib
 import uuid
+from boto.compat import filter, map
 from boto.connection import AWSQueryConnection
 from boto.fps.exception import ResponseErrorFactory
 from boto.fps.response import ResponseFactory
@@ -86,7 +87,7 @@ def needs_caller_reference(func):
 def api_action(*api):
 
     def decorator(func):
-        action = ''.join(api or map(str.capitalize, func.func_name.split('_')))
+        action = ''.join(api or map(str.capitalize, func.__name__.split('_')))
         response = ResponseFactory(action)
         if hasattr(boto.fps.response, action + 'Response'):
             response = getattr(boto.fps.response, action + 'Response')
