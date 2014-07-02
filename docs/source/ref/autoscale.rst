@@ -41,7 +41,7 @@ boto.ec2.autoscale.launchconfig
    :undoc-members:
 
 boto.ec2.autoscale.policy
---------------------------
+-------------------------
 
 .. automodule:: boto.ec2.autoscale.policy
    :members:   
@@ -61,10 +61,16 @@ boto.ec2.autoscale.scheduled
    :members:   
    :undoc-members:
 
-
 boto.ec2.autoscale.tag
-----------------------------
+----------------------
 
 .. automodule:: boto.ec2.autoscale.tag
    :members:   
+   :undoc-members:
+
+boto.ec2.autoscale.notificationconfiguration
+--------------------------------------------
+
+.. automodule:: boto.ec2.autoscale.notificationconfiguration
+   :members:
    :undoc-members:
