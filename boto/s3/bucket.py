@@ -403,6 +403,8 @@ class Bucket(object):
         if response.status == 200:
             rs = ResultSet(element_map)
             h = handler.XmlHandler(rs, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return rs
         else:
@@ -715,6 +717,8 @@ class Bucket(object):
             body = response.read()
             if response.status == 200:
                 h = handler.XmlHandler(result, self)
+                if not isinstance(body, bytes):
+                    body = body.encode('utf-8')
                 xml.sax.parseString(body, h)
                 return count >= 1000  # more?
             else:
@@ -871,6 +875,8 @@ class Bucket(object):
         if response.status == 200:
             key = self.new_key(new_key_name)
             h = handler.XmlHandler(key, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             if hasattr(key, 'Error'):
                 raise provider.storage_copy_error(key.Code, key.Message, body)
@@ -949,6 +955,8 @@ class Bucket(object):
         if response.status == 200:
             policy = Policy(self)
             h = handler.XmlHandler(policy, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return policy
         else:
@@ -1129,6 +1137,8 @@ class Bucket(object):
         if response.status == 200:
             rs = ResultSet(self)
             h = handler.XmlHandler(rs, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return rs.LocationConstraint
         else:
@@ -1208,6 +1218,8 @@ class Bucket(object):
         if response.status == 200:
             blogging = BucketLogging()
             h = handler.XmlHandler(blogging, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return blogging
         else:
@@ -1746,6 +1758,8 @@ class Bucket(object):
         if response.status == 200:
             resp = MultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return resp
         else:
@@ -1775,7 +1789,9 @@ class Bucket(object):
         if response.status == 200 and not contains_error:
             resp = CompleteMultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
-            xml.sax.parseString(body.encode('utf-8'), h)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
+            xml.sax.parseString(body, h)
             # Use a dummy key to parse various response headers
             # for versioning, encryption info and then explicitly
             # set the completed MPU object values from key.
