@@ -389,7 +389,7 @@ class Queue(object):
         while l:
             for m in l:
                 try:
-                    fp.write(array('B', str(m.get_body())))
+                    fp.write(array("B", map(ord, m.get_body())))
                 except:
                     print "Error writing message"
                     continue
