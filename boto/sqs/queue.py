@@ -26,6 +26,7 @@ Represents an SQS Queue
 import urlparse
 from boto.sqs.message import Message
 import sys
+from array import array
 
 
 class Queue(object):
@@ -388,7 +389,7 @@ class Queue(object):
         while l:
             for m in l:
                 try:
-                    fp.write(m.get_body().encode('utf8'))
+                    fp.write(array('B', str(m.get_body())))
                 except:
                     print "Error writing message"
                     continue
