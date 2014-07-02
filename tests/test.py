@@ -22,6 +22,7 @@
 from __future__ import print_function
 
 import argparse
+import os
 import sys
 
 from nose.core import run
@@ -34,7 +35,7 @@ from nose.core import run
 # We use this instead of test attributes/tags because in
 # order to filter on tags nose must load each test - many
 # will fail to import with Python 3.
-PY3_WHITELIST = [
+PY3_WHITELIST = (
     'tests/unit/auth',
     'tests/unit/beanstalk',
     'tests/unit/cloudtrail',
@@ -51,7 +52,7 @@ PY3_WHITELIST = [
     'tests/unit/test_connection.py',
     'tests/unit/test_exception.py',
     'tests/unit/test_regioninfo.py',
-]
+)
 
 def main(whitelist=[]):
     description = ("Runs boto unit and/or integration tests. "
@@ -74,6 +75,9 @@ def main(whitelist=[]):
     # Set default tests used by e.g. tox. For Py2 this means all unit
     # tests, while for Py3 it's just whitelisted ones.
     if 'default' in remaining_args:
+        # Run from the base project directory
+        os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
         for i, arg in enumerate(remaining_args):
             if arg == 'default':
                 if sys.version_info[0] == 3:
