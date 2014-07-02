@@ -16,45 +16,39 @@ it does, you can do this::
     >>> c = boto.ec2.cloudwatch.connect_to_region('us-west-2')
     >>> metrics = c.list_metrics()
     >>> metrics
-    [Metric:NetworkIn,
-     Metric:NetworkOut,
-     Metric:NetworkOut(InstanceType,m1.small),
-     Metric:NetworkIn(InstanceId,i-e573e68c),
-     Metric:CPUUtilization(InstanceId,i-e573e68c),
-     Metric:DiskWriteBytes(InstanceType,m1.small),
-     Metric:DiskWriteBytes(ImageId,ami-a1ffb63),
-     Metric:NetworkOut(ImageId,ami-a1ffb63),
-     Metric:DiskWriteOps(InstanceType,m1.small),
-     Metric:DiskReadBytes(InstanceType,m1.small),
-     Metric:DiskReadOps(ImageId,ami-a1ffb63),
-     Metric:CPUUtilization(InstanceType,m1.small),
-     Metric:NetworkIn(ImageId,ami-a1ffb63),
-     Metric:DiskReadOps(InstanceType,m1.small),
-     Metric:DiskReadBytes,
+    [Metric:DiskReadBytes,
      Metric:CPUUtilization,
-     Metric:DiskWriteBytes(InstanceId,i-e573e68c),
-     Metric:DiskWriteOps(InstanceId,i-e573e68c),
+     Metric:DiskWriteOps,
      Metric:DiskWriteOps,
      Metric:DiskReadOps,
-     Metric:CPUUtilization(ImageId,ami-a1ffb63),
-     Metric:DiskReadOps(InstanceId,i-e573e68c),
-     Metric:NetworkOut(InstanceId,i-e573e68c),
-     Metric:DiskReadBytes(ImageId,ami-a1ffb63),
-     Metric:DiskReadBytes(InstanceId,i-e573e68c),
-     Metric:DiskWriteBytes,
-     Metric:NetworkIn(InstanceType,m1.small),
-     Metric:DiskWriteOps(ImageId,ami-a1ffb63)]
+     Metric:DiskReadBytes,
+     Metric:DiskReadOps, 
+     Metric:CPUUtilization, 
+     Metric:DiskWriteOps, 
+     Metric:NetworkIn, 
+     Metric:NetworkOut, 
+     Metric:NetworkIn, 
+     Metric:DiskReadBytes, 
+     Metric:DiskWriteBytes, 
+     Metric:DiskWriteBytes, 
+     Metric:NetworkIn, 
+     Metric:NetworkIn, 
+     Metric:NetworkOut, 
+     Metric:NetworkOut, 
+     Metric:DiskReadOps, 
+     Metric:CPUUtilization, 
+     Metric:DiskReadOps, 
+     Metric:CPUUtilization, 
+     Metric:DiskWriteBytes, 
+     Metric:DiskWriteBytes, 
+     Metric:DiskReadBytes, 
+     Metric:NetworkOut, 
+     Metric:DiskWriteOps]
+
 
 The list_metrics call will return a list of all of the available metrics
 that you can query against.  Each entry in the list is a Metric object.
-As you can see from the list above, some of the metrics are generic metrics
-and some have Dimensions associated with them (e.g. InstanceType=m1.small).
-The Dimension can be used to refine your query.  So, for example, I could
-query the metric Metric:CPUUtilization which would create the desired statistic
-by aggregating cpu utilization data across all sources of information available
-or I could refine that by querying the metric
-Metric:CPUUtilization(InstanceId,i-e573e68c) which would use only the data
-associated with the instance identified by the instance ID i-e573e68c.
+As you can see from the list above, some of the metrics are repeated. The repeated metrics are across different dimensions (per-instance, per-image type, per instance type) which can identified by looking at the dimensions property.
 
 Because for this example, I'm only monitoring a single instance, the set
 of metrics available to me are fairly limited.  If I was monitoring many
@@ -62,12 +56,21 @@ instances, using many different instance types and AMI's and also several
 load balancers, the list of available metrics would grow considerably.
 
 Once you have the list of available metrics, you can actually
-query the CloudWatch system for that metric.  Let's choose the CPU utilization
-metric for our instance.::
+query the CloudWatch system for that metric.  
+Let's choose the CPU utilization metric for one of the ImageID.::
+    >>> m_image = metrics[7]
+    >>> m_image
+    Metric:CPUUtilization
+    >>> m_image.dimensions
+    {u'ImageId': [u'ami-6ac2a85a']}
 
-    >>> m = metrics[5]
+Let's choose another CPU utilization metric for our instance.::
+
+    >>> m = metrics[20]
     >>> m
-    Metric:CPUUtilization(InstanceId,i-e573e68c)
+    Metric:CPUUtilization
+    >>> m.dimensions
+    {u'InstanceId': [u'i-4ca81747']}
 
 The Metric object has a query method that lets us actually perform
 the query against the collected data in CloudWatch.  To call that,
@@ -87,8 +90,7 @@ values::
 
 And Units must be one of the following::
 
-    ['Seconds', 'Percent', 'Bytes', 'Bits', 'Count',
-    'Bytes/Second', 'Bits/Second', 'Count/Second']
+    ['Seconds', 'Microseconds', 'Milliseconds', 'Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Terabytes', 'Bits', 'Kilobits', 'Megabits', 'Gigabits', 'Terabits', 'Percent', 'Count', 'Bytes/Second', 'Kilobytes/Second', 'Megabytes/Second', 'Gigabytes/Second', 'Terabytes/Second', 'Bits/Second', 'Kilobits/Second', 'Megabits/Second', 'Gigabits/Second', 'Terabits/Second', 'Count/Second', None]
 
 The query method also takes an optional parameter, period.  This
 parameter controls the granularity (in seconds) of the data returned.
@@ -108,9 +110,8 @@ about that particular data point.::
 
     >>> d = datapoints[0]
     >>> d
-    {u'Average': 0.0,
-     u'SampleCount': 1.0,
-     u'Timestamp': u'2009-05-21T19:55:00Z',
+    {u'Timestamp': datetime.datetime(2014, 6, 23, 22, 25),
+     u'Average': 20.0, 
      u'Unit': u'Percent'}
 
 My server obviously isn't very busy right now!

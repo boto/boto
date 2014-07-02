@@ -783,6 +783,9 @@ class EC2Connection(AWSQueryConnection):
             * i2.2xlarge
             * i2.4xlarge
             * i2.8xlarge
+            * t2.micro
+            * t2.small
+            * t2.medium
 
         :type placement: string
         :param placement: The Availability Zone to launch the instance into.
@@ -1478,6 +1481,9 @@ class EC2Connection(AWSQueryConnection):
             * i2.2xlarge
             * i2.4xlarge
             * i2.8xlarge
+            * t2.micro
+            * t2.small
+            * t2.medium
 
         :type placement: string
         :param placement: The availability zone in which to launch

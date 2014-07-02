@@ -1142,7 +1142,7 @@ class IAMConnection(AWSQueryConnection):
             permission to assume the role.
 
         :type path: string
-        :param path: The path to the instance profile.
+        :param path: The path to the role.
         """
         params = {
             'RoleName': role_name,

@@ -648,16 +648,35 @@ class Table(object):
         self.connection.update_item(self.table_name, raw_key, item_data, **kwargs)
         return True
 
-    def delete_item(self, **kwargs):
+    def delete_item(self, expected=None, conditional_operator=None, **kwargs):
         """
-        Deletes an item in DynamoDB.
+        Deletes a single item. You can perform a conditional delete operation
+        that deletes the item if it exists, or if it has an expected attribute
+        value.
+
+        Conditional deletes are useful for only deleting items if specific
+        conditions are met. If those conditions are met, DynamoDB performs
+        the delete. Otherwise, the item is not deleted.
+
+        To specify the expected attribute values of the item, you can pass a
+        dictionary of conditions to ``expected``. Each condition should follow
+        the pattern ``<attributename>__<comparison_operator>=<value_to_expect>``.
 
         **IMPORTANT** - Be careful when using this method, there is no undo.
 
         To specify the key of the item you'd like to get, you can specify the
         key attributes as kwargs.
 
-        Returns ``True`` on success.
+        Optionally accepts an ``expected`` parameter which is a dictionary of
+        expected attribute value conditions.
+
+        Optionally accepts a ``conditional_operator`` which applies to the
+        expected attribute value conditions:
+
+        + `AND` - If all of the conditions evaluate to true (default)
+        + `OR` - True if at least one condition evaluates to true
+
+        Returns ``True`` on success, ``False`` on failed conditional delete.
 
         Example::
 
@@ -676,9 +695,21 @@ class Table(object):
             ... })
             True
 
+            # Conditional delete
+            >>> users.delete_item(username='johndoe',
+            ...                   expected={'balance__eq': 0})
+            True
         """
+        expected = self._build_filters(expected, using=FILTER_OPERATORS)
         raw_key = self._encode_keys(kwargs)
-        self.connection.delete_item(self.table_name, raw_key)
+
+        try:
+            self.connection.delete_item(self.table_name, raw_key,
+                                        expected=expected,
+                                        conditional_operator=conditional_operator)
+        except exceptions.ConditionalCheckFailedException:
+            return False
+
         return True
 
     def get_key_fields(self):
