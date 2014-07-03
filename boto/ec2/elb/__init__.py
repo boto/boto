@@ -30,7 +30,6 @@ from boto.ec2.instanceinfo import InstanceInfo
 from boto.ec2.elb.loadbalancer import LoadBalancer, LoadBalancerZones
 from boto.ec2.elb.instancestate import InstanceState
 from boto.ec2.elb.healthcheck import HealthCheck
-from boto.ec2.elb.listelement import ListElement
 from boto.regioninfo import RegionInfo, get_regions, load_regions
 import boto
 from boto.compat import six
@@ -69,8 +68,9 @@ class ELBConnection(AWSQueryConnection):
 
     APIVersion = boto.config.get('Boto', 'elb_version', '2012-06-01')
     DefaultRegionName = boto.config.get('Boto', 'elb_region_name', 'us-east-1')
-    DefaultRegionEndpoint = boto.config.get('Boto', 'elb_region_endpoint',
-                                            'elasticloadbalancing.us-east-1.amazonaws.com')
+    DefaultRegionEndpoint = boto.config.get(
+        'Boto', 'elb_region_endpoint',
+        'elasticloadbalancing.us-east-1.amazonaws.com')
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -88,20 +88,20 @@ class ELBConnection(AWSQueryConnection):
                                 self.DefaultRegionEndpoint)
         self.region = region
         super(ELBConnection, self).__init__(aws_access_key_id,
-                                    aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port,
-                                    proxy_user, proxy_pass,
-                                    self.region.endpoint, debug,
-                                    https_connection_factory, path,
-                                    security_token,
-                                    validate_certs=validate_certs,
-                                    profile_name=profile_name)
+                                            aws_secret_access_key,
+                                            is_secure, port, proxy, proxy_port,
+                                            proxy_user, proxy_pass,
+                                            self.region.endpoint, debug,
+                                            https_connection_factory, path,
+                                            security_token,
+                                            validate_certs=validate_certs,
+                                            profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['ec2']
 
     def build_list_params(self, params, items, label):
-        if isinstance(items, basestring):
+        if isinstance(items, six.string_types):
             items = [items]
         for index, item in enumerate(items):
             params[label % (index + 1)] = item
@@ -125,7 +125,8 @@ class ELBConnection(AWSQueryConnection):
                              [('member', LoadBalancer)])
 
     def create_load_balancer(self, name, zones, listeners=None, subnets=None,
-        security_groups=None, scheme='internet-facing', complex_listeners=None):
+                             security_groups=None, scheme='internet-facing',
+                             complex_listeners=None):
         """
         Create a new load balancer for your account. By default the load
         balancer will be created in EC2. To create a load balancer inside a
@@ -171,13 +172,14 @@ class ELBConnection(AWSQueryConnection):
 
         :type complex_listeners: List of tuples
         :param complex_listeners: Each tuple contains four or five values,
-            (LoadBalancerPortNumber, InstancePortNumber, Protocol, InstanceProtocol,
-            SSLCertificateId).
+            (LoadBalancerPortNumber, InstancePortNumber, Protocol,
+             InstanceProtocol, SSLCertificateId).
 
             Where:
                 - LoadBalancerPortNumber and InstancePortNumber are integer
                   values between 1 and 65535
-                - Protocol and InstanceProtocol is a string containing either 'TCP',
+                - Protocol and InstanceProtocol is a string containing
+                  either 'TCP',
                   'SSL', 'HTTP', or 'HTTPS'
                 - SSLCertificateId is the ARN of an SSL certificate loaded into
                   AWS IAM
@@ -225,7 +227,7 @@ class ELBConnection(AWSQueryConnection):
 
         if security_groups:
             self.build_list_params(params, security_groups,
-                                    'SecurityGroups.member.%d')
+                                   'SecurityGroups.member.%d')
 
         load_balancer = self.get_object('CreateLoadBalancer',
                                         params, LoadBalancer)
@@ -236,7 +238,8 @@ class ELBConnection(AWSQueryConnection):
         load_balancer.security_groups = security_groups
         return load_balancer
 
-    def create_load_balancer_listeners(self, name, listeners=None, complex_listeners=None):
+    def create_load_balancer_listeners(self, name, listeners=None,
+                                       complex_listeners=None):
         """
         Creates a Listener (or group of listeners) for an existing
         Load Balancer
@@ -255,13 +258,14 @@ class ELBConnection(AWSQueryConnection):
 
         :type complex_listeners: List of tuples
         :param complex_listeners: Each tuple contains four or five values,
-            (LoadBalancerPortNumber, InstancePortNumber, Protocol, InstanceProtocol,
-            SSLCertificateId).
+            (LoadBalancerPortNumber, InstancePortNumber, Protocol,
+             InstanceProtocol, SSLCertificateId).
 
             Where:
                 - LoadBalancerPortNumber and InstancePortNumber are integer
                   values between 1 and 65535
-                - Protocol and InstanceProtocol is a string containing either 'TCP',
+                - Protocol and InstanceProtocol is a string containing
+                  either 'TCP',
                   'SSL', 'HTTP', or 'HTTPS'
                 - SSLCertificateId is the ARN of an SSL certificate loaded into
                   AWS IAM
@@ -348,7 +352,7 @@ class ELBConnection(AWSQueryConnection):
         self.build_list_params(params, zones_to_add,
                                'AvailabilityZones.member.%d')
         obj = self.get_object('EnableAvailabilityZonesForLoadBalancer',
-                               params, LoadBalancerZones)
+                              params, LoadBalancerZones)
         return obj.zones
 
     def disable_availability_zones(self, load_balancer_name, zones_to_remove):
@@ -373,7 +377,7 @@ class ELBConnection(AWSQueryConnection):
         self.build_list_params(params, zones_to_remove,
                                'AvailabilityZones.member.%d')
         obj = self.get_object('DisableAvailabilityZonesForLoadBalancer',
-                               params, LoadBalancerZones)
+                              params, LoadBalancerZones)
         return obj.zones
 
     def modify_lb_attribute(self, load_balancer_name, attribute, value):
@@ -454,7 +458,8 @@ class ELBConnection(AWSQueryConnection):
 
           * accessLog - :py:class:`AccessLogAttribute` instance
           * crossZoneLoadBalancing - Boolean
-          * connectionDraining - :py:class:`ConnectionDrainingAttribute` instance
+          * connectionDraining - :py:class:`ConnectionDrainingAttribute`
+            instance
 
         :rtype: Attribute dependent
         :return: The new value for the attribute
@@ -614,12 +619,14 @@ class ELBConnection(AWSQueryConnection):
             params['CookieExpirationPeriod'] = cookie_expiration_period
         return self.get_status('CreateLBCookieStickinessPolicy', params)
 
-    def create_lb_policy(self, lb_name, policy_name, policy_type, policy_attributes):
+    def create_lb_policy(self, lb_name, policy_name, policy_type,
+                         policy_attributes):
         """
-        Creates a new policy that contains the necessary attributes depending on
-        the policy type. Policies are settings that are saved for your load
-        balancer and that can be applied to the front-end listener, or
-        the back-end application server.
+        Creates a new policy that contains the necessary attributes
+        depending on the policy type. Policies are settings that are
+        saved for your load balancer and that can be applied to the
+        front-end listener, or the back-end application server.
+
         """
         params = {'LoadBalancerName': lb_name,
                   'PolicyName': policy_name,
@@ -654,7 +661,8 @@ class ELBConnection(AWSQueryConnection):
             params['PolicyNames'] = ''
         return self.get_status('SetLoadBalancerPoliciesOfListener', params)
 
-    def set_lb_policies_of_backend_server(self, lb_name, instance_port, policies):
+    def set_lb_policies_of_backend_server(self, lb_name, instance_port,
+                                          policies):
         """
         Replaces the current set of policies associated with a port on which
         the back-end server is listening with a new set of policies.
@@ -665,7 +673,8 @@ class ELBConnection(AWSQueryConnection):
             self.build_list_params(params, policies, 'PolicyNames.member.%d')
         else:
             params['PolicyNames'] = ''
-        return self.get_status('SetLoadBalancerPoliciesForBackendServer', params)
+        return self.get_status('SetLoadBalancerPoliciesForBackendServer',
+                               params)
 
     def apply_security_groups_to_lb(self, name, security_groups):
         """

@@ -7,6 +7,7 @@ import mock
 
 from boto.ec2.elb import ELBConnection
 from boto.ec2.elb import LoadBalancer
+from boto.compat import six
 
 DISABLE_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
 <DisableAvailabilityZonesForLoadBalancerResult xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
@@ -121,7 +122,7 @@ class TestDetachSubnets(unittest.TestCase):
         lb = LoadBalancer(elb, "mylb")
 
         mock_response = mock.Mock()
-        mock_response.read.return_value = DETACH_RESPONSE
+        mock_response.read.return_value = six.b(DETACH_RESPONSE)
         mock_response.status = 200
         elb.make_request = mock.Mock(return_value=mock_response)
         lb.detach_subnets("s-xxx")

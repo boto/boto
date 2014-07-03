@@ -3,6 +3,7 @@ import xml.sax
 from tests.unit import unittest
 
 import boto.resultset
+from boto.compat import six
 from boto.ec2.elb.loadbalancer import LoadBalancer
 
 
@@ -85,7 +86,7 @@ class TestListenerResponseParsing(unittest.TestCase):
           ('member', LoadBalancer)
         ])
         h = boto.handler.XmlHandler(rs, None)
-        xml.sax.parseString(LISTENERS_RESPONSE, h)
+        xml.sax.parseString(six.b(LISTENERS_RESPONSE), h)
         listeners = rs[0].listeners
         self.assertEqual(
             sorted([l.get_complex_tuple() for l in listeners]),

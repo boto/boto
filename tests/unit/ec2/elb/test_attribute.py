@@ -5,6 +5,7 @@ import mock
 from boto.ec2.elb import ELBConnection
 from boto.ec2.elb import LoadBalancer
 from boto.ec2.elb.attributes import LbAttributes
+from boto.compat import six
 
 ATTRIBUTE_GET_TRUE_CZL_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeLoadBalancerAttributesResponse  xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
@@ -122,7 +123,7 @@ class TestLbAttributes(unittest.TestCase):
             ]
 
         for attr, value, args in tests:
-            mock_response.read.return_value = ATTRIBUTE_SET_RESPONSE
+            mock_response.read.return_value = six.b(ATTRIBUTE_SET_RESPONSE)
             result = elb.modify_lb_attribute('test_elb', attr, value)
             self.assertTrue(result)
             elb.make_request.assert_called_with(*args)
@@ -162,7 +163,7 @@ class TestLbAttributes(unittest.TestCase):
         """Tests enabling cross zone balancing from LoadBalancer."""
         mock_response, elb, lb = self._setup_mock()
 
-        mock_response.read.return_value = ATTRIBUTE_SET_RESPONSE
+        mock_response.read.return_value = six.b(ATTRIBUTE_SET_RESPONSE)
         self.assertTrue(lb.enable_cross_zone_load_balancing())
         elb.make_request.assert_called_with(*ATTRIBUTE_SET_CZL_TRUE_REQUEST)
 
@@ -170,7 +171,7 @@ class TestLbAttributes(unittest.TestCase):
         """Tests disabling cross zone balancing from LoadBalancer."""
         mock_response, elb, lb = self._setup_mock()
 
-        mock_response.read.return_value = ATTRIBUTE_SET_RESPONSE
+        mock_response.read.return_value = six.b(ATTRIBUTE_SET_RESPONSE)
         self.assertTrue(lb.disable_cross_zone_load_balancing())
         elb.make_request.assert_called_with(*ATTRIBUTE_SET_CZL_FALSE_REQUEST)
 
