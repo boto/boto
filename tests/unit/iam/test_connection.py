@@ -22,6 +22,7 @@
 #
 
 from tests.unit import unittest
+from boto.compat import json
 from boto.iam.connection import IAMConnection
 from tests.unit import AWSMockServiceTestCase
 
@@ -194,9 +195,9 @@ class TestCreateRole(AWSMockServiceTestCase):
 
         self.assert_request_parameters(
             {'Action': 'CreateRole',
-             'AssumeRolePolicyDocument': '{"Statement": [{"Action": ["sts:AssumeRole"], "Effect": "Allow", "Principal": {"Service": ["ec2.amazonaws.com"]}}]}',
              'RoleName': 'a_name'},
-            ignore_params_values=['Version'])
+            ignore_params_values=['Version', 'AssumeRolePolicyDocument'])
+        self.assertDictEqual(json.loads(self.actual_request.params["AssumeRolePolicyDocument"]), {"Statement": [{"Action": ["sts:AssumeRole"], "Effect": "Allow", "Principal": {"Service": ["ec2.amazonaws.com"]}}]})
 
     def test_create_role_default_cn_north(self):
         self.set_http_response(status_code=200)
@@ -205,9 +206,9 @@ class TestCreateRole(AWSMockServiceTestCase):
 
         self.assert_request_parameters(
             {'Action': 'CreateRole',
-             'AssumeRolePolicyDocument': '{"Statement": [{"Action": ["sts:AssumeRole"], "Effect": "Allow", "Principal": {"Service": ["ec2.amazonaws.com.cn"]}}]}',
              'RoleName': 'a_name'},
-            ignore_params_values=['Version'])
+            ignore_params_values=['Version', 'AssumeRolePolicyDocument'])
+        self.assertDictEqual(json.loads(self.actual_request.params["AssumeRolePolicyDocument"]), {"Statement": [{"Action": ["sts:AssumeRole"], "Effect": "Allow", "Principal": {"Service": ["ec2.amazonaws.com.cn"]}}]})
 
     def test_create_role_string_policy(self):
         self.set_http_response(status_code=200)
