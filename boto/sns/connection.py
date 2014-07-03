@@ -274,17 +274,18 @@ class SNSConnection(AWSQueryConnection):
         if message_structure is not None:
             params['MessageStructure'] = message_structure
         if message_attributes is not None:
-            for i, name in enumerate(message_attributes.keys(), start=1):
+            keys = sorted(message_attributes.keys())
+            for i, name in enumerate(keys, start=1):
                 attribute = message_attributes[name]
-                params['MessageAttributes.{0}.Name'.format(i)] = name
+                params['MessageAttributes.entry.{0}.Name'.format(i)] = name
                 if 'data_type' in attribute:
-                    params['MessageAttributes.{0}.Value.DataType'.format(i)] = \
+                    params['MessageAttributes.entry.{0}.Value.DataType'.format(i)] = \
                         attribute['data_type']
                 if 'string_value' in attribute:
-                    params['MessageAttributes.{0}.Value.StringValue'.format(i)] = \
+                    params['MessageAttributes.entry.{0}.Value.StringValue'.format(i)] = \
                         attribute['string_value']
                 if 'binary_value' in attribute:
-                    params['MessageAttributes.{0}.Value.BinaryValue'.format(i)] = \
+                    params['MessageAttributes.entry.{0}.Value.BinaryValue'.format(i)] = \
                         attribute['binary_value']
         return self._make_request('Publish', params, '/', 'POST')
 

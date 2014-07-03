@@ -237,8 +237,6 @@ class TestSNSConnection(AWSMockServiceTestCase):
         }, ignore_params_values=['Version', 'ContentType'])
 
     def test_publish_with_attributes(self):
-        from collections import OrderedDict
-
         self.set_http_response(status_code=200)
 
         self.service_connection.publish(
@@ -251,17 +249,16 @@ class TestSNSConnection(AWSMockServiceTestCase):
             message_structure='json',
             subject='subject',
             target_arn='target_arn',
-            # Ensure keys are ordered so we can assert on request
-            message_attributes=OrderedDict((
-                ('name1', {
+            message_attributes={
+                'name1': {
                     'data_type': 'Number',
                     'string_value': '42'
-                }),
-                ('name2', {
+                },
+                'name2': {
                     'data_type': 'String',
                     'string_value': 'Bob'
-                }),
-            )),
+                },
+            },
         )
         self.assert_request_parameters({
             'Action': 'Publish',
@@ -269,12 +266,12 @@ class TestSNSConnection(AWSMockServiceTestCase):
             'Subject': 'subject',
             'Message': '{"default": "Ignored.", "GCM": {"data": "goes here"}}',
             'MessageStructure': 'json',
-            'MessageAttributes.1.Name': 'name1',
-            'MessageAttributes.1.Value.DataType': 'Number',
-            'MessageAttributes.1.Value.StringValue': '42',
-            'MessageAttributes.2.Name': 'name2',
-            'MessageAttributes.2.Value.DataType': 'String',
-            'MessageAttributes.2.Value.StringValue': 'Bob',
+            'MessageAttributes.entry.1.Name': 'name1',
+            'MessageAttributes.entry.1.Value.DataType': 'Number',
+            'MessageAttributes.entry.1.Value.StringValue': '42',
+            'MessageAttributes.entry.2.Name': 'name2',
+            'MessageAttributes.entry.2.Value.DataType': 'String',
+            'MessageAttributes.entry.2.Value.StringValue': 'Bob',
         }, ignore_params_values=['Version', 'ContentType'])
 
 
