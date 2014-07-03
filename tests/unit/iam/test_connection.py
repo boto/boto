@@ -30,7 +30,7 @@ class TestCreateSamlProvider(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateSAMLProviderResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
               <CreateSAMLProviderResult>
                 <SAMLProviderArn>arn</SAMLProviderArn>
@@ -60,7 +60,7 @@ class TestListSamlProviders(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
             <ListSAMLProvidersResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
               <ListSAMLProvidersResult>
                 <SAMLProviderList>
@@ -95,7 +95,7 @@ class TestGetSamlProvider(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
             <GetSAMLProviderResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
               <GetSAMLProviderResult>
                 <CreateDate>2012-05-09T16:27:11Z</CreateDate>
@@ -124,7 +124,7 @@ class TestUpdateSamlProvider(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
             <UpdateSAMLProviderResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
               <UpdateSAMLProviderResult>
                 <SAMLProviderArn>arn:aws:iam::123456789012:saml-metadata/MyUniversity</SAMLProviderArn>
@@ -170,7 +170,7 @@ class TestCreateRole(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
           <CreateRoleResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
             <CreateRoleResult>
               <Role>
@@ -242,7 +242,7 @@ class TestGetSigninURL(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
           <ListAccountAliasesResponse>
             <ListAccountAliasesResult>
               <IsTruncated>false</IsTruncated>
@@ -287,7 +287,7 @@ class TestGetSigninURL(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
           <ListAccountAliasesResponse>
             <ListAccountAliasesResult>
               <IsTruncated>false</IsTruncated>

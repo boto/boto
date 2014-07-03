@@ -57,7 +57,7 @@ At the moment, boto supports:
 
 * Identity & Access
 
-  * AWS Identity and Access Management (IAM)
+  * AWS Identity and Access Management (IAM) (Python 3)
 
 * Application Services
 
