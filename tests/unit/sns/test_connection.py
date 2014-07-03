@@ -236,6 +236,47 @@ class TestSNSConnection(AWSMockServiceTestCase):
             'Message': message,
         }, ignore_params_values=['Version', 'ContentType'])
 
+    def test_publish_with_attributes(self):
+        from collections import OrderedDict
+
+        self.set_http_response(status_code=200)
+
+        self.service_connection.publish(
+            message=json.dumps({
+                'default': 'Ignored.',
+                'GCM': {
+                    'data': 'goes here',
+                }
+            }),
+            message_structure='json',
+            subject='subject',
+            target_arn='target_arn',
+            # Ensure keys are ordered so we can assert on request
+            message_attributes=OrderedDict((
+                ('name1', {
+                    'data_type': 'Number',
+                    'string_value': '42'
+                }),
+                ('name2', {
+                    'data_type': 'String',
+                    'string_value': 'Bob'
+                }),
+            )),
+        )
+        self.assert_request_parameters({
+            'Action': 'Publish',
+            'TargetArn': 'target_arn',
+            'Subject': 'subject',
+            'Message': '{"default": "Ignored.", "GCM": {"data": "goes here"}}',
+            'MessageStructure': 'json',
+            'MessageAttributes.1.Name': 'name1',
+            'MessageAttributes.1.Value.DataType': 'Number',
+            'MessageAttributes.1.Value.StringValue': '42',
+            'MessageAttributes.2.Name': 'name2',
+            'MessageAttributes.2.Value.DataType': 'String',
+            'MessageAttributes.2.Value.StringValue': 'Bob',
+        }, ignore_params_values=['Version', 'ContentType'])
+
 
 if __name__ == '__main__':
     unittest.main()
