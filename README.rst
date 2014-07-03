@@ -37,7 +37,7 @@ At the moment, boto supports:
 
 * Content Delivery
 
-  * Amazon CloudFront
+  * Amazon CloudFront (Python 3)
 
 * Database
 

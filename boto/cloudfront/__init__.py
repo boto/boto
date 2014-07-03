@@ -78,7 +78,7 @@ class CloudFrontConnection(AWSAuthConnection):
         rs_kwargs = result_set_kwargs or dict()
         rs = rs_class(tags, **rs_kwargs)
         h = handler.XmlHandler(rs, self)
-        xml.sax.parseString(body, h)
+        xml.sax.parseString(body.encode('utf-8'), h)
         return rs
 
     def _get_info(self, id, resource, dist_class):
@@ -94,7 +94,7 @@ class CloudFrontConnection(AWSAuthConnection):
             if key.lower() == 'etag':
                 d.etag = response_headers[key]
         h = handler.XmlHandler(d, self)
-        xml.sax.parseString(body, h)
+        xml.sax.parseString(body.encode('utf-8'), h)
         return d
 
     def _get_config(self, id, resource, config_class):
@@ -107,7 +107,7 @@ class CloudFrontConnection(AWSAuthConnection):
         d = config_class(connection=self)
         d.etag = self.get_etag(response)
         h = handler.XmlHandler(d, self)
-        xml.sax.parseString(body, h)
+        xml.sax.parseString(body.encode('utf-8'), h)
         return d
 
     def _set_config(self, distribution_id, etag, config):
@@ -134,7 +134,7 @@ class CloudFrontConnection(AWSAuthConnection):
         if response.status == 201:
             d = dist_class(connection=self)
             h = handler.XmlHandler(d, self)
-            xml.sax.parseString(body, h)
+            xml.sax.parseString(body.encode('utf-8'), h)
             d.etag = self.get_etag(response)
             return d
         else:
@@ -257,7 +257,7 @@ class CloudFrontConnection(AWSAuthConnection):
         body = response.read()
         if response.status == 201:
             h = handler.XmlHandler(paths, self)
-            xml.sax.parseString(body, h)
+            xml.sax.parseString(body.encode('utf-8'), h)
             return paths
         else:
             raise CloudFrontServerError(response.status, response.reason, body)
@@ -272,7 +272,7 @@ class CloudFrontConnection(AWSAuthConnection):
         if response.status == 200:
             paths = InvalidationBatch([])
             h = handler.XmlHandler(paths, self)
-            xml.sax.parseString(body, h)
+            xml.sax.parseString(body.encode('utf-8'), h)
             return paths
         else:
             raise CloudFrontServerError(response.status, response.reason, body)

@@ -4,7 +4,7 @@ try:
     import simplejson as json
 except ImportError:
     import json
-from cStringIO import StringIO
+from boto.compat import StringIO
 from textwrap import dedent
 
 from boto.cloudfront.distribution import Distribution
