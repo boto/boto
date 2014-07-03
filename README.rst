@@ -74,7 +74,7 @@ At the moment, boto supports:
 
 * Networking
 
-  * Amazon Route53
+  * Amazon Route53 (Python 3)
   * Amazon Virtual Private Cloud (VPC)
   * Elastic Load Balancing (ELB)
   * AWS Direct Connect
