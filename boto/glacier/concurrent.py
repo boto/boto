@@ -27,7 +27,7 @@ import threading
 import hashlib
 import time
 import logging
-from Queue import Queue, Empty
+from boto.compat import Queue
 import binascii
 
 from boto.glacier.utils import DEFAULT_PART_SIZE, minimum_part_size, \

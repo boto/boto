@@ -22,6 +22,8 @@
 # IN THE SOFTWARE.
 #
 from __future__ import with_statement
+import codecs
+from boto.compat import six
 from boto.glacier.exceptions import UploadArchiveError
 from boto.glacier.job import Job
 from boto.glacier.writer import compute_hashes_from_fileobj, \
@@ -55,8 +57,6 @@ class Vault(object):
         if response_data:
             for response_name, attr_name, default in self.ResponseDataElements:
                 value = response_data[response_name]
-                if isinstance(value, unicode):
-                    value = value.encode('utf8')
                 setattr(self, attr_name, value)
         else:
             for response_name, attr_name, default in self.ResponseDataElements:
@@ -228,7 +228,7 @@ class Vault(object):
         for part_desc in part_list_response['Parts']:
             part_index = self._range_string_to_part_index(
                 part_desc['RangeInBytes'], part_size)
-            part_tree_hash = part_desc['SHA256TreeHash'].decode('hex')
+            part_tree_hash = codecs.decode(part_desc['SHA256TreeHash'], 'hex')
             part_hash_map[part_index] = part_tree_hash
 
         if not file_obj:

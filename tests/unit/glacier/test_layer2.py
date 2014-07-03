@@ -25,13 +25,14 @@ from tests.unit import unittest
 
 from mock import call, Mock, patch, sentinel
 
+import codecs
 from boto.glacier.layer1 import Layer1
 from boto.glacier.layer2 import Layer2
 import boto.glacier.vault
 from boto.glacier.vault import Vault
 from boto.glacier.vault import Job
 
-from StringIO import StringIO
+from boto.compat import StringIO
 
 from datetime import datetime, tzinfo, timedelta
 
@@ -297,7 +298,7 @@ class TestVault(GlacierLayer2Base):
             sentinel.upload_id, file_obj=sentinel.file_obj)
         mock_resume_file_upload.assert_called_once_with(
             self.vault, sentinel.upload_id, part_size, sentinel.file_obj,
-            {0: '12'.decode('hex'), 1: '34'.decode('hex')})
+            {0: codecs.decode('12', 'hex'), 1: codecs.decode('34', 'hex')})
 
 
 class TestJob(GlacierLayer2Base):

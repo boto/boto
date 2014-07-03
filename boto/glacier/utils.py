@@ -21,6 +21,7 @@
 #
 import hashlib
 import math
+import binascii
 
 
 _MEGABYTE = 1024 * 1024
@@ -76,7 +77,7 @@ def chunk_hashes(bytestring, chunk_size=_MEGABYTE):
         end = (i + 1) * chunk_size
         hashes.append(hashlib.sha256(bytestring[start:end]).digest())
     if not hashes:
-        return [hashlib.sha256('').digest()]
+        return [hashlib.sha256(b'').digest()]
     return hashes
 
 
@@ -123,18 +124,18 @@ def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
     """
     linear_hash = hashlib.sha256()
     chunks = []
-    chunk = fileobj.read(chunk_size)
+    chunk = fileobj.read(chunk_size).encode('utf-8')
     while chunk:
         linear_hash.update(chunk)
         chunks.append(hashlib.sha256(chunk).digest())
         chunk = fileobj.read(chunk_size)
     if not chunks:
-        chunks = [hashlib.sha256('').digest()]
+        chunks = [hashlib.sha256(b'').digest()]
     return linear_hash.hexdigest(), bytes_to_hex(tree_hash(chunks))
 
 
 def bytes_to_hex(str_as_bytes):
-    return ''.join(["%02x" % ord(x) for x in str_as_bytes]).strip()
+    return binascii.hexlify(str_as_bytes)
 
 
 def tree_hash_from_str(str_as_bytes):

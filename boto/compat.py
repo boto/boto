@@ -50,6 +50,7 @@ from boto.vendored import six
 from boto.vendored.six import BytesIO, StringIO
 from boto.vendored.six.moves import filter, http_client, map, _thread, \
                                     urllib, zip
+from boto.vendored.six.moves.queue import Queue
 from boto.vendored.six.moves.configparser import SafeConfigParser
 from boto.vendored.six.moves.urllib.parse import parse_qs, quote, unquote, \
                                                  urlparse, urlsplit
