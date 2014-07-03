@@ -2254,10 +2254,10 @@ class EC2Connection(AWSQueryConnection):
 
         :type volume_type: string
         :param volume_type: The type of the volume. (optional).  Valid
-            values are: standard | io1.
+            values are: standard | io1 | gp2.
 
         :type iops: int
-        :param iops: The provisioned IOPs you want to associate with
+        :param iops: The provisioned IOPS you want to associate with
             this volume. (optional)
 
         :type encrypted: bool
