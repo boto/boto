@@ -66,7 +66,7 @@ At the moment, boto supports:
   * Amazon Simple Workflow Service (SWF)
   * Amazon Simple Queue Service (SQS) (Python 3)
   * Amazon Simple Notification Server (SNS)
-  * Amazon Simple Email Service (SES)
+  * Amazon Simple Email Service (SES) (Python 3)
 
 * Monitoring
 
