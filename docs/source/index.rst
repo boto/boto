@@ -48,7 +48,7 @@ Currently Supported Services
   * Relational Data Services 2 (RDS) -- (:doc:`API Reference <ref/rds2>`) -- (:doc:`Migration Guide from v1 <migrations/rds_v1_to_v2>`)
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
   * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
-  * Redshift -- (:doc:`API Reference <ref/redshift>`)
+  * Redshift -- (:doc:`API Reference <ref/redshift>`) (Python 3)
   * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
 
 * **Deployment and Management**
