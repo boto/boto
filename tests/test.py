@@ -45,6 +45,7 @@ PY3_WHITELIST = (
     'tests/unit/provider',
     'tests/unit/rds2',
     'tests/unit/s3',
+    'tests/unit/sns',
     'tests/unit/sqs',
     'tests/unit/sts',
     'tests/unit/swf',
