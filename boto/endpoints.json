@@ -192,6 +192,9 @@
         "us-west-2": "kinesis.us-west-2.amazonaws.com",
         "eu-west-1": "kinesis.eu-west-1.amazonaws.com"
     },
+    "logs": {
+        "us-east-1": "logs.us-east-1.amazonaws.com"
+    },
     "opsworks": {
         "us-east-1": "opsworks.us-east-1.amazonaws.com"
     },
