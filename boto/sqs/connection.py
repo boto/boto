@@ -122,12 +122,18 @@ class SQSConnection(AWSQueryConnection):
             supplied, the default is to return all attributes.  Valid
             attributes are:
 
+            * All
             * ApproximateNumberOfMessages
             * ApproximateNumberOfMessagesNotVisible
             * VisibilityTimeout
             * CreatedTimestamp
             * LastModifiedTimestamp
             * Policy
+            * MaximumMessageSize
+            * MessageRetentionPeriod
+            * QueueArn
+            * ApproximateNumberOfMessagesDelayed
+            * DelaySeconds
             * ReceiveMessageWaitTimeSeconds
             * RedrivePolicy
 
