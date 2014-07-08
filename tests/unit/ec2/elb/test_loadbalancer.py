@@ -8,7 +8,7 @@ import mock
 from boto.ec2.elb import ELBConnection
 from boto.ec2.elb import LoadBalancer
 
-DISABLE_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
+DISABLE_RESPONSE = b"""<?xml version="1.0" encoding="UTF-8"?>
 <DisableAvailabilityZonesForLoadBalancerResult xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
     <requestId>3be1508e-c444-4fef-89cc-0b1223c4f02fEXAMPLE</requestId>
     <AvailabilityZones>
@@ -30,7 +30,7 @@ class TestInstanceStatusResponseParsing(unittest.TestCase):
         self.assertEqual(disabled, ['sample-zone'])
 
 
-DESCRIBE_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
+DESCRIBE_RESPONSE = b"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeLoadBalancersResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
   <DescribeLoadBalancersResult>
     <LoadBalancerDescriptions>

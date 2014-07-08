@@ -6,7 +6,7 @@ import boto.resultset
 from boto.ec2.elb.loadbalancer import LoadBalancer
 
 
-LISTENERS_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
+LISTENERS_RESPONSE = b"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeLoadBalancersResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
   <DescribeLoadBalancersResult>
     <LoadBalancerDescriptions>
@@ -82,7 +82,7 @@ LISTENERS_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
 class TestListenerResponseParsing(unittest.TestCase):
     def test_parse_complex(self):
         rs = boto.resultset.ResultSet([
-          ('member', LoadBalancer)
+            ('member', LoadBalancer)
         ])
         h = boto.handler.XmlHandler(rs, None)
         xml.sax.parseString(LISTENERS_RESPONSE, h)
