@@ -313,7 +313,6 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         in the StringToSign.
         """
         host_header_value = self.host_header(self.host, http_request)
-        headers_to_sign = {}
         headers_to_sign = {'Host': host_header_value}
         for name, value in http_request.headers.items():
             lname = name.lower()
@@ -563,7 +562,6 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         in the StringToSign.
         """
         host_header_value = self.host_header(self.host, http_request)
-        headers_to_sign = {}
         headers_to_sign = {'Host': host_header_value}
         for name, value in http_request.headers.items():
             lname = name.lower()
