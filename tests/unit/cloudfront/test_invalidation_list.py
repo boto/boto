@@ -67,7 +67,7 @@ class CFInvalidationListTest(unittest.TestCase):
                 invals += INVAL_SUMMARY_TEMPLATE % cfg
             cfg.update(dict(inval_summaries=invals))
             mock_response = mock.Mock()
-            mock_response.read.return_value = RESPONSE_TEMPLATE % cfg
+            mock_response.read.return_value = (RESPONSE_TEMPLATE % cfg).encode('utf-8')
             mock_response.status = 200
             responses.append(mock_response)
         return responses
