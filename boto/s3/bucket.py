@@ -853,7 +853,7 @@ class Bucket(object):
             else:
                 src_bucket = self.connection.get_bucket(
                     src_bucket_name, validate=False)
-            acl = src_bucket.get_xml_acl(src_key_name)
+            acl = src_bucket.get_xml_acl(src_key_name, version_id=src_version_id)
         if encrypt_key:
             headers[provider.server_side_encryption_header] = 'AES256'
         src = '%s/%s' % (src_bucket_name, urllib.parse.quote(src_key_name))
