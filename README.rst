@@ -45,7 +45,7 @@ At the moment, boto supports:
   * Amazon DynamoDB
   * Amazon SimpleDB
   * Amazon ElastiCache (Python 3)
-  * Amazon Redshift
+  * Amazon Redshift (Python 3)
 
 * Deployment and Management
 
