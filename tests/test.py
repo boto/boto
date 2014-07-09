@@ -41,6 +41,7 @@ PY3_WHITELIST = (
     'tests/unit/cloudformation',
     'tests/unit/cloudtrail',
     'tests/unit/directconnect',
+    'tests/unit/ecs',
     'tests/unit/elasticache',
     'tests/unit/iam',
     'tests/unit/ec2/elb',
