@@ -43,7 +43,7 @@ class TestSNSConnection(AWSMockServiceTestCase):
         super(TestSNSConnection, self).setUp()
 
     def default_body(self):
-        return "{}"
+        return b"{}"
 
     def test_sqs_with_existing_policy(self):
         self.set_http_response(status_code=200)
@@ -221,9 +221,11 @@ class TestSNSConnection(AWSMockServiceTestCase):
             'Action': 'Publish',
             'TargetArn': 'target_arn',
             'Subject': 'subject',
-            'Message': '{"default": "Ignored.", "GCM": {"data": "goes here"}}',
             'MessageStructure': 'json',
-        }, ignore_params_values=['Version', 'ContentType'])
+        }, ignore_params_values=['Version', 'ContentType', 'Message'])
+        self.assertDictEqual(
+            json.loads(self.actual_request.params["Message"]),
+            {"default": "Ignored.", "GCM": {"data": "goes here"}})
 
     def test_publish_with_utf8_message(self):
         self.set_http_response(status_code=200)

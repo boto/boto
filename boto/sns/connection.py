@@ -313,7 +313,7 @@ class SNSConnection(AWSQueryConnection):
         """
         t = queue.id.split('/')
         q_arn = queue.arn
-        sid = hashlib.md5(topic + q_arn).hexdigest()
+        sid = hashlib.md5((topic + q_arn).encode('utf-8')).hexdigest()
         sid_exists = False
         resp = self.subscribe(topic, 'sqs', q_arn)
         attr = queue.get_attributes('Policy')
@@ -724,7 +724,7 @@ class SNSConnection(AWSQueryConnection):
         params['ContentType'] = 'JSON'
         response = self.make_request(action=action, verb=verb,
                                      path=path, params=params)
-        body = response.read()
+        body = response.read().decode('utf-8')
         boto.log.debug(body)
         if response.status == 200:
             return json.loads(body)
