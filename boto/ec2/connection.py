@@ -1376,7 +1376,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('DeleteSnapshot', params, verb='POST')
 
     def trim_snapshots(self, hourly_backups = 8, daily_backups = 7,
-                       weekly_backups = 4):
+                       weekly_backups = 4, filters=None):
         """
         Trim excess snapshots, based on when they were taken. More current
         snapshots are retained, with the number retained decreasing as you
@@ -1404,6 +1404,16 @@ class EC2Connection(AWSQueryConnection):
 
         :type weekly_backups: int
         :param weekly_backups: How many recent weekly backups should be saved.
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the snapshots trimmed.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
         """
 
         # This function first builds up an ordered list of target times
@@ -1463,7 +1473,7 @@ class EC2Connection(AWSQueryConnection):
 
         # get all the snapshots, sort them by date and time, and
         # organize them into one array for each volume:
-        all_snapshots = self.get_all_snapshots(owner = 'self')
+        all_snapshots = self.get_all_snapshots(owner = 'self', filters = filters)
         all_snapshots.sort(cmp = lambda x, y: cmp(x.start_time, y.start_time))
         snaps_for_each_volume = {}
         for snap in all_snapshots:
