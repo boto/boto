@@ -133,18 +133,15 @@ class TestRoute53HealthCheck(Route53TestCase):
         'request_interval'.
 
         """
-        with self.assertRaises(AttributeError):
-            HealthCheck(**self.health_check_params(request_interval=5))
+        self.assertRaises(AttributeError, lambda: HealthCheck(**self.health_check_params(request_interval=5)))
 
     def test_create_health_check_invalid_failure_threshold(self):
         """
         Test that health checks cannot be created with an invalid
         'failure_threshold'.
         """
-        with self.assertRaises(AttributeError):
-            HealthCheck(**self.health_check_params(failure_threshold=0))
-        with self.assertRaises(AttributeError):
-            HealthCheck(**self.health_check_params(failure_threshold=11))
+        self.assertRaises(AttributeError, lambda: HealthCheck(**self.health_check_params(failure_threshold=0)))
+        self.assertRaises(AttributeError, lambda: HealthCheck(**self.health_check_params(failure_threshold=11)))
 
     def test_create_health_check_request_interval(self):
         hc_params = self.health_check_params(request_interval=10)
