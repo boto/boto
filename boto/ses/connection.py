@@ -533,7 +533,7 @@ class SESConnection(AWSAuthConnection):
         :type notification_type: string
         :param notification_type: The type of feedback notifications that will 
                                   be published to the specified topic.
-                                  Valid Values: Bounce | Complaint
+                                  Valid Values: Bounce | Complaint | Delivery
 
         :type sns_topic: string or None
         :param sns_topic: The Amazon Resource Name (ARN) of the Amazon Simple 
