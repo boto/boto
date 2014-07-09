@@ -223,7 +223,9 @@ class TestSNSConnection(AWSMockServiceTestCase):
             'Subject': 'subject',
             'MessageStructure': 'json',
         }, ignore_params_values=['Version', 'ContentType', 'Message'])
-        self.assertDictEqual(json.loads(self.actual_request.params["Message"]), {"default": "Ignored.", "GCM": {"data": "goes here"}})
+        self.assertDictEqual(
+            json.loads(self.actual_request.params["Message"]),
+            {"default": "Ignored.", "GCM": {"data": "goes here"}})
 
     def test_publish_with_utf8_message(self):
         self.set_http_response(status_code=200)
