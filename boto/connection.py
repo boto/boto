@@ -787,13 +787,13 @@ class AWSAuthConnection(object):
             host = '%s:%d' % (host, port)
         else:
             host = '%s:%d' % (self.host, self.port)
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            sock.connect((self.proxy, int(self.proxy_port)))
-            if "timeout" in self.http_connection_kwargs:
-                sock.settimeout(self.http_connection_kwargs["timeout"])
-        except:
-            raise
+        # Seems properly to use timeout for connect too
+        timeout = self.https_connection_kwargs.get("timeout")
+        if timeout is not None:
+            sock = socket.create_connection((self.proxy,
+                                             int(self.proxy_port)), timeout)
+        else:
+            sock = socket.create_connection((self.proxy, int(self.proxy_port)))
         boto.log.debug("Proxy connection: CONNECT %s HTTP/1.0\r\n", host)
         sock.sendall("CONNECT %s HTTP/1.0\r\n" % host)
         sock.sendall("User-Agent: %s\r\n" % UserAgent)
