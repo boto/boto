@@ -44,20 +44,20 @@ At the moment, boto supports:
   * Amazon Relational Data Service (RDS)
   * Amazon DynamoDB
   * Amazon SimpleDB
-  * Amazon ElastiCache
+  * Amazon ElastiCache (Python 3)
   * Amazon Redshift
 
 * Deployment and Management
 
   * AWS Elastic Beanstalk
-  * AWS CloudFormation
-  * AWS Data Pipeline
+  * AWS CloudFormation (Python 3)
+  * AWS Data Pipeline (Python 3)
   * AWS Opsworks
   * AWS CloudTrail (Python 3)
 
 * Identity & Access
 
-  * AWS Identity and Access Management (IAM)
+  * AWS Identity and Access Management (IAM) (Python 3)
 
 * Application Services
 
@@ -66,7 +66,7 @@ At the moment, boto supports:
   * Amazon Simple Workflow Service (SWF)
   * Amazon Simple Queue Service (SQS) (Python 3)
   * Amazon Simple Notification Server (SNS)
-  * Amazon Simple Email Service (SES)
+  * Amazon Simple Email Service (SES) (Python 3)
 
 * Monitoring
 
@@ -77,7 +77,7 @@ At the moment, boto supports:
   * Amazon Route53
   * Amazon Virtual Private Cloud (VPC)
   * Elastic Load Balancing (ELB)
-  * AWS Direct Connect
+  * AWS Direct Connect (Python 3)
 
 * Payments and Billing
 

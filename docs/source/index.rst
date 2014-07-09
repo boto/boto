@@ -47,21 +47,21 @@ Currently Supported Services
   * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
   * Relational Data Services 2 (RDS) -- (:doc:`API Reference <ref/rds2>`) -- (:doc:`Migration Guide from v1 <migrations/rds_v1_to_v2>`)
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
-  * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
+  * ElastiCache -- (:doc:`API Reference <ref/elasticache>`) (Python 3)
   * Redshift -- (:doc:`API Reference <ref/redshift>`)
   * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
 
 * **Deployment and Management**
 
-  * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`)
+  * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`) (Python 3)
   * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
-  * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
+  * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`) (Python 3)
   * Opsworks -- (:doc:`API Reference <ref/opsworks>`)
   * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`) (Python 3)
 
 * **Identity & Access**
 
-  * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`)
+  * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`) (Python 3)
   * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`)
 
 * **Application Services**
@@ -72,7 +72,7 @@ Currently Supported Services
   * :doc:`Simple Workflow Service (SWF) <swf_tut>` -- (:doc:`API Reference <ref/swf>`)
   * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`) (Python 3)
   * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`)
-  * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`)
+  * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`) (Python 3)
 
 * **Monitoring**
 
@@ -83,6 +83,7 @@ Currently Supported Services
   * :doc:`Route 53 <route53_tut>` -- (:doc:`API Reference <ref/route53>`)
   * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`)
   * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:doc:`API Reference <ref/elb>`)
+  * AWS Direct Connect (Python 3)
 
 * **Payments & Billing**
 

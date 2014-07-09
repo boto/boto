@@ -6,7 +6,7 @@ from boto.ec2.elb import ELBConnection
 from boto.ec2.elb import LoadBalancer
 from boto.ec2.elb.attributes import LbAttributes
 
-ATTRIBUTE_GET_TRUE_CZL_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
+ATTRIBUTE_GET_TRUE_CZL_RESPONSE = b"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeLoadBalancerAttributesResponse  xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
  <DescribeLoadBalancerAttributesResult>
     <LoadBalancerAttributes>
@@ -21,7 +21,7 @@ ATTRIBUTE_GET_TRUE_CZL_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
 </DescribeLoadBalancerAttributesResponse>
 """
 
-ATTRIBUTE_GET_FALSE_CZL_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
+ATTRIBUTE_GET_FALSE_CZL_RESPONSE = b"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeLoadBalancerAttributesResponse  xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
  <DescribeLoadBalancerAttributesResult>
     <LoadBalancerAttributes>
@@ -36,7 +36,7 @@ ATTRIBUTE_GET_FALSE_CZL_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
 </DescribeLoadBalancerAttributesResponse>
 """
 
-ATTRIBUTE_SET_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
+ATTRIBUTE_SET_RESPONSE = b"""<?xml version="1.0" encoding="UTF-8"?>
 <ModifyLoadBalancerAttributesResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
 <ModifyLoadBalancerAttributesResult/>
 <ResponseMetadata>
