@@ -298,7 +298,7 @@ class TestVault(GlacierLayer2Base):
             sentinel.upload_id, file_obj=sentinel.file_obj)
         mock_resume_file_upload.assert_called_once_with(
             self.vault, sentinel.upload_id, part_size, sentinel.file_obj,
-            {0: codecs.getdecoder('hex_codec')('12')[0], 1: codecs.getdecoder('hex_codec')('34')[0]})
+            {0: codecs.decode('12', 'hex_codec'), 1: codecs.decode('34', 'hex_codec')})
 
 
 class TestJob(GlacierLayer2Base):
@@ -309,11 +309,11 @@ class TestJob(GlacierLayer2Base):
 
     def test_get_job_output(self):
         self.mock_layer1.get_job_output.return_value = "TEST_OUTPUT"
-        self.job.get_output((0,100))
+        self.job.get_output((0, 100))
         self.mock_layer1.get_job_output.assert_called_with(
             "examplevault",
             "HkF9p6o7yjhFx-K3CGl6fuSm6VzW9T7esGQfco8nUXVYwS0jlb5gq1JZ55yHgt5vP"
-            "54ZShjoQzQVVh7vEXAMPLEjobID", (0,100))
+            "54ZShjoQzQVVh7vEXAMPLEjobID", (0, 100))
 
 class TestRangeStringParsing(unittest.TestCase):
     def test_simple_range(self):

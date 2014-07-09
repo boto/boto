@@ -1,5 +1,5 @@
-# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.
-# All Rights Reserved
+# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.
+# All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,22 +19,26 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-#
+
 import boto
+import time
 
 from boto.compat import unittest
 
+class TestIAM(unittest.TestCase):
+    def test_group_users(self):
+        # A very basic test to create a group, a user, add the user
+        # to the group and then delete everything
+        iam = boto.connect_iam()
 
-class DirectConnectTest(unittest.TestCase):
-    """
-    A very basic test to make sure signatures and
-    basic calls work.
-    """
-    def test_basic(self):
-        conn = boto.connect_directconnect()
+        name = 'boto-test-%d' % time.time()
+        username = 'boto-test-user-%d' % time.time()
 
-        response = conn.describe_connections()
+        iam.create_group(name)
+        iam.create_user(username)
 
-        self.assertTrue(response)
-        self.assertTrue('connections' in response)
-        self.assertIsInstance(response['connections'], list)
+        iam.add_user_to_group(name, username)
+
+        iam.remove_user_from_group(name, username)
+        iam.delete_user(username)
+        iam.delete_group(name)
