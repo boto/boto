@@ -39,7 +39,7 @@ Currently Supported Services
 
 * **Content Delivery**
 
-  * :doc:`CloudFront <cloudfront_tut>` -- (:doc:`API Reference <ref/cloudfront>`)
+  * :doc:`CloudFront <cloudfront_tut>` -- (:doc:`API Reference <ref/cloudfront>`) (Python 3)
 
 * **Database**
 
