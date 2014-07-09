@@ -92,7 +92,7 @@ Currently Supported Services
 * **Storage**
 
   * :doc:`Simple Storage Service (S3) <s3_tut>` -- (:doc:`API Reference <ref/s3>`) (Python 3)
-  * Amazon Glacier -- (:doc:`API Reference <ref/glacier>`)
+  * Amazon Glacier -- (:doc:`API Reference <ref/glacier>`) (Python 3)
   * Google Cloud Storage -- (:doc:`API Reference <ref/gs>`)
 
 * **Workforce**

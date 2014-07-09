@@ -86,7 +86,7 @@ At the moment, boto supports:
 * Storage
 
   * Amazon Simple Storage Service (S3) (Python 3)
-  * Amazon Glacier
+  * Amazon Glacier (Python 3)
   * Amazon Elastic Block Store (EBS)
   * Google Cloud Storage
 
