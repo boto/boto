@@ -53,15 +53,15 @@ Currently Supported Services
 
 * **Deployment and Management**
 
-  * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`)
+  * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`) (Python 3)
   * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`) (Python 3)
-  * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
+  * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`) (Python 3)
   * Opsworks -- (:doc:`API Reference <ref/opsworks>`)
   * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`) (Python 3)
 
 * **Identity & Access**
 
-  * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`)
+  * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`) (Python 3)
   * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`)
 
 * **Application Services**
@@ -83,6 +83,7 @@ Currently Supported Services
   * :doc:`Route 53 <route53_tut>` -- (:doc:`API Reference <ref/route53>`)
   * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`)
   * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:doc:`API Reference <ref/elb>`)
+  * AWS Direct Connect (Python 3)
 
 * **Payments & Billing**
 

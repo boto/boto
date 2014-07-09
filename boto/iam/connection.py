@@ -21,7 +21,7 @@
 # IN THE SOFTWARE.
 import boto
 import boto.jsonresponse
-from boto.compat import json
+from boto.compat import json, six
 from boto.resultset import ResultSet
 from boto.iam.summarymap import SummaryMap
 from boto.connection import AWSQueryConnection
@@ -1104,7 +1104,7 @@ class IAMConnection(AWSQueryConnection):
 
     def _build_policy(self, assume_role_policy_document=None):
         if assume_role_policy_document is not None:
-            if isinstance(assume_role_policy_document, basestring):
+            if isinstance(assume_role_policy_document, six.string_types):
                 # Historically, they had to pass a string. If it's a string,
                 # assume the user has already handled it.
                 return assume_role_policy_document

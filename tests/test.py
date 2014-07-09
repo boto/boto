@@ -38,9 +38,11 @@ from nose.core import run
 PY3_WHITELIST = (
     'tests/unit/auth',
     'tests/unit/beanstalk',
+    'tests/unit/cloudformation',
     'tests/unit/cloudtrail',
     'tests/unit/directconnect',
     'tests/unit/elasticache',
+    'tests/unit/iam',
     'tests/unit/ec2/elb',
     'tests/unit/manage',
     'tests/unit/provider',
