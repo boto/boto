@@ -44,6 +44,7 @@ PY3_WHITELIST = (
     'tests/unit/directconnect',
     'tests/unit/ecs',
     'tests/unit/elasticache',
+    'tests/unit/emr',
     'tests/unit/glacier',
     'tests/unit/iam',
     'tests/unit/ec2/elb',
