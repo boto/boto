@@ -31,10 +31,10 @@ from boto.sdb.db.property import StringProperty, IntegerProperty, BooleanPropert
 from boto.manage import propget
 from boto.ec2.zone import Zone
 from boto.ec2.keypair import KeyPair
-import os, time, StringIO
+import os, time
 from contextlib import closing
 from boto.exception import EC2ResponseError
-from boto.compat import six
+from boto.compat import six, StringIO
 
 InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge',
                  'c1.medium', 'c1.xlarge',
@@ -103,7 +103,7 @@ class Bundler(object):
             ssh_key = self.server.get_ssh_key_file()
         self.copy_x509(key_file, cert_file)
         if not fp:
-            fp = StringIO.StringIO()
+            fp = StringIO()
         fp.write('sudo mv %s /mnt/boto.cfg; ' % BotoConfigPath)
         fp.write('mv ~/.ssh/authorized_keys /mnt/authorized_keys; ')
         if clear_history:
@@ -305,7 +305,7 @@ class Server(Model):
         # deal with possibly passed in logical volume:
         if logical_volume != None:
            cfg.set('EBS', 'logical_volume_name', logical_volume.name)
-        cfg_fp = StringIO.StringIO()
+        cfg_fp = StringIO()
         cfg.write(cfg_fp)
         # deal with the possibility that zone and/or keypair are strings read from the config file:
         if isinstance(zone, Zone):

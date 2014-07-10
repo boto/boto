@@ -28,7 +28,8 @@ from boto.mashups.server import Server, ServerSet
 from boto.mashups.iobject import IObject
 from boto.pyami.config import Config
 from boto.sdb.persist import get_domain, set_domain
-import time, StringIO
+import time
+from boto.compat import StringIO
 
 InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge', 'c1.medium', 'c1.xlarge']
 
@@ -123,7 +124,7 @@ class Item(IObject):
         self.config = Config(path=config_path)
 
     def get_userdata_string(self):
-        s = StringIO.StringIO()
+        s = StringIO()
         self.config.write(s)
         return s.getvalue()
 
