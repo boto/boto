@@ -28,7 +28,7 @@ from boto.exception import BotoServerError
 import boto.mws.exception
 import boto.mws.response
 from boto.handler import XmlHandler
-from boto.compat import filter, map
+from boto.compat import filter, map, six
 
 __all__ = ['MWSConnection']
 
@@ -115,7 +115,7 @@ def destructure_object(value, into, prefix, members=False):
                 continue
             destructure_object(value[name], into, prefix + '.' + name,
                                members=members)
-    elif isinstance(value, basestring):
+    elif isinstance(value, six.string_types):
         into[prefix] = value
     elif isinstance(value, collections.Iterable):
         for index, element in enumerate(value):
