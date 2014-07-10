@@ -77,7 +77,7 @@ At the moment, boto supports:
 
   * Amazon Route53 (Python 3)
   * Amazon Virtual Private Cloud (VPC)
-  * Elastic Load Balancing (ELB)
+  * Elastic Load Balancing (ELB) (Python 3)
   * AWS Direct Connect (Python 3)
 
 * Payments and Billing
