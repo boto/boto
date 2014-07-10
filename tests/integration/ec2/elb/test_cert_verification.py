@@ -24,10 +24,10 @@
 """
 Check that all of the certs on all service endpoints validate.
 """
-import unittest
 
 from tests.integration import ServiceCertVerificationTest
 
+from boto.compat import unittest
 import boto.ec2.elb
 
 
