@@ -62,7 +62,7 @@ At the moment, boto supports:
 * Application Services
 
   * Amazon CloudSearch
-  * Amazon Elastic Transcoder
+  * Amazon Elastic Transcoder (Python 3)
   * Amazon Simple Workflow Service (SWF)
   * Amazon Simple Queue Service (SQS) (Python 3)
   * Amazon Simple Notification Server (SNS) (Python 3)

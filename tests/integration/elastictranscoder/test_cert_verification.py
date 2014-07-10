@@ -19,11 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import unittest
 
 from tests.integration import ServiceCertVerificationTest
 
 import boto.elastictranscoder
+from boto.compat import unittest
 
 
 class ElasticTranscoderCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
