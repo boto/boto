@@ -1,9 +1,9 @@
 ####
 boto
 ####
-boto 2.30.0
+boto 2.31.0
 
-Released: 1-Jul-2014
+Released: 10-Jul-2014
 
 .. image:: https://travis-ci.org/boto/boto.png?branch=develop
         :target: https://travis-ci.org/boto/boto
@@ -61,6 +61,7 @@ At the moment, boto supports:
 * Monitoring
 
   * Amazon CloudWatch (EC2 Only)
+  * Amazon CloudWatch Logs
 
 * Networking
 

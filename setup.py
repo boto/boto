@@ -76,7 +76,7 @@ setup(name = "boto",
                   "boto.elastictranscoder", "boto.opsworks", "boto.redshift",
                   "boto.dynamodb2", "boto.support", "boto.cloudtrail",
                   "boto.directconnect", "boto.kinesis", "boto.rds2",
-                  "boto.cloudsearch2"],
+                  "boto.cloudsearch2", "boto.logs"],
       package_data = {
           "boto.cacerts": ["cacerts.txt"],
           "boto": ["endpoints.json"],
