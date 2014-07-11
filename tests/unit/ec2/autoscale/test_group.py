@@ -21,6 +21,7 @@
 # IN THE SOFTWARE.
 #
 
+import base64
 from datetime import datetime
 
 from tests.unit import unittest
@@ -356,6 +357,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
                 name='launch_config',
                 image_id='123456',
                 instance_type = 'm1.large',
+                user_data = '#!/bin/bash',
                 security_groups = ['group1', 'group2'],
                 spot_price='price',
                 block_device_mappings = [bdm],
@@ -378,6 +380,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'EbsOptimized': 'false',
             'LaunchConfigurationName': 'launch_config',
             'ImageId': '123456',
+            'UserData': base64.b64encode('#!/bin/bash').decode('utf-8'),
             'InstanceMonitoring.Enabled': 'false',
             'InstanceType': 'm1.large',
             'SecurityGroups.member.1': 'group1',
