@@ -31,8 +31,8 @@ At the moment, boto supports:
 * Compute
 
   * Amazon Elastic Compute Cloud (EC2)
-  * Amazon Elastic Map Reduce (EMR)
-  * AutoScaling
+  * Amazon Elastic Map Reduce (EMR) (Python 3)
+  * AutoScaling (Python 3)
   * Amazon Kinesis (Python 3)
 
 * Content Delivery
@@ -62,7 +62,7 @@ At the moment, boto supports:
 * Application Services
 
   * Amazon CloudSearch
-  * Amazon Elastic Transcoder
+  * Amazon Elastic Transcoder (Python 3)
   * Amazon Simple Workflow Service (SWF)
   * Amazon Simple Queue Service (SQS) (Python 3)
   * Amazon Simple Notification Server (SNS) (Python 3)
@@ -77,7 +77,7 @@ At the moment, boto supports:
 
   * Amazon Route53 (Python 3)
   * Amazon Virtual Private Cloud (VPC)
-  * Elastic Load Balancing (ELB)
+  * Elastic Load Balancing (ELB) (Python 3)
   * AWS Direct Connect (Python 3)
 
 * Payments and Billing

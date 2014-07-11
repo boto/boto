@@ -282,7 +282,7 @@ class EmrConnection(AWSQueryConnection):
                      value for that tag should be the empty string
                      (e.g. '') or None.
         """
-        assert isinstance(resource_id, basestring)
+        assert isinstance(resource_id, six.string_types)
         params = {
             'ResourceId': resource_id,
         }

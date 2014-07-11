@@ -33,8 +33,8 @@ Currently Supported Services
 * **Compute**
 
   * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
-  * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
-  * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
+  * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`) (Python 3)
+  * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`) (Python 3)
   * Kinesis -- (:doc:`API Reference <ref/kinesis>`) (Python 3)
 
 * **Content Delivery**
@@ -68,7 +68,7 @@ Currently Supported Services
 
   * Cloudsearch 2 -- (:doc:`API Reference <ref/cloudsearch2>`)
   * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
-  * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
+  * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`) (Python 3)
   * :doc:`Simple Workflow Service (SWF) <swf_tut>` -- (:doc:`API Reference <ref/swf>`)
   * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`) (Python 3)
   * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`) (Python 3)
@@ -83,7 +83,7 @@ Currently Supported Services
 
   * :doc:`Route 53 <route53_tut>` -- (:doc:`API Reference <ref/route53>`) (Python 3)
   * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`)
-  * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:doc:`API Reference <ref/elb>`)
+  * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:doc:`API Reference <ref/elb>`) (Python 3)
   * AWS Direct Connect (Python 3)
 
 * **Payments & Billing**

@@ -143,7 +143,7 @@ class AutoScaleConnection(AWSQueryConnection):
                             params['%s.member.%d.%s.%s' % (label, i, k, kk)] = vv
                     else:
                         params['%s.member.%d.%s' % (label, i, k)] = v
-            elif isinstance(items[i - 1], basestring):
+            elif isinstance(items[i - 1], six.string_types):
                 params['%s.member.%d' % (label, i)] = items[i - 1]
 
     def _update_group(self, op, as_group):
