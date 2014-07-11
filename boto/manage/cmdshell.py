@@ -348,9 +348,10 @@ class LocalClient(object):
 
 class FakeServer(object):
     """
-    This object has the same variables as a boto.manage.server.Server
-    object. You can use this object to create an SSHClient object
-    instead of creating an actual Server object.
+    This object has a subset of the variables that are normally in a
+    :class:`boto.manage.server.Server` object. You can use this FakeServer
+    object to create a :class:`boto.manage.SSHClient` object if you
+    don't have a real Server object.
     
     :ivar instance: A boto Instance object.
     :ivar ssh_key_file: The path to the SSH key file.
