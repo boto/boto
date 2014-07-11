@@ -168,7 +168,7 @@ Once a bucket exists, you can access it by getting the bucket. For example::
 
     >>> mybucket = conn.get_bucket('mybucket') # Substitute in your bucket name
     >>> mybucket.list()
-    <listing of keys in the bucket)
+    ...listing of keys in the bucket...
 
 By default, this method tries to validate the bucket's existence. You can
 override this behavior by passing ``validate=False``.::

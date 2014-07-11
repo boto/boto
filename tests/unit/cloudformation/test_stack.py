@@ -201,7 +201,7 @@ class TestStackParse(unittest.TestCase):
             datetime.datetime(2011, 3, 10, 16, 20, 51, 575757)
         )
 
-    def test_list_stacks_time_with_millis(self):
+    def test_list_stacks_time_with_millis_again(self):
         rs = boto.resultset.ResultSet([
             ('member', boto.cloudformation.stack.StackResourceSummary)
         ])

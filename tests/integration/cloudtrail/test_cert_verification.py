@@ -1,5 +1,4 @@
-# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
+# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,17 +24,15 @@
 Check that all of the certs on all service endpoints validate.
 """
 import unittest
-from nose.plugins.attrib import attr
 
 from tests.integration import ServiceCertVerificationTest
 
-import boto.route53
+import boto.cloudtrail
 
 
-@attr(route53=True)
-class Route53CertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
-    route53 = True
-    regions = boto.route53.regions()
+class CloudTrailCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
+    cloudtrail = True
+    regions = boto.cloudtrail.regions()
 
     def sample_service_call(self, conn):
-        conn.get_all_hosted_zones()
+        conn.describe_trails()

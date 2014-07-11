@@ -109,6 +109,9 @@ class Key(S3Key):
         self.metageneration = resp.getheader('x-goog-metageneration', None)
         self.generation = resp.getheader('x-goog-generation', None)
 
+    def handle_restore_headers(self, response):
+        return
+
     def handle_addl_headers(self, headers):
         for key, value in headers:
             if key == 'x-goog-hash':

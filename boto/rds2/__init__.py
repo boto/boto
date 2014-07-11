@@ -1,6 +1,4 @@
-# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
-# All rights reserved.
+# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,22 +18,36 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
-"""
-Check that all of the certs on all service endpoints validate.
-"""
-import unittest
-from nose.plugins.attrib import attr
-
-from tests.integration import ServiceCertVerificationTest
-
-import boto.route53
+#
+from boto.regioninfo import get_regions
 
 
-@attr(route53=True)
-class Route53CertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
-    route53 = True
-    regions = boto.route53.regions()
+def regions():
+    """
+    Get all available regions for the RDS service.
 
-    def sample_service_call(self, conn):
-        conn.get_all_hosted_zones()
+    :rtype: list
+    :return: A list of :class:`boto.regioninfo.RegionInfo`
+    """
+    from boto.rds2.layer1 import RDSConnection
+    return get_regions('rds', connection_cls=RDSConnection)
+
+
+def connect_to_region(region_name, **kw_params):
+    """
+    Given a valid region name, return a
+    :class:`boto.rds2.layer1.RDSConnection`.
+    Any additional parameters after the region_name are passed on to
+    the connect method of the region object.
+
+    :type: str
+    :param region_name: The name of the region to connect to.
+
+    :rtype: :class:`boto.rds2.layer1.RDSConnection` or ``None``
+    :return: A connection to the given region, or None if an invalid region
+             name is given
+    """
+    for region in regions():
+        if region.name == region_name:
+            return region.connect(**kw_params)
+    return None

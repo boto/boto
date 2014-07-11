@@ -109,6 +109,14 @@ class DynamoDBv2Test(unittest.TestCase):
 
         time.sleep(5)
 
+        # Does it exist? It should?
+        self.assertTrue(users.has_item(username='jane', friend_count=3))
+        # But this shouldn't be there...
+        self.assertFalse(users.has_item(
+            username='mrcarmichaeljones',
+            friend_count=72948
+        ))
+
         # Test getting an item & updating it.
         # This is the "safe" variant (only write if there have been no
         # changes).
@@ -223,6 +231,16 @@ class DynamoDBv2Test(unittest.TestCase):
             self.assertTrue(res['username'] in ['johndoe',])
             self.assertEqual(res.keys(), ['username'])
 
+        # Ensure that queries with attributes don't return the hash key.
+        results = users.query(
+            username__eq='johndoe',
+            friend_count__eq=4,
+            attributes=('first_name',)
+        )
+
+        for res in results:
+            self.assertTrue(res['first_name'] in ['John',])
+            self.assertEqual(res.keys(), ['first_name'])
 
         # Test the strongly consistent query.
         c_results = users.query(

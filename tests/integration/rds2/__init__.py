@@ -1,7 +1,6 @@
 # Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
-# All rights reserved.
-#
+# All Rights Reserved
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
 # "Software"), to deal in the Software without restriction, including
@@ -20,22 +19,3 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
-"""
-Check that all of the certs on all service endpoints validate.
-"""
-import unittest
-from nose.plugins.attrib import attr
-
-from tests.integration import ServiceCertVerificationTest
-
-import boto.route53
-
-
-@attr(route53=True)
-class Route53CertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
-    route53 = True
-    regions = boto.route53.regions()
-
-    def sample_service_call(self, conn):
-        conn.get_all_hosted_zones()
