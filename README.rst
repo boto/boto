@@ -71,7 +71,7 @@ At the moment, boto supports:
 * Monitoring
 
   * Amazon CloudWatch (EC2 Only)
-  * Amazon CloudWatch Logs
+  * Amazon CloudWatch Logs (Python 3)
 
 * Networking
 
