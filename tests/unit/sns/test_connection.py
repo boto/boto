@@ -245,7 +245,7 @@ class TestSNSConnection(AWSMockServiceTestCase):
                 'GCM': {
                     'data': 'goes here',
                 }
-            }),
+            }, sort_keys=True),
             message_structure='json',
             subject='subject',
             target_arn='target_arn',
@@ -264,7 +264,7 @@ class TestSNSConnection(AWSMockServiceTestCase):
             'Action': 'Publish',
             'TargetArn': 'target_arn',
             'Subject': 'subject',
-            'Message': '{"default": "Ignored.", "GCM": {"data": "goes here"}}',
+            'Message': '{"GCM": {"data": "goes here"}, "default": "Ignored."}',
             'MessageStructure': 'json',
             'MessageAttributes.entry.1.Name': 'name1',
             'MessageAttributes.entry.1.Value.DataType': 'Number',
