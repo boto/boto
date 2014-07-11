@@ -214,7 +214,7 @@ class SNSConnection(AWSQueryConnection):
         return self._make_request('DeleteTopic', params, '/', 'GET')
 
     def publish(self, topic=None, message=None, subject=None, target_arn=None,
-                message_structure=None):
+                message_structure=None, message_attributes=None):
         """
         Get properties of a Topic
 
@@ -232,6 +232,23 @@ class SNSConnection(AWSQueryConnection):
                                   your message should be a JSON string that
                                   matches the structure described at
                                   http://docs.aws.amazon.com/sns/latest/dg/PublishTopic.html#sns-message-formatting-by-protocol
+
+        :type message_attributes: dict
+        :param message_attributes: Message attributes to set. Should be
+            of the form:
+
+            .. code-block:: python
+
+                {
+                    "name1": {
+                        "data_type": "Number",
+                        "string_value": "42"
+                    },
+                    "name2": {
+                        "data_type": "String",
+                        "string_value": "Bob"
+                    }
+                }
 
         :type subject: string
         :param subject: Optional parameter to be used as the "Subject"
@@ -256,6 +273,20 @@ class SNSConnection(AWSQueryConnection):
             params['TargetArn'] = target_arn
         if message_structure is not None:
             params['MessageStructure'] = message_structure
+        if message_attributes is not None:
+            keys = sorted(message_attributes.keys())
+            for i, name in enumerate(keys, start=1):
+                attribute = message_attributes[name]
+                params['MessageAttributes.entry.{0}.Name'.format(i)] = name
+                if 'data_type' in attribute:
+                    params['MessageAttributes.entry.{0}.Value.DataType'.format(i)] = \
+                        attribute['data_type']
+                if 'string_value' in attribute:
+                    params['MessageAttributes.entry.{0}.Value.StringValue'.format(i)] = \
+                        attribute['string_value']
+                if 'binary_value' in attribute:
+                    params['MessageAttributes.entry.{0}.Value.BinaryValue'.format(i)] = \
+                        attribute['binary_value']
         return self._make_request('Publish', params, '/', 'POST')
 
     def subscribe(self, topic, protocol, endpoint):
