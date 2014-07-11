@@ -274,6 +274,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
                 <EvaluateTargetHealth>true</EvaluateTargetHealth>
                 <DNSName>example-123456-evaluate-health.us-west-2.elb.amazonaws.com.</DNSName>
             </AliasTarget>
+            <HealthCheckId>abcdefgh-abcd-abcd-abcd-abcdefghijkl</HealthCheckId>
         </ResourceRecordSet>
         <ResourceRecordSet>
             <Name>us-west-2-no-evaluate-health.example.com.</Name>
@@ -285,6 +286,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
                 <EvaluateTargetHealth>false</EvaluateTargetHealth>
                 <DNSName>example-123456-no-evaluate-health.us-west-2.elb.amazonaws.com.</DNSName>
             </AliasTarget>
+            <HealthCheckId>abcdefgh-abcd-abcd-abcd-abcdefghijkl</HealthCheckId>
         </ResourceRecordSet>
         <ResourceRecordSet>
             <Name>failover.example.com.</Name>
@@ -342,6 +344,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.assertTrue(evaluate_record.alias_evaluate_target_health)
         self.assertEqual(evaluate_record.alias_dns_name, 'example-123456-evaluate-health.us-west-2.elb.amazonaws.com.')
         evaluate_xml = evaluate_record.to_xml()
+        self.assertTrue(evaluate_record.health_check, 'abcdefgh-abcd-abcd-abcd-abcdefghijkl')
         self.assertTrue('<EvaluateTargetHealth>true</EvaluateTargetHealth>' in evaluate_xml)
 
         no_evaluate_record = response[3]
@@ -353,6 +356,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.assertFalse(no_evaluate_record.alias_evaluate_target_health)
         self.assertEqual(no_evaluate_record.alias_dns_name, 'example-123456-no-evaluate-health.us-west-2.elb.amazonaws.com.')
         no_evaluate_xml = no_evaluate_record.to_xml()
+        self.assertTrue(no_evaluate_record.health_check, 'abcdefgh-abcd-abcd-abcd-abcdefghijkl')
         self.assertTrue('<EvaluateTargetHealth>false</EvaluateTargetHealth>' in no_evaluate_xml)
 
         failover_record = response[4]
