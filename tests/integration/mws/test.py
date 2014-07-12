@@ -5,8 +5,6 @@ import os
 import os.path
 from datetime import datetime, timedelta
 
-from boto.compat import unittest
-
 
 simple = os.environ.get('MWS_MERCHANT', None)
 if not simple:
@@ -27,6 +25,7 @@ if __name__ == "__main__":
         print('>>> advanced MWS tests; using local boto sources')
 
 from boto.mws.connection import MWSConnection
+from boto.compat import unittest
 
 
 class MWSTestCase(unittest.TestCase):

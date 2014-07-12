@@ -149,8 +149,8 @@ def requires(*groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if 1 != len(filter(hasgroup, groups)):
+            hasgroup = lambda x: len(x) == len(list(filter(kw.has_key, x)))
+            if 1 != len(list(filter(hasgroup, groups))):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires {1} argument(s)" \
                           "".format(func.action, message)
@@ -168,8 +168,8 @@ def exclusive(*groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if len(filter(hasgroup, groups)) not in (0, 1):
+            hasgroup = lambda x: len(x) == len(list(filter(kw.has_key, x)))
+            if len(list(filter(hasgroup, groups))) not in (0, 1):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires either {1}" \
                           "".format(func.action, message)
@@ -187,8 +187,8 @@ def dependent(field, *groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if field in kw and 1 > len(filter(hasgroup, groups)):
+            hasgroup = lambda x: len(x) == len(list(filter(kw.has_key, x)))
+            if field in kw and 1 > len(list(filter(hasgroup, groups))):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} argument {1} requires {2}" \
                           "".format(func.action, field, message)
