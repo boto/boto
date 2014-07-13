@@ -43,7 +43,7 @@ At the moment, boto supports:
 
   * Amazon Relational Data Service (RDS)
   * Amazon DynamoDB
-  * Amazon SimpleDB
+  * Amazon SimpleDB (Python 3)
   * Amazon ElastiCache (Python 3)
   * Amazon Redshift (Python 3)
 
