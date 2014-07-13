@@ -76,7 +76,7 @@ Currently Supported Services
 
 * **Monitoring**
 
-  * :doc:`CloudWatch <cloudwatch_tut>` -- (:doc:`API Reference <ref/cloudwatch>`)
+  * :doc:`CloudWatch <cloudwatch_tut>` -- (:doc:`API Reference <ref/cloudwatch>`) (Python 3)
   * CloudWatch Logs -- (:doc:`API Reference <ref/logs>`) (Python 3)
 
 * **Networking**

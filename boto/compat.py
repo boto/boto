@@ -45,6 +45,11 @@ try:
 except ImportError:
     import unittest
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
 from boto.vendored import six
 
 from boto.vendored.six import BytesIO, StringIO

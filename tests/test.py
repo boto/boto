@@ -48,6 +48,7 @@ PY3_WHITELIST = (
     'tests/unit/glacier',
     'tests/unit/iam',
     'tests/unit/ec2/autoscale',
+    'tests/unit/ec2/cloudwatch',
     'tests/unit/ec2/elb',
     'tests/unit/manage',
     'tests/unit/provider',
