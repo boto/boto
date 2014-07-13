@@ -9,7 +9,7 @@ class TestDescribeSubnets(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeSubnetsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
               <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
               <subnetSet>
@@ -68,7 +68,7 @@ class TestCreateSubnet(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateSubnetResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
               <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
               <subnet>
@@ -109,7 +109,7 @@ class TestDeleteSubnet(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteSubnetResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <return>true</return>

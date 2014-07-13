@@ -61,6 +61,7 @@ PY3_WHITELIST = (
     'tests/unit/sts',
     'tests/unit/swf',
     'tests/unit/utils',
+    'tests/unit/vpc',
     'tests/unit/test_connection.py',
     'tests/unit/test_exception.py',
     'tests/unit/test_regioninfo.py',

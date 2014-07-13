@@ -82,7 +82,7 @@ Currently Supported Services
 * **Networking**
 
   * :doc:`Route 53 <route53_tut>` -- (:doc:`API Reference <ref/route53>`) (Python 3)
-  * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`)
+  * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`) (Python 3)
   * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:doc:`API Reference <ref/elb>`) (Python 3)
   * AWS Direct Connect (Python 3)
 

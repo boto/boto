@@ -9,7 +9,7 @@ class TestDescribeCustomerGateways(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeCustomerGatewaysResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
               <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
               <customerGatewaySet>
@@ -52,7 +52,7 @@ class TestCreateCustomerGateway(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateCustomerGatewayResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <customerGateway>
@@ -91,7 +91,7 @@ class TestDeleteCustomerGateway(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteCustomerGatewayResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <return>true</return>

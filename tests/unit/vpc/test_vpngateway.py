@@ -10,7 +10,7 @@ class TestDescribeVpnGateways(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeVpnGatewaysResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
               <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
               <vpnGatewaySet>
@@ -57,7 +57,7 @@ class TestCreateVpnGateway(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateVpnGatewayResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
               <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
               <vpnGateway>
@@ -90,7 +90,7 @@ class TestDeleteVpnGateway(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteVpnGatewayResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <return>true</return>
@@ -114,7 +114,7 @@ class TestAttachVpnGateway(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <AttachVpnGatewayResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <attachment>
@@ -144,7 +144,7 @@ class TestDetachVpnGateway(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DetachVpnGatewayResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <return>true</return>
@@ -169,7 +169,7 @@ class TestDisableVgwRoutePropagation(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DisableVgwRoutePropagationResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                 <requestId>4f35a1b2-c2c3-4093-b51f-abb9d7311990</requestId>
                 <return>true</return>
@@ -195,7 +195,7 @@ class TestEnableVgwRoutePropagation(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DisableVgwRoutePropagationResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                 <requestId>4f35a1b2-c2c3-4093-b51f-abb9d7311990</requestId>
                 <return>true</return>
