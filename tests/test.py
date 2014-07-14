@@ -50,6 +50,7 @@ PY3_WHITELIST = (
     'tests/unit/ec2/autoscale',
     'tests/unit/ec2/elb',
     'tests/unit/manage',
+    'tests/unit/mws',
     'tests/unit/provider',
     'tests/unit/rds2',
     'tests/unit/route53',

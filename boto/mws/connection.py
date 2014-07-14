@@ -28,7 +28,7 @@ from boto.exception import BotoServerError
 import boto.mws.exception
 import boto.mws.response
 from boto.handler import XmlHandler
-from boto.compat import filter, map
+from boto.compat import filter, map, six
 
 __all__ = ['MWSConnection']
 
@@ -115,7 +115,7 @@ def destructure_object(value, into, prefix, members=False):
                 continue
             destructure_object(value[name], into, prefix + '.' + name,
                                members=members)
-    elif isinstance(value, basestring):
+    elif isinstance(value, six.string_types):
         into[prefix] = value
     elif isinstance(value, collections.Iterable):
         for index, element in enumerate(value):
@@ -134,7 +134,7 @@ def structured_objects(*fields, **kwargs):
 
         def wrapper(*args, **kw):
             members = kwargs.get('members', False)
-            for field in filter(kw.has_key, fields):
+            for field in filter(lambda i: i in kw, fields):
                 destructure_object(kw.pop(field), kw, field, members=members)
             return func(*args, **kw)
         wrapper.__doc__ = "{0}\nElement|Iter|Map: {1}\n" \
@@ -149,8 +149,8 @@ def requires(*groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if 1 != len(filter(hasgroup, groups)):
+            hasgroup = lambda group: all(key in kw for key in group)
+            if 1 != len(list(filter(hasgroup, groups))):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires {1} argument(s)" \
                           "".format(func.action, message)
@@ -168,8 +168,8 @@ def exclusive(*groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if len(filter(hasgroup, groups)) not in (0, 1):
+            hasgroup = lambda group: all(key in kw for key in group)
+            if len(list(filter(hasgroup, groups))) not in (0, 1):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires either {1}" \
                           "".format(func.action, message)
@@ -187,8 +187,8 @@ def dependent(field, *groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if field in kw and 1 > len(filter(hasgroup, groups)):
+            hasgroup = lambda group: all(key in kw for key in group)
+            if field in kw and not any(hasgroup(g) for g in groups):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} argument {1} requires {2}" \
                           "".format(func.action, field, message)
@@ -207,7 +207,7 @@ def requires_some_of(*fields):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            if not filter(kw.has_key, fields):
+            if not any(i in kw for i in fields):
                 message = "{0} requires at least one of {1} argument(s)" \
                           "".format(func.action, ', '.join(fields))
                 raise KeyError(message)
@@ -725,7 +725,7 @@ class MWSConnection(AWSQueryConnection):
             'BuyerEmail': toggle.union(['SellerOrderId']),
             'SellerOrderId': toggle.union(['BuyerEmail']),
         }.items():
-            if do in kw and filter(kw.has_key, dont):
+            if do in kw and any(i in dont for i in kw):
                 message = "Don't include {0} when specifying " \
                           "{1}".format(' or '.join(dont), do)
                 raise AssertionError(message)
