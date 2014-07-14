@@ -92,6 +92,7 @@ class TestS3KeyRetries(AWSMockServiceTestCase):
         self.set_http_response(status_code=500)
         b = Bucket(self.service_connection, 'mybucket')
         k = b.new_key('test_failure')
+        k.storage_class = 'STANDARD'
         fail_file = StringIO('This will attempt to retry.')
 
         with self.assertRaises(BotoServerError):
@@ -103,6 +104,7 @@ class TestS3KeyRetries(AWSMockServiceTestCase):
         self.set_http_response(status_code=400, body=weird_timeout_body)
         b = Bucket(self.service_connection, 'mybucket')
         k = b.new_key('test_failure')
+        k.storage_class = 'STANDARD'
         fail_file = StringIO('This will pretend to be chunk-able.')
 
         k.should_retry = counter(k.should_retry)
@@ -119,6 +121,7 @@ class TestS3KeyRetries(AWSMockServiceTestCase):
         self.set_http_response(status_code=502, body=weird_timeout_body)
         b = Bucket(self.service_connection, 'mybucket')
         k = b.new_key('test_failure')
+        k.storage_class = 'STANDARD'
         fail_file = StringIO('This will pretend to be chunk-able.')
 
         k.should_retry = counter(k.should_retry)
@@ -135,6 +138,7 @@ class TestS3KeyRetries(AWSMockServiceTestCase):
         self.set_http_response(status_code=504, body=weird_timeout_body)
         b = Bucket(self.service_connection, 'mybucket')
         k = b.new_key('test_failure')
+        k.storage_class = 'STANDARD'
         fail_file = StringIO('This will pretend to be chunk-able.')
 
         k.should_retry = counter(k.should_retry)
