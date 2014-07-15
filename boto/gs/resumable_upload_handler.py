@@ -26,6 +26,8 @@ import re
 import socket
 import time
 import urlparse
+from __future__ import with_statement
+
 from boto import config, UserAgent
 from boto.connection import AWSAuthConnection
 from boto.exception import InvalidUriError

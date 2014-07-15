@@ -60,6 +60,8 @@ import gzip
 import base64
 import threading
 import locale
+from __future__ import with_statement
+
 from boto.compat import six, StringIO, urllib
 
 from contextlib import contextmanager
