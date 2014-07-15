@@ -110,7 +110,7 @@ class CloudWatchConnection(AWSQueryConnection):
         for dim_name in dimension:
             dim_value = dimension[dim_name]
             if dim_value:
-                if isinstance(dim_value, basestring):
+                if isinstance(dim_value, six.string_types):
                     dim_value = [dim_value]
                 for value in dim_value:
                     params['%s.%d.Name' % (prefix, i+1)] = dim_name
@@ -121,7 +121,7 @@ class CloudWatchConnection(AWSQueryConnection):
                 i += 1
 
     def build_list_params(self, params, items, label):
-        if isinstance(items, basestring):
+        if isinstance(items, six.string_types):
             items = [items]
         for index, item in enumerate(items):
             i = index + 1
