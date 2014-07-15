@@ -22,6 +22,8 @@
 import uuid
 import base64
 import time
+from __future__ import with_statement
+
 from boto.compat import six, json
 from boto.cloudfront.identity import OriginAccessIdentity
 from boto.cloudfront.object import Object, StreamingObject
