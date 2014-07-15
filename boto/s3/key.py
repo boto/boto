@@ -894,7 +894,9 @@ class Key(object):
         for header in find_matching_headers('User-Agent', headers):
             del headers[header]
         headers['User-Agent'] = UserAgent
-        if self.storage_class != 'STANDARD':
+        # If storage_class is None, then a user has not explicitly requested
+        # a storage class, so we can assume STANDARD here
+        if self._storage_class not in [None, 'STANDARD']:
             headers[provider.storage_class_header] = self.storage_class
         if find_matching_headers('Content-Encoding', headers):
             self.content_encoding = merge_headers_by_name(
