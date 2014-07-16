@@ -59,5 +59,7 @@ from boto.vendored.six.moves.urllib.request import urlopen
 if six.PY3:
     # StandardError was removed, so use the base exception type instead
     StandardError = Exception
+    long_type = int
 else:
     StandardError = StandardError
+    long_type = long

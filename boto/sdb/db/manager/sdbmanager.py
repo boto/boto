@@ -28,7 +28,7 @@ from boto.sdb.db.blob import Blob
 from boto.sdb.db.property import ListProperty, MapProperty
 from datetime import datetime, date, time
 from boto.exception import SDBPersistenceError, S3ResponseError
-from boto.compat import map, six
+from boto.compat import map, six, long_type
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -195,12 +195,12 @@ class SDBConverter(object):
         return int(value)
 
     def encode_long(self, value):
-        value = long(value)
+        value = long_type(value)
         value += 9223372036854775808
         return '%020d' % value
 
     def decode_long(self, value):
-        value = long(value)
+        value = long_type(value)
         value -= 9223372036854775808
         return value
 
@@ -389,7 +389,7 @@ class SDBConverter(object):
             # systems, however:
             arr = []
             for ch in value:
-                arr.append((chr if six.PY3 else unichr)(ord(ch)))
+                arr.append(six.unichr(ord(ch)))
             return u"".join(arr)
 
     def decode_string(self, value):

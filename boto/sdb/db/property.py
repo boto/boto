@@ -27,7 +27,7 @@ import re
 import boto
 import boto.s3.key
 from boto.sdb.db.blob import Blob
-from boto.compat import six
+from boto.compat import six, long_type
 
 
 class Property(object):
@@ -336,7 +336,7 @@ class IntegerProperty(Property):
 
 class LongProperty(Property):
 
-    data_type = int if six.PY3 else long
+    data_type = long_type
     type_name = 'Long'
 
     def __init__(self, verbose_name=None, name=None, default=0, required=False,
@@ -344,7 +344,7 @@ class LongProperty(Property):
         super(LongProperty, self).__init__(verbose_name, name, default, required, validator, choices, unique)
 
     def validate(self, value):
-        value = (int if six.PY3 else long)(value)
+        value = long_type(value)
         value = super(LongProperty, self).validate(value)
         min = -9223372036854775808
         max = 9223372036854775807
