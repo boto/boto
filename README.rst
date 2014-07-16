@@ -98,7 +98,7 @@ At the moment, boto supports:
 * Other
 
   * Marketplace Web Services (Python 3)
-  * AWS Support
+  * AWS Support (Python 3)
 
 The goal of boto is to support the full breadth and depth of Amazon
 Web Services.  In addition, boto provides support for other public

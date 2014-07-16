@@ -103,7 +103,7 @@ Currently Supported Services
 * **Other**
 
   * Marketplace Web Services -- (:doc:`API Reference <ref/mws>`) (Python 3)
-  * :doc:`Support <support_tut>` -- (:doc:`API Reference <ref/support>`)
+  * :doc:`Support <support_tut>` -- (:doc:`API Reference <ref/support>`) (Python 3)
 
 Additional Resources
 --------------------
