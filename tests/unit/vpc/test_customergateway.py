@@ -2,6 +2,7 @@ from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.vpc import VPCConnection, CustomerGateway
+from boto.compat import OrderedDict
 
 
 class TestDescribeCustomerGateways(AWSMockServiceTestCase):
@@ -29,8 +30,8 @@ class TestDescribeCustomerGateways(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         api_response = self.service_connection.get_all_customer_gateways(
             'cgw-b4dc3961',
-            filters=[('state', ['pending', 'available']),
-                     ('ip-address', '12.1.2.3')])
+            filters=OrderedDict([('state', ['pending', 'available']),
+                     ('ip-address', '12.1.2.3')]))
         self.assert_request_parameters({
             'Action': 'DescribeCustomerGateways',
             'CustomerGatewayId.1': 'cgw-b4dc3961',

@@ -3,6 +3,7 @@ from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.vpc import VPCConnection, VpnGateway, Attachment
+from boto.compat import OrderedDict
 
 
 class TestDescribeVpnGateways(AWSMockServiceTestCase):
@@ -34,8 +35,8 @@ class TestDescribeVpnGateways(AWSMockServiceTestCase):
     def test_get_all_vpn_gateways(self):
         self.set_http_response(status_code=200)
         api_response = self.service_connection.get_all_vpn_gateways(
-            'vgw-8db04f81', filters=[('state', ['pending', 'available']),
-                                     ('availability-zone', 'us-east-1a')])
+            'vgw-8db04f81', filters=OrderedDict([('state', ['pending', 'available']),
+                                     ('availability-zone', 'us-east-1a')]))
         self.assert_request_parameters({
             'Action': 'DescribeVpnGateways',
             'VpnGatewayId.1': 'vgw-8db04f81',

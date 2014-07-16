@@ -85,9 +85,9 @@ class VPCConnection(EC2Connection):
         :type vpc_ids: list
         :param vpc_ids: A list of strings with the desired VPC ID's
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-            consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+            or dict item consists of a filter key and a filter value.
             Possible filter keys are:
 
             * *state* - a list of states of the VPC (pending or available)
@@ -104,7 +104,9 @@ class VPCConnection(EC2Connection):
         if vpc_ids:
             self.build_list_params(params, vpc_ids, 'VpcId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            if not isinstance(filters, dict):
+                filters = dict(filters)
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeVpcs', params, [('item', VPC)])
@@ -204,9 +206,9 @@ class VPCConnection(EC2Connection):
         :param route_table_ids: A list of strings with the desired route table
                                 IDs.
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters. Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters. Each tuple
+                        or dict item consists of a filter key and a filter value.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -218,7 +220,9 @@ class VPCConnection(EC2Connection):
         if route_table_ids:
             self.build_list_params(params, route_table_ids, "RouteTableId")
         if filters:
-            self.build_filter_params(params, dict(filters))
+            if not isinstance(filters, dict):
+                filters = dict(filters)
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeRouteTables', params,
@@ -516,9 +520,9 @@ class VPCConnection(EC2Connection):
         :param network_acl_ids: A list of strings with the desired network ACL
                                 IDs.
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters. Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters. Each tuple
+                        or dict item consists of a filter key and a filter value.
 
         :rtype: list
         :return: A list of :class:`boto.vpc.networkacl.NetworkAcl`
@@ -527,7 +531,9 @@ class VPCConnection(EC2Connection):
         if network_acl_ids:
             self.build_list_params(params, network_acl_ids, "NetworkAclId")
         if filters:
-            self.build_filter_params(params, dict(filters))
+            if not isinstance(filters, dict):
+                filters = dict(filters)
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeNetworkAcls', params,
                              [('item', NetworkAcl)])
 
@@ -779,9 +785,9 @@ class VPCConnection(EC2Connection):
         :type internet_gateway_ids: list
         :param internet_gateway_ids: A list of strings with the desired gateway IDs.
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+                        or dict item consists of a filter key and a filter value.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -793,7 +799,9 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, internet_gateway_ids,
                                    'InternetGatewayId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            if not isinstance(filters, dict):
+                filters = dict(filters)
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeInternetGateways', params,
@@ -896,9 +904,9 @@ class VPCConnection(EC2Connection):
         :param customer_gateway_ids: A list of strings with the desired
             CustomerGateway ID's.
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+                        or dict item consists of a filter key and a filter value.
                         Possible filter keys are:
 
                          - *state*, the state of the CustomerGateway
@@ -918,7 +926,10 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, customer_gateway_ids,
                                    'CustomerGatewayId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            if not isinstance(filters, dict):
+                filters = dict(filters)
+
+            self.build_filter_params(params, filters)
 
         if dry_run:
             params['DryRun'] = 'true'
@@ -985,9 +996,9 @@ class VPCConnection(EC2Connection):
         :type vpn_gateway_ids: list
         :param vpn_gateway_ids: A list of strings with the desired VpnGateway ID's
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+                        or dict item consists of a filter key and a filter value.
                         Possible filter keys are:
 
                         - *state*, a list of states of the VpnGateway
@@ -1006,7 +1017,9 @@ class VPCConnection(EC2Connection):
         if vpn_gateway_ids:
             self.build_list_params(params, vpn_gateway_ids, 'VpnGatewayId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            if not isinstance(filters, dict):
+                filters = dict(filters)
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeVpnGateways', params,
@@ -1109,9 +1122,9 @@ class VPCConnection(EC2Connection):
         :type subnet_ids: list
         :param subnet_ids: A list of strings with the desired Subnet ID's
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+                        or dict item consists of a filter key and a filter value.
                         Possible filter keys are:
 
                         - *state*, a list of states of the Subnet
@@ -1132,7 +1145,9 @@ class VPCConnection(EC2Connection):
         if subnet_ids:
             self.build_list_params(params, subnet_ids, 'SubnetId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            if not isinstance(filters, dict):
+                filters = dict(filters)
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeSubnets', params, [('item', Subnet)])
@@ -1192,9 +1207,9 @@ class VPCConnection(EC2Connection):
         :type dhcp_options_ids: list
         :param dhcp_options_ids: A list of strings with the desired DhcpOption ID's
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-            consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+            or dict item consists of a filter key and a filter value.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -1206,7 +1221,9 @@ class VPCConnection(EC2Connection):
         if dhcp_options_ids:
             self.build_list_params(params, dhcp_options_ids, 'DhcpOptionsId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            if not isinstance(filters, dict):
+                filters = dict(filters)
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeDhcpOptions', params,
@@ -1339,9 +1356,9 @@ class VPCConnection(EC2Connection):
         :type vpn_connection_ids: list
         :param vpn_connection_ids: A list of strings with the desired VPN_CONNECTION ID's
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+                        or dict item consists of a filter key and a filter value.
                         Possible filter keys are:
 
                         - *state*, a list of states of the VPN_CONNECTION
@@ -1363,7 +1380,9 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, vpn_connection_ids,
                                    'VpnConnectionId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            if not isinstance(filters, dict):
+                filters = dict(filters)
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeVpnConnections', params,

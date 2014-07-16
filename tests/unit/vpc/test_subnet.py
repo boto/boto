@@ -2,6 +2,7 @@ from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.vpc import VPCConnection, Subnet
+from boto.compat import OrderedDict
 
 
 class TestDescribeSubnets(AWSMockServiceTestCase):
@@ -43,8 +44,8 @@ class TestDescribeSubnets(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         api_response = self.service_connection.get_all_subnets(
             ['subnet-9d4a7b6c', 'subnet-6e7f829e'],
-            filters=[('state', 'available'),
-                     ('vpc-id', ['subnet-9d4a7b6c', 'subnet-6e7f829e'])])
+            filters=OrderedDict([('state', 'available'),
+                     ('vpc-id', ['subnet-9d4a7b6c', 'subnet-6e7f829e'])]))
         self.assert_request_parameters({
             'Action': 'DescribeSubnets',
             'SubnetId.1': 'subnet-9d4a7b6c',
