@@ -122,6 +122,9 @@ class EC2Connection(AWSQueryConnection):
         return params
 
     def build_filter_params(self, params, filters):
+        if not isinstance(filters, dict):
+            filters = dict(filters)
+
         i = 1
         for name in filters:
             aws_name = name

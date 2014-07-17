@@ -20,10 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import unittest
 import time
 
 import boto
+from boto.compat import unittest, six
 from boto.ec2.networkinterface import NetworkInterfaceCollection
 from boto.ec2.networkinterface import NetworkInterfaceSpecification
 from boto.ec2.networkinterface import PrivateIPAddress
@@ -37,7 +37,7 @@ class TestVPCConnection(unittest.TestCase):
         # Registry for cleaning up the vpc after all instances are terminated
         # in the format [ ( func, (arg1, ... argn) ) ]
         self.post_terminate_cleanups = []
-        
+
         self.api = boto.connect_vpc()
         self.vpc = self.api.create_vpc('10.0.0.0/16')
 
@@ -71,7 +71,7 @@ class TestVPCConnection(unittest.TestCase):
 
     def terminate_instance(self, instance):
         instance.terminate()
-        for i in xrange(300):
+        for i in six.moves.range(300):
             instance.update()
             if instance.state == 'terminated':
                 # Give it a litle more time to settle.
