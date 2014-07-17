@@ -104,8 +104,6 @@ class VPCConnection(EC2Connection):
         if vpc_ids:
             self.build_list_params(params, vpc_ids, 'VpcId')
         if filters:
-            if not isinstance(filters, dict):
-                filters = dict(filters)
             self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
@@ -220,8 +218,6 @@ class VPCConnection(EC2Connection):
         if route_table_ids:
             self.build_list_params(params, route_table_ids, "RouteTableId")
         if filters:
-            if not isinstance(filters, dict):
-                filters = dict(filters)
             self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
@@ -531,8 +527,6 @@ class VPCConnection(EC2Connection):
         if network_acl_ids:
             self.build_list_params(params, network_acl_ids, "NetworkAclId")
         if filters:
-            if not isinstance(filters, dict):
-                filters = dict(filters)
             self.build_filter_params(params, filters)
         return self.get_list('DescribeNetworkAcls', params,
                              [('item', NetworkAcl)])
@@ -799,8 +793,6 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, internet_gateway_ids,
                                    'InternetGatewayId')
         if filters:
-            if not isinstance(filters, dict):
-                filters = dict(filters)
             self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
@@ -926,9 +918,6 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, customer_gateway_ids,
                                    'CustomerGatewayId')
         if filters:
-            if not isinstance(filters, dict):
-                filters = dict(filters)
-
             self.build_filter_params(params, filters)
 
         if dry_run:
@@ -1017,8 +1006,6 @@ class VPCConnection(EC2Connection):
         if vpn_gateway_ids:
             self.build_list_params(params, vpn_gateway_ids, 'VpnGatewayId')
         if filters:
-            if not isinstance(filters, dict):
-                filters = dict(filters)
             self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
@@ -1145,8 +1132,6 @@ class VPCConnection(EC2Connection):
         if subnet_ids:
             self.build_list_params(params, subnet_ids, 'SubnetId')
         if filters:
-            if not isinstance(filters, dict):
-                filters = dict(filters)
             self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
@@ -1221,8 +1206,6 @@ class VPCConnection(EC2Connection):
         if dhcp_options_ids:
             self.build_list_params(params, dhcp_options_ids, 'DhcpOptionsId')
         if filters:
-            if not isinstance(filters, dict):
-                filters = dict(filters)
             self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
@@ -1380,8 +1363,6 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, vpn_connection_ids,
                                    'VpnConnectionId')
         if filters:
-            if not isinstance(filters, dict):
-                filters = dict(filters)
             self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
