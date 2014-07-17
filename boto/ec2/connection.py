@@ -915,7 +915,7 @@ class EC2Connection(AWSQueryConnection):
                     l.append(group)
             self.build_list_params(params, l, 'SecurityGroup')
         if user_data:
-            params['UserData'] = base64.b64encode(user_data)
+            params['UserData'] = base64.b64encode(user_data).decode('utf-8')
         if addressing_type:
             params['AddressingType'] = addressing_type
         if instance_type:
