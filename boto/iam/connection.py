@@ -1498,3 +1498,28 @@ class IAMConnection(AWSQueryConnection):
         """
         params = {'SAMLProviderArn': saml_provider_arn }
         return self.get_response('DeleteSAMLProvider', params)
+
+    #
+    # IAM Reports
+    #
+
+    def generate_credential_report(self):
+        """
+        Generates a credential report for an account
+
+        A new credential report can only be generated every 4 hours. If one
+        hasn't been generated in the last 4 hours then get_credential_report
+        will error when called
+        """
+        params = {}
+        return self.get_response('GenerateCredentialReport', params)
+
+    def get_credential_report(self):
+        """
+        Retrieves a credential report for an account
+        
+        A report must have been generated in the last 4 hours to succeed.
+        The report is returned as a base64 encoded blob within the response.
+        """
+        params = {}
+        return self.get_response('GetCredentialReport', params)
