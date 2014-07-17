@@ -574,7 +574,7 @@ class S3Connection(AWSAuthConnection):
         return bucket
 
     def create_bucket(self, bucket_name, headers=None,
-                      location=Location.DEFAULT, policy=None):
+                      location=Location.DEFAULT, policy=None, query_args=None):
         """
         Creates a new located bucket. By default it's in the USA. You can pass
         Location.EU to create a European bucket (S3) or European Union bucket
@@ -595,6 +595,10 @@ class S3Connection(AWSAuthConnection):
         :param policy: A canned ACL policy that will be applied to the
             new key in S3.
 
+        :type query_args: string
+        :param query_args: A string of additional querystring arguments
+            to append to the request
+
         """
         check_lowercase_bucketname(bucket_name)
 
@@ -609,7 +613,7 @@ class S3Connection(AWSAuthConnection):
             data = '<CreateBucketConfiguration><LocationConstraint>' + \
                     location + '</LocationConstraint></CreateBucketConfiguration>'
         response = self.make_request('PUT', bucket_name, headers=headers,
-                data=data)
+                data=data, query_args=query_args)
         body = response.read()
         if response.status == 409:
             raise self.provider.storage_create_error(

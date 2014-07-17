@@ -1689,7 +1689,7 @@ class Bucket(object):
     def initiate_multipart_upload(self, key_name, headers=None,
                                   reduced_redundancy=False,
                                   metadata=None, encrypt_key=False,
-                                  policy=None):
+                                  policy=None, query_args=None):
         """
         Start a multipart upload operation.
 
@@ -1731,8 +1731,12 @@ class Bucket(object):
         :type policy: :class:`boto.s3.acl.CannedACLStrings`
         :param policy: A canned ACL policy that will be applied to the
             new key (once completed) in S3.
+
+        :type query_args: string
+        :param query_args: A string of additional querystring arguments
+            to append to the request
         """
-        query_args = 'uploads'
+        query_args = 'uploads&{0}'.format(query_args) if query_args is not None else 'uploads'
         provider = self.connection.provider
         headers = headers or {}
         if policy:
