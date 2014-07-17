@@ -2,6 +2,7 @@ from tests.unit import AWSMockServiceTestCase
 
 from boto.ec2.connection import EC2Connection
 from boto.ec2.snapshot import Snapshot
+from boto.compat import OrderedDict
 
 
 class TestDescribeSnapshots(AWSMockServiceTestCase):
@@ -9,7 +10,7 @@ class TestDescribeSnapshots(AWSMockServiceTestCase):
     connection_class = EC2Connection
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeSnapshotsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <snapshotSet>
@@ -39,8 +40,8 @@ class TestDescribeSnapshots(AWSMockServiceTestCase):
         response = self.service_connection.get_all_snapshots(['snap-1a2b3c4d', 'snap-9f8e7d6c'],
                                                              owner=['self', '111122223333'],
                                                              restorable_by='999988887777',
-                                                             filters={'status': 'pending',
-                                                                      'tag-value': '*db_*'})
+                                                             filters=OrderedDict((('status', 'pending'),
+                                                                                  ('tag-value', '*db_*'))))
         self.assert_request_parameters({
             'Action': 'DescribeSnapshots',
             'SnapshotId.1': 'snap-1a2b3c4d',

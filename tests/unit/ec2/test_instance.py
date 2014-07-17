@@ -9,7 +9,7 @@ import mock
 from boto.ec2.connection import EC2Connection
 from boto.ec2.blockdevicemapping import BlockDeviceType, BlockDeviceMapping
 
-DESCRIBE_INSTANCE_VPC = r"""<?xml version="1.0" encoding="UTF-8"?>
+DESCRIBE_INSTANCE_VPC = br"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2012-10-01/">
     <requestId>c6132c74-b524-4884-87f5-0f4bde4a9760</requestId>
     <reservationSet>
@@ -122,7 +122,7 @@ DESCRIBE_INSTANCE_VPC = r"""<?xml version="1.0" encoding="UTF-8"?>
 </DescribeInstancesResponse>
 """
 
-RUN_INSTANCE_RESPONSE = r"""
+RUN_INSTANCE_RESPONSE = br"""
 <RunInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2012-06-01/">
     <requestId>ad4b83c2-f606-4c39-90c6-5dcc5be823e1</requestId>
     <reservationId>r-c5cef7a7</reservationId>
@@ -214,7 +214,7 @@ class TestRunInstances(AWSMockServiceTestCase):
 
     def default_body(self):
         # This is a dummy response
-        return """
+        return b"""
         <DescribeLaunchConfigurationsResponse>
         </DescribeLaunchConfigurationsResponse>
         """
@@ -233,7 +233,7 @@ class TestRunInstances(AWSMockServiceTestCase):
             'Action': 'RunInstances',
             'ImageId': '123456',
             'InstanceType': 'm1.large',
-            'UserData': base64.b64encode('#!/bin/bash').decode('utf-8'),
+            'UserData': base64.b64encode(b'#!/bin/bash').decode('utf-8'),
             'MaxCount': 1,
             'MinCount': 1,
             'SecurityGroup.1': 'group1',

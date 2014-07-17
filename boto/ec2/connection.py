@@ -65,6 +65,7 @@ from boto.ec2.networkinterface import NetworkInterface
 from boto.ec2.attributes import AccountAttribute, VPCAttribute
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
+from boto.compat import six
 
 #boto.set_stream_logger('ec2')
 
@@ -918,6 +919,8 @@ class EC2Connection(AWSQueryConnection):
                     l.append(group)
             self.build_list_params(params, l, 'SecurityGroup')
         if user_data:
+            if isinstance(user_data, six.text_type):
+                user_data = user_data.encode('utf-8')
             params['UserData'] = base64.b64encode(user_data).decode('utf-8')
         if addressing_type:
             params['AddressingType'] = addressing_type
