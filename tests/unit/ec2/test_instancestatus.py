@@ -7,7 +7,7 @@ import mock
 
 from boto.ec2.connection import EC2Connection
 
-INSTANCE_STATUS_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
+INSTANCE_STATUS_RESPONSE = br"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeInstanceStatusResponse xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
     <requestId>3be1508e-c444-4fef-89cc-0b1223c4f02fEXAMPLE</requestId>
     <nextToken>page-2</nextToken>

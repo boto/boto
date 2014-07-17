@@ -30,7 +30,7 @@ At the moment, boto supports:
 
 * Compute
 
-  * Amazon Elastic Compute Cloud (EC2)
+  * Amazon Elastic Compute Cloud (EC2) (Python 3)
   * Amazon Elastic Map Reduce (EMR) (Python 3)
   * AutoScaling (Python 3)
   * Amazon Kinesis (Python 3)

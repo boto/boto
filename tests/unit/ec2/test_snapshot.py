@@ -9,7 +9,7 @@ class TestDescribeSnapshots(AWSMockServiceTestCase):
     connection_class = EC2Connection
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeSnapshotsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <snapshotSet>
