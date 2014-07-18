@@ -308,7 +308,7 @@ class MWSConnection(AWSQueryConnection):
         try:
             response = self._mexe(request, override_num_retries=None)
         except BotoServerError, bs:
-            raise self._response_error_factor(bs.status, bs.reason, bs.body)
+            raise self._response_error_factory(bs.status, bs.reason, bs.body)
         body = response.read()
         boto.log.debug(body)
         if not body:
