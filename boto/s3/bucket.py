@@ -94,6 +94,7 @@ class Bucket(object):
         self.name = name
         self.connection = connection
         self.key_class = key_class
+        self.owner = None
 
     def __repr__(self):
         return '<Bucket: %s>' % self.name
@@ -105,7 +106,11 @@ class Bucket(object):
         return not (self.get_key(key_name) is None)
 
     def startElement(self, name, attrs, connection):
-        return None
+        if name == 'Owner':
+            self.owner = User(self)
+            return self.owner
+        else:
+            return None
 
     def endElement(self, name, value, connection):
         if name == 'Name':
