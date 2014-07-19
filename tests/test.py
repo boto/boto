@@ -40,6 +40,7 @@ PY3_WHITELIST = (
     'tests/unit/beanstalk',
     'tests/unit/cloudformation',
     'tests/unit/cloudfront',
+    'tests/unit/cloudsearch',
     'tests/unit/cloudtrail',
     'tests/unit/directconnect',
     'tests/unit/ecs',
