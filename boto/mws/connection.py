@@ -63,6 +63,7 @@ api_call_map = {}
 def add_attrs_from(func, to):
     for attr in decorated_attrs:
         setattr(to, attr, getattr(func, attr, None))
+    to.__wrapped__ = func
     return to
 
 
@@ -147,7 +148,7 @@ def requires(*groups):
 
     def decorator(func):
 
-        def wrapper(*args, **kw):
+        def requires(*args, **kw):
             hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
             if 1 != len(filter(hasgroup, groups)):
                 message = ' OR '.join(['+'.join(g) for g in groups])
@@ -156,9 +157,9 @@ def requires(*groups):
                 raise KeyError(message)
             return func(*args, **kw)
         message = ' OR '.join(['+'.join(g) for g in groups])
-        wrapper.__doc__ = "{0}\nRequired: {1}".format(func.__doc__,
-                                                      message)
-        return add_attrs_from(func, to=wrapper)
+        requires.__doc__ = "{0}\nRequired: {1}".format(func.__doc__,
+                                                       message)
+        return add_attrs_from(func, to=requires)
     return decorator
 
 
@@ -205,15 +206,15 @@ def requires_some_of(*fields):
 
     def decorator(func):
 
-        def wrapper(*args, **kw):
+        def requires(*args, **kw):
             if not filter(kw.has_key, fields):
                 message = "{0} requires at least one of {1} argument(s)" \
                           "".format(func.action, ', '.join(fields))
                 raise KeyError(message)
             return func(*args, **kw)
-        wrapper.__doc__ = "{0}\nSome Required: {1}".format(func.__doc__,
-                                                           ', '.join(fields))
-        return add_attrs_from(func, to=wrapper)
+        requires.__doc__ = "{0}\nSome Required: {1}".format(func.__doc__,
+                                                            ', '.join(fields))
+        return add_attrs_from(func, to=requires)
     return decorator
 
 
@@ -702,12 +703,12 @@ class MWSConnection(AWSQueryConnection):
         return self._post_request(request, kw, response)
 
     @requires(['CreatedAfter'], ['LastUpdatedAfter'])
+    @requires(['MarketplaceId'])
     @exclusive(['CreatedAfter'], ['LastUpdatedAfter'])
     @dependent('CreatedBefore', ['CreatedAfter'])
     @exclusive(['LastUpdatedAfter'], ['BuyerEmail'], ['SellerOrderId'])
     @dependent('LastUpdatedBefore', ['LastUpdatedAfter'])
     @exclusive(['CreatedAfter'], ['LastUpdatedBefore'])
-    @requires(['MarketplaceId'])
     @structured_objects('OrderTotal', 'ShippingAddress',
                         'PaymentExecutionDetail')
     @structured_lists('MarketplaceId.Id', 'OrderStatus.Status',
