@@ -21,6 +21,7 @@
 # IN THE SOFTWARE.
 #
 
+import base64
 from datetime import datetime
 
 from tests.unit import unittest
@@ -42,7 +43,7 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
         super(TestAutoScaleGroup, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <CreateLaunchConfigurationResponse>
               <ResponseMetadata>
                 <RequestId>requestid</RequestId>
@@ -110,7 +111,7 @@ class TestAutoScaleGroupHonorCooldown(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
     def default_body(self):
-        return """
+        return b"""
             <SetDesiredCapacityResponse>
               <ResponseMetadata>
                 <RequestId>9fb7e2db-6998-11e2-a985-57c82EXAMPLE</RequestId>
@@ -135,7 +136,7 @@ class TestScheduledGroup(AWSMockServiceTestCase):
         super(TestScheduledGroup, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <PutScheduledUpdateGroupActionResponse>
                 <ResponseMetadata>
                   <RequestId>requestid</RequestId>
@@ -169,7 +170,7 @@ class TestParseAutoScaleGroupResponse(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
     def default_body(self):
-        return """
+        return b"""
           <DescribeAutoScalingGroupsResult>
              <AutoScalingGroups>
                <member>
@@ -238,7 +239,7 @@ class TestDescribeTerminationPolicies(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
     def default_body(self):
-        return """
+        return b"""
           <DescribeTerminationPolicyTypesResponse>
             <DescribeTerminationPolicyTypesResult>
               <TerminationPolicyTypes>
@@ -268,7 +269,7 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
 
     def default_body(self):
         # This is a dummy response
-        return """
+        return b"""
         <DescribeLaunchConfigurationsResponse>
           <DescribeLaunchConfigurationsResult>
             <LaunchConfigurations>
@@ -336,7 +337,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
 
     def default_body(self):
         # This is a dummy response
-        return """
+        return b"""
         <DescribeLaunchConfigurationsResponse>
         </DescribeLaunchConfigurationsResponse>
         """
@@ -356,6 +357,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
                 name='launch_config',
                 image_id='123456',
                 instance_type = 'm1.large',
+                user_data = '#!/bin/bash',
                 security_groups = ['group1', 'group2'],
                 spot_price='price',
                 block_device_mappings = [bdm],
@@ -378,6 +380,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'EbsOptimized': 'false',
             'LaunchConfigurationName': 'launch_config',
             'ImageId': '123456',
+            'UserData': base64.b64encode('#!/bin/bash').decode('utf-8'),
             'InstanceMonitoring.Enabled': 'false',
             'InstanceType': 'm1.large',
             'SecurityGroups.member.1': 'group1',
@@ -397,7 +400,7 @@ class TestCreateAutoScalePolicy(AWSMockServiceTestCase):
         super(TestCreateAutoScalePolicy, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <PutScalingPolicyResponse xmlns="http://autoscaling.amazonaws.com\
             /doc/2011-01-01/">
               <PutScalingPolicyResult>
@@ -472,7 +475,7 @@ class TestPutNotificationConfiguration(AWSMockServiceTestCase):
         super(TestPutNotificationConfiguration, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <PutNotificationConfigurationResponse>
               <ResponseMetadata>
                 <RequestId>requestid</RequestId>
@@ -502,7 +505,7 @@ class TestDeleteNotificationConfiguration(AWSMockServiceTestCase):
         super(TestDeleteNotificationConfiguration, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteNotificationConfigurationResponse>
               <ResponseMetadata>
                 <RequestId>requestid</RequestId>
@@ -527,7 +530,7 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
     def default_body(self):
-        return """
+        return b"""
         <CreateOrUpdateTagsResponse>
             <ResponseMetadata>
                 <RequestId>requestId</RequestId>
@@ -599,7 +602,7 @@ class TestAttachInstances(AWSMockServiceTestCase):
         super(TestAttachInstances, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <AttachInstancesResponse>
               <ResponseMetadata>
                 <RequestId>requestid</RequestId>
@@ -629,7 +632,7 @@ class TestGetAccountLimits(AWSMockServiceTestCase):
         super(TestGetAccountLimits, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeAccountLimitsAnswer>
               <MaxNumberOfAutoScalingGroups>6</MaxNumberOfAutoScalingGroups>
               <MaxNumberOfLaunchConfigurations>3</MaxNumberOfLaunchConfigurations>
@@ -655,7 +658,7 @@ class TestGetAdjustmentTypes(AWSMockServiceTestCase):
         super(TestGetAdjustmentTypes, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeAdjustmentTypesResponse xmlns="http://autoscaling.amazonaws.com/doc/201-01-01/">
               <DescribeAdjustmentTypesResult>
                 <AdjustmentTypes>
@@ -693,7 +696,7 @@ class TestLaunchConfigurationDescribeWithBlockDeviceTypes(AWSMockServiceTestCase
 
     def default_body(self):
         # This is a dummy response
-        return """
+        return b"""
         <DescribeLaunchConfigurationsResponse>
           <DescribeLaunchConfigurationsResult>
             <LaunchConfigurations>

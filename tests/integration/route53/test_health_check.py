@@ -22,6 +22,7 @@
 
 from tests.integration.route53 import Route53TestCase
 
+from boto.compat import six
 from boto.route53.healthcheck import HealthCheck
 from boto.route53.record import ResourceRecordSets
 
@@ -38,16 +39,28 @@ class TestRoute53HealthCheck(Route53TestCase):
         self.conn.delete_health_check(result['CreateHealthCheckResponse']['HealthCheck']['Id'])
 
     def test_create_https_health_check(self):
-        hc = HealthCheck(ip_addr="54.217.7.118", port=80, hc_type="HTTPS", resource_path="/testing")
+        hc = HealthCheck(ip_addr="54.217.7.118", port=443, hc_type="HTTPS", resource_path="/testing")
         result = self.conn.create_health_check(hc)
         self.assertEquals(result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'][u'Type'], 'HTTPS')
         self.assertEquals(result[u'CreateHealthCheckResponse'][
                           u'HealthCheck'][u'HealthCheckConfig'][u'IPAddress'], '54.217.7.118')
-        self.assertEquals(result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'][u'Port'], '80')
+        self.assertEquals(result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'][u'Port'], '443')
         self.assertEquals(result[u'CreateHealthCheckResponse'][
                           u'HealthCheck'][u'HealthCheckConfig'][u'ResourcePath'], '/testing')
+        self.assertFalse('FullyQualifiedDomainName' in result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'])
         self.conn.delete_health_check(result['CreateHealthCheckResponse']['HealthCheck']['Id'])
 
+    def test_create_https_health_check_fqdn(self):
+        hc = HealthCheck(ip_addr=None, port=443, hc_type="HTTPS", resource_path="/", fqdn="google.com")
+        result = self.conn.create_health_check(hc)
+        self.assertEquals(result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'][u'Type'], 'HTTPS')
+        self.assertEquals(result[u'CreateHealthCheckResponse'][
+                          u'HealthCheck'][u'HealthCheckConfig'][u'FullyQualifiedDomainName'], 'google.com')
+        self.assertEquals(result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'][u'Port'], '443')
+        self.assertEquals(result[u'CreateHealthCheckResponse'][
+                          u'HealthCheck'][u'HealthCheckConfig'][u'ResourcePath'], '/')
+        self.assertFalse('IPAddress' in result[u'CreateHealthCheckResponse'][u'HealthCheck'][u'HealthCheckConfig'])
+        self.conn.delete_health_check(result['CreateHealthCheckResponse']['HealthCheck']['Id'])
 
     def test_create_and_list_health_check(self):
         hc = HealthCheck(ip_addr="54.217.7.118", port=80, hc_type="HTTP", resource_path="/testing")
@@ -120,18 +133,15 @@ class TestRoute53HealthCheck(Route53TestCase):
         'request_interval'.
 
         """
-        with self.assertRaises(AttributeError):
-            HealthCheck(**self.health_check_params(request_interval=5))
+        self.assertRaises(AttributeError, lambda: HealthCheck(**self.health_check_params(request_interval=5)))
 
     def test_create_health_check_invalid_failure_threshold(self):
         """
         Test that health checks cannot be created with an invalid
         'failure_threshold'.
         """
-        with self.assertRaises(AttributeError):
-            HealthCheck(**self.health_check_params(failure_threshold=0))
-        with self.assertRaises(AttributeError):
-            HealthCheck(**self.health_check_params(failure_threshold=11))
+        self.assertRaises(AttributeError, lambda: HealthCheck(**self.health_check_params(failure_threshold=0)))
+        self.assertRaises(AttributeError, lambda: HealthCheck(**self.health_check_params(failure_threshold=11)))
 
     def test_create_health_check_request_interval(self):
         hc_params = self.health_check_params(request_interval=10)
@@ -140,7 +150,7 @@ class TestRoute53HealthCheck(Route53TestCase):
         hc_config = (result[u'CreateHealthCheckResponse']
                      [u'HealthCheck'][u'HealthCheckConfig'])
         self.assertEquals(hc_config[u'RequestInterval'],
-                          unicode(hc_params['request_interval']))
+                          six.text_type(hc_params['request_interval']))
         self.conn.delete_health_check(result['CreateHealthCheckResponse']['HealthCheck']['Id'])
 
     def test_create_health_check_failure_threshold(self):
@@ -150,7 +160,7 @@ class TestRoute53HealthCheck(Route53TestCase):
         hc_config = (result[u'CreateHealthCheckResponse']
                      [u'HealthCheck'][u'HealthCheckConfig'])
         self.assertEquals(hc_config[u'FailureThreshold'],
-                          unicode(hc_params['failure_threshold']))
+                          six.text_type(hc_params['failure_threshold']))
         self.conn.delete_health_check(result['CreateHealthCheckResponse']['HealthCheck']['Id'])
 
     def health_check_params(self, **kwargs):

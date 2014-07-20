@@ -22,7 +22,7 @@ The recommended method of doing this is as follows::
 At this point the variable conn will point to an SQSConnection object in the
 US-WEST-2 region. Bear in mind that just as any other AWS service, SQS is
 region-specific. In this example, the AWS access key and AWS secret key are
-passed in to the method explicitely. Alternatively, you can set the environment
+passed in to the method explicitly. Alternatively, you can set the environment
 variables:
 
 * ``AWS_ACCESS_KEY_ID`` - Your AWS Access Key ID
@@ -116,17 +116,17 @@ values of the message that was written to the queue.
 Arbitrary message attributes can be defined by setting a simple dictionary
 of values on the message object::
 
->>> m = Message()
->>> m.message_attributes = {
-    "name1": {
-        "data_type": "String",
-        "string_value": "I am a string"
-    },
-    "name2": {
-        "data_type": "Number",
-        "string_value": "12"
-    }
-}
+    >>> m = Message()
+    >>> m.message_attributes = {
+    ...     "name1": {
+    ...         "data_type": "String",
+    ...         "string_value": "I am a string"
+    ...     },
+    ...     "name2": {
+    ...         "data_type": "Number",
+    ...         "string_value": "12"
+    ...     }
+    ... }
 
 Note that by default, these arbitrary attributes are not returned when
 you request messages from a queue. Instead, you must request them via
@@ -159,7 +159,7 @@ default boto Message object.  To register your message class, you would::
 
 where MyMessage is the class definition for your message class.  Your
 message class should subclass the boto Message because there is a small
-bit of Python magic happening in the __setattr__ method of the boto Message
+bit of Python magic happening in the ``__setattr__`` method of the boto Message
 class.
 
 Reading Messages
@@ -203,14 +203,14 @@ passing a num_messages parameter (defaults to 1) you can control the maximum
 number of messages that will be returned by the method.  To show this
 feature off, first let's load up a few more messages.
 
->>> for i in range(1, 11):
-...   m = Message()
-...   m.set_body('This is message %d' % i)
-...   q.write(m)
-...
->>> rs = q.get_messages(10)
->>> len(rs)
-10
+    >>> for i in range(1, 11):
+    ...   m = Message()
+    ...   m.set_body('This is message %d' % i)
+    ...   q.write(m)
+    ...
+    >>> rs = q.get_messages(10)
+    >>> len(rs)
+    10
 
 Don't be alarmed if the length of the result set returned by the get_messages
 call is less than 10.  Sometimes it takes some time for new messages to become
@@ -275,5 +275,5 @@ messages in a queue to a local file:
 >>> q.dump('messages.txt', sep='\n------------------\n')
 
 This will read all of the messages in the queue and write the bodies of
-each of the messages to the file messages.txt.  The option sep argument
+each of the messages to the file messages.txt.  The optional ``sep`` argument
 is a separator that will be printed between each message body in the file.

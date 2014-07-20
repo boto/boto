@@ -1,3 +1,4 @@
+from boto.compat import six
 # Copyright (c) 2006,2007,2008 Mitch Garnaat http://garnaat.org/
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,7 +61,7 @@ class Blob(object):
         return self.file.readline()
 
     def next(self):
-        return self.file.next()
+        return next(self.file)
 
     def __iter__(self):
         return iter(self.file)

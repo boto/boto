@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-import httplib
-
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
@@ -20,7 +18,7 @@ class TestEC2ConnectionBase(AWSMockServiceTestCase):
 class TestReservedInstanceOfferings(TestEC2ConnectionBase):
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeInstanceTypesResponseType xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
                 <VmTypeMessage/>
                 <instanceTypeDetails>

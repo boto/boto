@@ -122,12 +122,18 @@ class SQSConnection(AWSQueryConnection):
             supplied, the default is to return all attributes.  Valid
             attributes are:
 
+            * All
             * ApproximateNumberOfMessages
             * ApproximateNumberOfMessagesNotVisible
             * VisibilityTimeout
             * CreatedTimestamp
             * LastModifiedTimestamp
             * Policy
+            * MaximumMessageSize
+            * MessageRetentionPeriod
+            * QueueArn
+            * ApproximateNumberOfMessagesDelayed
+            * DelaySeconds
             * ReceiveMessageWaitTimeSeconds
             * RedrivePolicy
 
@@ -288,7 +294,8 @@ class SQSConnection(AWSQueryConnection):
             params['DelaySeconds'] = int(delay_seconds)
 
         if message_attributes is not None:
-            for i, name in enumerate(message_attributes.keys(), start=1):
+            keys = sorted(message_attributes.keys())
+            for i, name in enumerate(keys, start=1):
                 attribute = message_attributes[name]
                 params['MessageAttribute.%s.Name' % i] = name
                 if 'data_type' in attribute:
@@ -338,7 +345,8 @@ class SQSConnection(AWSQueryConnection):
             params['%s.DelaySeconds' % base] = msg[2]
             if len(msg) > 3:
                 base += '.MessageAttribute'
-                for j, name in enumerate(msg[3].keys()):
+                keys = sorted(msg[3].keys())
+                for j, name in enumerate(keys):
                     attribute = msg[3][name]
 
                     p_name = '%s.%i.Name' % (base, j + 1)

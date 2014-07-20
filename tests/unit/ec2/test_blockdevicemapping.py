@@ -3,6 +3,7 @@ import unittest
 
 from boto.ec2.connection import EC2Connection
 from boto.ec2.blockdevicemapping import BlockDeviceType, BlockDeviceMapping
+from boto.compat import OrderedDict
 
 from tests.unit import AWSMockServiceTestCase
 
@@ -85,7 +86,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
 
     def default_body(self):
         # This is a dummy response
-        return """
+        return b"""
         <DescribeLaunchConfigurationsResponse>
         </DescribeLaunchConfigurationsResponse>
         """
@@ -98,9 +99,11 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
         dev_sdf = BlockDeviceType(snapshot_id='snap-12345')
         dev_sdg = BlockDeviceType(snapshot_id='snap-12346', delete_on_termination=True)
 
-        bdm = BlockDeviceMapping()
-        bdm['/dev/sdf'] = dev_sdf
-        bdm['/dev/sdg'] = dev_sdg
+        class OrderedBlockDeviceMapping(OrderedDict, BlockDeviceMapping):
+            pass
+
+        bdm = OrderedBlockDeviceMapping()
+        bdm.update(OrderedDict((('/dev/sdf', dev_sdf), ('/dev/sdg', dev_sdg))))
 
         response = self.service_connection.run_instances(
             image_id='123456',

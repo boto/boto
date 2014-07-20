@@ -173,7 +173,8 @@ class Layer1(AWSAuthConnection):
         if i == 0:
             next_sleep = 0
         else:
-            next_sleep = 0.05 * (2 ** i)
+            next_sleep = min(0.05 * (2 ** i),
+                             boto.config.get('Boto', 'max_retry_delay', 60))
         return next_sleep
 
     def list_tables(self, limit=None, start_table=None):

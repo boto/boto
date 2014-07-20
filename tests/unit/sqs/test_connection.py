@@ -207,12 +207,12 @@ class SQSSendMessageAttributes(AWSMockServiceTestCase):
 
         self.assert_request_parameters({
             'Action': 'SendMessage',
-            'MessageAttribute.1.Name': 'name2',
-            'MessageAttribute.1.Value.DataType': 'Number',
-            'MessageAttribute.1.Value.StringValue': '1',
-            'MessageAttribute.2.Name': 'name1',
-            'MessageAttribute.2.Value.DataType': 'String',
-            'MessageAttribute.2.Value.StringValue': 'Bob',
+            'MessageAttribute.1.Name': 'name1',
+            'MessageAttribute.1.Value.DataType': 'String',
+            'MessageAttribute.1.Value.StringValue': 'Bob',
+            'MessageAttribute.2.Name': 'name2',
+            'MessageAttribute.2.Value.DataType': 'Number',
+            'MessageAttribute.2.Value.StringValue': '1',
             'MessageBody': 'Test message',
             'Version': '2012-11-05'
         })

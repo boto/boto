@@ -648,16 +648,35 @@ class Table(object):
         self.connection.update_item(self.table_name, raw_key, item_data, **kwargs)
         return True
 
-    def delete_item(self, **kwargs):
+    def delete_item(self, expected=None, conditional_operator=None, **kwargs):
         """
-        Deletes an item in DynamoDB.
+        Deletes a single item. You can perform a conditional delete operation
+        that deletes the item if it exists, or if it has an expected attribute
+        value.
+
+        Conditional deletes are useful for only deleting items if specific
+        conditions are met. If those conditions are met, DynamoDB performs
+        the delete. Otherwise, the item is not deleted.
+
+        To specify the expected attribute values of the item, you can pass a
+        dictionary of conditions to ``expected``. Each condition should follow
+        the pattern ``<attributename>__<comparison_operator>=<value_to_expect>``.
 
         **IMPORTANT** - Be careful when using this method, there is no undo.
 
         To specify the key of the item you'd like to get, you can specify the
         key attributes as kwargs.
 
-        Returns ``True`` on success.
+        Optionally accepts an ``expected`` parameter which is a dictionary of
+        expected attribute value conditions.
+
+        Optionally accepts a ``conditional_operator`` which applies to the
+        expected attribute value conditions:
+
+        + `AND` - If all of the conditions evaluate to true (default)
+        + `OR` - True if at least one condition evaluates to true
+
+        Returns ``True`` on success, ``False`` on failed conditional delete.
 
         Example::
 
@@ -676,9 +695,21 @@ class Table(object):
             ... })
             True
 
+            # Conditional delete
+            >>> users.delete_item(username='johndoe',
+            ...                   expected={'balance__eq': 0})
+            True
         """
+        expected = self._build_filters(expected, using=FILTER_OPERATORS)
         raw_key = self._encode_keys(kwargs)
-        self.connection.delete_item(self.table_name, raw_key)
+
+        try:
+            self.connection.delete_item(self.table_name, raw_key,
+                                        expected=expected,
+                                        conditional_operator=conditional_operator)
+        except exceptions.ConditionalCheckFailedException:
+            return False
+
         return True
 
     def get_key_fields(self):
@@ -969,7 +1000,8 @@ class Table(object):
         return results
 
     def query_count(self, index=None, consistent=False, conditional_operator=None,
-                    query_filter=None, **filter_kwargs):
+                    query_filter=None, scan_index_forward=True, limit=None,
+                    **filter_kwargs):
         """
         Queries the exact count of matching items in a DynamoDB table.
 
@@ -1002,6 +1034,22 @@ class Table(object):
 
         Returns an integer which represents the exact amount of matched
         items.
+
+        :type scan_index_forward: boolean
+        :param scan_index_forward: Specifies ascending (true) or descending
+            (false) traversal of the index. DynamoDB returns results reflecting
+            the requested order determined by the range key. If the data type
+            is Number, the results are returned in numeric order. For String,
+            the results are returned in order of ASCII character code values.
+            For Binary, DynamoDB treats each byte of the binary data as
+            unsigned when it compares binary values.
+
+        If ScanIndexForward is not specified, the results are returned in
+            ascending order.
+
+        :type limit: integer
+        :param limit: The maximum number of items to evaluate (not necessarily
+            the number of matching items).
 
         Example::
 
@@ -1037,6 +1085,8 @@ class Table(object):
             key_conditions=key_conditions,
             query_filter=built_query_filter,
             conditional_operator=conditional_operator,
+            limit=limit,
+            scan_index_forward=scan_index_forward,
         )
         return int(raw_results.get('Count', 0))
 
@@ -1233,7 +1283,7 @@ class Table(object):
             'last_key': last_key,
         }
 
-    def batch_get(self, keys, consistent=False):
+    def batch_get(self, keys, consistent=False, attributes=None):
         """
         Fetches many specific items in batch from a table.
 
@@ -1243,6 +1293,10 @@ class Table(object):
         Optionally accepts a ``consistent`` parameter, which should be a
         boolean. If you provide ``True``, a strongly consistent read will be
         used. (Default: False)
+
+        Optionally accepts an ``attributes`` parameter, which should be a
+        tuple. If you provide any attributes only these will be fetched
+        from DynamoDB.
 
         Returns a ``ResultSet``, which transparently handles the pagination of
         results you get back.
@@ -1270,10 +1324,10 @@ class Table(object):
         # We pass the keys to the constructor instead, so it can maintain it's
         # own internal state as to what keys have been processed.
         results = BatchGetResultSet(keys=keys, max_batch_get=self.max_batch_get)
-        results.to_call(self._batch_get, consistent=consistent)
+        results.to_call(self._batch_get, consistent=consistent, attributes=attributes)
         return results
 
-    def _batch_get(self, keys, consistent=False):
+    def _batch_get(self, keys, consistent=False, attributes=None):
         """
         The internal method that performs the actual batch get. Used extensively
         by ``BatchGetResultSet`` to perform each (paginated) request.
@@ -1286,6 +1340,9 @@ class Table(object):
 
         if consistent:
             items[self.table_name]['ConsistentRead'] = True
+
+        if attributes is not None:
+            items[self.table_name]['AttributesToGet'] = attributes
 
         for key_data in keys:
             raw_key = {}

@@ -20,9 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 import re
-import urllib
 import base64
 
+from boto.compat import six, urllib
 from boto.connection import AWSAuthConnection
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
@@ -71,7 +71,7 @@ class SESConnection(AWSAuthConnection):
         :type label: string
         :param label: The parameter list's name
         """
-        if isinstance(items, basestring):
+        if isinstance(items, six.string_types):
             items = [items]
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]
@@ -92,16 +92,16 @@ class SESConnection(AWSAuthConnection):
         params['Action'] = action
 
         for k, v in params.items():
-            if isinstance(v, unicode):  # UTF-8 encode only if it's Unicode
+            if isinstance(v, six.text_type):  # UTF-8 encode only if it's Unicode
                 params[k] = v.encode('utf-8')
 
         response = super(SESConnection, self).make_request(
             'POST',
             '/',
             headers=headers,
-            data=urllib.urlencode(params)
+            data=urllib.parse.urlencode(params)
         )
-        body = response.read()
+        body = response.read().decode('utf-8')
         if response.status == 200:
             list_markers = ('VerifiedEmailAddresses', 'Identities',
                             'DkimTokens', 'VerificationAttributes',
@@ -306,7 +306,7 @@ class SESConnection(AWSAuthConnection):
 
         """
 
-        if isinstance(raw_message, unicode):
+        if isinstance(raw_message, six.text_type):
             raw_message = raw_message.encode('utf-8')
 
         params = {
@@ -533,7 +533,7 @@ class SESConnection(AWSAuthConnection):
         :type notification_type: string
         :param notification_type: The type of feedback notifications that will 
                                   be published to the specified topic.
-                                  Valid Values: Bounce | Complaint
+                                  Valid Values: Bounce | Complaint | Delivery
 
         :type sns_topic: string or None
         :param sns_topic: The Amazon Resource Name (ARN) of the Amazon Simple 

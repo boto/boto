@@ -65,6 +65,7 @@ from boto.ec2.networkinterface import NetworkInterface
 from boto.ec2.attributes import AccountAttribute, VPCAttribute
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
+from boto.compat import six
 
 #boto.set_stream_logger('ec2')
 
@@ -122,6 +123,9 @@ class EC2Connection(AWSQueryConnection):
         return params
 
     def build_filter_params(self, params, filters):
+        if not isinstance(filters, dict):
+            filters = dict(filters)
+
         i = 1
         for name in filters:
             aws_name = name
@@ -610,15 +614,24 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list
         :return: A list of  :class:`boto.ec2.instance.Instance`
         """
-        reservations = self.get_all_reservations(instance_ids=instance_ids,
-                                                 filters=filters,
-                                                 dry_run=dry_run,
-                                                 max_results=max_results)
-        return [instance for reservation in reservations
-                for instance in reservation.instances]
+        next_token = None
+        retval = []
+        while True:
+            reservations = self.get_all_reservations(instance_ids=instance_ids,
+                                                     filters=filters,
+                                                     dry_run=dry_run,
+                                                     max_results=max_results,
+                                                     next_token=next_token)
+            retval.extend([instance for reservation in reservations for
+                           instance in reservation.instances])
+            next_token = reservations.next_token
+            if not next_token:
+                break
+
+        return retval
 
     def get_all_reservations(self, instance_ids=None, filters=None,
-                             dry_run=False, max_results=None):
+                             dry_run=False, max_results=None, next_token=None):
         """
         Retrieve all the instance reservations associated with your account.
 
@@ -640,6 +653,10 @@ class EC2Connection(AWSQueryConnection):
         :param max_results: The maximum number of paginated instance
             items per response.
 
+        :type next_token: str
+        :param next_token: A string specifying the next paginated set
+            of results to return.
+
         :rtype: list
         :return: A list of  :class:`boto.ec2.instance.Reservation`
         """
@@ -660,6 +677,8 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         if max_results is not None:
             params['MaxResults'] = max_results
+        if next_token:
+            params['NextToken'] = next_token
         return self.get_list('DescribeInstances', params,
                              [('item', Reservation)], verb='POST')
 
@@ -783,6 +802,9 @@ class EC2Connection(AWSQueryConnection):
             * i2.2xlarge
             * i2.4xlarge
             * i2.8xlarge
+            * t2.micro
+            * t2.small
+            * t2.medium
 
         :type placement: string
         :param placement: The Availability Zone to launch the instance into.
@@ -897,7 +919,9 @@ class EC2Connection(AWSQueryConnection):
                     l.append(group)
             self.build_list_params(params, l, 'SecurityGroup')
         if user_data:
-            params['UserData'] = base64.b64encode(user_data)
+            if isinstance(user_data, six.text_type):
+                user_data = user_data.encode('utf-8')
+            params['UserData'] = base64.b64encode(user_data).decode('utf-8')
         if addressing_type:
             params['AddressingType'] = addressing_type
         if instance_type:
@@ -1478,6 +1502,9 @@ class EC2Connection(AWSQueryConnection):
             * i2.2xlarge
             * i2.4xlarge
             * i2.8xlarge
+            * t2.micro
+            * t2.small
+            * t2.medium
 
         :type placement: string
         :param placement: The availability zone in which to launch
@@ -2248,10 +2275,10 @@ class EC2Connection(AWSQueryConnection):
 
         :type volume_type: string
         :param volume_type: The type of the volume. (optional).  Valid
-            values are: standard | io1.
+            values are: standard | io1 | gp2.
 
         :type iops: int
-        :param iops: The provisioned IOPs you want to associate with
+        :param iops: The provisioned IOPS you want to associate with
             this volume. (optional)
 
         :type encrypted: bool
@@ -2804,7 +2831,7 @@ class EC2Connection(AWSQueryConnection):
                 keynames=[keyname],
                 dry_run=dry_run
             )[0]
-        except self.ResponseError, e:
+        except self.ResponseError as e:
             if e.code == 'InvalidKeyPair.NotFound':
                 return None
             else:
@@ -4198,11 +4225,14 @@ class EC2Connection(AWSQueryConnection):
 
     # Network Interface methods
 
-    def get_all_network_interfaces(self, filters=None, dry_run=False):
+    def get_all_network_interfaces(self, network_interface_ids=None, filters=None, dry_run=False):
         """
         Retrieve all of the Elastic Network Interfaces (ENI's)
         associated with your account.
 
+        :type network_interface_ids: list
+        :param network_interface_ids: a list of strings representing ENI IDs
+        
         :type filters: dict
         :param filters: Optional filters that can be used to limit
                         the results returned.  Filters are provided
@@ -4220,6 +4250,8 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of :class:`boto.ec2.networkinterface.NetworkInterface`
         """
         params = {}
+        if network_interface_ids:
+            self.build_list_params(params, network_interface_ids, 'NetworkInterfaceId')
         if filters:
             self.build_filter_params(params, filters)
         if dry_run:

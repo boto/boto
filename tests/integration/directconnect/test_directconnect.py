@@ -22,10 +22,10 @@
 #
 import boto
 
-from unittest import TestCase
+from boto.compat import unittest
 
 
-class DirectConnectTest(TestCase):
+class DirectConnectTest(unittest.TestCase):
     """
     A very basic test to make sure signatures and
     basic calls work.

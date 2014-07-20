@@ -23,6 +23,7 @@
 from boto.mws.connection import MWSConnection, api_call_map, destructure_object
 from boto.mws.response import (ResponseElement, GetFeedSubmissionListResult,
                                ResponseFactory)
+from boto.compat import unittest
 
 from tests.unit import AWSMockServiceTestCase
 
@@ -32,7 +33,7 @@ class TestMWSConnection(AWSMockServiceTestCase):
     mws = True
 
     def default_body(self):
-        return """<?xml version="1.0"?>
+        return b"""<?xml version="1.0"?>
 <GetFeedSubmissionListResponse xmlns="http://mws.amazonservices.com/
 doc/2009-01-01/">
   <GetFeedSubmissionListResult>
@@ -148,9 +149,9 @@ doc/2009-01-01/">
         with self.assertRaises(AttributeError) as err:
             self.service_connection.get_service_status()
 
-        self.assertTrue('products,' in str(err.exception))
-        self.assertTrue('inventory,' in str(err.exception))
-        self.assertTrue('feeds,' in str(err.exception))
+        self.assertTrue('products' in str(err.exception))
+        self.assertTrue('inventory' in str(err.exception))
+        self.assertTrue('feeds' in str(err.exception))
 
 
 if __name__ == '__main__':
