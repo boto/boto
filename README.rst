@@ -49,7 +49,7 @@ At the moment, boto supports:
 
 * Deployment and Management
 
-  * AWS Elastic Beanstalk
+  * AWS Elastic Beanstalk (Python 3)
   * AWS CloudFormation (Python 3)
   * AWS Data Pipeline (Python 3)
   * AWS Opsworks (Python 3)

@@ -54,7 +54,7 @@ Currently Supported Services
 * **Deployment and Management**
 
   * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`) (Python 3)
-  * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
+  * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`) (Python 3)
   * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`) (Python 3)
   * Opsworks -- (:doc:`API Reference <ref/opsworks>`) (Python 3)
   * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`) (Python 3)
