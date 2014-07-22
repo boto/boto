@@ -1,6 +1,6 @@
 from __future__ import print_function
 import os
-import urlparse
+from boto.compat import six
 import boto
 import boto.connection
 import boto.jsonresponse
@@ -96,7 +96,7 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
         if not url and self.EnvURL in os.environ:
             url = os.environ[self.EnvURL]
         if url:
-            rslt = urlparse.urlparse(url)
+            rslt = six.moves.urllib.parse.urlparse(url)
             if 'is_secure' not in self.args:
                 if rslt.scheme == 'https':
                     self.args['is_secure'] = True
