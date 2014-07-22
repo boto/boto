@@ -22,12 +22,20 @@
 
 import os
 
+from boto.compat import six
+from boto.exception import JSONResponseError
+
+
+class ValidationException(JSONResponseError):
+    pass
+
+
 class Converter(object):
 
     @classmethod
     def convert_string(cls, param, value):
         # TODO: could do length validation, etc. here
-        if not isinstance(value, basestring):
+        if not isinstance(value, six.string_types):
             raise ValueError
         return value
 
@@ -59,8 +67,8 @@ class Converter(object):
     @classmethod
     def convert(cls, param, value):
         try:
-            if hasattr(cls, 'convert_'+param.ptype):
-                mthd = getattr(cls, 'convert_'+param.ptype)
+            if hasattr(cls, 'convert_' + param.ptype):
+                mthd = getattr(cls, 'convert_' + param.ptype)
             else:
                 mthd = cls.convert_string
             return mthd(param, value)
@@ -142,6 +150,4 @@ class Param(Converter):
         :param value: The value to convert.  This should always
                       be a string.
         """
-        return super(Param, self).convert(self,value)
-
-
+        return super(Param, self).convert(self, value)

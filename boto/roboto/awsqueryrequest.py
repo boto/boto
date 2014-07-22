@@ -26,6 +26,7 @@ import optparse
 import copy
 import boto.exception
 import boto.roboto.awsqueryservice
+from boto.compat import six
 
 import bdb
 import traceback
@@ -358,7 +359,7 @@ class AWSQueryRequest(object):
         if options.version:
             # TODO - Where should the version # come from?
             print('version x.xx')
-            exit(0)
+            sys.exit(0)
         sys.excepthook = boto_except_hook(options.debugger,
                                           options.debug)
 
@@ -482,7 +483,7 @@ class AWSQueryRequest(object):
                 if isinstance(item, dict):
                     for field_name in item:
                         line.append(item[field_name])
-                elif isinstance(item, basestring):
+                elif isinstance(item, six.string_types):
                     line.append(item)
                 line.print_it()
 
@@ -499,5 +500,3 @@ class AWSQueryRequest(object):
         """
         if data:
             self._generic_cli_formatter(self.Response, data)
-
-

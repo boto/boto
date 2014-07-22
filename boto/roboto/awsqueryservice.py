@@ -119,4 +119,3 @@ class AWSQueryService(boto.connection.AWSQueryConnection):
 
     def _required_auth_capability(self):
         return [self.Authentication]
-
