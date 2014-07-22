@@ -151,13 +151,13 @@ class VpcPeeringConnection(TaggedEC2Object):
         self.__dict__.update(updated.__dict__)
 
     def update(self, validate=False, dry_run=False):
-        vpc_list = self.connection.get_all_vpcs(
+        vpc_peering_connection_list = self.connection.get_all_vpc_peering_connections(
             [self.id],
             dry_run=dry_run
         )
-        if len(vpc_list):
-            updated_vpc = vpc_list[0]
-            self._update(updated_vpc)
+        if len(vpc_peering_connection_list):
+            updated_vpc_peering_connection = vpc_peering_connection_list[0]
+            self._update(updated_vpc_peering_connection)
         elif validate:
             raise ValueError('%s is not a valid VpcPeeringConnection ID' % (self.id,))
         return self.status_code
