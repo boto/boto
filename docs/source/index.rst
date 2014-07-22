@@ -49,7 +49,7 @@ Currently Supported Services
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
   * ElastiCache -- (:doc:`API Reference <ref/elasticache>`) (Python 3)
   * Redshift -- (:doc:`API Reference <ref/redshift>`) (Python 3)
-  * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
+  * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`) (Python 3)
 
 * **Deployment and Management**
 

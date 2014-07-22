@@ -28,7 +28,7 @@ from boto.sdb.db.blob import Blob
 from boto.sdb.db.property import ListProperty, MapProperty
 from datetime import datetime, date, time
 from boto.exception import SDBPersistenceError, S3ResponseError
-from boto.compat import map, six
+from boto.compat import map, six, long_type
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -59,7 +59,6 @@ class SDBConverter(object):
         self.manager = manager
         self.type_map = {bool: (self.encode_bool, self.decode_bool),
                          int: (self.encode_int, self.decode_int),
-                         long: (self.encode_long, self.decode_long),
                          float: (self.encode_float, self.decode_float),
                          self.model_class: (
                             self.encode_reference, self.decode_reference
@@ -71,6 +70,8 @@ class SDBConverter(object):
                          Blob: (self.encode_blob, self.decode_blob),
                          str: (self.encode_string, self.decode_string),
                       }
+        if six.PY2:
+            self.type_map[long] = (self.encode_long, self.decode_long)
 
     def encode(self, item_type, value):
         try:
@@ -194,12 +195,12 @@ class SDBConverter(object):
         return int(value)
 
     def encode_long(self, value):
-        value = long(value)
+        value = long_type(value)
         value += 9223372036854775808
         return '%020d' % value
 
     def decode_long(self, value):
-        value = long(value)
+        value = long_type(value)
         value -= 9223372036854775808
         return value
 
@@ -265,7 +266,7 @@ class SDBConverter(object):
         return float(mantissa + 'e' + exponent)
 
     def encode_datetime(self, value):
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types):
             return value
         if isinstance(value, datetime):
             return value.strftime(ISO8601)
@@ -286,11 +287,11 @@ class SDBConverter(object):
             else:
                 value = value.split("-")
                 return date(int(value[0]), int(value[1]), int(value[2]))
-        except Exception as e:
+        except Exception:
             return None
 
     def encode_date(self, value):
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types):
             return value
         return value.isoformat()
 
@@ -323,7 +324,7 @@ class SDBConverter(object):
     def encode_reference(self, value):
         if value in (None, 'None', '', ' '):
             return None
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types):
             return value
         else:
             return value.id
@@ -336,7 +337,7 @@ class SDBConverter(object):
     def encode_blob(self, value):
         if not value:
             return None
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types):
             return value
 
         if not value.id:
@@ -381,14 +382,14 @@ class SDBConverter(object):
         if not isinstance(value, str):
             return value
         try:
-            return unicode(value, 'utf-8')
+            return six.text_type(value, 'utf-8')
         except:
             # really, this should throw an exception.
             # in the interest of not breaking current
             # systems, however:
             arr = []
             for ch in value:
-                arr.append(unichr(ord(ch)))
+                arr.append(six.unichr(ord(ch)))
             return u"".join(arr)
 
     def decode_string(self, value):
@@ -523,7 +524,7 @@ class SDBManager(object):
         query_str = "select * from `%s` %s" % (self.domain.name, self._build_filter_part(query.model_class, query.filters, query.sort_by, query.select))
         if query.limit:
             query_str += " limit %s" % query.limit
-        rs = self.domain.select(query_str, max_items=query.limit, next_token = query.next_token)
+        rs = self.domain.select(query_str, max_items=query.limit, next_token=query.next_token)
         query.rs = rs
         return self._object_lister(query.model_class, rs)
 
@@ -582,7 +583,7 @@ class SDBManager(object):
                 order_by_filtered = True
             query_parts.append("(%s)" % select)
 
-        if isinstance(filters, basestring):
+        if isinstance(filters, six.string_types):
             query = "WHERE %s AND `__type__` = '%s'" % (filters, cls.__name__)
             if order_by in ["__id__", "itemName()"]:
                 query += " ORDER BY itemName() %s" % order_by_method
