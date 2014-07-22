@@ -32,7 +32,7 @@ from boto.vpc import VPCConnection, Subnet
 
 
 class TestDescribeVpcPeeringConnections(AWSMockServiceTestCase):
-    DESCRIBE_VPC_PEERING_CONNECTIONS= r"""<?xml version="1.0" encoding="UTF-8"?>
+    DESCRIBE_VPC_PEERING_CONNECTIONS= b"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeVpcPeeringConnectionsResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
    <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
     <vpcPeeringConnectionSet>
@@ -109,7 +109,7 @@ class TestDescribeVpcPeeringConnections(AWSMockServiceTestCase):
 
 
 class TestCreateVpcPeeringConnection(AWSMockServiceTestCase):
-    CREATE_VPC_PEERING_CONNECTION= r"""<CreateVpcPeeringConnectionResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
+    CREATE_VPC_PEERING_CONNECTION= b"""<CreateVpcPeeringConnectionResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
   <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
   <vpcPeeringConnection>
         <vpcPeeringConnectionId>pcx-73a5401a</vpcPeeringConnectionId>
@@ -151,7 +151,7 @@ class TestCreateVpcPeeringConnection(AWSMockServiceTestCase):
         self.assertEqual(vpc_peering_connection.expiration_time, '2014-02-18T14:37:25.000Z')
 
 class TestDeleteVpcPeeringConnection(AWSMockServiceTestCase):
-    DELETE_VPC_PEERING_CONNECTION= r"""<DeleteVpcPeeringConnectionResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
+    DELETE_VPC_PEERING_CONNECTION= b"""<DeleteVpcPeeringConnectionResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
   <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
   <return>true</return>
 </DeleteVpcPeeringConnectionResponse>"""
@@ -166,7 +166,7 @@ class TestDeleteVpcPeeringConnection(AWSMockServiceTestCase):
         self.assertEquals(self.service_connection.delete_vpc_peering_connection('pcx-12345678'), True)
 
 class TestRejectVpcPeeringConnection(AWSMockServiceTestCase):
-    REJECT_VPC_PEERING_CONNECTION= r"""<RejectVpcPeeringConnectionResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
+    REJECT_VPC_PEERING_CONNECTION= b"""<RejectVpcPeeringConnectionResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
   <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
   <return>true</return>
 </RejectVpcPeeringConnectionResponse>"""
@@ -182,7 +182,7 @@ class TestRejectVpcPeeringConnection(AWSMockServiceTestCase):
 
 
 class TestAcceptVpcPeeringConnection(AWSMockServiceTestCase):
-    ACCEPT_VPC_PEERING_CONNECTION= r"""<AcceptVpcPeeringConnectionResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
+    ACCEPT_VPC_PEERING_CONNECTION= b"""<AcceptVpcPeeringConnectionResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
   <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
   <vpcPeeringConnection>
         <vpcPeeringConnectionId>pcx-1a2b3c4d</vpcPeeringConnectionId>
