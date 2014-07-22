@@ -969,10 +969,16 @@ class Key(object):
             if isinstance(md5, bytes):
                 md5 = md5.decode('utf-8')
 
-            if self.etag != '"%s"' % md5:
-                raise provider.storage_data_error(
-                    'ETag from S3 did not match computed MD5. '
-                    '%s vs. %s' % (self.etag, self.md5))
+            # If you use customer-provided encryption keys, the ETag value that
+            # Amazon S3 returns in the response will not be the MD5 of the
+            # object.
+            server_side_encryption_customer_algorithm = response.getheader(
+                'x-amz-server-side-encryption-customer-algorithm', None)
+            if server_side_encryption_customer_algorithm is None:
+                if self.etag != '"%s"' % md5:
+                    raise provider.storage_data_error(
+                        'ETag from S3 did not match computed MD5. '
+                        '%s vs. %s' % (self.etag, self.md5))
 
             return True
 
@@ -1457,7 +1463,7 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
-            
+
         :type version_id: str
         :param version_id: The ID of a particular version of the object.
             If this parameter is not supplied but the Key object has
@@ -1686,7 +1692,7 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
-            
+
         :type version_id: str
         :param version_id: The ID of a particular version of the object.
             If this parameter is not supplied but the Key object has

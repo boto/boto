@@ -421,3 +421,21 @@ class S3KeyTest(unittest.TestCase):
             urllib.parse.unquote(check.content_disposition),
             expected
         )
+
+    def test_set_contents_with_sse_c(self):
+        content="01234567890123456789"
+        # the plain text of customer key is "01testKeyToSSEC!"
+        header = {
+            "x-amz-server-side-encryption-customer-algorithm" :
+             "AES256",
+            "x-amz-server-side-encryption-customer-key" :
+             "MAAxAHQAZQBzAHQASwBlAHkAVABvAFMAUwBFAEMAIQA=",
+            "x-amz-server-side-encryption-customer-key-MD5" :
+             "fUgCZDDh6bfEMuP2bN38mg=="
+        }
+        # upload and download content with AWS specified headers
+        k = self.bucket.new_key("testkey_for_sse_c")
+        k.set_contents_from_string(content, headers=header)
+        kn = self.bucket.new_key("testkey_for_sse_c")
+        ks = kn.get_contents_as_string(headers=header)
+        self.assertEqual(ks, content)
