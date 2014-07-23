@@ -61,7 +61,7 @@ class DynamoDBLayer1Test(unittest.TestCase):
         return result
 
     def test_layer1_basic(self):
-        print '--- running DynamoDB Layer1 tests ---'
+        print('--- running DynamoDB Layer1 tests ---')
 
         c = self.dynamodb
 
@@ -126,13 +126,13 @@ class DynamoDBLayer1Test(unittest.TestCase):
             'Replies': {'N': '0'},
             'Answered': {'N': '0'},
             'Tags': {'SS': ["index", "primarykey", "table"]},
-            'LastPostDateTime':  {'S': '12/9/2011 11:36:03 PM'}
-            }
+            'LastPostDateTime': {'S': '12/9/2011 11:36:03 PM'}
+        }
         result = c.put_item(table_name, item1_data)
 
         # Now do a consistent read and check results
         key1 = {'HashKeyElement': {hash_key_type: item1_key},
-               'RangeKeyElement': {range_key_type: item1_range}}
+                'RangeKeyElement': {range_key_type: item1_range}}
         result = c.get_item(table_name, key=key1, consistent_read=True)
         for name in item1_data:
             assert name in result['Item']
@@ -167,12 +167,12 @@ class DynamoDBLayer1Test(unittest.TestCase):
         # Try and update an item, in a fashion which makes it too large.
         # The new message text is the item size limit minus 32 bytes and
         # the current object is larger than 32 bytes.
-        item_size_overflow_text = 'Text to be padded'.zfill(64*1024-32)
+        item_size_overflow_text = 'Text to be padded'.zfill(64 * 1024 - 32)
         attribute_updates = {'Message': {'Value': {'S': item_size_overflow_text},
-                                       'Action': 'PUT'}}
+                                         'Action': 'PUT'}}
         self.assertRaises(DynamoDBValidationError,
                           c.update_item, table_name, key=key1,
-                           attribute_updates=attribute_updates)
+                          attribute_updates=attribute_updates)
 
 
         # Put a few more items into the table
@@ -187,11 +187,11 @@ class DynamoDBLayer1Test(unittest.TestCase):
             'Replies': {'N': '0'},
             'Answered': {'N': '0'},
             'Tags': {'SS': ["index", "primarykey", "table"]},
-            'LastPostDateTime':  {'S': '12/9/2011 11:36:03 PM'}
-            }
+            'LastPostDateTime': {'S': '12/9/2011 11:36:03 PM'}
+        }
         result = c.put_item(table_name, item2_data)
         key2 = {'HashKeyElement': {hash_key_type: item2_key},
-               'RangeKeyElement': {range_key_type: item2_range}}
+                'RangeKeyElement': {range_key_type: item2_range}}
 
         item3_key = 'Amazon S3'
         item3_range = 'S3 Thread 1'
@@ -204,11 +204,11 @@ class DynamoDBLayer1Test(unittest.TestCase):
             'Replies': {'N': '0'},
             'Answered': {'N': '0'},
             'Tags': {'SS': ['largeobject', 'multipart upload']},
-            'LastPostDateTime':  {'S': '12/9/2011 11:36:03 PM'}
-            }
+            'LastPostDateTime': {'S': '12/9/2011 11:36:03 PM'}
+        }
         result = c.put_item(table_name, item3_data)
         key3 = {'HashKeyElement': {hash_key_type: item3_key},
-               'RangeKeyElement': {range_key_type: item3_range}}
+                'RangeKeyElement': {range_key_type: item3_range}}
 
         # Try a few queries
         result = c.query(table_name, {'S': 'Amazon DynamoDB'},
@@ -219,7 +219,7 @@ class DynamoDBLayer1Test(unittest.TestCase):
 
         # Try a few scans
         result = c.scan(table_name,
-                        {'Tags': {'AttributeValueList':[{'S': 'table'}],
+                        {'Tags': {'AttributeValueList': [{'S': 'table'}],
                                   'ComparisonOperator': 'CONTAINS'}})
         assert 'Count' in result
         assert result['Count'] == 2
@@ -229,7 +229,7 @@ class DynamoDBLayer1Test(unittest.TestCase):
         result = c.delete_item(table_name, key=key2)
         result = c.delete_item(table_name, key=key3)
 
-        print '--- tests completed ---'
+        print('--- tests completed ---')
 
     def test_binary_attributes(self):
         c = self.dynamodb
@@ -251,16 +251,16 @@ class DynamoDBLayer1Test(unittest.TestCase):
             'LastPostedBy': {'S': 'User A'},
             'Views': {'N': '0'},
             'Replies': {'N': '0'},
-            'BinaryData': {'B': base64.b64encode(bytes('\x01\x02\x03\x04'))},
+            'BinaryData': {'B': base64.b64encode(bytes('\x01\x02\x03\x04', 'utf-8')).decode('utf-8')},
             'Answered': {'N': '0'},
             'Tags': {'SS': ["index", "primarykey", "table"]},
-            'LastPostDateTime':  {'S': '12/9/2011 11:36:03 PM'}
+            'LastPostDateTime': {'S': '12/9/2011 11:36:03 PM'}
         }
         result = c.put_item(self.table_name, item1_data)
 
         # Now do a consistent read and check results
         key1 = {'HashKeyElement': {self.hash_key_type: item1_key},
-               'RangeKeyElement': {self.range_key_type: item1_range}}
+                'RangeKeyElement': {self.range_key_type: item1_range}}
         result = c.get_item(self.table_name, key=key1, consistent_read=True)
         self.assertEqual(result['Item']['BinaryData'],
-                         {'B': base64.b64encode(bytes('\x01\x02\x03\x04'))})
+                         {'B': base64.b64encode(bytes('\x01\x02\x03\x04', 'utf-8')).decode('utf-8')})

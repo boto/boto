@@ -44,7 +44,7 @@ Currently Supported Services
 * **Database**
 
   * :doc:`DynamoDB2 <dynamodb2_tut>` -- (:doc:`API Reference <ref/dynamodb2>`) -- (:doc:`Migration Guide from v1 <migrations/dynamodb_v1_to_v2>`)
-  * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
+  * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`) (Python 3)
   * Relational Data Services 2 (RDS) -- (:doc:`API Reference <ref/rds2>`) -- (:doc:`Migration Guide from v1 <migrations/rds_v1_to_v2>`)
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
   * ElastiCache -- (:doc:`API Reference <ref/elasticache>`) (Python 3)
