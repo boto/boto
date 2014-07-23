@@ -23,7 +23,7 @@
 #
 
 import time
-from boto.compat import unittest
+from tests.compat import unittest
 from nose.plugins.attrib import attr
 from boto.route53.connection import Route53Connection
 from boto.exception import TooManyRecordsException

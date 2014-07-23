@@ -6,7 +6,7 @@
 
 from decimal import Decimal
 
-from boto.compat import unittest
+from tests.compat import unittest
 from boto.emr.instance_group import InstanceGroup
 
 

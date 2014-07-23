@@ -39,17 +39,6 @@ except (AttributeError, ImportError):
     # This is probably running on App Engine.
     expanduser = (lambda x: x)
 
-# Use unittest2 for older versions of Python
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
-
 from boto.vendored import six
 
 from boto.vendored.six import BytesIO, StringIO

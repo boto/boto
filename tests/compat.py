@@ -1,5 +1,4 @@
-# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.
-# All Rights Reserved
+# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,31 +18,15 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+#
+# Use unittest2 for older versions of Python
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
-from boto.beanstalk.exception import simple
-from tests.compat import unittest
-
-
-class FakeError(object):
-    def __init__(self, code, status, reason, body):
-        self.code = code
-        self.status = status
-        self.reason = reason
-        self.body = body
-
-
-class TestExceptions(unittest.TestCase):
-    def test_exception_class_names(self):
-        # Create exception from class name
-        error = FakeError('TooManyApplications', 400, 'foo', 'bar')
-        exception = simple(error)
-        self.assertEqual(exception.__class__.__name__, 'TooManyApplications')
-
-        # Create exception from class name + 'Exception' as seen from the
-        # live service today
-        error = FakeError('TooManyApplicationsException', 400, 'foo', 'bar')
-        exception = simple(error)
-        self.assertEqual(exception.__class__.__name__, 'TooManyApplications')
-
-        # Make sure message body is present
-        self.assertEqual(exception.message, 'bar')
+# Use thirdt party ordereddict for older versions of Python
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict

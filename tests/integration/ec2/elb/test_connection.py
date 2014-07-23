@@ -26,7 +26,7 @@ Initial, and very limited, unit tests for ELBConnection.
 
 import boto
 import time
-from boto.compat import unittest
+from tests.compat import unittest
 from boto.ec2.elb import ELBConnection
 
 

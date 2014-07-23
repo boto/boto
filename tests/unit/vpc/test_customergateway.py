@@ -1,8 +1,8 @@
+from tests.compat import OrderedDict
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.vpc import VPCConnection, CustomerGateway
-from boto.compat import OrderedDict
 
 
 class TestDescribeCustomerGateways(AWSMockServiceTestCase):

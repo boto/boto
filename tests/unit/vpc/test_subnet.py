@@ -1,8 +1,8 @@
+from tests.compat import OrderedDict
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.vpc import VPCConnection, Subnet
-from boto.compat import OrderedDict
 
 
 class TestDescribeSubnets(AWSMockServiceTestCase):
