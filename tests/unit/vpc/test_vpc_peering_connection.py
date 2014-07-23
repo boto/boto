@@ -22,13 +22,7 @@
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
-from boto.vpc import VpcPeeringConnection, VPCConnection
-
-from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
-
-from boto.vpc import VPCConnection, Subnet
-
+from boto.vpc import VpcPeeringConnection, VPCConnection, Subnet
 
 
 class TestDescribeVpcPeeringConnections(AWSMockServiceTestCase):
