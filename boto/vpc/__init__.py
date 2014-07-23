@@ -1538,18 +1538,18 @@ class VPCConnection(EC2Connection):
     def get_all_vpc_peering_connections(self, vpc_peering_connection_ids=None, 
                                         filters=None, dry_run=False):
         """
-        Retrieve information about your VPC peering connections.  You 
+        Retrieve information about your VPC peering connections. You
         can filter results to return information only about those VPC
-        peering connections that match your search parameters.  
-        Otherwise, all VPC peering connections  associated with your 
+        peering connections that match your search parameters.
+        Otherwise, all VPC peering connections associated with your
         account are returned.
 
         :type vpc_peering_connection_ids: list
-        :param vpc_peering_connection_ids: A list of strings with the desired VPC 
+        :param vpc_peering_connection_ids: A list of strings with the desired VPC
             peering connection ID's
 
         :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
+        :param filters: A list of tuples containing filters. Each tuple
             consists of a filter key and a filter value.
             Possible filter keys are:
 
