@@ -66,8 +66,8 @@ Currently Supported Services
 
 * **Application Services**
 
-  * Cloudsearch 2 -- (:doc:`API Reference <ref/cloudsearch2>`)
-  * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
+  * Cloudsearch 2 -- (:doc:`API Reference <ref/cloudsearch2>`) (Python 3)
+  * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`) (Python 3)
   * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`) (Python 3)
   * :doc:`Simple Workflow Service (SWF) <swf_tut>` -- (:doc:`API Reference <ref/swf>`) (Python 3)
   * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`) (Python 3)

@@ -3,10 +3,8 @@
 from tests.unit import unittest
 from httpretty import HTTPretty
 
-import urlparse
 import json
 import mock
-import requests
 
 from boto.cloudsearch2.search import SearchConnection, SearchServiceException
 from boto.compat import six, map
@@ -73,17 +71,17 @@ class CloudSearchSearchBaseTest(unittest.TestCase):
     response_status = 200
 
     def get_args(self, requestline):
-        (_, request, _) = requestline.split(" ")
-        (_, request) = request.split("?", 1)
-        args = urlparse.parse_qs(request)
+        (_, request, _) = requestline.split(b" ")
+        (_, request) = request.split(b"?", 1)
+        args = six.moves.urllib.parse.parse_qs(request)
         return args
 
     def setUp(self):
         HTTPretty.enable()
         body = self.response
 
-        if not isinstance(body, basestring):
-            body = json.dumps(body)
+        if not isinstance(body, bytes):
+            body = json.dumps(body).encode('utf-8')
 
         HTTPretty.register_uri(HTTPretty.GET, FULL_URL,
                                body=body,
@@ -93,17 +91,18 @@ class CloudSearchSearchBaseTest(unittest.TestCase):
     def tearDown(self):
         HTTPretty.disable()
 
+
 class CloudSearchSearchTest(CloudSearchSearchBaseTest):
     response = {
         'rank': '-text_relevance',
-        'match-expr':"Test",
+        'match-expr': "Test",
         'hits': {
             'found': 30,
             'start': 0,
-            'hit':CloudSearchSearchBaseTest.hits
-            },
+            'hit': CloudSearchSearchBaseTest.hits
+        },
         'status': {
-            'rid':'b7c167f6c2da6d93531b9a7b314ad030b3a74803b4b7797edb905ba5a6a08',
+            'rid': 'b7c167f6c2da6d93531b9a7b314ad030b3a74803b4b7797edb905ba5a6a08',
             'time-ms': 2,
             'cpu-time-ms': 0
         }
@@ -117,10 +116,9 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['q'], ["Test"])
-        self.assertEqual(args['start'], ["0"])
-        self.assertEqual(args['size'], ["10"])
-
+        self.assertEqual(args[b'q'], [b"Test"])
+        self.assertEqual(args[b'start'], [b"0"])
+        self.assertEqual(args[b'size'], [b"10"])
 
     def test_cloudsearch_search_details(self):
         search = SearchConnection(endpoint=HOSTNAME)
@@ -129,9 +127,9 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['q'], ["Test"])
-        self.assertEqual(args['size'], ["50"])
-        self.assertEqual(args['start'], ["20"])
+        self.assertEqual(args[b'q'], [b"Test"])
+        self.assertEqual(args[b'size'], [b"50"])
+        self.assertEqual(args[b'start'], [b"20"])
 
     def test_cloudsearch_facet_constraint_single(self):
         search = SearchConnection(endpoint=HOSTNAME)
@@ -142,8 +140,8 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['facet.author'],
-                         ["'John Smith','Mark Smith'"])
+        self.assertEqual(args[b'facet.author'],
+                         [b"'John Smith','Mark Smith'"])
 
     def test_cloudsearch_facet_constraint_multiple(self):
         search = SearchConnection(endpoint=HOSTNAME)
@@ -155,21 +153,21 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['facet.author'],
-                         ["'John Smith','Mark Smith'"])
-        self.assertEqual(args['facet.category'],
-                         ["'News','Reviews'"])
+        self.assertEqual(args[b'facet.author'],
+                         [b"'John Smith','Mark Smith'"])
+        self.assertEqual(args[b'facet.category'],
+                         [b"'News','Reviews'"])
 
     def test_cloudsearch_facet_sort_single(self):
         search = SearchConnection(endpoint=HOSTNAME)
 
-        search.search(q='Test', facet={'author': {'sort':'alpha'}})
+        search.search(q='Test', facet={'author': {'sort': 'alpha'}})
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
         print(args)
 
-        self.assertEqual(args['facet.author'], ['{"sort": "alpha"}'])
+        self.assertEqual(args[b'facet.author'], [b'{"sort": "alpha"}'])
 
     def test_cloudsearch_facet_sort_multiple(self):
         search = SearchConnection(endpoint=HOSTNAME)
@@ -179,8 +177,8 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['facet.author'], ['{"sort": "alpha"}'])
-        self.assertEqual(args['facet.cat'], ['{"sort": "count"}'])
+        self.assertEqual(args[b'facet.author'], [b'{"sort": "alpha"}'])
+        self.assertEqual(args[b'facet.cat'], [b'{"sort": "count"}'])
 
     def test_cloudsearch_result_fields_single(self):
         search = SearchConnection(endpoint=HOSTNAME)
@@ -189,7 +187,7 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['return'], ['author'])
+        self.assertEqual(args[b'return'], [b'author'])
 
     def test_cloudsearch_result_fields_multiple(self):
         search = SearchConnection(endpoint=HOSTNAME)
@@ -198,7 +196,7 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
 
         args = self.get_args(HTTPretty.last_request.raw_requestline)
 
-        self.assertEqual(args['return'], ['author,title'])
+        self.assertEqual(args[b'return'], [b'author,title'])
 
     def test_cloudsearch_results_meta(self):
         """Check returned metadata is parsed correctly"""
@@ -255,7 +253,6 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
         for x in results:
             self.assertEqual(x['id'], next(results_correct))
 
-
     def test_cloudsearch_results_internal_consistancy(self):
         """Check the documents length matches the iterator details"""
         search = SearchConnection(endpoint=HOSTNAME)
@@ -276,23 +273,24 @@ class CloudSearchSearchTest(CloudSearchSearchBaseTest):
                          query1.start + query1.size)
         self.assertEqual(query1.q, query2.q)
 
+
 class CloudSearchSearchFacetTest(CloudSearchSearchBaseTest):
     response = {
         'rank': '-text_relevance',
-        'match-expr':"Test",
+        'match-expr': "Test",
         'hits': {
             'found': 30,
             'start': 0,
-            'hit':CloudSearchSearchBaseTest.hits
-            },
+            'hit': CloudSearchSearchBaseTest.hits
+        },
         'status': {
-            'rid':'b7c167f6c2da6d93531b9a7b314ad030b3a74803b4b7797edb905ba5a6a08',
+            'rid': 'b7c167f6c2da6d93531b9a7b314ad030b3a74803b4b7797edb905ba5a6a08',
             'time-ms': 2,
             'cpu-time-ms': 0
         },
         'facets': {
             'tags': {},
-            'animals': {'buckets': [{'count': '2', 'value': 'fish'}, {'count': '1', 'value':'lions'}]},
+            'animals': {'buckets': [{'count': '2', 'value': 'fish'}, {'count': '1', 'value': 'lions'}]},
         }
     }
 
@@ -308,7 +306,7 @@ class CloudSearchSearchFacetTest(CloudSearchSearchBaseTest):
 
 
 class CloudSearchNonJsonTest(CloudSearchSearchBaseTest):
-    response = '<html><body><h1>500 Internal Server Error</h1></body></html>'
+    response = b'<html><body><h1>500 Internal Server Error</h1></body></html>'
     response_status = 500
     content_type = 'text/xml'
 
@@ -320,7 +318,7 @@ class CloudSearchNonJsonTest(CloudSearchSearchBaseTest):
 
 
 class CloudSearchUnauthorizedTest(CloudSearchSearchBaseTest):
-    response = '<html><body><h1>403 Forbidden</h1>foo bar baz</body></html>'
+    response = b'<html><body><h1>403 Forbidden</h1>foo bar baz</body></html>'
     response_status = 403
     content_type = 'text/html'
 
@@ -333,7 +331,7 @@ class CloudSearchUnauthorizedTest(CloudSearchSearchBaseTest):
 
 class FakeResponse(object):
     status_code = 405
-    content = ''
+    content = b''
 
 
 class CloudSearchConnectionTest(unittest.TestCase):
@@ -348,7 +346,7 @@ class CloudSearchConnectionTest(unittest.TestCase):
     def test_expose_additional_error_info(self):
         mpo = mock.patch.object
         fake = FakeResponse()
-        fake.content = 'Nopenopenope'
+        fake.content = b'Nopenopenope'
 
         # First, in the case of a non-JSON, non-403 error.
         with mpo(self.conn.session, 'get', return_value=fake) as mock_request:
@@ -361,7 +359,7 @@ class CloudSearchConnectionTest(unittest.TestCase):
         # Then with JSON & an 'error' key within.
         fake.content = json.dumps({
             'error': "Something went wrong. Oops."
-        })
+        }).encode('utf-8')
 
         with mpo(self.conn.session, 'get', return_value=fake) as mock_request:
             with self.assertRaises(SearchServiceException) as cm:
