@@ -23,7 +23,7 @@ import time
 
 from boto.elastictranscoder.layer1 import ElasticTranscoderConnection
 from boto.elastictranscoder.exceptions import ValidationException
-from boto.compat import unittest
+from tests.compat import unittest
 import boto.s3
 import boto.sns
 import boto.iam

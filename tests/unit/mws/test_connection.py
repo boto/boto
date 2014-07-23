@@ -23,7 +23,7 @@
 from boto.mws.connection import MWSConnection, api_call_map, destructure_object
 from boto.mws.response import (ResponseElement, GetFeedSubmissionListResult,
                                ResponseFactory)
-from boto.compat import unittest
+from tests.compat import unittest
 
 from tests.unit import AWSMockServiceTestCase
 

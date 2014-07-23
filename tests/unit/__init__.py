@@ -1,7 +1,8 @@
 import mock
 from mock import Mock
 
-from boto.compat import http_client, unittest
+from boto.compat import http_client
+from tests.compat import unittest
 
 class AWSMockServiceTestCase(unittest.TestCase):
     """Base class for mocking aws services."""

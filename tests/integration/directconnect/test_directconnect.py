@@ -22,7 +22,7 @@
 #
 import boto
 
-from boto.compat import unittest
+from tests.compat import unittest
 
 
 class DirectConnectTest(unittest.TestCase):
