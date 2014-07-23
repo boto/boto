@@ -19,7 +19,7 @@ def fake_loads_json_error(content, *args, **kwargs):
 
 
 class CloudSearchJSONExceptionTest(CloudSearchSearchBaseTest):
-    response = '{}'
+    response = b'{}'
 
     def test_no_simplejson_value_error(self):
         with mock.patch.object(json, 'loads', fake_loads_value_error):
