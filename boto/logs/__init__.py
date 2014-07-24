@@ -25,7 +25,7 @@ from boto.regioninfo import get_regions
 
 def regions():
     """
-    Get all available regions for the Amazon Kinesis service.
+    Get all available regions for the CloudWatch Logs service.
 
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
