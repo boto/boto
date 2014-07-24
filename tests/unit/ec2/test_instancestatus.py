@@ -28,5 +28,16 @@ class TestInstanceStatusResponseParsing(unittest.TestCase):
         self.assertEqual(all_statuses.next_token, 'page-2')
 
 
+    def test_include_all_instances(self):
+        ec2 = EC2Connection(aws_access_key_id='aws_access_key_id',
+                            aws_secret_access_key='aws_secret_access_key')
+        mock_response = mock.Mock()
+        mock_response.read.return_value = INSTANCE_STATUS_RESPONSE
+        mock_response.status = 200
+        ec2.make_request = mock.Mock(return_value=mock_response)
+        all_statuses = ec2.get_all_instance_status(include_all_instances=True)
+        self.assertEqual(all_statuses.next_token, 'page-2')
+
+
 if __name__ == '__main__':
     unittest.main()
