@@ -429,4 +429,4 @@ It is also possible to delete documents::
     >>> # Again we'll cheat and use the current epoch time as our version number
 
     >>> doc_service.delete(4, int(time.mktime(datetime.utcnow().timetuple())))
-    >>> service.commit()
+    >>> doc_service.commit()
