@@ -1,6 +1,5 @@
-import mock
 from boto.compat import json
-from tests.unit import unittest
+from tests.compat import mock, unittest
 
 from tests.unit.cloudsearch.test_search import HOSTNAME, \
                                                CloudSearchSearchBaseTest

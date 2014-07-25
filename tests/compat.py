@@ -30,3 +30,9 @@ try:
     from collections import OrderedDict
 except ImportError:
     from ordereddict import OrderedDict
+
+# Use standard unittest.mock if possible. (mock doesn't support Python 3.4)
+try:
+    from unittest import mock
+except ImportError:
+    import mock

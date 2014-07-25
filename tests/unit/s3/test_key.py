@@ -22,8 +22,7 @@
 #
 from __future__ import with_statement
 
-import mock
-from tests.unit import unittest
+from tests.compat import mock, unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.compat import StringIO

@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
-from tests.unit import unittest
+from tests.compat import mock, unittest
 from tests.unit import AWSMockServiceTestCase
-
-import mock
 
 from boto.ec2.connection import EC2Connection
 

@@ -20,9 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 from __future__ import with_statement
-import mock
 
-from tests.unit import unittest
+from tests.compat import mock, unittest
 from boto.compat import http_client
 from boto.sns import connect_to_region
 
