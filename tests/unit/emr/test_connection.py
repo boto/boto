@@ -33,7 +33,8 @@ from boto.emr.emrobject import BootstrapAction, BootstrapActionList, \
                                ClusterSummary, ClusterTimeline, InstanceInfo, \
                                InstanceList, InstanceGroupInfo, \
                                InstanceGroup, InstanceGroupList, JobFlow, \
-                               JobFlowStepList, Step, StepSummaryList, Cluster
+                               JobFlowStepList, Step, StepSummaryList, \
+                               Cluster, RunJobFlowResponse
 
 # These tests are just checking the basic structure of
 # the Elastic MapReduce code, by picking a few calls
@@ -866,3 +867,35 @@ class TestDescribeJobFlow(DescribeJobFlowsTestBase):
             'Action': 'DescribeJobFlows',
             'JobFlowIds.member.1': 'j-aaaaaa',
         }, ignore_params_values=['Version'])
+
+class TestRunJobFlow(AWSMockServiceTestCase):
+    connection_class = EmrConnection
+
+    def default_body(self):
+        return b"""
+<RunJobFlowResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+  <RunJobFlowResult>
+    <JobFlowId>j-ZKIY4CKQRX72</JobFlowId>
+  </RunJobFlowResult>
+  <ResponseMetadata>
+    <RequestId>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</RequestId>
+  </ResponseMetadata>
+</RunJobFlowResponse>
+"""
+
+    def test_run_jobflow_service_role(self):
+        self.set_http_response(200)
+
+        response = self.service_connection.run_jobflow(
+            'EmrCluster', service_role='EMR_DefaultRole')
+
+        self.assertTrue(response)
+        self.assert_request_parameters({
+            'Action': 'RunJobFlow',
+            'Version': '2009-03-31',
+            'ServiceRole': 'EMR_DefaultRole',
+            'Name': 'EmrCluster' },
+            ignore_params_values=['ActionOnFailure', 'Instances.InstanceCount',
+                                  'Instances.KeepJobFlowAliveWhenNoSteps',
+                                  'Instances.MasterInstanceType',
+                                  'Instances.SlaveInstanceType'])
