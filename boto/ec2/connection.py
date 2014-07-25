@@ -684,7 +684,8 @@ class EC2Connection(AWSQueryConnection):
 
     def get_all_instance_status(self, instance_ids=None,
                                 max_results=None, next_token=None,
-                                filters=None, dry_run=False):
+                                filters=None, dry_run=False,
+                                include_all_instances=False):
         """
         Retrieve all the instances in your account scheduled for maintenance.
 
@@ -712,6 +713,11 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type include_all_instances: bool
+        :param include_all_instances: Set to True if all
+            instances should be returned. (Only running
+            instances are included by default.)
+
         :rtype: list
         :return: A list of instances that have maintenance scheduled.
         """
@@ -726,6 +732,8 @@ class EC2Connection(AWSQueryConnection):
             self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
+        if include_all_instances:
+            params['IncludeAllInstances'] = 'true'
         return self.get_object('DescribeInstanceStatus', params,
                                InstanceStatusSet, verb='POST')
 
