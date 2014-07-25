@@ -1,10 +1,9 @@
 #!/usr/bin env python
 
-from tests.unit import unittest
+from tests.compat import mock, unittest
 from httpretty import HTTPretty
 
 import json
-import mock
 import requests
 
 from boto.cloudsearch.search import SearchConnection, SearchServiceException

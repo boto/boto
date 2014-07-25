@@ -1,5 +1,4 @@
-import mock
-import unittest
+from tests.compat import mock, unittest
 
 from boto.ec2.connection import EC2Connection
 from boto.ec2.blockdevicemapping import BlockDeviceType, BlockDeviceMapping

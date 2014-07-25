@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
 import base64
-from tests.unit import unittest
+from tests.compat import unittest, mock
 from tests.unit import AWSMockServiceTestCase
-
-import mock
 
 from boto.ec2.connection import EC2Connection
 from boto.ec2.blockdevicemapping import BlockDeviceType, BlockDeviceMapping

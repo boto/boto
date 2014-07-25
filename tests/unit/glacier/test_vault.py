@@ -20,11 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import unittest
 from boto.compat import StringIO
+from tests.compat import mock, unittest
 
-import mock
-from mock import ANY
+ANY = mock.ANY
 
 from boto.glacier import vault
 from boto.glacier.job import Job

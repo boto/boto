@@ -21,11 +21,10 @@
 #
 from __future__ import with_statement
 
-import mock
 import os
 import socket
 
-from tests.unit import unittest
+from tests.compat import mock, unittest
 from httpretty import HTTPretty
 
 from boto.compat import json, parse_qs

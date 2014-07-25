@@ -1,6 +1,5 @@
 from tests.unit import unittest
-
-import mock
+from tests.compat import mock
 
 from boto.ec2.elb import ELBConnection
 from boto.ec2.elb import LoadBalancer

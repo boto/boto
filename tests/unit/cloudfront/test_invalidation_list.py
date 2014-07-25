@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 import random
 import string
-from tests.unit import unittest
+from tests.compat import unittest, mock
 
-import mock
 import boto
 
 

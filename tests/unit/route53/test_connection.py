@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import mock
+from tests.compat import mock, unittest
 import re
 import xml.dom.minidom
 
@@ -32,7 +32,6 @@ from boto.route53.record import ResourceRecordSets, Record
 from boto.route53.zone import Zone
 
 from nose.plugins.attrib import attr
-from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 @attr(route53=True)

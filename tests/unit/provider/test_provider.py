@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 from datetime import datetime, timedelta
 
-from tests.unit import unittest
-import mock
+from tests.compat import mock, unittest
 import os
 
 from boto import provider
