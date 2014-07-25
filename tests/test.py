@@ -50,6 +50,7 @@ PY3_WHITELIST = (
     'tests/unit/glacier',
     'tests/unit/iam',
     'tests/unit/ec2',
+    'tests/unit/logs',
     'tests/unit/manage',
     'tests/unit/mws',
     'tests/unit/provider',
