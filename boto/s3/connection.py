@@ -569,7 +569,9 @@ class S3Connection(AWSAuthConnection):
         """
         try:
             bucket = self.get_bucket(bucket_name, validate, headers=headers)
-        except:
+        except self.provider.storage_response_error, e:
+            if e.status != 404:
+                raise
             bucket = None
         return bucket
 
