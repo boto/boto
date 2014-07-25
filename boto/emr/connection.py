@@ -410,7 +410,8 @@ class EmrConnection(AWSQueryConnection):
                     ami_version=None,
                     api_params=None,
                     visible_to_all_users=None,
-                    job_flow_role=None):
+                    job_flow_role=None,
+                    supported_products=None):
         """
         Runs a job flow
         :type name: str
@@ -494,6 +495,11 @@ class EmrConnection(AWSQueryConnection):
 
         :rtype: str
         :return: The jobflow id
+
+        :type supported_products: str
+        :param supported_products: Installs supported products in EMR
+            current supported options are ``mapr-m3``, ``mapr-m5`` and
+            ``karmasphere-enterprise-utility``.
         """
         params = {}
         if action_on_failure:
@@ -501,6 +507,9 @@ class EmrConnection(AWSQueryConnection):
         if log_uri:
             params['LogUri'] = log_uri
         params['Name'] = name
+
+        if supported_products:
+            params['SupportedProducts.member.1'] = supported_products
 
         # Common instance args
         common_params = self._build_instance_common_args(ec2_keyname,
