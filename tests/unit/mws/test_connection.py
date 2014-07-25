@@ -90,6 +90,7 @@ doc/2009-01-01/">
             while func:
                 i = 0
                 if not hasattr(func, '__closure__'):
+                    func = getattr(func, '__wrapped__', None)
                     continue
                 while i < len(func.__closure__):
                     value = func.__closure__[i].cell_contents
