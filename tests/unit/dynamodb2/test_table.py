@@ -1551,14 +1551,6 @@ class TableTestCase(unittest.TestCase):
             self.assertEqual(self.users.throughput['read'], 9)
             self.assertEqual(self.users.throughput['write'], 5)
 
-        args = mock_update.call_args
-        self.assertEqual(len(args), 1)
-        self.assertEqual(args[0], 'users')
-        self.assertEqual(args[1]['provisioned_throughput'], {
-            'WriteCapacityUnits': 5,
-            'ReadCapacityUnits': 9,
-            })
-        mock_update
         mock_update.assert_called_once_with(
             'users',
             global_secondary_index_updates=[
