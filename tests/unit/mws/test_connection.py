@@ -89,6 +89,8 @@ doc/2009-01-01/">
             decs = [func.__name__]
             while func:
                 i = 0
+                if not hasattr(func, '__closure__'):
+                    continue
                 while i < len(func.__closure__):
                     value = func.__closure__[i].cell_contents
                     if hasattr(value, '__call__'):
