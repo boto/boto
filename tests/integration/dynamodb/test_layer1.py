@@ -251,7 +251,7 @@ class DynamoDBLayer1Test(unittest.TestCase):
             'LastPostedBy': {'S': 'User A'},
             'Views': {'N': '0'},
             'Replies': {'N': '0'},
-            'BinaryData': {'B': base64.b64encode(bytes('\x01\x02\x03\x04', 'utf-8')).decode('utf-8')},
+            'BinaryData': {'B': base64.b64encode(b'\x01\x02\x03\x04').decode('utf-8')},
             'Answered': {'N': '0'},
             'Tags': {'SS': ["index", "primarykey", "table"]},
             'LastPostDateTime': {'S': '12/9/2011 11:36:03 PM'}
@@ -263,4 +263,4 @@ class DynamoDBLayer1Test(unittest.TestCase):
                 'RangeKeyElement': {self.range_key_type: item1_range}}
         result = c.get_item(self.table_name, key=key1, consistent_read=True)
         self.assertEqual(result['Item']['BinaryData'],
-                         {'B': base64.b64encode(bytes('\x01\x02\x03\x04', 'utf-8')).decode('utf-8')})
+                         {'B': base64.b64encode(b'\x01\x02\x03\x04').decode('utf-8')})

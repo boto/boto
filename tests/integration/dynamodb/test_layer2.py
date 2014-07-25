@@ -23,11 +23,11 @@
 """
 Tests for Layer2 of Amazon DynamoDB
 """
-import unittest
 import time
 import uuid
 from decimal import Decimal
 
+from tests.unit import unittest
 from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
 from boto.dynamodb.exceptions import DynamoDBConditionalCheckFailedError
 from boto.dynamodb.layer2 import Layer2
@@ -460,6 +460,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
         retrieved = table.get_item('foo', 'bar')
         self.assertEqual(retrieved['decimalvalue'], Decimal('1.12345678912345'))
 
+    @unittest.skipIf(six.PY3, "skipping lossy_float_conversion test for Python 3.x")
     def test_lossy_float_conversion(self):
         table = self.create_sample_table()
         item = table.new_item('foo', 'bar')
