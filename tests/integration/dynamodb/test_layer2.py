@@ -447,7 +447,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
                          set(['largeobject', 'multipart upload']))
         self.assertEqual(retrieved['BinaryData'], Binary('\x01\x02\x03\x04'))
         # Also comparable directly to bytes:
-        self.assertEqual(retrieved['BinaryData'], bytes('\x01\x02\x03\x04', 'utf-8'))
+        self.assertEqual(retrieved['BinaryData'], b'\x01\x02\x03\x04')
         self.assertEqual(retrieved['BinarySequence'],
                          set([Binary('\x01\x02'), Binary('\x03\x04')]))
 
