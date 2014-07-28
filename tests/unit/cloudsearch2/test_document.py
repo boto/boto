@@ -306,5 +306,19 @@ class CloudSearchDocumentErrorMismatch(CloudSearchDocumentTest):
 
         document.add("1234", {"id": "1234", "title": "Title 1",
                               "category": ["cat_a", "cat_b", "cat_c"]})
-
         self.assertRaises(CommitMismatchError, document.commit)
+
+    def test_attached_errors_list(self):
+        document = DocumentServiceConnection(
+            endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com"
+        )
+        document.add("1234", {"id": "1234", "title": "Title 1",
+                              "category": ["cat_a", "cat_b", "cat_c"]})
+        try:
+            document.commit()
+        except CommitMismatchError, e:
+            self.assertTrue(hasattr(e, 'errors'))
+            self.assertIsInstance(e.errors, list)
+            self.assertEquals(e.errors[0], self.response['errors'][0].get('message'))
+
+
