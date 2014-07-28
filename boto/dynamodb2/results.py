@@ -106,7 +106,7 @@ class ResultSet(object):
         # DDB api calls use (which limit page size, not the overall result set).
         self._limit = kwargs.pop('limit', None)
 
-        if self._limit < 0:
+        if self._limit is not None and self._limit < 0:
             self._limit = None
 
         self.the_callable = the_callable

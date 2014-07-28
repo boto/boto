@@ -1,5 +1,4 @@
-from tests.unit import unittest
-from tests.compat import mock
+from tests.compat import mock, unittest
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
                                    AllIndex, KeysOnlyIndex, IncludeIndex,
@@ -1551,33 +1550,36 @@ class TableTestCase(unittest.TestCase):
             self.assertEqual(self.users.throughput['read'], 9)
             self.assertEqual(self.users.throughput['write'], 5)
 
-        mock_update.assert_called_once_with(
-            'users',
-            global_secondary_index_updates=[
-                {
-                    'Update': {
-                        'IndexName': 'AnotherIndex',
-                        'ProvisionedThroughput': {
-                            'WriteCapacityUnits': 2,
-                            'ReadCapacityUnits': 1
-                        }
-                    }
-                },
-                {
-                    'Update': {
-                        'IndexName': 'WhateverIndex',
-                        'ProvisionedThroughput': {
-                            'WriteCapacityUnits': 1,
-                            'ReadCapacityUnits': 6
-                        }
+        args, kwargs = mock_update.call_args
+        self.assertEqual(args, ('users',))
+        self.assertEqual(kwargs['provisioned_throughput'], {
+            'WriteCapacityUnits': 5,
+            'ReadCapacityUnits': 9,
+            })
+        update = kwargs['global_secondary_index_updates'][:]
+        update.sort(key=lambda x: x['Update']['IndexName'])
+        self.assertDictEqual(
+            update[0],
+            {
+                'Update': {
+                    'IndexName': 'AnotherIndex',
+                    'ProvisionedThroughput': {
+                        'WriteCapacityUnits': 2,
+                        'ReadCapacityUnits': 1
                     }
                 }
-            ],
-            provisioned_throughput={
-                'WriteCapacityUnits': 5,
-                'ReadCapacityUnits': 9,
-            }
-        )
+            })
+        self.assertDictEqual(
+            update[1],
+            {
+                'Update': {
+                    'IndexName': 'WhateverIndex',
+                    'ProvisionedThroughput': {
+                        'WriteCapacityUnits': 1,
+                        'ReadCapacityUnits': 6
+                    }
+                }
+            })
 
     def test_delete(self):
         with mock.patch.object(
