@@ -52,7 +52,7 @@ class ResultSet(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         self._offset += 1
 
         if self._offset >= len(self._results):
@@ -77,6 +77,8 @@ class ResultSet(object):
             return self._results[self._offset]
         else:
             raise StopIteration()
+
+    next = __next__
 
     def to_call(self, the_callable, *args, **kwargs):
         """

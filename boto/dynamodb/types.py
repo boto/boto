@@ -28,7 +28,7 @@ import base64
 from decimal import (Decimal, DecimalException, Context,
                      Clamped, Overflow, Inexact, Underflow, Rounded)
 from boto.dynamodb.exceptions import DynamoDBNumberError
-from boto.compat import filter, map
+from boto.compat import filter, map, long_type, six
 
 
 DYNAMODB_CONTEXT = Context(
@@ -52,13 +52,18 @@ def float_to_decimal(f):
 
 
 def is_num(n):
-    types = (int, long, float, bool, Decimal)
+    types = (int, long_type, float, bool, Decimal)
     return isinstance(n, types) or n in types
 
 
+if six.PY2:
+    str_type = basestring
+else:
+    str_type = str
+
 def is_str(n):
-    return isinstance(n, basestring) or (isinstance(n, type) and
-                                         issubclass(n, basestring))
+    return isinstance(n, str_type) or (isinstance(n, type) and
+                                       issubclass(n, str_type))
 
 
 def is_binary(n):
@@ -137,7 +142,7 @@ def dynamize_value(val):
 
 class Binary(object):
     def __init__(self, value):
-        if not isinstance(value, basestring):
+        if not isinstance(value, str_type):
             raise TypeError('Value must be a string of binary data!')
 
         self.value = value

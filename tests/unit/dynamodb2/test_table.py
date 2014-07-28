@@ -11,7 +11,7 @@ from boto.dynamodb2.table import Table
 from boto.dynamodb2.types import (STRING, NUMBER, BINARY,
                                   FILTER_OPERATORS, QUERY_OPERATORS)
 from boto.exception import JSONResponseError
-from boto.compat import six
+from boto.compat import six, long_type
 
 
 FakeDynamoDBConnection = mock.create_autospec(DynamoDBConnection)
@@ -388,11 +388,8 @@ class ItemTestCase(unittest.TestCase):
         self.assertFalse('whatever' in self.johndoe)
 
     def test_iter(self):
-        self.assertEqual(list(self.johndoe), [
-            'johndoe',
-            'John',
-            12345,
-        ])
+        self.assertEqual(set(self.johndoe),
+                         set(['johndoe', 'John', 12345]))
 
     def test_get(self):
         self.assertEqual(self.johndoe.get('username'), 'johndoe')
@@ -2488,7 +2485,7 @@ class TableTestCase(unittest.TestCase):
             # Now it should be populated.
             self.assertEqual(len(results._results), 2)
             self.assertEqual(res_1['username'], 'johndoe')
-            self.assertEqual(res_1.keys(), ['username'])
+            self.assertEqual(list(res_1.keys()), ['username'])
             res_2 = next(results)
             self.assertEqual(res_2['username'], 'jane')
 
@@ -2578,7 +2575,7 @@ class TableTestCase(unittest.TestCase):
             # Now it should be populated.
             self.assertEqual(len(results._results), 2)
             self.assertEqual(res_1['username'], 'johndoe')
-            self.assertEqual(res_1.keys(), ['username'])
+            self.assertEqual(list(res_1.keys()), ['username'])
             res_2 = next(results)
             self.assertEqual(res_2['username'], 'jane')
 
