@@ -76,12 +76,14 @@ DESCRIBE_RESPONSE = b"""<?xml version="1.0" encoding="UTF-8"?>
         <Subnets/>
       </member>
     </LoadBalancerDescriptions>
+    <Marker>1234</Marker>
   </DescribeLoadBalancersResult>
   <ResponseMetadata>
     <RequestId>5763d932-e8cc-11e2-a940-11136cceffb8</RequestId>
   </ResponseMetadata>
 </DescribeLoadBalancersResponse>
 """
+
 
 class TestDescribeLoadBalancers(unittest.TestCase):
     def test_other_policy(self):
@@ -107,12 +109,25 @@ class TestDescribeLoadBalancers(unittest.TestCase):
                          'EnableProxyProtocol')
         self.assertEqual(lb.backends[0].instance_port, 80)
 
+    def test_request_with_marker(self):
+        elb = ELBConnection(aws_access_key_id='aws_access_key_id',
+                            aws_secret_access_key='aws_secret_access_key')
+        mock_response = mock.Mock()
+        mock_response.read.return_value = DESCRIBE_RESPONSE
+        mock_response.status = 200
+        elb.make_request = mock.Mock(return_value=mock_response)
+        load_balancers1 = elb.get_all_load_balancers()
+        self.assertEqual('1234', load_balancers1.marker)
+        load_balancers2 = elb.get_all_load_balancers(marker=load_balancers1.marker)
+        self.assertEqual(len(load_balancers2), 1)
+
 
 DETACH_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
 <DetachLoadBalancerFromSubnets xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
     <requestId>3be1508e-c444-4fef-89cc-0b1223c4f02fEXAMPLE</requestId>
 </DetachLoadBalancerFromSubnets>
 """
+
 
 class TestDetachSubnets(unittest.TestCase):
     def test_detach_subnets(self):
