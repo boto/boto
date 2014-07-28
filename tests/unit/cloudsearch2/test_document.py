@@ -318,7 +318,7 @@ class CloudSearchDocumentErrorMismatch(CloudSearchDocumentTest):
             document.commit()
             #If we get here that is a problem
             #Working around the assertRaises not giving me exception instance.
-            self.assertTrue(True)
+            self.assertTrue(False)
         except CommitMismatchError as e:
             self.assertTrue(hasattr(e, 'errors'))
             self.assertIsInstance(e.errors, list)
