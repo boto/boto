@@ -108,8 +108,10 @@ class Item(object):
     def __contains__(self, key):
         return key in self._data
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self._data)
+
+    __nonzero__ = __bool__
 
     def _determine_alterations(self):
         """
