@@ -34,10 +34,6 @@ class SearchServiceException(Exception):
     pass
 
 
-class CommitMismatchError(Exception):
-    pass
-
-
 class SearchResults(object):
     def __init__(self, **attrs):
         self.rid = attrs['status']['rid']
