@@ -316,9 +316,10 @@ class CloudSearchDocumentErrorMismatch(CloudSearchDocumentTest):
                               "category": ["cat_a", "cat_b", "cat_c"]})
         try:
             document.commit()
-        except CommitMismatchError, e:
+            #If we get here that is a problem
+            #Working around the assertRaises not giving me exception instance.
+            self.assertTrue(True)
+        except CommitMismatchError as e:
             self.assertTrue(hasattr(e, 'errors'))
             self.assertIsInstance(e.errors, list)
             self.assertEquals(e.errors[0], self.response['errors'][0].get('message'))
-
-
