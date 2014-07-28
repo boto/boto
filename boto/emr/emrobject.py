@@ -434,11 +434,15 @@ class StepSummary(EmrObject):
     def __init__(self, connection=None):
         self.connection = connection
         self.status = None
+        self.config = None
 
     def startElement(self, name, attrs, connection):
         if name == 'Status':
             self.status = ClusterStatus()
             return self.status
+        elif name == 'Config':
+            self.config = StepConfig()
+            return self.config
         else:
             return None
 
