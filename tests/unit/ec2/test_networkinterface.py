@@ -21,8 +21,7 @@
 # IN THE SOFTWARE.
 #
 
-import mock
-from tests.unit import unittest
+from tests.compat import mock, unittest
 
 from boto.exception import BotoClientError
 from boto.ec2.networkinterface import NetworkInterfaceCollection

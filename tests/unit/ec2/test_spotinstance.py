@@ -8,7 +8,7 @@ class TestCancelSpotInstanceRequests(AWSMockServiceTestCase):
     connection_class = EC2Connection
 
     def default_body(self):
-        return """
+        return b"""
             <CancelSpotInstanceRequestsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
               <spotInstanceRequestSet>
@@ -47,7 +47,7 @@ class TestGetSpotPriceHistory(AWSMockServiceTestCase):
     connection_class = EC2Connection
 
     def default_body(self):
-        return """
+        return b"""
               <DescribeSpotPriceHistoryResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
               <requestId>b6c6978c-bd13-4ad7-9bc8-6f0ac9d32bcc</requestId>
               <spotPriceHistorySet>

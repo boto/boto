@@ -28,7 +28,7 @@ import xml.sax
 from boto import handler
 from boto.emr import emrobject
 from boto.resultset import ResultSet
-from boto.compat import unittest
+from tests.compat import unittest
 
 
 JOB_FLOW_EXAMPLE = b"""

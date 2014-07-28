@@ -1,6 +1,5 @@
-# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
-# All rights reserved.
+# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -21,18 +20,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-"""
-Check that all of the certs on all service endpoints validate.
-"""
-from tests.integration import ServiceCertVerificationTest
-
-import boto.ec2.cloudwatch
-from boto.compat import unittest
+from boto.beanstalk.exception import simple
+from tests.compat import unittest
 
 
-class CloudWatchCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
-    cloudwatch = True
-    regions = boto.ec2.cloudwatch.regions()
+class FakeError(object):
+    def __init__(self, code, status, reason, body):
+        self.code = code
+        self.status = status
+        self.reason = reason
+        self.body = body
 
-    def sample_service_call(self, conn):
-        conn.describe_alarms()
+
+class TestExceptions(unittest.TestCase):
+    def test_exception_class_names(self):
+        # Create exception from class name
+        error = FakeError('TooManyApplications', 400, 'foo', 'bar')
+        exception = simple(error)
+        self.assertEqual(exception.__class__.__name__, 'TooManyApplications')
+
+        # Create exception from class name + 'Exception' as seen from the
+        # live service today
+        error = FakeError('TooManyApplicationsException', 400, 'foo', 'bar')
+        exception = simple(error)
+        self.assertEqual(exception.__class__.__name__, 'TooManyApplications')
+
+        # Make sure message body is present
+        self.assertEqual(exception.message, 'bar')

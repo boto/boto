@@ -1,7 +1,7 @@
 ####
 boto
 ####
-boto 2.31.0
+boto 2.31.1
 
 Released: 10-Jul-2014
 
@@ -30,7 +30,7 @@ At the moment, boto supports:
 
 * Compute
 
-  * Amazon Elastic Compute Cloud (EC2)
+  * Amazon Elastic Compute Cloud (EC2) (Python 3)
   * Amazon Elastic Map Reduce (EMR) (Python 3)
   * AutoScaling (Python 3)
   * Amazon Kinesis (Python 3)
@@ -43,16 +43,16 @@ At the moment, boto supports:
 
   * Amazon Relational Data Service (RDS)
   * Amazon DynamoDB
-  * Amazon SimpleDB
+  * Amazon SimpleDB (Python 3)
   * Amazon ElastiCache (Python 3)
   * Amazon Redshift (Python 3)
 
 * Deployment and Management
 
-  * AWS Elastic Beanstalk
+  * AWS Elastic Beanstalk (Python 3)
   * AWS CloudFormation (Python 3)
   * AWS Data Pipeline (Python 3)
-  * AWS Opsworks
+  * AWS Opsworks (Python 3)
   * AWS CloudTrail (Python 3)
 
 * Identity & Access
@@ -61,22 +61,22 @@ At the moment, boto supports:
 
 * Application Services
 
-  * Amazon CloudSearch
+  * Amazon CloudSearch (Python 3)
   * Amazon Elastic Transcoder (Python 3)
-  * Amazon Simple Workflow Service (SWF)
+  * Amazon Simple Workflow Service (SWF) (Python 3)
   * Amazon Simple Queue Service (SQS) (Python 3)
   * Amazon Simple Notification Server (SNS) (Python 3)
   * Amazon Simple Email Service (SES) (Python 3)
 
 * Monitoring
 
-  * Amazon CloudWatch (EC2 Only)
+  * Amazon CloudWatch (EC2 Only) (Python 3)
   * Amazon CloudWatch Logs (Python 3)
 
 * Networking
 
   * Amazon Route53 (Python 3)
-  * Amazon Virtual Private Cloud (VPC)
+  * Amazon Virtual Private Cloud (VPC) (Python 3)
   * Elastic Load Balancing (ELB) (Python 3)
   * AWS Direct Connect (Python 3)
 
@@ -98,7 +98,7 @@ At the moment, boto supports:
 * Other
 
   * Marketplace Web Services (Python 3)
-  * AWS Support
+  * AWS Support (Python 3)
 
 The goal of boto is to support the full breadth and depth of Amazon
 Web Services.  In addition, boto provides support for other public

@@ -144,9 +144,9 @@ class ServicePoliciesStatus(OptionStatus):
             "Condition": {
                 "IpAddress": {
                     "aws:SourceIp": [ip]
-                    }
                 }
             }
+        }
 
     def _allow_ip(self, arn, ip):
         if 'Statement' not in self:

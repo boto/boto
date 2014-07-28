@@ -21,7 +21,7 @@
 #
 
 import time
-from boto.compat import unittest
+from tests.compat import unittest
 from tests.integration.route53 import Route53TestCase
 
 from boto.route53.connection import Route53Connection

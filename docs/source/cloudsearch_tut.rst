@@ -17,7 +17,7 @@ The recommended method of doing this is as follows::
 
     >>> import boto.cloudsearch
     >>> conn = boto.cloudsearch.connect_to_region("us-west-2",
-    ...             aws_access_key_id='<aws access key'>,
+    ...             aws_access_key_id='<aws access key>',
     ...             aws_secret_access_key='<aws secret key>')
 
 At this point, the variable conn will point to a CloudSearch connection object
@@ -429,4 +429,4 @@ It is also possible to delete documents::
     >>> # Again we'll cheat and use the current epoch time as our version number
 
     >>> doc_service.delete(4, int(time.mktime(datetime.utcnow().timetuple())))
-    >>> service.commit()
+    >>> doc_service.commit()

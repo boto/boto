@@ -20,11 +20,6 @@
 # IN THE SOFTWARE.
 #
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
 import base64
 import boto
 
@@ -32,6 +27,7 @@ from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 from boto.exception import JSONResponseError
 from boto.kinesis import exceptions
+from boto.compat import json
 
 
 class KinesisConnection(AWSQueryConnection):

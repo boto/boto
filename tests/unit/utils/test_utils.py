@@ -19,16 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+from tests.compat import mock, unittest
 
 import datetime
 import hashlib
 import hmac
 import locale
-import mock
 import time
 
 import boto.utils

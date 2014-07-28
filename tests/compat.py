@@ -1,6 +1,4 @@
-# Copyright (c) 2012 Mitch Garnaat http://garnaat.org/
-# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
-# All rights reserved.
+# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -20,19 +18,21 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+#
+# Use unittest2 for older versions of Python
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
-"""
-Check that all of the certs on all service endpoints validate.
-"""
-from tests.integration import ServiceCertVerificationTest
+# Use thirdt party ordereddict for older versions of Python
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 
-import boto.ec2.cloudwatch
-from boto.compat import unittest
-
-
-class CloudWatchCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
-    cloudwatch = True
-    regions = boto.ec2.cloudwatch.regions()
-
-    def sample_service_call(self, conn):
-        conn.describe_alarms()
+# Use standard unittest.mock if possible. (mock doesn't support Python 3.4)
+try:
+    from unittest import mock
+except ImportError:
+    import mock

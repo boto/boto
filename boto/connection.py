@@ -788,7 +788,7 @@ class AWSAuthConnection(object):
         else:
             host = '%s:%d' % (self.host, self.port)
         # Seems properly to use timeout for connect too
-        timeout = self.https_connection_kwargs.get("timeout")
+        timeout = self.http_connection_kwargs.get("timeout")
         if timeout is not None:
             sock = socket.create_connection((self.proxy,
                                              int(self.proxy_port)), timeout)

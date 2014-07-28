@@ -25,11 +25,9 @@ Initial, and very limited, unit tests for CloudWatchConnection.
 """
 
 import datetime
-import time
-import unittest
 
 from boto.ec2.cloudwatch import CloudWatchConnection
-from boto.ec2.cloudwatch.metric import Metric
+from tests.compat import unittest, OrderedDict
 
 # HTTP response body for CloudWatchConnection.describe_alarms
 DESCRIBE_ALARMS_BODY = """<DescribeAlarmsResponse xmlns="http://monitoring.amazonaws.com/doc/2010-08-01/">
@@ -160,7 +158,6 @@ class CloudWatchConnectionTest(unittest.TestCase):
         self.assertEqual(params, expected_params)
 
     def test_build_put_params_multiple_parameter_dimension(self):
-        from collections import OrderedDict
         self.maxDiff = None
         c = CloudWatchConnection()
         params = {}
@@ -180,7 +177,6 @@ class CloudWatchConnectionTest(unittest.TestCase):
         self.assertEqual(params, expected_params)
 
     def test_build_get_params_multiple_parameter_dimension1(self):
-        from collections import OrderedDict
         self.maxDiff = None
         c = CloudWatchConnection()
         params = {}
@@ -195,7 +191,6 @@ class CloudWatchConnectionTest(unittest.TestCase):
         self.assertEqual(params, expected_params)
 
     def test_build_get_params_multiple_parameter_dimension2(self):
-        from collections import OrderedDict
         self.maxDiff = None
         c = CloudWatchConnection()
         params = {}
@@ -225,14 +220,14 @@ class CloudWatchConnectionTest(unittest.TestCase):
     def test_get_metric_statistics(self):
         c = CloudWatchConnection()
         m = c.list_metrics()[0]
-        end = datetime.datetime.now()
+        end = datetime.datetime.utcnow()
         start = end - datetime.timedelta(hours=24*14)
         c.get_metric_statistics(
             3600*24, start, end, m.name, m.namespace, ['Average', 'Sum'])
 
     def test_put_metric_data(self):
         c = CloudWatchConnection()
-        now = datetime.datetime.now()
+        now = datetime.datetime.utcnow()
         name, namespace = 'unit-test-metric', 'boto-unit-test'
         c.put_metric_data(namespace, name, 5, now, 'Bytes')
 
@@ -245,7 +240,7 @@ class CloudWatchConnectionTest(unittest.TestCase):
         # time.sleep(60)
         # l = metric.query(
         #     now - datetime.timedelta(seconds=60),
-        #     datetime.datetime.now(),
+        #     datetime.datetime.utcnow(),
         #     'Average')
         # assert l
         # for row in l:

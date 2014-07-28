@@ -33,7 +33,7 @@ from boto.ec2.autoscale.policy import AdjustmentType, MetricCollectionTypes, Sca
 from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.tag import Tag
-from boto.compat import unittest
+from tests.compat import unittest
 
 
 class AutoscaleConnectionTest(unittest.TestCase):

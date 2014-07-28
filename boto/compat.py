@@ -39,12 +39,6 @@ except (AttributeError, ImportError):
     # This is probably running on App Engine.
     expanduser = (lambda x: x)
 
-# Use unittest2 for older versions of Python
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
 from boto.vendored import six
 
 from boto.vendored.six import BytesIO, StringIO
@@ -59,5 +53,7 @@ from boto.vendored.six.moves.urllib.request import urlopen
 if six.PY3:
     # StandardError was removed, so use the base exception type instead
     StandardError = Exception
+    long_type = int
 else:
     StandardError = StandardError
+    long_type = long
