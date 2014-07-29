@@ -57,7 +57,7 @@ class ResumableUploadTests(GSTestCase):
         for i in range(size):
             buf.append(str(random.randint(0, 9)))
         file_as_string = ''.join(buf)
-        return (file_as_string, StringIO.StringIO(file_as_string))
+        return (file_as_string, StringIO(file_as_string))
 
     def make_small_file(self):
         return self.build_input_file(SMALL_KEY_SIZE)
@@ -296,7 +296,7 @@ class ResumableUploadTests(GSTestCase):
         Tests uploading an empty file (exercises boundary conditions).
         """
         res_upload_handler = ResumableUploadHandler()
-        empty_src_file = StringIO.StringIO('')
+        empty_src_file = StringIO('')
         empty_src_file.seek(0)
         dst_key = self._MakeKey(set_contents=False)
         dst_key.set_contents_from_file(
