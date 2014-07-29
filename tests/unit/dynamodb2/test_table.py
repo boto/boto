@@ -337,6 +337,9 @@ class IndexFieldTestCase(unittest.TestCase):
 
 
 class ItemTestCase(unittest.TestCase):
+    if six.PY2:
+        assertCountEqual = unittest.TestCase.assertItemsEqual
+
     def setUp(self):
         super(ItemTestCase, self).setUp()
         self.table = Table('whatever', connection=FakeDynamoDBConnection())
@@ -368,28 +371,25 @@ class ItemTestCase(unittest.TestCase):
     # ordering everywhere & no erroneous failures.
 
     def test_keys(self):
-        self.assertEqual(sorted(self.johndoe.keys()), [
+        self.assertCountEqual(self.johndoe.keys(), [
             'date_joined',
             'first_name',
             'username',
         ])
 
     def test_values(self):
-        self.assertEqual(sorted(self.johndoe.values()), [
-            12345,
-            'John',
-            'johndoe',
-        ])
+        self.assertCountEqual(self.johndoe.values(),
+                              [12345, 'John', 'johndoe'])
 
     def test_contains(self):
-        self.assertTrue('username' in self.johndoe)
-        self.assertTrue('first_name' in self.johndoe)
-        self.assertTrue('date_joined' in self.johndoe)
-        self.assertFalse('whatever' in self.johndoe)
+        self.assertIn('username', self.johndoe)
+        self.assertIn('first_name', self.johndoe)
+        self.assertIn('date_joined', self.johndoe)
+        self.assertNotIn('whatever', self.johndoe)
 
     def test_iter(self):
-        self.assertEqual(set(self.johndoe),
-                         set(['johndoe', 'John', 12345]))
+        self.assertCountEqual(self.johndoe,
+                              ['johndoe', 'John', 12345])
 
     def test_get(self):
         self.assertEqual(self.johndoe.get('username'), 'johndoe')
@@ -402,11 +402,13 @@ class ItemTestCase(unittest.TestCase):
         self.assertEqual(self.johndoe.get('last_name', True), True)
 
     def test_items(self):
-        self.assertEqual(sorted(self.johndoe.items()), [
-            ('date_joined', 12345),
-            ('first_name', 'John'),
-            ('username', 'johndoe'),
-        ])
+        self.assertCountEqual(
+            self.johndoe.items(),
+            [
+                ('date_joined', 12345),
+                ('first_name', 'John'),
+                ('username', 'johndoe'),
+            ])
 
     def test_attribute_access(self):
         self.assertEqual(self.johndoe['username'], 'johndoe')
@@ -595,12 +597,12 @@ class ItemTestCase(unittest.TestCase):
         })
 
         self.johndoe['friends'] = set(['jane', 'alice'])
-        self.assertEqual(self.johndoe.prepare_full(), {
-            'username': {'S': 'johndoe'},
-            'first_name': {'S': 'John'},
-            'date_joined': {'N': '12345'},
-            'friends': {'SS': ['jane', 'alice']},
-        })
+        data = self.johndoe.prepare_full()
+        self.assertEqual(data['username'], {'S': 'johndoe'})
+        self.assertEqual(data['first_name'], {'S': 'John'})
+        self.assertEqual(data['date_joined'], {'N': '12345'})
+        self.assertCountEqual(data['friends']['SS'],
+                              ['jane', 'alice'])
 
     def test_prepare_full_empty_set(self):
         self.johndoe['friends'] = set()
