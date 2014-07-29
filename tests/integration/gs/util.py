@@ -70,12 +70,12 @@ def retry(ExceptionToCheck, tries=4, delay=3, backoff=2, logger=None):
                     return f(*args, **kwargs)
                     try_one_last_time = False
                     break
-                except ExceptionToCheck, e:
+                except ExceptionToCheck as e:
                     msg = "%s, Retrying in %d seconds..." % (str(e), mdelay)
                     if logger:
                         logger.warning(msg)
                     else:
-                        print msg
+                        print(msg)
                     time.sleep(mdelay)
                     mtries -= 1
                     mdelay *= backoff

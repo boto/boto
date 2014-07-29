@@ -19,7 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 import errno
-import httplib
 import os
 import re
 import socket
@@ -29,6 +28,7 @@ from boto import config, storage_uri_for_key
 from boto.connection import AWSAuthConnection
 from boto.exception import ResumableDownloadException
 from boto.exception import ResumableTransferDisposition
+from boto.compat import six
 from boto.s3.keyfile import KeyFile
 from boto.gs.key import Key as GSKey
 
@@ -92,7 +92,7 @@ class ResumableDownloadHandler(object):
 
     MIN_ETAG_LEN = 5
 
-    RETRYABLE_EXCEPTIONS = (httplib.HTTPException, IOError, socket.error,
+    RETRYABLE_EXCEPTIONS = (six.moves.http_client.HTTPException, IOError, socket.error,
                             socket.gaierror)
 
     def __init__(self, tracker_file_name=None, num_retries=None):
@@ -341,7 +341,7 @@ class ResumableDownloadHandler(object):
             # which we can safely ignore.
             try:
                 key.close()
-            except httplib.IncompleteRead:
+            except six.moves.http_client.IncompleteRead:
                 pass
 
             sleep_time_secs = 2**progress_less_iterations

@@ -25,10 +25,10 @@
 
 import binascii
 import re
-import StringIO
 
 from boto import storage_uri
 from boto.exception import BotoClientError
+from boto.compat import StringIO
 from boto.gs.acl import SupportedPermissions as perms
 from tests.integration.gs.testcase import GSTestCase
 
@@ -158,4 +158,3 @@ class GSStorageUriTest(GSTestCase):
         except BotoClientError as err:
             self.assertEquals(
                 err.reason, 'GCS does not support inter-bucket composing')
-

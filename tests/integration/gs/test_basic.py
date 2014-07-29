@@ -30,12 +30,12 @@ Some integration tests for the GSConnection
 
 import os
 import re
-import StringIO
 import urllib
 import xml.sax
 
 from boto import handler
 from boto import storage_uri
+from boto.compat import StringIO
 from boto.gs.acl import ACL
 from boto.gs.cors import Cors
 from boto.gs.lifecycle import LifecycleConfig
@@ -239,7 +239,7 @@ class GSBasicTest(GSTestCase):
 
         # Test case-insensitivity of XML ACL parsing.
         acl_xml = (
-            '<ACCESSControlList><EntrIes><Entry>'    +
+            '<ACCESSControlList><EntrIes><Entry>' +
             '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
             '</Entry></EntrIes></ACCESSControlList>')
         acl = ACL()
@@ -253,7 +253,7 @@ class GSBasicTest(GSTestCase):
     def test_logging(self):
         """Test set/get raw logging subresource."""
         bucket = self._MakeBucket()
-        empty_logging_str="<?xml version='1.0' encoding='UTF-8'?><Logging/>"
+        empty_logging_str = "<?xml version='1.0' encoding='UTF-8'?><Logging/>"
         logging_str = (
             "<?xml version='1.0' encoding='UTF-8'?><Logging>"
             "<LogBucket>log-bucket</LogBucket>" +

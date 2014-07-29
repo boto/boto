@@ -36,7 +36,7 @@ def versioned_bucket_lister(bucket, prefix='', delimiter='',
             yield k
         marker = rs.next_marker
         generation_marker = rs.next_generation_marker
-        more_results= rs.is_truncated
+        more_results = rs.is_truncated
 
 class VersionedBucketListResultSet(object):
     """

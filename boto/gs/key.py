@@ -929,7 +929,7 @@ class Key(S3Key):
             compose_req.append('<Component><Name>%s</Name>%s</Component>' %
                                (key.name, generation_tag))
         compose_req_xml = ('<ComposeRequest>%s</ComposeRequest>' %
-                         ''.join(compose_req))
+                           ''.join(compose_req))
         headers = headers or {}
         if content_type:
             headers['Content-Type'] = content_type

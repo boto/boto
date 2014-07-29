@@ -58,7 +58,7 @@ class GSVersioningTest(GSTestCase):
         self.assertEqual(len(versions), 2)
         self.assertEqual(versions[0].name, "foo")
         self.assertEqual(versions[1].name, "foo")
-        generations = [k.generation for k in versions]
+        generations = [v.generation for v in versions]
         self.assertIn(g1, generations)
         self.assertIn(g2, generations)
 
@@ -73,7 +73,7 @@ class GSVersioningTest(GSTestCase):
         self.assertEqual(len(versions), 2)
         self.assertEqual(versions[0].name, "foo")
         self.assertEqual(versions[1].name, "foo")
-        generations = [k.generation for k in versions]
+        generations = [v.generation for v in versions]
         self.assertIn(g1, generations)
         self.assertIn(g2, generations)
 
@@ -174,7 +174,7 @@ class GSVersioningTest(GSTestCase):
         self.assertEqual(len(entries1g1), len(entries1g2))
 
         acl_xml = (
-            '<ACCESSControlList><EntrIes><Entry>'    +
+            '<ACCESSControlList><EntrIes><Entry>' +
             '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
             '</Entry></EntrIes></ACCESSControlList>')
         aclo = acl.ACL()

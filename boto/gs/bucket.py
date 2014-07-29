@@ -409,8 +409,8 @@ class Bucket(S3Bucket):
         return self._get_acl_helper('', headers, DEF_OBJ_ACL)
 
     def _set_acl_helper(self, acl_or_str, key_name, headers, query_args,
-                          generation, if_generation, if_metageneration,
-                          canned=False):
+                        generation, if_generation, if_metageneration,
+                        canned=False):
         """Provides common functionality for set_acl, set_xml_acl,
         set_canned_acl, set_def_acl, set_def_xml_acl, and
         set_def_canned_acl()."""
@@ -609,7 +609,6 @@ class Bucket(S3Bucket):
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
-
 
     # Method with same signature as boto.s3.bucket.Bucket.add_email_grant(),
     # to allow polymorphic treatment at application layer.
@@ -942,7 +941,7 @@ class Bucket(S3Bucket):
 
         :param dict headers: Additional headers to send with the request.
         """
-        if enabled == True:
+        if enabled:
             req_body = self.VersioningBody % ('Enabled')
         else:
             req_body = self.VersioningBody % ('Suspended')

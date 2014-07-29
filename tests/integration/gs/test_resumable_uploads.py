@@ -23,7 +23,6 @@
 Tests of Google Cloud Storage resumable uploads.
 """
 
-import StringIO
 import errno
 import random
 import os
@@ -35,7 +34,8 @@ from boto.gs.resumable_upload_handler import ResumableUploadHandler
 from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
-from cb_test_harness import CallbackTestHarness
+from boto.compat import StringIO
+from tests.integration.gs.cb_test_harness import CallbackTestHarness
 from tests.integration.gs.testcase import GSTestCase
 
 
@@ -120,7 +120,7 @@ class ResumableUploadTests(GSTestCase):
                 small_src_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             # We'll get a ResumableUploadException at this point because
             # of CallbackTestHarness (above). Check that the tracker file was
             # created correctly.
@@ -185,7 +185,7 @@ class ResumableUploadTests(GSTestCase):
                 small_src_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected OSError')
-        except OSError, e:
+        except OSError as e:
             # Ensure the error was re-raised.
             self.assertEqual(e.errno, 13)
 
@@ -235,7 +235,7 @@ class ResumableUploadTests(GSTestCase):
         # ResumableUploadHandler instance will handle, writing enough data
         # before the first failure that some of it survives that process run.
         harness = CallbackTestHarness(
-            fail_after_n_bytes=LARGE_KEY_SIZE/2, num_times_to_fail=2)
+            fail_after_n_bytes=LARGE_KEY_SIZE / 2, num_times_to_fail=2)
         tracker_file_name = self.make_tracker_file()
         res_upload_handler = ResumableUploadHandler(
             tracker_file_name=tracker_file_name, num_retries=1)
@@ -247,7 +247,7 @@ class ResumableUploadTests(GSTestCase):
                 larger_src_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             self.assertEqual(e.disposition,
                              ResumableTransferDisposition.ABORT_CUR_PROCESS)
             # Ensure a tracker file survived.
@@ -274,7 +274,7 @@ class ResumableUploadTests(GSTestCase):
         # Set up harness to fail upload after several hundred KB so upload
         # server will have saved something before we retry.
         harness = CallbackTestHarness(
-            fail_after_n_bytes=LARGE_KEY_SIZE/2)
+            fail_after_n_bytes=LARGE_KEY_SIZE / 2)
         res_upload_handler = ResumableUploadHandler(num_retries=1)
         larger_src_file_as_string, larger_src_file = self.make_large_file()
         larger_src_file.seek(0)
@@ -308,8 +308,8 @@ class ResumableUploadTests(GSTestCase):
         Tests that resumable upload correctly sets passed metadata
         """
         res_upload_handler = ResumableUploadHandler()
-        headers = {'Content-Type' : 'text/plain', 'x-goog-meta-abc' : 'my meta',
-                   'x-goog-acl' : 'public-read'}
+        headers = {'Content-Type': 'text/plain', 'x-goog-meta-abc': 'my meta',
+                   'x-goog-acl': 'public-read'}
         small_src_file_as_string, small_src_file = self.make_small_file()
         small_src_file.seek(0)
         dst_key = self._MakeKey(set_contents=False)
@@ -336,7 +336,7 @@ class ResumableUploadTests(GSTestCase):
         upload start and restart
         """
         harness = CallbackTestHarness(
-            fail_after_n_bytes=LARGE_KEY_SIZE/2)
+            fail_after_n_bytes=LARGE_KEY_SIZE / 2)
         tracker_file_name = self.make_tracker_file()
         # Set up first process' ResumableUploadHandler not to do any
         # retries (initial upload request will establish expected size to
@@ -351,7 +351,7 @@ class ResumableUploadTests(GSTestCase):
                 larger_src_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             # First abort (from harness-forced failure) should be
             # ABORT_CUR_PROCESS.
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT_CUR_PROCESS)
@@ -368,7 +368,7 @@ class ResumableUploadTests(GSTestCase):
             dst_key.set_contents_from_file(
                 largest_src_file, res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             # This abort should be a hard abort (file size changing during
             # transfer).
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
@@ -391,7 +391,7 @@ class ResumableUploadTests(GSTestCase):
                 test_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('File changed during upload'), -1)
@@ -411,7 +411,7 @@ class ResumableUploadTests(GSTestCase):
                     test_file, cb=harness.call,
                     res_upload_handler=res_upload_handler)
                 return False
-            except ResumableUploadException, e:
+            except ResumableUploadException as e:
                 self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
                 # Ensure the file size didn't change.
                 test_file.seek(0, os.SEEK_END)
@@ -422,7 +422,7 @@ class ResumableUploadTests(GSTestCase):
                 try:
                     dst_key_uri.get_key()
                     self.fail('Did not get expected InvalidUriError')
-                except InvalidUriError, e:
+                except InvalidUriError as e:
                     pass
             return True
 
@@ -475,9 +475,9 @@ class ResumableUploadTests(GSTestCase):
         try:
             dst_key.set_contents_from_file(
                 small_src_file, res_upload_handler=res_upload_handler,
-                headers={'Content-Length' : SMALL_KEY_SIZE})
+                headers={'Content-Length': SMALL_KEY_SIZE})
             self.fail('Did not get expected ResumableUploadException')
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('Attempt to specify Content-Length header'), -1)
@@ -543,7 +543,7 @@ class ResumableUploadTests(GSTestCase):
             os.chmod(tmp_dir, 0)
             res_upload_handler = ResumableUploadHandler(
                 tracker_file_name=tracker_file_name)
-        except ResumableUploadException, e:
+        except ResumableUploadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('Couldn\'t write URI tracker file'), -1)

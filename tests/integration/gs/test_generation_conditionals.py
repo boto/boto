@@ -23,13 +23,13 @@
 
 """Integration tests for GS versioning support."""
 
-import StringIO
 import os
 import tempfile
 from xml import sax
 
 from boto import handler
 from boto.exception import GSResponseError
+from boto.compat import StringIO
 from boto.gs.acl import ACL
 from tests.integration.gs.testcase import GSTestCase
 
@@ -55,7 +55,7 @@ class GSGenerationConditionalsTest(GSTestCase):
         s2 = "test2"
         fp = StringIO.StringIO(s2)
         with self.assertRaisesRegexp(GSResponseError, VERSION_MISMATCH):
-            k.set_contents_from_file(fp, if_generation=int(g1)+1)
+            k.set_contents_from_file(fp, if_generation=int(g1) + 1)
 
         fp = StringIO.StringIO(s2)
         k.set_contents_from_file(fp, if_generation=g1)
@@ -73,7 +73,7 @@ class GSGenerationConditionalsTest(GSTestCase):
 
         s2 = "test2"
         with self.assertRaisesRegexp(GSResponseError, VERSION_MISMATCH):
-            k.set_contents_from_string(s2, if_generation=int(g1)+1)
+            k.set_contents_from_string(s2, if_generation=int(g1) + 1)
 
         k.set_contents_from_string(s2, if_generation=g1)
         self.assertEqual(k.get_contents_as_string(), s2)
@@ -101,7 +101,7 @@ class GSGenerationConditionalsTest(GSTestCase):
             g1 = k.generation
 
             with self.assertRaisesRegexp(GSResponseError, VERSION_MISMATCH):
-                k.set_contents_from_filename(fname2, if_generation=int(g1)+1)
+                k.set_contents_from_filename(fname2, if_generation=int(g1) + 1)
 
             k.set_contents_from_filename(fname2, if_generation=g1)
             self.assertEqual(k.get_contents_as_string(), s2)
@@ -168,7 +168,7 @@ class GSGenerationConditionalsTest(GSTestCase):
         s2 = "test2"
         fp = StringIO.StringIO(s2)
         with self.assertRaisesRegexp(GSResponseError, VERSION_MISMATCH):
-            k.set_contents_from_stream(fp, if_generation=int(g1)+1)
+            k.set_contents_from_stream(fp, if_generation=int(g1) + 1)
 
         fp = StringIO.StringIO(s2)
         k.set_contents_from_stream(fp, if_generation=g1)
@@ -229,7 +229,7 @@ class GSGenerationConditionalsTest(GSTestCase):
         self.assertEqual(str(mg1), "1")
 
         acl_xml = (
-            '<ACCESSControlList><EntrIes><Entry>'    +
+            '<ACCESSControlList><EntrIes><Entry>' +
             '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
             '</Entry></EntrIes></ACCESSControlList>')
         acl = ACL()
@@ -360,7 +360,7 @@ class GSGenerationConditionalsTest(GSTestCase):
         self.assertEqual(str(mg1), "1")
 
         acl_xml = (
-            '<ACCESSControlList><EntrIes><Entry>'    +
+            '<ACCESSControlList><EntrIes><Entry>' +
             '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
             '</Entry></EntrIes></ACCESSControlList>')
         acl = ACL()
