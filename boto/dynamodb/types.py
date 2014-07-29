@@ -56,13 +56,26 @@ def is_num(n):
     return isinstance(n, types) or n in types
 
 
-def is_str(n):
-    return isinstance(n, (bytes, six.text_type)) or (isinstance(n, type) and
-                                                     issubclass(n, (bytes, six.text_type)))
+if six.PY2:
+    def is_str(n):
+        return (isinstance(n, basestring) or
+                isinstance(n, type) and issubclass(n, basestring))
 
+    def is_binary(n):
+        return isinstance(n, Binary)
 
-def is_binary(n):
-    return isinstance(n, Binary)
+    def convert_binary(n):
+        return Binary(base64.b64decode(n))
+else:
+    def is_str(n):
+        return (isinstance(n, str) or
+                isinstance(n, type) and issubclass(n, str))
+
+    def is_binary(n):
+        return isinstance(n, (Binary, bytes))
+
+    def convert_binary(n):
+        return base64.b64decode(n)
 
 
 def serialize_num(val):
@@ -80,10 +93,6 @@ def convert_num(s):
     else:
         n = int(s)
     return n
-
-
-def convert_binary(n):
-    return Binary(base64.b64decode(n))
 
 
 def get_dynamodb_type(val):
@@ -104,7 +113,7 @@ def get_dynamodb_type(val):
             dynamodb_type = 'SS'
         elif False not in map(is_binary, val):
             dynamodb_type = 'BS'
-    elif isinstance(val, Binary):
+    elif is_binary(val):
         dynamodb_type = 'B'
     if dynamodb_type is None:
         msg = 'Unsupported type "%s" for value "%s"' % (type(val), val)
@@ -129,6 +138,8 @@ def dynamize_value(val):
     elif dynamodb_type == 'SS':
         val = {dynamodb_type: [n for n in val]}
     elif dynamodb_type == 'B':
+        if isinstance(val, bytes):
+            val = Binary(val)
         val = {dynamodb_type: val.encode()}
     elif dynamodb_type == 'BS':
         val = {dynamodb_type: [n.encode() for n in val]}
@@ -271,6 +282,8 @@ class Dynamizer(object):
         return [self._encode_s(n) for n in attr]
 
     def _encode_b(self, attr):
+        if isinstance(attr, bytes):
+            attr = Binary(attr)
         return attr.encode()
 
     def _encode_bs(self, attr):
