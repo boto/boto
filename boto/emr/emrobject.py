@@ -301,7 +301,7 @@ class ClusterSummaryList(EmrObject):
 
 class StepConfig(EmrObject):
     Fields = set([
-        'Jar'
+        'Jar',
         'MainClass'
     ])
 

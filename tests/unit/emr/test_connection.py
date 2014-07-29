@@ -468,8 +468,20 @@ class TestListSteps(AWSMockServiceTestCase):
             'INTERRUPTED'
         ]
 
+        # Check for step states
         for step in response.steps:
             self.assertIn(step.status.state, valid_states)
+
+        # Check for step config
+        step = response.steps[0]
+        self.assertEqual(step.config.jar,
+            '/home/hadoop/lib/emr-s3distcp-1.0.jar')
+        self.assertEqual(len(step.config.args), 4)
+        self.assertEqual(step.config.args[0].value, '--src')
+        self.assertEqual(step.config.args[1].value, 'hdfs:///data/test/')
+
+        step = response.steps[1]
+        self.assertEqual(step.config.mainclass, 'my.main.SomeClass')
 
     def test_list_steps_with_states(self):
         self.set_http_response(200)
