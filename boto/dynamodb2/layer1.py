@@ -2098,7 +2098,7 @@ class DynamoDBConnection(AWSQueryConnection):
         response = self._mexe(http_request, sender=None,
                               override_num_retries=self.NumberRetries,
                               retry_handler=self._retry_handler)
-        response_body = response.read()
+        response_body = response.read().decode('utf-8')
         boto.log.debug(response_body)
         if response.status == 200:
             if response_body:
@@ -2114,7 +2114,7 @@ class DynamoDBConnection(AWSQueryConnection):
         status = None
         boto.log.debug("Saw HTTP status: %s" % response.status)
         if response.status == 400:
-            response_body = response.read()
+            response_body = response.read().decode('utf-8')
             boto.log.debug(response_body)
             data = json.loads(response_body)
             if 'ProvisionedThroughputExceededException' in data.get('__type'):

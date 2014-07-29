@@ -229,7 +229,7 @@ class DynamoDBv2Test(unittest.TestCase):
 
         for res in results:
             self.assertTrue(res['username'] in ['johndoe',])
-            self.assertEqual(res.keys(), ['username'])
+            self.assertEqual(list(res.keys()), ['username'])
 
         # Ensure that queries with attributes don't return the hash key.
         results = users.query_2(
