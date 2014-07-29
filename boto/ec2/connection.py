@@ -894,9 +894,9 @@ class EC2Connection(AWSQueryConnection):
             provide optimal EBS I/O performance.  This optimization
             isn't available with all instance types.
 
-        :type network_interfaces: list
-        :param network_interfaces: A list of
-            :class:`boto.ec2.networkinterface.NetworkInterfaceSpecification`
+        :type network_interfaces: :class:`boto.ec2.networkinterface.NetworkInterfaceCollection`
+        :param network_interfaces: A NetworkInterfaceCollection data
+            structure containing the ENI specifications for the instance.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
