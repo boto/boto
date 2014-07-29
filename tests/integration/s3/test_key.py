@@ -438,4 +438,4 @@ class S3KeyTest(unittest.TestCase):
         k.set_contents_from_string(content, headers=header)
         kn = self.bucket.new_key("testkey_for_sse_c")
         ks = kn.get_contents_as_string(headers=header)
-        self.assertEqual(ks, content)
+        self.assertEqual(ks, content.encode('utf-8'))
