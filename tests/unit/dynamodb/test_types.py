@@ -38,8 +38,8 @@ class TestDynamizer(unittest.TestCase):
         self.assertEqual(dynamizer.encode(Decimal('1.1')), {'N': '1.1'})
         self.assertEqual(dynamizer.encode(set([1, 2, 3])),
                          {'NS': ['1', '2', '3']})
-        self.assertEqual(dynamizer.encode(set(['foo', 'bar'])),
-                         {'SS': ['foo', 'bar']})
+        self.assertIn(dynamizer.encode(set(['foo', 'bar'])),
+                      ({'SS': ['foo', 'bar']}, {'SS': ['bar', 'foo']}))
         self.assertEqual(dynamizer.encode(types.Binary('\x01')),
                          {'B': 'AQ=='})
         self.assertEqual(dynamizer.encode(set([types.Binary('\x01')])),

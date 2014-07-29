@@ -32,7 +32,9 @@ class SearchServiceException(Exception):
 
 
 class CommitMismatchError(Exception):
-    pass
+    # Let's do some extra work and let the user handle errors on his/her own.
+
+    errors = None
 
 
 class EncodingError(Exception):
@@ -258,6 +260,16 @@ class CommitResponse(object):
 
         if response_num != commit_num:
             boto.log.debug(self.response.content)
-            raise CommitMismatchError(
+            # There will always be a commit mismatch error if there is any
+            # errors on cloudsearch. self.errors gets lost when this
+            # CommitMismatchError is raised. Whoever is using boto has no idea
+            # why their commit failed. They can't even notify the user of the
+            # cause by parsing the error messages from amazon. So let's
+            # attach the self.errors to the exceptions if we already spent
+            # time and effort collecting them out of the response.
+            exc = CommitMismatchError(
                 'Incorrect number of {0}s returned. Commit: {1} Response: {2}'
-                .format(type_, commit_num, response_num))
+                .format(type_, commit_num, response_num)
+            )
+            exc.errors = self.errors
+            raise exc

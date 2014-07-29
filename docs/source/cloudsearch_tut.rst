@@ -21,8 +21,9 @@ The recommended method of doing this is as follows::
     ...             aws_secret_access_key='<aws secret key>')
 
 At this point, the variable conn will point to a CloudSearch connection object
-in the us-west-2 region. Currently, this is the only region which has the
-CloudSearch service. In this example, the AWS access key and AWS secret key are
+in the us-west-2 region. Available regions for cloudsearch can be found 
+`here <http://docs.aws.amazon.com/general/latest/gr/rande.html#cloudsearch_region>`_.
+In this example, the AWS access key and AWS secret key are
 passed in to the method explicitly. Alternatively, you can set the environment
 variables:
 
