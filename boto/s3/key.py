@@ -191,8 +191,9 @@ class Key(object):
         if self._storage_class is None and self.bucket:
             # Attempt to fetch storage class
             list_items = list(self.bucket.list(self.name.encode('utf-8')))
-            if len(list_items):
-                self._storage_class = list_items[0].storage_class
+            if len(list_items) and getattr(list_items[0], '_storage_class',
+                                           None):
+                self._storage_class = list_items[0]._storage_class
             else:
                 # Key is not yet saved? Just use default...
                 self._storage_class = 'STANDARD'
