@@ -23,7 +23,7 @@
 import time
 
 import boto
-from boto.compat import unittest
+from tests.compat import unittest
 from boto.kinesis.exceptions import ResourceNotFoundException
 
 

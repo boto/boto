@@ -1,5 +1,4 @@
-import mock
-from tests.unit import unittest
+from tests.compat import mock, unittest
 
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.tag import Tag, TagSet

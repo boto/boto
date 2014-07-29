@@ -20,11 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import unittest
-from cStringIO import StringIO
+from boto.compat import StringIO
+from tests.compat import mock, unittest
 
-import mock
-from mock import ANY
+ANY = mock.ANY
 
 from boto.glacier import vault
 from boto.glacier.job import Job
@@ -111,7 +110,7 @@ class TestVault(unittest.TestCase):
                 return 'something'
 
             def read(self, amt=None):
-                return """{
+                return b"""{
   "Action": "ArchiveRetrieval",
   "ArchiveId": "NkbByEejwEggmBz2fTHgJrg0XBoDfjP4q6iu87-EXAMPLEArchiveId",
   "ArchiveSizeInBytes": 16777216,

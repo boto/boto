@@ -282,7 +282,7 @@ class EmrConnection(AWSQueryConnection):
                      value for that tag should be the empty string
                      (e.g. '') or None.
         """
-        assert isinstance(resource_id, basestring)
+        assert isinstance(resource_id, six.string_types)
         params = {
             'ResourceId': resource_id,
         }
@@ -410,7 +410,8 @@ class EmrConnection(AWSQueryConnection):
                     ami_version=None,
                     api_params=None,
                     visible_to_all_users=None,
-                    job_flow_role=None):
+                    job_flow_role=None,
+                    service_role=None):
         """
         Runs a job flow
         :type name: str
@@ -492,6 +493,10 @@ class EmrConnection(AWSQueryConnection):
             ``EMRJobflowDefault``. In order to use the default role,
             you must have already created it using the CLI.
 
+        :type service_role: str
+        :param service_role: The IAM role that will be assumed by the Amazon
+            EMR service to access AWS resources on your behalf.
+
         :rtype: str
         :return: The jobflow id
         """
@@ -568,6 +573,9 @@ class EmrConnection(AWSQueryConnection):
 
         if job_flow_role is not None:
             params['JobFlowRole'] = job_flow_role
+
+        if service_role is not None:
+            params['ServiceRole'] = service_role
 
         response = self.get_object(
             'RunJobFlow', params, RunJobFlowResponse, verb='POST')

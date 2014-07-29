@@ -22,8 +22,7 @@
 #
 from __future__ import with_statement
 
-import mock
-from tests.unit import unittest
+from tests.compat import mock, unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.compat import StringIO
@@ -74,6 +73,31 @@ class TestS3Key(AWSMockServiceTestCase):
         b = Bucket(self.service_connection, 'mybucket')
         key = b.delete_key('fookey')
         self.assertIsNotNone(key)
+
+    def test_storage_class(self):
+        self.set_http_response(status_code=200)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.get_key('fookey')
+
+        # Mock out the bucket object - we really only care about calls
+        # to list.
+        k.bucket = mock.MagicMock()
+
+        # Default behavior doesn't call list
+        k.set_contents_from_string('test')
+        k.bucket.list.assert_not_called()
+
+        # Direct access calls list to get the real value if unset,
+        # and still defaults to STANDARD if unavailable.
+        sc_value = k.storage_class
+        self.assertEqual(sc_value, 'STANDARD')
+        k.bucket.list.assert_called_with(k.name.encode('utf-8'))
+        k.bucket.list.reset_mock()
+
+        # Setting manually doesn't call list
+        k.storage_class = 'GLACIER'
+        k.set_contents_from_string('test')
+        k.bucket.list.assert_not_called()
 
 
 def counter(fn):

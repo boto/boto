@@ -112,10 +112,10 @@ class CertValidatingHTTPSConnection(http_client.HTTPConnection):
 
   def connect(self):
     "Connect to a host on a given (SSL) port."
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    if hasattr(self, "timeout") and self.timeout is not socket._GLOBAL_DEFAULT_TIMEOUT:
-        sock.settimeout(self.timeout)
-    sock.connect((self.host, self.port))
+    if hasattr(self, "timeout"):
+        sock = socket.create_connection((self.host, self.port), self.timeout)
+    else:
+        sock = socket.create_connection((self.host, self.port))
     msg = "wrapping ssl socket; "
     if self.ca_certs:
         msg += "CA certificate file=%s" %self.ca_certs

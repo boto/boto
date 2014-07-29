@@ -64,7 +64,7 @@ class Query(object):
     def order(self, key):
         self.sort_by = key
         return self
-    
+
     def to_xml(self, doc=None):
         if not doc:
             xmlmanager = self.model_class.get_xmlmanager()

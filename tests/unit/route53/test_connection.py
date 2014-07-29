@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import mock
+from tests.compat import mock, unittest
 import re
 import xml.dom.minidom
 
@@ -32,7 +32,6 @@ from boto.route53.record import ResourceRecordSets, Record
 from boto.route53.zone import Zone
 
 from nose.plugins.attrib import attr
-from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 @attr(route53=True)
@@ -46,7 +45,7 @@ class TestRoute53Connection(AWSMockServiceTestCase):
         }
 
     def default_body(self):
-        return """<Route53Result>
+        return b"""<Route53Result>
     <Message>It failed.</Message>
 </Route53Result>
 """
@@ -97,7 +96,7 @@ class TestCreateZoneRoute53(AWSMockServiceTestCase):
         super(TestCreateZoneRoute53, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
 <CreateHostedZoneResponse xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
     <HostedZone>
         <Id>/hostedzone/Z11111</Id>
@@ -147,7 +146,7 @@ class TestGetZoneRoute53(AWSMockServiceTestCase):
         super(TestGetZoneRoute53, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
 <ListHostedZonesResponse xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
     <HostedZones>
         <HostedZone>
@@ -204,7 +203,7 @@ class TestGetHostedZoneRoute53(AWSMockServiceTestCase):
         super(TestGetHostedZoneRoute53, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
 <GetHostedZoneResponse xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
     <HostedZone>
         <Id>/hostedzone/Z1111</Id>
@@ -241,7 +240,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         super(TestGetAllRRSetsRoute53, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
 <ListResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
     <ResourceRecordSets>
         <ResourceRecordSet>
@@ -274,6 +273,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
                 <EvaluateTargetHealth>true</EvaluateTargetHealth>
                 <DNSName>example-123456-evaluate-health.us-west-2.elb.amazonaws.com.</DNSName>
             </AliasTarget>
+            <HealthCheckId>abcdefgh-abcd-abcd-abcd-abcdefghijkl</HealthCheckId>
         </ResourceRecordSet>
         <ResourceRecordSet>
             <Name>us-west-2-no-evaluate-health.example.com.</Name>
@@ -285,6 +285,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
                 <EvaluateTargetHealth>false</EvaluateTargetHealth>
                 <DNSName>example-123456-no-evaluate-health.us-west-2.elb.amazonaws.com.</DNSName>
             </AliasTarget>
+            <HealthCheckId>abcdefgh-abcd-abcd-abcd-abcdefghijkl</HealthCheckId>
         </ResourceRecordSet>
         <ResourceRecordSet>
             <Name>failover.example.com.</Name>
@@ -320,8 +321,10 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         response = self.service_connection.get_all_rrsets("Z1111", "A", "example.com.")
 
-        self.assertEqual(self.actual_request.path,
-                         "/2013-04-01/hostedzone/Z1111/rrset?type=A&name=example.com.")
+
+        self.assertIn(self.actual_request.path,
+                         ("/2013-04-01/hostedzone/Z1111/rrset?type=A&name=example.com.",
+                          "/2013-04-01/hostedzone/Z1111/rrset?name=example.com.&type=A"))
 
         self.assertTrue(isinstance(response, ResourceRecordSets))
         self.assertEqual(response.hosted_zone_id, "Z1111")
@@ -340,6 +343,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.assertTrue(evaluate_record.alias_evaluate_target_health)
         self.assertEqual(evaluate_record.alias_dns_name, 'example-123456-evaluate-health.us-west-2.elb.amazonaws.com.')
         evaluate_xml = evaluate_record.to_xml()
+        self.assertTrue(evaluate_record.health_check, 'abcdefgh-abcd-abcd-abcd-abcdefghijkl')
         self.assertTrue('<EvaluateTargetHealth>true</EvaluateTargetHealth>' in evaluate_xml)
 
         no_evaluate_record = response[3]
@@ -351,6 +355,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.assertFalse(no_evaluate_record.alias_evaluate_target_health)
         self.assertEqual(no_evaluate_record.alias_dns_name, 'example-123456-no-evaluate-health.us-west-2.elb.amazonaws.com.')
         no_evaluate_xml = no_evaluate_record.to_xml()
+        self.assertTrue(no_evaluate_record.health_check, 'abcdefgh-abcd-abcd-abcd-abcdefghijkl')
         self.assertTrue('<EvaluateTargetHealth>false</EvaluateTargetHealth>' in no_evaluate_xml)
 
         failover_record = response[4]
@@ -374,7 +379,7 @@ class TestCreateHealthCheckRoute53IpAddress(AWSMockServiceTestCase):
         super(TestCreateHealthCheckRoute53IpAddress, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
 <CreateHealthCheckResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
    <HealthCheck>
       <Id>34778cf8-e31e-4974-bad0-b108bd1623d3</Id>
@@ -417,7 +422,7 @@ class TestCreateHealthCheckRoute53FQDN(AWSMockServiceTestCase):
         super(TestCreateHealthCheckRoute53FQDN, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
 <CreateHealthCheckResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
    <HealthCheck>
       <Id>f9abfe10-8d2a-4bbd-8f35-796f0f8572f2</Id>
@@ -458,7 +463,7 @@ class TestChangeResourceRecordSetsRoute53(AWSMockServiceTestCase):
         super(TestChangeResourceRecordSetsRoute53, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
 <ChangeResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
     <ChangeInfo>
         <Id>/change/C1111111111111</Id>
@@ -481,7 +486,7 @@ class TestChangeResourceRecordSetsRoute53(AWSMockServiceTestCase):
         # the whitespacing doesn't match exactly, so we'll pretty print and drop all new lines
         # not the best, but
         actual_xml = re.sub(r"\s*[\r\n]+", "\n", xml.dom.minidom.parseString(changes_xml).toprettyxml())
-        expected_xml = re.sub(r"\s*[\r\n]+", "\n", xml.dom.minidom.parseString("""
+        expected_xml = re.sub(r"\s*[\r\n]+", "\n", xml.dom.minidom.parseString(b"""
 <ChangeResourceRecordSetsRequest xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
     <ChangeBatch>
         <Comment>None</Comment>

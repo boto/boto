@@ -196,7 +196,10 @@ class MockKey(object):
         contents of mock key.
         """
         m = md5()
-        m.update(self.data.encode('utf-8'))
+        if not isinstance(self.data, bytes):
+            m.update(self.data.encode('utf-8'))
+        else:
+            m.update(self.data)
         hex_md5 = m.hexdigest()
         self.etag = hex_md5
 

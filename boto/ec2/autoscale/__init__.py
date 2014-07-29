@@ -143,7 +143,7 @@ class AutoScaleConnection(AWSQueryConnection):
                             params['%s.member.%d.%s.%s' % (label, i, k, kk)] = vv
                     else:
                         params['%s.member.%d.%s' % (label, i, k)] = v
-            elif isinstance(items[i - 1], basestring):
+            elif isinstance(items[i - 1], six.string_types):
                 params['%s.member.%d' % (label, i)] = items[i - 1]
 
     def _update_group(self, op, as_group):
@@ -222,7 +222,7 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.key_name:
             params['KeyName'] = launch_config.key_name
         if launch_config.user_data:
-            params['UserData'] = base64.b64encode(launch_config.user_data)
+            params['UserData'] = base64.b64encode(launch_config.user_data).decode('utf-8')
         if launch_config.kernel_id:
             params['KernelId'] = launch_config.kernel_id
         if launch_config.ramdisk_id:

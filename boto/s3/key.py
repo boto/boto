@@ -116,7 +116,7 @@ class Key(object):
         self.is_latest = False
         self.last_modified = None
         self.owner = None
-        self.storage_class = 'STANDARD'
+        self._storage_class = None
         self.path = None
         self.resp = None
         self.mode = None
@@ -186,6 +186,23 @@ class Key(object):
             del self.local_hashes['md5']
 
     base64md5 = property(_get_base64md5, _set_base64md5);
+
+    def _get_storage_class(self):
+        if self._storage_class is None and self.bucket:
+            # Attempt to fetch storage class
+            list_items = list(self.bucket.list(self.name.encode('utf-8')))
+            if len(list_items):
+                self._storage_class = list_items[0].storage_class
+            else:
+                # Key is not yet saved? Just use default...
+                self._storage_class = 'STANDARD'
+
+        return self._storage_class
+
+    def _set_storage_class(self, value):
+        self._storage_class = value
+
+    storage_class = property(_get_storage_class, _set_storage_class)
 
     def get_md5_from_hexdigest(self, md5_hexdigest):
         """
@@ -877,7 +894,9 @@ class Key(object):
         for header in find_matching_headers('User-Agent', headers):
             del headers[header]
         headers['User-Agent'] = UserAgent
-        if self.storage_class != 'STANDARD':
+        # If storage_class is None, then a user has not explicitly requested
+        # a storage class, so we can assume STANDARD here
+        if self._storage_class not in [None, 'STANDARD']:
             headers[provider.storage_class_header] = self.storage_class
         if find_matching_headers('Content-Encoding', headers):
             self.content_encoding = merge_headers_by_name(
@@ -950,10 +969,16 @@ class Key(object):
             if isinstance(md5, bytes):
                 md5 = md5.decode('utf-8')
 
-            if self.etag != '"%s"' % md5:
-                raise provider.storage_data_error(
-                    'ETag from S3 did not match computed MD5. '
-                    '%s vs. %s' % (self.etag, self.md5))
+            # If you use customer-provided encryption keys, the ETag value that
+            # Amazon S3 returns in the response will not be the MD5 of the
+            # object.
+            server_side_encryption_customer_algorithm = response.getheader(
+                'x-amz-server-side-encryption-customer-algorithm', None)
+            if server_side_encryption_customer_algorithm is None:
+                if self.etag != '"%s"' % md5:
+                    raise provider.storage_data_error(
+                        'ETag from S3 did not match computed MD5. '
+                        '%s vs. %s' % (self.etag, self.md5))
 
             return True
 
@@ -1438,7 +1463,7 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
-            
+
         :type version_id: str
         :param version_id: The ID of a particular version of the object.
             If this parameter is not supplied but the Key object has
@@ -1667,7 +1692,7 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
-            
+
         :type version_id: str
         :param version_id: The ID of a particular version of the object.
             If this parameter is not supplied but the Key object has

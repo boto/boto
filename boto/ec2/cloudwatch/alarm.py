@@ -21,7 +21,6 @@
 #
 
 from datetime import datetime
-from boto.resultset import ResultSet
 from boto.ec2.cloudwatch.listelement import ListElement
 from boto.ec2.cloudwatch.dimension import Dimension
 from boto.compat import json
@@ -253,11 +252,11 @@ class MetricAlarm(object):
 
     def add_alarm_action(self, action_arn=None):
         """
-        Adds an alarm action, represented as an SNS topic, to this alarm. 
+        Adds an alarm action, represented as an SNS topic, to this alarm.
         What do do when alarm is triggered.
 
         :type action_arn: str
-        :param action_arn: SNS topics to which notification should be 
+        :param action_arn: SNS topics to which notification should be
                            sent if the alarm goes to state ALARM.
         """
         if not action_arn:
@@ -271,21 +270,21 @@ class MetricAlarm(object):
         this alarm. What to do when the insufficient_data state is reached.
 
         :type action_arn: str
-        :param action_arn: SNS topics to which notification should be 
+        :param action_arn: SNS topics to which notification should be
                            sent if the alarm goes to state INSUFFICIENT_DATA.
         """
         if not action_arn:
             return
         self.actions_enabled = 'true'
         self.insufficient_data_actions.append(action_arn)
-    
+
     def add_ok_action(self, action_arn=None):
         """
         Adds an ok action, represented as an SNS topic, to this alarm. What
         to do when the ok state is reached.
 
         :type action_arn: str
-        :param action_arn: SNS topics to which notification should be 
+        :param action_arn: SNS topics to which notification should be
                            sent if the alarm goes to state INSUFFICIENT_DATA.
         """
         if not action_arn:
@@ -321,4 +320,3 @@ class AlarmHistoryItem(object):
                                                    '%Y-%m-%dT%H:%M:%S.%fZ')
             except ValueError:
                 self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
-

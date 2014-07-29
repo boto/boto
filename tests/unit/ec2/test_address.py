@@ -1,5 +1,4 @@
-import mock
-import unittest
+from tests.compat import mock, unittest
 
 from boto.ec2.address import Address
 

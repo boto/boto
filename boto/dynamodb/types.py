@@ -28,7 +28,7 @@ import base64
 from decimal import (Decimal, DecimalException, Context,
                      Clamped, Overflow, Inexact, Underflow, Rounded)
 from boto.dynamodb.exceptions import DynamoDBNumberError
-from boto.compat import filter, map
+from boto.compat import filter, map, six, long_type
 
 
 DYNAMODB_CONTEXT = Context(
@@ -52,13 +52,13 @@ def float_to_decimal(f):
 
 
 def is_num(n):
-    types = (int, long, float, bool, Decimal)
+    types = (int, long_type, float, bool, Decimal)
     return isinstance(n, types) or n in types
 
 
 def is_str(n):
-    return isinstance(n, basestring) or (isinstance(n, type) and
-                                         issubclass(n, basestring))
+    return isinstance(n, (bytes, six.text_type)) or (isinstance(n, type) and
+                                                     issubclass(n, (bytes, six.text_type)))
 
 
 def is_binary(n):
@@ -137,13 +137,17 @@ def dynamize_value(val):
 
 class Binary(object):
     def __init__(self, value):
-        if not isinstance(value, basestring):
+        if isinstance(value, bytes):
+            pass
+        elif isinstance(value, six.text_type):
+            value = value.encode('utf-8')
+        else:
             raise TypeError('Value must be a string of binary data!')
 
         self.value = value
 
     def encode(self):
-        return base64.b64encode(self.value)
+        return base64.b64encode(self.value).decode('utf-8')
 
     def __eq__(self, other):
         if isinstance(other, Binary):
@@ -158,7 +162,7 @@ class Binary(object):
         return 'Binary(%s)' % self.value
 
     def __str__(self):
-        return self.value
+        return self.value.decode('utf-8')
 
     def __hash__(self):
         return hash(self.value)
@@ -254,9 +258,9 @@ class Dynamizer(object):
         raise DynamoDBNumberError(msg)
 
     def _encode_s(self, attr):
-        if isinstance(attr, unicode):
-            attr = attr.encode('utf-8')
-        elif not isinstance(attr, str):
+        if isinstance(attr, bytes):
+            attr = attr.decode('utf-8')
+        elif not isinstance(attr, six.text_type):
             attr = str(attr)
         return attr
 
@@ -280,7 +284,7 @@ class Dynamizer(object):
         """
         if len(attr) > 1 or not attr:
             return attr
-        dynamodb_type = attr.keys()[0]
+        dynamodb_type = list(attr.keys())[0]
         if dynamodb_type.lower() == dynamodb_type:
             # It's not an actual type, just a single character attr that
             # overlaps with the DDB types. Return it.

@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 
-from tests.unit import unittest
+from tests.compat import mock, unittest
 from tests.unit import AWSMockServiceTestCase
-
-import mock
 
 from boto.ec2.connection import EC2Connection
 from boto.ec2.securitygroup import SecurityGroup
 
 
-DESCRIBE_SECURITY_GROUP = r"""<?xml version="1.0" encoding="UTF-8"?>
+DESCRIBE_SECURITY_GROUP = br"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeSecurityGroupsResponse xmlns="http://ec2.amazonaws.com/doc/2013-06-15/">
    <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
    <securityGroupInfo>
@@ -59,7 +57,7 @@ DESCRIBE_SECURITY_GROUP = r"""<?xml version="1.0" encoding="UTF-8"?>
    </securityGroupInfo>
 </DescribeSecurityGroupsResponse>"""
 
-DESCRIBE_INSTANCES = r"""<?xml version="1.0" encoding="UTF-8"?>
+DESCRIBE_INSTANCES = br"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2012-10-01/">
     <requestId>c6132c74-b524-4884-87f5-0f4bde4a9760</requestId>
     <reservationSet>

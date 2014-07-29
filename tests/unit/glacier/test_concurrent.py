@@ -21,10 +21,9 @@
 # IN THE SOFTWARE.
 #
 import tempfile
-from Queue import Queue
+from boto.compat import Queue
 
-import mock
-from tests.unit import unittest
+from tests.compat import mock, unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.glacier.concurrent import ConcurrentUploader, ConcurrentDownloader
@@ -41,7 +40,7 @@ class FakeThreadedConcurrentUploader(ConcurrentUploader):
 
     def _wait_for_upload_threads(self, hash_chunks, result_queue, total_parts):
         for i in range(total_parts):
-            hash_chunks[i] = 'foo'
+            hash_chunks[i] = b'foo'
 
 
 class FakeThreadedConcurrentDownloader(ConcurrentDownloader):

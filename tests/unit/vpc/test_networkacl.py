@@ -9,7 +9,7 @@ class TestDescribeNetworkAcls(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeNetworkAclsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <networkAclSet>
@@ -141,7 +141,7 @@ class TestReplaceNetworkAclAssociation(AWSMockServiceTestCase):
 
     connection_class = VPCConnection
 
-    get_all_network_acls_vpc_body = """
+    get_all_network_acls_vpc_body = b"""
         <DescribeNetworkAclsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
            <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
            <networkAclSet>
@@ -187,7 +187,7 @@ class TestReplaceNetworkAclAssociation(AWSMockServiceTestCase):
         </DescribeNetworkAclsResponse>
     """
 
-    get_all_network_acls_subnet_body = """
+    get_all_network_acls_subnet_body = b"""
         <DescribeNetworkAclsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
             <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
             <networkAclSet>
@@ -227,7 +227,7 @@ class TestReplaceNetworkAclAssociation(AWSMockServiceTestCase):
     """
 
     def default_body(self):
-        return """
+        return b"""
             <ReplaceNetworkAclAssociationResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <newAssociationId>aclassoc-17b85d7e</newAssociationId>
@@ -274,7 +274,7 @@ class TestCreateNetworkAcl(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateNetworkAclResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <networkAcl>
@@ -320,7 +320,7 @@ class DeleteCreateNetworkAcl(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteNetworkAclResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>
@@ -344,7 +344,7 @@ class TestCreateNetworkAclEntry(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateNetworkAclEntryResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>
@@ -397,7 +397,7 @@ class TestReplaceNetworkAclEntry(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <ReplaceNetworkAclEntryResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>
@@ -449,7 +449,7 @@ class TestDeleteNetworkAclEntry(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteNetworkAclEntryResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>

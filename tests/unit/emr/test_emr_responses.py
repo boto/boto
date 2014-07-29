@@ -24,14 +24,14 @@
 # for the InstanceGroup fix.
 
 import xml.sax
-import unittest
 
 from boto import handler
 from boto.emr import emrobject
 from boto.resultset import ResultSet
+from tests.compat import unittest
 
 
-JOB_FLOW_EXAMPLE = """
+JOB_FLOW_EXAMPLE = b"""
 <DescribeJobFlowsResponse
     xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-01-15">
   <DescribeJobFlowsResult>
@@ -85,7 +85,7 @@ JOB_FLOW_EXAMPLE = """
 </DescribeJobFlowsResponse>
 """
 
-JOB_FLOW_COMPLETED = """
+JOB_FLOW_COMPLETED = b"""
 <DescribeJobFlowsResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
   <DescribeJobFlowsResult>
     <JobFlows>

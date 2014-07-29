@@ -23,16 +23,17 @@
 """
 Tests for Layer2 of Amazon DynamoDB
 """
-import unittest
 import time
 import uuid
 from decimal import Decimal
 
+from tests.unit import unittest
 from boto.dynamodb.exceptions import DynamoDBKeyNotFoundError
 from boto.dynamodb.exceptions import DynamoDBConditionalCheckFailedError
 from boto.dynamodb.layer2 import Layer2
 from boto.dynamodb.types import get_dynamodb_type, Binary
 from boto.dynamodb.condition import BEGINS_WITH, CONTAINS, GT
+from boto.compat import six, long_type
 
 
 class DynamoDBLayer2Test(unittest.TestCase):
@@ -61,7 +62,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
         return result
 
     def test_layer2_basic(self):
-        print '--- running Amazon DynamoDB Layer2 tests ---'
+        print('--- running Amazon DynamoDB Layer2 tests ---')
         c = self.dynamodb
 
         # First create a schema for the table
@@ -122,7 +123,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
             'Answered': 0,
             'Public': True,
             'Tags': set(['index', 'primarykey', 'table']),
-            'LastPostDateTime':  '12/9/2011 11:36:03 PM'}
+            'LastPostDateTime': '12/9/2011 11:36:03 PM'}
 
         # Test a few corner cases with new_item
 
@@ -148,7 +149,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
         # make sure the put() succeeds
         try:
             item1.put()
-        except c.layer1.ResponseError, e:
+        except c.layer1.ResponseError as e:
             raise Exception("Item put failed: %s" % e)
 
         # Try to get an item that does not exist.
@@ -162,7 +163,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
         assert item1_copy.range_key == item1.range_key
         for attr_name in item1_attrs:
             val = item1_copy[attr_name]
-            if isinstance(val, (int, long, float, basestring)):
+            if isinstance(val, (int, long_type, float, six.string_types)):
                 assert val == item1[attr_name]
 
         # Try retrieving only select attributes
@@ -189,7 +190,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
         expected = {'FooBar': True}
         try:
             item1.delete(expected_value=expected)
-        except c.layer1.ResponseError, e:
+        except c.layer1.ResponseError:
             pass
 
         # Now update the existing object
@@ -226,7 +227,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
             'Replies': 0,
             'Answered': 0,
             'Tags': set(["index", "primarykey", "table"]),
-            'LastPost2DateTime':  '12/9/2011 11:36:03 PM'}
+            'LastPost2DateTime': '12/9/2011 11:36:03 PM'}
         item2 = table.new_item(item2_key, item2_range, item2_attrs)
         item2.put()
 
@@ -410,7 +411,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
 
         item3.delete()
         table2_item1.delete()
-        print '--- tests completed ---'
+        print('--- tests completed ---')
 
     def test_binary_attrs(self):
         c = self.dynamodb
@@ -446,7 +447,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
                          set(['largeobject', 'multipart upload']))
         self.assertEqual(retrieved['BinaryData'], Binary('\x01\x02\x03\x04'))
         # Also comparable directly to bytes:
-        self.assertEqual(retrieved['BinaryData'], bytes('\x01\x02\x03\x04'))
+        self.assertEqual(retrieved['BinaryData'], b'\x01\x02\x03\x04')
         self.assertEqual(retrieved['BinarySequence'],
                          set([Binary('\x01\x02'), Binary('\x03\x04')]))
 
@@ -459,6 +460,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
         retrieved = table.get_item('foo', 'bar')
         self.assertEqual(retrieved['decimalvalue'], Decimal('1.12345678912345'))
 
+    @unittest.skipIf(six.PY3, "skipping lossy_float_conversion test for Python 3.x")
     def test_lossy_float_conversion(self):
         table = self.create_sample_table()
         item = table.new_item('foo', 'bar')

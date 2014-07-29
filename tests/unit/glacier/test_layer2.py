@@ -25,13 +25,14 @@ from tests.unit import unittest
 
 from mock import call, Mock, patch, sentinel
 
+import codecs
 from boto.glacier.layer1 import Layer1
 from boto.glacier.layer2 import Layer2
 import boto.glacier.vault
 from boto.glacier.vault import Vault
 from boto.glacier.vault import Job
 
-from StringIO import StringIO
+from boto.compat import StringIO
 
 from datetime import datetime, tzinfo, timedelta
 
@@ -297,7 +298,7 @@ class TestVault(GlacierLayer2Base):
             sentinel.upload_id, file_obj=sentinel.file_obj)
         mock_resume_file_upload.assert_called_once_with(
             self.vault, sentinel.upload_id, part_size, sentinel.file_obj,
-            {0: '12'.decode('hex'), 1: '34'.decode('hex')})
+            {0: codecs.decode('12', 'hex_codec'), 1: codecs.decode('34', 'hex_codec')})
 
 
 class TestJob(GlacierLayer2Base):
@@ -308,11 +309,11 @@ class TestJob(GlacierLayer2Base):
 
     def test_get_job_output(self):
         self.mock_layer1.get_job_output.return_value = "TEST_OUTPUT"
-        self.job.get_output((0,100))
+        self.job.get_output((0, 100))
         self.mock_layer1.get_job_output.assert_called_with(
             "examplevault",
             "HkF9p6o7yjhFx-K3CGl6fuSm6VzW9T7esGQfco8nUXVYwS0jlb5gq1JZ55yHgt5vP"
-            "54ZShjoQzQVVh7vEXAMPLEjobID", (0,100))
+            "54ZShjoQzQVVh7vEXAMPLEjobID", (0, 100))
 
 class TestRangeStringParsing(unittest.TestCase):
     def test_simple_range(self):
