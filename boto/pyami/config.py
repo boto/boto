@@ -54,8 +54,8 @@ class Config(SafeConfigParser):
     def __init__(self, path=None, fp=None, do_load=True):
         # We don't use ``super`` here, because ``ConfigParser`` still uses
         # old-style classes.
-        SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami',
-                                                      'debug' : '0'})
+        SafeConfigParser.__init__(self, {'working_dir': '/mnt/pyami',
+                                         'debug': '0'})
         if do_load:
             if path:
                 self.load_from_path(path)

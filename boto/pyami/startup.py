@@ -37,7 +37,7 @@ class Startup(ScriptBase):
                     pos = script.rfind('.')
                     if pos > 0:
                         mod_name = script[0:pos]
-                        cls_name = script[pos+1:]
+                        cls_name = script[pos + 1:]
                         cls = find_class(mod_name, cls_name)
                         boto.log.info('Running Script: %s' % script)
                         s = cls()
