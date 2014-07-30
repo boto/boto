@@ -20,10 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 from __future__ import with_statement
-import mock
-import httplib
 
-from tests.unit import unittest
+from tests.compat import mock, unittest
+from boto.compat import http_client
 from boto.sns import connect_to_region
 
 
@@ -32,10 +31,13 @@ class StubResponse(object):
     reason = 'nopenopenope'
 
     def getheader(self, val):
-        return ''
+        return b''
+
+    def getheaders(self):
+        return b''
 
     def read(self):
-        return ''
+        return b''
 
 
 class TestSNSConnection(unittest.TestCase):
@@ -53,7 +55,7 @@ class TestSNSConnection(unittest.TestCase):
         # On Python 2.5(.6), not having this in place would cause any SigV4
         # calls to fail, due to a signature mismatch (the port would be present
         # when it shouldn't be).
-        https = httplib.HTTPSConnection
+        https = http_client.HTTPConnection
         mpo = mock.patch.object
 
         with mpo(https, 'request') as mock_request:

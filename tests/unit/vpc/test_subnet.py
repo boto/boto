@@ -1,3 +1,4 @@
+from tests.compat import OrderedDict
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
@@ -9,7 +10,7 @@ class TestDescribeSubnets(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeSubnetsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
               <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
               <subnetSet>
@@ -43,8 +44,8 @@ class TestDescribeSubnets(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         api_response = self.service_connection.get_all_subnets(
             ['subnet-9d4a7b6c', 'subnet-6e7f829e'],
-            filters=[('state', 'available'),
-                     ('vpc-id', ['subnet-9d4a7b6c', 'subnet-6e7f829e'])])
+            filters=OrderedDict([('state', 'available'),
+                     ('vpc-id', ['subnet-9d4a7b6c', 'subnet-6e7f829e'])]))
         self.assert_request_parameters({
             'Action': 'DescribeSubnets',
             'SubnetId.1': 'subnet-9d4a7b6c',
@@ -68,7 +69,7 @@ class TestCreateSubnet(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateSubnetResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
               <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
               <subnet>
@@ -109,7 +110,7 @@ class TestDeleteSubnet(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteSubnetResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <return>true</return>

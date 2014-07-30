@@ -10,7 +10,7 @@ class TestCloudSearchCreateDomain(AWSMockServiceTestCase):
     connection_class = CloudSearchConnection
 
     def default_body(self):
-        return """
+        return b"""
 {
   "CreateDomainResponse": {
     "CreateDomainResult": {
@@ -124,7 +124,7 @@ class CloudSearchConnectionDeletionTest(AWSMockServiceTestCase):
     connection_class = CloudSearchConnection
 
     def default_body(self):
-        return """
+        return b"""
 {
   "DeleteDomainResponse": {
     "DeleteDomainResult": {
@@ -174,7 +174,7 @@ class CloudSearchConnectionIndexDocumentTest(AWSMockServiceTestCase):
     connection_class = CloudSearchConnection
 
     def default_body(self):
-        return """
+        return b"""
 {
   "IndexDocumentsResponse": {
     "IndexDocumentsResult": {

@@ -36,5 +36,14 @@ class TestQueue(unittest.TestCase):
         self.assertEqual(q.arn, 'arn:aws:sqs:us-east-1:id:queuename')
 
 
+    def test_queue_name(self):
+        connection = Mock()
+        connection.region.name = 'us-east-1'
+        q = Queue(
+            connection=connection,
+            url='https://sqs.us-east-1.amazonaws.com/id/queuename')
+        self.assertEqual(q.name, 'queuename')
+
+
 if __name__ == '__main__':
     unittest.main()

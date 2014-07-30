@@ -5,7 +5,7 @@ from tests.unit import AWSMockServiceTestCase
 from boto.vpc import VPCConnection, VPC
 
 
-DESCRIBE_VPCS = r'''<?xml version="1.0" encoding="UTF-8"?>
+DESCRIBE_VPCS = b'''<?xml version="1.0" encoding="UTF-8"?>
 <DescribeVpcsResponse xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
     <requestId>623040d1-b51c-40bc-8080-93486f38d03d</requestId>
     <vpcSet>
@@ -44,7 +44,7 @@ class TestCreateVpc(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateVpcResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <vpc>
@@ -81,7 +81,7 @@ class TestDeleteVpc(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteVpcResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <return>true</return>
@@ -105,7 +105,7 @@ class TestModifyVpcAttribute(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <ModifyVpcAttributeResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <return>true</return>

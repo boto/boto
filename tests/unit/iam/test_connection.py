@@ -22,6 +22,7 @@
 #
 
 from tests.unit import unittest
+from boto.compat import json
 from boto.iam.connection import IAMConnection
 from tests.unit import AWSMockServiceTestCase
 
@@ -30,7 +31,7 @@ class TestCreateSamlProvider(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateSAMLProviderResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
               <CreateSAMLProviderResult>
                 <SAMLProviderArn>arn</SAMLProviderArn>
@@ -60,7 +61,7 @@ class TestListSamlProviders(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
             <ListSAMLProvidersResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
               <ListSAMLProvidersResult>
                 <SAMLProviderList>
@@ -89,13 +90,20 @@ class TestListSamlProviders(AWSMockServiceTestCase):
         self.assert_request_parameters(
             {'Action': 'ListSAMLProviders'},
             ignore_params_values=['Version'])
+        self.assertEqual(response.saml_provider_list, [
+            {'arn':'arn:aws:iam::123456789012:instance-profile/application_abc/component_xyz/Database',
+             'valid_until':'2032-05-09T16:27:11Z',
+             'create_date':'2012-05-09T16:27:03Z'},
+            {'arn':'arn:aws:iam::123456789012:instance-profile/application_abc/component_xyz/Webserver',
+             'valid_until':'2015-03-11T13:11:02Z',
+             'create_date':'2012-05-09T16:27:11Z'}])
 
 
 class TestGetSamlProvider(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
             <GetSAMLProviderResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
               <GetSAMLProviderResult>
                 <CreateDate>2012-05-09T16:27:11Z</CreateDate>
@@ -124,7 +132,7 @@ class TestUpdateSamlProvider(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
             <UpdateSAMLProviderResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
               <UpdateSAMLProviderResult>
                 <SAMLProviderArn>arn:aws:iam::123456789012:saml-metadata/MyUniversity</SAMLProviderArn>
@@ -170,7 +178,7 @@ class TestCreateRole(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
           <CreateRoleResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
             <CreateRoleResult>
               <Role>
@@ -194,9 +202,9 @@ class TestCreateRole(AWSMockServiceTestCase):
 
         self.assert_request_parameters(
             {'Action': 'CreateRole',
-             'AssumeRolePolicyDocument': '{"Statement": [{"Action": ["sts:AssumeRole"], "Effect": "Allow", "Principal": {"Service": ["ec2.amazonaws.com"]}}]}',
              'RoleName': 'a_name'},
-            ignore_params_values=['Version'])
+            ignore_params_values=['Version', 'AssumeRolePolicyDocument'])
+        self.assertDictEqual(json.loads(self.actual_request.params["AssumeRolePolicyDocument"]), {"Statement": [{"Action": ["sts:AssumeRole"], "Effect": "Allow", "Principal": {"Service": ["ec2.amazonaws.com"]}}]})
 
     def test_create_role_default_cn_north(self):
         self.set_http_response(status_code=200)
@@ -205,9 +213,9 @@ class TestCreateRole(AWSMockServiceTestCase):
 
         self.assert_request_parameters(
             {'Action': 'CreateRole',
-             'AssumeRolePolicyDocument': '{"Statement": [{"Action": ["sts:AssumeRole"], "Effect": "Allow", "Principal": {"Service": ["ec2.amazonaws.com.cn"]}}]}',
              'RoleName': 'a_name'},
-            ignore_params_values=['Version'])
+            ignore_params_values=['Version', 'AssumeRolePolicyDocument'])
+        self.assertDictEqual(json.loads(self.actual_request.params["AssumeRolePolicyDocument"]), {"Statement": [{"Action": ["sts:AssumeRole"], "Effect": "Allow", "Principal": {"Service": ["ec2.amazonaws.com.cn"]}}]})
 
     def test_create_role_string_policy(self):
         self.set_http_response(status_code=200)
@@ -242,7 +250,7 @@ class TestGetSigninURL(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
           <ListAccountAliasesResponse>
             <ListAccountAliasesResult>
               <IsTruncated>false</IsTruncated>
@@ -287,7 +295,7 @@ class TestGetSigninURL(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
-        return """
+        return b"""
           <ListAccountAliasesResponse>
             <ListAccountAliasesResult>
               <IsTruncated>false</IsTruncated>

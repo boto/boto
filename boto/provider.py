@@ -27,6 +27,7 @@ This class encapsulates the provider-specific header differences.
 """
 
 import os
+from boto.compat import six
 from datetime import datetime
 
 import boto
@@ -355,6 +356,14 @@ class Provider(object):
                                                  security_token_name)
                 boto.log.debug("Using security token found in shared "
                                "credential file.")
+            elif profile_name is not None:
+                if config.has_option("profile %s" % profile_name,
+                                     security_token_name):
+                    boto.log.debug("config has option")
+                    self.security_token = config.get("profile %s" % profile_name,
+                                                     security_token_name)
+                    boto.log.debug("Using security token found in config file: "
+                                   "profile %s." % profile_name)
             elif config.has_option('Credentials', security_token_name):
                 self.security_token = config.get('Credentials',
                                                  security_token_name)
@@ -380,7 +389,7 @@ class Provider(object):
             data='meta-data/iam/security-credentials/')
         if metadata:
             # I'm assuming there's only one role on the instance profile.
-            security = metadata.values()[0]
+            security = list(metadata.values())[0]
             self._access_key = security['AccessKeyId']
             self._secret_key = self._convert_key_to_str(security['SecretAccessKey'])
             self._security_token = security['Token']
@@ -391,7 +400,7 @@ class Provider(object):
                            self._credential_expiry_time - datetime.now(), expires_at)
 
     def _convert_key_to_str(self, key):
-        if isinstance(key, unicode):
+        if isinstance(key, six.text_type):
             # the secret key must be bytes and not unicode to work
             #  properly with hmac.new (see http://bugs.python.org/issue5285)
             return str(key)

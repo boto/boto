@@ -21,8 +21,9 @@
 # IN THE SOFTWARE.
 #
 from decimal import Decimal
-from tests.unit import unittest
+from tests.compat import unittest
 
+from boto.compat import six
 from boto.dynamodb import types
 from boto.dynamodb.exceptions import DynamoDBNumberError
 
@@ -38,11 +39,11 @@ class TestDynamizer(unittest.TestCase):
         self.assertEqual(dynamizer.encode(Decimal('1.1')), {'N': '1.1'})
         self.assertEqual(dynamizer.encode(set([1, 2, 3])),
                          {'NS': ['1', '2', '3']})
-        self.assertEqual(dynamizer.encode(set(['foo', 'bar'])),
-                         {'SS': ['foo', 'bar']})
-        self.assertEqual(dynamizer.encode(types.Binary('\x01')),
+        self.assertIn(dynamizer.encode(set(['foo', 'bar'])),
+                      ({'SS': ['foo', 'bar']}, {'SS': ['bar', 'foo']}))
+        self.assertEqual(dynamizer.encode(types.Binary(b'\x01')),
                          {'B': 'AQ=='})
-        self.assertEqual(dynamizer.encode(set([types.Binary('\x01')])),
+        self.assertEqual(dynamizer.encode(set([types.Binary(b'\x01')])),
                          {'BS': ['AQ==']})
 
     def test_decoding_to_dynamodb(self):
@@ -54,9 +55,9 @@ class TestDynamizer(unittest.TestCase):
                          set([1, 2, 3]))
         self.assertEqual(dynamizer.decode({'SS': ['foo', 'bar']}),
                          set(['foo', 'bar']))
-        self.assertEqual(dynamizer.decode({'B': 'AQ=='}), types.Binary('\x01'))
+        self.assertEqual(dynamizer.decode({'B': 'AQ=='}), types.Binary(b'\x01'))
         self.assertEqual(dynamizer.decode({'BS': ['AQ==']}),
-                         set([types.Binary('\x01')]))
+                         set([types.Binary(b'\x01')]))
 
     def test_float_conversion_errors(self):
         dynamizer = types.Dynamizer()
@@ -80,15 +81,37 @@ class TestDynamizer(unittest.TestCase):
 
 
 class TestBinary(unittest.TestCase):
+    def test_good_input(self):
+        data = types.Binary(b'\x01')
+        self.assertEqual(b'\x01', data)
+        self.assertEqual(b'\x01', bytes(data))
+
+    @unittest.skipUnless(six.PY2, "Python 2 only")
     def test_bad_input(self):
         with self.assertRaises(TypeError):
-            data = types.Binary(1)
+            types.Binary(1)
 
-    def test_good_input(self):
-        data = types.Binary(chr(1))
+    @unittest.skipUnless(six.PY3, "Python 3 only")
+    def test_bytes_input(self):
+        data = types.Binary(1)
+        self.assertEqual(data, b'\x00')
+        self.assertEqual(data.value, b'\x00')
 
-        self.assertEqual('\x01', str(data))
+    @unittest.skipUnless(six.PY2, "Python 2 only")
+    def test_unicode_py2(self):
+        # It's dirty. But remains for backward compatibility.
+        data = types.Binary(u'\x01')
+        self.assertEqual(data, b'\x01')
+        self.assertEqual(bytes(data), b'\x01')
 
+        # Delegate to built-in b'\x01' == u'\x01'
+        # In Python 2.x these are considered equal
+        self.assertEqual(data, u'\x01')
+
+    @unittest.skipUnless(six.PY3, "Python 3 only")
+    def test_unicode_py3(self):
+        with self.assertRaises(TypeError):
+            types.Binary(u'\x01')
 
 if __name__ == '__main__':
     unittest.main()

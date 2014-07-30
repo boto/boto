@@ -13,7 +13,7 @@ class TestDescribeLogs(AWSMockServiceTestCase):
     def test_describe(self):
         self.set_http_response(status_code=200)
         api_response = self.service_connection.describe_log_groups()
-        
+
         self.assertEqual(0, len(api_response['logGroups']))
 
         self.assert_request_parameters({})

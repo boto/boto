@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-import unittest
 from boto.mws.connection import MWSConnection
 from boto.mws.response import (ResponseFactory, ResponseElement, Element,
                                MemberList, ElementList, SimpleList)
 
 
 from tests.unit import AWSMockServiceTestCase
+from boto.compat import filter, map
+from tests.compat import unittest
 
 
 class TestMWSResponse(AWSMockServiceTestCase):
@@ -20,7 +21,7 @@ class TestMWSResponse(AWSMockServiceTestCase):
         class Test9Result(ResponseElement):
             Item = Element(Test9one)
 
-        text = """<Test9Response><Test9Result>
+        text = b"""<Test9Response><Test9Result>
                   <Item>
                         <Foo>Bar</Foo>
                         <Nest>
@@ -47,7 +48,7 @@ class TestMWSResponse(AWSMockServiceTestCase):
             Item = MemberList(SimpleList)
             Extra = MemberList(Test8extra)
 
-        text = """<Test8Response><Test8Result>
+        text = b"""<Test8Response><Test8Result>
                   <Item>
                         <member>0</member>
                         <member>1</member>
@@ -62,11 +63,11 @@ class TestMWSResponse(AWSMockServiceTestCase):
                   </Test8Result></Test8Response>"""
         obj = self.check_issue(Test8Result, text)
         self.assertSequenceEqual(
-            map(int, obj._result.Item),
-            range(4),
+            list(map(int, obj._result.Item)),
+            list(range(4)),
         )
         self.assertSequenceEqual(
-            map(lambda x: map(int, x.Foo), obj._result.Extra),
+            list(map(lambda x: list(map(int, x.Foo)), obj._result.Extra)),
             [[4, 5], [], [6, 7]],
         )
 
@@ -75,7 +76,7 @@ class TestMWSResponse(AWSMockServiceTestCase):
             Item = MemberList(Nest=MemberList(),
                               List=ElementList(Simple=SimpleList()))
 
-        text = """<Test7Response><Test7Result>
+        text = b"""<Test7Response><Test7Result>
                   <Item>
                         <member>
                             <Value>One</Value>
@@ -143,7 +144,7 @@ class TestMWSResponse(AWSMockServiceTestCase):
         class Test6Result(ResponseElement):
             Item = MemberList()
 
-        text = """<Test6Response><Test6Result>
+        text = b"""<Test6Response><Test6Result>
                   <Item>
                         <member><Value>One</Value></member>
                         <member><Value>Two</Value>
@@ -165,7 +166,7 @@ class TestMWSResponse(AWSMockServiceTestCase):
         class Test5Result(ResponseElement):
             Item = MemberList(Nest=MemberList())
 
-        text = """<Test5Response><Test5Result>
+        text = b"""<Test5Response><Test5Result>
                   <Item/>
                   </Test5Result></Test5Response>"""
         obj = self.check_issue(Test5Result, text)
@@ -175,7 +176,7 @@ class TestMWSResponse(AWSMockServiceTestCase):
         class Test4Result(ResponseElement):
             Item = MemberList(NestedItem=MemberList())
 
-        text = """<Test4Response><Test4Result>
+        text = b"""<Test4Response><Test4Result>
                   </Test4Result></Test4Response>"""
         obj = self.check_issue(Test4Result, text)
         self.assertSequenceEqual(obj._result.Item, [])
@@ -184,7 +185,7 @@ class TestMWSResponse(AWSMockServiceTestCase):
         class Test1Result(ResponseElement):
             Item = ElementList()
 
-        text = """<Test1Response><Test1Result>
+        text = b"""<Test1Response><Test1Result>
             <Item><Foo>Bar</Foo></Item>
             <Item><Zip>Bif</Zip></Item>
             <Item><Foo>Baz</Foo>
@@ -193,14 +194,14 @@ class TestMWSResponse(AWSMockServiceTestCase):
         obj = self.check_issue(Test1Result, text)
         self.assertTrue(len(obj._result.Item) == 3)
         elements = lambda x: getattr(x, 'Foo', getattr(x, 'Zip', '?'))
-        elements = map(elements, obj._result.Item)
+        elements = list(map(elements, obj._result.Item))
         self.assertSequenceEqual(elements, ['Bar', 'Bif', 'Baz'])
 
     def test_parsing_missing_lists(self):
         class Test2Result(ResponseElement):
             Item = ElementList()
 
-        text = """<Test2Response><Test2Result>
+        text = b"""<Test2Response><Test2Result>
         </Test2Result></Test2Response>"""
         obj = self.check_issue(Test2Result, text)
         self.assertEqual(obj._result.Item, [])
@@ -209,7 +210,7 @@ class TestMWSResponse(AWSMockServiceTestCase):
         class Test3Result(ResponseElement):
             Item = SimpleList()
 
-        text = """<Test3Response><Test3Result>
+        text = b"""<Test3Response><Test3Result>
             <Item>Bar</Item>
             <Item>Bif</Item>
             <Item>Baz</Item>

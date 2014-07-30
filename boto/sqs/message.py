@@ -64,11 +64,13 @@ in the format in which it would be stored in SQS.
 """
 
 import base64
-import StringIO
+
+import boto
+
+from boto.compat import StringIO
 from boto.sqs.attributes import Attributes
 from boto.sqs.messageattributes import MessageAttributes
 from boto.exception import SQSDecodeError
-import boto
 
 class RawMessage(object):
     """
@@ -161,11 +163,11 @@ class Message(RawMessage):
     """
 
     def encode(self, value):
-        return base64.b64encode(value)
+        return base64.b64encode(value.encode('utf-8')).decode('utf-8')
 
     def decode(self, value):
         try:
-            value = base64.b64decode(value)
+            value = base64.b64decode(value.encode('utf-8')).decode('utf-8')
         except:
             boto.log.warning('Unable to decode message')
             return value
@@ -191,7 +193,7 @@ class MHMessage(Message):
     def decode(self, value):
         try:
             msg = {}
-            fp = StringIO.StringIO(value)
+            fp = StringIO(value)
             line = fp.readline()
             while line:
                 delim = line.find(':')
@@ -255,12 +257,12 @@ class EncodedMHMessage(MHMessage):
 
     def decode(self, value):
         try:
-            value = base64.b64decode(value)
+            value = base64.b64decode(value.encode('utf-8')).decode('utf-8')
         except:
             raise SQSDecodeError('Unable to decode message', self)
         return super(EncodedMHMessage, self).decode(value)
 
     def encode(self, value):
         value = super(EncodedMHMessage, self).encode(value)
-        return base64.b64encode(value)
+        return base64.b64encode(value.encode('utf-8')).decode('utf-8')
 

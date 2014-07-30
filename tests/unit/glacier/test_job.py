@@ -19,9 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from StringIO import StringIO
-from tests.unit import unittest
-import mock
+from boto.compat import StringIO
+from tests.compat import mock, unittest
 
 from boto.glacier.job import Job
 from boto.glacier.layer1 import Layer1

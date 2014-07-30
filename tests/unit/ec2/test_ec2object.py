@@ -7,7 +7,7 @@ from boto.ec2.connection import EC2Connection
 from boto.ec2.ec2object import TaggedEC2Object
 
 
-CREATE_TAGS_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
+CREATE_TAGS_RESPONSE = br"""<?xml version="1.0" encoding="UTF-8"?>
 <CreateTagsResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
   <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
   <return>true</return>
@@ -15,7 +15,7 @@ CREATE_TAGS_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
 """
 
 
-DELETE_TAGS_RESPONSE = r"""<?xml version="1.0" encoding="UTF-8"?>
+DELETE_TAGS_RESPONSE = br"""<?xml version="1.0" encoding="UTF-8"?>
 <DeleteTagsResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
    <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
    <return>true</return>

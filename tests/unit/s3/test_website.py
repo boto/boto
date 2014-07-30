@@ -225,6 +225,6 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
         """
         webconfig = WebsiteConfiguration()
         h = handler.XmlHandler(webconfig, None)
-        xml.sax.parseString(xml_in, h)
+        xml.sax.parseString(xml_in.encode('utf-8'), h)
         xml_out = webconfig.to_xml()
         self.assertEqual(x(xml_in), x(xml_out))

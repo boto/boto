@@ -20,16 +20,12 @@
 # IN THE SOFTWARE.
 #
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
 import boto
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 from boto.exception import JSONResponseError
 from boto.cloudsearch2 import exceptions
+from boto.compat import json
 
 
 class CloudSearchConnection(AWSQueryConnection):
@@ -59,7 +55,6 @@ class CloudSearchConnection(AWSQueryConnection):
         "ResourceNotFoundException": exceptions.ResourceNotFoundException,
         "BaseException": exceptions.BaseException,
     }
-
 
     def __init__(self, **kwargs):
         region = kwargs.pop('region', None)
@@ -772,7 +767,7 @@ class CloudSearchConnection(AWSQueryConnection):
         params['ContentType'] = 'JSON'
         response = self.make_request(action=action, verb='POST',
                                      path='/', params=params)
-        body = response.read()
+        body = response.read().decode('utf-8')
         boto.log.debug(body)
         if response.status == 200:
             return json.loads(body)

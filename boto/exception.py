@@ -26,10 +26,12 @@ Exception classes - Subclassing allows you to check for specific errors
 """
 import base64
 import xml.sax
-from boto import handler
-from boto.compat import json
-from boto.resultset import ResultSet
 
+import boto
+
+from boto import handler
+from boto.compat import json, six, StandardError
+from boto.resultset import ResultSet
 
 class BotoClientError(StandardError):
     """
@@ -80,7 +82,14 @@ class BotoServerError(StandardError):
         self.request_id = None
         self.error_code = None
         self._error_message = None
+        self.message = ''
         self.box_usage = None
+
+        if isinstance(self.body, bytes):
+            try:
+                self.body = self.body.decode('utf-8')
+            except UnicodeDecodeError:
+                boto.log.debug('Unable to decode body from bytes!')
 
         # Attempt to parse the error response. If body isn't present,
         # then just ignore the error response.
@@ -103,7 +112,7 @@ class BotoServerError(StandardError):
                 try:
                     h = handler.XmlHandlerWrapper(self, self)
                     h.parseString(self.body)
-                except (TypeError, xml.sax.SAXParseException), pe:
+                except (TypeError, xml.sax.SAXParseException) as pe:
                     # What if it's JSON? Let's try that.
                     try:
                         parsed = json.loads(self.body)

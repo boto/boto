@@ -18,7 +18,6 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
 import xml.sax
 import datetime
 import itertools
@@ -307,7 +306,7 @@ class MTurkConnection(AWSQueryConnection):
         records, return the page numbers to be retrieved.
         """
         pages = total_records / page_size + bool(total_records % page_size)
-        return range(1, pages + 1)
+        return list(range(1, pages + 1))
 
     def get_all_hits(self):
         """
@@ -829,7 +828,7 @@ class MTurkConnection(AWSQueryConnection):
         """
         body = response.read()
         if self.debug == 2:
-            print body
+            print(body)
         if '<Errors>' not in body:
             rs = ResultSet(marker_elems)
             h = handler.XmlHandler(rs, self)

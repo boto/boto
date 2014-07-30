@@ -10,7 +10,7 @@ class TestDescribeTrails(AWSMockServiceTestCase):
     connection_class = CloudTrailConnection
 
     def default_body(self):
-        return '''
+        return b'''
             {"trailList":
                 [
                     {
@@ -44,7 +44,7 @@ class TestDescribeTrails(AWSMockServiceTestCase):
 
         self.assertEqual(json.dumps({
             'trailNameList': ['test']
-        }), self.actual_request.body)
+        }), self.actual_request.body.decode('utf-8'))
 
         target = self.actual_request.headers['X-Amz-Target']
         self.assertTrue('DescribeTrails' in target)
@@ -54,7 +54,7 @@ class TestCreateTrail(AWSMockServiceTestCase):
     connection_class = CloudTrailConnection
 
     def default_body(self):
-        return '''
+        return b'''
             {"trail":
                 {
                     "IncludeGlobalServiceEvents": false,

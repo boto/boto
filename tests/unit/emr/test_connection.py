@@ -33,7 +33,8 @@ from boto.emr.emrobject import BootstrapAction, BootstrapActionList, \
                                ClusterSummary, ClusterTimeline, InstanceInfo, \
                                InstanceList, InstanceGroupInfo, \
                                InstanceGroup, InstanceGroupList, JobFlow, \
-                               JobFlowStepList, Step, StepSummaryList, Cluster
+                               JobFlowStepList, Step, StepSummaryList, \
+                               Cluster, RunJobFlowResponse
 
 # These tests are just checking the basic structure of
 # the Elastic MapReduce code, by picking a few calls
@@ -44,7 +45,7 @@ class TestListClusters(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """
+        return b"""
 <ListClustersResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
   <ListClustersResult>
     <Clusters>
@@ -155,7 +156,7 @@ class TestListInstanceGroups(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """
+        return b"""
 <ListInstanceGroupsResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
   <ListInstanceGroupsResult>
     <InstanceGroups>
@@ -243,7 +244,7 @@ class TestListInstances(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """
+        return b"""
 <ListInstancesResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
   <ListInstancesResult>
     <Instances>
@@ -373,7 +374,7 @@ class TestListSteps(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<ListStepsOutput><Steps><member><Name>Step 1</Name></member></Steps></ListStepsOutput>"""
+        return b"""<ListStepsOutput><Steps><member><Name>Step 1</Name></member></Steps></ListStepsOutput>"""
 
     def test_list_steps(self):
         self.set_http_response(200)
@@ -413,7 +414,7 @@ class TestListBootstrapActions(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<ListBootstrapActionsOutput></ListBootstrapActionsOutput>"""
+        return b"""<ListBootstrapActionsOutput></ListBootstrapActionsOutput>"""
 
     def test_list_bootstrap_actions(self):
         self.set_http_response(200)
@@ -434,7 +435,7 @@ class TestDescribeCluster(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """
+        return b"""
 <DescribeClusterResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
   <DescribeClusterResult>
     <Cluster>
@@ -509,7 +510,7 @@ class TestDescribeStep(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<DescribeStepOutput></DescribeStepOutput>"""
+        return b"""<DescribeStepOutput></DescribeStepOutput>"""
 
     def test_describe_step(self):
         self.set_http_response(200)
@@ -538,7 +539,7 @@ class TestAddJobFlowSteps(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """
+        return b"""
 <AddJobFlowStepsOutput>
     <StepIds>
         <member>Foo</member>
@@ -597,7 +598,7 @@ class TestAddTag(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<AddTagsResponse
+        return b"""<AddTagsResponse
                xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
                    <AddTagsResult/>
                    <ResponseMetadata>
@@ -642,7 +643,7 @@ class TestRemoveTag(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<RemoveTagsResponse
+        return b"""<RemoveTagsResponse
                xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
                    <RemoveTagsResult/>
                    <ResponseMetadata>
@@ -683,7 +684,7 @@ class DescribeJobFlowsTestBase(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """
+        return b"""
 <DescribeJobFlowsResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
   <DescribeJobFlowsResult>
     <JobFlows>
@@ -866,3 +867,35 @@ class TestDescribeJobFlow(DescribeJobFlowsTestBase):
             'Action': 'DescribeJobFlows',
             'JobFlowIds.member.1': 'j-aaaaaa',
         }, ignore_params_values=['Version'])
+
+class TestRunJobFlow(AWSMockServiceTestCase):
+    connection_class = EmrConnection
+
+    def default_body(self):
+        return b"""
+<RunJobFlowResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+  <RunJobFlowResult>
+    <JobFlowId>j-ZKIY4CKQRX72</JobFlowId>
+  </RunJobFlowResult>
+  <ResponseMetadata>
+    <RequestId>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</RequestId>
+  </ResponseMetadata>
+</RunJobFlowResponse>
+"""
+
+    def test_run_jobflow_service_role(self):
+        self.set_http_response(200)
+
+        response = self.service_connection.run_jobflow(
+            'EmrCluster', service_role='EMR_DefaultRole')
+
+        self.assertTrue(response)
+        self.assert_request_parameters({
+            'Action': 'RunJobFlow',
+            'Version': '2009-03-31',
+            'ServiceRole': 'EMR_DefaultRole',
+            'Name': 'EmrCluster' },
+            ignore_params_values=['ActionOnFailure', 'Instances.InstanceCount',
+                                  'Instances.KeepJobFlowAliveWhenNoSteps',
+                                  'Instances.MasterInstanceType',
+                                  'Instances.SlaveInstanceType'])

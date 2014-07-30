@@ -65,6 +65,7 @@ from boto.ec2.networkinterface import NetworkInterface
 from boto.ec2.attributes import AccountAttribute, VPCAttribute
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
+from boto.compat import six
 
 #boto.set_stream_logger('ec2')
 
@@ -122,6 +123,9 @@ class EC2Connection(AWSQueryConnection):
         return params
 
     def build_filter_params(self, params, filters):
+        if not isinstance(filters, dict):
+            filters = dict(filters)
+
         i = 1
         for name in filters:
             aws_name = name
@@ -680,7 +684,8 @@ class EC2Connection(AWSQueryConnection):
 
     def get_all_instance_status(self, instance_ids=None,
                                 max_results=None, next_token=None,
-                                filters=None, dry_run=False):
+                                filters=None, dry_run=False,
+                                include_all_instances=False):
         """
         Retrieve all the instances in your account scheduled for maintenance.
 
@@ -708,6 +713,11 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type include_all_instances: bool
+        :param include_all_instances: Set to True if all
+            instances should be returned. (Only running
+            instances are included by default.)
+
         :rtype: list
         :return: A list of instances that have maintenance scheduled.
         """
@@ -722,6 +732,8 @@ class EC2Connection(AWSQueryConnection):
             self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
+        if include_all_instances:
+            params['IncludeAllInstances'] = 'true'
         return self.get_object('DescribeInstanceStatus', params,
                                InstanceStatusSet, verb='POST')
 
@@ -814,7 +826,7 @@ class EC2Connection(AWSQueryConnection):
             instances.
 
         :type monitoring_enabled: bool
-        :param monitoring_enabled: Enable CloudWatch monitoring on
+        :param monitoring_enabled: Enable detailed CloudWatch monitoring on
             the instance.
 
         :type subnet_id: string
@@ -882,9 +894,9 @@ class EC2Connection(AWSQueryConnection):
             provide optimal EBS I/O performance.  This optimization
             isn't available with all instance types.
 
-        :type network_interfaces: list
-        :param network_interfaces: A list of
-            :class:`boto.ec2.networkinterface.NetworkInterfaceSpecification`
+        :type network_interfaces: :class:`boto.ec2.networkinterface.NetworkInterfaceCollection`
+        :param network_interfaces: A NetworkInterfaceCollection data
+            structure containing the ENI specifications for the instance.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -915,7 +927,9 @@ class EC2Connection(AWSQueryConnection):
                     l.append(group)
             self.build_list_params(params, l, 'SecurityGroup')
         if user_data:
-            params['UserData'] = base64.b64encode(user_data)
+            if isinstance(user_data, six.text_type):
+                user_data = user_data.encode('utf-8')
+            params['UserData'] = base64.b64encode(user_data).decode('utf-8')
         if addressing_type:
             params['AddressingType'] = addressing_type
         if instance_type:
@@ -1513,7 +1527,7 @@ class EC2Connection(AWSQueryConnection):
             instances
 
         :type monitoring_enabled: bool
-        :param monitoring_enabled: Enable CloudWatch monitoring on
+        :param monitoring_enabled: Enable detailed CloudWatch monitoring on
             the instance.
 
         :type subnet_id: string
@@ -2269,10 +2283,10 @@ class EC2Connection(AWSQueryConnection):
 
         :type volume_type: string
         :param volume_type: The type of the volume. (optional).  Valid
-            values are: standard | io1.
+            values are: standard | io1 | gp2.
 
         :type iops: int
-        :param iops: The provisioned IOPs you want to associate with
+        :param iops: The provisioned IOPS you want to associate with
             this volume. (optional)
 
         :type encrypted: bool
@@ -2825,7 +2839,7 @@ class EC2Connection(AWSQueryConnection):
                 keynames=[keyname],
                 dry_run=dry_run
             )[0]
-        except self.ResponseError, e:
+        except self.ResponseError as e:
             if e.code == 'InvalidKeyPair.NotFound':
                 return None
             else:
@@ -3854,7 +3868,7 @@ class EC2Connection(AWSQueryConnection):
 
     def monitor_instances(self, instance_ids, dry_run=False):
         """
-        Enable CloudWatch monitoring for the supplied instances.
+        Enable detailed CloudWatch monitoring for the supplied instances.
 
         :type instance_id: list of strings
         :param instance_id: The instance ids
@@ -3875,7 +3889,7 @@ class EC2Connection(AWSQueryConnection):
     def monitor_instance(self, instance_id, dry_run=False):
         """
         Deprecated Version, maintained for backward compatibility.
-        Enable CloudWatch monitoring for the supplied instance.
+        Enable detailed CloudWatch monitoring for the supplied instance.
 
         :type instance_id: string
         :param instance_id: The instance id
@@ -3911,7 +3925,7 @@ class EC2Connection(AWSQueryConnection):
     def unmonitor_instance(self, instance_id, dry_run=False):
         """
         Deprecated Version, maintained for backward compatibility.
-        Disable CloudWatch monitoring for the supplied instance.
+        Disable detailed CloudWatch monitoring for the supplied instance.
 
         :type instance_id: string
         :param instance_id: The instance id
@@ -4379,7 +4393,8 @@ class EC2Connection(AWSQueryConnection):
         """
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
-
+        :rtype: :class:`boto.ec2.image.CopyImage`
+        :return: Object containing the image_id of the copied image.
         """
         params = {
             'SourceRegion': source_region,
