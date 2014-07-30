@@ -38,7 +38,8 @@ class BlockDeviceType(object):
                  delete_on_termination=False,
                  size=None,
                  volume_type=None,
-                 iops=None):
+                 iops=None,
+                 encrypted=False):
         self.connection = connection
         self.ephemeral_name = ephemeral_name
         self.no_device = no_device
@@ -50,6 +51,7 @@ class BlockDeviceType(object):
         self.size = size
         self.volume_type = volume_type
         self.iops = iops
+        self.encrypted = encrypted
 
     def startElement(self, name, attrs, connection):
         pass
@@ -76,6 +78,8 @@ class BlockDeviceType(object):
             self.volume_type = value
         elif lname == 'iops':
             self.iops = int(value)
+        elif lname == 'encrypted':
+            self.encrypted = (value == 'true')
         else:
             setattr(self, name, value)
 
@@ -150,4 +154,8 @@ class BlockDeviceMapping(dict):
                         params['%s.Ebs.VolumeType' % pre] = block_dev.volume_type
                     if block_dev.iops is not None:
                         params['%s.Ebs.Iops' % pre] = block_dev.iops
+                    if block_dev.encrypted:
+                        params['%s.Ebs.Encrypted' % pre] = 'true'
+                    else:
+                        params['%s.Ebs.Encrypted' % pre] = 'false'
             i += 1
