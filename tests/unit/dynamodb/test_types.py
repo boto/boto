@@ -81,23 +81,31 @@ class TestDynamizer(unittest.TestCase):
 
 
 class TestBinary(unittest.TestCase):
-    def test_bad_input(self):
-        with self.assertRaises(TypeError):
-            data = types.Binary(1)
-
     def test_good_input(self):
         data = types.Binary(b'\x01')
         self.assertEqual(b'\x01', data)
         self.assertEqual(b'\x01', bytes(data))
 
     if six.PY2:
+        def test_bad_input(self):
+            with self.assertRaises(TypeError):
+                types.Binary(1)
+
         def test_unicode(self):
             # It's dirty. But remains for backward compatibility.
             data = types.Binary(u'\x01')
             self.assertEqual(data, b'\x01')
             self.assertEqual(bytes(data), b'\x01')
-            self.assertNotEqual(data, u'\x01')
+
+            # Delegate to built-in b'\x01' == u'\x01'
+            # In Python 2.x these are considered equal
+            self.assertEqual(data, u'\x01')
     else:
+        def test_bytes_input(self):
+            data = types.Binary(1)
+            self.assertEqual(data, b'\x00')
+            self.assertEqual(data.value, b'\x00')
+
         def test_unicode(self):
             with self.assertRaises(TypeError):
                 types.Binary(u'\x01')

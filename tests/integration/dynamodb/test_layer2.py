@@ -432,8 +432,8 @@ class DynamoDBLayer2Test(unittest.TestCase):
             'Views': 0,
             'Replies': 0,
             'Answered': 0,
-            'BinaryData': Binary('\x01\x02\x03\x04'),
-            'BinarySequence': set([Binary('\x01\x02'), Binary(b'\x03\x04')]),
+            'BinaryData': Binary(b'\x01\x02\x03\x04'),
+            'BinarySequence': set([Binary(b'\x01\x02'), Binary(b'\x03\x04')]),
             'Tags': set(['largeobject', 'multipart upload']),
             'LastPostDateTime': '12/9/2011 11:36:03 PM'
         }
@@ -449,7 +449,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
         # Also comparable directly to bytes:
         self.assertEqual(retrieved['BinaryData'], b'\x01\x02\x03\x04')
         self.assertEqual(retrieved['BinarySequence'],
-                         set([Binary('\x01\x02'), Binary('\x03\x04')]))
+                         set([Binary(b'\x01\x02'), Binary(b'\x03\x04')]))
 
     def test_put_decimal_attrs(self):
         self.dynamodb.use_decimals()

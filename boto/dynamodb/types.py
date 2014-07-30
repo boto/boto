@@ -148,7 +148,7 @@ def dynamize_value(val):
 if six.PY2:
     class Binary(object):
         def __init__(self, value):
-            if isinstance(value, unicode):  # Support only PY2 for backward compatibility.
+            if isinstance(value, six.text_type):  # Support only PY2 for backward compatibility.
                 value = value.encode('utf-8')
             elif not isinstance(value, bytes):
                 raise TypeError('Value must be a string of binary data!')
@@ -179,6 +179,13 @@ else:
     class Binary(bytes):
         def encode(self):
             return base64.b64encode(self).decode('utf-8')
+
+        @property
+        def value(self):
+            # This matches the public API of the Python 2 version,
+            # but just returns itself since it is already a bytes
+            # instance.
+            return bytes(self)
 
         def __repr__(self):
             return 'Binary(%r)' % self.value
