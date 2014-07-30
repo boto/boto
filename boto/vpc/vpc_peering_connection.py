@@ -145,7 +145,7 @@ class VpcPeeringConnection(TaggedEC2Object):
             setattr(self, name, value)
 
     def delete(self):
-        return self.connection.delete_vpc(self.id)
+        return self.connection.delete_vpc_peering_connection(self.id)
 
     def _update(self, updated):
         self.__dict__.update(updated.__dict__)
