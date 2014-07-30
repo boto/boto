@@ -86,29 +86,32 @@ class TestBinary(unittest.TestCase):
         self.assertEqual(b'\x01', data)
         self.assertEqual(b'\x01', bytes(data))
 
-    if six.PY2:
-        def test_bad_input(self):
-            with self.assertRaises(TypeError):
-                types.Binary(1)
+    @unittest.skipUnless(six.PY2, "Python 2 only")
+    def test_bad_input(self):
+        with self.assertRaises(TypeError):
+            types.Binary(1)
 
-        def test_unicode(self):
-            # It's dirty. But remains for backward compatibility.
-            data = types.Binary(u'\x01')
-            self.assertEqual(data, b'\x01')
-            self.assertEqual(bytes(data), b'\x01')
+    @unittest.skipUnless(six.PY3, "Python 3 only")
+    def test_bytes_input(self):
+        data = types.Binary(1)
+        self.assertEqual(data, b'\x00')
+        self.assertEqual(data.value, b'\x00')
 
-            # Delegate to built-in b'\x01' == u'\x01'
-            # In Python 2.x these are considered equal
-            self.assertEqual(data, u'\x01')
-    else:
-        def test_bytes_input(self):
-            data = types.Binary(1)
-            self.assertEqual(data, b'\x00')
-            self.assertEqual(data.value, b'\x00')
+    @unittest.skipUnless(six.PY2, "Python 2 only")
+    def test_unicode_py2(self):
+        # It's dirty. But remains for backward compatibility.
+        data = types.Binary(u'\x01')
+        self.assertEqual(data, b'\x01')
+        self.assertEqual(bytes(data), b'\x01')
 
-        def test_unicode(self):
-            with self.assertRaises(TypeError):
-                types.Binary(u'\x01')
+        # Delegate to built-in b'\x01' == u'\x01'
+        # In Python 2.x these are considered equal
+        self.assertEqual(data, u'\x01')
+
+    @unittest.skipUnless(six.PY3, "Python 3 only")
+    def test_unicode_py3(self):
+        with self.assertRaises(TypeError):
+            types.Binary(u'\x01')
 
 if __name__ == '__main__':
     unittest.main()
