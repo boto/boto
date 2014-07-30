@@ -433,7 +433,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
             'Replies': 0,
             'Answered': 0,
             'BinaryData': Binary('\x01\x02\x03\x04'),
-            'BinarySequence': set([Binary('\x01\x02'), Binary('\x03\x04')]),
+            'BinarySequence': set([Binary('\x01\x02'), Binary(b'\x03\x04')]),
             'Tags': set(['largeobject', 'multipart upload']),
             'LastPostDateTime': '12/9/2011 11:36:03 PM'
         }
@@ -445,7 +445,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
         self.assertEqual(retrieved['Views'], 0)
         self.assertEqual(retrieved['Tags'],
                          set(['largeobject', 'multipart upload']))
-        self.assertEqual(retrieved['BinaryData'], Binary('\x01\x02\x03\x04'))
+        self.assertEqual(retrieved['BinaryData'], Binary(b'\x01\x02\x03\x04'))
         # Also comparable directly to bytes:
         self.assertEqual(retrieved['BinaryData'], b'\x01\x02\x03\x04')
         self.assertEqual(retrieved['BinarySequence'],

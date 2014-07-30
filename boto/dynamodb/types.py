@@ -64,18 +64,13 @@ if six.PY2:
     def is_binary(n):
         return isinstance(n, Binary)
 
-    def convert_binary(n):
-        return Binary(base64.b64decode(n))
-else:
+else:  # PY3
     def is_str(n):
         return (isinstance(n, str) or
                 isinstance(n, type) and issubclass(n, str))
 
     def is_binary(n):
-        return isinstance(n, (Binary, bytes))
-
-    def convert_binary(n):
-        return base64.b64decode(n)
+        return isinstance(n, bytes)  # Binary is subclass of bytes.
 
 
 def serialize_num(val):
@@ -93,6 +88,10 @@ def convert_num(s):
     else:
         n = int(s)
     return n
+
+
+def convert_binary(n):
+    return Binary(base64.b64decode(n))
 
 
 def get_dynamodb_type(val):
@@ -146,37 +145,45 @@ def dynamize_value(val):
     return val
 
 
-class Binary(object):
-    def __init__(self, value):
-        if isinstance(value, bytes):
-            pass
-        elif isinstance(value, six.text_type):
-            value = value.encode('utf-8')
-        else:
-            raise TypeError('Value must be a string of binary data!')
+if six.PY2:
+    class Binary(object):
+        def __init__(self, value):
+            if isinstance(value, bytes):
+                pass
+            elif isinstance(value, six.text_type):
+                value = value.encode('utf-8')
+            else:
+                raise TypeError('Value must be a string of binary data!')
 
-        self.value = value
+            self.value = value
 
-    def encode(self):
-        return base64.b64encode(self.value).decode('utf-8')
+        def encode(self):
+            return base64.b64encode(self.value).decode('utf-8')
 
-    def __eq__(self, other):
-        if isinstance(other, Binary):
-            return self.value == other.value
-        else:
-            return self.value == other
+        def __eq__(self, other):
+            if isinstance(other, Binary):
+                return self.value == other.value
+            else:
+                return self.value == other
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
+        def __ne__(self, other):
+            return not self.__eq__(other)
 
-    def __repr__(self):
-        return 'Binary(%s)' % self.value
+        def __repr__(self):
+            return 'Binary(%r)' % self.value
 
-    def __str__(self):
-        return self.value.decode('utf-8')
+        def __str__(self):
+            return self.value.decode('utf-8')
 
-    def __hash__(self):
-        return hash(self.value)
+        def __hash__(self):
+            return hash(self.value)
+else:
+    class Binary(bytes):
+        def encode(self):
+            return base64.b64encode(self).decode('utf-8')
+
+        def __repr__(self):
+            return 'Binary(%r)' % self.value
 
 
 def item_object_hook(dct):
