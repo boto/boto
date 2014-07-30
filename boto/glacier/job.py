@@ -124,7 +124,7 @@ class Job(object):
                                      verify_hashes, retry_exceptions)
 
     def download_to_fileobj(self, output_file, chunk_size=DefaultPartSize,
-                            verify_hashes=True, 
+                            verify_hashes=True,
                             retry_exceptions=(socket.error,)):
         """Download an archive to a file object.
 

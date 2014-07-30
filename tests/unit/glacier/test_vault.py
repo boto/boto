@@ -69,7 +69,7 @@ class TestVault(unittest.TestCase):
         # The write should be created with the default part size of the
         # instance (2 MB).
         self.vault.create_archive_writer.assert_called_with(
-                description=mock.ANY, part_size=self.vault.DefaultPartSize)
+            description=mock.ANY, part_size=self.vault.DefaultPartSize)
 
     def test_large_part_size_is_obeyed(self):
         self.vault.DefaultPartSize = 8 * 1024 * 1024

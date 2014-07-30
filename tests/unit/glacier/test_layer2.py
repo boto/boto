@@ -32,73 +32,71 @@ import boto.glacier.vault
 from boto.glacier.vault import Vault
 from boto.glacier.vault import Job
 
-from boto.compat import StringIO
-
 from datetime import datetime, tzinfo, timedelta
 
 # Some fixture data from the Glacier docs
 FIXTURE_VAULT = {
-  "CreationDate" : "2012-02-20T17:01:45.198Z",
-  "LastInventoryDate" : "2012-03-20T17:03:43.221Z",
-  "NumberOfArchives" : 192,
-  "SizeInBytes" : 78088912,
-  "VaultARN" : "arn:aws:glacier:us-east-1:012345678901:vaults/examplevault",
-  "VaultName" : "examplevault"
+    "CreationDate": "2012-02-20T17:01:45.198Z",
+    "LastInventoryDate": "2012-03-20T17:03:43.221Z",
+    "NumberOfArchives": 192,
+    "SizeInBytes": 78088912,
+    "VaultARN": "arn:aws:glacier:us-east-1:012345678901:vaults/examplevault",
+    "VaultName": "examplevault"
 }
 
 FIXTURE_VAULTS = {
-        'RequestId': 'vuXO7SHTw-luynJ0Zu31AYjR3TcCn7X25r7ykpuulxY2lv8',
-        'VaultList': [{'SizeInBytes': 0, 'LastInventoryDate': None,
-                       'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault0',
-                       'VaultName': 'vault0', 'NumberOfArchives': 0,
-                       'CreationDate': '2013-05-17T02:38:39.049Z'},
-                      {'SizeInBytes': 0, 'LastInventoryDate': None,
-                       'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault3',
-                       'VaultName': 'vault3', 'NumberOfArchives': 0,
-                       'CreationDate': '2013-05-17T02:31:18.659Z'}]}
+    'RequestId': 'vuXO7SHTw-luynJ0Zu31AYjR3TcCn7X25r7ykpuulxY2lv8',
+    'VaultList': [{'SizeInBytes': 0, 'LastInventoryDate': None,
+                   'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault0',
+                   'VaultName': 'vault0', 'NumberOfArchives': 0,
+                   'CreationDate': '2013-05-17T02:38:39.049Z'},
+                  {'SizeInBytes': 0, 'LastInventoryDate': None,
+                   'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault3',
+                   'VaultName': 'vault3', 'NumberOfArchives': 0,
+                   'CreationDate': '2013-05-17T02:31:18.659Z'}]}
 
 FIXTURE_PAGINATED_VAULTS = {
-        'Marker': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault2',
-        'RequestId': 'vuXO7SHTw-luynJ0Zu31AYjR3TcCn7X25r7ykpuulxY2lv8',
-        'VaultList': [{'SizeInBytes': 0, 'LastInventoryDate': None,
-                       'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault0',
-                       'VaultName': 'vault0', 'NumberOfArchives': 0,
-                       'CreationDate': '2013-05-17T02:38:39.049Z'},
-                      {'SizeInBytes': 0, 'LastInventoryDate': None,
-                       'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault1',
-                       'VaultName': 'vault1', 'NumberOfArchives': 0,
-                       'CreationDate': '2013-05-17T02:31:18.659Z'}]}
+    'Marker': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault2',
+    'RequestId': 'vuXO7SHTw-luynJ0Zu31AYjR3TcCn7X25r7ykpuulxY2lv8',
+    'VaultList': [{'SizeInBytes': 0, 'LastInventoryDate': None,
+                   'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault0',
+                   'VaultName': 'vault0', 'NumberOfArchives': 0,
+                   'CreationDate': '2013-05-17T02:38:39.049Z'},
+                  {'SizeInBytes': 0, 'LastInventoryDate': None,
+                   'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault1',
+                   'VaultName': 'vault1', 'NumberOfArchives': 0,
+                   'CreationDate': '2013-05-17T02:31:18.659Z'}]}
 FIXTURE_PAGINATED_VAULTS_CONT = {
-        'Marker': None,
-        'RequestId': 'vuXO7SHTw-luynJ0Zu31AYjR3TcCn7X25r7ykpuulxY2lv8',
-        'VaultList': [{'SizeInBytes': 0, 'LastInventoryDate': None,
-                       'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault2',
-                       'VaultName': 'vault2', 'NumberOfArchives': 0,
-                       'CreationDate': '2013-05-17T02:38:39.049Z'},
-                      {'SizeInBytes': 0, 'LastInventoryDate': None,
-                       'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault3',
-                       'VaultName': 'vault3', 'NumberOfArchives': 0,
-                       'CreationDate': '2013-05-17T02:31:18.659Z'}]}
+    'Marker': None,
+    'RequestId': 'vuXO7SHTw-luynJ0Zu31AYjR3TcCn7X25r7ykpuulxY2lv8',
+    'VaultList': [{'SizeInBytes': 0, 'LastInventoryDate': None,
+                   'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault2',
+                   'VaultName': 'vault2', 'NumberOfArchives': 0,
+                   'CreationDate': '2013-05-17T02:38:39.049Z'},
+                  {'SizeInBytes': 0, 'LastInventoryDate': None,
+                   'VaultARN': 'arn:aws:glacier:us-east-1:686406519478:vaults/vault3',
+                   'VaultName': 'vault3', 'NumberOfArchives': 0,
+                   'CreationDate': '2013-05-17T02:31:18.659Z'}]}
 
 FIXTURE_ARCHIVE_JOB = {
-  "Action": "ArchiveRetrieval",
-  "ArchiveId": ("NkbByEejwEggmBz2fTHgJrg0XBoDfjP4q6iu87-TjhqG6eGoOY9Z8i1_AUyUs"
-                "uhPAdTqLHy8pTl5nfCFJmDl2yEZONi5L26Omw12vcs01MNGntHEQL8MBfGlqr"
-                "EXAMPLEArchiveId"),
-  "ArchiveSizeInBytes": 16777216,
-  "Completed": False,
-  "CreationDate": "2012-05-15T17:21:39.339Z",
-  "CompletionDate": "2012-05-15T17:21:43.561Z",
-  "InventorySizeInBytes": None,
-  "JobDescription": "My ArchiveRetrieval Job",
-  "JobId": ("HkF9p6o7yjhFx-K3CGl6fuSm6VzW9T7esGQfco8nUXVYwS0jlb5gq1JZ55yHgt5v"
-            "P54ZShjoQzQVVh7vEXAMPLEjobID"),
-  "SHA256TreeHash": ("beb0fe31a1c7ca8c6c04d574ea906e3f97b31fdca7571defb5b44dc"
-                     "a89b5af60"),
-  "SNSTopic": "arn:aws:sns:us-east-1:012345678901:mytopic",
-  "StatusCode": "InProgress",
-  "StatusMessage": "Operation in progress.",
-  "VaultARN": "arn:aws:glacier:us-east-1:012345678901:vaults/examplevault"
+    "Action": "ArchiveRetrieval",
+    "ArchiveId": ("NkbByEejwEggmBz2fTHgJrg0XBoDfjP4q6iu87-TjhqG6eGoOY9Z8i1_AUyUs"
+                  "uhPAdTqLHy8pTl5nfCFJmDl2yEZONi5L26Omw12vcs01MNGntHEQL8MBfGlqr"
+                  "EXAMPLEArchiveId"),
+    "ArchiveSizeInBytes": 16777216,
+    "Completed": False,
+    "CreationDate": "2012-05-15T17:21:39.339Z",
+    "CompletionDate": "2012-05-15T17:21:43.561Z",
+    "InventorySizeInBytes": None,
+    "JobDescription": "My ArchiveRetrieval Job",
+    "JobId": ("HkF9p6o7yjhFx-K3CGl6fuSm6VzW9T7esGQfco8nUXVYwS0jlb5gq1JZ55yHgt5v"
+              "P54ZShjoQzQVVh7vEXAMPLEjobID"),
+    "SHA256TreeHash": ("beb0fe31a1c7ca8c6c04d574ea906e3f97b31fdca7571defb5b44dc"
+                       "a89b5af60"),
+    "SNSTopic": "arn:aws:sns:us-east-1:012345678901:mytopic",
+    "StatusCode": "InProgress",
+    "StatusMessage": "Operation in progress.",
+    "VaultARN": "arn:aws:glacier:us-east-1:012345678901:vaults/examplevault"
 }
 
 EXAMPLE_PART_LIST_RESULT_PAGE_1 = {
@@ -107,11 +105,10 @@ EXAMPLE_PART_LIST_RESULT_PAGE_1 = {
     "Marker": "MfgsKHVjbQ6EldVl72bn3_n5h2TaGZQUO-Qb3B9j3TITf7WajQ",
     "MultipartUploadId": "OW2fM5iVylEpFEMM9_HpKowRapC3vn5sSL39_396UW9zLFUWVrnRHaPjUJddQ5OxSHVXjYtrN47NBZ-khxOjyEXAMPLE",
     "PartSizeInBytes": 4194304,
-    "Parts":
-    [ {
-      "RangeInBytes": "4194304-8388607",
-      "SHA256TreeHash": "01d34dabf7be316472c93b1ef80721f5d4"
-      }],
+    "Parts": [{
+        "RangeInBytes": "4194304-8388607",
+        "SHA256TreeHash": "01d34dabf7be316472c93b1ef80721f5d4"
+    }],
     "VaultARN": "arn:aws:glacier:us-east-1:012345678901:vaults/demo1-vault"
 }
 
@@ -123,11 +120,10 @@ EXAMPLE_PART_LIST_RESULT_PAGE_2 = {
     "Marker": None,
     "MultipartUploadId": None,
     "PartSizeInBytes": None,
-    "Parts":
-    [ {
-      "RangeInBytes": "0-4194303",
-      "SHA256TreeHash": "01d34dabf7be316472c93b1ef80721f5d4"
-      }],
+    "Parts": [{
+        "RangeInBytes": "0-4194303",
+        "SHA256TreeHash": "01d34dabf7be316472c93b1ef80721f5d4"
+    }],
     "VaultARN": None
 }
 
@@ -137,14 +133,13 @@ EXAMPLE_PART_LIST_COMPLETE = {
     "Marker": None,
     "MultipartUploadId": "OW2fM5iVylEpFEMM9_HpKowRapC3vn5sSL39_396UW9zLFUWVrnRHaPjUJddQ5OxSHVXjYtrN47NBZ-khxOjyEXAMPLE",
     "PartSizeInBytes": 4194304,
-    "Parts":
-    [ {
-      "RangeInBytes": "4194304-8388607",
-      "SHA256TreeHash": "01d34dabf7be316472c93b1ef80721f5d4"
+    "Parts": [{
+        "RangeInBytes": "4194304-8388607",
+        "SHA256TreeHash": "01d34dabf7be316472c93b1ef80721f5d4"
     }, {
-      "RangeInBytes": "0-4194303",
-      "SHA256TreeHash": "01d34dabf7be316472c93b1ef80721f5d4"
-      }],
+        "RangeInBytes": "0-4194303",
+        "SHA256TreeHash": "01d34dabf7be316472c93b1ef80721f5d4"
+    }],
     "VaultARN": "arn:aws:glacier:us-east-1:012345678901:vaults/demo1-vault"
 }
 
@@ -183,7 +178,7 @@ class TestGlacierLayer2Connection(GlacierLayer2Base):
         def return_paginated_vaults_resp(marker=None, limit=None):
             return resps.pop(0)
 
-        self.mock_layer1.list_vaults = Mock(side_effect = return_paginated_vaults_resp)
+        self.mock_layer1.list_vaults = Mock(side_effect=return_paginated_vaults_resp)
         vaults = self.layer2.list_vaults()
         self.assertEqual(vaults[0].name, "vault0")
         self.assertEqual(vaults[3].name, "vault3")
@@ -287,11 +282,11 @@ class TestVault(GlacierLayer2Base):
             'Parts': [{
                 'RangeInBytes': '0-3',
                 'SHA256TreeHash': '12',
-                }, {
+            }, {
                 'RangeInBytes': '4-6',
                 'SHA256TreeHash': '34',
-                },
-        ]}
+            }],
+        }
 
         self.vault.list_all_parts = mock_list_parts
         self.vault.resume_archive_from_file(
@@ -314,6 +309,7 @@ class TestJob(GlacierLayer2Base):
             "examplevault",
             "HkF9p6o7yjhFx-K3CGl6fuSm6VzW9T7esGQfco8nUXVYwS0jlb5gq1JZ55yHgt5vP"
             "54ZShjoQzQVVh7vEXAMPLEjobID", (0, 100))
+
 
 class TestRangeStringParsing(unittest.TestCase):
     def test_simple_range(self):

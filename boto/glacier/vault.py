@@ -23,7 +23,6 @@
 #
 from __future__ import with_statement
 import codecs
-from boto.compat import six
 from boto.glacier.exceptions import UploadArchiveError
 from boto.glacier.job import Job
 from boto.glacier.writer import compute_hashes_from_fileobj, \
