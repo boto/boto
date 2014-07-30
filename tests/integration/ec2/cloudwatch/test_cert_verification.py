@@ -27,7 +27,7 @@ Check that all of the certs on all service endpoints validate.
 from tests.integration import ServiceCertVerificationTest
 
 import boto.ec2.cloudwatch
-from boto.compat import unittest
+from tests.compat import unittest
 
 
 class CloudWatchCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
