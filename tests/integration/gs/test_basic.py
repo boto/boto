@@ -30,12 +30,11 @@ Some integration tests for the GSConnection
 
 import os
 import re
-import urllib
 import xml.sax
 
 from boto import handler
 from boto import storage_uri
-from boto.compat import StringIO
+from boto.compat import StringIO, urllib
 from boto.gs.acl import ACL
 from boto.gs.cors import Cors
 from boto.gs.lifecycle import LifecycleConfig
@@ -88,7 +87,7 @@ class GSBasicTest(GSTestCase):
         bucket = self._GetConnection().get_bucket(bucket_name)
         key_name = 'foobar'
         k = bucket.new_key(key_name)
-        s1 = 'This is a test of file upload and download'
+        s1 = b'This is a test of file upload and download'
         k.set_contents_from_string(s1)
         tmpdir = self._MakeTempDir()
         fpath = os.path.join(tmpdir, key_name)
@@ -102,7 +101,7 @@ class GSBasicTest(GSTestCase):
         fp.close()
         # Use generate_url to get the contents
         url = self._conn.generate_url(900, 'GET', bucket=bucket.name, key=key_name)
-        f = urllib.urlopen(url)
+        f = urllib.request.urlopen(url)
         self.assertEqual(s1, f.read())
         f.close()
         # check to make sure set_contents_from_file is working
@@ -239,9 +238,9 @@ class GSBasicTest(GSTestCase):
 
         # Test case-insensitivity of XML ACL parsing.
         acl_xml = (
-            '<ACCESSControlList><EntrIes><Entry>' +
-            '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
-            '</Entry></EntrIes></ACCESSControlList>')
+            b'<ACCESSControlList><EntrIes><Entry>'
+            b'<Scope type="AllUsers"></Scope><Permission>READ</Permission>'
+            b'</Entry></EntrIes></ACCESSControlList>')
         acl = ACL()
         h = handler.XmlHandler(acl, bucket)
         xml.sax.parseString(acl_xml, h)
@@ -253,12 +252,12 @@ class GSBasicTest(GSTestCase):
     def test_logging(self):
         """Test set/get raw logging subresource."""
         bucket = self._MakeBucket()
-        empty_logging_str = "<?xml version='1.0' encoding='UTF-8'?><Logging/>"
+        empty_logging_str = b"<?xml version='1.0' encoding='UTF-8'?><Logging/>"
         logging_str = (
-            "<?xml version='1.0' encoding='UTF-8'?><Logging>"
-            "<LogBucket>log-bucket</LogBucket>" +
-            "<LogObjectPrefix>example</LogObjectPrefix>" +
-            "</Logging>")
+            b"<?xml version='1.0' encoding='UTF-8'?><Logging>"
+            b"<LogBucket>log-bucket</LogBucket>"
+            b"<LogObjectPrefix>example</LogObjectPrefix>"
+            b"</Logging>")
         bucket.set_subresource('logging', logging_str)
         self.assertEqual(bucket.get_subresource('logging'), logging_str)
         # try disable/enable logging
@@ -395,7 +394,7 @@ class GSBasicTest(GSTestCase):
         # set cors document on new bucket
         cors_obj = Cors()
         h = handler.XmlHandler(cors_obj, None)
-        xml.sax.parseString(CORS_DOC, h)
+        xml.sax.parseString(CORS_DOC.encode('utf-8'), h)
         uri.set_cors(cors_obj)
         cors = re.sub(r'\s', '', uri.get_cors().to_xml())
         self.assertEqual(cors, CORS_DOC)

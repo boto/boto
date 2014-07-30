@@ -27,6 +27,7 @@ import errno
 import random
 import os
 import time
+from io import BytesIO
 
 import boto
 from boto import storage_uri
@@ -34,7 +35,6 @@ from boto.gs.resumable_upload_handler import ResumableUploadHandler
 from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
-from boto.compat import StringIO
 from tests.integration.gs.cb_test_harness import CallbackTestHarness
 from tests.integration.gs.testcase import GSTestCase
 
@@ -52,12 +52,12 @@ class ResumableUploadTests(GSTestCase):
         # I manually construct the random data here instead of calling
         # os.urandom() because I want to constrain the range of data (in
         # this case to 0'..'9') so the test
-        # code can easily overwrite part of the StringIO file with
+        # code can easily overwrite part of the BytesIO file with
         # known-to-be-different values.
         for i in range(size):
-            buf.append(str(random.randint(0, 9)))
-        file_as_string = ''.join(buf)
-        return (file_as_string, StringIO(file_as_string))
+            buf.append(str(random.randint(0, 9)).encode('utf-8'))
+        file_as_string = b''.join(buf)
+        return (file_as_string, BytesIO(file_as_string))
 
     def make_small_file(self):
         return self.build_input_file(SMALL_KEY_SIZE)
@@ -296,7 +296,7 @@ class ResumableUploadTests(GSTestCase):
         Tests uploading an empty file (exercises boundary conditions).
         """
         res_upload_handler = ResumableUploadHandler()
-        empty_src_file = StringIO('')
+        empty_src_file = BytesIO(b'')
         empty_src_file.seek(0)
         dst_key = self._MakeKey(set_contents=False)
         dst_key.set_contents_from_file(

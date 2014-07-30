@@ -367,6 +367,8 @@ class ResumableUploadHandler(object):
         # in debug stream.
         http_conn.set_debuglevel(0)
         while buf:
+            if not isinstance(buf, bytes):
+                buf = buf.encode('utf-8')
             http_conn.send(buf)
             for alg in self.digesters:
                 self.digesters[alg].update(buf)

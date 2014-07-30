@@ -98,7 +98,7 @@ class GSVersioningTest(GSTestCase):
         k = b.get_key("foo")
         g1 = k.generation
         o1 = k.get_contents_as_string()
-        self.assertEqual(o1, s1)
+        self.assertEqual(o1, s1.encode('utf-8'))
 
         s2 = "test2"
         k.set_contents_from_string(s2)
@@ -106,12 +106,12 @@ class GSVersioningTest(GSTestCase):
         g2 = k.generation
         self.assertNotEqual(g2, g1)
         o2 = k.get_contents_as_string()
-        self.assertEqual(o2, s2)
+        self.assertEqual(o2, s2.encode('utf-8'))
 
         k = b.get_key("foo", generation=g1)
-        self.assertEqual(k.get_contents_as_string(), s1)
+        self.assertEqual(k.get_contents_as_string(), s1.encode('utf-8'))
         k = b.get_key("foo", generation=g2)
-        self.assertEqual(k.get_contents_as_string(), s2)
+        self.assertEqual(k.get_contents_as_string(), s2.encode('utf-8'))
 
     def testVersionedBucketCannedAcl(self):
         b = self._MakeVersionedBucket()
@@ -174,9 +174,9 @@ class GSVersioningTest(GSTestCase):
         self.assertEqual(len(entries1g1), len(entries1g2))
 
         acl_xml = (
-            '<ACCESSControlList><EntrIes><Entry>' +
-            '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
-            '</Entry></EntrIes></ACCESSControlList>')
+            b'<ACCESSControlList><EntrIes><Entry>'
+             '<Scope type="AllUsers"></Scope><Permission>READ</Permission>'
+             '</Entry></EntrIes></ACCESSControlList>')
         aclo = acl.ACL()
         h = handler.XmlHandler(aclo, b)
         sax.parseString(acl_xml, h)
@@ -249,7 +249,7 @@ class GSVersioningTest(GSTestCase):
 
         k2 = b2.get_key("foo2")
         s3 = k2.get_contents_as_string()
-        self.assertEqual(s3, s1)
+        self.assertEqual(s3, s1.encode('utf-8'))
 
     def testKeyGenerationUpdatesOnSet(self):
         b = self._MakeVersionedBucket()

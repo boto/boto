@@ -58,7 +58,7 @@ class ResumableDownloadTests(GSTestCase):
         if not tmpdir:
             tmpdir = self._MakeTempDir()
         dst_file = os.path.join(tmpdir, 'dstfile')
-        return open(dst_file, 'w')
+        return open(dst_file, 'wb')
 
     def test_non_resumable_download(self):
         """

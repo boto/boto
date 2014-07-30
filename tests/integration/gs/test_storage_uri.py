@@ -143,11 +143,11 @@ class GSStorageUriTest(GSTestCase):
         components = [key_uri1, key_uri2]
         key_uri_composite.compose(components, content_type='text/plain')
         self.assertEquals(key_uri_composite.get_contents_as_string(),
-                          data1 + data2)
+                          (data1 + data2).encode('utf-8'))
         composite_key = key_uri_composite.get_key()
         cloud_crc32c = binascii.hexlify(
             composite_key.cloud_hashes['crc32c'])
-        self.assertEquals(cloud_crc32c, hex(expected_crc)[2:])
+        self.assertEquals(cloud_crc32c.decode('utf-8'), hex(expected_crc)[2:])
         self.assertEquals(composite_key.content_type, 'text/plain')
 
         # Compose disallowed between buckets.
