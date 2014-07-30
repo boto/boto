@@ -4393,7 +4393,8 @@ class EC2Connection(AWSQueryConnection):
         """
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
-
+        :rtype: :class:`boto.ec2.image.CopyImage`
+        :return: Object containing the image_id of the copied image.
         """
         params = {
             'SourceRegion': source_region,
