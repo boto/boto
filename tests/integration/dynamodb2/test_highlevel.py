@@ -229,7 +229,7 @@ class DynamoDBv2Test(unittest.TestCase):
 
         for res in results:
             self.assertTrue(res['username'] in ['johndoe',])
-            self.assertEqual(res.keys(), ['username'])
+            self.assertEqual(list(res.keys()), ['username'])
 
         # Ensure that queries with attributes don't return the hash key.
         results = users.query_2(
@@ -239,8 +239,8 @@ class DynamoDBv2Test(unittest.TestCase):
         )
 
         for res in results:
-            self.assertTrue(res['first_name'] in ['John',])
-            self.assertEqual(res.keys(), ['first_name'])
+            self.assertEqual(res['first_name'], 'John')
+            self.assertEqual(list(res.keys()), ['first_name'])
 
         # Test the strongly consistent query.
         c_results = users.query_2(
@@ -252,7 +252,7 @@ class DynamoDBv2Test(unittest.TestCase):
         )
 
         for res in c_results:
-            self.assertTrue(res['username'] in ['johndoe',])
+            self.assertEqual(res['username'], 'johndoe')
 
         # Test a query with query filters
         results = users.query_2(
@@ -268,14 +268,14 @@ class DynamoDBv2Test(unittest.TestCase):
 
         # Test scans without filters.
         all_users = users.scan(limit=7)
-        self.assertEqual(all_users.next()['username'], 'bob')
-        self.assertEqual(all_users.next()['username'], 'jane')
-        self.assertEqual(all_users.next()['username'], 'johndoe')
+        self.assertEqual(next(all_users)['username'], 'bob')
+        self.assertEqual(next(all_users)['username'], 'jane')
+        self.assertEqual(next(all_users)['username'], 'johndoe')
 
         # Test scans with a filter.
         filtered_users = users.scan(limit=2, username__beginswith='j')
-        self.assertEqual(filtered_users.next()['username'], 'jane')
-        self.assertEqual(filtered_users.next()['username'], 'johndoe')
+        self.assertEqual(next(filtered_users)['username'], 'jane')
+        self.assertEqual(next(filtered_users)['username'], 'johndoe')
 
         # Test deleting a single item.
         johndoe = users.get_item(username='johndoe', friend_count=4)
@@ -290,7 +290,7 @@ class DynamoDBv2Test(unittest.TestCase):
 
         for res in results:
             batch_users.append(res)
-            self.assertTrue(res['first_name'] in ['Bob', 'Jane'])
+            self.assertIn(res['first_name'], ['Bob', 'Jane'])
 
         self.assertEqual(len(batch_users), 2)
 

@@ -56,13 +56,21 @@ def is_num(n):
     return isinstance(n, types) or n in types
 
 
-def is_str(n):
-    return isinstance(n, (bytes, six.text_type)) or (isinstance(n, type) and
-                                                     issubclass(n, (bytes, six.text_type)))
+if six.PY2:
+    def is_str(n):
+        return (isinstance(n, basestring) or
+                isinstance(n, type) and issubclass(n, basestring))
 
+    def is_binary(n):
+        return isinstance(n, Binary)
 
-def is_binary(n):
-    return isinstance(n, Binary)
+else:  # PY3
+    def is_str(n):
+        return (isinstance(n, str) or
+                isinstance(n, type) and issubclass(n, str))
+
+    def is_binary(n):
+        return isinstance(n, bytes)  # Binary is subclass of bytes.
 
 
 def serialize_num(val):
@@ -104,7 +112,7 @@ def get_dynamodb_type(val):
             dynamodb_type = 'SS'
         elif False not in map(is_binary, val):
             dynamodb_type = 'BS'
-    elif isinstance(val, Binary):
+    elif is_binary(val):
         dynamodb_type = 'B'
     if dynamodb_type is None:
         msg = 'Unsupported type "%s" for value "%s"' % (type(val), val)
@@ -129,43 +137,58 @@ def dynamize_value(val):
     elif dynamodb_type == 'SS':
         val = {dynamodb_type: [n for n in val]}
     elif dynamodb_type == 'B':
+        if isinstance(val, bytes):
+            val = Binary(val)
         val = {dynamodb_type: val.encode()}
     elif dynamodb_type == 'BS':
         val = {dynamodb_type: [n.encode() for n in val]}
     return val
 
 
-class Binary(object):
-    def __init__(self, value):
-        if isinstance(value, bytes):
-            pass
-        elif isinstance(value, six.text_type):
-            value = value.encode('utf-8')
-        else:
-            raise TypeError('Value must be a string of binary data!')
+if six.PY2:
+    class Binary(object):
+        def __init__(self, value):
+            if isinstance(value, six.text_type):  # Support only PY2 for backward compatibility.
+                value = value.encode('utf-8')
+            elif not isinstance(value, bytes):
+                raise TypeError('Value must be a string of binary data!')
 
-        self.value = value
+            self.value = value
 
-    def encode(self):
-        return base64.b64encode(self.value).decode('utf-8')
+        def encode(self):
+            return base64.b64encode(self.value).decode('utf-8')
 
-    def __eq__(self, other):
-        if isinstance(other, Binary):
-            return self.value == other.value
-        else:
-            return self.value == other
+        def __eq__(self, other):
+            if isinstance(other, Binary):
+                return self.value == other.value
+            else:
+                return self.value == other
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
+        def __ne__(self, other):
+            return not self.__eq__(other)
 
-    def __repr__(self):
-        return 'Binary(%s)' % self.value
+        def __repr__(self):
+            return 'Binary(%r)' % self.value
 
-    def __str__(self):
-        return self.value.decode('utf-8')
+        def __str__(self):
+            return self.value.decode('utf-8')
 
-    def __hash__(self):
-        return hash(self.value)
+        def __hash__(self):
+            return hash(self.value)
+else:
+    class Binary(bytes):
+        def encode(self):
+            return base64.b64encode(self).decode('utf-8')
+
+        @property
+        def value(self):
+            # This matches the public API of the Python 2 version,
+            # but just returns itself since it is already a bytes
+            # instance.
+            return bytes(self)
+
+        def __repr__(self):
+            return 'Binary(%r)' % self.value
 
 
 def item_object_hook(dct):
@@ -271,6 +294,8 @@ class Dynamizer(object):
         return [self._encode_s(n) for n in attr]
 
     def _encode_b(self, attr):
+        if isinstance(attr, bytes):
+            attr = Binary(attr)
         return attr.encode()
 
     def _encode_bs(self, attr):

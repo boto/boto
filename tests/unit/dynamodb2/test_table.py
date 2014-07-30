@@ -1,5 +1,4 @@
-from tests.unit import unittest
-from tests.compat import mock
+from tests.compat import mock, unittest
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey,
                                    AllIndex, KeysOnlyIndex, IncludeIndex,
@@ -12,7 +11,7 @@ from boto.dynamodb2.table import Table
 from boto.dynamodb2.types import (STRING, NUMBER, BINARY,
                                   FILTER_OPERATORS, QUERY_OPERATORS)
 from boto.exception import JSONResponseError
-from boto.compat import six
+from boto.compat import six, long_type
 
 
 FakeDynamoDBConnection = mock.create_autospec(DynamoDBConnection)
@@ -338,6 +337,9 @@ class IndexFieldTestCase(unittest.TestCase):
 
 
 class ItemTestCase(unittest.TestCase):
+    if six.PY2:
+        assertCountEqual = unittest.TestCase.assertItemsEqual
+
     def setUp(self):
         super(ItemTestCase, self).setUp()
         self.table = Table('whatever', connection=FakeDynamoDBConnection())
@@ -369,31 +371,25 @@ class ItemTestCase(unittest.TestCase):
     # ordering everywhere & no erroneous failures.
 
     def test_keys(self):
-        self.assertEqual(sorted(self.johndoe.keys()), [
+        self.assertCountEqual(self.johndoe.keys(), [
             'date_joined',
             'first_name',
             'username',
         ])
 
     def test_values(self):
-        self.assertEqual(sorted(self.johndoe.values()), [
-            12345,
-            'John',
-            'johndoe',
-        ])
+        self.assertCountEqual(self.johndoe.values(),
+                              [12345, 'John', 'johndoe'])
 
     def test_contains(self):
-        self.assertTrue('username' in self.johndoe)
-        self.assertTrue('first_name' in self.johndoe)
-        self.assertTrue('date_joined' in self.johndoe)
-        self.assertFalse('whatever' in self.johndoe)
+        self.assertIn('username', self.johndoe)
+        self.assertIn('first_name', self.johndoe)
+        self.assertIn('date_joined', self.johndoe)
+        self.assertNotIn('whatever', self.johndoe)
 
     def test_iter(self):
-        self.assertEqual(list(self.johndoe), [
-            'johndoe',
-            'John',
-            12345,
-        ])
+        self.assertCountEqual(self.johndoe,
+                              ['johndoe', 'John', 12345])
 
     def test_get(self):
         self.assertEqual(self.johndoe.get('username'), 'johndoe')
@@ -406,11 +402,13 @@ class ItemTestCase(unittest.TestCase):
         self.assertEqual(self.johndoe.get('last_name', True), True)
 
     def test_items(self):
-        self.assertEqual(sorted(self.johndoe.items()), [
-            ('date_joined', 12345),
-            ('first_name', 'John'),
-            ('username', 'johndoe'),
-        ])
+        self.assertCountEqual(
+            self.johndoe.items(),
+            [
+                ('date_joined', 12345),
+                ('first_name', 'John'),
+                ('username', 'johndoe'),
+            ])
 
     def test_attribute_access(self):
         self.assertEqual(self.johndoe['username'], 'johndoe')
@@ -599,12 +597,12 @@ class ItemTestCase(unittest.TestCase):
         })
 
         self.johndoe['friends'] = set(['jane', 'alice'])
-        self.assertEqual(self.johndoe.prepare_full(), {
-            'username': {'S': 'johndoe'},
-            'first_name': {'S': 'John'},
-            'date_joined': {'N': '12345'},
-            'friends': {'SS': ['jane', 'alice']},
-        })
+        data = self.johndoe.prepare_full()
+        self.assertEqual(data['username'], {'S': 'johndoe'})
+        self.assertEqual(data['first_name'], {'S': 'John'})
+        self.assertEqual(data['date_joined'], {'N': '12345'})
+        self.assertCountEqual(data['friends']['SS'],
+                              ['jane', 'alice'])
 
     def test_prepare_full_empty_set(self):
         self.johndoe['friends'] = set()
@@ -1551,33 +1549,36 @@ class TableTestCase(unittest.TestCase):
             self.assertEqual(self.users.throughput['read'], 9)
             self.assertEqual(self.users.throughput['write'], 5)
 
-        mock_update.assert_called_once_with(
-            'users',
-            global_secondary_index_updates=[
-                {
-                    'Update': {
-                        'IndexName': 'AnotherIndex',
-                        'ProvisionedThroughput': {
-                            'WriteCapacityUnits': 2,
-                            'ReadCapacityUnits': 1
-                        }
-                    }
-                },
-                {
-                    'Update': {
-                        'IndexName': 'WhateverIndex',
-                        'ProvisionedThroughput': {
-                            'WriteCapacityUnits': 1,
-                            'ReadCapacityUnits': 6
-                        }
+        args, kwargs = mock_update.call_args
+        self.assertEqual(args, ('users',))
+        self.assertEqual(kwargs['provisioned_throughput'], {
+            'WriteCapacityUnits': 5,
+            'ReadCapacityUnits': 9,
+            })
+        update = kwargs['global_secondary_index_updates'][:]
+        update.sort(key=lambda x: x['Update']['IndexName'])
+        self.assertDictEqual(
+            update[0],
+            {
+                'Update': {
+                    'IndexName': 'AnotherIndex',
+                    'ProvisionedThroughput': {
+                        'WriteCapacityUnits': 2,
+                        'ReadCapacityUnits': 1
                     }
                 }
-            ],
-            provisioned_throughput={
-                'WriteCapacityUnits': 5,
-                'ReadCapacityUnits': 9,
-            }
-        )
+            })
+        self.assertDictEqual(
+            update[1],
+            {
+                'Update': {
+                    'IndexName': 'WhateverIndex',
+                    'ProvisionedThroughput': {
+                        'WriteCapacityUnits': 1,
+                        'ReadCapacityUnits': 6
+                    }
+                }
+            })
 
     def test_delete(self):
         with mock.patch.object(
@@ -2486,7 +2487,7 @@ class TableTestCase(unittest.TestCase):
             # Now it should be populated.
             self.assertEqual(len(results._results), 2)
             self.assertEqual(res_1['username'], 'johndoe')
-            self.assertEqual(res_1.keys(), ['username'])
+            self.assertEqual(list(res_1.keys()), ['username'])
             res_2 = next(results)
             self.assertEqual(res_2['username'], 'jane')
 
@@ -2576,7 +2577,7 @@ class TableTestCase(unittest.TestCase):
             # Now it should be populated.
             self.assertEqual(len(results._results), 2)
             self.assertEqual(res_1['username'], 'johndoe')
-            self.assertEqual(res_1.keys(), ['username'])
+            self.assertEqual(list(res_1.keys()), ['username'])
             res_2 = next(results)
             self.assertEqual(res_2['username'], 'jane')
 

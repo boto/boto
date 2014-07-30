@@ -226,11 +226,7 @@ def retry_url(url, retry_on_404=True, num_retries=10):
             result = r.read()
             return result
         except urllib.error.HTTPError as e:
-            # in 2.6 you use getcode(), in 2.5 and earlier you use code
-            if hasattr(e, 'getcode'):
-                code = e.getcode()
-            else:
-                code = e.code
+            code = e.getcode()
             if code == 404 and not retry_on_404:
                 return ''
         except Exception as e:
