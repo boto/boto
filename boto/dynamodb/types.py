@@ -148,11 +148,9 @@ def dynamize_value(val):
 if six.PY2:
     class Binary(object):
         def __init__(self, value):
-            if isinstance(value, bytes):
-                pass
-            elif isinstance(value, six.text_type):
+            if isinstance(value, unicode):  # Support only PY2 for backward compatibility.
                 value = value.encode('utf-8')
-            else:
+            elif not isinstance(value, bytes):
                 raise TypeError('Value must be a string of binary data!')
 
             self.value = value
