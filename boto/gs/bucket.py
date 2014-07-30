@@ -941,7 +941,7 @@ class Bucket(S3Bucket):
 
         :param dict headers: Additional headers to send with the request.
         """
-        if enabled:
+        if enabled == True:
             req_body = self.VersioningBody % ('Enabled')
         else:
             req_body = self.VersioningBody % ('Suspended')

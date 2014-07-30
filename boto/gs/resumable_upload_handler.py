@@ -32,7 +32,7 @@ from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.s3.keyfile import KeyFile
-from boto.compat import long_type, six
+from boto.compat import long_type, six, http_client
 
 """
 Handler for Google Cloud Storage resumable uploads. See
@@ -54,7 +54,7 @@ save the state needed to allow retrying later, in a separate process
 class ResumableUploadHandler(object):
 
     BUFFER_SIZE = 8192
-    RETRYABLE_EXCEPTIONS = (six.moves.http_client.HTTPException, IOError, socket.error,
+    RETRYABLE_EXCEPTIONS = (http_client.HTTPException, IOError, socket.error,
                             socket.gaierror)
 
     # (start, end) response indicating server has nothing (upload protocol uses
