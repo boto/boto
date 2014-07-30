@@ -826,7 +826,7 @@ class EC2Connection(AWSQueryConnection):
             instances.
 
         :type monitoring_enabled: bool
-        :param monitoring_enabled: Enable CloudWatch monitoring on
+        :param monitoring_enabled: Enable detailed CloudWatch monitoring on
             the instance.
 
         :type subnet_id: string
@@ -1527,7 +1527,7 @@ class EC2Connection(AWSQueryConnection):
             instances
 
         :type monitoring_enabled: bool
-        :param monitoring_enabled: Enable CloudWatch monitoring on
+        :param monitoring_enabled: Enable detailed CloudWatch monitoring on
             the instance.
 
         :type subnet_id: string
@@ -3868,7 +3868,7 @@ class EC2Connection(AWSQueryConnection):
 
     def monitor_instances(self, instance_ids, dry_run=False):
         """
-        Enable CloudWatch monitoring for the supplied instances.
+        Enable detailed CloudWatch monitoring for the supplied instances.
 
         :type instance_id: list of strings
         :param instance_id: The instance ids
@@ -3889,7 +3889,7 @@ class EC2Connection(AWSQueryConnection):
     def monitor_instance(self, instance_id, dry_run=False):
         """
         Deprecated Version, maintained for backward compatibility.
-        Enable CloudWatch monitoring for the supplied instance.
+        Enable detailed CloudWatch monitoring for the supplied instance.
 
         :type instance_id: string
         :param instance_id: The instance id
@@ -3925,7 +3925,7 @@ class EC2Connection(AWSQueryConnection):
     def unmonitor_instance(self, instance_id, dry_run=False):
         """
         Deprecated Version, maintained for backward compatibility.
-        Disable CloudWatch monitoring for the supplied instance.
+        Disable detailed CloudWatch monitoring for the supplied instance.
 
         :type instance_id: string
         :param instance_id: The instance id
