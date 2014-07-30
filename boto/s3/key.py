@@ -31,6 +31,7 @@ import re
 import base64
 import binascii
 import math
+from hashlib import md5
 import boto.utils
 from boto.compat import BytesIO, six, urllib
 
@@ -44,11 +45,6 @@ from boto import UserAgent
 from boto.utils import compute_md5, compute_hash
 from boto.utils import find_matching_headers
 from boto.utils import merge_headers_by_name
-
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
 
 
 class Key(object):
