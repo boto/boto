@@ -183,7 +183,7 @@ def merge_meta(headers, metadata, provider=None):
     for k in metadata.keys():
         if k.lower() in ['cache-control', 'content-md5', 'content-type',
                          'content-encoding', 'content-disposition',
-                         'expires']:
+                         'expires', 'x-robots-tag', 'content-language']:
             final_headers[k] = metadata[k]
         else:
             final_headers[metadata_prefix + k] = metadata[k]
