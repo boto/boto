@@ -99,7 +99,7 @@ class HmacKeys(object):
 
     def __setstate__(self, dct):
         self.__dict__ = dct
-        self.update_provider(self._provider.encode('utf-8'))
+        self.update_provider(self._provider)
 
 
 class AnonAuthHandler(AuthHandler, HmacKeys):
