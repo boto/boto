@@ -63,18 +63,8 @@ from boto.compat import six, StringIO, urllib, encodebytes
 
 from contextlib import contextmanager
 
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
-
-
-try:
-    import hashlib
-    _hashfn = hashlib.sha512
-except ImportError:
-    import md5
-    _hashfn = md5.md5
+from hashlib import md5, sha512
+_hashfn = sha512
 
 from boto.compat import json
 
