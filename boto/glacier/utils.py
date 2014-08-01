@@ -124,8 +124,10 @@ def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
     """
     linear_hash = hashlib.sha256()
     chunks = []
-    chunk = fileobj.read(chunk_size).encode('utf-8')
+    chunk = fileobj.read(chunk_size)
     while chunk:
+        if not isinstance(chunk, bytes):
+            chunk = chunk.encode('utf-8')
         linear_hash.update(chunk)
         chunks.append(hashlib.sha256(chunk).digest())
         chunk = fileobj.read(chunk_size)

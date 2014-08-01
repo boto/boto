@@ -21,11 +21,13 @@
 #
 import time
 import logging
+import tempfile
 from hashlib import sha256
 from tests.unit import unittest
 
+from boto.compat import BytesIO, six, StringIO
 from boto.glacier.utils import minimum_part_size, chunk_hashes, tree_hash, \
-        bytes_to_hex
+        bytes_to_hex, compute_hashes_from_fileobj
 
 
 class TestPartSizeCalculations(unittest.TestCase):
@@ -114,3 +116,43 @@ class TestTreeHash(unittest.TestCase):
         self.assertEqual(
             self.calculate_tree_hash(''),
             b'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
+
+
+class TestFileHash(unittest.TestCase):
+    def _gen_data(self):
+        # Generate some pseudo-random bytes of data
+        data = b''
+
+        for x in range(5000):
+            if six.PY2:
+                data += chr(x % 256)
+            else:
+                data += bytes([x % 256])
+
+        return data
+
+    def test_compute_hash_tempfile(self):
+        # Compute a hash from a file object. On Python 2 this uses a non-
+        # binary mode. On Python 3, however, binary mode is required for
+        # binary files. If not used, you will get UTF-8 code errors.
+        if six.PY2:
+            mode = "w+"
+        else:
+            mode = "wb+"
+
+        with tempfile.TemporaryFile(mode=mode) as f:
+            f.write(self._gen_data())
+            f.seek(0)
+
+            compute_hashes_from_fileobj(f, chunk_size=512)
+
+    @unittest.skipUnless(six.PY2, 'Python 3 requires reading binary!')
+    def test_compute_hash_stringio(self):
+        # Python 2 binary data in StringIO example
+        f = StringIO(self._gen_data())
+        compute_hashes_from_fileobj(f, chunk_size=512)
+
+    def test_compute_hash_bytesio(self):
+        # Compute a hash from a file-like BytesIO object.
+        f = BytesIO(self._gen_data())
+        compute_hashes_from_fileobj(f, chunk_size=512)
