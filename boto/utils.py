@@ -213,6 +213,11 @@ def retry_url(url, retry_on_404=True, num_retries=10):
             req = urllib.request.Request(url)
             r = opener.open(req)
             result = r.read()
+
+            if(not isinstance(result, six.string_types) and
+                    hasattr(result, 'decode')):
+                result = result.decode('utf-8')
+
             return result
         except urllib.error.HTTPError as e:
             code = e.getcode()
