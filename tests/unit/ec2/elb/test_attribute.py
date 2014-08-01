@@ -35,6 +35,21 @@ ATTRIBUTE_GET_FALSE_CZL_RESPONSE = b"""<?xml version="1.0" encoding="UTF-8"?>
 </DescribeLoadBalancerAttributesResponse>
 """
 
+ATTRIBUTE_GET_CS_RESPONSE = b"""<?xml version="1.0" encoding="UTF-8"?>
+<DescribeLoadBalancerAttributesResponse  xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
+ <DescribeLoadBalancerAttributesResult>
+    <LoadBalancerAttributes>
+      <ConnectionSettings>
+        <IdleTimeout>30</IdleTimeout>
+      </ConnectionSettings>
+    </LoadBalancerAttributes>
+  </DescribeLoadBalancerAttributesResult>
+<ResponseMetadata>
+    <RequestId>83c88b9d-12b7-11e3-8b82-87b12EXAMPLE</RequestId>
+</ResponseMetadata>
+</DescribeLoadBalancerAttributesResponse>
+"""
+
 ATTRIBUTE_SET_RESPONSE = b"""<?xml version="1.0" encoding="UTF-8"?>
 <ModifyLoadBalancerAttributesResponse xmlns="http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/">
 <ModifyLoadBalancerAttributesResult/>
@@ -63,6 +78,8 @@ ATTRIBUTE_TESTS = [
      [('cross_zone_load_balancing.enabled', True)]),
     (ATTRIBUTE_GET_FALSE_CZL_RESPONSE,
      [('cross_zone_load_balancing.enabled', False)]),
+    (ATTRIBUTE_GET_CS_RESPONSE,
+     [('connecting_settings.idle_timeout', 30)]),
     ]
 
 class TestLbAttributes(unittest.TestCase):
@@ -172,6 +189,17 @@ class TestLbAttributes(unittest.TestCase):
         mock_response.read.return_value = ATTRIBUTE_SET_RESPONSE
         self.assertTrue(lb.disable_cross_zone_load_balancing())
         elb.make_request.assert_called_with(*ATTRIBUTE_SET_CZL_FALSE_REQUEST)
+
+    def test_lb_get_connection_settings(self):
+        """Tests checking connectionSettings attribute"""
+        mock_response, elb, _ = self._setup_mock()
+        
+        attrs = [('idle_timeout', 30), ]
+        mock_response.read.return_value = ATTRIBUTE_GET_CS_RESPONSE
+        attributes = elb.get_all_lb_attributes('test_elb')
+        self.assertTrue(isinstance(attributes, LbAttributes))
+        for attr, value in attrs:
+            self.assertEqual(getattr(attributes.connecting_settings, attr), value)
 
 if __name__ == '__main__':
     unittest.main()
