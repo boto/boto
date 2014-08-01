@@ -20,7 +20,6 @@
 # IN THE SOFTWARE.
 import xml.sax
 import hashlib
-import base64
 import string
 import collections
 from boto.connection import AWSQueryConnection
@@ -28,7 +27,7 @@ from boto.exception import BotoServerError
 import boto.mws.exception
 import boto.mws.response
 from boto.handler import XmlHandler
-from boto.compat import filter, map, six
+from boto.compat import filter, map, six, encodebytes
 
 __all__ = ['MWSConnection']
 
@@ -55,7 +54,7 @@ api_version_path = {
     'OffAmazonPayments': ('2013-01-01', 'SellerId',
                           '/OffAmazonPayments/2013-01-01'),
 }
-content_md5 = lambda c: base64.encodestring(hashlib.md5(c).digest()).strip()
+content_md5 = lambda c: encodebytes(hashlib.md5(c).digest()).strip()
 decorated_attrs = ('action', 'response', 'section',
                    'quota', 'restore', 'version')
 api_call_map = {}

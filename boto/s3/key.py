@@ -32,7 +32,7 @@ import base64
 import binascii
 import math
 import boto.utils
-from boto.compat import BytesIO, six, urllib
+from boto.compat import BytesIO, six, urllib, encodebytes
 
 from boto.exception import BotoClientError
 from boto.exception import StorageDataError
@@ -211,7 +211,7 @@ class Key(object):
         from just having a precalculated md5_hexdigest.
         """
         digest = binascii.unhexlify(md5_hexdigest)
-        base64md5 = base64.encodestring(digest)
+        base64md5 = encodebytes(digest)
         if base64md5[-1] == '\n':
             base64md5 = base64md5[0:-1]
         return (md5_hexdigest, base64md5)
