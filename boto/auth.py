@@ -41,7 +41,7 @@ import sys
 import time
 import posixpath
 
-from boto.compat import urllib
+from boto.compat import urllib, encodebytes
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
 
@@ -89,7 +89,7 @@ class HmacKeys(object):
     def sign_string(self, string_to_sign):
         new_hmac = self._get_hmac()
         new_hmac.update(string_to_sign.encode('utf-8'))
-        return base64.encodestring(new_hmac.digest()).decode('utf-8').strip()
+        return encodebytes(new_hmac.digest()).decode('utf-8').strip()
 
     def __getstate__(self):
         pickled_dict = copy.copy(self.__dict__)
