@@ -19,8 +19,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from __future__ import with_statement
-
 import os
 import socket
 
@@ -116,7 +114,7 @@ class TestAWSAuthConnection(unittest.TestCase):
         self.assertEqual(conn.get_path('/folder//image.jpg'), '/folder//image.jpg')
         self.assertEqual(conn.get_path('/folder////image.jpg'), '/folder////image.jpg')
         self.assertEqual(conn.get_path('///folder////image.jpg'), '///folder////image.jpg')
-        
+
     def test_connection_behind_proxy(self):
         os.environ['http_proxy'] = "http://john.doe:p4ssw0rd@127.0.0.1:8180"
         conn = AWSAuthConnection(
@@ -130,7 +128,7 @@ class TestAWSAuthConnection(unittest.TestCase):
         self.assertEqual(conn.proxy_pass, 'p4ssw0rd')
         self.assertEqual(conn.proxy_port, '8180')
         del os.environ['http_proxy']
-        
+
     def test_connection_behind_proxy_without_explicit_port(self):
         os.environ['http_proxy'] = "http://127.0.0.1"
         conn = AWSAuthConnection(
@@ -139,7 +137,7 @@ class TestAWSAuthConnection(unittest.TestCase):
             aws_secret_access_key='secret',
             suppress_consec_slashes=False,
             port=8180
-        )        
+        )
         self.assertEqual(conn.proxy, '127.0.0.1')
         self.assertEqual(conn.proxy_port, 8180)
         del os.environ['http_proxy']
