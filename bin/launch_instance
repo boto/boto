@@ -33,7 +33,7 @@ f.close()
 import boto.pyami.config
 import boto.utils
 import re, os
-import ConfigParser
+from boto.compat import ConfigParser
 
 class Config(boto.pyami.config.Config):
     """A special config class that also adds import abilities
@@ -43,7 +43,7 @@ class Config(boto.pyami.config.Config):
     """
 
     def __init__(self):
-        ConfigParser.SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami', 'debug' : '0'})
+        ConfigParser.__init__(self, {'working_dir' : '/mnt/pyami', 'debug' : '0'})
 
     def add_config(self, file_url):
         """Add a config file to this configuration
