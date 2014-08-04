@@ -19,9 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import time
 import logging
+import os
 import tempfile
+import time
 from hashlib import sha256
 from tests.unit import unittest
 
@@ -120,16 +121,9 @@ class TestTreeHash(unittest.TestCase):
 
 class TestFileHash(unittest.TestCase):
     def _gen_data(self):
-        # Generate some pseudo-random bytes of data
-        data = b''
-
-        for x in range(5000):
-            if six.PY2:
-                data += chr(x % 256)
-            else:
-                data += bytes([x % 256])
-
-        return data
+        # Generate some pseudo-random bytes of data. We include the
+        # hard-coded blob as an example that fails to decode via UTF-8.
+        return os.urandom(5000) + b'\xc2\x00'
 
     def test_compute_hash_tempfile(self):
         # Compute a hash from a file object. On Python 2 this uses a non-
