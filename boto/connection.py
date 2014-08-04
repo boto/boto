@@ -42,8 +42,6 @@
 """
 Handles basic connections to AWS
 """
-from __future__ import with_statement
-
 from datetime import datetime
 import errno
 import os

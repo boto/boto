@@ -23,8 +23,6 @@
 """
 Tests for DynamoDB v2 high-level abstractions.
 """
-from __future__ import with_statement
-
 import os
 import time
 

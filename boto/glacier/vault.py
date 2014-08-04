@@ -21,7 +21,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from __future__ import with_statement
 import codecs
 from boto.compat import six
 from boto.glacier.exceptions import UploadArchiveError
