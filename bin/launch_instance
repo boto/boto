@@ -150,7 +150,7 @@ if __name__ == "__main__":
             region = r
             break
     else:
-        print "Region %s not found." % options.region
+        print("Region %s not found." % options.region)
         sys.exit(1)
     ec2 = boto.connect_ec2(region=region)
     if not options.nocred and not options.role:
@@ -206,7 +206,7 @@ if __name__ == "__main__":
                         scr_url = "file://%s" % scr_url
                 try:
                     scriptuples.append((scr, add_script(scr_url)))
-                except Exception, e:
+                except Exception as e:
                     pass
 
             user_data = boto.utils.write_mime_multipart(scriptuples, compress=True)
@@ -248,5 +248,5 @@ if __name__ == "__main__":
         time.sleep(3)
 
     if options.dns:
-        print "Public DNS name: %s" % instance.public_dns_name
-        print "Private DNS name: %s" % instance.private_dns_name
+        print("Public DNS name: %s" % instance.public_dns_name)
+        print("Private DNS name: %s" % instance.private_dns_name)
