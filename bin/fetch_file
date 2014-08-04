@@ -20,6 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import sys
+
+
 if __name__ == "__main__":
     from optparse import OptionParser
     usage = """%prog [options] URI
@@ -34,7 +37,7 @@ The URI can be either an HTTP URL, or "s3://bucket_name/key_name"
     (options, args) = parser.parse_args()
     if len(args) < 1:
         parser.print_help()
-        raise SystemExit(1)
+        sys.exit(1)
     from boto.utils import fetch_file
     f = fetch_file(args[0])
     if options.outfile:
