@@ -86,6 +86,12 @@ class TestBinary(unittest.TestCase):
         self.assertEqual(b'\x01', data)
         self.assertEqual(b'\x01', bytes(data))
 
+    def test_non_ascii_good_input(self):
+        # Binary data that is out of ASCII range
+        data = types.Binary(b'\x88')
+        self.assertEqual(b'\x88', data)
+        self.assertEqual(b'\x88', bytes(data))
+
     @unittest.skipUnless(six.PY2, "Python 2 only")
     def test_bad_input(self):
         with self.assertRaises(TypeError):
@@ -107,6 +113,9 @@ class TestBinary(unittest.TestCase):
         # Delegate to built-in b'\x01' == u'\x01'
         # In Python 2.x these are considered equal
         self.assertEqual(data, u'\x01')
+
+        # Check that the value field is of type bytes
+        self.assertEqual(type(data.value), bytes)
 
     @unittest.skipUnless(six.PY3, "Python 3 only")
     def test_unicode_py3(self):
