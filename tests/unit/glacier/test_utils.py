@@ -146,6 +146,19 @@ class TestFileHash(unittest.TestCase):
 
             compute_hashes_from_fileobj(f, chunk_size=512)
 
+    @unittest.skipUnless(six.PY3, 'Python 3 requires reading binary!')
+    def test_compute_hash_tempfile_py3(self):
+        # Note the missing 'b' in the mode!
+        with tempfile.TemporaryFile(mode='w+') as f:
+            with self.assertRaises(ValueError):
+                compute_hashes_from_fileobj(f, chunk_size=512)
+
+        # What about file-like objects without a mode? If it has an
+        # encoding we use it, otherwise attempt UTF-8 encoding to
+        # bytes for hashing.
+        f = StringIO('test data' * 500)
+        compute_hashes_from_fileobj(f, chunk_size=512)
+
     @unittest.skipUnless(six.PY2, 'Python 3 requires reading binary!')
     def test_compute_hash_stringio(self):
         # Python 2 binary data in StringIO example

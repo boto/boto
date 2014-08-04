@@ -44,7 +44,9 @@ class TestVault(unittest.TestCase):
     def tearDown(self):
         self.size_patch.stop()
 
-    def test_upload_archive_small_file(self):
+    @mock.patch('boto.glacier.vault.compute_hashes_from_fileobj',
+                return_value=[b'abc', b'123'])
+    def test_upload_archive_small_file(self, compute_hashes):
         self.getsize.return_value = 1
 
         self.api.upload_archive.return_value = {'ArchiveId': 'archive_id'}
