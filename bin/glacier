@@ -60,6 +60,8 @@ glacier <command> [args]
         --region     - AWS region to use. Possible values: us-east-1, us-west-1,
                        us-west-2, ap-northeast-1, eu-west-1.
                        Default: us-east-1
+        --part_size  - The part size in MB for a multipart upload.
+                       If not supplied, boto will use 4MB (4 * 1024 * 1024).
 
     Vaults operations:
 
@@ -105,14 +107,15 @@ def list_jobs(vault_name, region, access_key=None, secret_key=None):
     print layer2.layer1.list_jobs(vault_name)
 
 
-def upload_files(vault_name, filenames, region, access_key=None, secret_key=None):
+def upload_files(vault_name, filenames, region, access_key=None, secret_key=None,
+                 part_size=None):
     layer2 = connect(region, access_key = access_key, secret_key = secret_key)
     layer2.create_vault(vault_name)
     glacier_vault = layer2.get_vault(vault_name)
     for filename in filenames:
         if isfile(filename):
             print 'Uploading %s to %s' % (filename, vault_name)
-            glacier_vault.upload_archive(filename)
+            glacier_vault.upload_archive(filename, part_size=part_size)
 
 
 def main():
@@ -124,8 +127,8 @@ def main():
         usage()
 
     argv = sys.argv[2:]
-    options = 'a:s:r:'
-    long_options = ['access_key=', 'secret_key=', 'region=']
+    options = 'a:s:r:p:'
+    long_options = ['access_key=', 'secret_key=', 'region=', 'part_size=']
     try:
         opts, args = getopt(argv, options, long_options)
     except GetoptError, e:
@@ -134,6 +137,7 @@ def main():
     # Parse agument
     access_key = secret_key = None
     region = 'us-east-1'
+    part_size = None
     for option, value in opts:
         if option in ('-a', '--access_key'):
             access_key = value
@@ -141,6 +145,8 @@ def main():
             secret_key = value
         elif option in ('-r', '--region'):
             region = value
+        elif option in ('-p', '--part_size'):
+            part_size = int(value)
     # handle each command
     if command == 'vaults':
         list_vaults(region, access_key, secret_key)
@@ -151,7 +157,7 @@ def main():
     elif command == 'upload':
         if len(args) < 2:
             usage()
-        upload_files(args[0], args[1:], region, access_key, secret_key)
+        upload_files(args[0], args[1:], region, access_key, secret_key, part_size)
 
 
 if __name__ == '__main__':

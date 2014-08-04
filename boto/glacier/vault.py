@@ -71,7 +71,7 @@ class Vault(object):
         """
         self.layer1.delete_vault(self.name)
 
-    def upload_archive(self, filename, description=None):
+    def upload_archive(self, filename, description=None, part_size=None):
         """
         Adds an archive to a vault. For archives greater than 100MB the
         multipart upload will be used.
@@ -82,11 +82,15 @@ class Vault(object):
         :type description: str
         :param description: An optional description for the archive.
 
+        :type part_size: int
+        :param description: The part size for the multipart upload.
+
         :rtype: str
         :return: The archive id of the newly created archive
         """
         if os.path.getsize(filename) > self.SingleOperationThreshold:
-            return self.create_archive_from_file(filename, description=description)
+            return self.create_archive_from_file(filename, description=description,
+                                                 part_size=part_size)
         return self._upload_archive_single_operation(filename, description)
 
     def _upload_archive_single_operation(self, filename, description):
@@ -136,7 +140,8 @@ class Vault(object):
         return Writer(self, response['UploadId'], part_size=part_size)
 
     def create_archive_from_file(self, filename=None, file_obj=None,
-                                 description=None, upload_id_callback=None):
+                                 description=None, upload_id_callback=None,
+                                 part_size=None):
         """
         Create a new archive and upload the data from the given file
         or file-like object.
@@ -155,10 +160,14 @@ class Vault(object):
             only parameter when it becomes known, to enable future calls
             to resume_archive_from_file in case resume is needed.
 
+        :type part_size: int
+        :param part_size: The part size for the multipart upload.
+
         :rtype: str
         :return: The archive id of the newly created archive
         """
-        part_size = self.DefaultPartSize
+        if part_size is None:
+            part_size = self.DefaultPartSize
         if not file_obj:
             file_size = os.path.getsize(filename)
             try:
