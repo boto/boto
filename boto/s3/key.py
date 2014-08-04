@@ -20,8 +20,6 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-from __future__ import with_statement
-
 import email.utils
 import errno
 import hashlib
@@ -31,8 +29,9 @@ import re
 import base64
 import binascii
 import math
+from hashlib import md5
 import boto.utils
-from boto.compat import BytesIO, six, urllib
+from boto.compat import BytesIO, six, urllib, encodebytes
 
 from boto.exception import BotoClientError
 from boto.exception import StorageDataError
@@ -44,11 +43,6 @@ from boto import UserAgent
 from boto.utils import compute_md5, compute_hash
 from boto.utils import find_matching_headers
 from boto.utils import merge_headers_by_name
-
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
 
 
 class Key(object):
@@ -211,7 +205,7 @@ class Key(object):
         from just having a precalculated md5_hexdigest.
         """
         digest = binascii.unhexlify(md5_hexdigest)
-        base64md5 = base64.encodestring(digest)
+        base64md5 = encodebytes(digest)
         if base64md5[-1] == '\n':
             base64md5 = base64md5[0:-1]
         return (md5_hexdigest, base64md5)

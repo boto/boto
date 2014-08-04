@@ -42,9 +42,6 @@
 """
 Handles basic connections to AWS
 """
-from __future__ import with_statement
-
-import base64
 from datetime import datetime
 import errno
 import os
@@ -64,7 +61,7 @@ import boto.handler
 import boto.cacerts
 
 from boto import config, UserAgent
-from boto.compat import six, http_client, urlparse, quote
+from boto.compat import six, http_client, urlparse, quote, encodebytes
 from boto.exception import AWSConnectionError
 from boto.exception import BotoClientError
 from boto.exception import BotoServerError
@@ -857,7 +854,7 @@ class AWSAuthConnection(object):
         return path
 
     def get_proxy_auth_header(self):
-        auth = base64.encodestring(self.proxy_user + ':' + self.proxy_pass)
+        auth = encodebytes(self.proxy_user + ':' + self.proxy_pass)
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
     def set_host_header(self, request):

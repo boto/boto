@@ -57,25 +57,14 @@ import email.mime.text
 import email.utils
 import email.encoders
 import gzip
-import base64
 import threading
 import locale
-from boto.compat import six, StringIO, urllib
+from boto.compat import six, StringIO, urllib, encodebytes
 
 from contextlib import contextmanager
 
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
-
-
-try:
-    import hashlib
-    _hashfn = hashlib.sha512
-except ImportError:
-    import md5
-    _hashfn = md5.md5
+from hashlib import md5, sha512
+_hashfn = sha512
 
 from boto.compat import json
 
@@ -224,6 +213,11 @@ def retry_url(url, retry_on_404=True, num_retries=10):
             req = urllib.request.Request(url)
             r = opener.open(req)
             result = r.read()
+
+            if(not isinstance(result, six.string_types) and
+                    hasattr(result, 'decode')):
+                result = result.decode('utf-8')
+
             return result
         except urllib.error.HTTPError as e:
             code = e.getcode()
@@ -1029,7 +1023,7 @@ def compute_hash(fp, buf_size=8192, size=None, hash_algorithm=md5):
         else:
             s = fp.read(buf_size)
     hex_digest = hash_obj.hexdigest()
-    base64_digest = base64.encodestring(hash_obj.digest()).decode('utf-8')
+    base64_digest = encodebytes(hash_obj.digest()).decode('utf-8')
     if base64_digest[-1] == '\n':
         base64_digest = base64_digest[0:-1]
     # data_size based on bytes read.

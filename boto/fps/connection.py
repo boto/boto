@@ -23,7 +23,6 @@
 
 import urllib
 import uuid
-from boto.compat import filter, map
 from boto.connection import AWSQueryConnection
 from boto.fps.exception import ResponseErrorFactory
 from boto.fps.response import ResponseFactory

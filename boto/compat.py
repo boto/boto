@@ -29,6 +29,13 @@ except ImportError:
     import json
 
 
+# Switch to use encodebytes, which deprecates encodestring in Python 3
+try:
+    from base64 import encodebytes
+except ImportError:
+    from base64 import encodestring as encodebytes
+
+
 # If running in Google App Engine there is no "user" and
 # os.path.expanduser() will fail. Attempt to detect this case and use a
 # no-op expanduser function in this case.
@@ -45,7 +52,6 @@ from boto.vendored.six import BytesIO, StringIO
 from boto.vendored.six.moves import filter, http_client, map, _thread, \
                                     urllib, zip
 from boto.vendored.six.moves.queue import Queue
-from boto.vendored.six.moves.configparser import SafeConfigParser
 from boto.vendored.six.moves.urllib.parse import parse_qs, quote, unquote, \
                                                  urlparse, urlsplit
 from boto.vendored.six.moves.urllib.request import urlopen
@@ -54,6 +60,8 @@ if six.PY3:
     # StandardError was removed, so use the base exception type instead
     StandardError = Exception
     long_type = int
+    from configparser import ConfigParser
 else:
     StandardError = StandardError
     long_type = long
+    from ConfigParser import SafeConfigParser as ConfigParser

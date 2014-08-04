@@ -56,7 +56,7 @@ class TestJob(unittest.TestCase):
             self.job.get_output(byte_range=(1, 1024), validate_checksum=False)
 
     def test_download_to_fileobj(self):
-        http_response=mock.Mock(read=mock.Mock(return_value='xyz'))
+        http_response = mock.Mock(read=mock.Mock(return_value='xyz'))
         response = GlacierResponse(http_response, None)
         response['TreeHash'] = 'tree_hash'
         self.api.get_job_output.return_value = response

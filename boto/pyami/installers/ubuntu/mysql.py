@@ -31,7 +31,7 @@ from boto.pyami.installers.ubuntu.installer import Installer
 import os
 import boto
 from boto.utils import ShellCommand
-from ConfigParser import SafeConfigParser
+from boto.compat import ConfigParser
 import time
 
 ConfigSection = """
@@ -89,7 +89,7 @@ class MySQL(Installer):
             self.start('mysql')
         else:
             #get the password ubuntu expects to use:
-            config_parser = SafeConfigParser()
+            config_parser = ConfigParser()
             config_parser.read('/etc/mysql/debian.cnf')
             password = config_parser.get('client', 'password')
             # start the mysql deamon, then mysql with the required grant statement piped into it:

@@ -207,6 +207,22 @@ class TestRetryURL(unittest.TestCase):
         response = retry_url('http://10.10.10.10/foo', num_retries=1)
         self.assertEqual(response, 'no proxy response')
 
+    def test_retry_url_using_bytes_and_string_response(self):
+        test_value = 'normal response'
+        fake_response = mock.Mock()
+
+        # test using unicode
+        fake_response.read.return_value = test_value
+        self.opener.return_value.open.return_value = fake_response
+        response = retry_url('http://10.10.10.10/foo', num_retries=1)
+        self.assertEqual(response, test_value)
+
+        # test using bytes
+        fake_response.read.return_value = test_value.encode('utf-8')
+        self.opener.return_value.open.return_value = fake_response
+        response = retry_url('http://10.10.10.10/foo', num_retries=1)
+        self.assertEqual(response, test_value)
+
 class TestLazyLoadMetadata(unittest.TestCase):
 
     def setUp(self):

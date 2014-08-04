@@ -240,6 +240,9 @@ class CommitResponse(object):
                     raise EncodingError("Illegal Unicode character in document")
                 elif e == "The Content-Length is too long":
                     raise ContentTooLongError("Content was too long")
+            if 'adds' not in self.content or 'deletes' not in self.content:
+                raise SearchServiceException("Error indexing documents"
+                    " => %s" % self.content.get('message', ''))
         else:
             self.errors = []
 

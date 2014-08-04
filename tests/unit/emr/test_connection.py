@@ -19,8 +19,6 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-from __future__ import with_statement
-
 import boto.utils
 
 from datetime import datetime
@@ -374,7 +372,74 @@ class TestListSteps(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return b"""<ListStepsOutput><Steps><member><Name>Step 1</Name></member></Steps></ListStepsOutput>"""
+        return b"""<ListStepsResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+  <ListStepsResult>
+    <Steps>
+      <member>
+        <Id>abc123</Id>
+        <Status>
+          <StateChangeReason/>
+          <Timeline>
+            <CreationDateTime>2014-07-01T00:00:00.000Z</CreationDateTime>
+          </Timeline>
+          <State>PENDING</State>
+        </Status>
+        <Name>Step 1</Name>
+        <Config>
+          <Jar>/home/hadoop/lib/emr-s3distcp-1.0.jar</Jar>
+          <Args>
+            <member>--src</member>
+            <member>hdfs:///data/test/</member>
+            <member>--dest</member>
+            <member>s3n://test/data</member>
+          </Args>
+          <Properties/>
+        </Config>
+        <ActionOnFailure>CONTINUE</ActionOnFailure>
+      </member>
+      <member>
+        <Id>def456</Id>
+        <Status>
+          <StateChangeReason/>
+          <Timeline>
+            <CreationDateTime>2014-07-01T00:00:00.000Z</CreationDateTime>
+          </Timeline>
+          <State>COMPLETED</State>
+        </Status>
+        <Name>Step 2</Name>
+        <Config>
+          <MainClass>my.main.SomeClass</MainClass>
+          <Jar>s3n://test/jars/foo.jar</Jar>
+        </Config>
+        <ActionOnFailure>CONTINUE</ActionOnFailure>
+      </member>
+      <member>
+        <Id>ghi789</Id>
+        <Status>
+          <StateChangeReason/>
+          <Timeline>
+            <CreationDateTime>2014-07-01T00:00:00.000Z</CreationDateTime>
+          </Timeline>
+          <State>FAILED</State>
+        </Status>
+        <Name>Step 3</Name>
+        <Config>
+          <Jar>s3n://test/jars/bar.jar</Jar>
+          <Args>
+            <member>-arg</member>
+            <member>value</member>
+          </Args>
+          <Properties/>
+        </Config>
+        <ActionOnFailure>TERMINATE_CLUSTER</ActionOnFailure>
+      </member>
+    </Steps>
+  </ListStepsResult>
+  <ResponseMetadata>
+    <RequestId>eff31ee5-0342-11e4-b3c7-9de5a93f6fcb</RequestId>
+  </ResponseMetadata>
+</ListStepsResponse>
+"""
 
     def test_list_steps(self):
         self.set_http_response(200)
@@ -391,6 +456,30 @@ class TestListSteps(AWSMockServiceTestCase):
         })
         self.assertTrue(isinstance(response, StepSummaryList))
         self.assertEqual(response.steps[0].name, 'Step 1')
+
+        valid_states = [
+            'PENDING',
+            'RUNNING',
+            'COMPLETED',
+            'CANCELLED',
+            'FAILED',
+            'INTERRUPTED'
+        ]
+
+        # Check for step states
+        for step in response.steps:
+            self.assertIn(step.status.state, valid_states)
+
+        # Check for step config
+        step = response.steps[0]
+        self.assertEqual(step.config.jar,
+            '/home/hadoop/lib/emr-s3distcp-1.0.jar')
+        self.assertEqual(len(step.config.args), 4)
+        self.assertEqual(step.config.args[0].value, '--src')
+        self.assertEqual(step.config.args[1].value, 'hdfs:///data/test/')
+
+        step = response.steps[1]
+        self.assertEqual(step.config.mainclass, 'my.main.SomeClass')
 
     def test_list_steps_with_states(self):
         self.set_http_response(200)
