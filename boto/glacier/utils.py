@@ -132,6 +132,9 @@ def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
     chunks = []
     chunk = fileobj.read(chunk_size)
     while chunk:
+        # It's possible to get a file-like object that has no mode (checked
+        # above) and returns something other than bytes (e.g. str). So here
+        # we try to catch that and encode to bytes.
         if not isinstance(chunk, bytes):
             chunk = chunk.encode(getattr(fileobj, 'encoding', '') or 'utf-8')
         linear_hash.update(chunk)
