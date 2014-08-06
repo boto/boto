@@ -22,6 +22,7 @@
 
 from boto.ec2.ec2object import EC2Object
 
+
 class Address(EC2Object):
     """
     Represents an EC2 Elastic IP Address
@@ -125,5 +126,3 @@ class Address(EC2Object):
                 self.public_ip,
                 dry_run=dry_run
             )
-
-

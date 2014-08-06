@@ -2,6 +2,7 @@ from tests.compat import mock, unittest
 
 from boto.ec2.address import Address
 
+
 class AddressTest(unittest.TestCase):
     def setUp(self):
         self.address = Address()
@@ -20,7 +21,6 @@ class AddressTest(unittest.TestCase):
                           ("associationId", 1, "association_id"),
                           ("somethingRandom", "somethingRandom", "somethingRandom")]:
             self.check_that_attribute_has_been_set(arguments[0], arguments[1], arguments[2])
-
 
     def test_release_calls_connection_release_address_with_correct_args(self):
         self.address.release()
@@ -65,7 +65,6 @@ class AddressWithAllocationTest(unittest.TestCase):
                           ("associationId", 1, "association_id"),
                           ("somethingRandom", "somethingRandom", "somethingRandom")]:
             self.check_that_attribute_has_been_set(arguments[0], arguments[1], arguments[2])
-
 
     def test_release_calls_connection_release_address_with_correct_args(self):
         self.address.release()

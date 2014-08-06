@@ -110,7 +110,7 @@ class CloudWatchConnectionTest(unittest.TestCase):
             'ThingName1': 'thing1',
             'ThingName2': 'thing2',
             'ThingName3': 'thing3'
-            }
+        }
         self.assertEqual(params, expected_params)
 
     def test_build_put_params_one(self):
@@ -122,7 +122,7 @@ class CloudWatchConnectionTest(unittest.TestCase):
             'MetricData.member.1.Value': 1,
             'MetricData.member.1.Dimensions.member.1.Name': 'D',
             'MetricData.member.1.Dimensions.member.1.Value': 'V',
-            }
+        }
         self.assertEqual(params, expected_params)
 
     def test_build_put_params_multiple_metrics(self):
@@ -138,7 +138,7 @@ class CloudWatchConnectionTest(unittest.TestCase):
             'MetricData.member.2.Value': 2,
             'MetricData.member.2.Dimensions.member.1.Name': 'D',
             'MetricData.member.2.Dimensions.member.1.Value': 'V',
-            }
+        }
         self.assertEqual(params, expected_params)
 
     def test_build_put_params_multiple_dimensions(self):
@@ -154,7 +154,7 @@ class CloudWatchConnectionTest(unittest.TestCase):
             'MetricData.member.2.Value': 2,
             'MetricData.member.2.Dimensions.member.1.Name': 'D',
             'MetricData.member.2.Dimensions.member.1.Value': 'W',
-            }
+        }
         self.assertEqual(params, expected_params)
 
     def test_build_put_params_multiple_parameter_dimension(self):
@@ -173,7 +173,7 @@ class CloudWatchConnectionTest(unittest.TestCase):
             'MetricData.member.1.Dimensions.member.1.Value': 'V',
             'MetricData.member.1.Dimensions.member.2.Name': 'D2',
             'MetricData.member.1.Dimensions.member.2.Value': 'W',
-            }
+        }
         self.assertEqual(params, expected_params)
 
     def test_build_get_params_multiple_parameter_dimension1(self):
@@ -187,7 +187,7 @@ class CloudWatchConnectionTest(unittest.TestCase):
             'Dimensions.member.1.Value': 'V',
             'Dimensions.member.2.Name': 'D2',
             'Dimensions.member.2.Value': 'W',
-            }
+        }
         self.assertEqual(params, expected_params)
 
     def test_build_get_params_multiple_parameter_dimension2(self):
@@ -204,7 +204,7 @@ class CloudWatchConnectionTest(unittest.TestCase):
             'Dimensions.member.3.Name': 'D2',
             'Dimensions.member.3.Value': 'W',
             'Dimensions.member.4.Name': 'D3',
-            }
+        }
         self.assertEqual(params, expected_params)
 
     def test_build_put_params_invalid(self):
@@ -221,9 +221,9 @@ class CloudWatchConnectionTest(unittest.TestCase):
         c = CloudWatchConnection()
         m = c.list_metrics()[0]
         end = datetime.datetime.utcnow()
-        start = end - datetime.timedelta(hours=24*14)
+        start = end - datetime.timedelta(hours=24 * 14)
         c.get_metric_statistics(
-            3600*24, start, end, m.name, m.namespace, ['Average', 'Sum'])
+            3600 * 24, start, end, m.name, m.namespace, ['Average', 'Sum'])
 
     def test_put_metric_data(self):
         c = CloudWatchConnection()
@@ -247,13 +247,14 @@ class CloudWatchConnectionTest(unittest.TestCase):
         #     self.assertEqual(row['Unit'], 'Bytes')
         #     self.assertEqual(row['Average'], 5.0)
 
-
     def test_describe_alarms(self):
         c = CloudWatchConnection()
+
         def make_request(*args, **kwargs):
             class Body(object):
                 def __init__(self):
                     self.status = 200
+
                 def read(self):
                     return DESCRIBE_ALARMS_BODY
             return Body()

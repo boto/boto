@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from tests.compat import mock, unittest
-from tests.unit import AWSMockServiceTestCase
 
 from boto.ec2.connection import EC2Connection
 
@@ -25,7 +24,6 @@ class TestInstanceStatusResponseParsing(unittest.TestCase):
         all_statuses = ec2.get_all_instance_status()
         self.assertNotIn('IncludeAllInstances', ec2.make_request.call_args[0][1])
         self.assertEqual(all_statuses.next_token, 'page-2')
-
 
     def test_include_all_instances(self):
         ec2 = EC2Connection(aws_access_key_id='aws_access_key_id',

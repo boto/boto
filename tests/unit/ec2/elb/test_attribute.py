@@ -63,7 +63,8 @@ ATTRIBUTE_TESTS = [
      [('cross_zone_load_balancing.enabled', True)]),
     (ATTRIBUTE_GET_FALSE_CZL_RESPONSE,
      [('cross_zone_load_balancing.enabled', False)]),
-    ]
+]
+
 
 class TestLbAttributes(unittest.TestCase):
     """Tests LB Attributes."""
@@ -103,8 +104,7 @@ class TestLbAttributes(unittest.TestCase):
         tests = [
             ('crossZoneLoadBalancing', True, ATTRIBUTE_GET_TRUE_CZL_RESPONSE),
             ('crossZoneLoadBalancing', False, ATTRIBUTE_GET_FALSE_CZL_RESPONSE),
-            ]
-
+        ]
 
         for attr, value, response in tests:
             mock_response.read.return_value = response
@@ -118,7 +118,7 @@ class TestLbAttributes(unittest.TestCase):
         tests = [
             ('crossZoneLoadBalancing', True, ATTRIBUTE_SET_CZL_TRUE_REQUEST),
             ('crossZoneLoadBalancing', False, ATTRIBUTE_SET_CZL_FALSE_REQUEST),
-            ]
+        ]
 
         for attr, value, args in tests:
             mock_response.read.return_value = ATTRIBUTE_SET_RESPONSE
@@ -151,7 +151,7 @@ class TestLbAttributes(unittest.TestCase):
             # Gets a false result.
             (lb.is_cross_zone_load_balancing, [True], False,
              ATTRIBUTE_GET_FALSE_CZL_RESPONSE),
-            ]
+        ]
 
         for method, args, result, response in tests:
             mock_response.read.return_value = response
