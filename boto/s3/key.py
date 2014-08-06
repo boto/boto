@@ -30,7 +30,6 @@ import base64
 import binascii
 import math
 from hashlib import md5
-from io import TextIOBase
 import boto.utils
 from boto.compat import BytesIO, six, urllib, encodebytes
 
@@ -824,9 +823,6 @@ class Key(object):
             else:
                 chunk = fp.read(self.BufferSize)
 
-            if not isinstance(chunk, bytes):
-                chunk = chunk.encode('utf-8')
-
             if spos is None:
                 # read at least something from a non-seekable fp.
                 self.read_from_stream = True
@@ -1527,13 +1523,7 @@ class Key(object):
             cb(data_len, cb_size)
         try:
             for bytes in self:
-                # In Python 3, fp may be an instance of TextIOBase (for example,
-                # open a file without 'b' flag, or StringIO), which needs
-                # unicode literals instead of bytes. In this case, we decode it.
-                if isinstance(fp, TextIOBase):
-                    fp.write(bytes.decode('utf-8'))
-                else:
-                    fp.write(bytes)
+                fp.write(bytes)
                 data_len += len(bytes)
                 for alg in digesters:
                     digesters[alg].update(bytes)

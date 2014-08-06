@@ -32,7 +32,7 @@ from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.s3.keyfile import KeyFile
-from boto.compat import long_type, six, http_client
+from boto.compat import long_type, urllib, http_client
 
 """
 Handler for Google Cloud Storage resumable uploads. See
@@ -139,7 +139,7 @@ class ResumableUploadHandler(object):
 
         Raises InvalidUriError if URI is syntactically invalid.
         """
-        parse_result = six.moves.urllib.parse.urlparse(uri)
+        parse_result = urllib.parse.urlparse(uri)
         if (parse_result.scheme.lower() not in ['http', 'https'] or
             not parse_result.netloc):
             raise InvalidUriError('Invalid tracker URI (%s)' % uri)
@@ -367,8 +367,6 @@ class ResumableUploadHandler(object):
         # in debug stream.
         http_conn.set_debuglevel(0)
         while buf:
-            if not isinstance(buf, bytes):
-                buf = buf.encode('utf-8')
             http_conn.send(buf)
             for alg in self.digesters:
                 self.digesters[alg].update(buf)
@@ -512,7 +510,7 @@ class ResumableUploadHandler(object):
         """
         if key.bucket.connection.debug >= 1:
             print('Checking md5 against etag.')
-        if key.md5 != etag.strip('"\''):
+        if key.md5 != etag.strip(b'"\''):
             # Call key.open_read() before attempting to delete the
             # (incorrect-content) key, so we perform that request on a
             # different HTTP connection. This is neededb because httplib
@@ -659,7 +657,7 @@ class ResumableUploadHandler(object):
 
                 # Upload succceded, so remove the tracker file (if have one).
                 self._remove_tracker_file()
-                self._check_final_md5(key, etag)
+                self._check_final_md5(key, etag.encode('ascii'))
                 key.generation = self.generation
                 if debug >= 1:
                     print('Resumable upload complete.')
