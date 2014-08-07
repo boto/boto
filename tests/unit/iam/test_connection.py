@@ -21,6 +21,7 @@
 # IN THE SOFTWARE.
 #
 
+from base64 import b64decode
 from tests.unit import unittest
 from boto.compat import json
 from boto.iam.connection import IAMConnection
@@ -312,3 +313,51 @@ class TestGetSigninURL(AWSMockServiceTestCase):
 
         with self.assertRaises(Exception):
             self.service_connection.get_signin_url()
+
+
+class TestGenerateCredentialReport(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+    
+    def default_body(self):
+        return b"""
+          <GenerateCredentialReportResponse>
+            <GenerateCredentialReportResult>
+              <State>COMPLETE</State>
+            </GenerateCredentialReportResult>
+            <ResponseMetadata>
+              <RequestId>b62e22a3-0da1-11e4-ba55-0990EXAMPLE</RequestId>
+            </ResponseMetadata>
+          </GenerateCredentialReportResponse>
+        """
+
+    def test_generate_credential_report(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.generate_credential_report()
+        self.assertEquals(response['generate_credential_report_response']\
+                                  ['generate_credential_report_result']\
+                                  ['state'], 'COMPLETE') 
+
+
+class TestGetCredentialReport(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+          <GetCredentialReportResponse>
+            <ResponseMetadata>
+              <RequestId>99e60e9a-0db5-11e4-94d4-b764EXAMPLE</RequestId>
+            </ResponseMetadata>
+            <GetCredentialReportResult>
+              <Content>RXhhbXBsZQ==</Content>
+              <ReportFormat>text/csv</ReportFormat>
+              <GeneratedTime>2014-07-17T11:09:11Z</GeneratedTime>
+            </GetCredentialReportResult>
+          </GetCredentialReportResponse>
+        """
+    def test_get_credential_report(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_credential_report()
+        b64decode(response['get_credential_report_response']\
+                          ['get_credential_report_result']\
+                          ['content'])
+
