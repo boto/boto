@@ -21,6 +21,7 @@
 # IN THE SOFTWARE.
 #
 
+from base64 import b64decode
 from tests.unit import unittest
 from boto.compat import json
 from boto.iam.connection import IAMConnection
@@ -331,7 +332,10 @@ class TestGenerateCredentialReport(AWSMockServiceTestCase):
 
     def test_generate_credential_report(self):
         self.set_http_response(status_code=200)
-        self.service_connection.generate_credential_report()
+        response = self.service_connection.generate_credential_report()
+        self.assertEquals(response['generate_credential_report_response']\
+                                  ['generate_credential_report_result']\
+                                  ['state'], 'COMPLETE') 
 
 
 class TestGetCredentialReport(AWSMockServiceTestCase):
@@ -344,7 +348,7 @@ class TestGetCredentialReport(AWSMockServiceTestCase):
               <RequestId>99e60e9a-0db5-11e4-94d4-b764EXAMPLE</RequestId>
             </ResponseMetadata>
             <GetCredentialReportResult>
-              <Content>BASE64BLOB</Content>
+              <Content>RXhhbXBsZQ==</Content>
               <ReportFormat>text/csv</ReportFormat>
               <GeneratedTime>2014-07-17T11:09:11Z</GeneratedTime>
             </GetCredentialReportResult>
@@ -352,4 +356,8 @@ class TestGetCredentialReport(AWSMockServiceTestCase):
         """
     def test_get_credential_report(self):
         self.set_http_response(status_code=200)
-        self.service_connection.get_credential_report()
+        response = self.service_connection.get_credential_report()
+        b64decode(response['get_credential_report_response']\
+                          ['get_credential_report_result']\
+                          ['content'])
+
