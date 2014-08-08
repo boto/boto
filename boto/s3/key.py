@@ -314,8 +314,8 @@ class Key(object):
                 elif name.lower() == 'content-range':
                     end_range = re.sub('.*/(.*)', '\\1', value)
                     self.size = int(end_range)
-                elif name.lower in Key.base_fields:
-                    self.__dict__[name.lower.replace('-', '_')] = value
+                elif name.lower() in Key.base_fields:
+                    self.__dict__[name.lower().replace('-', '_')] = value
             self.handle_version_headers(self.resp)
             self.handle_encryption_headers(self.resp)
             self.handle_restore_headers(self.resp)
