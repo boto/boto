@@ -408,13 +408,13 @@ class S3KeyTest(unittest.TestCase):
         key.set_metadata('Content-Type', 'application/pdf')
         self.assertEqual(key.content_type, 'application/pdf')
         key.set_metadata('X-Robots-Tag', 'all')
-        key.set_metadata('Expires', 'Thu, 01 Dec 1994 16:00:00 GMT')
+        key.set_metadata('Expires', u'Thu, 01 Dec 1994 16:00:00 GMT')
         key.set_contents_from_string('foo')
 
         check = self.bucket.get_key('test_header_encoding')
         remote_metadata = check._get_remote_metadata()
 
-        self.assertEqual(check.cache_control, 'public,%20max-age=500')
+        self.assertEqual(check.cache_control, 'public, max-age=500')
         self.assertEqual(remote_metadata['cache-control'], 'public,%20max-age=500')
         self.assertEqual(check.get_metadata('test-plus'), 'A plus (+)')
         self.assertEqual(check.content_disposition, 'filename=Sch%C3%B6ne%20Zeit.txt')
