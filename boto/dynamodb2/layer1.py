@@ -2098,7 +2098,7 @@ class DynamoDBConnection(AWSQueryConnection):
         response = self._mexe(http_request, sender=None,
                               override_num_retries=self.NumberRetries,
                               retry_handler=self._retry_handler)
-        response_body = response.read()
+        response_body = response.read().decode('utf-8')
         boto.log.debug(response_body)
         if response.status == 200:
             if response_body:
@@ -2114,7 +2114,7 @@ class DynamoDBConnection(AWSQueryConnection):
         status = None
         boto.log.debug("Saw HTTP status: %s" % response.status)
         if response.status == 400:
-            response_body = response.read()
+            response_body = response.read().decode('utf-8')
             boto.log.debug(response_body)
             data = json.loads(response_body)
             if 'ProvisionedThroughputExceededException' in data.get('__type'):
@@ -2123,7 +2123,7 @@ class DynamoDBConnection(AWSQueryConnection):
                     'ProvisionedThroughputExceededException',
                     i
                 )
-                next_sleep = self._exponential_time(i)
+                next_sleep = self._truncated_exponential_time(i)
                 i += 1
                 status = (msg, i, next_sleep)
                 if i == self.NumberRetries:
@@ -2150,12 +2150,13 @@ class DynamoDBConnection(AWSQueryConnection):
             if actual_crc32 != expected_crc32:
                 msg = ("The calculated checksum %s did not match the expected "
                        "checksum %s" % (actual_crc32, expected_crc32))
-                status = (msg, i + 1, self._exponential_time(i))
+                status = (msg, i + 1, self._truncated_exponential_time(i))
         return status
 
-    def _exponential_time(self, i):
+    def _truncated_exponential_time(self, i):
         if i == 0:
             next_sleep = 0
         else:
-            next_sleep = 0.05 * (2 ** i)
+            next_sleep = min(0.05 * (2 ** i),
+                             boto.config.get('Boto', 'max_retry_delay', 60))
         return next_sleep

@@ -9,7 +9,7 @@ class TestDescribeDhcpOptions(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeDhcpOptionsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
               <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
               <dhcpOptionsSet>
@@ -71,7 +71,7 @@ class TestCreateDhcpOptions(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateDhcpOptionsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
               <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
               <dhcpOptions>
@@ -167,7 +167,7 @@ class TestDeleteDhcpOptions(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteDhcpOptionsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <return>true</return>
@@ -191,7 +191,7 @@ class TestAssociateDhcpOptions(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <AssociateDhcpOptionsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <return>true</return>

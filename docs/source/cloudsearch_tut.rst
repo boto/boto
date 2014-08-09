@@ -17,12 +17,13 @@ The recommended method of doing this is as follows::
 
     >>> import boto.cloudsearch
     >>> conn = boto.cloudsearch.connect_to_region("us-west-2",
-    ...             aws_access_key_id='<aws access key'>,
+    ...             aws_access_key_id='<aws access key>',
     ...             aws_secret_access_key='<aws secret key>')
 
 At this point, the variable conn will point to a CloudSearch connection object
-in the us-west-2 region. Currently, this is the only region which has the
-CloudSearch service. In this example, the AWS access key and AWS secret key are
+in the us-west-2 region. Available regions for cloudsearch can be found 
+`here <http://docs.aws.amazon.com/general/latest/gr/rande.html#cloudsearch_region>`_.
+In this example, the AWS access key and AWS secret key are
 passed in to the method explicitly. Alternatively, you can set the environment
 variables:
 
@@ -429,4 +430,4 @@ It is also possible to delete documents::
     >>> # Again we'll cheat and use the current epoch time as our version number
 
     >>> doc_service.delete(4, int(time.mktime(datetime.utcnow().timetuple())))
-    >>> service.commit()
+    >>> doc_service.commit()

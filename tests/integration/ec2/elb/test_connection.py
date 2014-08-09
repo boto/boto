@@ -26,8 +26,9 @@ Initial, and very limited, unit tests for ELBConnection.
 
 import boto
 import time
-import unittest
+from tests.compat import unittest
 from boto.ec2.elb import ELBConnection
+
 
 class ELBConnectionTest(unittest.TestCase):
     ec2 = True
@@ -39,7 +40,8 @@ class ELBConnectionTest(unittest.TestCase):
         self.name = 'elb-boto-unit-test'
         self.availability_zones = ['us-east-1a']
         self.listeners = [(80, 8000, 'HTTP')]
-        self.balancer = self.conn.create_load_balancer(self.name, self.availability_zones, self.listeners)
+        self.balancer = self.conn.create_load_balancer(
+            self.name, self.availability_zones, self.listeners)
 
         # S3 bucket for log tests
         self.s3 = boto.connect_s3()
@@ -67,7 +69,7 @@ class ELBConnectionTest(unittest.TestCase):
             'ThingName1': 'thing1',
             'ThingName2': 'thing2',
             'ThingName3': 'thing3'
-            }
+        }
         self.assertEqual(params, expected_params)
 
     # TODO: for these next tests, consider sleeping until our load
@@ -76,8 +78,8 @@ class ELBConnectionTest(unittest.TestCase):
 
     def test_create_load_balancer(self):
         self.assertEqual(self.balancer.name, self.name)
-        self.assertEqual(self.balancer.availability_zones,\
-            self.availability_zones)
+        self.assertEqual(self.balancer.availability_zones,
+                         self.availability_zones)
         self.assertEqual(self.balancer.listeners, self.listeners)
 
         balancers = self.conn.get_all_load_balancers()
@@ -91,22 +93,24 @@ class ELBConnectionTest(unittest.TestCase):
         self.assertEqual(
             sorted(l.get_tuple() for l in balancers[0].listeners),
             sorted(self.listeners + more_listeners)
-            )
+        )
 
     def test_delete_load_balancer_listeners(self):
         mod_listeners = [(80, 8000, 'HTTP'), (443, 8001, 'HTTP')]
         mod_name = self.name + "-mod"
-        self.mod_balancer = self.conn.create_load_balancer(mod_name,\
-            self.availability_zones, mod_listeners)
+        self.mod_balancer = self.conn.create_load_balancer(
+            mod_name, self.availability_zones, mod_listeners)
 
-        mod_balancers = self.conn.get_all_load_balancers(load_balancer_names=[mod_name])
+        mod_balancers = self.conn.get_all_load_balancers(
+            load_balancer_names=[mod_name])
         self.assertEqual([lb.name for lb in mod_balancers], [mod_name])
         self.assertEqual(
             sorted([l.get_tuple() for l in mod_balancers[0].listeners]),
             sorted(mod_listeners))
 
         self.conn.delete_load_balancer_listeners(self.mod_balancer.name, [443])
-        mod_balancers = self.conn.get_all_load_balancers(load_balancer_names=[mod_name])
+        mod_balancers = self.conn.get_all_load_balancers(
+            load_balancer_names=[mod_name])
         self.assertEqual([lb.name for lb in mod_balancers], [mod_name])
         self.assertEqual([l.get_tuple() for l in mod_balancers[0].listeners],
                          mod_listeners[:1])
@@ -117,40 +121,52 @@ class ELBConnectionTest(unittest.TestCase):
         self.conn.create_load_balancer_listeners(self.name, more_listeners)
 
         lb_policy_name = 'lb-policy'
-        self.conn.create_lb_cookie_stickiness_policy(1000, self.name, lb_policy_name)
-        self.conn.set_lb_policies_of_listener(self.name, self.listeners[0][0], lb_policy_name)
+        self.conn.create_lb_cookie_stickiness_policy(
+            1000, self.name, lb_policy_name)
+        self.conn.set_lb_policies_of_listener(
+            self.name, self.listeners[0][0], lb_policy_name)
 
         app_policy_name = 'app-policy'
-        self.conn.create_app_cookie_stickiness_policy('appcookie', self.name, app_policy_name)
-        self.conn.set_lb_policies_of_listener(self.name, more_listeners[0][0], app_policy_name)
+        self.conn.create_app_cookie_stickiness_policy(
+            'appcookie', self.name, app_policy_name)
+        self.conn.set_lb_policies_of_listener(
+            self.name, more_listeners[0][0], app_policy_name)
 
-        balancers = self.conn.get_all_load_balancers(load_balancer_names=[self.name])
+        balancers = self.conn.get_all_load_balancers(
+            load_balancer_names=[self.name])
         self.assertEqual([lb.name for lb in balancers], [self.name])
         self.assertEqual(
             sorted(l.get_tuple() for l in balancers[0].listeners),
             sorted(self.listeners + more_listeners)
-            )
+        )
         # Policy names should be checked here once they are supported
         # in the Listener object.
 
     def test_create_load_balancer_backend_with_policies(self):
         other_policy_name = 'enable-proxy-protocol'
         backend_port = 8081
-        self.conn.create_lb_policy(self.name, other_policy_name,
-                                   'ProxyProtocolPolicyType', {'ProxyProtocol': True})
-        self.conn.set_lb_policies_of_backend_server(self.name, backend_port, [other_policy_name])
+        self.conn.create_lb_policy(
+            self.name, other_policy_name,
+            'ProxyProtocolPolicyType', {'ProxyProtocol': True})
+        self.conn.set_lb_policies_of_backend_server(
+            self.name, backend_port, [other_policy_name])
 
-        balancers = self.conn.get_all_load_balancers(load_balancer_names=[self.name])
+        balancers = self.conn.get_all_load_balancers(
+            load_balancer_names=[self.name])
         self.assertEqual([lb.name for lb in balancers], [self.name])
         self.assertEqual(len(balancers[0].policies.other_policies), 1)
-        self.assertEqual(balancers[0].policies.other_policies[0].policy_name, other_policy_name)
+        self.assertEqual(balancers[0].policies.other_policies[0].policy_name,
+                         other_policy_name)
         self.assertEqual(len(balancers[0].backends), 1)
         self.assertEqual(balancers[0].backends[0].instance_port, backend_port)
-        self.assertEqual(balancers[0].backends[0].policies[0].policy_name, other_policy_name)
+        self.assertEqual(balancers[0].backends[0].policies[0].policy_name,
+                         other_policy_name)
 
-        self.conn.set_lb_policies_of_backend_server(self.name, backend_port, [])
+        self.conn.set_lb_policies_of_backend_server(self.name, backend_port,
+                                                    [])
 
-        balancers = self.conn.get_all_load_balancers(load_balancer_names=[self.name])
+        balancers = self.conn.get_all_load_balancers(
+            load_balancer_names=[self.name])
         self.assertEqual([lb.name for lb in balancers], [self.name])
         self.assertEqual(len(balancers[0].policies.other_policies), 1)
         self.assertEqual(len(balancers[0].backends), 0)
@@ -193,9 +209,9 @@ class ELBConnectionTest(unittest.TestCase):
 
         self.assertEqual(True, new_attributes.access_log.enabled)
         self.assertEqual(self.bucket_name,
-            new_attributes.access_log.s3_bucket_name)
+                         new_attributes.access_log.s3_bucket_name)
         self.assertEqual('access-logs',
-            new_attributes.access_log.s3_bucket_prefix)
+                         new_attributes.access_log.s3_bucket_prefix)
         self.assertEqual(5, new_attributes.access_log.emit_interval)
 
     def test_load_balancer_get_attributes(self):
@@ -210,35 +226,40 @@ class ELBConnectionTest(unittest.TestCase):
         access_log = self.conn.get_lb_attribute(self.balancer.name,
                                                 'AccessLog')
         self.assertEqual(access_log.enabled, attributes.access_log.enabled)
-        self.assertEqual(access_log.s3_bucket_name, attributes.access_log.s3_bucket_name)
-        self.assertEqual(access_log.s3_bucket_prefix, attributes.access_log.s3_bucket_prefix)
-        self.assertEqual(access_log.emit_interval, attributes.access_log.emit_interval)
+        self.assertEqual(access_log.s3_bucket_name,
+                         attributes.access_log.s3_bucket_name)
+        self.assertEqual(access_log.s3_bucket_prefix,
+                         attributes.access_log.s3_bucket_prefix)
+        self.assertEqual(access_log.emit_interval,
+                         attributes.access_log.emit_interval)
 
-        cross_zone_load_balancing = self.conn.get_lb_attribute(self.balancer.name,
-                                                'CrossZoneLoadBalancing')
+        cross_zone_load_balancing = self.conn.get_lb_attribute(
+            self.balancer.name, 'CrossZoneLoadBalancing')
         self.assertEqual(cross_zone_load_balancing,
                          attributes.cross_zone_load_balancing.enabled)
 
-    def change_and_verify_load_balancer_connection_draining(self, enabled, timeout = None):
+    def change_and_verify_load_balancer_connection_draining(
+            self, enabled, timeout=None):
         attributes = self.balancer.get_attributes()
 
         attributes.connection_draining.enabled = enabled
-        if timeout != None:
+        if timeout is not None:
             attributes.connection_draining.timeout = timeout
 
-	self.conn.modify_lb_attribute(self.balancer.name,
-                                      'ConnectionDraining', attributes.connection_draining)
+        self.conn.modify_lb_attribute(
+            self.balancer.name, 'ConnectionDraining',
+            attributes.connection_draining)
 
         attributes = self.balancer.get_attributes()
         self.assertEqual(enabled, attributes.connection_draining.enabled)
-        if timeout != None:
+        if timeout is not None:
             self.assertEqual(timeout, attributes.connection_draining.timeout)
 
     def test_load_balancer_connection_draining_config(self):
-    	self.change_and_verify_load_balancer_connection_draining(True, 128)
-    	self.change_and_verify_load_balancer_connection_draining(True, 256)
-    	self.change_and_verify_load_balancer_connection_draining(False)
-    	self.change_and_verify_load_balancer_connection_draining(True, 64) 
+        self.change_and_verify_load_balancer_connection_draining(True, 128)
+        self.change_and_verify_load_balancer_connection_draining(True, 256)
+        self.change_and_verify_load_balancer_connection_draining(False)
+        self.change_and_verify_load_balancer_connection_draining(True, 64)
 
     def test_set_load_balancer_policies_of_listeners(self):
         more_listeners = [(443, 8001, 'HTTP')]

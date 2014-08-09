@@ -21,7 +21,7 @@
 # IN THE SOFTWARE.
 import boto
 import boto.jsonresponse
-from boto.compat import json
+from boto.compat import json, six
 from boto.resultset import ResultSet
 from boto.iam.summarymap import SummaryMap
 from boto.connection import AWSQueryConnection
@@ -1104,7 +1104,7 @@ class IAMConnection(AWSQueryConnection):
 
     def _build_policy(self, assume_role_policy_document=None):
         if assume_role_policy_document is not None:
-            if isinstance(assume_role_policy_document, basestring):
+            if isinstance(assume_role_policy_document, six.string_types):
                 # Historically, they had to pass a string. If it's a string,
                 # assume the user has already handled it.
                 return assume_role_policy_document
@@ -1142,7 +1142,7 @@ class IAMConnection(AWSQueryConnection):
             permission to assume the role.
 
         :type path: string
-        :param path: The path to the instance profile.
+        :param path: The path to the role.
         """
         params = {
             'RoleName': role_name,
@@ -1440,7 +1440,7 @@ class IAMConnection(AWSQueryConnection):
         Lists the SAML providers in the account.
         This operation requires `Signature Version 4`_.
         """
-        return self.get_response('ListSAMLProviders', {})
+        return self.get_response('ListSAMLProviders', {}, list_marker='SAMLProviderList')
 
     def get_saml_provider(self, saml_provider_arn):
         """
@@ -1498,3 +1498,28 @@ class IAMConnection(AWSQueryConnection):
         """
         params = {'SAMLProviderArn': saml_provider_arn }
         return self.get_response('DeleteSAMLProvider', params)
+
+    #
+    # IAM Reports
+    #
+
+    def generate_credential_report(self):
+        """
+        Generates a credential report for an account
+
+        A new credential report can only be generated every 4 hours. If one
+        hasn't been generated in the last 4 hours then get_credential_report
+        will error when called
+        """
+        params = {}
+        return self.get_response('GenerateCredentialReport', params)
+
+    def get_credential_report(self):
+        """
+        Retrieves a credential report for an account
+        
+        A report must have been generated in the last 4 hours to succeed.
+        The report is returned as a base64 encoded blob within the response.
+        """
+        params = {}
+        return self.get_response('GetCredentialReport', params)

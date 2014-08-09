@@ -41,7 +41,7 @@ COMMANDS = ('vaults', 'jobs', 'upload')
 
 
 def usage():
-    print """
+    print("""
 glacier <command> [args]
 
     Commands
@@ -78,7 +78,7 @@ glacier <command> [args]
         Examples : 
             glacier upload pics *.jpg
             glacier upload pics a.jpg b.jpg
-"""
+""")
     sys.exit()
 
 
@@ -89,7 +89,7 @@ def connect(region, debug_level=0, access_key=None, secret_key=None):
                                aws_secret_access_key=secret_key,
                                debug=debug_level)
     if layer2 is None:
-        print 'Invalid region (%s)' % region
+        print('Invalid region (%s)' % region)
         sys.exit(1)
     return layer2
 
@@ -97,12 +97,12 @@ def connect(region, debug_level=0, access_key=None, secret_key=None):
 def list_vaults(region, access_key=None, secret_key=None):
     layer2 = connect(region, access_key = access_key, secret_key = secret_key)
     for vault in layer2.list_vaults():
-        print vault.arn
+        print(vault.arn)
 
 
 def list_jobs(vault_name, region, access_key=None, secret_key=None):
     layer2 = connect(region, access_key = access_key, secret_key = secret_key)
-    print layer2.layer1.list_jobs(vault_name)
+    print(layer2.layer1.list_jobs(vault_name))
 
 
 def upload_files(vault_name, filenames, region, access_key=None, secret_key=None):
@@ -111,7 +111,7 @@ def upload_files(vault_name, filenames, region, access_key=None, secret_key=None
     glacier_vault = layer2.get_vault(vault_name)
     for filename in filenames:
         if isfile(filename):
-            print 'Uploading %s to %s' % (filename, vault_name)
+            print('Uploading %s to %s' % (filename, vault_name))
             glacier_vault.upload_archive(filename)
 
 
@@ -128,7 +128,7 @@ def main():
     long_options = ['access_key=', 'secret_key=', 'region=']
     try:
         opts, args = getopt(argv, options, long_options)
-    except GetoptError, e:
+    except GetoptError as e:
         usage()
 
     # Parse agument

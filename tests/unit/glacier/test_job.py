@@ -19,9 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from StringIO import StringIO
-from tests.unit import unittest
-import mock
+from boto.compat import StringIO
+from tests.compat import mock, unittest
 
 from boto.glacier.job import Job
 from boto.glacier.layer1 import Layer1
@@ -57,7 +56,7 @@ class TestJob(unittest.TestCase):
             self.job.get_output(byte_range=(1, 1024), validate_checksum=False)
 
     def test_download_to_fileobj(self):
-        http_response=mock.Mock(read=mock.Mock(return_value='xyz'))
+        http_response = mock.Mock(read=mock.Mock(return_value='xyz'))
         response = GlacierResponse(http_response, None)
         response['TreeHash'] = 'tree_hash'
         self.api.get_job_output.return_value = response

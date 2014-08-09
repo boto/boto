@@ -23,10 +23,6 @@
 """
 Base class to make checking the certs easier.
 """
-import httplib
-import socket
-import unittest
-
 
 # We subclass from ``object`` instead of ``TestCase`` here so that this doesn't
 # add noise to the test suite (otherwise these no-ops would run on every

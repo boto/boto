@@ -62,7 +62,7 @@ class SNSSubcribeSQSTest(unittest.TestCase):
                 ['TopicArn']
         self.addCleanup(self.snsc.delete_topic, topic_arn)
 
-        expected_sid = hashlib.md5(topic_arn + queue_arn).hexdigest()
+        expected_sid = hashlib.md5((topic_arn + queue_arn).encode('utf-8')).hexdigest()
         resp = self.snsc.subscribe_sqs_queue(topic_arn, queue)
 
         found_expected_sid = False
