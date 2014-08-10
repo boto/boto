@@ -129,7 +129,6 @@ class SQSProfileName(MockServiceWithConfigTestCase):
         }
 
     @attr(sqs=True)
-    @attr(chris=True)
     def test_profile_name_gets_passed(self):
 
         query_mock = AWSQueryConnection()
