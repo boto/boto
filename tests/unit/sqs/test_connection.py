@@ -22,13 +22,15 @@
 # IN THE SOFTWARE.
 #
 
-from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceWithConfigTestCase
+
+from tests.compat import mock
 
 from boto.sqs.connection import SQSConnection
 from boto.sqs.regioninfo import SQSRegionInfo
 from boto.sqs.message import RawMessage
 from boto.sqs.queue import Queue
+from boto.connection import AWSQueryConnection
 
 from nose.plugins.attrib import attr
 
@@ -113,6 +115,34 @@ class SQSAuthParams(AWSMockServiceTestCase):
         assert 'QueueOwnerAWSAccountId' in self.actual_request.params.keys()
         self.assertEquals(self.actual_request.params['QueueOwnerAWSAccountId'], '599169622985')
 
+class SQSProfileName(MockServiceWithConfigTestCase):
+    connection_class = SQSConnection
+    profile_name = 'prod'
+
+    def setUp(self):
+        super(SQSProfileName, self).setUp()
+        self.config = {
+            "profile prod": {
+                'aws_access_key_id': 'access_key',
+                'aws_secret_access_key': 'secret_access',
+            }
+        }
+
+    @attr(sqs=True)
+    @attr(chris=True)
+    def test_profile_name_gets_passed(self):
+
+        query_mock = AWSQueryConnection()
+        query_mock.__init__ = mock.Mock(wraps=AWSQueryConnection.__init__)
+
+        region = SQSRegionInfo(name='us-west-2',
+                               endpoint='us-west-2.queue.amazonaws.com')
+        self.service_connection = SQSConnection(
+            https_connection_factory=self.https_connection_factory,
+            region=region,
+            profile_name=self.profile_name)
+        self.initialize_service_connection()
+        self.set_http_response(status_code=200)
 
 class SQSMessageAttributesParsing(AWSMockServiceTestCase):
     connection_class = SQSConnection
@@ -280,7 +310,6 @@ class SQSSendBatchMessageAttributes(AWSMockServiceTestCase):
             'SendMessageBatchRequestEntry.2.MessageBody': 'Message 2',
             'Version': '2012-11-05'
         })
-
 
 if __name__ == '__main__':
     unittest.main()
