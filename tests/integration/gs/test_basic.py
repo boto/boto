@@ -31,10 +31,11 @@ Some integration tests for the GSConnection
 import os
 import re
 import xml.sax
+from io import BytesIO
 
 from boto import handler
 from boto import storage_uri
-from boto.compat import StringIO, urllib
+from boto.compat import urllib
 from boto.gs.acl import ACL
 from boto.gs.cors import Cors
 from boto.gs.lifecycle import LifecycleConfig
@@ -95,7 +96,7 @@ class GSBasicTest(GSTestCase):
         # now get the contents from gcs to a local file
         k.get_contents_to_file(fp)
         fp.close()
-        fp = open(fpath)
+        fp = open(fpath, 'rb')
         # check to make sure content read from gcs is identical to original
         self.assertEqual(s1, fp.read())
         fp.close()
@@ -105,12 +106,12 @@ class GSBasicTest(GSTestCase):
         self.assertEqual(s1, f.read())
         f.close()
         # check to make sure set_contents_from_file is working
-        sfp = StringIO('foo')
+        sfp = BytesIO(b'foo')
         k.set_contents_from_file(sfp)
-        self.assertEqual(k.get_contents_as_string(), 'foo')
-        sfp2 = StringIO('foo2')
+        self.assertEqual(k.get_contents_as_string(), b'foo')
+        sfp2 = BytesIO(b'foo2')
         k.set_contents_from_file(sfp2)
-        self.assertEqual(k.get_contents_as_string(), 'foo2')
+        self.assertEqual(k.get_contents_as_string(), b'foo2')
 
     def test_get_all_keys(self):
         """Tests get_all_keys."""
