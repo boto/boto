@@ -1,4 +1,6 @@
 #!/usr/bin env python
+from boto.cloudsearch2.domain import Domain
+from boto.cloudsearch2.layer1 import CloudSearchConnection
 
 from tests.compat import mock, unittest
 from httpretty import HTTPretty
@@ -7,6 +9,9 @@ import json
 
 from boto.cloudsearch2.search import SearchConnection, SearchServiceException
 from boto.compat import six, map
+from tests.unit import AWSMockServiceTestCase
+from tests.unit.cloudsearch2 import DEMO_DOMAIN_DATA
+from tests.unit.cloudsearch2.test_connection import TestCloudSearchCreateDomain
 
 HOSTNAME = "search-demo-userdomain.us-east-1.cloudsearch.amazonaws.com"
 FULL_URL = 'http://%s/2013-01-01/search' % HOSTNAME
@@ -366,3 +371,13 @@ class CloudSearchConnectionTest(unittest.TestCase):
 
             self.assertTrue('Unknown error' in str(cm.exception))
             self.assertTrue('went wrong. Oops' in str(cm.exception))
+
+    def test_proxy(self):
+        conn = CloudSearchConnection(
+                proxy="127.0.0.1",
+                proxy_user="john.doe",
+                proxy_pass="p4ssw0rd",
+                proxy_port="8180")
+        domain = Domain(conn, DEMO_DOMAIN_DATA)
+        search = SearchConnection(domain=domain)
+        self.assertEqual(search.session.proxies, {'http': 'http://john.doe:p4ssw0rd@127.0.0.1:8180'})
