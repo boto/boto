@@ -24,14 +24,12 @@
 """
 Some unit tests for the SQSConnection
 """
-from __future__ import with_statement
-
 import time
 from threading import Timer
 from tests.unit import unittest
-import StringIO
 
 import boto
+from boto.compat import StringIO
 from boto.sqs.bigmessage import BigMessage
 from boto.exception import SQSError
 
@@ -42,7 +40,7 @@ class TestBigMessage(unittest.TestCase):
 
     def test_1_basic(self):
         c = boto.connect_sqs()
-        
+
         # create a queue so we can test BigMessage
         queue_name = 'test%d' % int(time.time())
         timeout = 60
@@ -58,10 +56,10 @@ class TestBigMessage(unittest.TestCase):
 
         # now add a message
         msg_body = 'This is a test of the big message'
-        fp = StringIO.StringIO(msg_body)
+        fp = StringIO(msg_body)
         s3_url = 's3://%s' % queue_name
         message = queue.new_message(fp, s3_url=s3_url)
-        
+
         queue.write(message)
         time.sleep(30)
 
@@ -69,9 +67,9 @@ class TestBigMessage(unittest.TestCase):
 
         # Make sure msg body is in bucket
         self.assertTrue(bucket.lookup(s3_object_name))
-        
+
         m = queue.read()
-        self.assertEqual(m.get_body(), msg_body)
+        self.assertEqual(m.get_body().decode('utf-8'), msg_body)
 
         m.delete()
         time.sleep(30)

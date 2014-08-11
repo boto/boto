@@ -7,6 +7,17 @@ boto: A Python interface to Amazon Web Services
 An integrated interface to current and future infrastructural services
 offered by `Amazon Web Services`_.
 
+Currently, all features work with Python 2.6 and 2.7. Work is under way to
+support Python 3.3+ in the same codebase. Modules are being ported one at
+a time with the help of the open source community, so please check below
+for compatibility with Python 3.3+.
+
+To port a module to Python 3.3+, please view our
+:doc:`Contributing Guidelines <contributing>` and the
+:doc:`Porting Guide <porting_guide>`. If you would like, you can open an
+issue to let others know about your work in progress. Tests **must** pass
+on Python 2.6, 2.7, 3.3, and 3.4 for pull requests to be accepted.
+
 .. _Amazon Web Services: http://aws.amazon.com/
 
 Getting Started
@@ -21,58 +32,59 @@ Currently Supported Services
 
 * **Compute**
 
-  * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`)
-  * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`)
-  * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`)
-  * Kinesis -- (:doc:`API Reference <ref/kinesis>`)
+  * :doc:`Elastic Compute Cloud (EC2) <ec2_tut>` -- (:doc:`API Reference <ref/ec2>`) (Python 3)
+  * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`) (Python 3)
+  * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`) (Python 3)
+  * Kinesis -- (:doc:`API Reference <ref/kinesis>`) (Python 3)
 
 * **Content Delivery**
 
-  * :doc:`CloudFront <cloudfront_tut>` -- (:doc:`API Reference <ref/cloudfront>`)
+  * :doc:`CloudFront <cloudfront_tut>` -- (:doc:`API Reference <ref/cloudfront>`) (Python 3)
 
 * **Database**
 
   * :doc:`DynamoDB2 <dynamodb2_tut>` -- (:doc:`API Reference <ref/dynamodb2>`) -- (:doc:`Migration Guide from v1 <migrations/dynamodb_v1_to_v2>`)
-  * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
+  * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`) (Python 3)
   * Relational Data Services 2 (RDS) -- (:doc:`API Reference <ref/rds2>`) -- (:doc:`Migration Guide from v1 <migrations/rds_v1_to_v2>`)
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
-  * ElastiCache -- (:doc:`API Reference <ref/elasticache>`)
-  * Redshift -- (:doc:`API Reference <ref/redshift>`)
-  * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
+  * ElastiCache -- (:doc:`API Reference <ref/elasticache>`) (Python 3)
+  * Redshift -- (:doc:`API Reference <ref/redshift>`) (Python 3)
+  * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`) (Python 3)
 
 * **Deployment and Management**
 
-  * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`)
-  * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
-  * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`)
-  * Opsworks -- (:doc:`API Reference <ref/opsworks>`)
-  * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`)
+  * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`) (Python 3)
+  * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`) (Python 3)
+  * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`) (Python 3)
+  * Opsworks -- (:doc:`API Reference <ref/opsworks>`) (Python 3)
+  * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`) (Python 3)
 
 * **Identity & Access**
 
-  * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`)
-  * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`)
+  * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`) (Python 3)
+  * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`) (Python 3)
 
 * **Application Services**
 
-  * Cloudsearch 2 -- (:doc:`API Reference <ref/cloudsearch2>`)
-  * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
-  * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`)
-  * :doc:`Simple Workflow Service (SWF) <swf_tut>` -- (:doc:`API Reference <ref/swf>`)
-  * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`)
-  * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`)
-  * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`)
+  * Cloudsearch 2 -- (:doc:`API Reference <ref/cloudsearch2>`) (Python 3)
+  * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`) (Python 3)
+  * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`) (Python 3)
+  * :doc:`Simple Workflow Service (SWF) <swf_tut>` -- (:doc:`API Reference <ref/swf>`) (Python 3)
+  * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`) (Python 3)
+  * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`) (Python 3)
+  * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`) (Python 3)
 
 * **Monitoring**
 
-  * :doc:`CloudWatch <cloudwatch_tut>` -- (:doc:`API Reference <ref/cloudwatch>`)
-  * CloudWatch Logs -- (:doc:`API Reference <ref/logs>`)
+  * :doc:`CloudWatch <cloudwatch_tut>` -- (:doc:`API Reference <ref/cloudwatch>`) (Python 3)
+  * CloudWatch Logs -- (:doc:`API Reference <ref/logs>`) (Python 3)
 
 * **Networking**
 
-  * :doc:`Route 53 <route53_tut>` -- (:doc:`API Reference <ref/route53>`)
-  * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`)
-  * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:doc:`API Reference <ref/elb>`)
+  * :doc:`Route 53 <route53_tut>` -- (:doc:`API Reference <ref/route53>`) (Python 3)
+  * :doc:`Virtual Private Cloud (VPC) <vpc_tut>` -- (:doc:`API Reference <ref/vpc>`) (Python 3)
+  * :doc:`Elastic Load Balancing (ELB) <elb_tut>` -- (:doc:`API Reference <ref/elb>`) (Python 3)
+  * AWS Direct Connect (Python 3)
 
 * **Payments & Billing**
 
@@ -80,8 +92,8 @@ Currently Supported Services
 
 * **Storage**
 
-  * :doc:`Simple Storage Service (S3) <s3_tut>` -- (:doc:`API Reference <ref/s3>`)
-  * Amazon Glacier -- (:doc:`API Reference <ref/glacier>`)
+  * :doc:`Simple Storage Service (S3) <s3_tut>` -- (:doc:`API Reference <ref/s3>`) (Python 3)
+  * Amazon Glacier -- (:doc:`API Reference <ref/glacier>`) (Python 3)
   * Google Cloud Storage -- (:doc:`API Reference <ref/gs>`)
 
 * **Workforce**
@@ -90,8 +102,8 @@ Currently Supported Services
 
 * **Other**
 
-  * Marketplace Web Services -- (:doc:`API Reference <ref/mws>`)
-  * :doc:`Support <support_tut>` -- (:doc:`API Reference <ref/support>`)
+  * Marketplace Web Services -- (:doc:`API Reference <ref/mws>`) (Python 3)
+  * :doc:`Support <support_tut>` -- (:doc:`API Reference <ref/support>`) (Python 3)
 
 Additional Resources
 --------------------
@@ -120,6 +132,8 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.32.1
+   releasenotes/v2.32.0
    releasenotes/v2.31.1
    releasenotes/v2.31.0
    releasenotes/v2.30.0

@@ -23,7 +23,7 @@
 #
 
 import time
-import unittest
+from tests.compat import unittest
 from nose.plugins.attrib import attr
 from boto.route53.connection import Route53Connection
 from boto.exception import TooManyRecordsException
@@ -151,8 +151,7 @@ class TestRoute53Zone(unittest.TestCase):
                         identifier=('baz', 'us-east-1'))
         self.zone.add_a('exception.%s' % self.base_domain, '8.7.6.5',
                         identifier=('bam', 'us-west-1'))
-        with self.assertRaises(TooManyRecordsException):
-            lbrs = self.zone.get_a('exception.%s' % self.base_domain)
+        self.assertRaises(TooManyRecordsException, lambda: self.zone.get_a('exception.%s' % self.base_domain))
         self.zone.delete_a('exception.%s' % self.base_domain, all=True)
 
     @classmethod

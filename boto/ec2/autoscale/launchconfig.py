@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from datetime import datetime
 from boto.ec2.elb.listelement import ListElement
 # Namespacing issue with deprecated local class
 from boto.ec2.blockdevicemapping import BlockDeviceMapping as BDM

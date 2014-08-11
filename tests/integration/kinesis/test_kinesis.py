@@ -23,16 +23,15 @@
 import time
 
 import boto
+from tests.compat import unittest
 from boto.kinesis.exceptions import ResourceNotFoundException
-
-from unittest import TestCase
 
 
 class TimeoutError(Exception):
     pass
 
 
-class TestKinesis(TestCase):
+class TestKinesis(unittest.TestCase):
     def setUp(self):
         self.kinesis = boto.connect_kinesis()
 

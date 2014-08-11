@@ -1,10 +1,6 @@
 import tempfile
 import unittest
-try:
-    import simplejson as json
-except ImportError:
-    import json
-from cStringIO import StringIO
+from boto.compat import StringIO, six, json
 from textwrap import dedent
 
 from boto.cloudfront.distribution import Distribution
@@ -157,7 +153,7 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
                     "v0pYdWJkflDKJ3xIu7lbwRpSkG98NBlgPi4ZJpRRnVX4kXAJK6td"
                     "Nx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCMIYHIaiOB6~5j"
                     "t9w2EOwi6sIIqrg_")
-        unicode_policy = unicode(self.canned_policy)
+        unicode_policy = six.text_type(self.canned_policy)
         sig = self.dist._sign_string(unicode_policy, private_key_string=self.pk_str)
         encoded_sig = self.dist._url_base64_encode(sig)
         self.assertEqual(expected, encoded_sig)

@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 from tests.unit import unittest
 
 from boto.ses.connection import SESConnection

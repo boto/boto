@@ -20,7 +20,6 @@
 # IN THE SOFTWARE.
 import xml.sax
 import hashlib
-import base64
 import string
 import collections
 from boto.connection import AWSQueryConnection
@@ -28,6 +27,7 @@ from boto.exception import BotoServerError
 import boto.mws.exception
 import boto.mws.response
 from boto.handler import XmlHandler
+from boto.compat import filter, map, six, encodebytes
 
 __all__ = ['MWSConnection']
 
@@ -54,7 +54,7 @@ api_version_path = {
     'OffAmazonPayments': ('2013-01-01', 'SellerId',
                           '/OffAmazonPayments/2013-01-01'),
 }
-content_md5 = lambda c: base64.encodestring(hashlib.md5(c).digest()).strip()
+content_md5 = lambda c: encodebytes(hashlib.md5(c).digest()).strip()
 decorated_attrs = ('action', 'response', 'section',
                    'quota', 'restore', 'version')
 api_call_map = {}
@@ -63,6 +63,7 @@ api_call_map = {}
 def add_attrs_from(func, to):
     for attr in decorated_attrs:
         setattr(to, attr, getattr(func, attr, None))
+    to.__wrapped__ = func
     return to
 
 
@@ -114,7 +115,7 @@ def destructure_object(value, into, prefix, members=False):
                 continue
             destructure_object(value[name], into, prefix + '.' + name,
                                members=members)
-    elif isinstance(value, basestring):
+    elif isinstance(value, six.string_types):
         into[prefix] = value
     elif isinstance(value, collections.Iterable):
         for index, element in enumerate(value):
@@ -133,7 +134,7 @@ def structured_objects(*fields, **kwargs):
 
         def wrapper(*args, **kw):
             members = kwargs.get('members', False)
-            for field in filter(kw.has_key, fields):
+            for field in filter(lambda i: i in kw, fields):
                 destructure_object(kw.pop(field), kw, field, members=members)
             return func(*args, **kw)
         wrapper.__doc__ = "{0}\nElement|Iter|Map: {1}\n" \
@@ -147,18 +148,18 @@ def requires(*groups):
 
     def decorator(func):
 
-        def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if 1 != len(filter(hasgroup, groups)):
+        def requires(*args, **kw):
+            hasgroup = lambda group: all(key in kw for key in group)
+            if 1 != len(list(filter(hasgroup, groups))):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires {1} argument(s)" \
                           "".format(func.action, message)
                 raise KeyError(message)
             return func(*args, **kw)
         message = ' OR '.join(['+'.join(g) for g in groups])
-        wrapper.__doc__ = "{0}\nRequired: {1}".format(func.__doc__,
-                                                      message)
-        return add_attrs_from(func, to=wrapper)
+        requires.__doc__ = "{0}\nRequired: {1}".format(func.__doc__,
+                                                       message)
+        return add_attrs_from(func, to=requires)
     return decorator
 
 
@@ -167,8 +168,8 @@ def exclusive(*groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if len(filter(hasgroup, groups)) not in (0, 1):
+            hasgroup = lambda group: all(key in kw for key in group)
+            if len(list(filter(hasgroup, groups))) not in (0, 1):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires either {1}" \
                           "".format(func.action, message)
@@ -186,8 +187,8 @@ def dependent(field, *groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if field in kw and 1 > len(filter(hasgroup, groups)):
+            hasgroup = lambda group: all(key in kw for key in group)
+            if field in kw and not any(hasgroup(g) for g in groups):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} argument {1} requires {2}" \
                           "".format(func.action, field, message)
@@ -205,15 +206,15 @@ def requires_some_of(*fields):
 
     def decorator(func):
 
-        def wrapper(*args, **kw):
-            if not filter(kw.has_key, fields):
+        def requires(*args, **kw):
+            if not any(i in kw for i in fields):
                 message = "{0} requires at least one of {1} argument(s)" \
                           "".format(func.action, ', '.join(fields))
                 raise KeyError(message)
             return func(*args, **kw)
-        wrapper.__doc__ = "{0}\nSome Required: {1}".format(func.__doc__,
-                                                           ', '.join(fields))
-        return add_attrs_from(func, to=wrapper)
+        requires.__doc__ = "{0}\nSome Required: {1}".format(func.__doc__,
+                                                            ', '.join(fields))
+        return add_attrs_from(func, to=requires)
     return decorator
 
 
@@ -235,7 +236,7 @@ def api_action(section, quota, restore, *api):
 
     def decorator(func, quota=int(quota), restore=float(restore)):
         version, accesskey, path = api_version_path[section]
-        action = ''.join(api or map(str.capitalize, func.func_name.split('_')))
+        action = ''.join(api or map(str.capitalize, func.__name__.split('_')))
 
         def wrapper(self, *args, **kw):
             kw.setdefault(accesskey, getattr(self, accesskey, None))
@@ -254,7 +255,7 @@ def api_action(section, quota, restore, *api):
         wrapper.__doc__ = "MWS {0}/{1} API call; quota={2} restore={3:.2f}\n" \
                           "{4}".format(action, version, quota, restore,
                                        func.__doc__)
-        api_call_map[action] = func.func_name
+        api_call_map[action] = func.__name__
         return wrapper
     return decorator
 
@@ -307,7 +308,7 @@ class MWSConnection(AWSQueryConnection):
                                                host=self.host)
         try:
             response = self._mexe(request, override_num_retries=None)
-        except BotoServerError, bs:
+        except BotoServerError as bs:
             raise self._response_error_factor(bs.status, bs.reason, bs.body)
         body = response.read()
         boto.log.debug(body)
@@ -363,10 +364,10 @@ class MWSConnection(AWSQueryConnection):
             response = more(NextToken=response._result.NextToken)
             yield response
 
+    @requires(['FeedType'])
     @boolean_arguments('PurgeAndReplace')
     @http_body('FeedContent')
     @structured_lists('MarketplaceIdList.Id')
-    @requires(['FeedType'])
     @api_action('Feeds', 15, 120)
     def submit_feed(self, request, response, headers=None, body='', **kw):
         """Uploads a feed for processing by Amazon MWS.
@@ -422,9 +423,9 @@ class MWSConnection(AWSQueryConnection):
                   "{1}".format(self.__class__.__name__, sections)
         raise AttributeError(message)
 
+    @requires(['ReportType'])
     @structured_lists('MarketplaceIdList.Id')
     @boolean_arguments('ReportOptions=ShowSalesChannel')
-    @requires(['ReportType'])
     @api_action('Reports', 15, 60)
     def request_report(self, request, response, **kw):
         """Creates a report request and submits the request to Amazon MWS.
@@ -535,8 +536,8 @@ class MWSConnection(AWSQueryConnection):
         """
         return self._post_request(request, kw, response)
 
-    @boolean_arguments('Acknowledged')
     @requires(['ReportIdList'])
+    @boolean_arguments('Acknowledged')
     @structured_lists('ReportIdList.Id')
     @api_action('Reports', 10, 45)
     def update_report_acknowledgements(self, request, response, **kw):
@@ -642,8 +643,8 @@ class MWSConnection(AWSQueryConnection):
         """
         return self._post_request(request, kw, response)
 
-    @structured_objects('Address', 'Items')
     @requires(['Address', 'Items'])
+    @structured_objects('Address', 'Items')
     @api_action('Outbound', 30, 0.5)
     def get_fulfillment_preview(self, request, response, **kw):
         """Returns a list of fulfillment order previews based on items
@@ -651,11 +652,11 @@ class MWSConnection(AWSQueryConnection):
         """
         return self._post_request(request, kw, response)
 
-    @structured_objects('DestinationAddress', 'Items')
     @requires(['SellerFulfillmentOrderId', 'DisplayableOrderId',
                'ShippingSpeedCategory',    'DisplayableOrderDateTime',
                'DestinationAddress',       'DisplayableOrderComment',
                'Items'])
+    @structured_objects('DestinationAddress', 'Items')
     @api_action('Outbound', 30, 0.5)
     def create_fulfillment_order(self, request, response, **kw):
         """Requests that Amazon ship items from the seller's inventory
@@ -702,12 +703,12 @@ class MWSConnection(AWSQueryConnection):
         return self._post_request(request, kw, response)
 
     @requires(['CreatedAfter'], ['LastUpdatedAfter'])
+    @requires(['MarketplaceId'])
     @exclusive(['CreatedAfter'], ['LastUpdatedAfter'])
     @dependent('CreatedBefore', ['CreatedAfter'])
     @exclusive(['LastUpdatedAfter'], ['BuyerEmail'], ['SellerOrderId'])
     @dependent('LastUpdatedBefore', ['LastUpdatedAfter'])
     @exclusive(['CreatedAfter'], ['LastUpdatedBefore'])
-    @requires(['MarketplaceId'])
     @structured_objects('OrderTotal', 'ShippingAddress',
                         'PaymentExecutionDetail')
     @structured_lists('MarketplaceId.Id', 'OrderStatus.Status',
@@ -724,7 +725,7 @@ class MWSConnection(AWSQueryConnection):
             'BuyerEmail': toggle.union(['SellerOrderId']),
             'SellerOrderId': toggle.union(['BuyerEmail']),
         }.items():
-            if do in kw and filter(kw.has_key, dont):
+            if do in kw and any(i in dont for i in kw):
                 message = "Don't include {0} when specifying " \
                           "{1}".format(' or '.join(dont), do)
                 raise AssertionError(message)

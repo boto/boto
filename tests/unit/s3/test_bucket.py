@@ -104,14 +104,14 @@ class TestS3Bucket(AWSMockServiceTestCase):
         qa = bukket._get_all_query_args(multiple_params)
         self.assertEqual(
             qa,
-            'bar=%E2%98%83&max-keys=0&foo=true&some-other=thing'
+            'bar=%E2%98%83&foo=true&max-keys=0&some-other=thing'
         )
 
         # Multiple params with initial.
         qa = bukket._get_all_query_args(multiple_params, 'initial=1')
         self.assertEqual(
             qa,
-            'initial=1&bar=%E2%98%83&max-keys=0&foo=true&some-other=thing'
+            'initial=1&bar=%E2%98%83&foo=true&max-keys=0&some-other=thing'
         )
 
     @patch.object(S3Connection, 'head_bucket')

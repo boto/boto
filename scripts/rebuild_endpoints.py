@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import json
 from pyquery import PyQuery as pq
 import requests

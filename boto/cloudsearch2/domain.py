@@ -20,13 +20,13 @@
 # IN THE SOFTWARE.
 #
 
-from .optionstatus import IndexFieldStatus
-from .optionstatus import ServicePoliciesStatus
-from .optionstatus import ExpressionStatus
-from .optionstatus import AvailabilityOptionsStatus
-from .optionstatus import ScalingParametersStatus
-from .document import DocumentServiceConnection
-from .search import SearchConnection
+from boto.cloudsearch2.optionstatus import IndexFieldStatus
+from boto.cloudsearch2.optionstatus import ServicePoliciesStatus
+from boto.cloudsearch2.optionstatus import ExpressionStatus
+from boto.cloudsearch2.optionstatus import AvailabilityOptionsStatus
+from boto.cloudsearch2.optionstatus import ScalingParametersStatus
+from boto.cloudsearch2.document import DocumentServiceConnection
+from boto.cloudsearch2.search import SearchConnection
 
 
 def handle_bool(value):

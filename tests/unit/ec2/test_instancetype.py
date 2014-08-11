@@ -1,13 +1,11 @@
 #!/usr/bin/env python
-import httplib
-
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 import boto.ec2
 
-from boto.ec2.instancetype import InstanceType
 from boto.ec2.connection import EC2Connection
+
 
 class TestEC2ConnectionBase(AWSMockServiceTestCase):
     connection_class = EC2Connection
@@ -20,7 +18,7 @@ class TestEC2ConnectionBase(AWSMockServiceTestCase):
 class TestReservedInstanceOfferings(TestEC2ConnectionBase):
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeInstanceTypesResponseType xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
                 <VmTypeMessage/>
                 <instanceTypeDetails>

@@ -132,9 +132,9 @@ class S3BucketTest (unittest.TestCase):
         self.bucket.delete_tags()
         try:
             self.bucket.get_tags()
-        except S3ResponseError, e:
+        except S3ResponseError as e:
             self.assertEqual(e.code, 'NoSuchTagSet')
-        except Exception, e:
+        except Exception as e:
             self.fail("Wrong exception raised (expected S3ResponseError): %s"
                       % e)
         else:
@@ -248,7 +248,7 @@ class S3BucketTest (unittest.TestCase):
     def test_lifecycle_jp(self):
         # test lifecycle with Japanese prefix
         name = "Japanese files"
-        prefix = u"日本語/"
+        prefix = "日本語/"
         days = 30
         lifecycle = Lifecycle()
         lifecycle.add_rule(name, prefix, "Enabled", days)

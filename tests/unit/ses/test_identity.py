@@ -34,7 +34,7 @@ class TestSESIdentity(AWSMockServiceTestCase):
         super(TestSESIdentity, self).setUp()
 
     def default_body(self):
-        return """<GetIdentityDkimAttributesResponse \
+        return b"""<GetIdentityDkimAttributesResponse \
 xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
   <GetIdentityDkimAttributesResult>
     <DkimAttributes>
@@ -85,7 +85,7 @@ class TestSESSetIdentityNotificationTopic(AWSMockServiceTestCase):
         super(TestSESSetIdentityNotificationTopic, self).setUp()
 
     def default_body(self):
-        return """<SetIdentityNotificationTopicResponse \
+        return b"""<SetIdentityNotificationTopicResponse \
         xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
            <SetIdentityNotificationTopicResult/>
            <ResponseMetadata>
@@ -130,7 +130,7 @@ class TestSESSetIdentityFeedbackForwardingEnabled(AWSMockServiceTestCase):
         super(TestSESSetIdentityFeedbackForwardingEnabled, self).setUp()
 
     def default_body(self):
-        return """<SetIdentityFeedbackForwardingEnabledResponse \
+        return b"""<SetIdentityFeedbackForwardingEnabledResponse \
         xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
           <SetIdentityFeedbackForwardingEnabledResult/>
           <ResponseMetadata>
