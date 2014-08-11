@@ -139,7 +139,8 @@ class ServicePoliciesStatus(OptionStatus):
         """
         return {
             "Effect": "Allow",
-            "Action": "*",  # Docs say use GET, but denies unless *
+            "Action": "cloudsearch:*",
+            "Principal": {"AWS": "*"},
             "Resource": arn,
             "Condition": {
                 "IpAddress": {
