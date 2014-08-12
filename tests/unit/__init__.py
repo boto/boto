@@ -23,6 +23,8 @@ class AWSMockServiceTestCase(unittest.TestCase):
         self.actual_request = None
         self.original_mexe = self.service_connection._mexe
         self.service_connection._mexe = self._mexe_spy
+        self.proxy = None
+        self.use_proxy = False
 
     def create_service_connection(self, **kwargs):
         if self.connection_class is None:
