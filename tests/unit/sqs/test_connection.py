@@ -131,9 +131,6 @@ class SQSProfileName(MockServiceWithConfigTestCase):
     @attr(sqs=True)
     def test_profile_name_gets_passed(self):
 
-        query_mock = AWSQueryConnection()
-        query_mock.__init__ = mock.Mock(wraps=AWSQueryConnection.__init__)
-
         region = SQSRegionInfo(name='us-west-2',
                                endpoint='us-west-2.queue.amazonaws.com')
         self.service_connection = SQSConnection(
