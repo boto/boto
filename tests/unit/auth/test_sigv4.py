@@ -251,6 +251,17 @@ class TestSigV4Handler(unittest.TestCase):
         auth2 = pickle.loads(pickled)
         self.assertEqual(auth.host, auth2.host)
 
+    def test_bytes_header(self):
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
+                                 mock.Mock(), self.provider)
+        request = HTTPRequest(
+            'GET', 'http', 'glacier.us-east-1.amazonaws.com', 80,
+            'x/./././x .html', None, {},
+            {'x-amz-glacier-version': '2012-06-01', 'x-amz-hash': b'f00'}, '')
+        canonical = auth.canonical_request(request)
+
+        self.assertIn('f00', canonical)
+
 
 class TestS3HmacAuthV4Handler(unittest.TestCase):
     def setUp(self):
