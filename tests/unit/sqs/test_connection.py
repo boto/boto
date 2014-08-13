@@ -140,6 +140,8 @@ class SQSProfileName(MockServiceWithConfigTestCase):
         self.initialize_service_connection()
         self.set_http_response(status_code=200)
 
+        self.assertEquals(self.service_connection.profile_name, self.profile_name)
+
 class SQSMessageAttributesParsing(AWSMockServiceTestCase):
     connection_class = SQSConnection
 
