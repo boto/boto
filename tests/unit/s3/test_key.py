@@ -97,6 +97,21 @@ class TestS3Key(AWSMockServiceTestCase):
         k.set_contents_from_string('test')
         k.bucket.list.assert_not_called()
 
+    def test_storage_class_slash(self):
+        self.set_http_response(status_code=200)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.get_key('/fookey.txt')
+
+        # Mock out the bucket object - we really only care about calls
+        # to list.
+        k.bucket = mock.MagicMock()
+
+        # Test getting storage class, which should NOT ever begin
+        # with a slash.
+        sc_value = k.storage_class
+        self.assertEqual(sc_value, 'STANDARD')
+        k.bucket.list.assert_called_with(b'fookey.txt')
+
 
 def counter(fn):
     def _wrapper(*args, **kwargs):
