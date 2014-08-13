@@ -2,7 +2,7 @@
 from boto.cloudsearch2.domain import Domain
 from boto.cloudsearch2.layer1 import CloudSearchConnection
 
-from tests.unit import unittest
+from tests.unit import unittest, AWSMockServiceTestCase
 from httpretty import HTTPretty
 from mock import MagicMock
 
@@ -16,13 +16,17 @@ import boto
 from tests.unit.cloudsearch2 import DEMO_DOMAIN_DATA
 
 
-class CloudSearchDocumentConnectionTest(unittest.TestCase):
+class CloudSearchDocumentConnectionTest(AWSMockServiceTestCase):
+    connection_class = CloudSearchConnection
+
     def test_proxy(self):
-        conn = CloudSearchConnection(
-            proxy="127.0.0.1",
-            proxy_user="john.doe",
-            proxy_pass="p4ssw0rd",
-            proxy_port="8180")
+        conn = self.service_connection
+        conn.proxy = "127.0.0.1"
+        conn.proxy_user = "john.doe"
+        conn.proxy_pass="p4ssw0rd"
+        conn.proxy_port="8180"
+        conn.use_proxy = True
+
         domain = Domain(conn, DEMO_DOMAIN_DATA)
         service = DocumentServiceConnection(domain=domain)
         self.assertEqual(service.proxy, {'http': 'http://john.doe:p4ssw0rd@127.0.0.1:8180'})

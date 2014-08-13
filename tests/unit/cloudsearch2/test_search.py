@@ -339,8 +339,9 @@ class FakeResponse(object):
     content = b''
 
 
-class CloudSearchConnectionTest(unittest.TestCase):
+class CloudSearchConnectionTest(AWSMockServiceTestCase):
     cloudsearch = True
+    connection_class = CloudSearchConnection
 
     def setUp(self):
         super(CloudSearchConnectionTest, self).setUp()
@@ -374,11 +375,13 @@ class CloudSearchConnectionTest(unittest.TestCase):
             self.assertTrue('went wrong. Oops' in str(cm.exception))
 
     def test_proxy(self):
-        conn = CloudSearchConnection(
-                proxy="127.0.0.1",
-                proxy_user="john.doe",
-                proxy_pass="p4ssw0rd",
-                proxy_port="8180")
+        conn = self.service_connection
+        conn.proxy = "127.0.0.1"
+        conn.proxy_user = "john.doe"
+        conn.proxy_pass="p4ssw0rd"
+        conn.proxy_port="8180"
+        conn.use_proxy = True
+
         domain = Domain(conn, DEMO_DOMAIN_DATA)
         search = SearchConnection(domain=domain)
         self.assertEqual(search.session.proxies, {'http': 'http://john.doe:p4ssw0rd@127.0.0.1:8180'})
