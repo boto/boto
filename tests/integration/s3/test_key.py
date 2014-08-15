@@ -414,7 +414,8 @@ class S3KeyTest(unittest.TestCase):
         check = self.bucket.get_key('test_header_encoding')
         remote_metadata = check._get_remote_metadata()
 
-        self.assertEqual(check.cache_control, 'public, max-age=500')
+        # TODO: investigate whether encoding ' ' as '%20' makes sense
+        self.assertEqual(check.cache_control, 'public,%20max-age=500')
         self.assertEqual(remote_metadata['cache-control'], 'public,%20max-age=500')
         self.assertEqual(check.get_metadata('test-plus'), 'A plus (+)')
         self.assertEqual(check.content_disposition, 'filename=Sch%C3%B6ne%20Zeit.txt')
@@ -427,8 +428,8 @@ class S3KeyTest(unittest.TestCase):
         self.assertEqual(remote_metadata['content-type'], 'application/pdf')
         self.assertEqual(check.x_robots_tag, 'all')
         self.assertEqual(remote_metadata['x-robots-tag'], 'all')
-        self.assertEqual(check.expires, 'Thu, 01 Dec 1994 16:00:00 GMT')
-        self.assertEqual(remote_metadata['expires'], 'Thu, 01 Dec 1994 16:00:00 GMT')
+        self.assertEqual(check.expires, 'Thu,%2001%20Dec%201994%2016:00:00%20GMT')
+        self.assertEqual(remote_metadata['expires'], 'Thu,%2001%20Dec%201994%2016:00:00%20GMT')
 
         expected = u'filename=Schöne Zeit.txt'
         if six.PY2:
