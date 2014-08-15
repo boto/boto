@@ -43,7 +43,7 @@ class ElastiCacheConnection(AWSQueryConnection):
     associated with their cache and can receive alarms if a part of
     their cache runs hot.
     """
-    APIVersion = "2013-06-15"
+    APIVersion = "2014-07-15"
     DefaultRegionName = "us-east-1"
     DefaultRegionEndpoint = "elasticache.us-east-1.amazonaws.com"
 
@@ -109,7 +109,8 @@ class ElastiCacheConnection(AWSQueryConnection):
                              preferred_availability_zone=None,
                              preferred_maintenance_window=None, port=None,
                              notification_topic_arn=None,
-                             auto_minor_version_upgrade=None):
+                             auto_minor_version_upgrade=None, az_mode=None,
+                             preferred_availability_zones=None):
         """
         The CreateCacheCluster operation creates a new cache cluster.
         All nodes in the cache cluster run the same protocol-compliant
@@ -241,6 +242,18 @@ class ElastiCacheConnection(AWSQueryConnection):
             occur; `False` disables automatic upgrades.
         Default: `True`
 
+        :type az_mode: string
+        :param az_mode: AZ mode, single-az or cross-az.
+            Specifies whether the nodes in this Memcached cache cluster are created
+            in a single Availability Zone or created across multiple Availability Zones.
+            This option is only supported for Memcached cache clusters.
+
+        :type preferred_availability_zones: list
+        :param preferred_availability_zones: list of availability zones.
+            A list of the Availability Zones in which nodes will be created.
+            The order of the zones in the list is not important.
+            This option is only supported on Memcached clusters.
+            The number of Availability Zones listed must equal the value of num_cache_nodes.
         """
         params = {
             'CacheClusterId': cache_cluster_id,
@@ -282,6 +295,17 @@ class ElastiCacheConnection(AWSQueryConnection):
         if auto_minor_version_upgrade is not None:
             params['AutoMinorVersionUpgrade'] = str(
                 auto_minor_version_upgrade).lower()
+        # cross AZ cache cluster
+        if engine == 'memcached':  # only memcached is supported
+            if az_mode is not None and az_mode == 'cross-az':  # az_mode must be cross-az
+                # number of preferred_availability_zones must match num_cache_nodes
+                if preferred_availability_zones is not None and len(preferred_availability_zones) == num_cache_nodes:
+                    if 'PreferredAvailabilityZone' in params:
+                        del params['PreferredAvailabilityZone']
+                    params['AZMode'] = 'cross-az'
+                    for i, single_az in enumerate(preferred_availability_zones):
+                        param_name = 'PreferredAvailabilityZones.member.%d' % (i + 1)
+                        params[param_name] = single_az
         return self._make_request(
             action='CreateCacheCluster',
             verb='POST',
