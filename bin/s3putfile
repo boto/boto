@@ -221,8 +221,6 @@ def expand_path(path):
 
 def main():
 
-    boto.set_file_logger('boto', '/Users/bob/Desktop/boto.log', logging.DEBUG)
-    
     # default values
     aws_access_key_id = None
     aws_secret_access_key = None
