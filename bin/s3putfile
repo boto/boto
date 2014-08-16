@@ -63,9 +63,9 @@ usage_string = """
 SYNOPSIS
     s3put [-a/--access_key <access_key>] [-s/--secret_key <secret_key>]
           -b/--bucket <bucket_name> [-c/--callback <num_cb>]
-          [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
-          [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
-          [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
+          [-d/--debug <debug_level>]
+          [-n/--no_op] [-k/--key <key>]
+          [-q/--quiet] [-g/--grant grant] [-r/--reduced]
           [--header] [--region <name>] [--host <s3_host>] [--sse_customer_key <32-bit key>]""" + \
           usage_flag_multipart_capable + """ path [path...]
 
@@ -78,43 +78,21 @@ SYNOPSIS
                      AWS_SECRET_ACCESS_KEY
         bucket_name - The name of the S3 bucket the file(s) should be
                       copied to.
-        path - A path to a directory or file that represents the items
-               to be uploaded.  If the path points to an individual file,
-               that file will be uploaded to the specified bucket.  If the
-               path points to a directory, it will recursively traverse
-               the directory and upload all files to the specified bucket.
+        path - A path to a directory file that represents the item
+               to be uploaded.
+        key - The key to give the object in S3  
         debug_level - 0 means no debug output (default), 1 means normal
                       debug output from boto, and 2 means boto debug output
                       plus request/response output from httplib
-        ignore_dirs - a comma-separated list of directory names that will
-                      be ignored and not uploaded to S3.
         num_cb - The number of progress callbacks to display.  The default
                  is zero which means no callbacks.  If you supplied a value
                  of "-c 10" for example, the progress callback would be
                  called 10 times for each file transferred.
-        prefix - A file path prefix that will be stripped from the full
-                 path of the file when determining the key name in S3.
-                 For example, if the full path of a file is:
-                     /home/foo/bar/fie.baz
-                 and the prefix is specified as "-p /home/foo/" the
-                 resulting key name in S3 will be:
-                     /bar/fie.baz
-                 The prefix must end in a trailing separator and if it
-                 does not then one will be added.
-        key_prefix - A prefix to be added to the S3 key name, after any
-                     stripping of the file path is done based on the
-                     "-p/--prefix" option.
         reduced - Use Reduced Redundancy storage
         grant - A canned ACL policy that will be granted on each file
                 transferred to S3.  The value of provided must be one
                 of the "canned" ACL policies supported by S3:
                 private|public-read|public-read-write|authenticated-read
-        no_overwrite - No files will be overwritten on S3, if the file/key
-                       exists on s3 it will be kept. This is useful for
-                       resuming interrupted transfers. Note this is not a
-                       sync, even if the file has been updated locally if
-                       the key exists on s3 the file on s3 will not be
-                       updated.
         header - key=value pairs of extra header(s) to pass along in the
                  request
         region - Manually set a region for buckets that are not in the US
@@ -138,15 +116,6 @@ def usage(status=1):
 
 def submit_cb(bytes_so_far, total_bytes):
     print('%d bytes transferred / %d bytes total' % (bytes_so_far, total_bytes))
-
-
-def get_key_name(fullpath, prefix, key_prefix):
-    if fullpath.startswith(prefix):
-        key_name = fullpath[len(prefix):]
-    else:
-        key_name = fullpath
-    l = key_name.split(os.sep)
-    return key_prefix + '/'.join(l)
 
 
 def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
@@ -258,28 +227,25 @@ def main():
     aws_access_key_id = None
     aws_secret_access_key = None
     bucket_name = ''
-    ignore_dirs = []
     debug = 0
     cb = None
     num_cb = 0
     quiet = False
     no_op = False
-    prefix = '/'
-    key_prefix = ''
     grant = None
-    no_overwrite = False
     reduced = False
     headers = {}
     host = None
     multipart_requested = False
     region = None
     sse_customer_key = None
+    key_name = ''
 
     try:
         opts, args = getopt.getopt(
             sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
             ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
-             'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet',
+             'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet', 'key=',
              'secret_key=', 'no_overwrite', 'reduced', 'header=', 'multipart',
              'host=', 'region=', 'sse_customer_key='])
     except:
@@ -300,21 +266,12 @@ def main():
             debug = int(a)
         if o in ('-g', '--grant'):
             grant = a
-        if o in ('-i', '--ignore'):
-            ignore_dirs = a.split(',')
         if o in ('-n', '--no_op'):
             no_op = True
-        if o in ('-w', '--no_overwrite'):
-            no_overwrite = True
-        if o in ('-p', '--prefix'):
-            prefix = a
-            if prefix[-1] != os.sep:
-                prefix = prefix + os.sep
-            prefix = expand_path(prefix)
-        if o in ('-k', '--key_prefix'):
-            key_prefix = a
         if o in ('-q', '--quiet'):
             quiet = True
+        if o in ('-k', '--key'):
+            key_name = a
         if o in ('-s', '--secret_key'):
             aws_secret_access_key = a
         if o in ('-r', '--reduced'):
@@ -391,64 +348,25 @@ def main():
                 print(e)
             print('Could not get bucket region info, skipping...')
 
-    existing_keys_to_check_against = []
-    files_to_check_for_upload = []
+    fullpath = expand_path(args[0])
 
-    for path in args:
-        path = expand_path(path)
-        # upload a directory of files recursively
-        if os.path.isdir(path):
-            if no_overwrite:
-                if not quiet:
-                    print('Getting list of existing keys to check against')
-                for key in b.list(get_key_name(path, prefix, key_prefix)):
-                    existing_keys_to_check_against.append(key.name)
-            for root, dirs, files in os.walk(path):
-                for ignore in ignore_dirs:
-                    if ignore in dirs:
-                        dirs.remove(ignore)
-                for path in files:
-                    if path.startswith("."):
-                        continue
-                    files_to_check_for_upload.append(os.path.join(root, path))
+    if not quiet:
+        print('Copying %s to %s/%s' % (fullpath, bucket_name, key_name))
 
-        # upload a single file
-        elif os.path.isfile(path):
-            fullpath = os.path.abspath(path)
-            key_name = get_key_name(fullpath, prefix, key_prefix)
-            files_to_check_for_upload.append(fullpath)
-            existing_keys_to_check_against.append(key_name)
-
-        # we are trying to upload something unknown
+    if not no_op:
+        # 0-byte files don't work and also don't need multipart upload
+        if os.stat(fullpath).st_size != 0 and multipart_capable and \
+                multipart_requested:
+            multipart_upload(bucket_name, aws_access_key_id,
+                             aws_secret_access_key, fullpath, key_name,
+                             reduced, debug, cb, num_cb,
+                             grant or 'private', headers,
+                             region=region or DEFAULT_REGION,
+                             sse_customer_key=sse_customer_key)
         else:
-            print("I don't know what %s is, so i can't upload it" % path)
-
-    for fullpath in files_to_check_for_upload:
-        key_name = get_key_name(fullpath, prefix, key_prefix)
-
-        if no_overwrite and key_name in existing_keys_to_check_against:
-            if b.get_key(key_name):
-                if not quiet:
-                    print('Skipping %s as it exists in s3' % fullpath)
-                continue
-
-        if not quiet:
-            print('Copying %s to %s/%s' % (fullpath, bucket_name, key_name))
-
-        if not no_op:
-            # 0-byte files don't work and also don't need multipart upload
-            if os.stat(fullpath).st_size != 0 and multipart_capable and \
-                    multipart_requested:
-                multipart_upload(bucket_name, aws_access_key_id,
-                                 aws_secret_access_key, fullpath, key_name,
-                                 reduced, debug, cb, num_cb,
-                                 grant or 'private', headers,
-                                 region=region or DEFAULT_REGION,
-                                 sse_customer_key=sse_customer_key)
-            else:
-                singlepart_upload(b, key_name, fullpath, cb=cb, num_cb=num_cb,
-                                  policy=grant, reduced_redundancy=reduced,
-                                  headers=headers)
+            singlepart_upload(b, key_name, fullpath, cb=cb, num_cb=num_cb,
+                              policy=grant, reduced_redundancy=reduced,
+                              headers=headers)
 
 if __name__ == "__main__":
     main()

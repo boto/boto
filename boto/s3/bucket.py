@@ -47,6 +47,7 @@ import xml.sax
 import xml.sax.saxutils
 import re
 import base64
+import hashlib
 from collections import defaultdict
 from boto.compat import BytesIO, six, StringIO, urllib
 
@@ -1689,6 +1690,7 @@ class Bucket(object):
     def initiate_multipart_upload(self, key_name, headers=None,
                                   reduced_redundancy=False,
                                   metadata=None, encrypt_key=False,
+                                  sse_customer_key=None,
                                   policy=None):
         """
         Start a multipart upload operation.
@@ -1745,6 +1747,11 @@ class Bucket(object):
             # (see boto.s3.key.Key.set_contents_from_file)
         if encrypt_key:
             headers[provider.server_side_encryption_header] = 'AES256'
+        if sse_customer_key:
+            headers[provider.customer_server_side_encryption_key_md5_header] = base64.b64encode(hashlib.md5(sse_customer_key).digest())
+            headers[provider.customer_server_side_encryption_key_header] = base64.b64encode(sse_customer_key)
+            headers[provider.customer_server_side_encryption_algorithm_header] = 'AES256'
+
         if metadata is None:
             metadata = {}
 

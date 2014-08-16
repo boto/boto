@@ -27,6 +27,7 @@ import mimetypes
 import os
 import re
 import base64
+import hashlib
 import binascii
 import math
 from hashlib import md5
@@ -1112,7 +1113,8 @@ class Key(object):
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
                                reduced_redundancy=False, query_args=None,
-                               encrypt_key=False, size=None, rewind=False):
+                               encrypt_key=False, size=None, rewind=False,
+                               sse_customer_key=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file pointed to by 'fp' as the
@@ -1227,6 +1229,12 @@ class Key(object):
                                              'or seek() to data start.')
                 # seek back to the correct position.
                 fp.seek(spos)
+
+        if sse_customer_key:
+            headers[provider.customer_server_side_encryption_key_md5_header] = base64.b64encode(hashlib.md5(sse_customer_key).digest())
+            headers[provider.customer_server_side_encryption_key_header] = base64.b64encode(sse_customer_key)
+            headers[provider.customer_server_side_encryption_algorithm_header] = 'AES256'
+
 
         if reduced_redundancy:
             self.storage_class = 'REDUCED_REDUNDANCY'
