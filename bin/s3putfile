@@ -352,6 +352,10 @@ def main():
         print('Copying %s to %s/%s' % (fullpath, bucket_name, key_name))
 
     if not no_op:
+        # If the file size is greater than 100MB... force to multi-part
+        if os.stat(fullpath).st_size > 104857600:
+            multipart_requested = True
+
         # 0-byte files don't work and also don't need multipart upload
         if os.stat(fullpath).st_size != 0 and multipart_capable and \
                 multipart_requested:
