@@ -343,7 +343,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  {'par1': 'foo', 'par2': 'baz'},
                                  "/",
                                  "POST")
-
+        print resp.read()
         self.assertEqual(resp.read(), b'{"test": "normal"}')
 
     def test_alternate_port(self):
