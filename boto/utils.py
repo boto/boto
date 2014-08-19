@@ -170,9 +170,7 @@ def merge_meta(headers, metadata, provider=None):
     metadata_prefix = provider.metadata_prefix
     final_headers = headers.copy()
     for k in metadata.keys():
-        if k.lower() in ['cache-control', 'content-md5', 'content-type',
-                         'content-encoding', 'content-disposition',
-                         'expires']:
+        if k.lower() in boto.s3.key.Key.base_user_settable_fields:
             final_headers[k] = metadata[k]
         else:
             final_headers[metadata_prefix + k] = metadata[k]
