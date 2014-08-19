@@ -218,7 +218,7 @@ instances sets.
 Creating a Launch Configuration is easy:
 
    >>> conn = boto.connect_autoscale()
-   >>> config = LaunchConfig(name='foo', image_id='ami-abcd1234', key_name='foo.pem')
+   >>> config = LaunchConfiguration(name='foo', image_id='ami-abcd1234', key_name='foo.pem')
    >>> conn.create_launch_configuration(config)
 
 Once you have a launch configuration, you can list you current configurations:
