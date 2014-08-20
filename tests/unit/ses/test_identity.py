@@ -123,6 +123,7 @@ class TestSESSetIdentityNotificationTopic(AWSMockServiceTestCase):
         self.assertEqual(2, len(response))
         self.assertEqual(0, len(result))
 
+
 class TestSESSetIdentityFeedbackForwardingEnabled(AWSMockServiceTestCase):
     connection_class = SESConnection
 
