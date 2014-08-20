@@ -34,7 +34,7 @@ import sys
 
 from boto.glacier import connect_to_region
 from getopt import getopt, GetoptError
-from os.path import isfile
+from os.path import isfile, basename
 
 
 COMMANDS = ('vaults', 'jobs', 'upload')
@@ -112,7 +112,7 @@ def upload_files(vault_name, filenames, region, access_key=None, secret_key=None
     for filename in filenames:
         if isfile(filename):
             print('Uploading %s to %s' % (filename, vault_name))
-            glacier_vault.upload_archive(filename)
+            glacier_vault.upload_archive(filename, description = basename(filename))
 
 
 def main():
