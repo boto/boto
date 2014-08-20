@@ -1,4 +1,4 @@
-from boto.elasticache import connect_to_region
+from boto.elasticache.layer1 import ElastiCacheConnection
 from tests.compat import mock
 from tests.unit import unittest
 
@@ -128,7 +128,8 @@ MOCK_DESCRIBE_CROSS_AZ_MEMCACHED_CLUSTER = b"""{
 
 class TestCreateCrossAZCacheCluster(unittest.TestCase):
     def test_create_cross_az_cache_cluster(self):
-        connection = connect_to_region('us-west-2')
+        connection = ElastiCacheConnection(aws_access_key_id='aws_access_key_id',
+                                           aws_secret_access_key='aws_secret_access_key')
 
         mock_create_response = mock.Mock()
         mock_create_response.read.return_value = MOCK_CREATE_CROSS_AZ_MEMCACHED_CLUSTER
