@@ -175,8 +175,8 @@ class GSVersioningTest(GSTestCase):
 
         acl_xml = (
             b'<ACCESSControlList><EntrIes><Entry>'
-             '<Scope type="AllUsers"></Scope><Permission>READ</Permission>'
-             '</Entry></EntrIes></ACCESSControlList>')
+            b'<Scope type="AllUsers"></Scope><Permission>READ</Permission>'
+            b'</Entry></EntrIes></ACCESSControlList>')
         aclo = acl.ACL()
         h = handler.XmlHandler(aclo, b)
         sax.parseString(acl_xml, h)
