@@ -383,7 +383,7 @@ class Route53Connection(AWSAuthConnection):
 
         """
         params = {'type': type, 'name': name,
-                  'Identifier': identifier, 'maxitems': maxitems}
+                  'identifier': identifier, 'maxitems': maxitems}
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
         response = self.make_request('GET', uri, params=params)
         body = response.read()
