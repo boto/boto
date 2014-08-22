@@ -20,13 +20,17 @@
 # IN THE SOFTWARE.
 #
 
+import os
 import json
 import boto
+from boto import config
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 from boto.exception import JSONResponseError
 from boto.redshift import exceptions
 
+MASTER_USER_NAME = 'master_user_name'
+MASTER_USER_PASSWORD = 'master_user_password'
 
 class RedshiftConnection(AWSQueryConnection):
     """
@@ -308,8 +312,8 @@ class RedshiftConnection(AWSQueryConnection):
             verb='POST',
             path='/', params=params)
 
-    def create_cluster(self, cluster_identifier, node_type, master_username,
-                       master_user_password, db_name=None, cluster_type=None,
+    def create_cluster(self, cluster_identifier, node_type, master_username=None,
+                       master_user_password=None, db_name=None, cluster_type=None,
                        cluster_security_groups=None,
                        vpc_security_group_ids=None,
                        cluster_subnet_group_name=None,
@@ -565,9 +569,20 @@ class RedshiftConnection(AWSQueryConnection):
         params = {
             'ClusterIdentifier': cluster_identifier,
             'NodeType': node_type,
-            'MasterUsername': master_username,
-            'MasterUserPassword': master_user_password,
         }
+        if master_username is not None:
+            params['MasterUsername'] = master_username
+        elif MASTER_USER_NAME.upper() in os.environ:
+            params['MasterUsername'] = os.environ[MASTER_USER_NAME.upper()]
+        elif config.has_option('Redshift', MASTER_USER_NAME):
+            params['MasterUsername'] = config.get('Redshift', MASTER_USER_NAME)
+        if master_user_password is not None:
+            params['MasterUserPassword'] = master_user_password
+        elif MASTER_USER_PASSWORD.upper() in os.environ:
+            params['MasterUserPassword'] = os.environ[MASTER_USER_PASSWORD.upper()]
+        elif config.has_option('Redshift', MASTER_USER_PASSWORD):
+            params['MasterUserPassword'] = config.get('Redshift', MASTER_USER_PASSWORD)
+
         if db_name is not None:
             params['DBName'] = db_name
         if cluster_type is not None:
