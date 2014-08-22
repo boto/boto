@@ -29,6 +29,7 @@ class TestS3Bucket(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         bucket = Bucket(self.service_connection, 'mybucket_constructor')
         self.assertEqual(bucket.name, 'mybucket_constructor')
+        self.assertEqual(bucket.owner, 'owner_display_name')
 
     def test_bucket_basics(self):
         self.set_http_response(status_code=200)
