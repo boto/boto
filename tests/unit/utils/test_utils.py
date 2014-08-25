@@ -279,7 +279,10 @@ class TestStringToDatetimeParsing(unittest.TestCase):
     """ Test string to datetime parsing """
     def setUp(self):
         self._saved = locale.setlocale(locale.LC_ALL)
-        locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
+        try:
+            locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
+        except locale.Error:
+            self.skipTest('Unsupported locale setting')
 
     def tearDown(self):
         locale.setlocale(locale.LC_ALL, self._saved)
