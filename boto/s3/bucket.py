@@ -377,6 +377,8 @@ class Bucket(object):
                 key = 'max-keys'
             if not isinstance(value, six.string_types + (six.binary_type,)):
                 value = six.text_type(value)
+            if not isinstance(value, six.binary_type):
+                value = value.encode('utf-8')
             if value != '':
                 pairs.append(u'%s=%s' % (
                     urllib.parse.quote(key),
