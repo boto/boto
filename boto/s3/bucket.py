@@ -379,7 +379,7 @@ class Bucket(object):
                 value = six.text_type(value)
             if not isinstance(value, six.binary_type):
                 value = value.encode('utf-8')
-            if value != '':
+            if value != six.binary_type(''):
                 pairs.append(u'%s=%s' % (
                     urllib.parse.quote(key),
                     urllib.parse.quote(value)
