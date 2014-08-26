@@ -53,7 +53,7 @@ def main():
     if options.headers:
         headers = tuple(options.headers.split(','))
     else:
-        headers = ("ID", 'Zone', "Groups", "Hostname")
+        headers = ("ID", 'Zone', "Groups", "T:Name")
 
     # Create format string
     format_string = ""
