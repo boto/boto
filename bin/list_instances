@@ -7,21 +7,21 @@ from optparse import OptionParser
 import boto
 from boto.ec2 import regions
 
-
 HEADERS = {
-    'ID': {'get': attrgetter('id'), 'length':15},
-    'Zone': {'get': attrgetter('placement'), 'length':15},
-    'Groups': {'get': attrgetter('groups'), 'length':30},
-    'Hostname': {'get': attrgetter('public_dns_name'), 'length':50},
-    'PrivateHostname': {'get': attrgetter('private_dns_name'), 'length':50},
-    'State': {'get': attrgetter('state'), 'length':15},
-    'Image': {'get': attrgetter('image_id'), 'length':15},
-    'Type': {'get': attrgetter('instance_type'), 'length':15},
-    'IP': {'get': attrgetter('ip_address'), 'length':16},
-    'PrivateIP': {'get': attrgetter('private_ip_address'), 'length':16},
-    'Key': {'get': attrgetter('key_name'), 'length':25},
+    'ID': {'get': attrgetter('id'), 'length': 15},
+    'Zone': {'get': attrgetter('placement'), 'length': 15},
+    'Groups': {'get': attrgetter('groups'), 'length': 30},
+    'Hostname': {'get': attrgetter('public_dns_name'), 'length': 50},
+    'PrivateHostname': {'get': attrgetter('private_dns_name'), 'length': 50},
+    'State': {'get': attrgetter('state'), 'length': 15},
+    'Image': {'get': attrgetter('image_id'), 'length': 15},
+    'Type': {'get': attrgetter('instance_type'), 'length': 15},
+    'IP': {'get': attrgetter('ip_address'), 'length': 16},
+    'PrivateIP': {'get': attrgetter('private_ip_address'), 'length': 16},
+    'Key': {'get': attrgetter('key_name'), 'length': 25},
     'T:': {'length': 30},
 }
+
 
 def get_column(name, instance=None):
     if name.startswith('T:'):
@@ -80,11 +80,10 @@ def main():
         groups = [g.name for g in r.groups]
         for i in r.instances:
             i.groups = ','.join(groups)
-            if options.tab: 
+            if options.tab:
                 print("\t".join(tuple(get_column(h, i) for h in headers)))
             else:
                 print(format_string % tuple(get_column(h, i) for h in headers))
- 
 
 if __name__ == "__main__":
     main()
