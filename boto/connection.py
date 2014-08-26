@@ -638,6 +638,13 @@ class AWSAuthConnection(object):
             path += '/'
         if params:
             path = path + params
+
+        # Workaround for Python 2.7 httplib encoding exception bug:
+        # https://groups.google.com/forum/#!topic/boto-users/bodQ0T2Xqj8
+        # http://bugs.python.org/issue12398
+        if (sys.version_info[0], sys.version_info[1]) == (2, 7):
+            if isinstance(path, unicode):
+                path = path.encode('ISO-8859-1')
         return path
 
     def server_name(self, port=None):
