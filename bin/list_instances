@@ -57,12 +57,20 @@ def main():
 
     # Create format string
     format_string = ""
-    for h in headers:
-        if h.startswith('T:'):
+    for header in headers:
+        if header.startswith('T:'):
             format_string += "%%-%ds" % HEADERS['T:']['length']
         else:
-            format_string += "%%-%ds" % HEADERS[h]['length']
+            length = 0
 
+            if 'length' in HEADERS[header]:
+                length = HEADERS[header]['length']
+
+            # Ensure length at least as long as column header
+            if length < (len(header) + 1):
+                length = len(header) + 1
+
+            format_string += "%%-%ds" % length
 
     # Parse filters (if any)
     if options.filter:
