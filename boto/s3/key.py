@@ -136,9 +136,15 @@ class Key(object):
 
     def __repr__(self):
         if self.bucket:
-            return '<Key: %s,%s>' % (self.bucket.name, self.name)
+            name = u'<Key: %s,%s>' % (self.bucket.name, self.name)
         else:
-            return '<Key: None,%s>' % self.name
+            name = u'<Key: None,%s>' % self.name
+
+        # Encode to bytes for Python 2 to prevent display decoding issues
+        if not isinstance(name, str):
+            name = name.encode('utf-8')
+
+        return name
 
     def __iter__(self):
         return self
