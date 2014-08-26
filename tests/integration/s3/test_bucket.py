@@ -100,6 +100,8 @@ class S3BucketTest (unittest.TestCase):
         getall = lambda *a, **k: orig_getall(*a, max_keys=2, **k)
         with patch.object(self.bucket, '_get_all', getall):
             rs = self.bucket.list(encoding_type="url")
+            import pdb
+            pdb.set_trace()
             for element in rs:
                 name = urllib.parse.unquote(element.name.encode('utf-8'))
                 self.assertEqual(name, expected.pop(0))
