@@ -20,6 +20,31 @@ HEADERS = {
     'PrivateIP': {'get': attrgetter('private_ip_address'), 'length': 16},
     'Key': {'get': attrgetter('key_name'), 'length': 25},
     'T:': {'length': 30},
+    'LaunchIndex': {'get': attrgetter('ami_launch_index')},
+    'Architecture': {'get': attrgetter('architecture')},
+    'EbsOptimized': {'get': attrgetter('ebs_optimized')},
+    'GroupName': {'get': attrgetter('group_name'), 'length': 10},
+    'Hypervisor': {'get': attrgetter('hypervisor')},
+    'Profile': {'get': attrgetter('instance_profile'), 'length': 16,
+                'field': 'arn'},
+    'Kernel': {'get': attrgetter('kernel'), 'length': 13},
+    'LaunchTime': {'get': attrgetter('launch_time'), 'length': 25},
+    'Monitored': {'get': attrgetter('monitored')},
+    'MonState': {'get': attrgetter('monitoring_state')},
+    'PlacementGroup': {'get': attrgetter('placement_group')},
+    'PlacementTenancy': {'get': attrgetter('placement_tenancy')},
+    'Platform': {'get': attrgetter('platform'), 'length':  len('windows') + 1},
+    'RootDeviceName': {'get': attrgetter('root_device_name'),
+                       'length':  len('/dev/sda1') + 1},
+    'RootDeviceType': {'get': attrgetter('root_device_type'),
+                       'length':  len('instance-store') + 1},
+    'SpotId': {'get': attrgetter('spot_instance_request_id'),
+               'length':  len('spot-DEADBEEF') + 1},
+    'SubnetId': {'get': attrgetter('subnet_id'),
+                 'length':  len('subnet-DEADBEEF') + 1},
+    'VirtType': {'get': attrgetter('virtualization_type'),
+                 'length':  len('paravirtual') + 1},
+    'VpcId': {'get': attrgetter('vpc_id'), 'length':  len('vpc-DEADBEEF') + 1},
 }
 
 
@@ -27,17 +52,44 @@ def get_column(name, instance=None):
     if name.startswith('T:'):
         _, tag = name.split(':', 1)
         return instance.tags.get(tag, '')
-    return HEADERS[name]['get'](instance)
+    if 'field' in HEADERS[name]:
+        obj = HEADERS[name]['get'](instance)
+        if obj is None:
+            return None
+        else:
+            return obj[HEADERS[name]['field']]
+    else:
+        return HEADERS[name]['get'](instance)
 
 
 def main():
-    parser = OptionParser()
-    parser.add_option("-r", "--region", help="Region (default us-east-1)", dest="region", default="us-east-1")
-    parser.add_option("-H", "--headers", help="Set headers (use 'T:tagname' for including tags)", default=None, action="store", dest="headers", metavar="ID,Zone,Groups,Hostname,State,T:Name")
-    parser.add_option("-t", "--tab", help="Tab delimited, skip header - useful in shell scripts", action="store_true", default=False)
-    parser.add_option("-f", "--filter", help="Filter option sent to DescribeInstances API call, format is key1=value1,key2=value2,...", default=None)
-    (options, args) = parser.parse_args()
+    parse = OptionParser()
+    parse.add_option("-r", "--region",
+                     help="Region (default us-east-1)",
+                     dest="region",
+                     default="us-east-1")
 
+    header_names = [x for x in HEADERS.keys() if x != 'T:']
+    header_help = "%s, T:Name" % ', '.join(header_names)
+    parse.add_option("-H", "--headers",
+                     help="Set headers (use 'T:tagname' for including tags) " +
+                     header_help,
+                     default=None,
+                     action="store",
+                     dest="headers")
+
+    parse.add_option("-t", "--tab",
+                     help="Tab delimited, skip header - useful in shell " +
+                     "scripts",
+                     action="store_true",
+                     default=False)
+
+    parse.add_option("-f", "--filter",
+                     help="Filter option sent to DescribeInstances API " +
+                     "call, format is key1=value1,key2=value2,...",
+                     default=None)
+
+    (options, _args) = parse.parse_args()
 
     # Connect the region
     for r in regions():
