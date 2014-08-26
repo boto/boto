@@ -26,6 +26,7 @@
 Some unit tests for the S3 Bucket
 """
 
+from mock import patch, Mock
 import unittest
 import time
 
@@ -39,6 +40,7 @@ from boto.s3.lifecycle import Rule
 from boto.s3.acl import Grant
 from boto.s3.tagging import Tags, TagSet
 from boto.s3.website import RedirectLocation
+from boto.compat import urllib
 
 
 class S3BucketTest (unittest.TestCase):
@@ -85,6 +87,25 @@ class S3BucketTest (unittest.TestCase):
         for element in rs:
             self.assertEqual(element.name, expected.pop(0))
         self.assertEqual(expected, [])
+
+    def test_list_with_url_encoding(self):
+        expected = ["α", "β", "γ"]
+        for key_name in expected:
+            key = self.bucket.new_key(key_name)
+            key.set_contents_from_string(key_name)
+
+        # ensure bucket.list() still works by just
+        # popping elements off the front of expected.
+        orig_getall = self.bucket._get_all
+        getall = lambda *a, **k: orig_getall(*a, max_keys=2, **k)
+        with patch.object(self.bucket, '_get_all', getall):
+            rs = self.bucket.list(encoding_type="url")
+            import pdb
+            pdb.set_trace()
+            for element in rs:
+                name = urllib.parse.unquote(element.name.encode('utf-8'))
+                self.assertEqual(name, expected.pop(0))
+            self.assertEqual(expected, [])
 
     def test_logging(self):
         # use self.bucket as the target bucket so that teardown
