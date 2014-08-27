@@ -64,13 +64,13 @@ class IAMConnection(AWSQueryConnection):
                  debug=0, https_connection_factory=None, path='/',
                  security_token=None, validate_certs=True, profile_name=None):
         super(IAMConnection, self).__init__(aws_access_key_id,
-                                    aws_secret_access_key,
-                                    is_secure, port, proxy,
-                                    proxy_port, proxy_user, proxy_pass,
-                                    host, debug, https_connection_factory,
-                                    path, security_token,
-                                    validate_certs=validate_certs,
-                                    profile_name=profile_name)
+                                            aws_secret_access_key,
+                                            is_secure, port, proxy,
+                                            proxy_port, proxy_user, proxy_pass,
+                                            host, debug, https_connection_factory,
+                                            path, security_token,
+                                            validate_certs=validate_certs,
+                                            profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
@@ -700,7 +700,7 @@ class IAMConnection(AWSQueryConnection):
     #
 
     def list_server_certs(self, path_prefix='/',
-                             marker=None, max_items=None):
+                          marker=None, max_items=None):
         """
         Lists the server certificates that have the specified path prefix.
         If none exist, the action returns an empty list.
@@ -1199,8 +1199,8 @@ class IAMConnection(AWSQueryConnection):
         :param instance_profile_name: Name of the instance profile to get
             information about.
         """
-        return self.get_response('GetInstanceProfile', {'InstanceProfileName':
-                                                       instance_profile_name})
+        return self.get_response('GetInstanceProfile',
+                                 {'InstanceProfileName': instance_profile_name})
 
     def get_role(self, role_name):
         """
@@ -1453,7 +1453,7 @@ class IAMConnection(AWSQueryConnection):
             provider to get information about.
 
         """
-        params = {'SAMLProviderArn': saml_provider_arn }
+        params = {'SAMLProviderArn': saml_provider_arn}
         return self.get_response('GetSAMLProvider', params)
 
     def update_saml_provider(self, saml_provider_arn, saml_metadata_document):
@@ -1496,7 +1496,7 @@ class IAMConnection(AWSQueryConnection):
             provider to delete.
 
         """
-        params = {'SAMLProviderArn': saml_provider_arn }
+        params = {'SAMLProviderArn': saml_provider_arn}
         return self.get_response('DeleteSAMLProvider', params)
 
     #
@@ -1517,7 +1517,7 @@ class IAMConnection(AWSQueryConnection):
     def get_credential_report(self):
         """
         Retrieves a credential report for an account
-        
+
         A report must have been generated in the last 4 hours to succeed.
         The report is returned as a base64 encoded blob within the response.
         """
