@@ -287,7 +287,7 @@ class TestGetSigninURL(AWSMockServiceTestCase):
         url = self.service_connection.get_signin_url()
         self.assertEqual(
             url,
-            'https://foocorporation.signin.aws.amazon.com/console/ec2'
+            'https://foocorporation.signin.amazonaws.cn/console/ec2'
         )
 
 
