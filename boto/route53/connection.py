@@ -47,7 +47,7 @@ HZXML = """<?xml version="1.0" encoding="UTF-8"?>
   </HostedZoneConfig>
 </CreateHostedZoneRequest>"""
 
-#boto.set_stream_logger('dns')
+# boto.set_stream_logger('dns')
 
 
 class Route53Connection(AWSAuthConnection):
@@ -65,13 +65,14 @@ class Route53Connection(AWSAuthConnection):
                  host=DefaultHost, debug=0, security_token=None,
                  validate_certs=True, https_connection_factory=None,
                  profile_name=None):
-        super(Route53Connection, self).__init__(host,
-                                   aws_access_key_id, aws_secret_access_key,
-                                   True, port, proxy, proxy_port, debug=debug,
-                                   security_token=security_token,
-                                   validate_certs=validate_certs,
-                                   https_connection_factory=https_connection_factory,
-                                   profile_name=profile_name)
+        super(Route53Connection, self).__init__(
+            host,
+            aws_access_key_id, aws_secret_access_key,
+            True, port, proxy, proxy_port, debug=debug,
+            security_token=security_token,
+            validate_certs=validate_certs,
+            https_connection_factory=https_connection_factory,
+            profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['route53']
@@ -84,9 +85,9 @@ class Route53Connection(AWSAuthConnection):
                     continue
                 pairs.append(key + '=' + urllib.parse.quote(str(val)))
             path += '?' + '&'.join(pairs)
-        return super(Route53Connection, self).make_request(action, path,
-                                              headers, data,
-                                              retry_handler=self._retry_handler)
+        return super(Route53Connection, self).make_request(
+            action, path, headers, data,
+            retry_handler=self._retry_handler)
 
     # Hosted Zones
 
@@ -103,7 +104,7 @@ class Route53Connection(AWSAuthConnection):
         if start_marker:
             params = {'marker': start_marker}
         response = self.make_request('GET', '/%s/hostedzone' % self.Version,
-                params=params)
+                                     params=params)
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
@@ -157,7 +158,7 @@ class Route53Connection(AWSAuthConnection):
             hosted_zone_name += '.'
         all_hosted_zones = self.get_all_hosted_zones()
         for zone in all_hosted_zones['ListHostedZonesResponse']['HostedZones']:
-            #check that they gave us the FQDN for their zone
+            # check that they gave us the FQDN for their zone
             if zone['Name'] == hosted_zone_name:
                 return self.get_hosted_zone(zone['Id'].split('/')[-1])
 
@@ -232,7 +233,6 @@ class Route53Connection(AWSAuthConnection):
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
-
 
     # Health checks
 
@@ -326,7 +326,6 @@ class Route53Connection(AWSAuthConnection):
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
-
 
     # Resource Record Sets
 
