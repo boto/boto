@@ -29,6 +29,23 @@ from boto.s3.connection import S3Connection, HostRequiredError
 from boto.s3.connection import S3ResponseError, Bucket
 
 
+class TestBuildPostFormArgs(AWSMockServiceTestCase):
+    connection_class = S3Connection
+
+    def test_b64encode(self):
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more'
+        )
+        fields = conn.build_post_form_args('bucket', 'foo/goo/${filename}')['fields']
+
+        policy = [x['value'] for x in fields if x['name'] == 'policy'][0]
+        signature = [x['value'] for x in fields if x['name'] == 'signature'][0]
+
+        self.assertIsNotNone(policy)
+        self.assertIsNotNone(signature)
+
+
 class TestSignatureAlteration(AWSMockServiceTestCase):
     connection_class = S3Connection
 

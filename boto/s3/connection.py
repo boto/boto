@@ -330,7 +330,7 @@ class S3Connection(AWSAuthConnection):
         policy = self.build_post_policy(expiration, conditions)
 
         # Add the base64-encoded policy document as the 'policy' field
-        policy_b64 = base64.b64encode(policy)
+        policy_b64 = base64.b64encode(policy.encode('ascii')).decode('ascii')
         fields.append({"name": "policy", "value": policy_b64})
 
         # Add the AWS access key as the 'AWSAccessKeyId' field
