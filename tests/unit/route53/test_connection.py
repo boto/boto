@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from tests.compat import mock, unittest
+from tests.compat import mock
 import re
 import xml.dom.minidom
 from boto.exception import BotoServerError
@@ -34,6 +34,7 @@ from nose.plugins.attrib import attr
 from tests.unit import AWSMockServiceTestCase
 from boto.compat import six
 urllib = six.moves.urllib
+
 
 @attr(route53=True)
 class TestRoute53Connection(AWSMockServiceTestCase):
@@ -89,6 +90,7 @@ class TestRoute53Connection(AWSMockServiceTestCase):
         # Unpatch.
         self.service_connection._retry_handler = orig_retry
 
+
 @attr(route53=True)
 class TestCreateZoneRoute53(AWSMockServiceTestCase):
     connection_class = Route53Connection
@@ -138,6 +140,7 @@ class TestCreateZoneRoute53(AWSMockServiceTestCase):
 
         self.assertEqual(response['CreateHostedZoneResponse']['DelegationSet']['NameServers'],
                          ['ns-100.awsdns-01.com', 'ns-1000.awsdns-01.co.uk', 'ns-1000.awsdns-01.org', 'ns-900.awsdns-01.net'])
+
 
 @attr(route53=True)
 class TestGetZoneRoute53(AWSMockServiceTestCase):
@@ -196,6 +199,7 @@ class TestGetZoneRoute53(AWSMockServiceTestCase):
         self.assertTrue(isinstance(response, Zone))
         self.assertEqual(response.name, "example.com.")
 
+
 @attr(route53=True)
 class TestGetHostedZoneRoute53(AWSMockServiceTestCase):
     connection_class = Route53Connection
@@ -232,6 +236,7 @@ class TestGetHostedZoneRoute53(AWSMockServiceTestCase):
         self.assertEqual(response['GetHostedZoneResponse']['HostedZone']['Name'], 'example.com.')
         self.assertEqual(response['GetHostedZoneResponse']['DelegationSet']['NameServers'],
                          ['ns-1000.awsdns-40.org', 'ns-200.awsdns-30.com', 'ns-900.awsdns-50.net', 'ns-1000.awsdns-00.co.uk'])
+
 
 @attr(route53=True)
 class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
@@ -322,10 +327,9 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         response = self.service_connection.get_all_rrsets("Z1111", "A", "example.com.")
 
-
         self.assertIn(self.actual_request.path,
-                         ("/2013-04-01/hostedzone/Z1111/rrset?type=A&name=example.com.",
-                          "/2013-04-01/hostedzone/Z1111/rrset?name=example.com.&type=A"))
+                      ("/2013-04-01/hostedzone/Z1111/rrset?type=A&name=example.com.",
+                       "/2013-04-01/hostedzone/Z1111/rrset?name=example.com.&type=A"))
 
         self.assertTrue(isinstance(response, ResourceRecordSets))
         self.assertEqual(response.hosted_zone_id, "Z1111")
@@ -371,6 +375,7 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.assertEqual(healthcheck_record.name, 'us-west-2-evaluate-health-healthcheck.example.com.')
         self.assertEqual(healthcheck_record.identifier, 'latency-example-us-west-2-evaluate-health-healthcheck')
         self.assertEqual(healthcheck_record.alias_dns_name, 'example-123456-evaluate-health-healthcheck.us-west-2.elb.amazonaws.com.')
+
 
 @attr(route53=True)
 class TestTruncatedGetAllRRSetsRoute53(AWSMockServiceTestCase):
@@ -512,6 +517,7 @@ class TestCreateHealthCheckRoute53IpAddress(AWSMockServiceTestCase):
         self.assertEqual(hc_resp['SearchString'], 'OK')
         self.assertEqual(response['CreateHealthCheckResponse']['HealthCheck']['Id'], '34778cf8-e31e-4974-bad0-b108bd1623d3')
 
+
 @attr(route53=True)
 class TestCreateHealthCheckRoute53FQDN(AWSMockServiceTestCase):
     connection_class = Route53Connection
@@ -552,6 +558,7 @@ class TestCreateHealthCheckRoute53FQDN(AWSMockServiceTestCase):
         self.assertEqual(hc_resp['Port'], '443')
         self.assertEqual(hc_resp['ResourcePath'], '/health_check')
         self.assertEqual(response['CreateHealthCheckResponse']['HealthCheck']['Id'], 'f9abfe10-8d2a-4bbd-8f35-796f0f8572f2')
+
 
 @attr(route53=True)
 class TestChangeResourceRecordSetsRoute53(AWSMockServiceTestCase):
@@ -667,4 +674,3 @@ class TestChangeResourceRecordSetsRoute53(AWSMockServiceTestCase):
 
         # Note: the alias XML should not include the TTL, even if it's specified in the object model
         self.assertEqual(actual_xml, expected_xml)
-

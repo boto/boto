@@ -79,7 +79,6 @@ class TestRoute53AliasResourceRecordSets(unittest.TestCase):
         rrs.add_change(action="DELETE", **base_record)
         rrs.commit()
 
-
     def test_set_alias(self):
         base_record = dict(name="alias.%s." % self.base_domain,
                            type="A",
@@ -94,7 +93,6 @@ class TestRoute53AliasResourceRecordSets(unittest.TestCase):
         delete = rrs.add_change(action="DELETE", **base_record)
         delete.set_alias(self.zone.id, "target.%s" % self.base_domain, False)
         rrs.commit()
-
 
     def test_set_alias_backwards_compatability(self):
         base_record = dict(name="alias.%s." % self.base_domain,
