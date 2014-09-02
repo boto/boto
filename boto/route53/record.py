@@ -54,6 +54,7 @@ class ResourceRecordSets(ResultSet):
         self.changes = []
         self.next_record_name = None
         self.next_record_type = None
+        self.next_record_identifier = None
         super(ResourceRecordSets, self).__init__([('ResourceRecordSet', Record)])
 
     def __repr__(self):
@@ -165,12 +166,14 @@ class ResourceRecordSets(ResultSet):
         return self.connection.change_rrsets(self.hosted_zone_id, self.to_xml())
 
     def endElement(self, name, value, connection):
-        """Overwritten to also add the NextRecordName and
-        NextRecordType to the base object"""
+        """Overwritten to also add the NextRecordName,
+        NextRecordType and NextRecordIdentifier to the base object"""
         if name == 'NextRecordName':
             self.next_record_name = value
         elif name == 'NextRecordType':
             self.next_record_type = value
+        elif name == 'NextRecordIdentifier':
+            self.next_record_identifier = value
         else:
             return super(ResourceRecordSets, self).endElement(name, value, connection)
 
@@ -183,7 +186,9 @@ class ResourceRecordSets(ResultSet):
                 yield obj
             if self.is_truncated:
                 self.is_truncated = False
-                results = self.connection.get_all_rrsets(self.hosted_zone_id, name=self.next_record_name, type=self.next_record_type)
+                results = self.connection.get_all_rrsets(self.hosted_zone_id, name=self.next_record_name,
+                                                         type=self.next_record_type,
+                                                         identifier=self.next_record_identifier)
             else:
                 results = None
                 self.is_truncated = truncated

@@ -23,7 +23,6 @@
 from tests.compat import mock, unittest
 import re
 import xml.dom.minidom
-
 from boto.exception import BotoServerError
 from boto.route53.connection import Route53Connection
 from boto.route53.exception import DNSServerError
@@ -33,6 +32,8 @@ from boto.route53.zone import Zone
 
 from nose.plugins.attrib import attr
 from tests.unit import AWSMockServiceTestCase
+from boto.compat import six
+urllib = six.moves.urllib
 
 @attr(route53=True)
 class TestRoute53Connection(AWSMockServiceTestCase):
@@ -370,6 +371,103 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.assertEqual(healthcheck_record.name, 'us-west-2-evaluate-health-healthcheck.example.com.')
         self.assertEqual(healthcheck_record.identifier, 'latency-example-us-west-2-evaluate-health-healthcheck')
         self.assertEqual(healthcheck_record.alias_dns_name, 'example-123456-evaluate-health-healthcheck.us-west-2.elb.amazonaws.com.')
+
+@attr(route53=True)
+class TestTruncatedGetAllRRSetsRoute53(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestTruncatedGetAllRRSetsRoute53, self).setUp()
+
+    def default_body(self):
+        return b"""
+<ListResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+  <ResourceRecordSets>
+    <ResourceRecordSet>
+      <Name>example.com.</Name>
+      <Type>NS</Type>
+      <TTL>900</TTL>
+      <ResourceRecords>
+        <ResourceRecord>
+          <Value>ns-91.awsdns-41.co.uk.</Value>
+        </ResourceRecord>
+        <ResourceRecord>
+          <Value>ns-1929.awsdns-93.net.</Value>
+        </ResourceRecord>
+        <ResourceRecord>
+          <Value>ns-12.awsdns-21.org.</Value>
+        </ResourceRecord>
+        <ResourceRecord>
+          <Value>ns-102.awsdns-96.com.</Value>
+        </ResourceRecord>
+      </ResourceRecords>
+    </ResourceRecordSet>
+    <ResourceRecordSet>
+      <Name>example.com.</Name>
+      <Type>SOA</Type>
+      <TTL>1800</TTL>
+      <ResourceRecords>
+        <ResourceRecord>
+          <Value>ns-1929.awsdns-93.net. hostmaster.awsdns.net. 1 10800 3600 604800 1800</Value>
+        </ResourceRecord>
+      </ResourceRecords>
+    </ResourceRecordSet>
+    <ResourceRecordSet>
+      <Name>wrr.example.com.</Name>
+      <Type>A</Type>
+      <SetIdentifier>primary</SetIdentifier>
+      <Weight>100</Weight>
+      <TTL>300</TTL>
+      <ResourceRecords>
+        <ResourceRecord><Value>127.0.0.1</Value></ResourceRecord>
+      </ResourceRecords>
+    </ResourceRecordSet>
+  </ResourceRecordSets>
+  <IsTruncated>true</IsTruncated>
+  <NextRecordName>wrr.example.com.</NextRecordName>
+  <NextRecordType>A</NextRecordType>
+  <NextRecordIdentifier>secondary</NextRecordIdentifier>
+  <MaxItems>3</MaxItems>
+</ListResourceRecordSetsResponse>"""
+
+    def paged_body(self):
+        return b"""
+<ListResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+  <ResourceRecordSets>
+    <ResourceRecordSet>
+      <Name>wrr.example.com.</Name>
+      <Type>A</Type>
+      <SetIdentifier>secondary</SetIdentifier>
+      <Weight>50</Weight>
+      <TTL>300</TTL>
+      <ResourceRecords>
+        <ResourceRecord><Value>127.0.0.2</Value></ResourceRecord>
+      </ResourceRecords>
+    </ResourceRecordSet>
+  </ResourceRecordSets>
+  <IsTruncated>false</IsTruncated>
+  <MaxItems>3</MaxItems>
+</ListResourceRecordSetsResponse>"""
+
+
+    def test_get_all_rr_sets(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_all_rrsets("Z1111", maxitems=3)
+
+        # made first request
+        self.assertEqual(self.actual_request.path, '/2013-04-01/hostedzone/Z1111/rrset?maxitems=3')
+
+        # anticipate a second request when we page it
+        self.set_http_response(status_code=200, body=self.paged_body())
+
+        # this should trigger another call to get_all_rrsets
+        self.assertEqual(len(list(response)), 4)
+
+        url_parts = urllib.parse.urlparse(self.actual_request.path)
+        self.assertEqual(url_parts.path, '/2013-04-01/hostedzone/Z1111/rrset')
+        self.assertEqual(urllib.parse.parse_qs(url_parts.query),
+                         dict(type=['A'], name=['wrr.example.com.'], identifier=['secondary']))
+
 
 @attr(route53=True)
 class TestCreateHealthCheckRoute53IpAddress(AWSMockServiceTestCase):
