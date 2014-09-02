@@ -361,3 +361,84 @@ class TestGetCredentialReport(AWSMockServiceTestCase):
                           ['get_credential_report_result']\
                           ['content'])
 
+
+class TestCreateLoginProfile(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+          <CreateLoginProfileResponse>
+             <CreateUserResult>
+                <LoginProfile>
+                   <UserName>Bob</UserName>
+                   <CreateDate>2011-09-19T23:00:56Z</CreateDate>
+                </LoginProfile>
+             </CreateUserResult>
+             <ResponseMetadata>
+                <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+             </ResponseMetadata>
+          </CreateLoginProfileResponse>
+        """
+
+
+    def test_create_login_profile(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.create_login_profile('Bob', 'Password1')
+
+        self.assert_request_parameters(
+            {'Action': 'CreateLoginProfile',
+             'UserName': 'Bob',
+             'Password': 'Password1',
+             'PasswordResetRequired': 'false'
+             },
+             ignore_params_values=['Version'])
+
+    def test_create_login_profile_with_password_reset_required(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.create_login_profile('Bob', 'Password1', password_reset_required=True)
+
+        self.assert_request_parameters(
+            {'Action': 'CreateLoginProfile',
+             'UserName': 'Bob',
+             'Password': 'Password1',
+             'PasswordResetRequired': 'true'
+             },
+             ignore_params_values=['Version'])
+
+
+class TestUpdateLoginProfile(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+          <UpdateLoginProfileResponse>
+             <ResponseMetadata>
+                <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+             </ResponseMetadata>
+          </UpdateLoginProfileResponse>
+        """
+
+    def test_update_login_profile(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.update_login_profile('Bob', 'NewPassword')
+
+        self.assert_request_parameters(
+            {'Action': 'UpdateLoginProfile',
+             'UserName': 'Bob',
+             'Password': 'NewPassword',
+             'PasswordResetRequired': 'false'
+             },
+             ignore_params_values=['Version'])
+
+    def test_update_login_profile_with_password_reset_required(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.update_login_profile('Bob', 'NewPassword', password_reset_required=True)
+
+        self.assert_request_parameters(
+            {'Action': 'UpdateLoginProfile',
+             'UserName': 'Bob',
+             'Password': 'NewPassword',
+             'PasswordResetRequired': 'true'
+             },
+             ignore_params_values=['Version'])
+
