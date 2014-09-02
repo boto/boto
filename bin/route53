@@ -33,26 +33,26 @@
 # route53 delete_alias ZPO9LGHZ43QB9 alias.example.com. A Z3DZXE0Q79N41H lb2-1218761514.us-east-1.elb.amazonaws.com.
 
 def _print_zone_info(zoneinfo):
-    print "="*80
-    print "| ID:   %s" % zoneinfo['Id'].split("/")[-1]
-    print "| Name: %s" % zoneinfo['Name']
-    print "| Ref:  %s" % zoneinfo['CallerReference']
-    print "="*80
-    print zoneinfo['Config']
-    print
+    print("="*80)
+    print("| ID:   %s" % zoneinfo['Id'].split("/")[-1])
+    print("| Name: %s" % zoneinfo['Name'])
+    print("| Ref:  %s" % zoneinfo['CallerReference'])
+    print("="*80)
+    print(zoneinfo['Config'])
+    print()
 
 
 def create(conn, hostname, caller_reference=None, comment=''):
     """Create a hosted zone, returning the nameservers"""
     response = conn.create_hosted_zone(hostname, caller_reference, comment)
-    print "Pending, please add the following Name Servers:"
+    print("Pending, please add the following Name Servers:")
     for ns in response.NameServers:
-        print "\t", ns
+        print("\t", ns)
 
 def delete_zone(conn, hosted_zone_id):
     """Delete a hosted zone by ID"""
     response = conn.delete_hosted_zone(hosted_zone_id)
-    print response
+    print(response)
 
 def ls(conn):
     """List all hosted zones"""
@@ -68,9 +68,9 @@ def get(conn, hosted_zone_id, type=None, name=None, maxitems=None):
     # instead of allowing it to page
     if maxitems:
         response = response[:]
-    print '%-40s %-5s %-20s %s' % ("Name", "Type", "TTL", "Value(s)")
+    print('%-40s %-5s %-20s %s' % ("Name", "Type", "TTL", "Value(s)"))
     for record in response:
-        print '%-40s %-5s %-20s %s' % (record.name, record.type, record.ttl, record.to_print())
+        print('%-40s %-5s %-20s %s' % (record.name, record.type, record.ttl, record.to_print()))
 
 def _add_del(conn, hosted_zone_id, change, name, type, identifier, weight, values, ttl, comment):
     from boto.route53.record import ResourceRecordSets
@@ -79,7 +79,7 @@ def _add_del(conn, hosted_zone_id, change, name, type, identifier, weight, value
                                 identifier=identifier, weight=weight)
     for value in values.split(','):
         change.add_value(value)
-    print changes.commit()
+    print(changes.commit())
 
 def _add_del_alias(conn, hosted_zone_id, change, name, type, identifier, weight, alias_hosted_zone_id, alias_dns_name, comment):
     from boto.route53.record import ResourceRecordSets
@@ -87,7 +87,7 @@ def _add_del_alias(conn, hosted_zone_id, change, name, type, identifier, weight,
     change = changes.add_change(change, name, type,
                                 identifier=identifier, weight=weight)
     change.set_alias(alias_hosted_zone_id, alias_dns_name)
-    print changes.commit()
+    print(changes.commit())
 
 def add_record(conn, hosted_zone_id, name, type, values, ttl=600,
                identifier=None, weight=None, comment=""):
@@ -135,7 +135,7 @@ def change_record(conn, hosted_zone_id, name, type, newvalues, ttl=600,
             identifier=identifier, weight=weight)
     for new_value in newvalues.split(','):
         change2.add_value(new_value)
-    print changes.commit()
+    print(changes.commit())
 
 def change_alias(conn, hosted_zone_id, name, type, new_alias_hosted_zone_id, new_alias_dns_name, identifier=None, weight=None, comment=""):
     """Delete and then add an alias to a zone.  identifier and weight are optional."""
@@ -154,7 +154,7 @@ def change_alias(conn, hosted_zone_id, name, type, new_alias_hosted_zone_id, new
         change1.set_alias(response.alias_hosted_zone_id, response.alias_dns_name)
     change2 = changes.add_change("UPSERT", name, type, identifier=identifier, weight=weight)
     change2.set_alias(new_alias_hosted_zone_id, new_alias_dns_name)
-    print changes.commit()
+    print(changes.commit())
 
 def help(conn, fnc=None):
     """Prints this help message"""
@@ -166,19 +166,19 @@ def help(conn, fnc=None):
         except:
             cmd = None
         if not inspect.isfunction(cmd):
-            print "No function named: %s found" % fnc
+            print("No function named: %s found" % fnc)
             sys.exit(2)
         (args, varargs, varkw, defaults) = inspect.getargspec(cmd)
-        print cmd.__doc__
-        print "Usage: %s %s" % (fnc, " ".join([ "[%s]" % a for a in args[1:]]))
+        print(cmd.__doc__)
+        print("Usage: %s %s" % (fnc, " ".join([ "[%s]" % a for a in args[1:]])))
     else:
-        print "Usage: route53 [command]"
+        print("Usage: route53 [command]")
         for cname in dir(self):
             if not cname.startswith("_"):
                 cmd = getattr(self, cname)
                 if inspect.isfunction(cmd):
                     doc = cmd.__doc__
-                    print "\t%-20s  %s" % (cname, doc)
+                    print("\t%-20s  %s" % (cname, doc))
     sys.exit(1)
 
 
@@ -201,5 +201,5 @@ if __name__ == "__main__":
     try:
         cmd(conn, *args)
     except TypeError, e:
-        print e
+        print(e)
         help(conn, cmd.__name__)
