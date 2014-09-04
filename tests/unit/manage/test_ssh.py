@@ -28,9 +28,7 @@ except ImportError:
     paramiko = None
     SSHClient = None
 
-import mock
-
-from tests.unit import unittest
+from tests.compat import mock, unittest
 
 
 class TestSSHTimeout(unittest.TestCase):

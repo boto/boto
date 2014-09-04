@@ -89,7 +89,7 @@ class TestGetSpotPriceHistory(AWSMockServiceTestCase):
         self.assertEqual(response[0].availability_zone, 'us-west-2c')
         self.assertEqual(response[1].instance_type, 'c3.large')
         self.assertEqual(response[1].availability_zone, 'us-west-2b')
-        
+
         response = self.service_connection.get_spot_price_history(
             filters={'instance-type': 'c3.large'})
         self.assert_request_parameters({
@@ -99,7 +99,7 @@ class TestGetSpotPriceHistory(AWSMockServiceTestCase):
             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                   'SignatureVersion', 'Timestamp',
                                   'Version'])
-        
+
         response = self.service_connection.get_spot_price_history(
             next_token='foobar')
         self.assert_request_parameters({

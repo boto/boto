@@ -23,8 +23,7 @@
 import tempfile
 from boto.compat import Queue
 
-import mock
-from tests.unit import unittest
+from tests.compat import mock, unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.glacier.concurrent import ConcurrentUploader, ConcurrentDownloader

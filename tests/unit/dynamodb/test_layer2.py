@@ -30,9 +30,9 @@ from boto.dynamodb.table import Table, Schema
 
 DESCRIBE_TABLE = {
     "Table": {
-        "CreationDateTime": 1.353526122785E9, "ItemCount":1,
+        "CreationDateTime": 1.353526122785E9, "ItemCount": 1,
         "KeySchema": {
-            "HashKeyElement":{"AttributeName": "foo", "AttributeType": "N"}},
+            "HashKeyElement": {"AttributeName": "foo", "AttributeType": "N"}},
         "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
             "ReadCapacityUnits": 5,

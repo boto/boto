@@ -1,7 +1,7 @@
 import boto
 
 from time import time
-from boto.compat import unittest
+from tests.compat import unittest
 
 DEFAULT_S3_POLICY = """{
     "Version": "2012-10-17",

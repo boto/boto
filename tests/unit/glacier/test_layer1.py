@@ -76,7 +76,7 @@ class GlacierJobOperations(GlacierLayer1ConnectionBase):
         self.set_http_response(status_code=200, header=header,
                                body=self.job_content)
         response = self.service_connection.get_job_output(self.vault_name,
-                                                         'example-job-id')
+                                                          'example-job-id')
         self.assertEqual(self.job_content, response.read())
 
 

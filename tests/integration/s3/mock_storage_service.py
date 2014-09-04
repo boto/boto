@@ -30,17 +30,13 @@ import copy
 import boto
 import base64
 import re
+from hashlib import md5
 
 from boto.utils import compute_md5
 from boto.utils import find_matching_headers
 from boto.utils import merge_headers_by_name
 from boto.s3.prefix import Prefix
 from boto.compat import six
-
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
 
 NOT_IMPL = None
 
@@ -196,7 +192,10 @@ class MockKey(object):
         contents of mock key.
         """
         m = md5()
-        m.update(self.data.encode('utf-8'))
+        if not isinstance(self.data, bytes):
+            m.update(self.data.encode('utf-8'))
+        else:
+            m.update(self.data)
         hex_md5 = m.hexdigest()
         self.etag = hex_md5
 

@@ -197,7 +197,6 @@ class BatchList(list):
 
         return self.submit()
 
-
     def submit(self):
         res = self.layer2.batch_get_item(self)
         if 'UnprocessedKeys' in res:
@@ -260,4 +259,3 @@ class BatchWriteList(list):
             table_name, batch_dict = batch.to_dict()
             d[table_name] = batch_dict
         return d
-

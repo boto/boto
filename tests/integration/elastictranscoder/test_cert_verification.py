@@ -23,7 +23,7 @@
 from tests.integration import ServiceCertVerificationTest
 
 import boto.elastictranscoder
-from boto.compat import unittest
+from tests.compat import unittest
 
 
 class ElasticTranscoderCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):

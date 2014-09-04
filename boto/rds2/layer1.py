@@ -20,16 +20,12 @@
 # IN THE SOFTWARE.
 #
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
 import boto
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 from boto.exception import JSONResponseError
 from boto.rds2 import exceptions
+from boto.compat import json
 
 
 class RDSConnection(AWSQueryConnection):

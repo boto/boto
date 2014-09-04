@@ -105,14 +105,14 @@ class AutoScaleConnection(AWSQueryConnection):
         self.region = region
         self.use_block_device_types = use_block_device_types
         super(AutoScaleConnection, self).__init__(aws_access_key_id,
-                                    aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port,
-                                    proxy_user, proxy_pass,
-                                    self.region.endpoint, debug,
-                                    https_connection_factory, path=path,
-                                    security_token=security_token,
-                                    validate_certs=validate_certs,
-                                    profile_name=profile_name)
+                                                  aws_secret_access_key,
+                                                  is_secure, port, proxy, proxy_port,
+                                                  proxy_user, proxy_pass,
+                                                  self.region.endpoint, debug,
+                                                  https_connection_factory, path=path,
+                                                  security_token=security_token,
+                                                  validate_certs=validate_certs,
+                                                  profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['hmac-v4']

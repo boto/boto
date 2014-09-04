@@ -1,9 +1,9 @@
 # -*- coding: UTF-8 -*-
+from tests.compat import OrderedDict
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.vpc import VPCConnection, VpnGateway, Attachment
-from boto.compat import OrderedDict
 
 
 class TestDescribeVpnGateways(AWSMockServiceTestCase):

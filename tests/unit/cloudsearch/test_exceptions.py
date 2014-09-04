@@ -1,6 +1,5 @@
-import mock
 from boto.compat import json
-from tests.unit import unittest
+from tests.compat import mock, unittest
 
 from tests.unit.cloudsearch.test_search import HOSTNAME, \
                                                CloudSearchSearchBaseTest
@@ -19,7 +18,7 @@ def fake_loads_json_error(content, *args, **kwargs):
 
 
 class CloudSearchJSONExceptionTest(CloudSearchSearchBaseTest):
-    response = '{}'
+    response = b'{}'
 
     def test_no_simplejson_value_error(self):
         with mock.patch.object(json, 'loads', fake_loads_value_error):

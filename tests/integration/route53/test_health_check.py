@@ -26,6 +26,7 @@ from boto.compat import six
 from boto.route53.healthcheck import HealthCheck
 from boto.route53.record import ResourceRecordSets
 
+
 class TestRoute53HealthCheck(Route53TestCase):
     def test_create_health_check(self):
         hc = HealthCheck(ip_addr="54.217.7.118", port=80, hc_type="HTTP", resource_path="/testing")
@@ -124,7 +125,7 @@ class TestRoute53HealthCheck(Route53TestCase):
 
         records = ResourceRecordSets(self.conn, self.zone.id)
         deleted = records.add_change('DELETE', "unittest.%s." % self.base_domain, "A", ttl=30, identifier='test',
-                                    weight=1, health_check=result['CreateHealthCheckResponse']['HealthCheck']['Id'])
+                                     weight=1, health_check=result['CreateHealthCheckResponse']['HealthCheck']['Id'])
         deleted.add_value('54.217.7.118')
         records.commit()
 

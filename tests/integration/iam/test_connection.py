@@ -23,7 +23,8 @@
 import boto
 import time
 
-from boto.compat import unittest
+from tests.compat import unittest
+
 
 class TestIAM(unittest.TestCase):
     def test_group_users(self):

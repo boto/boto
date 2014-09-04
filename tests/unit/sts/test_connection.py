@@ -45,7 +45,7 @@ class TestSTSConnection(AWSMockServiceTestCase):
         super(TestSTSConnection, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <AssumeRoleResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
               <AssumeRoleResult>
                 <AssumedRoleUser>
@@ -112,7 +112,7 @@ class TestSTSWebIdentityConnection(AWSMockServiceTestCase):
         super(TestSTSWebIdentityConnection, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
 <AssumeRoleWithWebIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
   <AssumeRoleWithWebIdentityResult>
     <SubjectFromWebIdentityToken>
@@ -200,7 +200,7 @@ class TestSTSSAMLConnection(AWSMockServiceTestCase):
         super(TestSTSSAMLConnection, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
 <AssumeRoleWithSAMLResponse xmlns="https://sts.amazonaws.com/doc/
 2011-06-15/">
   <AssumeRoleWithSAMLResult>

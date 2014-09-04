@@ -1,10 +1,9 @@
-import mock
-import unittest
+from tests.compat import unittest
 
 from boto.ec2.connection import EC2Connection
 from boto.ec2.blockdevicemapping import BlockDeviceType, BlockDeviceMapping
-from boto.compat import OrderedDict
 
+from tests.compat import OrderedDict
 from tests.unit import AWSMockServiceTestCase
 
 
@@ -42,6 +41,15 @@ class BlockDeviceTypeTests(unittest.TestCase):
         self.block_device_type.endElement("deleteOnTermination", 'something else', None)
         self.assertEqual(self.block_device_type.delete_on_termination, False)
 
+    def test_endElement_with_name_encrypted_value_true(self):
+        self.block_device_type.endElement("Encrypted", "true", None)
+        self.assertEqual(self.block_device_type.encrypted, True)
+
+    def test_endElement_with_name_Encrypted_value_other(self):
+        self.block_device_type.endElement("Encrypted", 'something else', None)
+        self.assertEqual(self.block_device_type.encrypted, False)
+
+
 class BlockDeviceMappingTests(unittest.TestCase):
     def setUp(self):
         self.block_device_mapping = BlockDeviceMapping()
@@ -56,7 +64,8 @@ class BlockDeviceMappingTests(unittest.TestCase):
                         b1.status == b2.status,
                         b1.attach_time == b2.attach_time,
                         b1.delete_on_termination == b2.delete_on_termination,
-                        b1.size == b2.size])
+                        b1.size == b2.size,
+                        b1.encrypted == b2.encrypted])
 
     def test_startElement_with_name_ebs_sets_and_returns_current_value(self):
         retval = self.block_device_mapping.startElement("ebs", None, None)
@@ -97,7 +106,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
         # Autoscaling).
         self.set_http_response(status_code=200)
         dev_sdf = BlockDeviceType(snapshot_id='snap-12345')
-        dev_sdg = BlockDeviceType(snapshot_id='snap-12346', delete_on_termination=True)
+        dev_sdg = BlockDeviceType(snapshot_id='snap-12346', delete_on_termination=True, encrypted=True)
 
         class OrderedBlockDeviceMapping(OrderedDict, BlockDeviceMapping):
             pass
@@ -120,6 +129,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'BlockDeviceMapping.2.DeviceName': '/dev/sdg',
             'BlockDeviceMapping.2.Ebs.DeleteOnTermination': 'true',
             'BlockDeviceMapping.2.Ebs.SnapshotId': 'snap-12346',
+            'BlockDeviceMapping.2.Ebs.Encrypted': 'true',
             'ImageId': '123456',
             'InstanceType': 'm1.large',
             'MaxCount': 1,

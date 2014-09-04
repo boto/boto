@@ -26,16 +26,13 @@ import re
 import socket
 import time
 import urlparse
+from hashlib import md5
 from boto import config, UserAgent
 from boto.connection import AWSAuthConnection
 from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.s3.keyfile import KeyFile
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
 
 """
 Handler for Google Cloud Storage resumable uploads. See

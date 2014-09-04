@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 
 import base64
-from tests.unit import unittest
+from tests.compat import unittest, mock
 from tests.unit import AWSMockServiceTestCase
 
-import mock
-
 from boto.ec2.connection import EC2Connection
-from boto.ec2.blockdevicemapping import BlockDeviceType, BlockDeviceMapping
 
 DESCRIBE_INSTANCE_VPC = br"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2012-10-01/">
@@ -226,7 +223,7 @@ class TestRunInstances(AWSMockServiceTestCase):
             image_id='123456',
             instance_type='m1.large',
             security_groups=['group1', 'group2'],
-            user_data = '#!/bin/bash'
+            user_data='#!/bin/bash'
         )
 
         self.assert_request_parameters({

@@ -26,8 +26,11 @@ from boto.sqs.message import RawMessage
 from boto.sqs.bigmessage import BigMessage
 from boto.exception import SQSDecodeError
 
+from nose.plugins.attrib import attr
 
 class TestMHMessage(unittest.TestCase):
+
+    @attr(sqs=True)
     def test_contains(self):
         msg = MHMessage()
         msg.update({'hello': 'world'})
@@ -35,11 +38,14 @@ class TestMHMessage(unittest.TestCase):
 
 
 class DecodeExceptionRaisingMessage(RawMessage):
+
+    @attr(sqs=True)
     def decode(self, message):
         raise SQSDecodeError('Sample decode error', self)
 
 class TestEncodeMessage(unittest.TestCase):
 
+    @attr(sqs=True)
     def test_message_id_available(self):
         import xml.sax
         from boto.resultset import ResultSet
@@ -65,7 +71,8 @@ class TestEncodeMessage(unittest.TestCase):
 
 
 class TestBigMessage(unittest.TestCase):
-    
+
+    @attr(sqs=True)
     def test_s3url_parsing(self):
         msg = BigMessage()
         # Try just a bucket name
@@ -89,6 +96,6 @@ class TestBigMessage(unittest.TestCase):
             bucket, key = msg._get_bucket_key('foo/bar')
 
 
-        
+
 if __name__ == '__main__':
     unittest.main()

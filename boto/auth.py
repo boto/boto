@@ -41,7 +41,7 @@ import sys
 import time
 import posixpath
 
-from boto.compat import urllib
+from boto.compat import urllib, encodebytes
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
 
@@ -89,7 +89,7 @@ class HmacKeys(object):
     def sign_string(self, string_to_sign):
         new_hmac = self._get_hmac()
         new_hmac.update(string_to_sign.encode('utf-8'))
-        return base64.encodestring(new_hmac.digest()).decode('utf-8').strip()
+        return encodebytes(new_hmac.digest()).decode('utf-8').strip()
 
     def __getstate__(self):
         pickled_dict = copy.copy(self.__dict__)
@@ -99,7 +99,7 @@ class HmacKeys(object):
 
     def __setstate__(self, dct):
         self.__dict__ = dct
-        self.update_provider(self._provider.encode('utf-8'))
+        self.update_provider(self._provider)
 
 
 class AnonAuthHandler(AuthHandler, HmacKeys):
@@ -317,6 +317,8 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         for name, value in http_request.headers.items():
             lname = name.lower()
             if lname.startswith('x-amz'):
+                if isinstance(value, bytes):
+                    value = value.decode('utf-8')
                 headers_to_sign[name] = value
         return headers_to_sign
 
@@ -581,8 +583,8 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         # - s3-us-west-2.amazonaws.com (Specific region)
         # - bukkit.s3.amazonaws.com (Vhosted Classic)
         # - bukkit.s3-ap-northeast-1.amazonaws.com (Vhosted specific region)
-        # - s3.cn-north-1.amazonaws.com.cn - (Bejing region)
-        # - bukkit.s3.cn-north-1.amazonaws.com.cn - (Vhosted Bejing region)
+        # - s3.cn-north-1.amazonaws.com.cn - (Beijing region)
+        # - bukkit.s3.cn-north-1.amazonaws.com.cn - (Vhosted Beijing region)
         parts = self.split_host_parts(host)
 
         if self.region_name is not None:

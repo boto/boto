@@ -22,7 +22,7 @@ def list_bucket(b, prefix=None, marker=None):
         if not prefix.endswith("/"):
             prefix = prefix + "/"
         query = b.list(prefix=prefix, delimiter="/", marker=marker)
-        print "%s" % prefix
+        print("%s" % prefix)
     else:
         query = b.list(delimiter="/", marker=marker)
 
@@ -42,27 +42,27 @@ def list_bucket(b, prefix=None, marker=None):
                     elif g.permission == "FULL_CONTROL":
                         mode = "-rwxrwx"
         if isinstance(k, Key):
-            print "%s\t%s\t%010s\t%s" % (mode, k.last_modified,
-                                         sizeof_fmt(size), k.name)
+            print("%s\t%s\t%010s\t%s" % (mode, k.last_modified,
+                                         sizeof_fmt(size), k.name))
         else:
            #If it's not a Key object, it doesn't have a last_modified time, so
            #print nothing instead
-            print "%s\t%s\t%010s\t%s" % (mode, ' ' * 24,
-                                         sizeof_fmt(size), k.name)
+            print("%s\t%s\t%010s\t%s" % (mode, ' ' * 24,
+                                         sizeof_fmt(size), k.name))
         total += size
-    print "=" * 80
-    print "\t\tTOTAL:  \t%010s \t%i Files" % (sizeof_fmt(total), num)
+    print ("=" * 80)
+    print ("\t\tTOTAL:  \t%010s \t%i Files" % (sizeof_fmt(total), num))
 
 
 def list_buckets(s3, display_tags=False):
     """List all the buckets"""
     for b in s3.get_all_buckets():
-        print b.name
+        print(b.name)
         if display_tags:
             try:
                 tags = b.get_tags()
                 for tag in tags[0]:
-                    print "   %s:%s" % (tag.key, tag.value)
+                    print("   %s:%s" % (tag.key, tag.value))
             except S3ResponseError as e:
                 if e.status != 404:
                     raise
@@ -87,7 +87,7 @@ def main():
         sys.exit(0)
 
     if options.tags:
-        print "-t option only works for the overall bucket list"
+        print("-t option only works for the overall bucket list")
         sys.exit(1)
 
     pairs = []

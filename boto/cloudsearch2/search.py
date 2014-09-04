@@ -34,10 +34,6 @@ class SearchServiceException(Exception):
     pass
 
 
-class CommitMismatchError(Exception):
-    pass
-
-
 class SearchResults(object):
     def __init__(self, **attrs):
         self.rid = attrs['status']['rid']
@@ -126,7 +122,7 @@ class Query(object):
 
         if self.facet:
             for k, v in six.iteritems(self.facet):
-                if type(v) not in [str, unicode]:
+                if not isinstance(v, six.string_types):
                     v = json.dumps(v)
                 params['facet.%s' % k] = v
 
@@ -135,7 +131,7 @@ class Query(object):
                 params['highlight.%s' % k] = v
 
         if self.options:
-            params['options'] = self.options
+            params['q.options'] = self.options
 
         if self.return_fields:
             params['return'] = ','.join(self.return_fields)
@@ -155,6 +151,10 @@ class SearchConnection(object):
         self.domain = domain
         self.endpoint = endpoint
         self.session = requests.Session()
+
+        # Copy proxy settings from connection
+        if self.domain and self.domain.layer1 and self.domain.layer1.use_proxy:
+            self.session.proxies['http'] = self.domain.layer1.get_proxy_url_with_auth()
 
         if not endpoint:
             self.endpoint = domain.search_service_endpoint
@@ -279,19 +279,20 @@ class SearchConnection(object):
         params = query.to_params()
 
         r = self.session.get(url, params=params)
+        _body = r.content.decode('utf-8')
         try:
-            data = json.loads(r.content)
-        except ValueError as e:
+            data = json.loads(_body)
+        except ValueError:
             if r.status_code == 403:
                 msg = ''
                 import re
-                g = re.search('<html><body><h1>403 Forbidden</h1>([^<]+)<', r.content)
+                g = re.search('<html><body><h1>403 Forbidden</h1>([^<]+)<', _body)
                 try:
                     msg = ': %s' % (g.groups()[0].strip())
                 except AttributeError:
                     pass
                 raise SearchServiceException('Authentication error from Amazon%s' % msg)
-            raise SearchServiceException("Got non-json response from Amazon. %s" % r.content, query)
+            raise SearchServiceException("Got non-json response from Amazon. %s" % _body, query)
 
         if 'messages' in data and 'error' in data:
             for m in data['messages']:

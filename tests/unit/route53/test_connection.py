@@ -20,10 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import mock
+from tests.compat import mock
 import re
 import xml.dom.minidom
-
 from boto.exception import BotoServerError
 from boto.route53.connection import Route53Connection
 from boto.route53.exception import DNSServerError
@@ -32,8 +31,10 @@ from boto.route53.record import ResourceRecordSets, Record
 from boto.route53.zone import Zone
 
 from nose.plugins.attrib import attr
-from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
+from boto.compat import six
+urllib = six.moves.urllib
+
 
 @attr(route53=True)
 class TestRoute53Connection(AWSMockServiceTestCase):
@@ -89,6 +90,7 @@ class TestRoute53Connection(AWSMockServiceTestCase):
         # Unpatch.
         self.service_connection._retry_handler = orig_retry
 
+
 @attr(route53=True)
 class TestCreateZoneRoute53(AWSMockServiceTestCase):
     connection_class = Route53Connection
@@ -138,6 +140,7 @@ class TestCreateZoneRoute53(AWSMockServiceTestCase):
 
         self.assertEqual(response['CreateHostedZoneResponse']['DelegationSet']['NameServers'],
                          ['ns-100.awsdns-01.com', 'ns-1000.awsdns-01.co.uk', 'ns-1000.awsdns-01.org', 'ns-900.awsdns-01.net'])
+
 
 @attr(route53=True)
 class TestGetZoneRoute53(AWSMockServiceTestCase):
@@ -196,6 +199,7 @@ class TestGetZoneRoute53(AWSMockServiceTestCase):
         self.assertTrue(isinstance(response, Zone))
         self.assertEqual(response.name, "example.com.")
 
+
 @attr(route53=True)
 class TestGetHostedZoneRoute53(AWSMockServiceTestCase):
     connection_class = Route53Connection
@@ -232,6 +236,7 @@ class TestGetHostedZoneRoute53(AWSMockServiceTestCase):
         self.assertEqual(response['GetHostedZoneResponse']['HostedZone']['Name'], 'example.com.')
         self.assertEqual(response['GetHostedZoneResponse']['DelegationSet']['NameServers'],
                          ['ns-1000.awsdns-40.org', 'ns-200.awsdns-30.com', 'ns-900.awsdns-50.net', 'ns-1000.awsdns-00.co.uk'])
+
 
 @attr(route53=True)
 class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
@@ -322,10 +327,9 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         response = self.service_connection.get_all_rrsets("Z1111", "A", "example.com.")
 
-
         self.assertIn(self.actual_request.path,
-                         ("/2013-04-01/hostedzone/Z1111/rrset?type=A&name=example.com.",
-                          "/2013-04-01/hostedzone/Z1111/rrset?name=example.com.&type=A"))
+                      ("/2013-04-01/hostedzone/Z1111/rrset?type=A&name=example.com.",
+                       "/2013-04-01/hostedzone/Z1111/rrset?name=example.com.&type=A"))
 
         self.assertTrue(isinstance(response, ResourceRecordSets))
         self.assertEqual(response.hosted_zone_id, "Z1111")
@@ -372,6 +376,104 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
         self.assertEqual(healthcheck_record.identifier, 'latency-example-us-west-2-evaluate-health-healthcheck')
         self.assertEqual(healthcheck_record.alias_dns_name, 'example-123456-evaluate-health-healthcheck.us-west-2.elb.amazonaws.com.')
 
+
+@attr(route53=True)
+class TestTruncatedGetAllRRSetsRoute53(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestTruncatedGetAllRRSetsRoute53, self).setUp()
+
+    def default_body(self):
+        return b"""
+<ListResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+  <ResourceRecordSets>
+    <ResourceRecordSet>
+      <Name>example.com.</Name>
+      <Type>NS</Type>
+      <TTL>900</TTL>
+      <ResourceRecords>
+        <ResourceRecord>
+          <Value>ns-91.awsdns-41.co.uk.</Value>
+        </ResourceRecord>
+        <ResourceRecord>
+          <Value>ns-1929.awsdns-93.net.</Value>
+        </ResourceRecord>
+        <ResourceRecord>
+          <Value>ns-12.awsdns-21.org.</Value>
+        </ResourceRecord>
+        <ResourceRecord>
+          <Value>ns-102.awsdns-96.com.</Value>
+        </ResourceRecord>
+      </ResourceRecords>
+    </ResourceRecordSet>
+    <ResourceRecordSet>
+      <Name>example.com.</Name>
+      <Type>SOA</Type>
+      <TTL>1800</TTL>
+      <ResourceRecords>
+        <ResourceRecord>
+          <Value>ns-1929.awsdns-93.net. hostmaster.awsdns.net. 1 10800 3600 604800 1800</Value>
+        </ResourceRecord>
+      </ResourceRecords>
+    </ResourceRecordSet>
+    <ResourceRecordSet>
+      <Name>wrr.example.com.</Name>
+      <Type>A</Type>
+      <SetIdentifier>primary</SetIdentifier>
+      <Weight>100</Weight>
+      <TTL>300</TTL>
+      <ResourceRecords>
+        <ResourceRecord><Value>127.0.0.1</Value></ResourceRecord>
+      </ResourceRecords>
+    </ResourceRecordSet>
+  </ResourceRecordSets>
+  <IsTruncated>true</IsTruncated>
+  <NextRecordName>wrr.example.com.</NextRecordName>
+  <NextRecordType>A</NextRecordType>
+  <NextRecordIdentifier>secondary</NextRecordIdentifier>
+  <MaxItems>3</MaxItems>
+</ListResourceRecordSetsResponse>"""
+
+    def paged_body(self):
+        return b"""
+<ListResourceRecordSetsResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+  <ResourceRecordSets>
+    <ResourceRecordSet>
+      <Name>wrr.example.com.</Name>
+      <Type>A</Type>
+      <SetIdentifier>secondary</SetIdentifier>
+      <Weight>50</Weight>
+      <TTL>300</TTL>
+      <ResourceRecords>
+        <ResourceRecord><Value>127.0.0.2</Value></ResourceRecord>
+      </ResourceRecords>
+    </ResourceRecordSet>
+  </ResourceRecordSets>
+  <IsTruncated>false</IsTruncated>
+  <MaxItems>3</MaxItems>
+</ListResourceRecordSetsResponse>"""
+
+
+    def test_get_all_rr_sets(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_all_rrsets("Z1111", maxitems=3)
+
+        # made first request
+        self.assertEqual(self.actual_request.path, '/2013-04-01/hostedzone/Z1111/rrset?maxitems=3')
+
+        # anticipate a second request when we page it
+        self.set_http_response(status_code=200, body=self.paged_body())
+
+        # this should trigger another call to get_all_rrsets
+        self.assertEqual(len(list(response)), 4)
+
+        url_parts = urllib.parse.urlparse(self.actual_request.path)
+        self.assertEqual(url_parts.path, '/2013-04-01/hostedzone/Z1111/rrset')
+        self.assertEqual(urllib.parse.parse_qs(url_parts.query),
+                         dict(type=['A'], name=['wrr.example.com.'], identifier=['secondary']))
+
+
 @attr(route53=True)
 class TestCreateHealthCheckRoute53IpAddress(AWSMockServiceTestCase):
     connection_class = Route53Connection
@@ -415,6 +517,7 @@ class TestCreateHealthCheckRoute53IpAddress(AWSMockServiceTestCase):
         self.assertEqual(hc_resp['SearchString'], 'OK')
         self.assertEqual(response['CreateHealthCheckResponse']['HealthCheck']['Id'], '34778cf8-e31e-4974-bad0-b108bd1623d3')
 
+
 @attr(route53=True)
 class TestCreateHealthCheckRoute53FQDN(AWSMockServiceTestCase):
     connection_class = Route53Connection
@@ -455,6 +558,7 @@ class TestCreateHealthCheckRoute53FQDN(AWSMockServiceTestCase):
         self.assertEqual(hc_resp['Port'], '443')
         self.assertEqual(hc_resp['ResourcePath'], '/health_check')
         self.assertEqual(response['CreateHealthCheckResponse']['HealthCheck']['Id'], 'f9abfe10-8d2a-4bbd-8f35-796f0f8572f2')
+
 
 @attr(route53=True)
 class TestChangeResourceRecordSetsRoute53(AWSMockServiceTestCase):
@@ -570,4 +674,3 @@ class TestChangeResourceRecordSetsRoute53(AWSMockServiceTestCase):
 
         # Note: the alias XML should not include the TTL, even if it's specified in the object model
         self.assertEqual(actual_xml, expected_xml)
-

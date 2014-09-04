@@ -23,7 +23,7 @@
 from boto.exception import JSONResponseError
 from boto.opsworks import connect_to_region, regions, RegionInfo
 from boto.opsworks.layer1 import OpsWorksConnection
-from boto.compat import unittest
+from tests.compat import unittest
 
 
 class TestOpsWorksConnection(unittest.TestCase):
