@@ -24,7 +24,7 @@
 Check that all of the certs on all service endpoints validate.
 """
 
-from boto.compat import unittest
+from tests.compat import unittest
 from tests.integration import ServiceCertVerificationTest
 
 import boto.logs

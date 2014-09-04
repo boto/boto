@@ -19,10 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from __future__ import with_statement
-
 import os
-from tests.unit import unittest
+import socket
+
+from tests.compat import mock, unittest
 from httpretty import HTTPretty
 
 from boto.compat import json, parse_qs
@@ -114,7 +114,7 @@ class TestAWSAuthConnection(unittest.TestCase):
         self.assertEqual(conn.get_path('/folder//image.jpg'), '/folder//image.jpg')
         self.assertEqual(conn.get_path('/folder////image.jpg'), '/folder////image.jpg')
         self.assertEqual(conn.get_path('///folder////image.jpg'), '///folder////image.jpg')
-        
+
     def test_connection_behind_proxy(self):
         os.environ['http_proxy'] = "http://john.doe:p4ssw0rd@127.0.0.1:8180"
         conn = AWSAuthConnection(
@@ -122,13 +122,26 @@ class TestAWSAuthConnection(unittest.TestCase):
             aws_access_key_id='access_key',
             aws_secret_access_key='secret',
             suppress_consec_slashes=False
-        )        
+        )
         self.assertEqual(conn.proxy, '127.0.0.1')
         self.assertEqual(conn.proxy_user, 'john.doe')
         self.assertEqual(conn.proxy_pass, 'p4ssw0rd')
         self.assertEqual(conn.proxy_port, '8180')
         del os.environ['http_proxy']
-        
+
+    def test_get_proxy_url_with_auth(self):
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False,
+            proxy="127.0.0.1",
+            proxy_user="john.doe",
+            proxy_pass="p4ssw0rd",
+            proxy_port="8180"
+        )
+        self.assertEqual(conn.get_proxy_url_with_auth(), 'http://john.doe:p4ssw0rd@127.0.0.1:8180')
+
     def test_connection_behind_proxy_without_explicit_port(self):
         os.environ['http_proxy'] = "http://127.0.0.1"
         conn = AWSAuthConnection(
@@ -137,10 +150,30 @@ class TestAWSAuthConnection(unittest.TestCase):
             aws_secret_access_key='secret',
             suppress_consec_slashes=False,
             port=8180
-        )        
+        )
         self.assertEqual(conn.proxy, '127.0.0.1')
         self.assertEqual(conn.proxy_port, 8180)
         del os.environ['http_proxy']
+
+    @mock.patch.object(socket, 'create_connection')
+    @mock.patch('boto.compat.http_client.HTTPResponse')
+    @mock.patch('boto.compat.http_client.ssl')
+    def test_proxy_ssl(self, ssl_mock, http_response_mock,
+                       create_connection_mock):
+        type(http_response_mock.return_value).status = mock.PropertyMock(
+            return_value=200)
+
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False,
+            proxy_port=80
+        )
+        conn.https_validate_certificates = False
+
+        # Attempt to call proxy_ssl and make sure it works
+        conn.proxy_ssl('mockservice.cc-zone-1.amazonaws.com', 80)
 
     # this tests the proper setting of the host_header in v4 signing
     def test_host_header_with_nonstandard_port(self):

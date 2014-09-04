@@ -1,9 +1,9 @@
 ####
 boto
 ####
-boto 2.31.1
+boto 2.32.1
 
-Released: 10-Jul-2014
+Released: 04-Aug-2014
 
 .. image:: https://travis-ci.org/boto/boto.png?branch=develop
         :target: https://travis-ci.org/boto/boto
@@ -42,14 +42,14 @@ At the moment, boto supports:
 * Database
 
   * Amazon Relational Data Service (RDS)
-  * Amazon DynamoDB
-  * Amazon SimpleDB
+  * Amazon DynamoDB (Python 3)
+  * Amazon SimpleDB (Python 3)
   * Amazon ElastiCache (Python 3)
   * Amazon Redshift (Python 3)
 
 * Deployment and Management
 
-  * AWS Elastic Beanstalk
+  * AWS Elastic Beanstalk (Python 3)
   * AWS CloudFormation (Python 3)
   * AWS Data Pipeline (Python 3)
   * AWS Opsworks (Python 3)
@@ -61,7 +61,7 @@ At the moment, boto supports:
 
 * Application Services
 
-  * Amazon CloudSearch
+  * Amazon CloudSearch (Python 3)
   * Amazon Elastic Transcoder (Python 3)
   * Amazon Simple Workflow Service (SWF) (Python 3)
   * Amazon Simple Queue Service (SQS) (Python 3)

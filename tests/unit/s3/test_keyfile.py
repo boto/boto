@@ -99,3 +99,16 @@ class KeyfileTest(unittest.TestCase):
         self.keyfile.seek(1, os.SEEK_CUR)
         self.assertEqual(self.keyfile.tell(), 2)
         self.assertEqual(self.keyfile.read(4), self.contents[2:6])
+
+    def testSetEtag(self):
+        # Make sure both bytes and strings work as contents. This is one of the
+        # very few places Boto uses the mock key object.
+        # https://github.com/GoogleCloudPlatform/gsutil/issues/214#issuecomment-49906044
+        self.keyfile.key.data = b'test'
+        self.keyfile.key.set_etag()
+        self.assertEqual(self.keyfile.key.etag, '098f6bcd4621d373cade4e832627b4f6')
+
+        self.keyfile.key.etag = None
+        self.keyfile.key.data = 'test'
+        self.keyfile.key.set_etag()
+        self.assertEqual(self.keyfile.key.etag, '098f6bcd4621d373cade4e832627b4f6')

@@ -1,8 +1,8 @@
+from tests.compat import OrderedDict
 from tests.unit import AWSMockServiceTestCase
 
 from boto.ec2.connection import EC2Connection
 from boto.ec2.snapshot import Snapshot
-from boto.compat import OrderedDict
 
 
 class TestDescribeSnapshots(AWSMockServiceTestCase):

@@ -1,7 +1,5 @@
-import mock
-from mock import Mock
-
-from boto.compat import http_client, unittest
+from boto.compat import http_client
+from tests.compat import mock, unittest
 
 class AWSMockServiceTestCase(unittest.TestCase):
     """Base class for mocking aws services."""
@@ -11,10 +9,10 @@ class AWSMockServiceTestCase(unittest.TestCase):
     connection_class = None
 
     def setUp(self):
-        self.https_connection = Mock(spec=http_client.HTTPSConnection)
+        self.https_connection = mock.Mock(spec=http_client.HTTPSConnection)
         self.https_connection.debuglevel = 0
         self.https_connection_factory = (
-            Mock(return_value=self.https_connection), ())
+            mock.Mock(return_value=self.https_connection), ())
         self.service_connection = self.create_service_connection(
             https_connection_factory=self.https_connection_factory,
             aws_access_key_id='aws_access_key_id',
@@ -25,6 +23,8 @@ class AWSMockServiceTestCase(unittest.TestCase):
         self.actual_request = None
         self.original_mexe = self.service_connection._mexe
         self.service_connection._mexe = self._mexe_spy
+        self.proxy = None
+        self.use_proxy = False
 
     def create_service_connection(self, **kwargs):
         if self.connection_class is None:
@@ -39,7 +39,7 @@ class AWSMockServiceTestCase(unittest.TestCase):
     def create_response(self, status_code, reason='', header=[], body=None):
         if body is None:
             body = self.default_body()
-        response = Mock(spec=http_client.HTTPResponse)
+        response = mock.Mock(spec=http_client.HTTPResponse)
         response.status = status_code
         response.read.return_value = body
         response.reason = reason

@@ -60,7 +60,7 @@ class Zone(object):
         return response['ChangeResourceRecordSetsResponse']['ChangeInfo']
 
     def _new_record(self, changes, resource_type, name, value, ttl, identifier,
-                   comment=""):
+                    comment=""):
         """
         Add a CREATE change record to an existing ResourceRecordSets
 

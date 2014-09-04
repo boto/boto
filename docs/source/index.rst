@@ -44,17 +44,17 @@ Currently Supported Services
 * **Database**
 
   * :doc:`DynamoDB2 <dynamodb2_tut>` -- (:doc:`API Reference <ref/dynamodb2>`) -- (:doc:`Migration Guide from v1 <migrations/dynamodb_v1_to_v2>`)
-  * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`)
+  * :doc:`DynamoDB <dynamodb_tut>` -- (:doc:`API Reference <ref/dynamodb>`) (Python 3)
   * Relational Data Services 2 (RDS) -- (:doc:`API Reference <ref/rds2>`) -- (:doc:`Migration Guide from v1 <migrations/rds_v1_to_v2>`)
   * :doc:`Relational Data Services (RDS) <rds_tut>` -- (:doc:`API Reference <ref/rds>`)
   * ElastiCache -- (:doc:`API Reference <ref/elasticache>`) (Python 3)
   * Redshift -- (:doc:`API Reference <ref/redshift>`) (Python 3)
-  * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`)
+  * :doc:`SimpleDB <simpledb_tut>` -- (:doc:`API Reference <ref/sdb>`) (Python 3)
 
 * **Deployment and Management**
 
   * CloudFormation -- (:doc:`API Reference <ref/cloudformation>`) (Python 3)
-  * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`)
+  * Elastic Beanstalk -- (:doc:`API Reference <ref/beanstalk>`) (Python 3)
   * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`) (Python 3)
   * Opsworks -- (:doc:`API Reference <ref/opsworks>`) (Python 3)
   * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`) (Python 3)
@@ -62,12 +62,12 @@ Currently Supported Services
 * **Identity & Access**
 
   * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`) (Python 3)
-  * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`)
+  * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`) (Python 3)
 
 * **Application Services**
 
-  * Cloudsearch 2 -- (:doc:`API Reference <ref/cloudsearch2>`)
-  * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`)
+  * Cloudsearch 2 -- (:doc:`API Reference <ref/cloudsearch2>`) (Python 3)
+  * :doc:`Cloudsearch <cloudsearch_tut>` -- (:doc:`API Reference <ref/cloudsearch>`) (Python 3)
   * Elastic Transcoder -- (:doc:`API Reference <ref/elastictranscoder>`) (Python 3)
   * :doc:`Simple Workflow Service (SWF) <swf_tut>` -- (:doc:`API Reference <ref/swf>`) (Python 3)
   * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`) (Python 3)
@@ -132,6 +132,8 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.32.1
+   releasenotes/v2.32.0
    releasenotes/v2.31.1
    releasenotes/v2.31.0
    releasenotes/v2.30.0

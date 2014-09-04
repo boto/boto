@@ -250,7 +250,7 @@ class Server(Model):
     instance_type = CalculatedProperty(verbose_name="Instance Type", calculated_type=str, use_method=True)
     status = CalculatedProperty(verbose_name="Current Status", calculated_type=str, use_method=True)
     launch_time = CalculatedProperty(verbose_name="Server Launch Time", calculated_type=str, use_method=True)
-    console_output = CalculatedProperty(verbose_name="Console Output", calculated_type=file, use_method=True)
+    console_output = CalculatedProperty(verbose_name="Console Output", calculated_type=open, use_method=True)
 
     packages = []
     plugins = []

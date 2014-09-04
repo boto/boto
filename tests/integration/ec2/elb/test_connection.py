@@ -26,7 +26,7 @@ Initial, and very limited, unit tests for ELBConnection.
 
 import boto
 import time
-from boto.compat import unittest
+from tests.compat import unittest
 from boto.ec2.elb import ELBConnection
 
 
@@ -69,7 +69,7 @@ class ELBConnectionTest(unittest.TestCase):
             'ThingName1': 'thing1',
             'ThingName2': 'thing2',
             'ThingName3': 'thing3'
-            }
+        }
         self.assertEqual(params, expected_params)
 
     # TODO: for these next tests, consider sleeping until our load
@@ -93,7 +93,7 @@ class ELBConnectionTest(unittest.TestCase):
         self.assertEqual(
             sorted(l.get_tuple() for l in balancers[0].listeners),
             sorted(self.listeners + more_listeners)
-            )
+        )
 
     def test_delete_load_balancer_listeners(self):
         mod_listeners = [(80, 8000, 'HTTP'), (443, 8001, 'HTTP')]

@@ -26,7 +26,7 @@ import warnings
 
 import boto
 
-from boto.compat import expanduser, SafeConfigParser, StringIO
+from boto.compat import expanduser, ConfigParser, StringIO
 
 
 # By default we use two locations for the boto configurations,
@@ -49,13 +49,13 @@ elif 'BOTO_PATH' in os.environ:
         BotoConfigLocations.append(expanduser(path))
 
 
-class Config(SafeConfigParser):
+class Config(ConfigParser):
 
     def __init__(self, path=None, fp=None, do_load=True):
         # We don't use ``super`` here, because ``ConfigParser`` still uses
         # old-style classes.
-        SafeConfigParser.__init__(self, {'working_dir' : '/mnt/pyami',
-                                                      'debug' : '0'})
+        ConfigParser.__init__(self, {'working_dir': '/mnt/pyami',
+                                         'debug': '0'})
         if do_load:
             if path:
                 self.load_from_path(path)
@@ -95,7 +95,7 @@ class Config(SafeConfigParser):
         Replace any previous value.  If the path doesn't exist, create it.
         Also add the option the the in-memory config.
         """
-        config = SafeConfigParser()
+        config = ConfigParser()
         config.read(path)
         if not config.has_section(section):
             config.add_section(section)
@@ -139,21 +139,21 @@ class Config(SafeConfigParser):
 
     def get(self, section, name, default=None):
         try:
-            val = SafeConfigParser.get(self, section, name)
+            val = ConfigParser.get(self, section, name)
         except:
             val = default
         return val
 
     def getint(self, section, name, default=0):
         try:
-            val = SafeConfigParser.getint(self, section, name)
+            val = ConfigParser.getint(self, section, name)
         except:
             val = int(default)
         return val
 
     def getfloat(self, section, name, default=0.0):
         try:
-            val = SafeConfigParser.getfloat(self, section, name)
+            val = ConfigParser.getfloat(self, section, name)
         except:
             val = float(default)
         return val

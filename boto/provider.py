@@ -356,6 +356,14 @@ class Provider(object):
                                                  security_token_name)
                 boto.log.debug("Using security token found in shared "
                                "credential file.")
+            elif profile_name is not None:
+                if config.has_option("profile %s" % profile_name,
+                                     security_token_name):
+                    boto.log.debug("config has option")
+                    self.security_token = config.get("profile %s" % profile_name,
+                                                     security_token_name)
+                    boto.log.debug("Using security token found in config file: "
+                                   "profile %s." % profile_name)
             elif config.has_option('Credentials', security_token_name):
                 self.security_token = config.get('Credentials',
                                                  security_token_name)

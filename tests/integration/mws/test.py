@@ -25,7 +25,7 @@ if __name__ == "__main__":
         print('>>> advanced MWS tests; using local boto sources')
 
 from boto.mws.connection import MWSConnection
-from boto.compat import unittest
+from tests.compat import unittest
 
 
 class MWSTestCase(unittest.TestCase):

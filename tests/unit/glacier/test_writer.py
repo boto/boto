@@ -27,7 +27,6 @@ from tests.unit import unittest
 from mock import (
     call,
     Mock,
-    patch,
     sentinel,
 )
 from nose.tools import assert_equal
@@ -50,7 +49,7 @@ def create_mock_vault():
 def partify(data, part_size):
     for i in itertools.count(0):
         start = i * part_size
-        part = data[start:start+part_size]
+        part = data[start:start + part_size]
         if part:
             yield part
         else:

@@ -20,22 +20,23 @@
 # IN THE SOFTWARE.
 #
 import copy
-import mock
-from mock import Mock
+import pickle
 import os
-from tests.unit import unittest, MockServiceWithConfigTestCase
+from tests.compat import unittest, mock
+from tests.unit import MockServiceWithConfigTestCase
 
 from boto.auth import HmacAuthV4Handler
 from boto.auth import S3HmacAuthV4Handler
 from boto.auth import detect_potential_s3sigv4
 from boto.auth import detect_potential_sigv4
 from boto.connection import HTTPRequest
+from boto.provider import Provider
 from boto.regioninfo import RegionInfo
 
 
 class TestSigV4Handler(unittest.TestCase):
     def setUp(self):
-        self.provider = Mock()
+        self.provider = mock.Mock()
         self.provider.access_key = 'access_key'
         self.provider.secret_key = 'secret_key'
         self.request = HTTPRequest(
@@ -45,14 +46,14 @@ class TestSigV4Handler(unittest.TestCase):
 
     def test_not_adding_empty_qs(self):
         self.provider.security_token = None
-        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com', Mock(), self.provider)
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com', mock.Mock(), self.provider)
         req = copy.copy(self.request)
         auth.add_auth(req)
         self.assertEqual(req.path, '/-/vaults/foo/archives')
 
     def test_inner_whitespace_is_collapsed(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
-                                 Mock(), self.provider)
+                                 mock.Mock(), self.provider)
         self.request.headers['x-amz-archive-description'] = 'two  spaces'
         self.request.headers['x-amz-quoted-string'] = '  "a   b   c" '
         headers = auth.headers_to_sign(self.request)
@@ -69,7 +70,7 @@ class TestSigV4Handler(unittest.TestCase):
 
     def test_canonical_query_string(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
-                                 Mock(), self.provider)
+                                 mock.Mock(), self.provider)
         request = HTTPRequest(
             'GET', 'https', 'glacier.us-east-1.amazonaws.com', 443,
             '/-/vaults/foo/archives', None, {},
@@ -81,7 +82,7 @@ class TestSigV4Handler(unittest.TestCase):
 
     def test_query_string(self):
         auth = HmacAuthV4Handler('sns.us-east-1.amazonaws.com',
-                                 Mock(), self.provider)
+                                 mock.Mock(), self.provider)
         params = {
             'Message': u'We \u2665 utf-8'.encode('utf-8'),
         }
@@ -93,7 +94,7 @@ class TestSigV4Handler(unittest.TestCase):
 
     def test_canonical_uri(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
-                                 Mock(), self.provider)
+                                 mock.Mock(), self.provider)
         request = HTTPRequest(
             'GET', 'https', 'glacier.us-east-1.amazonaws.com', 443,
             'x/./././x .html', None, {},
@@ -103,7 +104,7 @@ class TestSigV4Handler(unittest.TestCase):
         self.assertEqual(canonical_uri, 'x/x%20.html')
 
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
-                                 Mock(), self.provider)
+                                 mock.Mock(), self.provider)
         request = HTTPRequest(
             'GET', 'https', 'glacier.us-east-1.amazonaws.com', 443,
             'x/./././x/html/', None, {},
@@ -131,7 +132,7 @@ class TestSigV4Handler(unittest.TestCase):
     def test_credential_scope(self):
         # test the AWS standard regions IAM endpoint
         auth = HmacAuthV4Handler('iam.amazonaws.com',
-                                 Mock(), self.provider)
+                                 mock.Mock(), self.provider)
         request = HTTPRequest(
             'POST', 'https', 'iam.amazonaws.com', 443,
             '/', '/',
@@ -148,7 +149,7 @@ class TestSigV4Handler(unittest.TestCase):
 
         # test the AWS GovCloud region IAM endpoint
         auth = HmacAuthV4Handler('iam.us-gov.amazonaws.com',
-                                 Mock(), self.provider)
+                                 mock.Mock(), self.provider)
         request = HTTPRequest(
             'POST', 'https', 'iam.us-gov.amazonaws.com', 443,
             '/', '/',
@@ -167,7 +168,7 @@ class TestSigV4Handler(unittest.TestCase):
         # covers the remaining region_name control structure for a
         # different region name
         auth = HmacAuthV4Handler('iam.us-west-1.amazonaws.com',
-                                 Mock(), self.provider)
+                                 mock.Mock(), self.provider)
         request = HTTPRequest(
             'POST', 'https', 'iam.us-west-1.amazonaws.com', 443,
             '/', '/',
@@ -183,7 +184,7 @@ class TestSigV4Handler(unittest.TestCase):
         self.assertEqual(region_name, 'us-west-1')
 
         # Test connections to custom locations, e.g. localhost:8080
-        auth = HmacAuthV4Handler('localhost', Mock(), self.provider,
+        auth = HmacAuthV4Handler('localhost', mock.Mock(), self.provider,
                                  service_name='iam')
 
         request = HTTPRequest(
@@ -203,7 +204,7 @@ class TestSigV4Handler(unittest.TestCase):
 
     def test_headers_to_sign(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
-                                 Mock(), self.provider)
+                                 mock.Mock(), self.provider)
         request = HTTPRequest(
             'GET', 'http', 'glacier.us-east-1.amazonaws.com', 80,
             'x/./././x .html', None, {},
@@ -230,7 +231,7 @@ class TestSigV4Handler(unittest.TestCase):
 
     def test_region_and_service_can_be_overriden(self):
         auth = HmacAuthV4Handler('queue.amazonaws.com',
-                                 Mock(), self.provider)
+                                 mock.Mock(), self.provider)
         self.request.headers['X-Amz-Date'] = '20121121000000'
 
         auth.region_name = 'us-west-2'
@@ -238,10 +239,33 @@ class TestSigV4Handler(unittest.TestCase):
         scope = auth.credential_scope(self.request)
         self.assertEqual(scope, '20121121/us-west-2/sqs/aws4_request')
 
+    def test_pickle_works(self):
+        provider = Provider('aws', access_key='access_key',
+                            secret_key='secret_key')
+        auth = HmacAuthV4Handler('queue.amazonaws.com', None, provider)
+
+        # Pickle it!
+        pickled = pickle.dumps(auth)
+
+        # Now restore it
+        auth2 = pickle.loads(pickled)
+        self.assertEqual(auth.host, auth2.host)
+
+    def test_bytes_header(self):
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
+                                 mock.Mock(), self.provider)
+        request = HTTPRequest(
+            'GET', 'http', 'glacier.us-east-1.amazonaws.com', 80,
+            'x/./././x .html', None, {},
+            {'x-amz-glacier-version': '2012-06-01', 'x-amz-hash': b'f00'}, '')
+        canonical = auth.canonical_request(request)
+
+        self.assertIn('f00', canonical)
+
 
 class TestS3HmacAuthV4Handler(unittest.TestCase):
     def setUp(self):
-        self.provider = Mock()
+        self.provider = mock.Mock()
         self.provider.access_key = 'access_key'
         self.provider.secret_key = 'secret_key'
         self.provider.security_token = 'sekret_tokens'
@@ -269,7 +293,7 @@ class TestS3HmacAuthV4Handler(unittest.TestCase):
         )
         self.auth = S3HmacAuthV4Handler(
             host='awesome-bucket.s3-us-west-2.amazonaws.com',
-            config=Mock(),
+            config=mock.Mock(),
             provider=self.provider,
             region_name='s3-us-west-2'
         )
@@ -294,7 +318,7 @@ class TestS3HmacAuthV4Handler(unittest.TestCase):
     def test_region_stripping(self):
         auth = S3HmacAuthV4Handler(
             host='s3-us-west-2.amazonaws.com',
-            config=Mock(),
+            config=mock.Mock(),
             provider=self.provider
         )
         self.assertEqual(auth.region_name, None)
@@ -302,7 +326,7 @@ class TestS3HmacAuthV4Handler(unittest.TestCase):
         # What we wish we got.
         auth = S3HmacAuthV4Handler(
             host='s3-us-west-2.amazonaws.com',
-            config=Mock(),
+            config=mock.Mock(),
             provider=self.provider,
             region_name='us-west-2'
         )

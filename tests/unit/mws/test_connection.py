@@ -23,7 +23,7 @@
 from boto.mws.connection import MWSConnection, api_call_map, destructure_object
 from boto.mws.response import (ResponseElement, GetFeedSubmissionListResult,
                                ResponseFactory)
-from boto.compat import unittest
+from tests.compat import unittest
 
 from tests.unit import AWSMockServiceTestCase
 
@@ -82,6 +82,24 @@ doc/2009-01-01/">
             members = user is inputs[-1]
             destructure_object(user, result, prefix='Prefix', members=members)
             self.assertEqual(result, amazon)
+
+    def test_decorator_order(self):
+        for action, func in api_call_map.items():
+            func = getattr(self.service_connection, func)
+            decs = [func.__name__]
+            while func:
+                i = 0
+                if not hasattr(func, '__closure__'):
+                    func = getattr(func, '__wrapped__', None)
+                    continue
+                while i < len(func.__closure__):
+                    value = func.__closure__[i].cell_contents
+                    if hasattr(value, '__call__'):
+                        if 'requires' == value.__name__:
+                            self.assertTrue(not decs or decs[-1] == 'requires')
+                        decs.append(value.__name__)
+                    i += 1
+                func = getattr(func, '__wrapped__', None)
 
     def test_built_api_call_map(self):
         # Ensure that the map is populated.

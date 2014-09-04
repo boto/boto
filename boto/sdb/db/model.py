@@ -255,9 +255,9 @@ class Model(object):
         props = {}
         for prop in self.properties(hidden=False):
             props[prop.name] = getattr(self, prop.name)
-        obj = {'properties' : props,
-               'id' : self.id}
-        return {self.__class__.__name__ : obj}
+        obj = {'properties': props,
+               'id': self.id}
+        return {self.__class__.__name__: obj}
 
     def to_xml(self, doc=None):
         xmlmanager = self.get_xmlmanager()
@@ -294,5 +294,3 @@ class Expando(Model):
                 object.__setattr__(self, name, value)
                 return value
         raise AttributeError
-
-

@@ -110,6 +110,38 @@ An instance object allows you get more meta-data available about the instance::
 In this case, we can see that our instance is a c1.xlarge instance in the
 `us-west-2` availability zone.
 
+Checking Health Status Of Instances
+-----------------------------------
+You can also get the health status of your instances, including any scheduled events::
+
+    >>> statuses = conn.get_all_instance_status()
+    >>> statuses
+    [InstanceStatus:i-00000000]
+
+An instance status object allows you to get information about impaired
+functionality or scheduled / system maintenance events::
+
+    >>> status = statuses[0]
+    >>> status.events
+    [Event:instance-reboot]
+    >>> event = status.events[0]
+    >>> event.description
+    u'Maintenance software update.'
+    >>> event.not_before
+    u'2011-12-11T04:00:00.000Z'
+    >>> event.not_after
+    u'2011-12-11T10:00:00.000Z'
+    >>> status.instance_status
+    Status:ok
+    >>> status.system_status
+    Status:ok
+    >>> status.system_status.details
+    {u'reachability': u'passed'}
+
+This will by default include the health status only for running instances.
+If you wish to request the health status for all instances, simply add
+``include_all_instances=True`` keyword argument to the call above.
+
 =================================
 Using Elastic Block Storage (EBS)
 =================================
@@ -186,7 +218,7 @@ instances sets.
 Creating a Launch Configuration is easy:
 
    >>> conn = boto.connect_autoscale()
-   >>> config = LaunchConfig(name='foo', image_id='ami-abcd1234', key_name='foo.pem')
+   >>> config = LaunchConfiguration(name='foo', image_id='ami-abcd1234', key_name='foo.pem')
    >>> conn.create_launch_configuration(config)
 
 Once you have a launch configuration, you can list you current configurations:
