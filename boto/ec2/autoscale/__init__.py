@@ -222,7 +222,10 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.key_name:
             params['KeyName'] = launch_config.key_name
         if launch_config.user_data:
-            params['UserData'] = base64.b64encode(launch_config.user_data).decode('utf-8')
+            user_data = launch_config.user_data
+            if isinstance(user_data, six.text_type):
+                user_data = user_data.encode('utf-8')
+            params['UserData'] = base64.b64encode(user_data).decode('utf-8')
         if launch_config.kernel_id:
             params['KernelId'] = launch_config.kernel_id
         if launch_config.ramdisk_id:
