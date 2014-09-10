@@ -62,6 +62,12 @@
         "us-west-1": "monitoring.us-west-1.amazonaws.com",
         "us-west-2": "monitoring.us-west-2.amazonaws.com"
     },
+    "cognito-identity": {
+        "us-east-1": "cognito-identity.us-east-1.amazonaws.com"
+    },
+    "cognito-sync": {
+        "us-east-1": "cognito-sync.us-east-1.amazonaws.com"
+    },
     "datapipeline": {
         "us-east-1": "datapipeline.us-east-1.amazonaws.com",
         "us-west-2": "datapipeline.us-west-2.amazonaws.com",
