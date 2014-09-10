@@ -858,6 +858,30 @@ def connect_logs(aws_access_key_id=None,
         **kwargs
     )
 
+
+def connect_route53domains(aws_access_key_id=None,
+                           aws_secret_access_key=None,
+                           **kwargs):
+    """
+    Connect to Amazon Route 53 Domains
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.route53.domains.layer1.Route53DomainsConnection`
+    :return: A connection to the Amazon Route 53 Domains service
+    """
+    from boto.route53.domains.layer1 import Route53DomainsConnection
+    return Route53DomainsConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
                 bucket_storage_uri_class=BucketStorageUri,
                 suppress_consec_slashes=True, is_latest=False):
