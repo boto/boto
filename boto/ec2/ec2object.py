@@ -140,4 +140,5 @@ class TaggedEC2Object(EC2Object):
         )
         for key, value in tags.iteritems():
             if key in self.tags:
-                del self.tags[key]
+                if value is None or value == self.tags[key]:
+                    del self.tags[key]

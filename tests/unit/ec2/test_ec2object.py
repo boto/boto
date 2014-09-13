@@ -138,7 +138,8 @@ class TestRemoveTags(AWSMockServiceTestCase):
                                   'SignatureVersion', 'Timestamp',
                                   'Version'])
 
-        self.assertEqual(taggedEC2Object.tags, {"key2": "value2"})
+        self.assertEqual(taggedEC2Object.tags,
+                         {"key1": "value1", "key2": "value2"})
 
 
 if __name__ == '__main__':
