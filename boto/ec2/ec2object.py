@@ -138,7 +138,7 @@ class TaggedEC2Object(EC2Object):
             tags,
             dry_run=dry_run
         )
-        for key, value in tags.iteritems():
+        for key, value in tags.items():
             if key in self.tags:
                 if value is None or value == self.tags[key]:
                     del self.tags[key]
