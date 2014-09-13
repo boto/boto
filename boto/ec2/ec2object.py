@@ -77,14 +77,7 @@ class TaggedEC2Object(EC2Object):
                       If you want only the tag name and no value, the
                       value should be the empty string.
         """
-        status = self.connection.create_tags(
-            [self.id],
-            {key: value},
-            dry_run=dry_run
-        )
-        if self.tags is None:
-            self.tags = TagSet()
-        self.tags[key] = value
+        self.add_tags({key: value}, dry_run)
 
     def add_tags(self, tags, dry_run=False):
         """
@@ -124,17 +117,7 @@ class TaggedEC2Object(EC2Object):
                       NOTE: There is an important distinction between a value
                       of '' and a value of None.
         """
-        if value is not None:
-            tags = {key: value}
-        else:
-            tags = [key]
-        status = self.connection.delete_tags(
-            [self.id],
-            tags,
-            dry_run=dry_run
-        )
-        if key in self.tags:
-            del self.tags[key]
+        self.remove_tags({key: value}, dry_run)
 
     def remove_tags(self, tags, dry_run=False):
         """
