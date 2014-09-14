@@ -392,7 +392,7 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254',
     try:
         metadata_url = _build_instance_metadata_url(url, version, data)
         return _get_instance_metadata(metadata_url, num_retries=num_retries, timeout=timeout)
-    except urllib.error.URLError as e:
+    except urllib.error.URLError:
         return None
 
 
@@ -414,7 +414,7 @@ def get_instance_identity(version='latest', url='http://169.254.169.254',
             if field:
                 iid[field] = val
         return iid
-    except urllib.error.URLError as e:
+    except urllib.error.URLError:
         return None
 
 
@@ -436,6 +436,7 @@ ISO8601_MS = '%Y-%m-%dT%H:%M:%S.%fZ'
 RFC1123 = '%a, %d %b %Y %H:%M:%S %Z'
 LOCALE_LOCK = threading.Lock()
 
+
 @contextmanager
 def setlocale(name):
     """
@@ -448,6 +449,7 @@ def setlocale(name):
             yield locale.setlocale(locale.LC_ALL, name)
         finally:
             locale.setlocale(locale.LC_ALL, saved)
+
 
 def get_ts(ts=None):
     if not ts:
@@ -1037,6 +1039,7 @@ def merge_headers_by_name(name, headers):
     matching_headers = find_matching_headers(name, headers)
     return ','.join(str(headers[h]) for h in matching_headers
                     if headers[h] is not None)
+
 
 class RequestHook(object):
     """
