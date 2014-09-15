@@ -77,7 +77,7 @@ class TestLbTag(unittest.TestCase):
             #import pdb; pdb.set_trace()
             tags = elb.get_all_lb_tags('test_elb')
             self.assertTrue(isinstance(tags, LbTagSet))
-            self.assertEqual(tags.items(), tags_test)
+            self.assertEqual(sorted(tags.items()), sorted(tags_test))
 
     def test_lb_get_tags(self):
         """Tests getting LbTagSet from ELB object."""
@@ -87,7 +87,7 @@ class TestLbTag(unittest.TestCase):
             mock_response.read.return_value = response
             tags = lb.get_tags(force=True)
             self.assertTrue(isinstance(tags, LbTagSet))
-            self.assertEqual(tags.items(), tags_test)
+            self.assertEqual(sorted(tags.items()), sorted(tags_test))
 
 if __name__ == '__main__':
     unittest.main()
