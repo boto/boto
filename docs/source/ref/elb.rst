@@ -59,3 +59,10 @@ boto.ec2.elb.securitygroup
 .. automodule:: boto.ec2.elb.securitygroup
    :members:
    :undoc-members:
+
+boto.ec2.elb.tag
+-------------------------
+
+.. automodule:: boto.ec2.elb.tag
+   :members:
+   :undoc-members:
