@@ -234,7 +234,7 @@ class LoadBalancer(object):
         :return: The LbTagSet object
         """
         if not self._tags or force:
-            self._tags = self.connection.get_all_lb_tags(self.name)
+            self._tags = self.connection.get_all_tags(self.name)
         return self._tags
 
 

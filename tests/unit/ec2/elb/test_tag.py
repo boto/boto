@@ -75,7 +75,7 @@ class TestLbTag(unittest.TestCase):
         for response, tags_test in TAGS_TEST:
             mock_response.read.return_value = response
             #import pdb; pdb.set_trace()
-            tags = elb.get_all_lb_tags('test_elb')
+            tags = elb.get_all_tags('test_elb')
             self.assertTrue(isinstance(tags, LbTagSet))
             self.assertEqual(sorted(tags.items()), sorted(tags_test))
 

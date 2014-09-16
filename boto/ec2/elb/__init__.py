@@ -459,7 +459,7 @@ class ELBConnection(AWSQueryConnection):
         return self.get_object('DescribeLoadBalancerAttributes',
                                params, LbAttributes)
 
-    def get_all_lb_tags(self, load_balancer_names):
+    def get_all_tags(self, load_balancer_names):
         """Gets all tags of a Load Balancer
 
         :type load_balancer_name: string
