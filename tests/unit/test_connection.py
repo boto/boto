@@ -25,8 +25,9 @@ import socket
 from tests.compat import mock, unittest
 from httpretty import HTTPretty
 
+from boto import UserAgent
 from boto.compat import json, parse_qs
-from boto.connection import AWSQueryConnection, AWSAuthConnection
+from boto.connection import AWSQueryConnection, AWSAuthConnection, HTTPRequest
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
 
@@ -472,6 +473,30 @@ class TestAWSQueryStatus(TestAWSQueryConnection):
             resp = conn.get_status('getStatus',
                                    {'par1': 'foo', 'par2': 'baz'},
                                    'status')
+
+
+class TestHTTPRequest(unittest.TestCase):
+    def test_user_agent_not_url_encoded(self):
+        headers = {'Some-Header': u'should be url encoded',
+                   'User-Agent': UserAgent}
+        request = HTTPRequest('PUT', 'https', 'amazon.com', 443, None,
+                              None, {}, headers, 'Body')
+        mock_connection = mock.Mock()
+
+        # Create a method that preserves the headers at the time of
+        # authorization.
+        def mock_add_auth(req, **kwargs):
+            mock_connection.headers_at_auth = req.headers.copy()
+
+        mock_connection._auth_handler.add_auth = mock_add_auth
+
+        request.authorize(mock_connection)
+        # Ensure the headers at authorization are as expected i.e.
+        # the user agent header was not url encoded but the other header was.
+        self.assertEqual(mock_connection.headers_at_auth,
+                         {'Some-Header': 'should%20be%20url%20encoded',
+                          'User-Agent': UserAgent})
+
 
 if __name__ == '__main__':
     unittest.main()
