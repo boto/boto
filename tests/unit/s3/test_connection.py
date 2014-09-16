@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright (c) 2013 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -214,6 +216,22 @@ class TestHeadBucket(AWSMockServiceTestCase):
         # We don't have special-cases for this error status.
         self.assertEqual(err.error_code, None)
         self.assertEqual(err.message, '')
+
+
+class TestBuildFormArgs(MockServiceWithConfigTestCase):
+    connection_class = S3Connection
+
+    def test_unicode_filename(self):
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more',
+            host='s3.cn-north-1.amazonaws.com.cn'
+        )
+        args = conn.build_post_form_args('bucket', u'안녕하세요')
+        fields = {field['name']: field['value'] for field in args['fields']}
+        self.assertEqual(fields['key'],
+                         '\xec\x95\x88\xeb\x85\x95\xed\x95\x98\xec\x84'
+                         '\xb8\xec\x9a\x94')
 
 
 if __name__ == "__main__":
