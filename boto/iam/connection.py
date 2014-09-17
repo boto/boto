@@ -512,12 +512,13 @@ class IAMConnection(AWSQueryConnection):
     # Access Keys
     #
 
-    def get_all_access_keys(self, user_name, marker=None, max_items=None):
+    def get_all_access_keys(self, user_name=None, marker=None, max_items=None):
         """
         Get all access keys associated with an account.
 
         :type user_name: string
-        :param user_name: The username of the user
+        :param user_name: The username of the user. If absent then assume the 
+            user to be the one who has signed the requrest. 
 
         :type marker: string
         :param marker: Use this only when paginating results and only
@@ -529,7 +530,9 @@ class IAMConnection(AWSQueryConnection):
         :param max_items: Use this only when paginating results to indicate
             the maximum number of groups you want in the response.
         """
-        params = {'UserName': user_name}
+        params = {}
+        if user_name:
+            params['UserName'] = user_name
         if marker:
             params['Marker'] = marker
         if max_items:
