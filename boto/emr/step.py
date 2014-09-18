@@ -262,6 +262,7 @@ class InstallHiveStep(HiveBase):
         step_args.extend(['--install-hive'])
         step_args.extend(['--hive-versions', hive_versions])
         if hive_site is not None:
+            step_args.extend(['--install-hive-site'])
             step_args.extend(['--hive-site=%s' % hive_site])
         super(InstallHiveStep, self).__init__(self.InstallHiveName,
                                   step_args=step_args)
