@@ -400,7 +400,7 @@ class ELBConnection(AWSQueryConnection):
         :param attribute: The attribute you wish to change.
 
         * crossZoneLoadBalancing - Boolean (true)
-        * connectionSettings - :py:class:`ConnectionSettingAttribute` instance
+        * connectingSettings - :py:class:`ConnectionSettingAttribute` instance
         * accessLog - :py:class:`AccessLogAttribute` instance
         * connectionDraining - :py:class:`ConnectionDrainingAttribute` instance
 
@@ -472,7 +472,7 @@ class ELBConnection(AWSQueryConnection):
 
           * accessLog - :py:class:`AccessLogAttribute` instance
           * crossZoneLoadBalancing - Boolean
-          * connectionSettings - :py:class:`ConnectionSettingAttribute` instance
+          * connectingSettings - :py:class:`ConnectionSettingAttribute` instance
           * connectionDraining - :py:class:`ConnectionDrainingAttribute`
             instance
 
