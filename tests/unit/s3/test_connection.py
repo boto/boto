@@ -239,8 +239,8 @@ class TestUrlGeneration(unittest.TestCase):
     def test_generate_url_without_query_auth(self):
         conn = S3Connection(
             aws_access_key_id='fake_id',
-            aws_secret_access_key='fake_secret'
-
+            aws_secret_access_key='fake_secret',
+            security_token='fake_token'
         )
 
         url = conn.generate_url(
@@ -253,7 +253,15 @@ class TestUrlGeneration(unittest.TestCase):
 
         self.assertNotIn('AWSAccessKeyId', url, 'S3 url should not contain access key authentication info when query_auth=False')
         self.assertNotIn('x-amz-security-token', url, 'S3 url should not contain security token when query_auth=False')
-        
+
+        url2 = conn.generate_url(
+            3600, 
+            method='GET', 
+            bucket='test-bucket', 
+            key='test-key',
+        )
+
+        self.assertIn('fake_token', url2, 'S3 url should contain security token when query_auth=True')
 
 if __name__ == "__main__":
     unittest.main()
