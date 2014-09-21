@@ -235,6 +235,25 @@ class TestHeadBucket(AWSMockServiceTestCase):
         self.assertEqual(err.error_code, None)
         self.assertEqual(err.message, '')
 
+class TestUrlGeneration(unittest.TestCase):
+    def test_generate_url_without_query_auth(self):
+        conn = S3Connection(
+            aws_access_key_id='fake_id',
+            aws_secret_access_key='fake_secret'
+
+        )
+
+        url = conn.generate_url(
+            3600, 
+            method='GET', 
+            bucket='test-bucket', 
+            key='test-key',
+            query_auth=False
+        )
+
+        self.assertNotIn('AWSAccessKeyId', url, 'S3 url should not contain access key authentication info when query_auth=False')
+        self.assertNotIn('x-amz-security-token', url, 'S3 url should not contain security token when query_auth=False')
+        
 
 if __name__ == "__main__":
     unittest.main()
