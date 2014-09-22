@@ -72,6 +72,7 @@ class MockAWSService(AWSQueryConnection):
     """
 
     APIVersion = '2012-01-01'
+
     def _required_auth_capability(self):
         return ['sign-v2']
 
@@ -94,6 +95,7 @@ class MockAWSService(AWSQueryConnection):
                                     security_token,
                                     validate_certs=validate_certs,
                                     profile_name=profile_name)
+
 
 class TestAWSAuthConnection(unittest.TestCase):
     def test_get_path(self):
@@ -182,8 +184,9 @@ class TestAWSAuthConnection(unittest.TestCase):
             'testhost',
             aws_access_key_id='access_key',
             aws_secret_access_key='secret')
-        request = conn.build_base_http_request(method='POST', path='/',
-            auth_path=None, params=None, headers=None, data='', host=None)
+        request = conn.build_base_http_request(
+            method='POST', path='/', auth_path=None, params=None, headers=None,
+            data='', host=None)
         conn.set_host_header(request)
         self.assertEqual(request.headers['Host'], 'testhost')
 
@@ -193,15 +196,17 @@ class TestAWSAuthConnection(unittest.TestCase):
             aws_access_key_id='access_key',
             aws_secret_access_key='secret',
             port=8773)
-        request = conn.build_base_http_request(method='POST', path='/',
-            auth_path=None, params=None, headers=None, data='', host=None)
+        request = conn.build_base_http_request(
+            method='POST', path='/', auth_path=None, params=None, headers=None,
+            data='', host=None)
         conn.set_host_header(request)
         self.assertEqual(request.headers['Host'], 'testhost:8773')
 
+
 class V4AuthConnection(AWSAuthConnection):
     def __init__(self, host, aws_access_key_id, aws_secret_access_key, port=443):
-        AWSAuthConnection.__init__(self, host, aws_access_key_id,
-            aws_secret_access_key, port=port)
+        AWSAuthConnection.__init__(
+            self, host, aws_access_key_id, aws_secret_access_key, port=port)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
@@ -209,14 +214,16 @@ class V4AuthConnection(AWSAuthConnection):
 
 class TestAWSQueryConnection(unittest.TestCase):
     def setUp(self):
-        self.region = RegionInfo(name='cc-zone-1',
-                            endpoint='mockservice.cc-zone-1.amazonaws.com',
-                            connection_cls=MockAWSService)
+        self.region = RegionInfo(
+            name='cc-zone-1',
+            endpoint='mockservice.cc-zone-1.amazonaws.com',
+            connection_cls=MockAWSService)
 
         HTTPretty.enable()
 
     def tearDown(self):
         HTTPretty.disable()
+
 
 class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
     def test_query_connection_basis(self):
@@ -263,7 +270,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                    aws_secret_access_key='secret',
                                    proxy="NON_EXISTENT_HOSTNAME",
                                    proxy_port="3128",
-                                   is_secure = False)
+                                   is_secure=False)
 
         resp = conn.make_request('myCmd',
                                  {'par1': 'foo', 'par2': 'baz'},
@@ -453,7 +460,7 @@ class TestAWSQueryStatus(TestAWSQueryConnection):
                                content_type='text/xml')
 
         conn = self.region.connect(aws_access_key_id='access_key',
-                aws_secret_access_key='secret')
+                                   aws_secret_access_key='secret')
         with self.assertRaises(BotoServerError):
             resp = conn.get_status('getStatus',
                                    {'par1': 'foo', 'par2': 'baz'},
