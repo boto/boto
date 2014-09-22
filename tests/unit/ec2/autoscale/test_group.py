@@ -351,11 +351,9 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
         # This unit test is based on #753 and #1343
         self.set_http_response(status_code=200)
         dev_sdf = EBSBlockDeviceType(snapshot_id='snap-12345')
-        dev_sdg = EBSBlockDeviceType(snapshot_id='snap-12346')
 
         bdm = BlockDeviceMapping()
         bdm['/dev/sdf'] = dev_sdf
-        bdm['/dev/sdg'] = dev_sdg
 
         lc = launchconfig.LaunchConfiguration(
             connection=self.service_connection,
@@ -363,7 +361,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             image_id='123456',
             instance_type='m1.large',
             user_data='#!/bin/bash',
-            security_groups=['group1', 'group2'],
+            security_groups=['group1'],
             spot_price='price',
             block_device_mappings=[bdm],
             associate_public_ip_address=True,
@@ -379,9 +377,6 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'BlockDeviceMappings.member.1.DeviceName': '/dev/sdf',
             'BlockDeviceMappings.member.1.Ebs.DeleteOnTermination': 'false',
             'BlockDeviceMappings.member.1.Ebs.SnapshotId': 'snap-12345',
-            'BlockDeviceMappings.member.2.DeviceName': '/dev/sdg',
-            'BlockDeviceMappings.member.2.Ebs.DeleteOnTermination': 'false',
-            'BlockDeviceMappings.member.2.Ebs.SnapshotId': 'snap-12346',
             'EbsOptimized': 'false',
             'LaunchConfigurationName': 'launch_config',
             'ImageId': '123456',
@@ -389,7 +384,6 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'InstanceMonitoring.Enabled': 'false',
             'InstanceType': 'm1.large',
             'SecurityGroups.member.1': 'group1',
-            'SecurityGroups.member.2': 'group2',
             'SpotPrice': 'price',
             'AssociatePublicIpAddress': 'true',
             'VolumeType': 'atype',
