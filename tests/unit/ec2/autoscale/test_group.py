@@ -27,8 +27,6 @@ from datetime import datetime
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
-from boto.compat import six
-
 from boto.ec2.autoscale import AutoScaleConnection
 from boto.ec2.autoscale.group import AutoScalingGroup
 from boto.ec2.autoscale.policy import ScalingPolicy
@@ -387,7 +385,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'EbsOptimized': 'false',
             'LaunchConfigurationName': 'launch_config',
             'ImageId': '123456',
-            'UserData': base64.b64encode(six.b('#!/bin/bash')).decode('utf-8'),
+            'UserData': base64.b64encode(b'#!/bin/bash').decode('utf-8'),
             'InstanceMonitoring.Enabled': 'false',
             'InstanceType': 'm1.large',
             'SecurityGroups.member.1': 'group1',
