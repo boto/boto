@@ -62,15 +62,16 @@ class ELBConnectionTest(unittest.TestCase):
         self.balancer.delete()
 
     def test_build_list_params(self):
-        params = {}
-        self.conn.build_list_params(
-            params, ['thing1', 'thing2', 'thing3'], 'ThingName%d')
-        expected_params = {
-            'ThingName1': 'thing1',
-            'ThingName2': 'thing2',
-            'ThingName3': 'thing3'
-        }
-        self.assertEqual(params, expected_params)
+        items = ['thing1', 'thing2', 'thing3']
+        for i in (items, iter(items)):
+            params = {}
+            self.conn.build_list_params(params, i, 'ThingName%d')
+            expected_params = {
+                'ThingName1': 'thing1',
+                'ThingName2': 'thing2',
+                'ThingName3': 'thing3'
+            }
+            self.assertEqual(params, expected_params)
 
     # TODO: for these next tests, consider sleeping until our load
     # balancer comes up, then testing for connectivity to

@@ -103,15 +103,16 @@ class CloudWatchConnectionTest(unittest.TestCase):
 
     def test_build_list_params(self):
         c = CloudWatchConnection()
-        params = {}
-        c.build_list_params(
-            params, ['thing1', 'thing2', 'thing3'], 'ThingName%d')
-        expected_params = {
-            'ThingName1': 'thing1',
-            'ThingName2': 'thing2',
-            'ThingName3': 'thing3'
-        }
-        self.assertEqual(params, expected_params)
+        items = ['thing1', 'thing2', 'thing3']
+        for i in (items, iter(items)):
+            params = {}
+            c.build_list_params(params, i, 'ThingName%d')
+            expected_params = {
+                'ThingName1': 'thing1',
+                'ThingName2': 'thing2',
+                'ThingName3': 'thing3'
+            }
+            self.assertEqual(params, expected_params)
 
     def test_build_put_params_one(self):
         c = CloudWatchConnection()

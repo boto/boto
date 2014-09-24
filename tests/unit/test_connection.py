@@ -63,6 +63,16 @@ class TestListParamsSerialization(unittest.TestCase):
             'ParamName.member.3': 'baz',
         }, params)
 
+    def test_simple_iterable_serialization(self):
+        params = {}
+        self.connection.build_list_params(
+            params, iter(['foo', 'bar', 'baz']), 'ParamName.member')
+        self.assertDictEqual({
+            'ParamName.member.1': 'foo',
+            'ParamName.member.2': 'bar',
+            'ParamName.member.3': 'baz',
+        }, params)
+
 
 class MockAWSService(AWSQueryConnection):
     """

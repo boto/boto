@@ -1113,8 +1113,8 @@ class AWSQueryConnection(AWSAuthConnection):
     def build_list_params(self, params, items, label):
         if isinstance(items, six.string_types):
             items = [items]
-        for i in range(1, len(items) + 1):
-            params['%s.%d' % (label, i)] = items[i - 1]
+        for i, item in enumerate(items, start=1):
+            params['%s.%d' % (label, i)] = item
 
     def build_complex_list_params(self, params, items, label, names):
         """Serialize a list of structures.
