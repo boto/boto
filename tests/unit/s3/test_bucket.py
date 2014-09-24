@@ -64,6 +64,11 @@ class TestS3Bucket(AWSMockServiceTestCase):
         with self.assertRaises(TypeError):
             bucket.get_all_keys(delimeter='foo')
 
+    def test_bucket_create_bucket_query_args(self):
+        self.set_http_response(status_code=200)
+        bucket = self.service_connection.create_bucket('mybucket_create', query_args="rgwx-uid=testuser")
+        self.assertEqual(bucket.name, 'mybucket_create')
+
     def test__get_all_query_args(self):
         bukket = Bucket()
 
@@ -227,3 +232,20 @@ class TestS3Bucket(AWSMockServiceTestCase):
         document = xml.dom.minidom.parseString(xml_policy)
         namespace = document.documentElement.namespaceURI
         self.assertEqual(namespace, 'http://s3.amazonaws.com/doc/2006-03-01/')
+
+    def initiate_multipart_upload(self):
+        return """<?xml version="1.0" encoding="UTF-8"?>
+        <InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            <Bucket>example-bucket</Bucket>
+            <Key>example-key</Key>
+            <UploadId>2/-yPRkYqqIXBZhaVF0bGkrQceLtStPQc</UploadId>
+        </InitiateMultipartUploadResult>"""
+
+    def test_bucket_initiate_multipart_upload(self):
+        self.set_http_response(status_code=200)
+        bucket = self.service_connection.create_bucket('example-bucket')
+        self.assertEqual(bucket.name, 'example-bucket')
+
+        self.set_http_response(status_code=200, body=self.initiate_multipart_upload())
+        mp = bucket.initiate_multipart_upload('example-key', query_args="rgwx-uid=testuser")
+        self.assertIsInstance(mp, MultiPartUpload)
