@@ -4459,3 +4459,14 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('ModifyVpcAttribute', params, verb='POST')
+
+    def modify_subnet_attribute(self, subnet_id, auto_assign_public_ip=None, dry_run=False):
+        params = {'SubnetId': subnet_id}
+        if auto_assign_public_ip is not None:
+            if auto_assign_public_ip:
+                params['MapPublicIpOnLaunch.Value'] = 'true'
+            else:
+                params['MapPublicIpOnLaunch.Value'] = 'false'
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('ModifySubnetAttribute', params)
