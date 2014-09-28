@@ -56,7 +56,7 @@ class HealthCheck(object):
             %(ip_addr_part)s
             <Port>%(port)s</Port>
             <Type>%(type)s</Type>
-            <ResourcePath>%(resource_path)s</ResourcePath>
+            %(resource_path_part)s
             %(fqdn_part)s
             %(string_match_part)s
             %(request_interval)s
@@ -66,6 +66,8 @@ class HealthCheck(object):
 
     XMLIpAddrPart = """<IPAddress>%(ip_addr)s</IPAddress>"""
 
+    XMLResourcePathPart = """<ResourcePath>%(resource_path)s</ResourcePath>"""
+
     XMLFQDNPart = """<FullyQualifiedDomainName>%(fqdn)s</FullyQualifiedDomainName>"""
 
     XMLStringMatchPart = """<SearchString>%(string_match)s</SearchString>"""
@@ -74,7 +76,7 @@ class HealthCheck(object):
 
     valid_request_intervals = (10, 30)
 
-    def __init__(self, ip_addr, port, hc_type, resource_path, fqdn=None, string_match=None, request_interval=30, failure_threshold=3):
+    def __init__(self, ip_addr, port, hc_type, resource_path=None, fqdn=None, string_match=None, request_interval=30, failure_threshold=3):
         """
         HealthCheck object
 
@@ -127,13 +129,17 @@ class HealthCheck(object):
             'ip_addr_part': '',
             'port': self.port,
             'type': self.hc_type,
-            'resource_path': self.resource_path,
+            'resource_path': '',
             'fqdn_part': "",
             'string_match_part': "",
             'request_interval': (self.XMLRequestIntervalPart %
                                  {'request_interval': self.request_interval}),
             'failure_threshold': self.failure_threshold,
         }
+
+        if self.resource_path:
+            params['resource_path_part'] = self.XMLResourcePathPart % {'resource_path': self.resource_path}
+
         if self.fqdn is not None:
             params['fqdn_part'] = self.XMLFQDNPart % {'fqdn': self.fqdn}
 
