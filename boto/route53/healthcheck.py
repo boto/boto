@@ -129,7 +129,7 @@ class HealthCheck(object):
             'ip_addr_part': '',
             'port': self.port,
             'type': self.hc_type,
-            'resource_path': '',
+            'resource_path_part': '',
             'fqdn_part': "",
             'string_match_part': "",
             'request_interval': (self.XMLRequestIntervalPart %

@@ -561,6 +561,45 @@ class TestCreateHealthCheckRoute53FQDN(AWSMockServiceTestCase):
 
 
 @attr(route53=True)
+class TestCreateHealthCheckRoute53TCP(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestCreateHealthCheckRoute53TCP, self).setUp()
+
+    def default_body(self):
+        return b"""
+<CreateHealthCheckResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+   <HealthCheck>
+      <Id>34778cf8-e31e-4974-bad0-b108bd1623d3</Id>
+      <CallerReference>2fa48c8f-76ef-4253-9874-8bcb2b0d7694</CallerReference>
+      <HealthCheckConfig>
+         <IPAddress>74.125.228.81</IPAddress>
+         <Port>80</Port>
+         <Type>TCP</Type>
+         <RequestInterval>30</RequestInterval>
+         <FailureThreshold>3</FailureThreshold>
+      </HealthCheckConfig>
+   </HealthCheck>
+</CreateHealthCheckResponse>
+        """
+
+    def test_create_health_check_tcp(self):
+        self.set_http_response(status_code=201)
+        hc = HealthCheck(ip_addr='74.125.228.81', port=80, hc_type='TCP')
+        hc_xml = hc.to_xml()
+        self.assertFalse('<ResourcePath>' in hc_xml)
+        self.assertTrue('<IPAddress>' in hc_xml)
+
+        response = self.service_connection.create_health_check(hc)
+        hc_resp = response['CreateHealthCheckResponse']['HealthCheck']['HealthCheckConfig']
+        self.assertEqual(hc_resp['IPAddress'], '74.125.228.81')
+        self.assertEqual(hc_resp['Type'], 'TCP')
+        self.assertEqual(hc_resp['Port'], '80')
+        self.assertEqual(response['CreateHealthCheckResponse']['HealthCheck']['Id'], '34778cf8-e31e-4974-bad0-b108bd1623d3')
+
+
+@attr(route53=True)
 class TestChangeResourceRecordSetsRoute53(AWSMockServiceTestCase):
     connection_class = Route53Connection
 
