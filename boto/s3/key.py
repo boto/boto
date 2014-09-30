@@ -1706,7 +1706,9 @@ class Key(object):
                                           res_download_handler=res_download_handler,
                                           response_headers=response_headers)
         except Exception:
-            os.remove(filename)
+            if os.path.exists(filename):
+                # If open fails, then filename doesn't exist.
+                os.remove(filename)
             raise
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified is not None:
