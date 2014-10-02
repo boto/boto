@@ -53,7 +53,7 @@ from boto.vendored.six.moves import filter, http_client, map, _thread, \
                                     urllib, zip
 from boto.vendored.six.moves.queue import Queue
 from boto.vendored.six.moves.urllib.parse import parse_qs, quote, unquote, \
-                                                 urlparse, urlsplit
+                                                 urlparse, urlsplit, unquote_plus
 from boto.vendored.six.moves.urllib.request import urlopen
 
 if six.PY3:
