@@ -132,13 +132,14 @@ class LbAttributes(object):
         self.access_log = AccessLogAttribute(self.connection)
         self.connection_draining = ConnectionDrainingAttribute(self.connection)
         self.connecting_settings = ConnectionSettingAttribute(self.connection)
+        self.connection_settings = self.connecting_settings
 
     def __repr__(self):
         return 'LbAttributes(%s, %s, %s, %s)' % (
             repr(self.cross_zone_load_balancing),
             repr(self.access_log),
             repr(self.connection_draining),
-            repr(self.connecting_settings))
+            repr(self.connection_settings))
 
     def startElement(self, name, attrs, connection):
         if name == 'CrossZoneLoadBalancing':
