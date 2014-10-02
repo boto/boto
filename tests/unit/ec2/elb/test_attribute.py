@@ -69,6 +69,10 @@ ATTRIBUTE_SET_CZL_FALSE_REQUEST = (
     'ModifyLoadBalancerAttributes',
     {'LoadBalancerAttributes.CrossZoneLoadBalancing.Enabled': 'false',
      'LoadBalancerName': 'test_elb'}, mock.ANY, mock.ANY)
+ATTRIBUTE_SET_IDLE_TIMEOUT = (
+    'ModifyLoadBalancerAttributes',
+    {'LoadBalancerAttributes.ConnectionSettings.IdleTimeout': 120,
+     'LoadBalancerName': 'test_elb'}, mock.ANY, mock.ANY)
 
 # Tests to be run on an LbAttributes
 # Format:
@@ -80,6 +84,8 @@ ATTRIBUTE_TESTS = [
      [('cross_zone_load_balancing.enabled', False)]),
     (ATTRIBUTE_GET_CS_RESPONSE,
      [('connecting_settings.idle_timeout', 30)]),
+    (ATTRIBUTE_GET_CS_RESPONSE,
+     [('connection_settings.idle_timeout', 30)]),
 ]
 
 
@@ -132,9 +138,15 @@ class TestLbAttributes(unittest.TestCase):
         """Tests setting the attributes from elb.connection."""
         mock_response, elb, _ = self._setup_mock()
 
+        # mock the ConnectionSettings attribute
+        mock_response.read.return_value = ATTRIBUTE_GET_CS_RESPONSE
+        cs_attr = elb.get_lb_attribute('test_elb', 'ConnectionSettings')
+        cs_attr.idle_timeout = 120
+
         tests = [
             ('crossZoneLoadBalancing', True, ATTRIBUTE_SET_CZL_TRUE_REQUEST),
             ('crossZoneLoadBalancing', False, ATTRIBUTE_SET_CZL_FALSE_REQUEST),
+            ('connectionSettings', cs_attr, ATTRIBUTE_SET_IDLE_TIMEOUT),
         ]
 
         for attr, value, args in tests:
@@ -193,7 +205,7 @@ class TestLbAttributes(unittest.TestCase):
     def test_lb_get_connection_settings(self):
         """Tests checking connectionSettings attribute"""
         mock_response, elb, _ = self._setup_mock()
-        
+
         attrs = [('idle_timeout', 30), ]
         mock_response.read.return_value = ATTRIBUTE_GET_CS_RESPONSE
         attributes = elb.get_all_lb_attributes('test_elb')
