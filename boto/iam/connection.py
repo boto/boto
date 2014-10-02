@@ -1523,3 +1523,7 @@ class IAMConnection(AWSQueryConnection):
         """
         params = {}
         return self.get_response('GetCredentialReport', params)
+
+    def get_account_password_policy(self):
+        params = {}
+        return self.get_response('GetAccountPasswordPolicy', params)
