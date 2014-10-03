@@ -345,7 +345,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         for param in sorted(http_request.params):
             value = boto.utils.get_utf8_value(http_request.params[param])
             l.append('%s=%s' % (urllib.parse.quote(param, safe='-_.~'),
-                                urllib.parse.quote(value.decode('utf-8'), safe='-_.~')))
+                                urllib.parse.quote(value, safe='-_.~')))
         return '&'.join(l)
 
     def canonical_headers(self, headers_to_sign):
