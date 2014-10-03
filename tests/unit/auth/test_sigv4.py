@@ -75,10 +75,12 @@ class TestSigV4Handler(unittest.TestCase):
             'GET', 'https', 'glacier.us-east-1.amazonaws.com', 443,
             '/-/vaults/foo/archives', None, {},
             {'x-amz-glacier-version': '2012-06-01'}, '')
+        request.params['Bar'] = u'We \u2665 utf-8'.encode('utf-8')
         request.params['Foo.1'] = 'aaa'
         request.params['Foo.10'] = 'zzz'
         query_string = auth.canonical_query_string(request)
-        self.assertEqual(query_string, 'Foo.1=aaa&Foo.10=zzz')
+        self.assertEqual(query_string,
+                         'Bar=We%20%E2%99%A5%20utf-8&Foo.1=aaa&Foo.10=zzz')
 
     def test_query_string(self):
         auth = HmacAuthV4Handler('sns.us-east-1.amazonaws.com',
