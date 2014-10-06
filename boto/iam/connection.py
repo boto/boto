@@ -1525,5 +1525,82 @@ class IAMConnection(AWSQueryConnection):
         return self.get_response('GetCredentialReport', params)
 
     def get_account_password_policy(self):
+        """
+        Retrieves the password policy for the account.
+        """
         params = {}
         return self.get_response('GetAccountPasswordPolicy', params)
+
+    def delete_account_password_policy(self):
+        """
+        delete the password policy associated
+        with the account
+        """
+        params = {}
+        return self.get_response('DeleteAccountPasswordPolicy', params)
+
+    def update_account_password_policy(self,
+                                       allow_users_to_change_password=None,
+                                       hard_expiry=None,
+                                       max_password_age=None,
+                                       minimum_password_length=None,
+                                       password_reuse_prevention=None,
+                                       require_lowercase_characters=None,
+                                       require_numbers=None,
+                                       require_symbols=None,
+                                       require_uppercase_characters=None,
+                                       ):
+        """
+        Update/Create an account password policy
+
+        :type allow_users_to_change_password: bool
+        :param allow_users_to_change_password:
+
+        :type hard_expiry: bool
+        :param hard_expiry:
+
+        :type max_password_age: int
+        :param max_password_age:
+
+        :type minimum_password_length: int
+        :param minimum_password_length:
+
+        :type password_reuse_prevention: bool
+        :param password_reuse_prevention:
+
+        :type require_lowercase_characters: int
+        :param require_lowercase_characters:
+
+        :type require_numbers: int
+        :param require_numbers:
+
+        :type require_symbols: bool
+        :param require_symbols:
+
+        :type require_uppercase_characters: bool
+        :param require_uppercase_characters:
+        """
+        mapping = {
+            "AllowUsersToChangePassword" : allow_users_to_change_password,
+            "HardExpiry" : hard_expiry,
+            "MaxPasswordAge" : max_password_age,
+            "MinimumPasswordLength" : minimum_password_length,
+            "PasswordReusePrevention" : password_reuse_prevention,
+            "RequireLowercaseCharacters" : require_lowercase_characters,
+            "RequireNumbers" : require_numbers,
+            "RequireSymbols" : require_symbols,
+            "RequireUppercaseCharacters" : require_uppercase_characters
+        }
+        params = {}
+        for param, value in mapping.items():
+            if value is not None:
+                if isinstance(value, bool):
+                    #map boolean values to text format
+                    #should certainly be moved to request builder ?
+                    params[param] = 'true' if value else 'false'
+                else:
+                    params[param] = value
+
+        return self.get_response('UpdateAccountPasswordPolicy', params)
+
+
