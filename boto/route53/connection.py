@@ -521,12 +521,18 @@ class Route53Connection(AWSAuthConnection):
         if response.status == 400:
             code = response.getheader('Code')
 
-            if code and 'PriorRequestNotComplete' in code:
+            if code:
                 # This is a case where we need to ignore a 400 error, as
                 # Route53 returns this. See
                 # http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html
+                if 'PriorRequestNotComplete' in code:
+                    error = 'PriorRequestNotComplete'
+                elif 'Throttling' in code:
+                    error = 'Throttling'
+                else:
+                    return status
                 msg = "%s, retry attempt %s" % (
-                    'PriorRequestNotComplete',
+                    error,
                     i
                 )
                 next_sleep = min(random.random() * (2 ** i),
