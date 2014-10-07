@@ -372,9 +372,10 @@ class HTTPRequest(object):
                     self.headers[key] = quote(val.encode('utf-8'), safe)
             setattr(self, '_headers_quoted', True)
 
+        self.headers['User-Agent'] = UserAgent
+
         connection._auth_handler.add_auth(self, **kwargs)
 
-        self.headers['User-Agent'] = UserAgent
         # I'm not sure if this is still needed, now that add_auth is
         # setting the content-length for POST requests.
         if 'Content-Length' not in self.headers:
