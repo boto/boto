@@ -272,14 +272,30 @@ class TestLazyLoadMetadata(unittest.TestCase):
 
         boto.utils.retry_url.assert_called_with(
             'http://169.254.169.254/latest/user-data',
-            retry_on_404=False)
+            retry_on_404=False,
+            num_retries=5, timeout=None)
+
+    def test_user_data_timeout(self):
+        self.set_normal_response(['foo'])
+
+        userdata = get_instance_userdata(timeout=1, num_retries=2)
+
+        self.assertEqual('foo', userdata)
+
+        boto.utils.retry_url.assert_called_with(
+            'http://169.254.169.254/latest/user-data',
+            retry_on_404=False,
+            num_retries=2, timeout=1)
 
 
 class TestStringToDatetimeParsing(unittest.TestCase):
     """ Test string to datetime parsing """
     def setUp(self):
         self._saved = locale.setlocale(locale.LC_ALL)
-        locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
+        try:
+            locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
+        except locale.Error:
+            self.skipTest('Unsupported locale setting')
 
     def tearDown(self):
         locale.setlocale(locale.LC_ALL, self._saved)

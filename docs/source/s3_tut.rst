@@ -53,7 +53,7 @@ later, first let's just create a bucket.  That can be accomplished like this::
         raise S3CreateError(response.status, response.reason)
     boto.exception.S3CreateError: S3Error[409]: Conflict
 
-Whoa.  What happended there?  Well, the thing you have to know about
+Whoa.  What happened there?  Well, the thing you have to know about
 buckets is that they are kind of like domain names.  It's one flat name
 space that everyone who uses S3 shares.  So, someone has already create
 a bucket called "mybucket" in S3 and that means no one else can grab that

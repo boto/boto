@@ -23,8 +23,6 @@ import os
 from tests.unit import unittest
 
 import boto
-from boto.compat import json
-from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo, load_endpoint_json, merge_endpoints
 from boto.regioninfo import load_regions, get_regions
 

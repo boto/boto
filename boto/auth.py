@@ -37,8 +37,6 @@ import datetime
 from email.utils import formatdate
 import hmac
 import os
-import sys
-import time
 import posixpath
 
 from boto.compat import urllib, encodebytes
@@ -317,6 +315,8 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         for name, value in http_request.headers.items():
             lname = name.lower()
             if lname.startswith('x-amz'):
+                if isinstance(value, bytes):
+                    value = value.decode('utf-8')
                 headers_to_sign[name] = value
         return headers_to_sign
 
@@ -376,7 +376,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         path = http_request.auth_path
         # Normalize the path
         # in windows normpath('/') will be '\\' so we chane it back to '/'
-        normalized = posixpath.normpath(path).replace('\\','/')
+        normalized = posixpath.normpath(path).replace('\\', '/')
         # Then urlencode whatever's left.
         encoded = urllib.parse.quote(normalized)
         if len(path) > 1 and path.endswith('/'):
@@ -472,7 +472,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
     def signature(self, http_request, string_to_sign):
         key = self._provider.secret_key
         k_date = self._sign(('AWS4' + key).encode('utf-8'),
-                              http_request.timestamp)
+                            http_request.timestamp)
         k_region = self._sign(k_date, http_request.region_name)
         k_service = self._sign(k_region, http_request.service_name)
         k_signing = self._sign(k_service, 'aws4_request')
@@ -568,7 +568,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
             # Hooray for the only difference! The main SigV4 signer only does
             # ``Host`` + ``x-amz-*``. But S3 wants pretty much everything
             # signed, except for authorization itself.
-            if not lname in ['authorization']:
+            if lname not in ['authorization']:
                 headers_to_sign[name] = value
         return headers_to_sign
 
@@ -581,8 +581,8 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         # - s3-us-west-2.amazonaws.com (Specific region)
         # - bukkit.s3.amazonaws.com (Vhosted Classic)
         # - bukkit.s3-ap-northeast-1.amazonaws.com (Vhosted specific region)
-        # - s3.cn-north-1.amazonaws.com.cn - (Bejing region)
-        # - bukkit.s3.cn-north-1.amazonaws.com.cn - (Vhosted Bejing region)
+        # - s3.cn-north-1.amazonaws.com.cn - (Beijing region)
+        # - bukkit.s3.cn-north-1.amazonaws.com.cn - (Vhosted Beijing region)
         parts = self.split_host_parts(host)
 
         if self.region_name is not None:
@@ -665,7 +665,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         return super(S3HmacAuthV4Handler, self).payload(http_request)
 
     def add_auth(self, req, **kwargs):
-        if not 'x-amz-content-sha256' in req.headers:
+        if 'x-amz-content-sha256' not in req.headers:
             if '_sha256' in req.headers:
                 req.headers['x-amz-content-sha256'] = req.headers.pop('_sha256')
             else:
@@ -703,6 +703,10 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         if self._provider.security_token:
             params['X-Amz-Security-Token'] = self._provider.security_token
 
+        headers_to_sign = self.headers_to_sign(req)
+        l = sorted(['%s' % n.lower().strip() for n in headers_to_sign])
+        params['X-Amz-SignedHeaders'] = ';'.join(l)
+ 
         req.params.update(params)
 
         cr = self.canonical_request(req)
@@ -749,7 +753,6 @@ class QueryAuthHandler(AuthHandler):
 
     def add_auth(self, http_request, **kwargs):
         headers = http_request.headers
-        params = http_request.params
         qs = self._build_query_string(
             http_request.params
         )
@@ -897,7 +900,7 @@ class POSTPathQSV2AuthHandler(QuerySignatureV2AuthHandler, AuthHandler):
         # already be there, we need to get rid of that and rebuild it
         req.path = req.path.split('?')[0]
         req.path = (req.path + '?' + qs +
-                             '&Signature=' + urllib.parse.quote_plus(signature))
+                    '&Signature=' + urllib.parse.quote_plus(signature))
 
 
 def get_auth_handler(host, config, provider, requested_capability=None):
@@ -923,7 +926,6 @@ def get_auth_handler(host, config, provider, requested_capability=None):
     """
     ready_handlers = []
     auth_handlers = boto.plugin.get_plugin(AuthHandler, requested_capability)
-    total_handlers = len(auth_handlers)
     for handler in auth_handlers:
         try:
             ready_handlers.append(handler(host, config, provider))
@@ -934,9 +936,9 @@ def get_auth_handler(host, config, provider, requested_capability=None):
         checked_handlers = auth_handlers
         names = [handler.__name__ for handler in checked_handlers]
         raise boto.exception.NoAuthHandlerFound(
-              'No handler was ready to authenticate. %d handlers were checked.'
-              ' %s '
-              'Check your credentials' % (len(names), str(names)))
+            'No handler was ready to authenticate. %d handlers were checked.'
+            ' %s '
+            'Check your credentials' % (len(names), str(names)))
 
     # We select the last ready auth handler that was loaded, to allow users to
     # customize how auth works in environments where there are shared boto
