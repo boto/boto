@@ -324,12 +324,11 @@ class MWSConnection(AWSQueryConnection):
         digest = response.getheader('Content-MD5')
         if digest is not None:
             assert content_md5(body) == digest
+            return body
         contenttype = response.getheader('Content-Type')
         return self._parse_response(parser, contenttype, body)
 
     def _parse_response(self, parser, contenttype, body):
-        if not contenttype.startswith('text/xml'):
-            return body
         handler = XmlHandler(parser, self)
         xml.sax.parseString(body, handler)
         return parser
