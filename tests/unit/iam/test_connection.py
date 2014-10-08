@@ -360,3 +360,96 @@ class TestGetCredentialReport(AWSMockServiceTestCase):
         b64decode(response['get_credential_report_response']
                           ['get_credential_report_result']
                           ['content'])
+
+
+class TestGetAccountPasswordPolicy(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+          <GetAccountPasswordPolicyResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+            <GetAccountPasswordPolicyResult>
+              <PasswordPolicy>
+                <AllowUsersToChangePassword>true</AllowUsersToChangePassword>
+                <RequireUppercaseCharacters>true</RequireUppercaseCharacters>
+                <RequireSymbols>true</RequireSymbols>
+                <ExpirePasswords>false</ExpirePasswords>
+                <PasswordReusePrevention>12</PasswordReusePrevention>
+                <RequireLowercaseCharacters>true</RequireLowercaseCharacters>
+                <MaxPasswordAge>90</MaxPasswordAge>
+                <HardExpiry>false</HardExpiry>
+                <RequireNumbers>true</RequireNumbers>
+                <MinimumPasswordLength>12</MinimumPasswordLength>
+              </PasswordPolicy>
+            </GetAccountPasswordPolicyResult>
+            <ResponseMetadata>
+              <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+            </ResponseMetadata>
+          </GetAccountPasswordPolicyResponse>
+        """
+
+    def test_get_account_password_policy(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_account_password_policy()
+        self.assertEqual(response['get_account_password_policy_response']
+                                 ['get_account_password_policy_result']
+                                 ['password_policy']
+                                 ['allow_users_to_change_password'],
+                                 'true')
+
+
+class TestDeleteAccountPasswordPolicy(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+            return b"""
+                  <DeleteAccountPasswordPolicyResponse>
+                    <ResponseMetadata>
+                        <RequestId>EXAMPLE</RequestId>
+                    </ResponseMetadata>
+                  </DeleteAccountPasswordPolicyResponse>
+                  """
+
+    def test_delete_account_password_policy(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.delete_account_password_policy()
+        self.assertEqual(response['delete_account_password_policy_response']
+                                 ['response_metadata']
+                                 ['request_id'],
+                                 'EXAMPLE')
+
+class TestUpdateAccountPasswordPolicy(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+            return b"""
+                <UpdateAccountPasswordPolicyResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+                 <ResponseMetadata>
+                    <RequestId>EXAMPLE</RequestId>
+                 </ResponseMetadata>
+                </UpdateAccountPasswordPolicyResponse>
+                """
+
+    def test_boolean_parameter_true(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.update_account_password_policy(allow_users_to_change_password=True)
+        self.assertEqual(response['update_account_password_policy_response']
+                                 ['response_metadata']
+                                 ['request_id'],
+                                 'EXAMPLE')
+
+    def test_boolean_parameter_text_true(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.update_account_password_policy(allow_users_to_change_password='true')
+        self.assertEqual(response['update_account_password_policy_response']
+                                 ['response_metadata']
+                                 ['request_id'],
+                                 'EXAMPLE')
+
+    def test_integer_parameter(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.update_account_password_policy(minimum_password_length=10)
+        self.assertEqual(response['update_account_password_policy_response']
+                                 ['response_metadata']
+                                 ['request_id'],
+                                 'EXAMPLE')
