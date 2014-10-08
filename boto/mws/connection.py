@@ -310,6 +310,9 @@ class MWSConnection(AWSQueryConnection):
             response = self._mexe(request, override_num_retries=None)
         except BotoServerError as bs:
             raise self._response_error_factor(bs.status, bs.reason, bs.body)
+        return self._process_response(parser, response)
+
+    def _process_response(self, parser, response):
         body = response.read()
         boto.log.debug(body)
         if not body:
@@ -329,6 +332,8 @@ class MWSConnection(AWSQueryConnection):
         return self._parse_response(parser, contenttype, body)
 
     def _parse_response(self, parser, contenttype, body):
+        if not contenttype.startswith('text/xml'):
+            return body
         handler = XmlHandler(parser, self)
         xml.sax.parseString(body, handler)
         return parser
