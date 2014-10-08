@@ -20,7 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from boto.mws.connection import MWSConnection, api_call_map, destructure_object
+from boto.mws.connection import (MWSConnection, api_call_map,
+                                 destructure_object, content_md5)
 from boto.mws.response import (ResponseElement, GetFeedSubmissionListResult,
                                ResponseFactory)
 from tests.compat import unittest
@@ -50,6 +51,19 @@ doc/2009-01-01/">
     <RequestId>1105b931-6f1c-4480-8e97-f3b467840a9e</RequestId>
   </ResponseMetadata>
 </GetFeedSubmissionListResponse>"""
+
+    def test_report_response(self):
+        # Test that we don't attempt to parse reports
+        connection = self.service_connection
+        report = "a sample report"
+        headers = {
+            'Content-Type': 'text/xml',
+            'Content-MD5': content_md5(report),
+        }
+        response = self.create_response(200, 'Ok!', header=headers, body=report)
+        parser = connection._response_factory('GetReport', connection=connection)
+        result = connection._process_response(parser, response)
+        self.assertEqual(result, report)
 
     def test_destructure_object(self):
         # Test that parsing of user input to Amazon input works.
