@@ -561,6 +561,9 @@ class Key(object):
     def update_metadata(self, d):
         self.metadata.update(d)
 
+    def delete_metadata(self, name):
+        self.metadata.pop(name, None)
+
     # convenience methods for setting/getting ACL
     def set_acl(self, acl_str, headers=None):
         if self.bucket is not None:
