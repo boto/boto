@@ -45,6 +45,12 @@ class TestDynamizer(unittest.TestCase):
                          {'B': 'AQ=='})
         self.assertEqual(dynamizer.encode(set([types.Binary(b'\x01')])),
                          {'BS': ['AQ==']})
+        self.assertEqual(dynamizer.encode(['foo', 54, [1]]),
+                         {'L': [{'S': 'foo'}, {'N': '54'}, {'L': [{'N': '1'}]}]})
+        self.assertEqual(dynamizer.encode({'foo': 'bar', 'hoge': {'sub': 1}}),
+                         {'M': {'foo': {'S': 'bar'}, 'hoge': {'M': {'sub': {'N': '1'}}}}})
+        self.assertEqual(dynamizer.encode(None), {'NULL': True})
+        self.assertEqual(dynamizer.encode(False), {'BOOL': False})
 
     def test_decoding_to_dynamodb(self):
         dynamizer = types.Dynamizer()
@@ -58,6 +64,12 @@ class TestDynamizer(unittest.TestCase):
         self.assertEqual(dynamizer.decode({'B': 'AQ=='}), types.Binary(b'\x01'))
         self.assertEqual(dynamizer.decode({'BS': ['AQ==']}),
                          set([types.Binary(b'\x01')]))
+        self.assertEqual(dynamizer.decode({'L': [{'S': 'foo'}, {'N': '54'}, {'L': [{'N': '1'}]}]}),
+                         ['foo', 54, [1]])
+        self.assertEqual(dynamizer.decode({'M': {'foo': {'S': 'bar'}, 'hoge': {'M': {'sub': {'N': '1'}}}}}),
+                         {'foo': 'bar', 'hoge': {'sub': 1}})
+        self.assertEqual(dynamizer.decode({'NULL': True}), None)
+        self.assertEqual(dynamizer.decode({'BOOL': False}), False)
 
     def test_float_conversion_errors(self):
         dynamizer = types.Dynamizer()

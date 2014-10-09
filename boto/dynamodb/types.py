@@ -52,7 +52,7 @@ def float_to_decimal(f):
 
 
 def is_num(n):
-    types = (int, long_type, float, bool, Decimal)
+    types = (int, long_type, float, Decimal)
     return isinstance(n, types) or n in types
 
 
@@ -101,7 +101,11 @@ def get_dynamodb_type(val):
     not a supported type, raise a TypeError.
     """
     dynamodb_type = None
-    if is_num(val):
+    if val is None:
+        dynamodb_type = 'NULL'
+    elif isinstance(val, bool):
+        dynamodb_type = 'BOOL'
+    elif is_num(val):
         dynamodb_type = 'N'
     elif is_str(val):
         dynamodb_type = 'S'
@@ -114,6 +118,10 @@ def get_dynamodb_type(val):
             dynamodb_type = 'BS'
     elif is_binary(val):
         dynamodb_type = 'B'
+    elif isinstance(val, dict):
+        dynamodb_type = 'M'
+    elif isinstance(val, list):
+        dynamodb_type = 'L'
     if dynamodb_type is None:
         msg = 'Unsupported type "%s" for value "%s"' % (type(val), val)
         raise TypeError(msg)
@@ -301,6 +309,18 @@ class Dynamizer(object):
     def _encode_bs(self, attr):
         return [self._encode_b(n) for n in attr]
 
+    def _encode_null(self, attr):
+        return True
+
+    def _encode_bool(self, attr):
+        return attr
+
+    def _encode_m(self, attr):
+        return {k: self.encode(v) for k, v in attr.items()}
+
+    def _encode_l(self, attr):
+        return [self.encode(i) for i in attr]
+
     def decode(self, attr):
         """
         Takes the format returned by DynamoDB and constructs
@@ -337,6 +357,18 @@ class Dynamizer(object):
 
     def _decode_bs(self, attr):
         return set(map(self._decode_b, attr))
+
+    def _decode_null(self, attr):
+        return None
+
+    def _decode_bool(self, attr):
+        return attr
+
+    def _decode_m(self, attr):
+        return {k: self.decode(v) for k, v in attr.items()}
+
+    def _decode_l(self, attr):
+        return [self.decode(i) for i in attr]
 
 
 class LossyFloatDynamizer(Dynamizer):

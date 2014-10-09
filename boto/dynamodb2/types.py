@@ -11,6 +11,10 @@ BINARY = 'B'
 STRING_SET = 'SS'
 NUMBER_SET = 'NS'
 BINARY_SET = 'BS'
+NULL = 'NULL'
+BOOLEAN = 'BOOL'
+MAP = 'M'
+LIST = 'L'
 
 QUERY_OPERATORS = {
     'eq': 'EQ',
