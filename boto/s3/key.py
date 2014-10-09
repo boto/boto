@@ -903,6 +903,38 @@ class Key(object):
 
         size = size or self.size or None
         md5, base64md5 = self.md5, self.base64md5
+        iv, envelope_key, master_key = None, None, self.bucket.connection.client_side_encryption_key
+        self.delete_metadata('x-amz-iv')
+        self.delete_metadata('x-amz-key')
+        self.delete_metadata('x-amz-matdesc')
+        self.delete_metadata('x-amz-unencrypted-content-length')
+        if master_key:
+            # Generate the key
+            iv = os.urandom(16)
+            iv_base64 = base64.b64encode(iv)
+            envelope_key = bytes(os.urandom(256/8))
+            # Maximum padding because the key size is a multiple of 16
+            envelope_key_padded = envelope_key + ''.join([chr(16)] * 16)
+            envelope_key_encrypted = AES.new(master_key, AES.MODE_ECB).encrypt(envelope_key_padded)
+            envelope_key_encrypted_base64 = base64.b64encode(envelope_key_encrypted)
+
+            # Add the encryption headers
+            self.set_metadata('x-amz-iv', iv_base64)
+            self.set_metadata('x-amz-key', envelope_key_encrypted_base64)
+            self.set_metadata('x-amz-matdesc', '{}')
+            if size:
+                self.set_metadata('x-amz-unencrypted-content-length', size)
+
+            # Adjust the md5
+            if base64md5:
+                encryptor = _AESEncryptor(fp, envelope_key, iv)
+                md5, base64md5, _ = compute_hash(encryptor)
+
+            # Adjust the size to take the padding into account
+            # If the size is a multiple of the block size (16 bytes), a full block will be added
+            if size and not chunked_transfer:
+                size += 16 - size % 16
+
         # If hash_algs is unset and the MD5 hasn't already been computed,
         # default to an MD5 hash_alg to hash the data on-the-fly.
         if hash_algs is None and not self.md5:
@@ -922,6 +954,10 @@ class Key(object):
                 raise provider.storage_data_error(
                     'Cannot retry failed request. fp does not support seeking.')
             sender_fp = fp
+
+            if master_key:
+                # Replace the stream
+                sender_fp = _AESEncryptor(sender_fp, envelope_key, iv)
 
             # If the caller explicitly specified host header, tell putrequest
             # not to add a second host header. Similarly for accept-encoding.
@@ -1007,6 +1043,8 @@ class Key(object):
                     chunk = chunk.encode('utf-8')
 
             self.size = data_len
+            if master_key:
+                self.size = self.size - sender_fp.padding_size
 
             for alg in digesters:
                 self.local_hashes[alg] = digesters[alg].digest()
