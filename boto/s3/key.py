@@ -775,6 +775,7 @@ class Key(object):
                 # avoid setting bad data.
                 raise provider.storage_data_error(
                     'Cannot retry failed request. fp does not support seeking.')
+            sender_fp = fp
 
             # If the caller explicitly specified host header, tell putrequest
             # not to add a second host header. Similarly for accept-encoding.
@@ -821,9 +822,9 @@ class Key(object):
 
             bytes_togo = size
             if bytes_togo and bytes_togo < self.BufferSize:
-                chunk = fp.read(bytes_togo)
+                chunk = sender_fp.read(bytes_togo)
             else:
-                chunk = fp.read(self.BufferSize)
+                chunk = sender_fp.read(self.BufferSize)
 
             if not isinstance(chunk, bytes):
                 chunk = chunk.encode('utf-8')
@@ -852,9 +853,9 @@ class Key(object):
                         cb(data_len, cb_size)
                         i = 0
                 if bytes_togo and bytes_togo < self.BufferSize:
-                    chunk = fp.read(bytes_togo)
+                    chunk = sender_fp.read(bytes_togo)
                 else:
-                    chunk = fp.read(self.BufferSize)
+                    chunk = sender_fp.read(self.BufferSize)
 
                 if not isinstance(chunk, bytes):
                     chunk = chunk.encode('utf-8')
