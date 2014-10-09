@@ -316,7 +316,7 @@ class Dynamizer(object):
         return attr
 
     def _encode_m(self, attr):
-        return {k: self.encode(v) for k, v in attr.items()}
+        return dict([(k, self.encode(v)) for k, v in attr.items()])
 
     def _encode_l(self, attr):
         return [self.encode(i) for i in attr]
@@ -365,7 +365,7 @@ class Dynamizer(object):
         return attr
 
     def _decode_m(self, attr):
-        return {k: self.decode(v) for k, v in attr.items()}
+        return dict([(k, self.decode(v)) for k, v in attr.items()])
 
     def _decode_l(self, attr):
         return [self.decode(i) for i in attr]
