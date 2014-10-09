@@ -29,7 +29,7 @@ import re
 import base64
 import binascii
 import math
-from hashlib import md5
+import hashlib
 import boto.utils
 from boto.compat import BytesIO, six, urllib, encodebytes
 
@@ -758,10 +758,11 @@ class Key(object):
             self.read_from_stream = False
 
         size = size or self.size or None
+        md5, base64md5 = self.md5, self.base64md5
         # If hash_algs is unset and the MD5 hasn't already been computed,
         # default to an MD5 hash_alg to hash the data on-the-fly.
         if hash_algs is None and not self.md5:
-            hash_algs = {'md5': md5}
+            hash_algs = {'md5': hashlib.md5}
         digesters = dict((alg, hash_algs[alg]()) for alg in hash_algs or {})
 
         def sender(http_conn, method, path, data, headers):
@@ -879,7 +880,7 @@ class Key(object):
             response = http_conn.getresponse()
             body = response.read()
 
-            if not self.should_retry(response, chunked_transfer):
+            if not self.should_retry(response, chunked_transfer, md5):
                 raise provider.storage_response_error(
                     response.status, response.reason, body)
 
@@ -923,8 +924,8 @@ class Key(object):
             headers['Content-Type'] = self.content_type
         else:
             headers['Content-Type'] = self.content_type
-        if self.base64md5:
-            headers['Content-MD5'] = self.base64md5
+        if base64md5:
+            headers['Content-MD5'] = base64md5
         if chunked_transfer:
             headers['Transfer-Encoding'] = 'chunked'
             #if not self.base64md5:
@@ -950,7 +951,7 @@ class Key(object):
         self.handle_version_headers(resp, force=True)
         self.handle_addl_headers(resp.getheaders())
 
-    def should_retry(self, response, chunked_transfer=False):
+    def should_retry(self, response, chunked_transfer=False, md5=None):
         provider = self.bucket.connection.provider
 
         if not chunked_transfer:
@@ -964,7 +965,7 @@ class Key(object):
 
         if 200 <= response.status <= 299:
             self.etag = response.getheader('etag')
-            md5 = self.md5
+            md5 = md5 or self.md5
             if isinstance(md5, bytes):
                 md5 = md5.decode('utf-8')
 
@@ -1492,7 +1493,7 @@ class Key(object):
             query_args.append('torrent')
 
         if hash_algs is None and not torrent:
-            hash_algs = {'md5': md5}
+            hash_algs = {'md5': hashlib.md5}
         digesters = dict((alg, hash_algs[alg]()) for alg in hash_algs or {})
 
         # If a version_id is passed in, use that.  If not, check to see
