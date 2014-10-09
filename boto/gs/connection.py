@@ -39,12 +39,13 @@ class GSConnection(S3Connection):
                  proxy_user=None, proxy_pass=None,
                  host=DefaultHost, debug=0, https_connection_factory=None,
                  calling_format=SubdomainCallingFormat(), path='/',
-                 suppress_consec_slashes=True):
+                 suppress_consec_slashes=True, client_side_encryption_key=None):
         super(GSConnection, self).__init__(gs_access_key_id, gs_secret_access_key,
                  is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                  host, debug, https_connection_factory, calling_format, path,
                  "google", Bucket,
-                 suppress_consec_slashes=suppress_consec_slashes)
+                 suppress_consec_slashes=suppress_consec_slashes,
+                 client_side_encryption_key=client_side_encryption_key)
 
     def create_bucket(self, bucket_name, headers=None,
                       location=Location.DEFAULT, policy=None,

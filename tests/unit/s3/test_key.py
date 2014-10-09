@@ -86,6 +86,7 @@ class TestS3Key(AWSMockServiceTestCase):
         # Mock out the bucket object - we really only care about calls
         # to list.
         k.bucket = mock.MagicMock()
+        k.bucket.connection.client_side_encryption_key = None
 
         # Default behavior doesn't call list
         k.set_contents_from_string('test')
