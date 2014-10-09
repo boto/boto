@@ -757,6 +757,7 @@ class Key(object):
             spos = None
             self.read_from_stream = False
 
+        size = size or self.size or None
         # If hash_algs is unset and the MD5 hasn't already been computed,
         # default to an MD5 hash_alg to hash the data on-the-fly.
         if hash_algs is None and not self.md5:
@@ -929,7 +930,7 @@ class Key(object):
             #if not self.base64md5:
             #    headers['Trailer'] = "Content-MD5"
         else:
-            headers['Content-Length'] = str(self.size)
+            headers['Content-Length'] = str(size)
         # This is terrible. We need a SHA256 of the body for SigV4, but to do
         # the chunked ``sender`` behavior above, the ``fp`` isn't available to
         # the auth mechanism (because closures). Detect if it's SigV4 & embelish
