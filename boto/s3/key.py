@@ -23,6 +23,7 @@
 import email.utils
 import errno
 import hashlib
+from io import RawIOBase
 import mimetypes
 import os
 import re
@@ -30,6 +31,7 @@ import base64
 import binascii
 import math
 import hashlib
+from Crypto.Cipher import AES
 import boto.utils
 from boto.compat import BytesIO, six, urllib, encodebytes
 
@@ -43,6 +45,145 @@ from boto import UserAgent
 from boto.utils import compute_md5, compute_hash
 from boto.utils import find_matching_headers
 from boto.utils import merge_headers_by_name
+
+
+class _AESBase(RawIOBase):
+
+    def __init__(self, stream, encryption_key, iv=None):
+        super(RawIOBase, self).__init__()
+        self._stream = stream
+        self._encryption_key = encryption_key
+        self._iv = iv
+        self._cipher = None
+        self._initial_position = None
+        self._padding_size = None  # Undefined until the last block has been processed
+        self._init()
+
+    def _init(self):
+        self._cipher = AES.new(self._encryption_key, AES.MODE_CBC, self._iv)
+        self._initial_position = self._stream.tell() if hasattr(self._stream, 'tell') else None
+        self._padding_size = None
+
+    @property
+    def padding_size(self):
+        if not self._padding_size:
+            raise BotoClientError('padding_size will contains a valid value after the last block has been processed')
+        return self._padding_size
+
+    def _ensure_read_multiple_of_16(self, n):
+        if n % 16:
+            raise BotoClientError('Please read in multiples of 16 bytes. Got {}'.format(n))
+
+
+class _AESEncryptor(_AESBase):
+    """
+    Encrypt the underlying stream.
+    """
+
+    def tell(self):
+        return self._stream.tell() + (16 - self._stream.tell() % 16) % 16
+
+    def seek(self, offset, whence=0):
+        if whence == 0 and offset < self.tell():
+            if offset < self._initial_position:
+                raise IOError('Offset too low (offet = {} and spos = {})'.format(offset, self._initial_position))
+            elif offset < self.tell():
+                self._stream.seek(self._initial_position)
+                self._init()
+                self.seek(offset, whence)
+            elif offset > self.tell():
+                chunk_size = 5 * 1024 * 1024
+                n_bytes_to_read = offset - self._initial_position
+                self.read(n_bytes_to_read % chunk_size)
+                for _ in xrange(n_bytes_to_read / chunk_size):
+                    self.read(chunk_size)
+        if whence != 0 and offset != 0:
+            raise IOError('seek({}, {}) not supported'.format(offset, whence))
+
+    def read(self, n=-1):
+        self._ensure_read_multiple_of_16(n)
+        current_block = self._stream.read(n)
+
+        if len(current_block) < n and not self._padding_size:
+            # End of the stream, add the padding
+            self._padding_size = padding_size = 16 - len(current_block) % 16
+            # Note: the size of the current block will never be greater than n because:
+            # n % 16 == 0 && len(current_block) % 16 == 0 && len(current_block) < n -> len(current_block) <= n-16
+            current_block += ''.join([chr(padding_size)] * padding_size)
+
+        if current_block:
+            current_block = self._cipher.encrypt(current_block)
+        return current_block
+
+
+class _AESDecryptor(_AESBase):
+    """
+    Decrypt the underlying stream.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(_AESDecryptor, self).__init__(*args, **kwargs)
+        self._next_block = None
+
+    def read(self, n=-1):
+        if n == -1:
+            # Read until the end of the stream
+            if self._next_block:
+                current_block = self._next_block + self._stream.read()
+            else:
+                current_block = self._stream.read()
+        else:
+            self._ensure_read_multiple_of_16(n)
+            if self._next_block:
+                if len(self._next_block) > n:
+                    current_block = self._next_block[:n]
+                    self._next_block = self._next_block[n:]
+                else:
+                    if len(self._next_block) < n:
+                        self._next_block += self._stream.read(n-len(self._next_block))
+                    current_block = self._next_block
+                    self._next_block = self._stream.read(n)
+            else:
+                current_block = self._stream.read(n)
+                self._next_block = self._stream.read(n)
+
+        if len(current_block) > 0:
+            current_block = self._cipher.decrypt(current_block)
+            if not self._next_block:
+                # Last block, contains the padding
+                self._padding_size = ord(current_block[-1])
+
+                # There's always at least on byte of padding which contains its size.
+                # All the bytes of the padding block should be identical.
+                #
+                # Getting the wrong values could mean that the file was not encrypted properly or that
+                # the encryption key/iv are not the ones used to encrypt the files.
+                #
+                # This is a weak integrity check. The probability of passing this test with a random file is at
+                # least 1/256 (with a padding of size 1). In such a case, the content will be truncated/expanded.
+                padding_block = current_block[-self._padding_size:]
+                expected_padding_block = ''.join([chr(self._padding_size)] * self._padding_size)
+                if self._padding_size < 1 or self._padding_size > 16 or padding_block != expected_padding_block:
+                    raise BotoClientError('Given final block not properly padded. ' +
+                                          'Please check that you are using the right encryption key.')
+
+                current_block = current_block[:-self._padding_size]
+            return current_block
+
+
+class _Delegator(object):
+
+    def __init__(self, delegate, parent):
+        self._delegate = delegate
+        self._parent = parent
+
+    def __getattr__(self, key):
+        if hasattr(self._delegate, key):
+            return getattr(self._delegate, key)
+        if hasattr(self._parent, key):
+            return getattr(self._parent, key)
+        # Default behaviour
+        raise AttributeError(key)
 
 
 class Key(object):
