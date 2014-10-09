@@ -445,6 +445,24 @@ class Key(object):
             response_headers = self.resp.msg
             self.metadata = boto.utils.get_aws_metadata(response_headers,
                                                         provider)
+
+            master_key = self.bucket.connection.client_side_encryption_key
+            if master_key and self.get_metadata('x-amz-key'):
+                iv_base64 = self.get_metadata('x-amz-iv')
+                iv = base64.b64decode(iv_base64)
+
+                envelope_key_base64_with_padding = self.get_metadata('x-amz-key')
+                envelope_key_encrypted = base64.b64decode(envelope_key_base64_with_padding)[:-16]
+                envelope_key = AES.new(master_key, AES.MODE_ECB).decrypt(envelope_key_encrypted)
+
+                matdesc = self.get_metadata('x-amz-matdesc')
+                if matdesc != '{}':
+                    raise BotoClientError('This key was encrypted by a different client using non-default ' +
+                                          'parameters. This is not supported. Got: {}'.format(matdesc))
+
+                decryptor = _AESDecryptor(self.resp, envelope_key, iv)
+                self.resp = _Delegator(decryptor, self.resp)
+
             for name, value in response_headers.items():
                 # To get correct size for Range GETs, use Content-Range
                 # header if one was returned. If not, use Content-Length
@@ -457,6 +475,17 @@ class Key(object):
                     self.size = int(end_range)
                 elif name.lower() in Key.base_fields:
                     self.__dict__[name.lower().replace('-', '_')] = value
+
+            if master_key:
+                size_as_string = self.get_metadata('x-amz-unencrypted-content-length')
+                if size_as_string:
+                    self.size = int(size_as_string)
+                else:
+                    # If the file was sent
+                    #    - from a stream, the size won't be set
+                    #    - using the java sdk, the size may not be set
+                    self.size = None
+
             self.handle_version_headers(self.resp)
             self.handle_encryption_headers(self.resp)
             self.handle_restore_headers(self.resp)
