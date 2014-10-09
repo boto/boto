@@ -12,6 +12,7 @@ import urllib2
 from pip.vendor.distlib.version import NormalizedVersion
 
 from boto.s3.connection import S3Connection
+from boto.s3.multipart import MultiPartUpload
 
 try:
     import psutil
@@ -148,6 +149,18 @@ class S3ClientSideEncryptionTest(unittest.TestCase):
                         self.assertEqual(encrypted_key2.size, key_size)
 
         print('--- {} tests completed ---'.format(self.__class__.__name__))
+
+    def test_client_side_encryption_multipart(self):
+        print('--- running {} multipart tests ---'.format(self.__class__.__name__))
+
+        connection = S3Connection(client_side_encryption_key=os.urandom(256 / 8))
+        bucket = connection.get_bucket(self.bucket_name)
+
+        multipart_upload = MultiPartUpload(bucket)  # does not create an upload, so there's nothing to clean
+        self.assertRaises(ValueError, multipart_upload.upload_part_from_file, None, None)
+        self.assertRaises(ValueError, multipart_upload.copy_part_from_key, None, None, None)
+
+        print('--- tests {} multipart tests completed ---'.format(self.__class__.__name__))
 
 
 class _TestWithJavaS3GatewayMixin(object):

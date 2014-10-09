@@ -252,6 +252,8 @@ class MultiPartUpload(object):
         """
         if part_num < 1:
             raise ValueError('Part numbers must be greater than zero')
+        if self.bucket.connection.client_side_encryption_key:
+            raise ValueError('Multipart upload with client-side encryption is not yet supported.')
         query_args = 'uploadId=%s&partNumber=%d' % (self.id, part_num)
         key = self.bucket.new_key(self.key_name)
         key.set_contents_from_file(fp, headers=headers, replace=replace,
@@ -289,6 +291,8 @@ class MultiPartUpload(object):
         """
         if part_num < 1:
             raise ValueError('Part numbers must be greater than zero')
+        if self.bucket.connection.client_side_encryption_key:
+            raise ValueError('Multipart upload with client-side encryption is not yet supported.')
         query_args = 'uploadId=%s&partNumber=%d' % (self.id, part_num)
         if start is not None and end is not None:
             rng = 'bytes=%s-%s' % (start, end)
