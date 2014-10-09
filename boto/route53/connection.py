@@ -24,9 +24,8 @@
 # IN THE SOFTWARE.
 #
 
-import exception
+from boto.route53 import exception
 import random
-import urllib
 import uuid
 import xml.sax
 
@@ -36,6 +35,7 @@ from boto import handler
 import boto.jsonresponse
 from boto.route53.record import ResourceRecordSets
 from boto.route53.zone import Zone
+from boto.compat import six, urllib
 
 
 HZXML = """<?xml version="1.0" encoding="UTF-8"?>
@@ -47,7 +47,7 @@ HZXML = """<?xml version="1.0" encoding="UTF-8"?>
   </HostedZoneConfig>
 </CreateHostedZoneRequest>"""
 
-#boto.set_stream_logger('dns')
+# boto.set_stream_logger('dns')
 
 
 class Route53Connection(AWSAuthConnection):
@@ -65,13 +65,14 @@ class Route53Connection(AWSAuthConnection):
                  host=DefaultHost, debug=0, security_token=None,
                  validate_certs=True, https_connection_factory=None,
                  profile_name=None):
-        super(Route53Connection, self).__init__(host,
-                                   aws_access_key_id, aws_secret_access_key,
-                                   True, port, proxy, proxy_port, debug=debug,
-                                   security_token=security_token,
-                                   validate_certs=validate_certs,
-                                   https_connection_factory=https_connection_factory,
-                                   profile_name=profile_name)
+        super(Route53Connection, self).__init__(
+            host,
+            aws_access_key_id, aws_secret_access_key,
+            True, port, proxy, proxy_port, debug=debug,
+            security_token=security_token,
+            validate_certs=validate_certs,
+            https_connection_factory=https_connection_factory,
+            profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['route53']
@@ -79,14 +80,14 @@ class Route53Connection(AWSAuthConnection):
     def make_request(self, action, path, headers=None, data='', params=None):
         if params:
             pairs = []
-            for key, val in params.iteritems():
+            for key, val in six.iteritems(params):
                 if val is None:
                     continue
-                pairs.append(key + '=' + urllib.quote(str(val)))
+                pairs.append(key + '=' + urllib.parse.quote(str(val)))
             path += '?' + '&'.join(pairs)
-        return super(Route53Connection, self).make_request(action, path,
-                                              headers, data,
-                                              retry_handler=self._retry_handler)
+        return super(Route53Connection, self).make_request(
+            action, path, headers, data,
+            retry_handler=self._retry_handler)
 
     # Hosted Zones
 
@@ -103,7 +104,7 @@ class Route53Connection(AWSAuthConnection):
         if start_marker:
             params = {'marker': start_marker}
         response = self.make_request('GET', '/%s/hostedzone' % self.Version,
-                params=params)
+                                     params=params)
         body = response.read()
         boto.log.debug(body)
         if response.status >= 300:
@@ -157,7 +158,7 @@ class Route53Connection(AWSAuthConnection):
             hosted_zone_name += '.'
         all_hosted_zones = self.get_all_hosted_zones()
         for zone in all_hosted_zones['ListHostedZonesResponse']['HostedZones']:
-            #check that they gave us the FQDN for their zone
+            # check that they gave us the FQDN for their zone
             if zone['Name'] == hosted_zone_name:
                 return self.get_hosted_zone(zone['Id'].split('/')[-1])
 
@@ -213,6 +214,13 @@ class Route53Connection(AWSAuthConnection):
                                            body)
 
     def delete_hosted_zone(self, hosted_zone_id):
+        """
+        Delete the hosted zone specified by the given id.
+
+        :type hosted_zone_id: str
+        :param hosted_zone_id: The hosted zone's id
+
+        """
         uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
         response = self.make_request('DELETE', uri)
         body = response.read()
@@ -225,7 +233,6 @@ class Route53Connection(AWSAuthConnection):
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
-
 
     # Health checks
 
@@ -320,7 +327,6 @@ class Route53Connection(AWSAuthConnection):
         h.parse(body)
         return e
 
-
     # Resource Record Sets
 
     def get_all_rrsets(self, hosted_zone_id, type=None,
@@ -376,7 +382,7 @@ class Route53Connection(AWSAuthConnection):
 
         """
         params = {'type': type, 'name': name,
-                  'Identifier': identifier, 'maxitems': maxitems}
+                  'identifier': identifier, 'maxitems': maxitems}
         uri = '/%s/hostedzone/%s/rrset' % (self.Version, hosted_zone_id)
         response = self.make_request('GET', uri, params=params)
         body = response.read()
@@ -480,6 +486,10 @@ class Route53Connection(AWSAuthConnection):
         """
         Returns a list of Zone objects, one for each of the Hosted
         Zones defined for the AWS account.
+
+        :rtype: list
+        :returns: A list of Zone objects.
+
         """
         zones = self.get_all_hosted_zones()
         return [Zone(self, zone) for zone in
@@ -511,15 +521,22 @@ class Route53Connection(AWSAuthConnection):
         if response.status == 400:
             code = response.getheader('Code')
 
-            if code and 'PriorRequestNotComplete' in code:
+            if code:
                 # This is a case where we need to ignore a 400 error, as
                 # Route53 returns this. See
                 # http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html
+                if 'PriorRequestNotComplete' in code:
+                    error = 'PriorRequestNotComplete'
+                elif 'Throttling' in code:
+                    error = 'Throttling'
+                else:
+                    return status
                 msg = "%s, retry attempt %s" % (
-                    'PriorRequestNotComplete',
+                    error,
                     i
                 )
-                next_sleep = random.random() * (2 ** i)
+                next_sleep = min(random.random() * (2 ** i),
+                                 boto.config.get('Boto', 'max_retry_delay', 60))
                 i += 1
                 status = (msg, i, next_sleep)
 

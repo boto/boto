@@ -110,6 +110,38 @@ An instance object allows you get more meta-data available about the instance::
 In this case, we can see that our instance is a c1.xlarge instance in the
 `us-west-2` availability zone.
 
+Checking Health Status Of Instances
+-----------------------------------
+You can also get the health status of your instances, including any scheduled events::
+
+    >>> statuses = conn.get_all_instance_status()
+    >>> statuses
+    [InstanceStatus:i-00000000]
+
+An instance status object allows you to get information about impaired
+functionality or scheduled / system maintenance events::
+
+    >>> status = statuses[0]
+    >>> status.events
+    [Event:instance-reboot]
+    >>> event = status.events[0]
+    >>> event.description
+    u'Maintenance software update.'
+    >>> event.not_before
+    u'2011-12-11T04:00:00.000Z'
+    >>> event.not_after
+    u'2011-12-11T10:00:00.000Z'
+    >>> status.instance_status
+    Status:ok
+    >>> status.system_status
+    Status:ok
+    >>> status.system_status.details
+    {u'reachability': u'passed'}
+
+This will by default include the health status only for running instances.
+If you wish to request the health status for all instances, simply add
+``include_all_instances=True`` keyword argument to the call above.
+
 =================================
 Using Elastic Block Storage (EBS)
 =================================
@@ -176,3 +208,40 @@ If you no longer need a snapshot, you can also easily delete it::
    True
 
 
+Working With Launch Configurations
+----------------------------------
+
+Launch Configurations allow you to create a re-usable set of properties for an
+instance.  These are used with AutoScaling groups to produce consistent repeatable
+instances sets.
+
+Creating a Launch Configuration is easy:
+
+   >>> conn = boto.connect_autoscale()
+   >>> config = LaunchConfiguration(name='foo', image_id='ami-abcd1234', key_name='foo.pem')
+   >>> conn.create_launch_configuration(config)
+
+Once you have a launch configuration, you can list you current configurations:
+
+   >>> conn = boto.connect_autoscale()
+   >>> config = conn.get_all_launch_configurations(names=['foo'])
+
+If you no longer need a launch configuration, you can delete it:
+
+   >>> conn = boto.connect_autoscale()
+   >>> conn.delete_launch_configuration('foo')
+
+.. versionchanged:: 2.27.0
+.. Note::
+
+    If ``use_block_device_types=True`` is passed to the connection it will deserialize
+    Launch Configurations with Block Device Mappings into a re-usable format with
+    BlockDeviceType objects, similar to how AMIs are deserialized currently.  Legacy
+    behavior is to put them into a format that is incompatabile with creating new Launch
+    Configurations. This switch is in place to preserve backwards compatability, but
+    its usage is the preferred format going forward.
+
+    If you would like to use the new format, you should use something like:
+
+      >>> conn = boto.connect_autoscale(use_block_device_types=True)
+      >>> config = conn.get_all_launch_configurations(names=['foo'])

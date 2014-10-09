@@ -24,11 +24,10 @@
 """
 Check that all of the certs on all service endpoints validate.
 """
-import unittest
-
 from tests.integration import ServiceCertVerificationTest
 
 import boto.ec2.cloudwatch
+from tests.compat import unittest
 
 
 class CloudWatchCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):

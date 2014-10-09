@@ -25,7 +25,7 @@ class TestListAvailableSolutionStacks(AWSMockServiceTestCase):
                        u'SolutionStackName': u'32bit Amazon Linux running PHP 5.3'}],
                       u'SolutionStacks': [u'32bit Amazon Linux running Tomcat 7',
                                           u'32bit Amazon Linux running PHP 5.3']},
-                u'ResponseMetadata': {u'RequestId': u'request_id'}}})
+                u'ResponseMetadata': {u'RequestId': u'request_id'}}}).encode('utf-8')
 
     def test_list_available_solution_stacks(self):
         self.set_http_response(status_code=200)
@@ -62,7 +62,7 @@ class TestCreateApplicationVersion(AWSMockServiceTestCase):
                      u'Description': None,
                      u'SourceBundle': {u'S3Bucket': u'elasticbeanstalk-us-east-1',
                      u'S3Key': u'resources/elasticbeanstalk-sampleapp.war'},
-                     u'VersionLabel': u'version1'}}}})
+                     u'VersionLabel': u'version1'}}}}).encode('utf-8')
 
     def test_create_application_version(self):
         self.set_http_response(status_code=200)
@@ -90,7 +90,7 @@ class TestCreateEnvironment(AWSMockServiceTestCase):
     connection_class = Layer1
 
     def default_body(self):
-        return json.dumps({})
+        return json.dumps({}).encode('utf-8')
 
     def test_create_environment(self):
         self.set_http_response(status_code=200)
@@ -143,7 +143,7 @@ class TestCreateEnvironment(AWSMockServiceTestCase):
             'OptionSettings.member.2.Namespace': 'aws:elasticbeanstalk:application:environment',
             'OptionSettings.member.2.OptionName': 'ENVVAR',
             'OptionSettings.member.2.Value': 'VALUE1',
-            'Tier.member.Name': 'Worker',
-            'Tier.member.Type': 'SQS/HTTP',
-            'Tier.member.Version': '1.0',
+            'Tier.Name': 'Worker',
+            'Tier.Type': 'SQS/HTTP',
+            'Tier.Version': '1.0',
         })

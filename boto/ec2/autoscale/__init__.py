@@ -45,6 +45,7 @@ from boto.ec2.autoscale.instance import Instance
 from boto.ec2.autoscale.scheduled import ScheduledUpdateGroupAction
 from boto.ec2.autoscale.tag import Tag
 from boto.ec2.autoscale.limits import AccountLimits
+from boto.compat import six
 
 RegionData = load_regions().get('autoscaling', {})
 
@@ -87,27 +88,31 @@ class AutoScaleConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True, profile_name=None):
+                 security_token=None, validate_certs=True, profile_name=None,
+                 use_block_device_types=False):
         """
         Init method to create a new connection to the AutoScaling service.
 
         B{Note:} The host argument is overridden by the host specified in the
                  boto configuration file.
+
+
         """
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint,
                                 AutoScaleConnection)
         self.region = region
+        self.use_block_device_types = use_block_device_types
         super(AutoScaleConnection, self).__init__(aws_access_key_id,
-                                    aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port,
-                                    proxy_user, proxy_pass,
-                                    self.region.endpoint, debug,
-                                    https_connection_factory, path=path,
-                                    security_token=security_token,
-                                    validate_certs=validate_certs,
-                                    profile_name=profile_name)
+                                                  aws_secret_access_key,
+                                                  is_secure, port, proxy, proxy_port,
+                                                  proxy_user, proxy_pass,
+                                                  self.region.endpoint, debug,
+                                                  https_connection_factory, path=path,
+                                                  security_token=security_token,
+                                                  validate_certs=validate_certs,
+                                                  profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
@@ -130,15 +135,15 @@ class AutoScaleConnection(AWSQueryConnection):
             ['us-east-1b',...]
         """
         # different from EC2 list params
-        for i in xrange(1, len(items) + 1):
+        for i in range(1, len(items) + 1):
             if isinstance(items[i - 1], dict):
-                for k, v in items[i - 1].iteritems():
+                for k, v in six.iteritems(items[i - 1]):
                     if isinstance(v, dict):
-                        for kk, vv in v.iteritems():
+                        for kk, vv in six.iteritems(v):
                             params['%s.member.%d.%s.%s' % (label, i, k, kk)] = vv
                     else:
                         params['%s.member.%d.%s' % (label, i, k)] = v
-            elif isinstance(items[i - 1], basestring):
+            elif isinstance(items[i - 1], six.string_types):
                 params['%s.member.%d' % (label, i)] = items[i - 1]
 
     def _update_group(self, op, as_group):
@@ -217,7 +222,10 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.key_name:
             params['KeyName'] = launch_config.key_name
         if launch_config.user_data:
-            params['UserData'] = base64.b64encode(launch_config.user_data)
+            user_data = launch_config.user_data
+            if isinstance(user_data, six.text_type):
+                user_data = user_data.encode('utf-8')
+            params['UserData'] = base64.b64encode(user_data).decode('utf-8')
         if launch_config.kernel_id:
             params['KernelId'] = launch_config.kernel_id
         if launch_config.ramdisk_id:

@@ -231,7 +231,7 @@ DynamoDB v2::
 
     >>> from boto.dynamodb2.table import Table
     >>> table = Table('messages')
-    >>> items = table.query(
+    >>> items = table.query_2(
     ...     forum_name__eq='Amazon DynamoDB',
     ...     subject__beginswith='DynamoDB',
     ...     limit=1

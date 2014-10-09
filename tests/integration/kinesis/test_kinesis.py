@@ -20,29 +20,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import boto
 import time
 
-from unittest import TestCase
+import boto
+from tests.compat import unittest
+from boto.kinesis.exceptions import ResourceNotFoundException
 
 
 class TimeoutError(Exception):
     pass
 
 
-class TestKinesis(TestCase):
+class TestKinesis(unittest.TestCase):
     def setUp(self):
         self.kinesis = boto.connect_kinesis()
-
-    def tearDown(self):
-        # Delete the stream even if there is a failure
-        self.kinesis.delete_stream('test')
 
     def test_kinesis(self):
         kinesis = self.kinesis
 
         # Create a new stream
         kinesis.create_stream('test', 1)
+        self.addCleanup(self.kinesis.delete_stream, 'test')
 
         # Wait for the stream to be ready
         tries = 0
@@ -70,7 +68,7 @@ class TestKinesis(TestCase):
         while tries < 100:
             tries += 1
             time.sleep(1)
-            
+
             response = kinesis.get_records(shard_iterator)
             shard_iterator = response['NextShardIterator']
 
@@ -82,3 +80,11 @@ class TestKinesis(TestCase):
         # Read the data, which should be the same as what we wrote
         self.assertEqual(1, len(response['Records']))
         self.assertEqual(data, response['Records'][0]['Data'])
+
+    def test_describe_non_existent_stream(self):
+        with self.assertRaises(ResourceNotFoundException) as cm:
+            self.kinesis.describe_stream('this-stream-shouldnt-exist')
+
+        # Assert things about the data we passed along.
+        self.assertEqual(cm.exception.error_code, None)
+        self.assertTrue('not found' in cm.exception.message)

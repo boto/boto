@@ -1,5 +1,4 @@
-import mock
-from tests.unit import unittest
+from tests.compat import mock, unittest
 
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.tag import Tag, TagSet
@@ -78,10 +77,11 @@ class VolumeTests(unittest.TestCase):
         retval = volume.startElement("not tagSet or attachmentSet", None, None)
         self.assertEqual(retval, None)
 
-    def check_that_attribute_has_been_set(self, name, value, attribute):
+    def check_that_attribute_has_been_set(self, name, value, attribute, obj_value=None):
         volume = Volume()
         volume.endElement(name, value, None)
-        self.assertEqual(getattr(volume, attribute), value)
+        expected_value = obj_value if obj_value is not None else value
+        self.assertEqual(getattr(volume, attribute), expected_value)
 
     def test_endElement_sets_correct_attributes_with_values(self):
         for arguments in [("volumeId", "some value", "id"),
@@ -90,8 +90,9 @@ class VolumeTests(unittest.TestCase):
                           ("size", 5, "size"),
                           ("snapshotId", 1, "snapshot_id"),
                           ("availabilityZone", "some zone", "zone"),
-                          ("someName", "some value", "someName")]:
-            self.check_that_attribute_has_been_set(arguments[0], arguments[1], arguments[2])
+                          ("someName", "some value", "someName"),
+                          ("encrypted", "true", "encrypted", True)]:
+            self.check_that_attribute_has_been_set(*arguments)
 
     def test_endElement_with_name_status_and_empty_string_value_doesnt_set_status(self):
         volume = Volume()
@@ -143,20 +144,19 @@ class VolumeTests(unittest.TestCase):
         self.volume_one.connection = mock.Mock()
         self.volume_one.detach()
         self.volume_one.connection.detach_volume.assert_called_with(
-                1, 2, "/dev/null", False, dry_run=False)
+            1, 2, "/dev/null", False, dry_run=False)
 
     def test_detach_with_no_attach_data(self):
         self.volume_two.connection = mock.Mock()
         self.volume_two.detach()
         self.volume_two.connection.detach_volume.assert_called_with(
-                1, None, None, False, dry_run=False)
+            1, None, None, False, dry_run=False)
 
     def test_detach_with_force_calls_detach_volume_with_force(self):
         self.volume_one.connection = mock.Mock()
         self.volume_one.detach(True)
         self.volume_one.connection.detach_volume.assert_called_with(
-                1, 2, "/dev/null", True, dry_run=False)
-
+            1, 2, "/dev/null", True, dry_run=False)
 
     def test_create_snapshot_calls_connection_create_snapshot(self):
         self.volume_one.connection = mock.Mock()
@@ -204,7 +204,8 @@ class VolumeTests(unittest.TestCase):
         self.volume_one.connection.get_all_snapshots.return_value = []
         self.volume_one.snapshots("owner", "restorable_by")
         self.volume_one.connection.get_all_snapshots.assert_called_with(
-                owner="owner", restorable_by="restorable_by", dry_run=False)
+            owner="owner", restorable_by="restorable_by", dry_run=False)
+
 
 class AttachmentSetTests(unittest.TestCase):
     def check_that_attribute_has_been_set(self, name, value, attribute):
@@ -229,6 +230,7 @@ class AttachmentSetTests(unittest.TestCase):
 
     def test_endElement_with_other_name_sets_other_name_attribute(self):
         return self.check_that_attribute_has_been_set("someName", "some value", "someName")
+
 
 class VolumeAttributeTests(unittest.TestCase):
     def setUp(self):

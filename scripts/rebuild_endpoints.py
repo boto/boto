@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import json
 from pyquery import PyQuery as pq
 import requests
@@ -20,6 +18,7 @@ def fetch_endpoints():
         ))
 
     return resp.text
+
 
 def parse_xml(raw_xml):
     return pq(raw_xml, parser='xml')

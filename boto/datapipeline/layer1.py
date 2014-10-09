@@ -85,7 +85,7 @@ class DataPipelineConnection(AWSQueryConnection):
 
 
     def __init__(self, **kwargs):
-        region = kwargs.get('region')
+        region = kwargs.pop('region', None)
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
@@ -627,7 +627,7 @@ class DataPipelineConnection(AWSQueryConnection):
             headers=headers, data=body)
         response = self._mexe(http_request, sender=None,
                               override_num_retries=10)
-        response_body = response.read()
+        response_body = response.read().decode('utf-8')
         boto.log.debug(response_body)
         if response.status == 200:
             if response_body:

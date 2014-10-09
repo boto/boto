@@ -20,7 +20,6 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-from __future__ import with_statement
 import os
 
 import boto
@@ -87,8 +86,8 @@ def load_regions():
     # Try the ENV var. If not, check the config file.
     if os.environ.get('BOTO_ENDPOINTS'):
         additional_path = os.environ['BOTO_ENDPOINTS']
-    elif boto.config.get('boto', 'endpoints_path'):
-        additional_path = boto.config.get('boto', 'endpoints_path')
+    elif boto.config.get('Boto', 'endpoints_path'):
+        additional_path = boto.config.get('Boto', 'endpoints_path')
 
     # If there's a file provided, we'll load it & additively merge it into
     # the endpoints.
@@ -125,7 +124,7 @@ def get_regions(service_name, region_cls=None, connection_cls=None):
     """
     endpoints = load_regions()
 
-    if not service_name in endpoints:
+    if service_name not in endpoints:
         raise BotoClientError(
             "Service '%s' not found in endpoints." % service_name
         )

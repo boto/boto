@@ -20,11 +20,6 @@
 # IN THE SOFTWARE.
 #
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
 import base64
 import boto
 
@@ -32,6 +27,7 @@ from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 from boto.exception import JSONResponseError
 from boto.kinesis import exceptions
+from boto.compat import json
 
 
 class KinesisConnection(AWSQueryConnection):
@@ -293,7 +289,8 @@ class KinesisConnection(AWSQueryConnection):
         # Base64 decode the data
         if b64_decode:
             for record in response.get('Records', []):
-                record['Data'] = base64.b64decode(record['Data'])
+                record['Data'] = base64.b64decode(
+                    record['Data'].encode('utf-8')).decode('utf-8')
 
         return response
 
@@ -532,11 +529,10 @@ class KinesisConnection(AWSQueryConnection):
         placed and the sequence number that was assigned to the data
         record.
 
-        The `SequenceNumberForOrdering` sets the initial sequence
-        number for the partition key. Later `PutRecord` requests to
-        the same partition key (from the same client) will
-        automatically increase from `SequenceNumberForOrdering`,
-        ensuring strict sequential ordering.
+        Sequence numbers generally increase over time. To guarantee
+        strictly increasing ordering, use the
+        `SequenceNumberForOrdering` parameter. For more information,
+        see the `Amazon Kinesis Developer Guide`_.
 
         If a `PutRecord` request cannot be processed because of
         insufficient provisioned throughput on the shard involved in
@@ -550,8 +546,10 @@ class KinesisConnection(AWSQueryConnection):
         :param stream_name: The name of the stream to put the data record into.
 
         :type data: blob
-        :param data: The data blob to put into the record, which will be Base64
-            encoded. The maximum size of the data blob is 50 kilobytes (KB).
+        :param data: The data blob to put into the record, which is
+            Base64-encoded when the blob is serialized.
+            The maximum size of the data blob (the payload after
+            Base64-decoding) is 50 kilobytes (KB)
             Set `b64_encode` to disable automatic Base64 encoding.
 
         :type partition_key: string
@@ -571,10 +569,12 @@ class KinesisConnection(AWSQueryConnection):
             partition key hash.
 
         :type sequence_number_for_ordering: string
-        :param sequence_number_for_ordering: The sequence number to use as the
-            initial number for the partition key. Subsequent calls to
-            `PutRecord` from the same client and for the same partition key
-            will increase from the `SequenceNumberForOrdering` value.
+        :param sequence_number_for_ordering: Guarantees strictly increasing
+            sequence numbers, for puts from the same client and to the same
+            partition key. Usage: set the `SequenceNumberForOrdering` of record
+            n to the sequence number of record n-1 (as returned in the
+            PutRecordResult when putting record n-1 ). If this parameter is not
+            set, records will be coarsely ordered based on arrival time.
 
         :type b64_encode: boolean
         :param b64_encode: Whether to Base64 encode `data`. Can be set to
@@ -591,7 +591,8 @@ class KinesisConnection(AWSQueryConnection):
         if sequence_number_for_ordering is not None:
             params['SequenceNumberForOrdering'] = sequence_number_for_ordering
         if b64_encode:
-            params['Data'] = base64.b64encode(params['Data'])
+            params['Data'] = base64.b64encode(
+                params['Data'].encode('utf-8')).decode('utf-8')
         return self.make_request(action='PutRecord',
                                  body=json.dumps(params))
 
@@ -692,7 +693,7 @@ class KinesisConnection(AWSQueryConnection):
             headers=headers, data=body)
         response = self._mexe(http_request, sender=None,
                               override_num_retries=10)
-        response_body = response.read()
+        response_body = response.read().decode('utf-8')
         boto.log.debug(response.getheaders())
         boto.log.debug(response_body)
         if response.status == 200:

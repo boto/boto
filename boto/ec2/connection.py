@@ -58,20 +58,21 @@ from boto.ec2.spotdatafeedsubscription import SpotDatafeedSubscription
 from boto.ec2.bundleinstance import BundleInstanceTask
 from boto.ec2.placementgroup import PlacementGroup
 from boto.ec2.tag import Tag
-from boto.ec2.vmtype import VmType
+from boto.ec2.instancetype import InstanceType
 from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
 from boto.ec2.networkinterface import NetworkInterface
 from boto.ec2.attributes import AccountAttribute, VPCAttribute
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
+from boto.compat import six
 
 #boto.set_stream_logger('ec2')
 
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2013-10-15')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2014-05-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -92,14 +93,14 @@ class EC2Connection(AWSQueryConnection):
                                 self.DefaultRegionEndpoint)
         self.region = region
         super(EC2Connection, self).__init__(aws_access_key_id,
-                                    aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port,
-                                    proxy_user, proxy_pass,
-                                    self.region.endpoint, debug,
-                                    https_connection_factory, path,
-                                    security_token,
-                                    validate_certs=validate_certs,
-                                    profile_name=profile_name)
+                                            aws_secret_access_key,
+                                            is_secure, port, proxy, proxy_port,
+                                            proxy_user, proxy_pass,
+                                            self.region.endpoint, debug,
+                                            https_connection_factory, path,
+                                            security_token,
+                                            validate_certs=validate_certs,
+                                            profile_name=profile_name)
         if api_version:
             self.APIVersion = api_version
 
@@ -109,7 +110,7 @@ class EC2Connection(AWSQueryConnection):
 
     def get_params(self):
         """
-        Returns a dictionary containing the value of of all of the keyword
+        Returns a dictionary containing the value of all of the keyword
         arguments passed when constructing this connection.
         """
         param_names = ['aws_access_key_id', 'aws_secret_access_key',
@@ -122,6 +123,9 @@ class EC2Connection(AWSQueryConnection):
         return params
 
     def build_filter_params(self, params, filters):
+        if not isinstance(filters, dict):
+            filters = dict(filters)
+
         i = 1
         for name in filters:
             aws_name = name
@@ -266,7 +270,8 @@ class EC2Connection(AWSQueryConnection):
                        root_device_name=None, block_device_map=None,
                        dry_run=False, virtualization_type=None,
                        sriov_net_support=None,
-                       snapshot_id=None):
+                       snapshot_id=None,
+                       delete_root_volume_on_termination=False):
         """
         Register an image.
 
@@ -315,6 +320,12 @@ class EC2Connection(AWSQueryConnection):
             as root device for the image. Mutually exclusive with
             block_device_map, requires root_device_name
 
+        :type delete_root_volume_on_termination: bool
+        :param delete_root_volume_on_termination: Whether to delete the root
+            volume of the image after instance termination. Only applies when
+            creating image from snapshot_id. Defaults to False.  Note that
+            leaving volumes behind after instance termination is not free.
+
         :rtype: string
         :return: The new image id
         """
@@ -334,7 +345,8 @@ class EC2Connection(AWSQueryConnection):
         if root_device_name:
             params['RootDeviceName'] = root_device_name
         if snapshot_id:
-            root_vol = BlockDeviceType(snapshot_id=snapshot_id)
+            root_vol = BlockDeviceType(snapshot_id=snapshot_id,
+                delete_on_termination=delete_root_volume_on_termination)
             block_device_map = BlockDeviceMapping()
             block_device_map[root_device_name] = root_vol
         if block_device_map:
@@ -345,7 +357,6 @@ class EC2Connection(AWSQueryConnection):
             params['VirtualizationType'] = virtualization_type
         if sriov_net_support:
             params['SriovNetSupport'] = sriov_net_support
-
 
         rs = self.get_object('RegisterImage', params, ResultSet, verb='POST')
         image_id = getattr(rs, 'imageId', None)
@@ -602,15 +613,24 @@ class EC2Connection(AWSQueryConnection):
         :rtype: list
         :return: A list of  :class:`boto.ec2.instance.Instance`
         """
-        reservations = self.get_all_reservations(instance_ids=instance_ids,
-                                                 filters=filters,
-                                                 dry_run=dry_run,
-                                                 max_results=max_results)
-        return [instance for reservation in reservations
-                for instance in reservation.instances]
+        next_token = None
+        retval = []
+        while True:
+            reservations = self.get_all_reservations(instance_ids=instance_ids,
+                                                     filters=filters,
+                                                     dry_run=dry_run,
+                                                     max_results=max_results,
+                                                     next_token=next_token)
+            retval.extend([instance for reservation in reservations for
+                           instance in reservation.instances])
+            next_token = reservations.next_token
+            if not next_token:
+                break
+
+        return retval
 
     def get_all_reservations(self, instance_ids=None, filters=None,
-                             dry_run=False, max_results=None):
+                             dry_run=False, max_results=None, next_token=None):
         """
         Retrieve all the instance reservations associated with your account.
 
@@ -632,6 +652,10 @@ class EC2Connection(AWSQueryConnection):
         :param max_results: The maximum number of paginated instance
             items per response.
 
+        :type next_token: str
+        :param next_token: A string specifying the next paginated set
+            of results to return.
+
         :rtype: list
         :return: A list of  :class:`boto.ec2.instance.Reservation`
         """
@@ -652,12 +676,15 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         if max_results is not None:
             params['MaxResults'] = max_results
+        if next_token:
+            params['NextToken'] = next_token
         return self.get_list('DescribeInstances', params,
                              [('item', Reservation)], verb='POST')
 
     def get_all_instance_status(self, instance_ids=None,
                                 max_results=None, next_token=None,
-                                filters=None, dry_run=False):
+                                filters=None, dry_run=False,
+                                include_all_instances=False):
         """
         Retrieve all the instances in your account scheduled for maintenance.
 
@@ -685,6 +712,11 @@ class EC2Connection(AWSQueryConnection):
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
+        :type include_all_instances: bool
+        :param include_all_instances: Set to True if all
+            instances should be returned. (Only running
+            instances are included by default.)
+
         :rtype: list
         :return: A list of instances that have maintenance scheduled.
         """
@@ -699,6 +731,8 @@ class EC2Connection(AWSQueryConnection):
             self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
+        if include_all_instances:
+            params['IncludeAllInstances'] = 'true'
         return self.get_object('DescribeInstanceStatus', params,
                                InstanceStatusSet, verb='POST')
 
@@ -775,6 +809,9 @@ class EC2Connection(AWSQueryConnection):
             * i2.2xlarge
             * i2.4xlarge
             * i2.8xlarge
+            * t2.micro
+            * t2.small
+            * t2.medium
 
         :type placement: string
         :param placement: The Availability Zone to launch the instance into.
@@ -788,7 +825,7 @@ class EC2Connection(AWSQueryConnection):
             instances.
 
         :type monitoring_enabled: bool
-        :param monitoring_enabled: Enable CloudWatch monitoring on
+        :param monitoring_enabled: Enable detailed CloudWatch monitoring on
             the instance.
 
         :type subnet_id: string
@@ -856,9 +893,9 @@ class EC2Connection(AWSQueryConnection):
             provide optimal EBS I/O performance.  This optimization
             isn't available with all instance types.
 
-        :type network_interfaces: list
-        :param network_interfaces: A list of
-            :class:`boto.ec2.networkinterface.NetworkInterfaceSpecification`
+        :type network_interfaces: :class:`boto.ec2.networkinterface.NetworkInterfaceCollection`
+        :param network_interfaces: A NetworkInterfaceCollection data
+            structure containing the ENI specifications for the instance.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -889,7 +926,9 @@ class EC2Connection(AWSQueryConnection):
                     l.append(group)
             self.build_list_params(params, l, 'SecurityGroup')
         if user_data:
-            params['UserData'] = base64.b64encode(user_data)
+            if isinstance(user_data, six.text_type):
+                user_data = user_data.encode('utf-8')
+            params['UserData'] = base64.b64encode(user_data).decode('utf-8')
         if addressing_type:
             params['AddressingType'] = addressing_type
         if instance_type:
@@ -1470,6 +1509,9 @@ class EC2Connection(AWSQueryConnection):
             * i2.2xlarge
             * i2.4xlarge
             * i2.8xlarge
+            * t2.micro
+            * t2.small
+            * t2.medium
 
         :type placement: string
         :param placement: The availability zone in which to launch
@@ -1484,7 +1526,7 @@ class EC2Connection(AWSQueryConnection):
             instances
 
         :type monitoring_enabled: bool
-        :param monitoring_enabled: Enable CloudWatch monitoring on
+        :param monitoring_enabled: Enable detailed CloudWatch monitoring on
             the instance.
 
         :type subnet_id: string
@@ -1838,19 +1880,20 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('AssignPrivateIpAddresses', params, verb='POST')
 
     def _associate_address(self, status, instance_id=None, public_ip=None,
-                          allocation_id=None, network_interface_id=None,
-                          private_ip_address=None, allow_reassociation=False,
-                          dry_run=False):
+                           allocation_id=None, network_interface_id=None,
+                           private_ip_address=None, allow_reassociation=False,
+                           dry_run=False):
         params = {}
         if instance_id is not None:
                 params['InstanceId'] = instance_id
         elif network_interface_id is not None:
                 params['NetworkInterfaceId'] = network_interface_id
 
-        if public_ip is not None:
-            params['PublicIp'] = public_ip
-        elif allocation_id is not None:
+        # Allocation id trumps public ip in order to associate with VPCs
+        if allocation_id is not None:
             params['AllocationId'] = allocation_id
+        elif public_ip is not None:
+            params['PublicIp'] = public_ip
 
         if private_ip_address is not None:
             params['PrivateIpAddress'] = private_ip_address
@@ -1916,9 +1959,9 @@ class EC2Connection(AWSQueryConnection):
             allow_reassociation=allow_reassociation, dry_run=dry_run)
 
     def associate_address_object(self, instance_id=None, public_ip=None,
-                          allocation_id=None, network_interface_id=None,
-                          private_ip_address=None, allow_reassociation=False,
-                          dry_run=False):
+                                 allocation_id=None, network_interface_id=None,
+                                 private_ip_address=None, allow_reassociation=False,
+                                 dry_run=False):
         """
         Associate an Elastic IP address with a currently running instance.
         This requires one of ``public_ip`` or ``allocation_id`` depending
@@ -1982,10 +2025,12 @@ class EC2Connection(AWSQueryConnection):
         """
         params = {}
 
-        if public_ip is not None:
-            params['PublicIp'] = public_ip
-        elif association_id is not None:
+        # If there is an association id it trumps public ip
+        # in order to successfully dissassociate with a VPC elastic ip
+        if association_id is not None:
             params['AssociationId'] = association_id
+        elif public_ip is not None:
+            params['PublicIp'] = public_ip
 
         if dry_run:
             params['DryRun'] = 'true'
@@ -2220,8 +2265,8 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
-    def create_volume(self, size, zone, snapshot=None,
-                      volume_type=None, iops=None, dry_run=False):
+    def create_volume(self, size, zone, snapshot=None, volume_type=None,
+                      iops=None, encrypted=False, dry_run=False):
         """
         Create a new EBS Volume.
 
@@ -2237,11 +2282,15 @@ class EC2Connection(AWSQueryConnection):
 
         :type volume_type: string
         :param volume_type: The type of the volume. (optional).  Valid
-            values are: standard | io1.
+            values are: standard | io1 | gp2.
 
         :type iops: int
-        :param iops: The provisioned IOPs you want to associate with
+        :param iops: The provisioned IOPS you want to associate with
             this volume. (optional)
+
+        :type encrypted: bool
+        :param encrypted: Specifies whether the volume should be encrypted.
+            (optional)
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -2260,6 +2309,8 @@ class EC2Connection(AWSQueryConnection):
             params['VolumeType'] = volume_type
         if iops:
             params['Iops'] = str(iops)
+        if encrypted:
+            params['Encrypted'] = 'true'
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateVolume', params, Volume, verb='POST')
@@ -2537,7 +2588,7 @@ class EC2Connection(AWSQueryConnection):
         now = datetime.utcnow()
         last_hour = datetime(now.year, now.month, now.day, now.hour)
         last_midnight = datetime(now.year, now.month, now.day)
-        last_sunday = datetime(now.year, now.month, now.day) - timedelta(days = (now.weekday() + 1) % 7)
+        last_sunday = datetime(now.year, now.month, now.day) - timedelta(days=(now.weekday() + 1) % 7)
         start_of_month = datetime(now.year, now.month, 1)
 
         target_backup_times = []
@@ -2546,15 +2597,15 @@ class EC2Connection(AWSQueryConnection):
         oldest_snapshot_date = datetime(2007, 1, 1)
 
         for hour in range(0, hourly_backups):
-            target_backup_times.append(last_hour - timedelta(hours = hour))
+            target_backup_times.append(last_hour - timedelta(hours=hour))
 
         for day in range(0, daily_backups):
-            target_backup_times.append(last_midnight - timedelta(days = day))
+            target_backup_times.append(last_midnight - timedelta(days=day))
 
         for week in range(0, weekly_backups):
-            target_backup_times.append(last_sunday - timedelta(weeks = week))
+            target_backup_times.append(last_sunday - timedelta(weeks=week))
 
-        one_day = timedelta(days = 1)
+        one_day = timedelta(days=1)
         monthly_snapshots_added = 0
         while (start_of_month > oldest_snapshot_date and
                (monthly_backups is True or
@@ -2787,7 +2838,7 @@ class EC2Connection(AWSQueryConnection):
                 keynames=[keyname],
                 dry_run=dry_run
             )[0]
-        except self.ResponseError, e:
+        except self.ResponseError as e:
             if e.code == 'InvalidKeyPair.NotFound':
                 return None
             else:
@@ -3028,7 +3079,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful.
         """
-        params = {'GroupName':group_name}
+        params = {'GroupName': group_name}
         if src_security_group_name:
             params['SourceSecurityGroupName'] = src_security_group_name
         if src_security_group_owner_id:
@@ -3132,7 +3183,7 @@ class EC2Connection(AWSQueryConnection):
             if not isinstance(cidr_ip, list):
                 cidr_ip = [cidr_ip]
             for i, single_cidr_ip in enumerate(cidr_ip):
-                params['IpPermissions.1.IpRanges.%d.CidrIp' % (i+1)] = \
+                params['IpPermissions.1.IpRanges.%d.CidrIp' % (i + 1)] = \
                     single_cidr_ip
         if dry_run:
             params['DryRun'] = 'true'
@@ -3226,7 +3277,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful.
         """
-        params = {'GroupName':group_name}
+        params = {'GroupName': group_name}
         if src_security_group_name:
             params['SourceSecurityGroupName'] = src_security_group_name
         if src_security_group_owner_id:
@@ -3424,7 +3475,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         regions = self.get_list('DescribeRegions', params,
-                                 [('item', RegionInfo)], verb='POST')
+                                [('item', RegionInfo)], verb='POST')
         for region in regions:
             region.connection_cls = EC2Connection
         return regions
@@ -3816,7 +3867,7 @@ class EC2Connection(AWSQueryConnection):
 
     def monitor_instances(self, instance_ids, dry_run=False):
         """
-        Enable CloudWatch monitoring for the supplied instances.
+        Enable detailed CloudWatch monitoring for the supplied instances.
 
         :type instance_id: list of strings
         :param instance_id: The instance ids
@@ -3837,7 +3888,7 @@ class EC2Connection(AWSQueryConnection):
     def monitor_instance(self, instance_id, dry_run=False):
         """
         Deprecated Version, maintained for backward compatibility.
-        Enable CloudWatch monitoring for the supplied instance.
+        Enable detailed CloudWatch monitoring for the supplied instance.
 
         :type instance_id: string
         :param instance_id: The instance id
@@ -3873,7 +3924,7 @@ class EC2Connection(AWSQueryConnection):
     def unmonitor_instance(self, instance_id, dry_run=False):
         """
         Deprecated Version, maintained for backward compatibility.
-        Disable CloudWatch monitoring for the supplied instance.
+        Disable detailed CloudWatch monitoring for the supplied instance.
 
         :type instance_id: string
         :param instance_id: The instance id
@@ -4058,7 +4109,7 @@ class EC2Connection(AWSQueryConnection):
         :rtype: bool
         :return: True if successful
         """
-        params = {'GroupName':name, 'Strategy':strategy}
+        params = {'GroupName': name, 'Strategy': strategy}
         if dry_run:
             params['DryRun'] = 'true'
         group = self.get_status('CreatePlacementGroup', params, verb='POST')
@@ -4075,7 +4126,7 @@ class EC2Connection(AWSQueryConnection):
         :param dry_run: Set to True if the operation should not actually run.
 
         """
-        params = {'GroupName':name}
+        params = {'GroupName': name}
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('DeletePlacementGroup', params, verb='POST')
@@ -4087,9 +4138,9 @@ class EC2Connection(AWSQueryConnection):
         i = 1
         for key in keys:
             value = tags[key]
-            params['Tag.%d.Key'%i] = key
+            params['Tag.%d.Key' % i] = key
             if value is not None:
-                params['Tag.%d.Value'%i] = value
+                params['Tag.%d.Value' % i] = value
             i += 1
 
     def get_all_tags(self, filters=None, dry_run=False, max_results=None):
@@ -4181,10 +4232,13 @@ class EC2Connection(AWSQueryConnection):
 
     # Network Interface methods
 
-    def get_all_network_interfaces(self, filters=None, dry_run=False):
+    def get_all_network_interfaces(self, network_interface_ids=None, filters=None, dry_run=False):
         """
         Retrieve all of the Elastic Network Interfaces (ENI's)
         associated with your account.
+
+        :type network_interface_ids: list
+        :param network_interface_ids: a list of strings representing ENI IDs
 
         :type filters: dict
         :param filters: Optional filters that can be used to limit
@@ -4203,6 +4257,8 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of :class:`boto.ec2.networkinterface.NetworkInterface`
         """
         params = {}
+        if network_interface_ids:
+            self.build_list_params(params, network_interface_ids, 'NetworkInterfaceId')
         if filters:
             self.build_filter_params(params, filters)
         if dry_run:
@@ -4321,22 +4377,23 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteNetworkInterface', params, verb='POST')
 
-    def get_all_vmtypes(self):
+    def get_all_instance_types(self):
         """
-        Get all vmtypes available on this cloud (eucalyptus specific)
+        Get all instance_types available on this cloud (eucalyptus specific)
 
-        :rtype: list of :class:`boto.ec2.vmtype.VmType`
-        :return: The requested VmType objects
+        :rtype: list of :class:`boto.ec2.instancetype.InstanceType`
+        :return: The requested InstanceType objects
         """
         params = {}
-        return self.get_list('DescribeVmTypes', params, [('euca:item', VmType)], verb='POST')
+        return self.get_list('DescribeInstanceTypes', params, [('item', InstanceType)], verb='POST')
 
     def copy_image(self, source_region, source_image_id, name=None,
                    description=None, client_token=None, dry_run=False):
         """
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
-
+        :rtype: :class:`boto.ec2.image.CopyImage`
+        :return: Object containing the image_id of the copied image.
         """
         params = {
             'SourceRegion': source_region,
@@ -4351,7 +4408,7 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CopyImage', params, CopyImage,
-                                 verb='POST')
+                               verb='POST')
 
     def describe_account_attributes(self, attribute_names=None, dry_run=False):
         """

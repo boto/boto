@@ -23,7 +23,7 @@
 #
 
 import time
-import unittest
+from tests.compat import unittest
 from nose.plugins.attrib import attr
 from boto.route53.connection import Route53Connection
 from boto.exception import TooManyRecordsException
@@ -104,7 +104,7 @@ class TestRoute53Zone(unittest.TestCase):
         record = self.zone.get_mx(self.base_domain)
         self.assertEquals(set(record.resource_records),
                           set([u'10 mail1.%s.' % self.base_domain,
-                                '20 mail2.%s.' % self.base_domain]))
+                               '20 mail2.%s.' % self.base_domain]))
         self.assertEquals(record.ttl, u'50')
 
     def test_get_records(self):
@@ -142,7 +142,7 @@ class TestRoute53Zone(unittest.TestCase):
         )
         self.assertEquals(len(lbrs), 2)
         self.zone.delete_a('lbr.%s' % self.base_domain,
-                      identifier=('bam', 'us-west-1'))
+                           identifier=('bam', 'us-west-1'))
         self.zone.delete_a('lbr.%s' % self.base_domain,
                            identifier=('baz', 'us-east-1'))
 
@@ -151,8 +151,7 @@ class TestRoute53Zone(unittest.TestCase):
                         identifier=('baz', 'us-east-1'))
         self.zone.add_a('exception.%s' % self.base_domain, '8.7.6.5',
                         identifier=('bam', 'us-west-1'))
-        with self.assertRaises(TooManyRecordsException):
-            lbrs = self.zone.get_a('exception.%s' % self.base_domain)
+        self.assertRaises(TooManyRecordsException, lambda: self.zone.get_a('exception.%s' % self.base_domain))
         self.zone.delete_a('exception.%s' % self.base_domain, all=True)
 
     @classmethod

@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 from tests.unit import unittest
 
 from boto.ses.connection import SESConnection
@@ -20,7 +18,7 @@ class SESConnectionTest(unittest.TestCase):
         self.assertTrue('GetIdentityDkimAttributesResult' in
                         response['GetIdentityDkimAttributesResponse'])
         self.assertTrue(
-            'DkimAttributes' in response['GetIdentityDkimAttributesResponse']\
+            'DkimAttributes' in response['GetIdentityDkimAttributesResponse']
                                         ['GetIdentityDkimAttributesResult'])
 
     def test_set_identity_dkim_enabled(self):

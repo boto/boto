@@ -1,4 +1,5 @@
 # Copyright (c) 2014 Netflix, Inc. Stefan Praszalowicz
+# Copyright (c) 2014 42Lines, Inc. Jim Browne
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -21,7 +22,7 @@
 #
 
 import time
-import unittest
+from tests.compat import unittest
 from boto.route53.connection import Route53Connection
 from boto.route53.record import ResourceRecordSets
 from boto.route53.exception import DNSServerError
@@ -76,6 +77,36 @@ class TestRoute53AliasResourceRecordSets(unittest.TestCase):
 
         rrs = ResourceRecordSets(self.conn, self.zone.id)
         rrs.add_change(action="DELETE", **base_record)
+        rrs.commit()
+
+    def test_set_alias(self):
+        base_record = dict(name="alias.%s." % self.base_domain,
+                           type="A",
+                           identifier="boto:TestRoute53AliasResourceRecordSets")
+
+        rrs = ResourceRecordSets(self.conn, self.zone.id)
+        new = rrs.add_change(action="UPSERT", **base_record)
+        new.set_alias(self.zone.id, "target.%s" % self.base_domain, False)
+        rrs.commit()
+
+        rrs = ResourceRecordSets(self.conn, self.zone.id)
+        delete = rrs.add_change(action="DELETE", **base_record)
+        delete.set_alias(self.zone.id, "target.%s" % self.base_domain, False)
+        rrs.commit()
+
+    def test_set_alias_backwards_compatability(self):
+        base_record = dict(name="alias.%s." % self.base_domain,
+                           type="A",
+                           identifier="boto:TestRoute53AliasResourceRecordSets")
+
+        rrs = ResourceRecordSets(self.conn, self.zone.id)
+        new = rrs.add_change(action="UPSERT", **base_record)
+        new.set_alias(self.zone.id, "target.%s" % self.base_domain)
+        rrs.commit()
+
+        rrs = ResourceRecordSets(self.conn, self.zone.id)
+        delete = rrs.add_change(action="DELETE", **base_record)
+        delete.set_alias(self.zone.id, "target.%s" % self.base_domain)
         rrs.commit()
 
 

@@ -322,3 +322,42 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
         for i in range(100):
             # This would cause an exception due to a non-existant instance variable.
             self.dynamodb.scan(tiny_tablename)
+
+    def test_recursive(self):
+        result = self.create_table(
+            self.table_name,
+            self.attributes,
+            self.schema,
+            self.provisioned_throughput,
+            self.lsi
+        )
+        self.assertEqual(
+            result['TableDescription']['TableName'],
+            self.table_name
+        )
+
+        description = self.dynamodb.describe_table(self.table_name)
+        self.assertEqual(description['Table']['ItemCount'], 0)
+
+        # Create some records with one being a recursive shape.
+        record_1_data = {
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'John'},
+            'last_name': {'S': 'Doe'},
+            'date_joined': {'N': '1366056668'},
+            'friend_count': {'N': '3'},
+            'friend_data': {'M': {'username': {'S': 'alice'},
+                                  'friend_count': {'N': '4'}}}
+        }
+        r1_result = self.dynamodb.put_item(self.table_name, record_1_data)
+
+        # Get the data.
+        record_1 = self.dynamodb.get_item(self.table_name, key={
+            'username': {'S': 'johndoe'},
+            'date_joined': {'N': '1366056668'},
+        }, consistent_read=True)
+        self.assertEqual(record_1['Item']['username']['S'], 'johndoe')
+        self.assertEqual(record_1['Item']['first_name']['S'], 'John')
+        recursive_data = record_1['Item']['friend_data']['M']
+        self.assertEqual(recursive_data['username']['S'], 'alice')
+        self.assertEqual(recursive_data['friend_count']['N'], '4')
