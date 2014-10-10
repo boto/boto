@@ -51,10 +51,7 @@ BOTO_SWF_UNITTEST_DOMAIN = os.environ.get("BOTO_SWF_UNITTEST_DOMAIN", "boto-swf-
 PAUSE_SECONDS = 4
 
 
-
 class SimpleWorkflowLayer2TestBase(unittest.TestCase):
-    """
-    """
     swf = True
     # Some params used throughout the tests...
     # Domain registration params...
@@ -147,8 +144,6 @@ class SimpleWorkflowLayer2TestBase(unittest.TestCase):
         pass
 
 
-
-
 class SimpleWorkflowLayer2Test(SimpleWorkflowLayer2TestBase):
 
     def test_list_workflow_types(self):
@@ -159,7 +154,8 @@ class SimpleWorkflowLayer2Test(SimpleWorkflowLayer2TestBase):
         for wft in r:
             info = wft.describe()
             #sys.stderr.write(json.dumps(info))
-            if ( info['typeInfo']['workflowType']['name'] == self._workflow_type_name and info['typeInfo']['workflowType']['version'] == self._workflow_type_version ):
+            if ( info['typeInfo']['workflowType']['name'] == self._workflow_type_name and
+	            info['typeInfo']['workflowType']['version'] == self._workflow_type_version ):
                 found = info
                 break
         self.assertNotEqual(found, None, 'list_workflow_types; test type not found')
