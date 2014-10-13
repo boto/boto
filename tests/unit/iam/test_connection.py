@@ -361,6 +361,7 @@ class TestGetCredentialReport(AWSMockServiceTestCase):
                           ['get_credential_report_result']
                           ['content'])
 
+
 class TestCreateLoginProfile(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
