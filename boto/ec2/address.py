@@ -79,7 +79,7 @@ class Address(EC2Object):
         """
         if self.allocation_id:
             return self.connection.release_address(
-                association_id=self.allocation_id,
+                allocation_id=self.allocation_id,
                 dry_run=dry_run)
         else:
             return self.connection.release_address(

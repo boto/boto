@@ -54,7 +54,7 @@ class TestRoute53Connection(AWSMockServiceTestCase):
 
     def test_typical_400(self):
         self.set_http_response(status_code=400, header=[
-            ['Code', 'Throttling'],
+            ['Code', 'AccessDenied'],
         ])
 
         with self.assertRaises(DNSServerError) as err:
@@ -62,11 +62,22 @@ class TestRoute53Connection(AWSMockServiceTestCase):
 
         self.assertTrue('It failed.' in str(err.exception))
 
-    @mock.patch('time.sleep')
-    def test_retryable_400(self, sleep_mock):
+    def test_retryable_400_prior_request_not_complete(self):
+        # Test ability to retry on ``PriorRequestNotComplete``.
         self.set_http_response(status_code=400, header=[
             ['Code', 'PriorRequestNotComplete'],
         ])
+        self.do_retry_handler()
+
+    def test_retryable_400_throttling(self):
+        # Test ability to rety on ``Throttling``.
+        self.set_http_response(status_code=400, header=[
+            ['Code', 'Throttling'],
+        ])
+        self.do_retry_handler()
+
+    @mock.patch('time.sleep')
+    def do_retry_handler(self, sleep_mock):
 
         def incr_retry_handler(func):
             def _wrapper(*args, **kwargs):

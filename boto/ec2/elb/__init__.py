@@ -437,7 +437,7 @@ class ELBConnection(AWSQueryConnection):
                 value.enabled and 'true' or 'false'
             params['LoadBalancerAttributes.ConnectionDraining.Timeout'] = \
                 value.timeout
-        elif attribute.lower == 'connectingsettings':
+        elif attribute.lower() == 'connectingsettings':
             params['LoadBalancerAttributes.ConnectionSettings.IdleTimeout'] = \
                 value.idle_timeout
         else:
