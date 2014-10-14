@@ -4467,6 +4467,7 @@ class EC2Connection(AWSQueryConnection):
                 params['MapPublicIpOnLaunch.Value'] = 'true'
             else:
                 params['MapPublicIpOnLaunch.Value'] = 'false'
+        params['Version'] = '2014-06-15'
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('ModifySubnetAttribute', params)
