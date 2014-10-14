@@ -4462,12 +4462,12 @@ class EC2Connection(AWSQueryConnection):
 
     def modify_subnet_attribute(self, subnet_id, auto_assign_public_ip=None, dry_run=False):
         params = {'SubnetId': subnet_id}
+        params['Version'] = '2014-06-15'
         if auto_assign_public_ip is not None:
             if auto_assign_public_ip:
                 params['MapPublicIpOnLaunch.Value'] = 'true'
             else:
                 params['MapPublicIpOnLaunch.Value'] = 'false'
-        params['Version'] = '2014-06-15'
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('ModifySubnetAttribute', params)

@@ -1107,7 +1107,7 @@ class AWSQueryConnection(AWSAuthConnection):
                                                     self.host)
         if action:
             http_request.params['Action'] = action
-        if self.APIVersion and http_request.params.get('Version') is None:
+        if self.APIVersion and http_request.params.get('Version', None) is None:
             http_request.params['Version'] = self.APIVersion
         return self._mexe(http_request)
 
