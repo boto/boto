@@ -27,6 +27,7 @@ Python types and vice-versa.
 import base64
 from decimal import (Decimal, DecimalException, Context,
                      Clamped, Overflow, Inexact, Underflow, Rounded)
+from collections import Mapping
 from boto.dynamodb.exceptions import DynamoDBNumberError
 from boto.compat import filter, map, six, long_type
 
@@ -118,7 +119,7 @@ def get_dynamodb_type(val):
             dynamodb_type = 'BS'
     elif is_binary(val):
         dynamodb_type = 'B'
-    elif isinstance(val, dict):
+    elif isinstance(val, Mapping):
         dynamodb_type = 'M'
     elif isinstance(val, list):
         dynamodb_type = 'L'
