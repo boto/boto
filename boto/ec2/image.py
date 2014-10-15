@@ -33,18 +33,32 @@ class ProductCodes(list):
             self.append(value)
 
 
-class BillingProducts(list):
-    def startElement(self, name, attrs, connection):
-        pass
-
-    def endElement(self, name, value, connection):
-        if name == 'billingProduct':
-            self.append(value)
-
-
 class Image(TaggedEC2Object):
     """
     Represents an EC2 Image
+
+    :ivar architecture: The architecture of the image (i386 or x86_64) 
+    :ivar block_device_mapping: The Block Device Mapping for the image.
+    :ivar description: The description of the Image, provided during image creation.
+    :ivar hypervisor: The Hypervisor type (xen or ovm).
+    :ivar id: The unique ID of this Image.
+    :ivar is_public: Whether or not the image is publicly visible.
+    :ivar kernel_id: The unique ID of the kernal associated with the Image.
+    :ivar location: The location of the Image manifest.
+    :ivar name: The name of the Image, provided during image creation.
+    :ivar ownerId: The unique ID of the owner of the Image.
+    :ivar owner_alias: The AWS account alias for the owner_id.
+    :ivar owner_id: The unique ID of the owner of the Image.
+    :ivar platform: The platform of the image.
+    :ivar product_codes: The product codes, if any, attached to the Image.
+    :ivar ramdisk_id: The unique ID of the ramdisk associated with the Image.
+    :ivar root_device_name: The name of the root device volume.
+    :ivar root_device_type: The type of the root device volume (ebs or instance-store).
+    :ivar sriov_net_support: Whether enhanced networking is enabled (simple or None).
+    :ivar state: The string representation of the image's current state.
+    :ivar type: The image type (machine, kernel, or ramdisk).
+    :ivar virtualization_type: The virtualization type (paravirtual or hvm).
+
     """
 
     def __init__(self, connection=None):
@@ -64,13 +78,11 @@ class Image(TaggedEC2Object):
         self.name = None
         self.description = None
         self.product_codes = ProductCodes()
-        self.billing_products = BillingProducts()
         self.block_device_mapping = None
         self.root_device_type = None
         self.root_device_name = None
         self.virtualization_type = None
         self.hypervisor = None
-        self.instance_lifecycle = None
         self.sriov_net_support = None
 
     def __repr__(self):
@@ -85,8 +97,6 @@ class Image(TaggedEC2Object):
             return self.block_device_mapping
         elif name == 'productCodes':
             return self.product_codes
-        elif name == 'billingProducts':
-            return self.billing_products
         else:
             return None
 

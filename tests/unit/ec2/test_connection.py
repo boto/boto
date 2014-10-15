@@ -742,11 +742,6 @@ class TestGetAllImages(TestEC2ConnectionBase):
             <viridianEnabled>true</viridianEnabled>
             <name>Windows Test</name>
             <description>Windows Test Description</description>
-            <billingProducts>
-                        <item>
-                                <billingProduct>bp-6ba54002</billingProduct>
-                        </item>
-                        </billingProducts>
             <rootDeviceType>ebs</rootDeviceType>
             <rootDeviceName>/dev/sda1</rootDeviceName>
             <blockDeviceMapping>
@@ -805,10 +800,6 @@ class TestGetAllImages(TestEC2ConnectionBase):
         self.assertEquals("hvm", parsed[0].virtualization_type)
         self.assertEquals("xen", parsed[0].hypervisor)
         self.assertEquals(None, parsed[0].instance_lifecycle)
-
-        # 1 billing product parsed into a list
-        self.assertEquals(1, len(parsed[0].billing_products))
-        self.assertEquals("bp-6ba54002", parsed[0].billing_products[0])
 
         # Just verify length, there is already a block_device_mapping test
         self.assertEquals(5, len(parsed[0].block_device_mapping))
