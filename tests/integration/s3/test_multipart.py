@@ -173,8 +173,6 @@ class S3MultiPartUploadSigV4Test(unittest.TestCase):
     s3 = True
 
     def setUp(self):
-        copy_env = os.environ.copy()
-        copy_env['S3_USE_SIGV4'] = True
         self.env_patch = mock.patch('os.environ', {'S3_USE_SIGV4': True})
         self.env_patch.start()
         self.conn = boto.s3.connect_to_region('us-west-2')

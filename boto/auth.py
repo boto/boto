@@ -498,9 +498,15 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         qs_to_post = qs
 
         # We do not want to include any params that were mangled into
-        # the params if performing if it is s3-sigv4. Since it does not
-        # belong in the body of a post for some requests.
-        if kwargs.get('unmangled_req', None) is not None:
+        # the params if performing s3-sigv4 since it does not
+        # belong in the body of a post for some requests.  Mangled
+        # refers to items in the query string URL being added to the
+        # http response params. However, these params get added to
+        # the body of the request, but the query string URL does not
+        # belong in the body of the request. ``unmangled_resp`` is the
+        # response that happened prior to the mangling.  This ``unmangled_req``
+        # kwarg will only appear for s3-sigv4.
+        if 'unmangled_req' in kwargs:
             qs_to_post = self.query_string(kwargs['unmangled_req'])
 
         if qs_to_post and req.method == 'POST':
@@ -662,6 +668,10 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         if modified_req.params is None:
             modified_req.params = {}
         else:
+            # To keep the original request object untouched. We must make
+            # a copy of the params dictionary. Because the copy of the
+            # original request directly refers to the params dictionary
+            # of the original request.
             copy_params = req.params.copy()
             modified_req.params = copy_params
 
