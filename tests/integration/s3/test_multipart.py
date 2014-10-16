@@ -32,10 +32,14 @@ Some unit tests for the S3 MultiPartUpload
 # bigger than 5M. Hence we just use 1 part so we can keep
 # things small and still test logic.
 
+import os
 import unittest
 import time
 from boto.compat import StringIO
 
+import mock
+
+import boto
 from boto.s3.connection import S3Connection
 
 
@@ -163,3 +167,33 @@ class S3MultiPartUploadTest(unittest.TestCase):
             pn += 1
         # Can't complete 2 small parts so just clean up.
         mpu.cancel_upload()
+
+
+class S3MultiPartUploadSigV4Test(unittest.TestCase):
+    s3 = True
+
+    def setUp(self):
+        copy_env = os.environ.copy()
+        copy_env['S3_USE_SIGV4'] = True
+        self.env_patch = mock.patch('os.environ', {'S3_USE_SIGV4': True})
+        self.env_patch.start()
+        self.conn = boto.s3.connect_to_region('us-west-2')
+        self.bucket_name = 'multipart-%d' % int(time.time())
+        self.bucket = self.conn.create_bucket(self.bucket_name,
+                                              location='us-west-2')
+
+    def tearDown(self):
+        for key in self.bucket:
+            key.delete()
+        self.bucket.delete()
+        self.env_patch.stop()
+
+    def test_initiate_multipart(self):
+        key_name = "multipart"
+        multipart_upload = self.bucket.initiate_multipart_upload(key_name)
+        multipart_uploads = self.bucket.get_all_multipart_uploads()
+        for upload in multipart_uploads:
+            # Check that the multipart upload was created.
+            self.assertEqual(upload.key_name, multipart_upload.key_name)
+            self.assertEqual(upload.id, multipart_upload.id)
+        multipart_upload.cancel_upload()
