@@ -345,7 +345,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         for param in sorted(http_request.params):
             value = boto.utils.get_utf8_value(http_request.params[param])
             l.append('%s=%s' % (urllib.parse.quote(param, safe='-_.~'),
-                                urllib.parse.quote(value.decode('utf-8'), safe='-_.~')))
+                                urllib.parse.quote(value, safe='-_.~')))
         return '&'.join(l)
 
     def canonical_headers(self, headers_to_sign):
@@ -494,10 +494,25 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         if self._provider.security_token:
             req.headers['X-Amz-Security-Token'] = self._provider.security_token
         qs = self.query_string(req)
-        if qs and req.method == 'POST':
+
+        qs_to_post = qs
+
+        # We do not want to include any params that were mangled into
+        # the params if performing s3-sigv4 since it does not
+        # belong in the body of a post for some requests.  Mangled
+        # refers to items in the query string URL being added to the
+        # http response params. However, these params get added to
+        # the body of the request, but the query string URL does not
+        # belong in the body of the request. ``unmangled_resp`` is the
+        # response that happened prior to the mangling.  This ``unmangled_req``
+        # kwarg will only appear for s3-sigv4.
+        if 'unmangled_req' in kwargs:
+            qs_to_post = self.query_string(kwargs['unmangled_req'])
+
+        if qs_to_post and req.method == 'POST':
             # Stash request parameters into post body
             # before we generate the signature.
-            req.body = qs
+            req.body = qs_to_post
             req.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
             req.headers['Content-Length'] = str(len(req.body))
         else:
@@ -548,6 +563,17 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         # Requote, this time addressing all characters.
         encoded = urllib.parse.quote(unquoted)
         return encoded
+
+    def canonical_query_string(self, http_request):
+        # Note that we just do not return an empty string for
+        # POST request. Query strings in url are included in canonical
+        # query string.
+        l = []
+        for param in sorted(http_request.params):
+            value = boto.utils.get_utf8_value(http_request.params[param])
+            l.append('%s=%s' % (urllib.parse.quote(param, safe='-_.~'),
+                                urllib.parse.quote(value, safe='-_.~')))
+        return '&'.join(l)
 
     def host_header(self, host, http_request):
         port = http_request.port
@@ -641,6 +667,13 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
 
         if modified_req.params is None:
             modified_req.params = {}
+        else:
+            # To keep the original request object untouched. We must make
+            # a copy of the params dictionary. Because the copy of the
+            # original request directly refers to the params dictionary
+            # of the original request.
+            copy_params = req.params.copy()
+            modified_req.params = copy_params
 
         raw_qs = parsed_path.query
         existing_qs = urllib.parse.parse_qs(
@@ -670,9 +703,10 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
                 req.headers['x-amz-content-sha256'] = req.headers.pop('_sha256')
             else:
                 req.headers['x-amz-content-sha256'] = self.payload(req)
-
-        req = self.mangle_path_and_params(req)
-        return super(S3HmacAuthV4Handler, self).add_auth(req, **kwargs)
+        updated_req = self.mangle_path_and_params(req)
+        return super(S3HmacAuthV4Handler, self).add_auth(updated_req,
+                                                         unmangled_req=req,
+                                                         **kwargs)
 
     def presign(self, req, expires, iso_date=None):
         """
