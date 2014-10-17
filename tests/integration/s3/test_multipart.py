@@ -223,7 +223,7 @@ class S3MultiPartUploadSigV4Test(unittest.TestCase):
         # etag 01234 != etag 56789
         self.assertNotEqual(etags[1], etags[2])
 
-        # parts are too small to compete as each part must
+        # parts are too small to complete as each part must
         # be a min of 5MB so so we'll assume that is enough
         # testing and abort the upload.
         mpu.cancel_upload()
