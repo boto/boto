@@ -2670,10 +2670,21 @@ class TableTestCase(unittest.TestCase):
             else:
                 return {
                     'Count': 20,
-                    'LastEvaluatedKey': {'username': {'S': 'johndoe'}, 'date_joined': {'N': '4118642633'}}
+                    'LastEvaluatedKey': {
+                        'username': {
+                            'S': 'johndoe'
+                        },
+                        'date_joined': {
+                            'N': '4118642633'
+                        }
+                    }
                 }
 
-        with mock.patch.object(self.users.connection, 'query', side_effect=return_side_effect) as mock_query:
+        with mock.patch.object(
+                self.users.connection,
+                'query',
+                side_effect=return_side_effect
+        ) as mock_query:
             count = self.users.query_count(username__eq='johndoe')
             self.assertTrue(isinstance(count, int))
             self.assertEqual(30, count)
