@@ -934,7 +934,10 @@ class Key(object):
         # the auth mechanism (because closures). Detect if it's SigV4 & embelish
         # while we can before the auth calculations occur.
         if 'hmac-v4-s3' in self.bucket.connection._required_auth_capability():
-            headers['_sha256'] = compute_hash(fp, hash_algorithm=hashlib.sha256)[0]
+            kwargs = {'fp': fp, 'hash_algorithm': hashlib.sha256}
+            if size is not None:
+                kwargs['size'] = size
+            headers['_sha256'] = compute_hash(**kwargs)[0]
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
         resp = self.bucket.connection.make_request(
