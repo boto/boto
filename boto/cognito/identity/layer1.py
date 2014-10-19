@@ -180,6 +180,56 @@ class CognitoIdentityConnection(AWSQueryConnection):
         return self.make_request(action='GetOpenIdToken',
                                  body=json.dumps(params))
 
+    def get_open_id_token_for_developer_identity(self, identity_pool_id,
+                                                 logins, identity_id=None,
+                                                 token_duration=None):
+        """
+        Registers (or retrieves) a Cognito IdentityId and an OpenID
+        Connect token for a user authenticated by your backend
+        authentication process. Supplying multiple logins will create
+        an implicit linked account. You can only specify one
+        developer provider as part of the Logins map, which is linked
+        to the identity pool. The developer provider is the "domain"
+        by which Cognito will refer to your users.
+
+        You can use GetOpenIdTokenForDeveloperIdentity to create a
+        new identity and to link new logins (that is, user
+        credentials issued by a public provider or developer
+        provider) to an existing identity. When you want to create a
+        new identity, the IdentityId should be null. When you want to
+        associate a new login with an existing
+        authenticated/unauthenticated identity, you can do so by
+        providing the existing IdentityId. This API will create the
+        identity in the specified IdentityPoolId.
+
+        :type identity_pool_id: string
+        :param identity_pool_id: An identity pool ID in the format REGION:GUID.
+
+        :type logins: map
+        :param logins: A set of optional name/value pairs that map provider
+            names to provider tokens.
+
+        :type identity_id: string
+        :param identity_id: A unique identifier in the format REGION:GUID.
+
+        :type token_duration: integer
+        :param token_duration: The expiration time of the token, in seconds
+
+        """
+        params = {
+            'IdentityPoolId': identity_pool_id,
+            'Logins': logins,
+        }
+
+        if identity_id is not None:
+            params['IdentityId'] = identity_id
+
+        if token_duration is not None:
+            params['TokenDuration'] = token_duration
+
+        return self.make_request(action='GetOpenIdTokenForDeveloperIdentity',
+                                 body=json.dumps(params))
+
     def list_identities(self, identity_pool_id, max_results, next_token=None):
         """
         Lists the identities in a pool.
@@ -219,6 +269,127 @@ class CognitoIdentityConnection(AWSQueryConnection):
         if next_token is not None:
             params['NextToken'] = next_token
         return self.make_request(action='ListIdentityPools',
+                                 body=json.dumps(params))
+
+
+    def lookup_developer_identity(self, identity_pool_id,
+                                  developer_user_identifier=None,
+                                  identity_id=None, max_results=None,
+                                  next_token=None):
+        """
+        Retrieves the IdentityID associated with a
+        DeveloperUserIdentifier or the list of
+        DeveloperUserIdentifiers associated with an IdentityId for an
+        existing identity. Either IdentityID or
+        DeveloperUserIdentifier must not be null. If you supply only
+        one of these values, the other value will be searched in the
+        database and returned as a part of the response. If you
+        supply both, DeveloperUserIdentifier will be matched against
+        IdentityID. If the values are verified against the database,
+        the response returns both values and is the same as the
+        request. Otherwise a ResourceConflictException is thrown.
+
+        :type identity_pool_id: string
+        :param identity_pool_id: An identity pool ID in the format REGION:GUID.
+
+        :type developer_user_identifier: string
+        :param developer_user_identifier: A unique ID used by your backend
+            authentication process to identify a user.
+
+        :type identity_id: string
+        :param identity_id: A unique identifier in the format REGION:GUID.
+
+        :type max_results: integer
+        :param max_results: The maximum number of identities to return.
+
+        :type next_token: string
+        :param next_token: A pagination token.
+
+        """
+        params = {'IdentityPoolId': identity_pool_id, }
+        if developer_user_identifier is not None:
+            params['DeveloperUserIdentifier'] = developer_user_identifier
+        if identity_id is not None:
+            params['IdentityId'] = identity_id
+        if max_results is not None:
+            params['MaxResults'] = max_results
+        if next_token is not None:
+            params['NextToken'] = next_token
+        return self.make_request(action='LookupDeveloperIdentity',
+                                 body=json.dumps(params))
+
+    def merge_developer_identities(self, destination_user_identifier,
+                                   developer_provider_name, identity_pool_id,
+                                   source_user_identifier):
+        """
+        Merges two users having different IdentityIds, existing in
+        the same identity pool, and identified by the same developer
+        provider. You can use this action to request that discrete
+        users be merged and identified as a single user in the
+        Cognito environment. Cognito associates the given source user
+        (SourceUserIdentifier) with the IdentityId of the
+        DestinationUserIdentifier. Only developer-authenticated users
+        can be merged. If the users to be merged are associated with
+        the same public provider, but as two different users, an
+        exception will be thrown.
+
+        :type destination_user_identifier: string
+        :param destination_user_identifier: User identifier for the destination
+            user. The value should be a DeveloperUserIdentifier.
+
+        :type developer_provider_name: string
+        :param developer_provider_name: The "domain" by which Cognito will
+            refer to your users. This is a (pseudo) domain name that you
+            provide while creating an identity pool.
+
+        :type identity_pool_id: string
+        :param identity_pool_id: An identity pool ID in the format REGION:GUID.
+
+        :type source_user_identifier: string
+        :param source_user_identifier: User identifier for the source user. The
+            value should be a DeveloperUserIdentifier.
+        """
+        params = {
+            'DestinationUserIdentifier': destination_user_identifier,
+            'DeveloperProviderName': developer_provider_name,
+            'IdentityPoolId': identity_pool_id,
+            'SourceUserIdentifier': source_user_identifier,
+        }
+        return self.make_request(action='MergeDeveloperIdentities',
+                                 body=json.dumps(params))
+
+    def unlink_developer_identity(self, developer_provider_name,
+                                  developer_user_identifier, identity_id,
+                                  identity_pool_id):
+        """
+        Unlinks a DeveloperUserIdentifier from an existing identity.
+        Unlinked developer users will be considered new identities
+        next time they are seen. If, for a given Cognito identity,
+        you remove all federated identities as well as the developer
+        user identifier, the Cognito identity becomes inaccessible.
+
+        :type developer_provider_name: string
+        :param developer_provider_name: The "domain" by which Cognito will
+            refer to your users.
+
+        :type developer_user_identifier: string
+        :param developer_user_identifier: A unique ID used by your backend
+            authentication process to identify a user.
+
+        :type identity_id: string
+        :param identity_id: A unique identifier in the format REGION:GUID.
+
+        :type identity_pool_id: string
+        :param identity_pool_id: An identity pool ID in the format REGION:GUID.
+
+        """
+        params = {
+            'DeveloperProviderName': developer_provider_name,
+            'DeveloperUserIdentifier': developer_user_identifier,
+            'IdentityId': identity_id,
+            'IdentityPoolId': identity_pool_id,
+        }
+        return self.make_request(action='UnlinkDeveloperIdentity',
                                  body=json.dumps(params))
 
     def unlink_identity(self, identity_id, logins, logins_to_remove):
