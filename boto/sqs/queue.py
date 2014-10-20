@@ -364,7 +364,7 @@ class Queue(object):
         """
         Deprecated.  This is the old 'count' method that actually counts
         the messages by reading them all.  This gives an accurate count but
-        is very slow for queues with non-trivial number of messasges.
+        is very slow for queues with non-trivial number of messages.
         Instead, use get_attributes('ApproximateNumberOfMessages') to take
         advantage of the new SQS capability.  This is retained only for
         the unit tests.
