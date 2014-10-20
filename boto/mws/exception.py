@@ -27,7 +27,6 @@ class ResponseErrorFactory(ResponseFactory):
     def __call__(self, status, reason, body=None):
         server = BotoServerError(status, reason, body=body)
         supplied = self.find_element(server.error_code, '', ResponseError)
-        print(supplied.__name__)
         return supplied(status, reason, body=body)
 
 
