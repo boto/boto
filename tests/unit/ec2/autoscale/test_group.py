@@ -128,6 +128,33 @@ class TestAutoScaleGroupHonorCooldown(AWSMockServiceTestCase):
             'HonorCooldown': 'true',
         }, ignore_params_values=['Version'])
 
+
+class TestAutoScaleExecutePolicy(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def default_body(self):
+        return "<dummy/>"
+
+    def _test_honor_cooldown(self, input_value, output_value):
+        self.set_http_response(status_code=200)
+        self.service_connection.execute_policy('test', honor_cooldown=input_value)
+        self.assert_request_parameters({
+            'HonorCooldown': output_value,
+        }, ignore_params_values=['Action', 'PolicyName', 'Version'])
+
+    def test_honor_cooldown_bool_true(self):
+        self._test_honor_cooldown(True, 'true')
+
+    def test_honor_cooldown_bool_false(self):
+        self._test_honor_cooldown(False, 'false')
+
+    def test_honor_cooldown_str_true(self):
+        self._test_honor_cooldown('true', 'true')
+
+    def test_honor_cooldown_str_false(self):
+        self._test_honor_cooldown('false', 'false')
+
+
 class TestScheduledGroup(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
