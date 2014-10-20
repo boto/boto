@@ -48,7 +48,10 @@ class Stack(object):
         elif name == "Description":
             self.description = value
         elif name == "DisableRollback":
-            self.disable_rollback = bool(value)
+            if str(value).lower() == 'true':
+                self.disable_rollback = True
+            else:
+                self.disable_rollback = False
         elif name == 'StackId':
             self.stack_id = value
         elif name == 'StackName':
@@ -104,6 +107,35 @@ class Stack(object):
     def get_template(self):
         return self.connection.get_template(stack_name_or_id=self.stack_id)
 
+    def get_policy(self):
+        """
+        Returns the stack policy for this stack. If it has no policy
+        then, a null value is returned.
+        """
+        return self.connection.get_stack_policy(self.stack_id)
+
+    def set_policy(self, stack_policy_body=None, stack_policy_url=None):
+        """
+        Sets a stack policy for this stack.
+
+        :type stack_policy_body: string
+        :param stack_policy_body: Structure containing the stack policy body.
+            (For more information, go to ` Prevent Updates to Stack Resources`_
+            in the AWS CloudFormation User Guide.)
+        You must pass `StackPolicyBody` or `StackPolicyURL`. If both are
+            passed, only `StackPolicyBody` is used.
+
+        :type stack_policy_url: string
+        :param stack_policy_url: Location of a file containing the stack
+            policy. The URL must point to a policy (max size: 16KB) located in
+            an S3 bucket in the same region as the stack. You must pass
+            `StackPolicyBody` or `StackPolicyURL`. If both are passed, only
+            `StackPolicyBody` is used.
+        """
+        return self.connection.set_stack_policy(self.stack_id,
+            stack_policy_body=stack_policy_body,
+            stack_policy_url=stack_policy_url)
+
 
 class StackSummary(object):
     def __init__(self, connection=None):
@@ -126,9 +158,15 @@ class StackSummary(object):
         elif name == 'StackName':
             self.stack_name = value
         elif name == 'CreationTime':
-            self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.creation_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
         elif name == "DeletionTime":
-            self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.deletion_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
         elif name == 'TemplateDescription':
             self.template_description = value
         elif name == "member":
@@ -271,7 +309,10 @@ class StackResource(object):
         elif name == "StackName":
             self.stack_name = value
         elif name == "Timestamp":
-            self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            try:
+                self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                self.timestamp = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
         else:
             setattr(self, name, value)
 
@@ -283,7 +324,7 @@ class StackResource(object):
 class StackResourceSummary(object):
     def __init__(self, connection=None):
         self.connection = connection
-        self.last_updated_timestamp = None
+        self.last_updated_time = None
         self.logical_resource_id = None
         self.physical_resource_id = None
         self.resource_status = None
@@ -294,9 +335,17 @@ class StackResourceSummary(object):
         return None
 
     def endElement(self, name, value, connection):
-        if name == "LastUpdatedTimestamp":
-            self.last_updated_timestamp = datetime.strptime(value,
-                '%Y-%m-%dT%H:%M:%SZ')
+        if name == "LastUpdatedTime":
+            try:
+                self.last_updated_time = datetime.strptime(
+                    value,
+                    '%Y-%m-%dT%H:%M:%SZ'
+                )
+            except ValueError:
+                self.last_updated_time = datetime.strptime(
+                    value,
+                    '%Y-%m-%dT%H:%M:%S.%fZ'
+                )
         elif name == "LogicalResourceId":
             self.logical_resource_id = value
         elif name == "PhysicalResourceId":

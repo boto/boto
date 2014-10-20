@@ -23,7 +23,7 @@
 import os
 
 class Converter(object):
-    
+
     @classmethod
     def convert_string(cls, param, value):
         # TODO: could do length validation, etc. here
@@ -35,7 +35,7 @@ class Converter(object):
     def convert_integer(cls, param, value):
         # TODO: could do range checking here
         return int(value)
-        
+
     @classmethod
     def convert_boolean(cls, param, value):
         """
@@ -43,19 +43,19 @@ class Converter(object):
         of the option means True so just return True
         """
         return True
-        
+
     @classmethod
     def convert_file(cls, param, value):
-        if os.path.isfile(value):
+        if os.path.exists(value) and not os.path.isdir(value):
             return value
         raise ValueError
-        
+
     @classmethod
     def convert_dir(cls, param, value):
         if os.path.isdir(value):
             return value
         raise ValueError
-        
+
     @classmethod
     def convert(cls, param, value):
         try:
@@ -66,8 +66,8 @@ class Converter(object):
             return mthd(param, value)
         except:
             raise ValidationException(param, '')
-        
-class Param(object):
+
+class Param(Converter):
 
     def __init__(self, name=None, ptype='string', optional=True,
                  short_name=None, long_name=None, doc='',
@@ -142,6 +142,6 @@ class Param(object):
         :param value: The value to convert.  This should always
                       be a string.
         """
-        return Converter.convert(self, value)
+        return super(Param, self).convert(self,value)
 
 

@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -22,12 +22,13 @@ import boto
 from boto.utils import find_class, Password
 from boto.sdb.db.key import Key
 from boto.sdb.db.model import Model
+from boto.compat import six, encodebytes
 from datetime import datetime
 from xml.dom.minidom import getDOMImplementation, parse, parseString, Node
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
-class XMLConverter:
+class XMLConverter(object):
     """
     Responsible for converting base Python types to format compatible with underlying
     database.  For SimpleDB, that means everything needs to be converted to a string
@@ -43,11 +44,12 @@ class XMLConverter:
         self.manager = manager
         self.type_map = { bool : (self.encode_bool, self.decode_bool),
                           int : (self.encode_int, self.decode_int),
-                          long : (self.encode_long, self.decode_long),
                           Model : (self.encode_reference, self.decode_reference),
                           Key : (self.encode_reference, self.decode_reference),
                           Password : (self.encode_password, self.decode_password),
                           datetime : (self.encode_datetime, self.decode_datetime)}
+        if six.PY2:
+            self.type_map[long] = (self.encode_long, self.decode_long)
 
     def get_text_value(self, parent_node):
         value = ''
@@ -145,9 +147,9 @@ class XMLConverter:
             return None
 
     def encode_reference(self, value):
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, six.string_types):
             return value
-        if value == None:
+        if value is None:
             return ''
         else:
             val_node = self.manager.doc.createElement("object")
@@ -179,7 +181,7 @@ class XMLConverter:
 
 
 class XMLManager(object):
-    
+
     def __init__(self, cls, db_name, db_user, db_passwd,
                  db_host, db_port, db_table, ddl_dir, enable_ssl):
         self.cls = cls
@@ -201,9 +203,8 @@ class XMLManager(object):
         self.enable_ssl = enable_ssl
         self.auth_header = None
         if self.db_user:
-            import base64
-            base64string = base64.encodestring('%s:%s' % (self.db_user, self.db_passwd))[:-1]
-            authheader =  "Basic %s" % base64string
+            base64string = encodebytes('%s:%s' % (self.db_user, self.db_passwd))[:-1]
+            authheader = "Basic %s" % base64string
             self.auth_header = authheader
 
     def _connect(self):
@@ -260,7 +261,7 @@ class XMLManager(object):
 
     def get_doc(self):
         return self.doc
-            
+
     def encode_value(self, prop, value):
         return self.converter.encode_prop(prop, value)
 
@@ -296,7 +297,7 @@ class XMLManager(object):
             prop = obj.find_property(prop_name)
             value = self.decode_value(prop, prop_node)
             value = prop.make_value_from_datastore(value)
-            if value != None:
+            if value is not None:
                 try:
                     setattr(obj, prop.name, value)
                 except:
@@ -321,11 +322,11 @@ class XMLManager(object):
             prop = cls.find_property(prop_name)
             value = self.decode_value(prop, prop_node)
             value = prop.make_value_from_datastore(value)
-            if value != None:
+            if value is not None:
                 props[prop.name] = value
         return (cls, props, id)
-        
-        
+
+
     def get_object(self, cls, id):
         if not self.connection:
             self._connect()
@@ -352,7 +353,7 @@ class XMLManager(object):
         query = str(self._build_query(cls, filters, limit, order_by))
         if query:
             url = "/%s?%s" % (self.db_name, urlencode({"query": query}))
-        else: 
+        else:
             url = "/%s" % self.db_name
         resp = self._make_request('GET', url)
         if resp.status == 200:
@@ -373,7 +374,7 @@ class XMLManager(object):
             for property in properties:
                 if property.name == name:
                     found = True
-                    if types.TypeType(value) == types.ListType:
+                    if types.TypeType(value) == list:
                         filter_parts = []
                         for val in value:
                             val = self.encode_value(property, val)
@@ -459,25 +460,25 @@ class XMLManager(object):
                 elif isinstance(value, Node):
                     prop_node.appendChild(value)
                 else:
-                    text_node = doc.createTextNode(unicode(value).encode("ascii", "ignore"))
+                    text_node = doc.createTextNode(six.text_type(value).encode("ascii", "ignore"))
                     prop_node.appendChild(text_node)
             obj_node.appendChild(prop_node)
 
         return doc
 
     def unmarshal_object(self, fp, cls=None, id=None):
-        if isinstance(fp, str) or isinstance(fp, unicode):
+        if isinstance(fp, six.string_types):
             doc = parseString(fp)
         else:
             doc = parse(fp)
         return self.get_object_from_doc(cls, id, doc)
-    
+
     def unmarshal_props(self, fp, cls=None, id=None):
         """
         Same as unmarshalling an object, except it returns
         from "get_props_from_doc"
         """
-        if isinstance(fp, str) or isinstance(fp, unicode):
+        if isinstance(fp, six.string_types):
             doc = parseString(fp)
         else:
             doc = parse(fp)
@@ -488,7 +489,7 @@ class XMLManager(object):
         return self._make_request("DELETE", url)
 
     def set_key_value(self, obj, name, value):
-        self.domain.put_attributes(obj.id, {name : value}, replace=True)
+        self.domain.put_attributes(obj.id, {name: value}, replace=True)
 
     def delete_key_value(self, obj, name):
         self.domain.delete_attributes(obj.id, name)
@@ -499,7 +500,7 @@ class XMLManager(object):
             return a[name]
         else:
             return None
-    
+
     def get_raw_item(self, obj):
         return self.domain.get_item(obj.id)
 
@@ -514,4 +515,3 @@ class XMLManager(object):
             obj = obj.get_by_id(obj.id)
             obj._loaded = True
         return obj
-

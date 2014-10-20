@@ -22,8 +22,8 @@
 # IN THE SOFTWARE.
 #
 
-from .layer1 import Layer1
-from .domain import Domain
+from boto.cloudsearch.layer1 import Layer1
+from boto.cloudsearch.domain import Domain
 
 
 class Layer2(object):
@@ -32,10 +32,18 @@ class Layer2(object):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  host=None, debug=0, session_token=None, region=None,
                  validate_certs=True):
-        self.layer1 = Layer1(aws_access_key_id, aws_secret_access_key,
-                             is_secure, port, proxy, proxy_port,
-                             host, debug, session_token, region,
-                             validate_certs=validate_certs)
+        self.layer1 = Layer1(
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            is_secure=is_secure,
+            port=port,
+            proxy=proxy,
+            proxy_port=proxy_port,
+            host=host,
+            debug=debug,
+            security_token=session_token,
+            region=region,
+            validate_certs=validate_certs)
 
     def list_domains(self, domain_names=None):
         """

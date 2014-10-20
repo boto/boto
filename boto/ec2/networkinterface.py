@@ -23,6 +23,7 @@
 """
 Represents an EC2 Elastic Network Interface
 """
+from boto.exception import BotoClientError
 from boto.ec2.ec2object import TaggedEC2Object
 from boto.resultset import ResultSet
 from boto.ec2.group import Group
@@ -59,6 +60,8 @@ class Attachment(object):
             self.id = value
         elif name == 'instanceId':
             self.instance_id = value
+        elif name == 'deviceIndex':
+            self.device_index = int(value)
         elif name == 'instanceOwnerId':
             self.instance_owner_id = value
         elif name == 'status':
@@ -96,7 +99,7 @@ class NetworkInterface(TaggedEC2Object):
     """
 
     def __init__(self, connection=None):
-        TaggedEC2Object.__init__(self, connection)
+        super(NetworkInterface, self).__init__(connection)
         self.id = None
         self.subnet_id = None
         self.vpc_id = None
@@ -116,7 +119,7 @@ class NetworkInterface(TaggedEC2Object):
         return 'NetworkInterface:%s' % self.id
 
     def startElement(self, name, attrs, connection):
-        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        retval = super(NetworkInterface, self).startElement(name, attrs, connection)
         if retval is not None:
             return retval
         if name == 'groupSet':
@@ -163,8 +166,75 @@ class NetworkInterface(TaggedEC2Object):
         else:
             setattr(self, name, value)
 
-    def delete(self):
-        return self.connection.delete_network_interface(self.id)
+    def _update(self, updated):
+        self.__dict__.update(updated.__dict__)
+
+    def update(self, validate=False, dry_run=False):
+        """
+        Update the data associated with this ENI by querying EC2.
+
+        :type validate: bool
+        :param validate: By default, if EC2 returns no data about the
+                         ENI the update method returns quietly.  If
+                         the validate param is True, however, it will
+                         raise a ValueError exception if no data is
+                         returned from EC2.
+        """
+        rs = self.connection.get_all_network_interfaces(
+            [self.id],
+            dry_run=dry_run
+        )
+        if len(rs) > 0:
+            self._update(rs[0])
+        elif validate:
+            raise ValueError('%s is not a valid ENI ID' % self.id)
+        return self.status
+
+    def attach(self, instance_id, device_index, dry_run=False):
+        """
+        Attach this ENI to an EC2 instance.
+
+        :type instance_id: str
+        :param instance_id: The ID of the EC2 instance to which it will
+                            be attached.
+
+        :type device_index: int
+        :param device_index: The interface nunber, N, on the instance (eg. ethN)
+
+        :rtype: bool
+        :return: True if successful
+        """
+        return self.connection.attach_network_interface(
+            self.id,
+            instance_id,
+            device_index,
+            dry_run=dry_run
+        )
+
+    def detach(self, force=False, dry_run=False):
+        """
+        Detach this ENI from an EC2 instance.
+
+        :type force: bool
+        :param force: Forces detachment if the previous detachment
+                      attempt did not occur cleanly.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        attachment_id = getattr(self.attachment, 'id', None)
+
+        return self.connection.detach_network_interface(
+            attachment_id,
+            force,
+            dry_run=dry_run
+        )
+
+    def delete(self, dry_run=False):
+        return self.connection.delete_network_interface(
+            self.id,
+            dry_run=dry_run
+        )
 
 
 class PrivateIPAddress(object):
@@ -194,13 +264,15 @@ class NetworkInterfaceCollection(list):
 
     def build_list_params(self, params, prefix=''):
         for i, spec in enumerate(self):
-            full_prefix = '%sNetworkInterface.%s.' % (prefix, i+1)
+            full_prefix = '%sNetworkInterface.%s.' % (prefix, i)
             if spec.network_interface_id is not None:
                 params[full_prefix + 'NetworkInterfaceId'] = \
                         str(spec.network_interface_id)
             if spec.device_index is not None:
                 params[full_prefix + 'DeviceIndex'] = \
                         str(spec.device_index)
+            else:
+                params[full_prefix + 'DeviceIndex'] = 0
             if spec.subnet_id is not None:
                 params[full_prefix + 'SubnetId'] = str(spec.subnet_id)
             if spec.description is not None:
@@ -216,17 +288,47 @@ class NetworkInterfaceCollection(list):
                         str(spec.private_ip_address)
             if spec.groups is not None:
                 for j, group_id in enumerate(spec.groups):
-                    query_param_key = '%sSecurityGroupId.%s' % (full_prefix, j+1)
+                    query_param_key = '%sSecurityGroupId.%s' % (full_prefix, j)
                     params[query_param_key] = str(group_id)
             if spec.private_ip_addresses is not None:
                 for k, ip_addr in enumerate(spec.private_ip_addresses):
                     query_param_key_prefix = (
-                        '%sPrivateIpAddresses.%s' % (full_prefix, k+1))
+                        '%sPrivateIpAddresses.%s' % (full_prefix, k))
                     params[query_param_key_prefix + '.PrivateIpAddress'] = \
                             str(ip_addr.private_ip_address)
                     if ip_addr.primary is not None:
                         params[query_param_key_prefix + '.Primary'] = \
                                 'true' if ip_addr.primary else 'false'
+
+            # Associating Public IPs have special logic around them:
+            #
+            # * Only assignable on an device_index of ``0``
+            # * Only on one interface
+            # * Only if there are no other interfaces being created
+            # * Only if it's a new interface (which we can't really guard
+            #   against)
+            #
+            # More details on http://docs.aws.amazon.com/AWSEC2/latest/APIReference/ApiReference-query-RunInstances.html
+            if spec.associate_public_ip_address is not None:
+                if not params[full_prefix + 'DeviceIndex'] in (0, '0'):
+                    raise BotoClientError(
+                        "Only the interface with device index of 0 can " + \
+                        "be provided when using " + \
+                        "'associate_public_ip_address'."
+                    )
+
+                if len(self) > 1:
+                    raise BotoClientError(
+                        "Only one interface can be provided when using " + \
+                        "'associate_public_ip_address'."
+                    )
+
+                key = full_prefix + 'AssociatePublicIpAddress'
+
+                if spec.associate_public_ip_address:
+                    params[key] = 'true'
+                else:
+                    params[key] = 'false'
 
 
 class NetworkInterfaceSpecification(object):
@@ -234,7 +336,8 @@ class NetworkInterfaceSpecification(object):
                  subnet_id=None, description=None, private_ip_address=None,
                  groups=None, delete_on_termination=None,
                  private_ip_addresses=None,
-                 secondary_private_ip_address_count=None):
+                 secondary_private_ip_address_count=None,
+                 associate_public_ip_address=None):
         self.network_interface_id = network_interface_id
         self.device_index = device_index
         self.subnet_id = subnet_id
@@ -245,3 +348,4 @@ class NetworkInterfaceSpecification(object):
         self.private_ip_addresses = private_ip_addresses
         self.secondary_private_ip_address_count = \
                 secondary_private_ip_address_count
+        self.associate_public_ip_address = associate_public_ip_address

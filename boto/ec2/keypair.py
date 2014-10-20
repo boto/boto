@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -27,10 +27,11 @@ import os
 from boto.ec2.ec2object import EC2Object
 from boto.exception import BotoClientError
 
+
 class KeyPair(EC2Object):
-    
+
     def __init__(self, connection=None):
-        EC2Object.__init__(self, connection)
+        super(KeyPair, self).__init__(connection)
         self.name = None
         self.fingerprint = None
         self.material = None
@@ -48,20 +49,20 @@ class KeyPair(EC2Object):
         else:
             setattr(self, name, value)
 
-    def delete(self):
+    def delete(self, dry_run=False):
         """
         Delete the KeyPair.
-        
+
         :rtype: bool
         :return: True if successful, otherwise False.
         """
-        return self.connection.delete_key_pair(self.name)
+        return self.connection.delete_key_pair(self.name, dry_run=dry_run)
 
     def save(self, directory_path):
         """
         Save the material (the unencrypted PEM encoded RSA private key)
         of a newly created KeyPair to a local file.
-        
+
         :type directory_path: string
         :param directory_path: The fully qualified path to the directory
                                in which the keypair will be saved.  The
@@ -71,7 +72,7 @@ class KeyPair(EC2Object):
                                name already exists in the directory, an
                                exception will be raised and the old file
                                will not be overwritten.
-        
+
         :rtype: bool
         :return: True if successful.
         """
@@ -83,12 +84,12 @@ class KeyPair(EC2Object):
             fp = open(file_path, 'wb')
             fp.write(self.material)
             fp.close()
-            os.chmod(file_path, 0600)
+            os.chmod(file_path, 0o600)
             return True
         else:
             raise BotoClientError('KeyPair contains no material')
 
-    def copy_to_region(self, region):
+    def copy_to_region(self, region, dry_run=False):
         """
         Create a new key pair of the same new in another region.
         Note that the new key pair will use a different ssh
@@ -106,8 +107,5 @@ class KeyPair(EC2Object):
             raise BotoClientError('Unable to copy to the same Region')
         conn_params = self.connection.get_params()
         rconn = region.connect(**conn_params)
-        kp = rconn.create_key_pair(self.name)
+        kp = rconn.create_key_pair(self.name, dry_run=dry_run)
         return kp
-
-
-

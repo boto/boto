@@ -16,7 +16,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -26,7 +26,8 @@ from boto.regioninfo import RegionInfo
 
 class RDSRegionInfo(RegionInfo):
 
-    def __init__(self, connection=None, name=None, endpoint=None):
+    def __init__(self, connection=None, name=None, endpoint=None,
+                 connection_cls=None):
         from boto.rds import RDSConnection
-        RegionInfo.__init__(self, connection, name, endpoint,
+        super(RDSRegionInfo, self).__init__(connection, name, endpoint,
                             RDSConnection)

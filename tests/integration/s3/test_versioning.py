@@ -30,6 +30,7 @@ import time
 from boto.s3.connection import S3Connection
 from boto.exception import S3ResponseError
 from boto.s3.deletemarker import DeleteMarker
+from boto.compat import six
 
 class S3VersionTest (unittest.TestCase):
 
@@ -62,7 +63,7 @@ class S3VersionTest (unittest.TestCase):
         v1 = k.version_id
         
         # now get the contents from s3 
-        o1 = k.get_contents_as_string()
+        o1 = k.get_contents_as_string().decode('utf-8')
         
         # check to make sure content read from k is identical to original
         self.assertEqual(s1, o1)
@@ -74,12 +75,12 @@ class S3VersionTest (unittest.TestCase):
         
         # now retrieve latest contents as a string and compare
         k2 = self.bucket.new_key("foobar")
-        o2 = k2.get_contents_as_string()
+        o2 = k2.get_contents_as_string().decode('utf-8')
         self.assertEqual(s2, o2)
 
         # next retrieve explicit versions and compare
-        o1 = k.get_contents_as_string(version_id=v1)
-        o2 = k.get_contents_as_string(version_id=v2)
+        o1 = k.get_contents_as_string(version_id=v1).decode('utf-8')
+        o2 = k.get_contents_as_string(version_id=v2).decode('utf-8')
         self.assertEqual(s1, o1)
         self.assertEqual(s2, o2)
         
@@ -126,7 +127,7 @@ class S3VersionTest (unittest.TestCase):
         kv1.set_contents_from_string("v1")
         
         # read list which should contain latest v1
-        listed_kv1 = iter(self.bucket.get_all_versions()).next()
+        listed_kv1 = next(iter(self.bucket.get_all_versions()))
         self.assertEqual(listed_kv1.name, key_name)
         self.assertEqual(listed_kv1.version_id, kv1.version_id)
         self.assertEqual(listed_kv1.is_latest, True)
@@ -137,8 +138,8 @@ class S3VersionTest (unittest.TestCase):
 
         # read 2 versions, confirm v2 is latest
         i = iter(self.bucket.get_all_versions())
-        listed_kv2 = i.next()
-        listed_kv1 = i.next()
+        listed_kv2 = next(i)
+        listed_kv1 = next(i)
         self.assertEqual(listed_kv2.version_id, kv2.version_id)
         self.assertEqual(listed_kv1.version_id, kv1.version_id)
         self.assertEqual(listed_kv2.is_latest, True)
@@ -147,9 +148,9 @@ class S3VersionTest (unittest.TestCase):
         # delete key, which creates a delete marker as latest
         self.bucket.delete_key(key_name)
         i = iter(self.bucket.get_all_versions())
-        listed_kv3 = i.next()
-        listed_kv2 = i.next()
-        listed_kv1 = i.next()
+        listed_kv3 = next(i)
+        listed_kv2 = next(i)
+        listed_kv1 = next(i)
         self.assertNotEqual(listed_kv3.version_id, None)
         self.assertEqual(listed_kv2.version_id, kv2.version_id)
         self.assertEqual(listed_kv1.version_id, kv1.version_id)

@@ -20,12 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from __future__ import with_statement
 import math
 import socket
 
-from .exceptions import TreeHashDoesNotMatchError, DownloadArchiveError
-from .utils import tree_hash_from_str
+from boto.glacier.exceptions import TreeHashDoesNotMatchError, \
+                                    DownloadArchiveError
+from boto.glacier.utils import tree_hash_from_str
 
 
 class Job(object):
@@ -97,9 +97,12 @@ class Job(object):
                         actual_tree_hash, response['TreeHash'], byte_range))
         return response
 
+    def _calc_num_chunks(self, chunk_size):
+        return int(math.ceil(self.archive_size / float(chunk_size)))
+
     def download_to_file(self, filename, chunk_size=DefaultPartSize,
                          verify_hashes=True, retry_exceptions=(socket.error,)):
-        """Download an archive to a file.
+        """Download an archive to a file by name.
 
         :type filename: str
         :param filename: The name of the file where the archive
@@ -114,14 +117,36 @@ class Job(object):
             the tree hashes for each downloaded chunk.
 
         """
-        num_chunks = int(math.ceil(self.archive_size / float(chunk_size)))
+        num_chunks = self._calc_num_chunks(chunk_size)
         with open(filename, 'wb') as output_file:
             self._download_to_fileob(output_file, num_chunks, chunk_size,
                                      verify_hashes, retry_exceptions)
 
+    def download_to_fileobj(self, output_file, chunk_size=DefaultPartSize,
+                            verify_hashes=True,
+                            retry_exceptions=(socket.error,)):
+        """Download an archive to a file object.
+
+        :type output_file: file
+        :param output_file: The file object where the archive
+            contents will be saved.
+
+        :type chunk_size: int
+        :param chunk_size: The chunk size to use when downloading
+            the archive.
+
+        :type verify_hashes: bool
+        :param verify_hashes: Indicates whether or not to verify
+            the tree hashes for each downloaded chunk.
+
+        """
+        num_chunks = self._calc_num_chunks(chunk_size)
+        self._download_to_fileob(output_file, num_chunks, chunk_size,
+                                 verify_hashes, retry_exceptions)
+
     def _download_to_fileob(self, fileobj, num_chunks, chunk_size, verify_hashes,
                             retry_exceptions):
-        for i in xrange(num_chunks):
+        for i in range(num_chunks):
             byte_range = ((i * chunk_size), ((i + 1) * chunk_size) - 1)
             data, expected_tree_hash = self._download_byte_range(
                 byte_range, retry_exceptions)
@@ -138,13 +163,13 @@ class Job(object):
         # You can occasionally get socket.errors when downloading
         # chunks from Glacier, so each chunk can be retried up
         # to 5 times.
-        for _ in xrange(5):
+        for _ in range(5):
             try:
                 response = self.get_output(byte_range)
                 data = response.read()
                 expected_tree_hash = response['TreeHash']
                 return data, expected_tree_hash
-            except retry_exceptions, e:
+            except retry_exceptions as e:
                 continue
         else:
             raise DownloadArchiveError("There was an error downloading"

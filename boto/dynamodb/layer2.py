@@ -145,11 +145,13 @@ class Layer2(object):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  debug=0, security_token=None, region=None,
-                 validate_certs=True, dynamizer=LossyFloatDynamizer):
+                 validate_certs=True, dynamizer=LossyFloatDynamizer,
+                 profile_name=None):
         self.layer1 = Layer1(aws_access_key_id, aws_secret_access_key,
                              is_secure, port, proxy, proxy_port,
                              debug, security_token, region,
-                             validate_certs=validate_certs)
+                             validate_certs=validate_certs,
+                             profile_name=profile_name)
         self.dynamizer = dynamizer()
 
     def use_decimals(self):
@@ -262,13 +264,13 @@ class Layer2(object):
         """
         dynamodb_key = {}
         dynamodb_value = self.dynamizer.encode(hash_key)
-        if dynamodb_value.keys()[0] != schema.hash_key_type:
+        if list(dynamodb_value.keys())[0] != schema.hash_key_type:
             msg = 'Hashkey must be of type: %s' % schema.hash_key_type
             raise TypeError(msg)
         dynamodb_key['HashKeyElement'] = dynamodb_value
         if range_key is not None:
             dynamodb_value = self.dynamizer.encode(range_key)
-            if dynamodb_value.keys()[0] != schema.range_key_type:
+            if list(dynamodb_value.keys())[0] != schema.range_key_type:
                 msg = 'RangeKey must be of type: %s' % schema.range_key_type
                 raise TypeError(msg)
             dynamodb_key['RangeKeyElement'] = dynamodb_value

@@ -1,9 +1,6 @@
 import tempfile
 import unittest
-try:
-    import simplejson as json
-except ImportError:
-    import json
+from boto.compat import StringIO, six, json
 from textwrap import dedent
 
 from boto.cloudfront.distribution import Distribution
@@ -132,6 +129,22 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         encoded_sig = self.dist._url_base64_encode(sig)
         self.assertEqual(expected, encoded_sig)
 
+    def test_sign_canned_policy_pk_file_like(self):
+        """
+        Test signing the canned policy from amazon's cloudfront documentation
+        with a file-like object (not a subclass of 'file' type)
+        """
+        expected = ("Nql641NHEUkUaXQHZINK1FZ~SYeUSoBJMxjdgqrzIdzV2gyEXPDN"
+                    "v0pYdWJkflDKJ3xIu7lbwRpSkG98NBlgPi4ZJpRRnVX4kXAJK6td"
+                    "Nx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCMIYHIaiOB6~5j"
+                    "t9w2EOwi6sIIqrg_")
+        pk_file = StringIO()
+        pk_file.write(self.pk_str)
+        pk_file.seek(0)
+        sig = self.dist._sign_string(self.canned_policy, private_key_file=pk_file)
+        encoded_sig = self.dist._url_base64_encode(sig)
+        self.assertEqual(expected, encoded_sig)
+
     def test_sign_canned_policy_unicode(self):
         """
         Test signing the canned policy from amazon's cloudfront documentation.
@@ -140,7 +153,7 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
                     "v0pYdWJkflDKJ3xIu7lbwRpSkG98NBlgPi4ZJpRRnVX4kXAJK6td"
                     "Nx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCMIYHIaiOB6~5j"
                     "t9w2EOwi6sIIqrg_")
-        unicode_policy = unicode(self.canned_policy)
+        unicode_policy = six.text_type(self.canned_policy)
         sig = self.dist._sign_string(unicode_policy, private_key_string=self.pk_str)
         encoded_sig = self.dist._url_base64_encode(sig)
         self.assertEqual(expected, encoded_sig)

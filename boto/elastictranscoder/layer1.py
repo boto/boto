@@ -55,7 +55,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         else:
             del kwargs['region']
         kwargs['host'] = region.endpoint
-        AWSAuthConnection.__init__(self, **kwargs)
+        super(ElasticTranscoderConnection, self).__init__(**kwargs)
         self.region = region
 
     def _required_auth_capability(self):
@@ -63,15 +63,14 @@ class ElasticTranscoderConnection(AWSAuthConnection):
 
     def cancel_job(self, id=None):
         """
-        To cancel a job, send a DELETE request to the
-        `/2012-09-25/jobs/ [jobId] ` resource.
+        The CancelJob operation cancels an unfinished job.
         You can only cancel a job that has a status of `Submitted`. To
         prevent a pipeline from starting to process a job while you're
         getting the job identifier, use UpdatePipelineStatus to
         temporarily pause the pipeline.
 
         :type id: string
-        :param id: The identifier of the job that you want to delete.
+        :param id: The identifier of the job that you want to cancel.
         To get a list of the jobs (including their `jobId`) that have a status
             of `Submitted`, use the ListJobsByStatus API action.
 
@@ -82,9 +81,6 @@ class ElasticTranscoderConnection(AWSAuthConnection):
     def create_job(self, pipeline_id=None, input_name=None, output=None,
                    outputs=None, output_key_prefix=None, playlists=None):
         """
-        To create a job, send a POST request to the `/2012-09-25/jobs`
-        resource.
-
         When you create a job, Elastic Transcoder returns JSON data
         that includes the values that you specified plus information
         about the job that is created.
@@ -107,7 +103,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
             information about the file that is being transcoded.
 
         :type output: dict
-        :param output:
+        :param output: The `CreateJobOutput` structure.
 
         :type outputs: list
         :param outputs: A section of the request body that provides information
@@ -149,8 +145,8 @@ class ElasticTranscoderConnection(AWSAuthConnection):
                         output_bucket=None, role=None, notifications=None,
                         content_config=None, thumbnail_config=None):
         """
-        To create a pipeline, send a POST request to the
-        `2012-09-25/pipelines` resource.
+        The CreatePipeline operation creates a pipeline with settings
+        that you specify.
 
         :type name: string
         :param name: The name of the pipeline. We recommend that the name be
@@ -364,10 +360,10 @@ class ElasticTranscoderConnection(AWSAuthConnection):
     def create_preset(self, name=None, description=None, container=None,
                       video=None, audio=None, thumbnails=None):
         """
-        To create a preset, send a POST request to the
-        `/2012-09-25/presets` resource.
-        Elastic Transcoder checks the settings that you specify to
-        ensure that they meet Elastic Transcoder requirements and to
+        The CreatePreset operation creates a preset with settings that
+        you specify.
+        Elastic Transcoder checks the CreatePreset settings to ensure
+        that they meet Elastic Transcoder requirements and to
         determine whether they comply with H.264 standards. If your
         settings are not valid for Elastic Transcoder, Elastic
         Transcoder returns an HTTP 400 response (
@@ -391,8 +387,8 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         :param description: A description of the preset.
 
         :type container: string
-        :param container: The container type for the output file. This value
-            must be `mp4`.
+        :param container: The container type for the output file. Valid values
+            include `mp3`, `mp4`, `ogg`, `ts`, and `webm`.
 
         :type video: dict
         :param video: A section of the request body that specifies the video
@@ -426,8 +422,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
 
     def delete_pipeline(self, id=None):
         """
-        To delete a pipeline, send a DELETE request to the
-        `/2012-09-25/pipelines/ [pipelineId] ` resource.
+        The DeletePipeline operation removes a pipeline.
 
         You can only delete a pipeline that has never been used or
         that is not currently in use (doesn't contain any active
@@ -443,10 +438,11 @@ class ElasticTranscoderConnection(AWSAuthConnection):
 
     def delete_preset(self, id=None):
         """
-        To delete a preset, send a DELETE request to the
-        `/2012-09-25/presets/ [presetId] ` resource.
+        The DeletePreset operation removes a preset that you've added
+        in an AWS region.
 
-        If the preset has been used, you cannot delete it.
+        You can't delete the default presets that are included with
+        Elastic Transcoder.
 
         :type id: string
         :param id: The identifier of the preset for which you want to get
@@ -459,9 +455,8 @@ class ElasticTranscoderConnection(AWSAuthConnection):
     def list_jobs_by_pipeline(self, pipeline_id=None, ascending=None,
                               page_token=None):
         """
-        To get a list of the jobs currently in a pipeline, send a GET
-        request to the `/2012-09-25/jobsByPipeline/ [pipelineId] `
-        resource.
+        The ListJobsByPipeline operation gets a list of the jobs
+        currently in a pipeline.
 
         Elastic Transcoder returns all of the jobs currently in the
         specified pipeline. The response body contains one element for
@@ -496,11 +491,7 @@ class ElasticTranscoderConnection(AWSAuthConnection):
     def list_jobs_by_status(self, status=None, ascending=None,
                             page_token=None):
         """
-        To get a list of the jobs that have a specified status, send a
-        GET request to the `/2012-09-25/jobsByStatus/ [status] `
-        resource.
-
-        Elastic Transcoder returns all of the jobs that have the
+        The ListJobsByStatus operation gets a list of jobs that have a
         specified status. The response body contains one element for
         each job that satisfies the search criteria.
 
@@ -532,32 +523,61 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         return self.make_request('GET', uri, expected_status=200,
                                  params=params)
 
-    def list_pipelines(self):
+    def list_pipelines(self, ascending=None, page_token=None):
         """
-        To get a list of the pipelines associated with the current AWS
-        account, send a GET request to the `/2012-09-25/pipelines`
-        resource.
+        The ListPipelines operation gets a list of the pipelines
+        associated with the current AWS account.
 
-        
-        """
-        uri = '/2012-09-25/pipelines'
-        return self.make_request('GET', uri, expected_status=200)
+        :type ascending: string
+        :param ascending: To list pipelines in chronological order by the date
+            and time that they were created, enter `True`. To list pipelines in
+            reverse chronological order, enter `False`.
 
-    def list_presets(self):
-        """
-        To get a list of all presets associated with the current AWS
-        account, send a GET request to the `/2012-09-25/presets`
-        resource.
+        :type page_token: string
+        :param page_token: When Elastic Transcoder returns more than one page
+            of results, use `pageToken` in subsequent `GET` requests to get
+            each successive page of results.
 
-        
         """
-        uri = '/2012-09-25/presets'
-        return self.make_request('GET', uri, expected_status=200)
+        uri = '/2012-09-25/pipelines'.format()
+        params = {}
+        if ascending is not None:
+            params['Ascending'] = ascending
+        if page_token is not None:
+            params['PageToken'] = page_token
+        return self.make_request('GET', uri, expected_status=200,
+                                 params=params)
+
+    def list_presets(self, ascending=None, page_token=None):
+        """
+        The ListPresets operation gets a list of the default presets
+        included with Elastic Transcoder and the presets that you've
+        added in an AWS region.
+
+        :type ascending: string
+        :param ascending: To list presets in chronological order by the date
+            and time that they were created, enter `True`. To list presets in
+            reverse chronological order, enter `False`.
+
+        :type page_token: string
+        :param page_token: When Elastic Transcoder returns more than one page
+            of results, use `pageToken` in subsequent `GET` requests to get
+            each successive page of results.
+
+        """
+        uri = '/2012-09-25/presets'.format()
+        params = {}
+        if ascending is not None:
+            params['Ascending'] = ascending
+        if page_token is not None:
+            params['PageToken'] = page_token
+        return self.make_request('GET', uri, expected_status=200,
+                                 params=params)
 
     def read_job(self, id=None):
         """
-        To get detailed information about a job, send a GET request to
-        the `/2012-09-25/jobs/ [jobId] ` resource.
+        The ReadJob operation returns detailed information about a
+        job.
 
         :type id: string
         :param id: The identifier of the job for which you want to get detailed
@@ -569,9 +589,8 @@ class ElasticTranscoderConnection(AWSAuthConnection):
 
     def read_pipeline(self, id=None):
         """
-        To get detailed information about a pipeline, send a GET
-        request to the `/2012-09-25/pipelines/ [pipelineId] `
-        resource.
+        The ReadPipeline operation gets detailed information about a
+        pipeline.
 
         :type id: string
         :param id: The identifier of the pipeline to read.
@@ -582,8 +601,8 @@ class ElasticTranscoderConnection(AWSAuthConnection):
 
     def read_preset(self, id=None):
         """
-        To get detailed information about a preset, send a GET request
-        to the `/2012-09-25/presets/ [presetId] ` resource.
+        The ReadPreset operation gets detailed information about a
+        preset.
 
         :type id: string
         :param id: The identifier of the preset for which you want to get
@@ -596,9 +615,8 @@ class ElasticTranscoderConnection(AWSAuthConnection):
     def test_role(self, role=None, input_bucket=None, output_bucket=None,
                   topics=None):
         """
-        To test the IAM role that's used by Elastic Transcoder to
-        create the pipeline, send a POST request to the
-        `/2012-09-25/roleTests` resource.
+        The TestRole operation tests the IAM role used to create the
+        pipeline.
 
         The `TestRole` action lets you determine whether the IAM role
         you are using has sufficient permissions to let Elastic
@@ -644,28 +662,161 @@ class ElasticTranscoderConnection(AWSAuthConnection):
                         notifications=None, content_config=None,
                         thumbnail_config=None):
         """
-        
+        Use the `UpdatePipeline` operation to update settings for a
+        pipeline. When you change pipeline settings, your changes take
+        effect immediately. Jobs that you have already submitted and
+        that Elastic Transcoder has not started to process are
+        affected in addition to jobs that you submit after you change
+        settings.
 
         :type id: string
-        :param id:
+        :param id: The ID of the pipeline that you want to update.
 
         :type name: string
-        :param name:
+        :param name: The name of the pipeline. We recommend that the name be
+            unique within the AWS account, but uniqueness is not enforced.
+        Constraints: Maximum 40 characters
 
         :type input_bucket: string
-        :param input_bucket:
+        :param input_bucket: The Amazon S3 bucket in which you saved the media
+            files that you want to transcode and the graphics that you want to
+            use as watermarks.
 
         :type role: string
-        :param role:
+        :param role: The IAM Amazon Resource Name (ARN) for the role that you
+            want Elastic Transcoder to use to transcode jobs for this pipeline.
 
         :type notifications: dict
         :param notifications:
+        The Amazon Simple Notification Service (Amazon SNS) topic or topics to
+            notify in order to report job status.
+        To receive notifications, you must also subscribe to the new topic in
+            the Amazon SNS console.
 
         :type content_config: dict
         :param content_config:
+        The optional `ContentConfig` object specifies information about the
+            Amazon S3 bucket in which you want Elastic Transcoder to save
+            transcoded files and playlists: which bucket to use, which users
+            you want to have access to the files, the type of access you want
+            users to have, and the storage class that you want to assign to the
+            files.
+
+        If you specify values for `ContentConfig`, you must also specify values
+            for `ThumbnailConfig`.
+
+        If you specify values for `ContentConfig` and `ThumbnailConfig`, omit
+            the `OutputBucket` object.
+
+
+        + **Bucket**: The Amazon S3 bucket in which you want Elastic Transcoder
+              to save transcoded files and playlists.
+        + **Permissions** (Optional): The Permissions object specifies which
+              users you want to have access to transcoded files and the type of
+              access you want them to have. You can grant permissions to a
+              maximum of 30 users and/or predefined Amazon S3 groups.
+        + **Grantee Type**: Specify the type of value that appears in the
+              `Grantee` object:
+
+            + **Canonical**: The value in the `Grantee` object is either the
+                  canonical user ID for an AWS account or an origin access identity
+                  for an Amazon CloudFront distribution. For more information about
+                  canonical user IDs, see Access Control List (ACL) Overview in the
+                  Amazon Simple Storage Service Developer Guide. For more information
+                  about using CloudFront origin access identities to require that
+                  users use CloudFront URLs instead of Amazon S3 URLs, see Using an
+                  Origin Access Identity to Restrict Access to Your Amazon S3
+                  Content. A canonical user ID is not the same as an AWS account
+                  number.
+            + **Email**: The value in the `Grantee` object is the registered email
+                  address of an AWS account.
+            + **Group**: The value in the `Grantee` object is one of the following
+                  predefined Amazon S3 groups: `AllUsers`, `AuthenticatedUsers`, or
+                  `LogDelivery`.
+
+        + **Grantee**: The AWS user or group that you want to have access to
+              transcoded files and playlists. To identify the user or group, you
+              can specify the canonical user ID for an AWS account, an origin
+              access identity for a CloudFront distribution, the registered email
+              address of an AWS account, or a predefined Amazon S3 group
+        + **Access**: The permission that you want to give to the AWS user that
+              you specified in `Grantee`. Permissions are granted on the files
+              that Elastic Transcoder adds to the bucket, including playlists and
+              video files. Valid values include:
+
+            + `READ`: The grantee can read the objects and metadata for objects
+                  that Elastic Transcoder adds to the Amazon S3 bucket.
+            + `READ_ACP`: The grantee can read the object ACL for objects that
+                  Elastic Transcoder adds to the Amazon S3 bucket.
+            + `WRITE_ACP`: The grantee can write the ACL for the objects that
+                  Elastic Transcoder adds to the Amazon S3 bucket.
+            + `FULL_CONTROL`: The grantee has `READ`, `READ_ACP`, and `WRITE_ACP`
+                  permissions for the objects that Elastic Transcoder adds to the
+                  Amazon S3 bucket.
+
+        + **StorageClass**: The Amazon S3 storage class, `Standard` or
+              `ReducedRedundancy`, that you want Elastic Transcoder to assign to
+              the video files and playlists that it stores in your Amazon S3
+              bucket.
 
         :type thumbnail_config: dict
         :param thumbnail_config:
+        The `ThumbnailConfig` object specifies several values, including the
+            Amazon S3 bucket in which you want Elastic Transcoder to save
+            thumbnail files, which users you want to have access to the files,
+            the type of access you want users to have, and the storage class
+            that you want to assign to the files.
+
+        If you specify values for `ContentConfig`, you must also specify values
+            for `ThumbnailConfig` even if you don't want to create thumbnails.
+
+        If you specify values for `ContentConfig` and `ThumbnailConfig`, omit
+            the `OutputBucket` object.
+
+
+        + **Bucket**: The Amazon S3 bucket in which you want Elastic Transcoder
+              to save thumbnail files.
+        + **Permissions** (Optional): The `Permissions` object specifies which
+              users and/or predefined Amazon S3 groups you want to have access to
+              thumbnail files, and the type of access you want them to have. You
+              can grant permissions to a maximum of 30 users and/or predefined
+              Amazon S3 groups.
+        + **GranteeType**: Specify the type of value that appears in the
+              Grantee object:
+
+            + **Canonical**: The value in the `Grantee` object is either the
+                  canonical user ID for an AWS account or an origin access identity
+                  for an Amazon CloudFront distribution. A canonical user ID is not
+                  the same as an AWS account number.
+            + **Email**: The value in the `Grantee` object is the registered email
+                  address of an AWS account.
+            + **Group**: The value in the `Grantee` object is one of the following
+                  predefined Amazon S3 groups: `AllUsers`, `AuthenticatedUsers`, or
+                  `LogDelivery`.
+
+        + **Grantee**: The AWS user or group that you want to have access to
+              thumbnail files. To identify the user or group, you can specify the
+              canonical user ID for an AWS account, an origin access identity for
+              a CloudFront distribution, the registered email address of an AWS
+              account, or a predefined Amazon S3 group.
+        + **Access**: The permission that you want to give to the AWS user that
+              you specified in `Grantee`. Permissions are granted on the
+              thumbnail files that Elastic Transcoder adds to the bucket. Valid
+              values include:
+
+            + `READ`: The grantee can read the thumbnails and metadata for objects
+                  that Elastic Transcoder adds to the Amazon S3 bucket.
+            + `READ_ACP`: The grantee can read the object ACL for thumbnails that
+                  Elastic Transcoder adds to the Amazon S3 bucket.
+            + `WRITE_ACP`: The grantee can write the ACL for the thumbnails that
+                  Elastic Transcoder adds to the Amazon S3 bucket.
+            + `FULL_CONTROL`: The grantee has `READ`, `READ_ACP`, and `WRITE_ACP`
+                  permissions for the thumbnails that Elastic Transcoder adds to the
+                  Amazon S3 bucket.
+
+        + **StorageClass**: The Amazon S3 storage class, `Standard` or
+              `ReducedRedundancy`, that you want Elastic Transcoder to assign to
+              the thumbnails that it stores in your Amazon S3 bucket.
 
         """
         uri = '/2012-09-25/pipelines/{0}'.format(id)
@@ -687,9 +838,9 @@ class ElasticTranscoderConnection(AWSAuthConnection):
 
     def update_pipeline_notifications(self, id=None, notifications=None):
         """
-        To update Amazon Simple Notification Service (Amazon SNS)
-        notifications for a pipeline, send a POST request to the
-        `/2012-09-25/pipelines/ [pipelineId] /notifications` resource.
+        With the UpdatePipelineNotifications operation, you can update
+        Amazon Simple Notification Service (Amazon SNS) notifications
+        for a pipeline.
 
         When you update notifications for a pipeline, Elastic
         Transcoder returns the values that you specified in the
@@ -734,10 +885,9 @@ class ElasticTranscoderConnection(AWSAuthConnection):
 
     def update_pipeline_status(self, id=None, status=None):
         """
-        To pause or reactivate a pipeline, so the pipeline stops or
-        restarts processing jobs, update the status for the pipeline.
-        Send a POST request to the `/2012-09-25/pipelines/
-        [pipelineId] /status` resource.
+        The UpdatePipelineStatus operation pauses or reactivates a
+        pipeline, so that the pipeline stops or restarts the
+        processing of jobs.
 
         Changing the pipeline status is useful if you want to cancel
         one or more jobs. You can't cancel jobs after Elastic
@@ -771,9 +921,9 @@ class ElasticTranscoderConnection(AWSAuthConnection):
                      expected_status=None, params=None):
         if headers is None:
             headers = {}
-        response = AWSAuthConnection.make_request(
-            self, verb, resource, headers=headers, data=data)
-        body = json.load(response)
+        response = super(ElasticTranscoderConnection, self).make_request(
+            verb, resource, headers=headers, data=data, params=params)
+        body = json.loads(response.read().decode('utf-8'))
         if response.status == expected_status:
             return body
         else:

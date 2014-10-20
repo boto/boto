@@ -24,19 +24,10 @@ This module provides an interface to the Elastic Compute Cloud (EC2)
 service from AWS.
 """
 from boto.ec2.connection import EC2Connection
-from boto.regioninfo import RegionInfo
+from boto.regioninfo import RegionInfo, get_regions, load_regions
 
 
-RegionData = {
-    'us-east-1': 'ec2.us-east-1.amazonaws.com',
-    'us-west-1': 'ec2.us-west-1.amazonaws.com',
-    'us-west-2': 'ec2.us-west-2.amazonaws.com',
-    'sa-east-1': 'ec2.sa-east-1.amazonaws.com',
-    'eu-west-1': 'ec2.eu-west-1.amazonaws.com',
-    'ap-northeast-1': 'ec2.ap-northeast-1.amazonaws.com',
-    'ap-southeast-1': 'ec2.ap-southeast-1.amazonaws.com',
-    'ap-southeast-2': 'ec2.ap-southeast-2.amazonaws.com',
-}
+RegionData = load_regions().get('ec2', {})
 
 
 def regions(**kw_params):
@@ -49,13 +40,7 @@ def regions(**kw_params):
     :rtype: list
     :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
     """
-    regions = []
-    for region_name in RegionData:
-        region = RegionInfo(name=region_name,
-                            endpoint=RegionData[region_name],
-                            connection_cls=EC2Connection)
-        regions.append(region)
-    return regions
+    return get_regions('ec2', connection_cls=EC2Connection)
 
 
 def connect_to_region(region_name, **kw_params):
@@ -72,9 +57,14 @@ def connect_to_region(region_name, **kw_params):
     :return: A connection to the given region, or None if an invalid region
              name is given
     """
+    if 'region' in kw_params and isinstance(kw_params['region'], RegionInfo)\
+       and region_name == kw_params['region'].name:
+        return EC2Connection(**kw_params)
+
     for region in regions(**kw_params):
         if region.name == region_name:
             return region.connect(**kw_params)
+
     return None
 
 

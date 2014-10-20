@@ -27,9 +27,9 @@ class InstanceGroup(object):
         self.market = market
         self.name = name
         if market == 'SPOT':
-            if not isinstance(bidprice, basestring):
+            if not bidprice:
                 raise ValueError('bidprice must be specified if market == SPOT')
-            self.bidprice = bidprice
+            self.bidprice = str(bidprice)
 
     def __repr__(self):
         if self.market == 'SPOT':

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,17 +21,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-
-from tests.unit import unittest
+from tests.compat import mock, unittest
 from tests.unit import AWSMockServiceTestCase
 
+from boto.compat import StringIO
 from boto.exception import BotoServerError
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
+from boto.s3.key import Key
 
 
 class TestS3Key(AWSMockServiceTestCase):
@@ -41,6 +39,11 @@ class TestS3Key(AWSMockServiceTestCase):
 
     def default_body(self):
         return "default body"
+
+    def test_unicode_name(self):
+        k = Key()
+        k.name = u'Österreich'
+        print(repr(k))
 
     def test_when_no_restore_header_present(self):
         self.set_http_response(status_code=200)
@@ -75,6 +78,31 @@ class TestS3Key(AWSMockServiceTestCase):
         key = b.delete_key('fookey')
         self.assertIsNotNone(key)
 
+    def test_storage_class(self):
+        self.set_http_response(status_code=200)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.get_key('fookey')
+
+        # Mock out the bucket object - we really only care about calls
+        # to list.
+        k.bucket = mock.MagicMock()
+
+        # Default behavior doesn't call list
+        k.set_contents_from_string('test')
+        k.bucket.list.assert_not_called()
+
+        # Direct access calls list to get the real value if unset,
+        # and still defaults to STANDARD if unavailable.
+        sc_value = k.storage_class
+        self.assertEqual(sc_value, 'STANDARD')
+        k.bucket.list.assert_called_with(k.name.encode('utf-8'))
+        k.bucket.list.reset_mock()
+
+        # Setting manually doesn't call list
+        k.storage_class = 'GLACIER'
+        k.set_contents_from_string('test')
+        k.bucket.list.assert_not_called()
+
 
 def counter(fn):
     def _wrapper(*args, **kwargs):
@@ -87,40 +115,77 @@ def counter(fn):
 class TestS3KeyRetries(AWSMockServiceTestCase):
     connection_class = S3Connection
 
-    def setUp(self):
-        super(TestS3KeyRetries, self).setUp()
-
-    def test_500_retry(self):
+    @mock.patch('time.sleep')
+    def test_500_retry(self, sleep_mock):
         self.set_http_response(status_code=500)
         b = Bucket(self.service_connection, 'mybucket')
         k = b.new_key('test_failure')
         fail_file = StringIO('This will attempt to retry.')
 
-        try:
+        with self.assertRaises(BotoServerError):
             k.send_file(fail_file)
-            self.fail("This shouldn't ever succeed.")
-        except BotoServerError:
-            pass
 
-    def test_400_timeout(self):
+    @mock.patch('time.sleep')
+    def test_400_timeout(self, sleep_mock):
         weird_timeout_body = "<Error><Code>RequestTimeout</Code></Error>"
         self.set_http_response(status_code=400, body=weird_timeout_body)
         b = Bucket(self.service_connection, 'mybucket')
         k = b.new_key('test_failure')
         fail_file = StringIO('This will pretend to be chunk-able.')
 
-        # Decorate.
         k.should_retry = counter(k.should_retry)
         self.assertEqual(k.should_retry.count, 0)
 
-        try:
+        with self.assertRaises(BotoServerError):
             k.send_file(fail_file)
-            self.fail("This shouldn't ever succeed.")
-        except BotoServerError:
-            pass
 
         self.assertTrue(k.should_retry.count, 1)
 
+    @mock.patch('time.sleep')
+    def test_502_bad_gateway(self, sleep_mock):
+        weird_timeout_body = "<Error><Code>BadGateway</Code></Error>"
+        self.set_http_response(status_code=502, body=weird_timeout_body)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.new_key('test_failure')
+        fail_file = StringIO('This will pretend to be chunk-able.')
+
+        k.should_retry = counter(k.should_retry)
+        self.assertEqual(k.should_retry.count, 0)
+
+        with self.assertRaises(BotoServerError):
+            k.send_file(fail_file)
+
+        self.assertTrue(k.should_retry.count, 1)
+
+    @mock.patch('time.sleep')
+    def test_504_gateway_timeout(self, sleep_mock):
+        weird_timeout_body = "<Error><Code>GatewayTimeout</Code></Error>"
+        self.set_http_response(status_code=504, body=weird_timeout_body)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.new_key('test_failure')
+        fail_file = StringIO('This will pretend to be chunk-able.')
+
+        k.should_retry = counter(k.should_retry)
+        self.assertEqual(k.should_retry.count, 0)
+
+        with self.assertRaises(BotoServerError):
+            k.send_file(fail_file)
+
+        self.assertTrue(k.should_retry.count, 1)
+
+
+class TestFileError(unittest.TestCase):
+    def test_file_error(self):
+        key = Key()
+
+        class CustomException(Exception): pass
+
+        key.get_contents_to_file = mock.Mock(
+            side_effect=CustomException('File blew up!'))
+
+        # Ensure our exception gets raised instead of a file or IO error
+        with self.assertRaises(CustomException):
+            key.get_contents_to_filename('foo.txt')
 
 if __name__ == '__main__':
     unittest.main()

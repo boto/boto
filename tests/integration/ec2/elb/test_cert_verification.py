@@ -25,16 +25,15 @@
 Check that all of the certs on all service endpoints validate.
 """
 
-import unittest
+from tests.integration import ServiceCertVerificationTest
+
+from tests.compat import unittest
 import boto.ec2.elb
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class ELBCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     elb = True
-    ssl = True
+    regions = boto.ec2.elb.regions()
 
-    def test_certs(self):
-        for region in boto.ec2.elb.regions():
-            c = region.connect()
-            c.get_all_load_balancers()
+    def sample_service_call(self, conn):
+        conn.get_all_load_balancers()

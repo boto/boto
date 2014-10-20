@@ -32,9 +32,10 @@ import socket
 
 from nose.plugins.attrib import attr
 from boto.ec2.connection import EC2Connection
+from boto.exception import EC2ResponseError
 
 
-class EC2ConnectionTest (unittest.TestCase):
+class EC2ConnectionTest(unittest.TestCase):
     ec2 = True
 
     @attr('notdefault')
@@ -42,7 +43,7 @@ class EC2ConnectionTest (unittest.TestCase):
         # this is my user_id, if you want to run these tests you should
         # replace this with yours or they won't work
         user_id = '963068290131'
-        print '--- running EC2Connection tests ---'
+        print('--- running EC2Connection tests ---')
         c = EC2Connection()
         # get list of private AMI's
         rs = c.get_all_images(owners=[user_id])
@@ -125,7 +126,7 @@ class EC2ConnectionTest (unittest.TestCase):
         reservation = image.run(security_groups=[group.name])
         instance = reservation.instances[0]
         while instance.state != 'running':
-            print '\tinstance is %s' % instance.state
+            print('\tinstance is %s' % instance.state)
             time.sleep(30)
             instance.update()
         # instance in now running, try to telnet to port 80
@@ -189,4 +190,52 @@ class EC2ConnectionTest (unittest.TestCase):
         assert len(l[0].product_codes) == 1
         assert l[0].product_codes[0] == demo_paid_ami_product_code
 
-        print '--- tests completed ---'
+        print('--- tests completed ---')
+
+    def test_dry_run(self):
+        c = EC2Connection()
+        dry_run_msg = 'Request would have succeeded, but DryRun flag is set.'
+
+        try:
+            rs = c.get_all_images(dry_run=True)
+            self.fail("Should have gotten an exception")
+        except EC2ResponseError as e:
+            self.assertTrue(dry_run_msg in str(e))
+
+        try:
+            rs = c.run_instances(
+                image_id='ami-a0cd60c9',
+                instance_type='m1.small',
+                dry_run=True
+            )
+            self.fail("Should have gotten an exception")
+        except EC2ResponseError as e:
+            self.assertTrue(dry_run_msg in str(e))
+
+        # Need an actual instance for the rest of this...
+        rs = c.run_instances(
+            image_id='ami-a0cd60c9',
+            instance_type='m1.small'
+        )
+        time.sleep(120)
+
+        try:
+            rs = c.stop_instances(
+                instance_ids=[rs.instances[0].id],
+                dry_run=True
+            )
+            self.fail("Should have gotten an exception")
+        except EC2ResponseError as e:
+            self.assertTrue(dry_run_msg in str(e))
+
+        try:
+            rs = c.terminate_instances(
+                instance_ids=[rs.instances[0].id],
+                dry_run=True
+            )
+            self.fail("Should have gotten an exception")
+        except EC2ResponseError as e:
+            self.assertTrue(dry_run_msg in str(e))
+
+        # And kill it.
+        rs.instances[0].terminate()

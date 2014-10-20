@@ -56,7 +56,7 @@ class KeyfileTest(unittest.TestCase):
         self.keyfile.close()
         try:
             self.keyfile.tell()
-        except ValueError, e:
+        except ValueError as e:
             self.assertEqual(str(e), 'I/O operation on closed file')
 
     def testSeek(self):
@@ -69,7 +69,7 @@ class KeyfileTest(unittest.TestCase):
         # Seeking negative should raise.
         try:
             self.keyfile.seek(-5)
-        except IOError, e:
+        except IOError as e:
             self.assertEqual(str(e), 'Invalid argument')
 
         # Reading past end of file is supposed to return empty string.
@@ -91,7 +91,7 @@ class KeyfileTest(unittest.TestCase):
         # Test attempt to seek backwards past the start from the end.
         try:
             self.keyfile.seek(-100, os.SEEK_END)
-        except IOError, e:
+        except IOError as e:
             self.assertEqual(str(e), 'Invalid argument')
 
     def testSeekCur(self):
@@ -99,3 +99,16 @@ class KeyfileTest(unittest.TestCase):
         self.keyfile.seek(1, os.SEEK_CUR)
         self.assertEqual(self.keyfile.tell(), 2)
         self.assertEqual(self.keyfile.read(4), self.contents[2:6])
+
+    def testSetEtag(self):
+        # Make sure both bytes and strings work as contents. This is one of the
+        # very few places Boto uses the mock key object.
+        # https://github.com/GoogleCloudPlatform/gsutil/issues/214#issuecomment-49906044
+        self.keyfile.key.data = b'test'
+        self.keyfile.key.set_etag()
+        self.assertEqual(self.keyfile.key.etag, '098f6bcd4621d373cade4e832627b4f6')
+
+        self.keyfile.key.etag = None
+        self.keyfile.key.data = 'test'
+        self.keyfile.key.set_etag()
+        self.assertEqual(self.keyfile.key.etag, '098f6bcd4621d373cade4e832627b4f6')

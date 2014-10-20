@@ -22,7 +22,7 @@
 import uuid
 import base64
 import time
-from boto.compat import json
+from boto.compat import six, json
 from boto.cloudfront.identity import OriginAccessIdentity
 from boto.cloudfront.object import Object, StreamingObject
 from boto.cloudfront.signers import ActiveTrustedSigners, TrustedSigners
@@ -30,7 +30,7 @@ from boto.cloudfront.logging import LoggingInfo
 from boto.cloudfront.origin import S3Origin, CustomOrigin
 from boto.s3.acl import ACL
 
-class DistributionConfig:
+class DistributionConfig(object):
 
     def __init__(self, connection=None, origin=None, enabled=False,
                  caller_reference='', cnames=None, comment='',
@@ -100,8 +100,11 @@ class DistributionConfig:
             self.cnames = cnames
         self.comment = comment
         self.trusted_signers = trusted_signers
-        self.logging = None
+        self.logging = logging
         self.default_root_object = default_root_object
+
+    def __repr__(self):
+        return "DistributionConfig:%s" % self.origin
 
     def to_xml(self):
         s = '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -176,7 +179,7 @@ class StreamingDistributionConfig(DistributionConfig):
     def __init__(self, connection=None, origin='', enabled=False,
                  caller_reference='', cnames=None, comment='',
                  trusted_signers=None, logging=None):
-        DistributionConfig.__init__(self, connection=connection,
+        super(StreamingDistributionConfig, self).__init__(connection=connection,
                                     origin=origin, enabled=enabled,
                                     caller_reference=caller_reference,
                                     cnames=cnames, comment=comment,
@@ -214,7 +217,7 @@ class StreamingDistributionConfig(DistributionConfig):
         s += '</StreamingDistributionConfig>\n'
         return s
 
-class DistributionSummary:
+class DistributionSummary(object):
 
     def __init__(self, connection=None, domain_name='', id='',
                  last_modified_time=None, status='', origin=None,
@@ -233,6 +236,9 @@ class DistributionSummary:
         self.trusted_signers = None
         self.etag = None
         self.streaming = False
+
+    def __repr__(self):
+        return "DistributionSummary:%s" % self.domain_name
 
     def startElement(self, name, attrs, connection):
         if name == 'TrustedSigners':
@@ -279,7 +285,7 @@ class StreamingDistributionSummary(DistributionSummary):
     def get_distribution(self):
         return self.connection.get_streaming_distribution_info(self.id)
 
-class Distribution:
+class Distribution(object):
 
     def __init__(self, connection=None, config=None, domain_name='',
                  id='', last_modified_time=None, status=''):
@@ -294,6 +300,9 @@ class Distribution:
         self.etag = None
         self._bucket = None
         self._object_class = Object
+
+    def __repr__(self):
+        return "Distribution:%s" % self.domain_name
 
     def startElement(self, name, attrs, connection):
         if name == 'DistributionConfig':
@@ -350,11 +359,11 @@ class Distribution:
                                         self.config.cnames, self.config.comment,
                                         self.config.trusted_signers,
                                         self.config.default_root_object)
-        if enabled != None:
+        if enabled is not None:
             new_config.enabled = enabled
-        if cnames != None:
+        if cnames is not None:
             new_config.cnames = cnames
-        if comment != None:
+        if comment is not None:
             new_config.comment = comment
         self.etag = self.connection.set_distribution_config(self.id, self.etag, new_config)
         self.config = new_config
@@ -362,14 +371,14 @@ class Distribution:
 
     def enable(self):
         """
-        Deactivate the Distribution.  A convenience wrapper around
+        Activate the Distribution.  A convenience wrapper around
         the update method.
         """
         self.update(enabled=True)
 
     def disable(self):
         """
-        Activate the Distribution.  A convenience wrapper around
+        Deactivate the Distribution.  A convenience wrapper around
         the update method.
         """
         self.update(enabled=False)
@@ -654,12 +663,14 @@ class Distribution:
             raise ValueError("Only specify the private_key_file or the private_key_string not both")
         if not private_key_file and not private_key_string:
             raise ValueError("You must specify one of private_key_file or private_key_string")
-        # If private_key_file is a file, read its contents. Otherwise, open it and then read it
-        if isinstance(private_key_file, file):
-            private_key_string = private_key_file.read()
-        elif private_key_file:
-            with open(private_key_file, 'r') as file_handle:
-                private_key_string = file_handle.read()
+        # If private_key_file is a file name, open it and read it
+        if private_key_string is None:
+            if isinstance(private_key_file, six.string_types):
+                with open(private_key_file, 'r') as file_handle:
+                    private_key_string = file_handle.read()
+            # Otherwise, treat it like a file
+            else:
+                private_key_string = private_key_file.read()
 
         # Sign it!
         private_key = rsa.PrivateKey.load_pkcs1(private_key_string)
@@ -682,8 +693,8 @@ class StreamingDistribution(Distribution):
 
     def __init__(self, connection=None, config=None, domain_name='',
                  id='', last_modified_time=None, status=''):
-        Distribution.__init__(self, connection, config, domain_name,
-                              id, last_modified_time, status)
+        super(StreamingDistribution, self).__init__(connection, config,
+                              domain_name, id, last_modified_time, status)
         self._object_class = StreamingObject
 
     def startElement(self, name, attrs, connection):
@@ -691,7 +702,8 @@ class StreamingDistribution(Distribution):
             self.config = StreamingDistributionConfig()
             return self.config
         else:
-            return Distribution.startElement(self, name, attrs, connection)
+            return super(StreamingDistribution, self).startElement(name, attrs,
+                connection)
 
     def update(self, enabled=None, cnames=None, comment=None):
         """
@@ -727,11 +739,11 @@ class StreamingDistribution(Distribution):
                                                  self.config.cnames,
                                                  self.config.comment,
                                                  self.config.trusted_signers)
-        if enabled != None:
+        if enabled is not None:
             new_config.enabled = enabled
-        if cnames != None:
+        if cnames is not None:
             new_config.cnames = cnames
-        if comment != None:
+        if comment is not None:
             new_config.comment = comment
         self.etag = self.connection.set_streaming_distribution_config(self.id,
                                                                       self.etag,

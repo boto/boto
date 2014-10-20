@@ -83,14 +83,13 @@ class DataPipelineConnection(AWSQueryConnection):
         "InternalServiceError": exceptions.InternalServiceError,
     }
 
-
     def __init__(self, **kwargs):
-        region = kwargs.get('region')
+        region = kwargs.pop('region', None)
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         kwargs['host'] = region.endpoint
-        AWSQueryConnection.__init__(self, **kwargs)
+        super(DataPipelineConnection, self).__init__(**kwargs)
         self.region = region
 
     def _required_auth_capability(self):
@@ -627,7 +626,7 @@ class DataPipelineConnection(AWSQueryConnection):
             headers=headers, data=body)
         response = self._mexe(http_request, sender=None,
                               override_num_retries=10)
-        response_body = response.read()
+        response_body = response.read().decode('utf-8')
         boto.log.debug(response_body)
         if response.status == 200:
             if response_body:
@@ -638,4 +637,3 @@ class DataPipelineConnection(AWSQueryConnection):
             exception_class = self._faults.get(fault_name, self.ResponseError)
             raise exception_class(response.status, response.reason,
                                   body=json_body)
-

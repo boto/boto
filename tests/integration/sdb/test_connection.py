@@ -34,7 +34,7 @@ class SDBConnectionTest (unittest.TestCase):
     sdb = True
 
     def test_1_basic(self):
-        print '--- running SDBConnection tests ---'
+        print('--- running SDBConnection tests ---')
         c = SDBConnection()
         rs = c.get_all_domains()
         num_domains = len(rs)
@@ -54,10 +54,10 @@ class SDBConnectionTest (unittest.TestCase):
         # now let's a couple of items and attributes
         item_1 = 'item1'
         same_value = 'same_value'
-        attrs_1 = {'name1' : same_value, 'name2' : 'diff_value_1'}
+        attrs_1 = {'name1': same_value, 'name2': 'diff_value_1'}
         domain.put_attributes(item_1, attrs_1)
         item_2 = 'item2'
-        attrs_2 = {'name1' : same_value, 'name2' : 'diff_value_2'}
+        attrs_2 = {'name1': same_value, 'name2': 'diff_value_2'}
         domain.put_attributes(item_2, attrs_2)
 
         # try to get the attributes and see if they match
@@ -85,28 +85,28 @@ class SDBConnectionTest (unittest.TestCase):
         assert stat
 
         # now try a batch put operation on the domain
-        item3 = {'name3_1' : 'value3_1',
-                 'name3_2' : 'value3_2',
-                 'name3_3' : ['value3_3_1', 'value3_3_2']}
+        item3 = {'name3_1': 'value3_1',
+                 'name3_2': 'value3_2',
+                 'name3_3': ['value3_3_1', 'value3_3_2']}
 
-        item4 = {'name4_1' : 'value4_1',
-                 'name4_2' : ['value4_2_1', 'value4_2_2'],
-                 'name4_3' : 'value4_3'}
-        items = {'item3' : item3, 'item4' : item4}
+        item4 = {'name4_1': 'value4_1',
+                 'name4_2': ['value4_2_1', 'value4_2_2'],
+                 'name4_3': 'value4_3'}
+        items = {'item3': item3, 'item4': item4}
         domain.batch_put_attributes(items)
 
         item = domain.get_attributes('item3', consistent_read=True)
         assert item['name3_2'] == 'value3_2'
 
         # now try a batch delete operation (variation #1)
-        items = {'item3' : item3}
+        items = {'item3': item3}
         stat = domain.batch_delete_attributes(items)
 
         item = domain.get_attributes('item3', consistent_read=True)
         assert not item
 
         # now try a batch delete operation (variation #2)
-        stat = domain.batch_delete_attributes({'item4' : None})
+        stat = domain.batch_delete_attributes({'item4': None})
 
         item = domain.get_attributes('item4', consistent_read=True)
         assert not item
@@ -115,5 +115,4 @@ class SDBConnectionTest (unittest.TestCase):
         stat = c.delete_domain(domain)
         assert stat
 
-        print '--- tests completed ---'
-
+        print('--- tests completed ---')

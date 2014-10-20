@@ -26,6 +26,7 @@
 Some unit tests for the S3 Bucket
 """
 
+from mock import patch, Mock
 import unittest
 import time
 
@@ -34,11 +35,12 @@ from boto.s3.connection import S3Connection
 from boto.s3.bucketlogging import BucketLogging
 from boto.s3.lifecycle import Lifecycle
 from boto.s3.lifecycle import Transition
+from boto.s3.lifecycle import Expiration
 from boto.s3.lifecycle import Rule
 from boto.s3.acl import Grant
 from boto.s3.tagging import Tags, TagSet
-from boto.s3.lifecycle import Lifecycle, Expiration, Transition
 from boto.s3.website import RedirectLocation
+from boto.compat import urllib
 
 
 class S3BucketTest (unittest.TestCase):
@@ -86,6 +88,23 @@ class S3BucketTest (unittest.TestCase):
             self.assertEqual(element.name, expected.pop(0))
         self.assertEqual(expected, [])
 
+    def test_list_with_url_encoding(self):
+        expected = ["α", "β", "γ"]
+        for key_name in expected:
+            key = self.bucket.new_key(key_name)
+            key.set_contents_from_string(key_name)
+
+        # ensure bucket.list() still works by just
+        # popping elements off the front of expected.
+        orig_getall = self.bucket._get_all
+        getall = lambda *a, **k: orig_getall(*a, max_keys=2, **k)
+        with patch.object(self.bucket, '_get_all', getall):
+            rs = self.bucket.list(encoding_type="url")
+            for element in rs:
+                name = urllib.parse.unquote(element.name.encode('utf-8'))
+                self.assertEqual(name, expected.pop(0))
+            self.assertEqual(expected, [])
+
     def test_logging(self):
         # use self.bucket as the target bucket so that teardown
         # will delete any log files that make it into the bucket
@@ -132,9 +151,9 @@ class S3BucketTest (unittest.TestCase):
         self.bucket.delete_tags()
         try:
             self.bucket.get_tags()
-        except S3ResponseError, e:
+        except S3ResponseError as e:
             self.assertEqual(e.code, 'NoSuchTagSet')
-        except Exception, e:
+        except Exception as e:
             self.fail("Wrong exception raised (expected S3ResponseError): %s"
                       % e)
         else:
@@ -248,7 +267,7 @@ class S3BucketTest (unittest.TestCase):
     def test_lifecycle_jp(self):
         # test lifecycle with Japanese prefix
         name = "Japanese files"
-        prefix = u"日本語/"
+        prefix = "日本語/"
         days = 30
         lifecycle = Lifecycle()
         lifecycle.add_rule(name, prefix, "Enabled", days)
@@ -261,3 +280,22 @@ class S3BucketTest (unittest.TestCase):
             self.assertEqual(rule.expiration.days, days)
             #Note: Boto seems correct? AWS seems broken?
             #self.assertEqual(rule.prefix, prefix)
+
+    def test_lifecycle_with_defaults(self):
+        lifecycle = Lifecycle()
+        lifecycle.add_rule(expiration=30)
+        self.assertTrue(self.bucket.configure_lifecycle(lifecycle))
+        response = self.bucket.get_lifecycle_config()
+        self.assertEqual(len(response), 1)
+        actual_lifecycle = response[0]
+        self.assertNotEqual(len(actual_lifecycle.id), 0)
+        self.assertEqual(actual_lifecycle.prefix, '')
+
+    def test_lifecycle_rule_xml(self):
+        # create a rule directly with id, prefix defaults
+        rule = Rule(status='Enabled', expiration=30)
+        s = rule.to_xml()
+        # Confirm no ID is set in the rule.
+        self.assertEqual(s.find("<ID>"), -1)
+        # Confirm Prefix is '' and not set to 'None'
+        self.assertNotEqual(s.find("<Prefix></Prefix>"), -1)

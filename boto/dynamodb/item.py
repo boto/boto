@@ -35,26 +35,26 @@ class Item(dict):
     :ivar range_key_name: The name of the RangeKey associated with this item.
     :ivar table: The Table this item belongs to.
     """
-    
+
     def __init__(self, table, hash_key=None, range_key=None, attrs=None):
         self.table = table
         self._updates = None
         self._hash_key_name = self.table.schema.hash_key_name
         self._range_key_name = self.table.schema.range_key_name
-        if attrs == None:
+        if attrs is None:
             attrs = {}
-        if hash_key == None:
+        if hash_key is None:
             hash_key = attrs.get(self._hash_key_name, None)
         self[self._hash_key_name] = hash_key
         if self._range_key_name:
-            if range_key == None:
+            if range_key is None:
                 range_key = attrs.get(self._range_key_name, None)
             self[self._range_key_name] = range_key
+        self._updates = {}
         for key, value in attrs.items():
             if key != self._hash_key_name and key != self._range_key_name:
                 self[key] = value
         self.consumed_units = 0
-        self._updates = {}
 
     @property
     def hash_key(self):

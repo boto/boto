@@ -45,16 +45,15 @@ import boto.jsonresponse
 import boto.utils
 import xml.sax
 import xml.sax.saxutils
-import StringIO
-import urllib
 import re
 import base64
 from collections import defaultdict
+from boto.compat import BytesIO, six, StringIO, urllib
 
 # as per http://goo.gl/BDuud (02/19/2011)
 
 
-class S3WebsiteEndpointTranslate:
+class S3WebsiteEndpointTranslate(object):
 
     trans_region = defaultdict(lambda: 's3-website-us-east-1')
     trans_region['eu-west-1'] = 's3-website-eu-west-1'
@@ -63,6 +62,8 @@ class S3WebsiteEndpointTranslate:
     trans_region['sa-east-1'] = 's3-website-sa-east-1'
     trans_region['ap-northeast-1'] = 's3-website-ap-northeast-1'
     trans_region['ap-southeast-1'] = 's3-website-ap-southeast-1'
+    trans_region['ap-southeast-2'] = 's3-website-ap-southeast-2'
+    trans_region['cn-north-1'] = 's3-website.cn-north-1'
 
     @classmethod
     def translate_region(self, reg):
@@ -141,30 +142,52 @@ class Bucket(object):
         return self.get_key(key_name, headers=headers)
 
     def get_key(self, key_name, headers=None, version_id=None,
-                response_headers=None):
+                response_headers=None, validate=True):
         """
         Check to see if a particular key exists within the bucket.  This
-        method uses a HEAD request to check for the existance of the key.
+        method uses a HEAD request to check for the existence of the key.
         Returns: An instance of a Key object or None
 
-        :type key_name: string
         :param key_name: The name of the key to retrieve
+        :type key_name: string
 
-        :type response_headers: dict
+        :param headers: The headers to send when retrieving the key
+        :type headers: dict
+
+        :param version_id:
+        :type version_id: string
+
         :param response_headers: A dictionary containing HTTP
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
+        :type response_headers: dict
+
+        :param validate: Verifies whether the key exists. If ``False``, this
+            will not hit the service, constructing an in-memory object.
+            Default is ``True``.
+        :type validate: bool
 
         :rtype: :class:`boto.s3.key.Key`
         :returns: A Key object from this bucket.
         """
+        if validate is False:
+            if headers or version_id or response_headers:
+                raise BotoClientError(
+                    "When providing 'validate=False', no other params " + \
+                    "are allowed."
+                )
+
+            # This leans on the default behavior of ``new_key`` (not hitting
+            # the service). If that changes, that behavior should migrate here.
+            return self.new_key(key_name)
+
         query_args_l = []
         if version_id:
             query_args_l.append('versionId=%s' % version_id)
         if response_headers:
-            for rk, rv in response_headers.iteritems():
-                query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
+            for rk, rv in six.iteritems(response_headers):
+                query_args_l.append('%s=%s' % (rk, urllib.parse.quote(rv)))
 
         key, resp = self._get_key_internal(key_name, headers, query_args_l)
         return key
@@ -181,12 +204,9 @@ class Bucket(object):
             k = self.key_class(self)
             provider = self.connection.provider
             k.metadata = boto.utils.get_aws_metadata(response.msg, provider)
-            k.etag = response.getheader('etag')
-            k.content_type = response.getheader('content-type')
-            k.content_encoding = response.getheader('content-encoding')
-            k.content_disposition = response.getheader('content-disposition')
-            k.content_language = response.getheader('content-language')
-            k.last_modified = response.getheader('last-modified')
+            for field in Key.base_fields:
+                k.__dict__[field.lower().replace('-', '_')] = \
+                    response.getheader(field)
             # the following machinations are a workaround to the fact that
             # apache/fastcgi omits the content-length header on HEAD
             # requests when the content-length is zero.
@@ -196,7 +216,6 @@ class Bucket(object):
                 k.size = int(response.getheader('content-length'))
             else:
                 k.size = 0
-            k.cache_control = response.getheader('cache-control')
             k.name = key_name
             k.handle_version_headers(response)
             k.handle_encryption_headers(response)
@@ -210,7 +229,8 @@ class Bucket(object):
                 raise self.connection.provider.storage_response_error(
                     response.status, response.reason, '')
 
-    def list(self, prefix='', delimiter='', marker='', headers=None):
+    def list(self, prefix='', delimiter='', marker='', headers=None,
+             encoding_type=None):
         """
         List key objects within a bucket.  This returns an instance of an
         BucketListResultSet that automatically handles all of the result
@@ -242,13 +262,26 @@ class Bucket(object):
         :type marker: string
         :param marker: The "marker" of where you are in the result set
 
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
+
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
-        return BucketListResultSet(self, prefix, delimiter, marker, headers)
+        return BucketListResultSet(self, prefix, delimiter, marker, headers,
+                                   encoding_type=encoding_type)
 
     def list_versions(self, prefix='', delimiter='', key_marker='',
-                      version_id_marker='', headers=None):
+                      version_id_marker='', headers=None, encoding_type=None):
         """
         List version objects within a bucket.  This returns an
         instance of an VersionedBucketListResultSet that automatically
@@ -272,34 +305,63 @@ class Bucket(object):
 
             for more details.
 
-        :type marker: string
-        :param marker: The "marker" of where you are in the result set
+        :type key_marker: string
+        :param key_marker: The "marker" of where you are in the result set
+
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
 
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
         return VersionedBucketListResultSet(self, prefix, delimiter,
                                             key_marker, version_id_marker,
-                                            headers)
+                                            headers,
+                                            encoding_type=encoding_type)
 
     def list_multipart_uploads(self, key_marker='',
                                upload_id_marker='',
-                               headers=None):
+                               headers=None, encoding_type=None):
         """
         List multipart upload objects within a bucket.  This returns an
         instance of an MultiPartUploadListResultSet that automatically
         handles all of the result paging, etc. from S3.  You just need
         to keep iterating until there are no more results.
 
-        :type marker: string
-        :param marker: The "marker" of where you are in the result set
+        :type key_marker: string
+        :param key_marker: The "marker" of where you are in the result set
+
+        :type upload_id_marker: string
+        :param upload_id_marker: The upload identifier
+
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
 
         :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
         return MultiPartUploadListResultSet(self, key_marker,
                                             upload_id_marker,
-                                            headers)
+                                            headers,
+                                            encoding_type=encoding_type)
 
     def _get_all_query_args(self, params, initial_query_string=''):
         pairs = []
@@ -307,17 +369,21 @@ class Bucket(object):
         if initial_query_string:
             pairs.append(initial_query_string)
 
-        for key, value in params.items():
+        for key, value in sorted(params.items(), key=lambda x: x[0]):
+            if value is None:
+                continue
             key = key.replace('_', '-')
             if key == 'maxkeys':
                 key = 'max-keys'
-            if isinstance(value, unicode):
+            if not isinstance(value, six.string_types + (six.binary_type,)):
+                value = six.text_type(value)
+            if not isinstance(value, six.binary_type):
                 value = value.encode('utf-8')
-            if value is not None and value != '':
-                pairs.append('%s=%s' % (
-                    urllib.quote(key),
-                    urllib.quote(str(value)
-                )))
+            if value:
+                pairs.append(u'%s=%s' % (
+                    urllib.parse.quote(key),
+                    urllib.parse.quote(value)
+                ))
 
         return '&'.join(pairs)
 
@@ -335,11 +401,27 @@ class Bucket(object):
         if response.status == 200:
             rs = ResultSet(element_map)
             h = handler.XmlHandler(rs, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return rs
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
+
+    def validate_kwarg_names(self, kwargs, names):
+        """
+        Checks that all named arguments are in the specified list of names.
+
+        :type kwargs: dict
+        :param kwargs: Dictionary of kwargs to validate.
+
+        :type names: list
+        :param names: List of possible named arguments.
+        """
+        for kwarg in kwargs:
+            if kwarg not in names:
+                raise TypeError('Invalid argument "%s"!' % kwarg)
 
     def get_all_keys(self, headers=None, **params):
         """
@@ -366,10 +448,25 @@ class Bucket(object):
             element in the CommonPrefixes collection. These rolled-up
             keys are not returned elsewhere in the response.
 
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
+
         :rtype: ResultSet
         :return: The result from S3 listing the keys requested
 
         """
+        self.validate_kwarg_names(params, ['maxkeys', 'max_keys', 'prefix',
+                                           'marker', 'delimiter',
+                                           'encoding_type'])
         return self._get_all([('Contents', self.key_class),
                               ('CommonPrefixes', Prefix)],
                              '', headers, **params)
@@ -404,13 +501,38 @@ class Bucket(object):
             element in the CommonPrefixes collection. These rolled-up
             keys are not returned elsewhere in the response.
 
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
+
         :rtype: ResultSet
         :return: The result from S3 listing the keys requested
         """
+        self.validate_get_all_versions_params(params)
         return self._get_all([('Version', self.key_class),
                               ('CommonPrefixes', Prefix),
                               ('DeleteMarker', DeleteMarker)],
                              'versions', headers, **params)
+
+    def validate_get_all_versions_params(self, params):
+        """
+        Validate that the parameters passed to get_all_versions are valid.
+        Overridden by subclasses that allow a different set of parameters.
+
+        :type params: dict
+        :param params: Parameters to validate.
+        """
+        self.validate_kwarg_names(
+                params, ['maxkeys', 'max_keys', 'prefix', 'key_marker',
+                         'version_id_marker', 'delimiter', 'encoding_type'])
 
     def get_all_multipart_uploads(self, headers=None, **params):
         """
@@ -446,10 +568,42 @@ class Bucket(object):
             list only if they have an upload ID lexicographically
             greater than the specified upload_id_marker.
 
+        :type encoding_type: string
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+
+        :type delimiter: string
+        :param delimiter: Character you use to group keys.
+            All keys that contain the same string between the prefix, if
+            specified, and the first occurrence of the delimiter after the
+            prefix are grouped under a single result element, CommonPrefixes.
+            If you don't specify the prefix parameter, then the substring
+            starts at the beginning of the key. The keys that are grouped
+            under CommonPrefixes result element are not returned elsewhere
+            in the response.
+
+        :type prefix: string
+        :param prefix: Lists in-progress uploads only for those keys that
+            begin with the specified prefix. You can use prefixes to separate
+            a bucket into different grouping of keys. (You can think of using
+            prefix to make groups in the same way you'd use a folder in a
+            file system.)
+
         :rtype: ResultSet
         :return: The result from S3 listing the uploads requested
 
         """
+        self.validate_kwarg_names(params, ['max_uploads', 'key_marker',
+                                           'upload_id_marker', 'encoding_type',
+                                           'delimiter', 'prefix'])
         return self._get_all([('Upload', MultiPartUpload),
                               ('CommonPrefixes', Prefix)],
                              'uploads', headers, **params)
@@ -517,10 +671,10 @@ class Bucket(object):
             count = 0
             while count < 1000:
                 try:
-                    key = ikeys.next()
+                    key = next(ikeys)
                 except StopIteration:
                     break
-                if isinstance(key, basestring):
+                if isinstance(key, six.string_types):
                     key_name = key
                     version_id = None
                 elif isinstance(key, tuple) and len(key) == 2:
@@ -548,7 +702,7 @@ class Bucket(object):
             if count <= 0:
                 return False  # no more
             data = data.encode('utf-8')
-            fp = StringIO.StringIO(data)
+            fp = BytesIO(data)
             md5 = boto.utils.compute_md5(fp)
             hdrs['Content-MD5'] = md5[1]
             hdrs['Content-Type'] = 'text/xml'
@@ -561,6 +715,8 @@ class Bucket(object):
             body = response.read()
             if response.status == 200:
                 h = handler.XmlHandler(result, self)
+                if not isinstance(body, bytes):
+                    body = body.encode('utf-8')
                 xml.sax.parseString(body, h)
                 return count >= 1000  # more?
             else:
@@ -693,11 +849,12 @@ class Bucket(object):
             if self.name == src_bucket_name:
                 src_bucket = self
             else:
-                src_bucket = self.connection.get_bucket(src_bucket_name)
+                src_bucket = self.connection.get_bucket(
+                    src_bucket_name, validate=False)
             acl = src_bucket.get_xml_acl(src_key_name)
         if encrypt_key:
             headers[provider.server_side_encryption_header] = 'AES256'
-        src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
+        src = '%s/%s' % (src_bucket_name, urllib.parse.quote(src_key_name))
         if src_version_id:
             src += '?versionId=%s' % src_version_id
         headers[provider.copy_source_header] = str(src)
@@ -716,6 +873,8 @@ class Bucket(object):
         if response.status == 200:
             key = self.new_key(new_key_name)
             h = handler.XmlHandler(key, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             if hasattr(key, 'Error'):
                 raise provider.storage_copy_error(key.Code, key.Message, body)
@@ -764,8 +923,10 @@ class Bucket(object):
                     query_args='acl'):
         if version_id:
             query_args += '&versionId=%s' % version_id
+        if not isinstance(acl_str, bytes):
+            acl_str = acl_str.encode('utf-8')
         response = self.connection.make_request('PUT', self.name, key_name,
-                                                data=acl_str.encode('UTF-8'),
+                                                data=acl_str,
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()
@@ -792,6 +953,8 @@ class Bucket(object):
         if response.status == 200:
             policy = Policy(self)
             h = handler.XmlHandler(policy, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return policy
         else:
@@ -826,8 +989,10 @@ class Bucket(object):
         query_args = subresource
         if version_id:
             query_args += '&versionId=%s' % version_id
+        if not isinstance(value, bytes):
+            value = value.encode('utf-8')
         response = self.connection.make_request('PUT', self.name, key_name,
-                                                data=value.encode('UTF-8'),
+                                                data=value,
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()
@@ -970,6 +1135,8 @@ class Bucket(object):
         if response.status == 200:
             rs = ResultSet(self)
             h = handler.XmlHandler(rs, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return rs.LocationConstraint
         else:
@@ -989,7 +1156,9 @@ class Bucket(object):
         :rtype: bool
         :return: True if ok or raises an exception.
         """
-        body = logging_str.encode('utf-8')
+        body = logging_str
+        if not isinstance(body, bytes):
+            body = body.encode('utf-8')
         response = self.connection.make_request('PUT', self.name, data=body,
                 query_args='logging', headers=headers)
         body = response.read()
@@ -1047,6 +1216,8 @@ class Bucket(object):
         if response.status == 200:
             blogging = BucketLogging()
             h = handler.XmlHandler(blogging, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return blogging
         else:
@@ -1149,6 +1320,8 @@ class Bucket(object):
         response = self.connection.make_request('GET', self.name,
                 query_args='versioning', headers=headers)
         body = response.read()
+        if not isinstance(body, six.string_types):
+            body = body.decode('utf-8')
         boto.log.debug(body)
         if response.status == 200:
             d = {}
@@ -1172,8 +1345,8 @@ class Bucket(object):
             to configure for this bucket.
         """
         xml = lifecycle_config.to_xml()
-        xml = xml.encode('utf-8')
-        fp = StringIO.StringIO(xml)
+        #xml = xml.encode('utf-8')
+        fp = StringIO(xml)
         md5 = boto.utils.compute_md5(fp)
         if headers is None:
             headers = {}
@@ -1205,6 +1378,8 @@ class Bucket(object):
         if response.status == 200:
             lifecycle = Lifecycle()
             h = handler.XmlHandler(lifecycle, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return lifecycle
         else:
@@ -1300,6 +1475,7 @@ class Bucket(object):
             * ErrorDocument
 
               * Key : name of object to serve when an error occurs
+
         """
         return self.get_website_configuration_with_xml(headers)[0]
 
@@ -1320,15 +1496,24 @@ class Bucket(object):
 
         :rtype: 2-Tuple
         :returns: 2-tuple containing:
-        1) A dictionary containing a Python representation
-                  of the XML response. The overall structure is:
-          * WebsiteConfiguration
-            * IndexDocument
-              * Suffix : suffix that is appended to request that
-                is for a "directory" on the website endpoint
-              * ErrorDocument
-                * Key : name of object to serve when an error occurs
-        2) unparsed XML describing the bucket's website configuration.
+
+            1) A dictionary containing a Python representation \
+                of the XML response. The overall structure is:
+
+              * WebsiteConfiguration
+
+                * IndexDocument
+
+                  * Suffix : suffix that is appended to request that \
+                    is for a "directory" on the website endpoint
+
+                  * ErrorDocument
+
+                    * Key : name of object to serve when an error occurs
+
+
+            2) unparsed XML describing the bucket's website configuration
+
         """
 
         body = self.get_website_configuration_xml(headers=headers)
@@ -1341,7 +1526,7 @@ class Bucket(object):
         """Get raw website configuration xml"""
         response = self.connection.make_request('GET', self.name,
                 query_args='website', headers=headers)
-        body = response.read()
+        body = response.read().decode('utf-8')
         boto.log.debug(body)
 
         if response.status != 200:
@@ -1427,7 +1612,7 @@ class Bucket(object):
             CORS configuration.  See the S3 documentation for details
             of the exact syntax required.
         """
-        fp = StringIO.StringIO(cors_xml)
+        fp = StringIO(cors_xml)
         md5 = boto.utils.compute_md5(fp)
         if headers is None:
             headers = {}
@@ -1506,6 +1691,15 @@ class Bucket(object):
         """
         Start a multipart upload operation.
 
+        .. note::
+
+            Note: After you initiate multipart upload and upload one or more
+            parts, you must either complete or abort multipart upload in order
+            to stop getting charged for storage of the uploaded parts. Only
+            after you either complete or abort multipart upload, Amazon S3
+            frees up the parts storage and stops charging you for the parts
+            storage.
+
         :type key_name: string
         :param key_name: The name of the key that will ultimately
             result from this multipart upload operation.  This will be
@@ -1562,6 +1756,8 @@ class Bucket(object):
         if response.status == 200:
             resp = MultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return resp
         else:
@@ -1581,7 +1777,7 @@ class Bucket(object):
                                                 query_args=query_args,
                                                 headers=headers, data=xml_body)
         contains_error = False
-        body = response.read()
+        body = response.read().decode('utf-8')
         # Some errors will be reported in the body of the response
         # even though the HTTP response code is 200.  This check
         # does a quick and dirty peek in the body for an error element.
@@ -1591,6 +1787,8 @@ class Bucket(object):
         if response.status == 200 and not contains_error:
             resp = CompleteMultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             # Use a dummy key to parse various response headers
             # for versioning, encryption info and then explicitly
@@ -1606,6 +1804,11 @@ class Bucket(object):
                 response.status, response.reason, body)
 
     def cancel_multipart_upload(self, key_name, upload_id, headers=None):
+        """
+        To verify that all parts have been removed, so you don't get charged
+        for the part storage, you should call the List Parts operation and
+        ensure the parts list is empty.
+        """
         query_args = 'uploadId=%s' % upload_id
         response = self.connection.make_request('DELETE', self.name, key_name,
                                                 query_args=query_args,
@@ -1623,6 +1826,8 @@ class Bucket(object):
         response = self.get_xml_tags()
         tags = Tags()
         h = handler.XmlHandler(tags, self)
+        if not isinstance(response, bytes):
+            response = response.encode('utf-8')
         xml.sax.parseString(response, h)
         return tags
 
@@ -1640,11 +1845,13 @@ class Bucket(object):
     def set_xml_tags(self, tag_str, headers=None, query_args='tagging'):
         if headers is None:
             headers = {}
-        md5 = boto.utils.compute_md5(StringIO.StringIO(tag_str))
+        md5 = boto.utils.compute_md5(StringIO(tag_str))
         headers['Content-MD5'] = md5[1]
         headers['Content-Type'] = 'text/xml'
+        if not isinstance(tag_str, bytes):
+            tag_str = tag_str.encode('utf-8')
         response = self.connection.make_request('PUT', self.name,
-                                                data=tag_str.encode('utf-8'),
+                                                data=tag_str,
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()

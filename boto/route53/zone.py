@@ -34,8 +34,8 @@ class Zone(object):
     """
     A Route53 Zone.
 
-    :ivar Route53Connection route53connection
-    :ivar str Id: The ID of the hosted zone.
+    :ivar route53connection: A :class:`boto.route53.connection.Route53Connection` connection
+    :ivar id: The ID of the hosted zone
     """
     def __init__(self, route53connection, zone_dict):
         self.route53connection = route53connection
@@ -60,7 +60,7 @@ class Zone(object):
         return response['ChangeResourceRecordSetsResponse']['ChangeInfo']
 
     def _new_record(self, changes, resource_type, name, value, ttl, identifier,
-                   comment=""):
+                    comment=""):
         """
         Add a CREATE change record to an existing ResourceRecordSets
 
@@ -233,7 +233,14 @@ class Zone(object):
 
         # name/type for get_all_rrsets sets the starting record; they
         # are not a filter
-        results = [r for r in returned if r.name == name and r.type == type]
+        results = []
+        for r in returned:
+            if r.name == name and r.type == type:
+                results.append(r)
+            # Is at the end of the list of matched records. No need to continue
+            # since the records are sorted by name and type.
+            else:
+                break
 
         weight = None
         region = None

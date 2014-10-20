@@ -5,13 +5,11 @@ from tests.unit import AWSMockServiceTestCase
 from boto.cloudsearch.domain import Domain
 from boto.cloudsearch.layer1 import Layer1
 
-import json
-
 class TestCloudSearchCreateDomain(AWSMockServiceTestCase):
     connection_class = Layer1
 
     def default_body(self):
-        return """
+        return b"""
 <CreateDomainResponse xmlns="http://cloudsearch.amazonaws.com/doc/2011-02-01">
   <CreateDomainResult>
     <DomainStatus>
@@ -47,11 +45,8 @@ class TestCloudSearchCreateDomain(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'CreateDomain',
             'DomainName': 'demo',
-            'AWSAccessKeyId': 'aws_access_key_id',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'Version': '2011-02-01',
-        }, ignore_params_values=['Timestamp'])
+        })
 
     def test_cloudsearch_connect_result_endpoints(self):
         """Check that endpoints & ARNs are correctly returned from AWS"""
@@ -118,7 +113,7 @@ class CloudSearchConnectionDeletionTest(AWSMockServiceTestCase):
     connection_class = Layer1
 
     def default_body(self):
-        return """
+        return b"""
 <DeleteDomainResponse xmlns="http://cloudsearch.amazonaws.com/doc/2011-02-01">
   <DeleteDomainResult>
     <DomainStatus>
@@ -158,18 +153,15 @@ class CloudSearchConnectionDeletionTest(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'DeleteDomain',
             'DomainName': 'demo',
-            'AWSAccessKeyId': 'aws_access_key_id',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'Version': '2011-02-01',
-        }, ignore_params_values=['Timestamp'])
+        })
 
 
 class CloudSearchConnectionIndexDocumentTest(AWSMockServiceTestCase):
     connection_class = Layer1
 
     def default_body(self):
-        return """
+        return b"""
 <IndexDocumentsResponse xmlns="http://cloudsearch.amazonaws.com/doc/2011-02-01">
   <IndexDocumentsResult>
     <FieldNames>
@@ -215,11 +207,8 @@ class CloudSearchConnectionIndexDocumentTest(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'IndexDocuments',
             'DomainName': 'demo',
-            'AWSAccessKeyId': 'aws_access_key_id',
-            'SignatureMethod': 'HmacSHA256',
-            'SignatureVersion': 2,
             'Version': '2011-02-01',
-        }, ignore_params_values=['Timestamp'])
+        })
 
     def test_cloudsearch_index_documents_resp(self):
         """

@@ -20,9 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 import re
-import urllib
 import base64
 
+from boto.compat import six, urllib
 from boto.connection import AWSAuthConnection
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
@@ -42,18 +42,19 @@ class SESConnection(AWSAuthConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True):
+                 security_token=None, validate_certs=True, profile_name=None):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         self.region = region
-        AWSAuthConnection.__init__(self, self.region.endpoint,
-                                   aws_access_key_id, aws_secret_access_key,
-                                   is_secure, port, proxy, proxy_port,
-                                   proxy_user, proxy_pass, debug,
-                                   https_connection_factory, path,
-                                   security_token=security_token,
-                                   validate_certs=validate_certs)
+        super(SESConnection, self).__init__(self.region.endpoint,
+                                            aws_access_key_id, aws_secret_access_key,
+                                            is_secure, port, proxy, proxy_port,
+                                            proxy_user, proxy_pass, debug,
+                                            https_connection_factory, path,
+                                            security_token=security_token,
+                                            validate_certs=validate_certs,
+                                            profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['ses']
@@ -70,7 +71,7 @@ class SESConnection(AWSAuthConnection):
         :type label: string
         :param label: The parameter list's name
         """
-        if isinstance(items, basestring):
+        if isinstance(items, six.string_types):
             items = [items]
         for i in range(1, len(items) + 1):
             params['%s.%d' % (label, i)] = items[i - 1]
@@ -91,19 +92,20 @@ class SESConnection(AWSAuthConnection):
         params['Action'] = action
 
         for k, v in params.items():
-            if isinstance(v, unicode):  # UTF-8 encode only if it's Unicode
+            if isinstance(v, six.text_type):  # UTF-8 encode only if it's Unicode
                 params[k] = v.encode('utf-8')
 
         response = super(SESConnection, self).make_request(
             'POST',
             '/',
             headers=headers,
-            data=urllib.urlencode(params)
+            data=urllib.parse.urlencode(params)
         )
-        body = response.read()
+        body = response.read().decode('utf-8')
         if response.status == 200:
             list_markers = ('VerifiedEmailAddresses', 'Identities',
-                            'VerificationAttributes', 'SendDataPoints')
+                            'DkimTokens', 'VerificationAttributes',
+                            'SendDataPoints')
             item_markers = ('member', 'item', 'entry')
 
             e = boto.jsonresponse.Element(list_marker=list_markers,
@@ -258,18 +260,18 @@ class SESConnection(AWSAuthConnection):
             raise ValueError("No text or html body found for mail")
 
         self._build_list_params(params, to_addresses,
-                               'Destination.ToAddresses.member')
+                                'Destination.ToAddresses.member')
         if cc_addresses:
             self._build_list_params(params, cc_addresses,
-                                   'Destination.CcAddresses.member')
+                                    'Destination.CcAddresses.member')
 
         if bcc_addresses:
             self._build_list_params(params, bcc_addresses,
-                                   'Destination.BccAddresses.member')
+                                    'Destination.BccAddresses.member')
 
         if reply_addresses:
             self._build_list_params(params, reply_addresses,
-                                   'ReplyToAddresses.member')
+                                    'ReplyToAddresses.member')
 
         return self._make_request('SendEmail', params)
 
@@ -304,7 +306,7 @@ class SESConnection(AWSAuthConnection):
 
         """
 
-        if isinstance(raw_message, unicode):
+        if isinstance(raw_message, six.text_type):
             raw_message = raw_message.encode('utf-8')
 
         params = {
@@ -316,7 +318,7 @@ class SESConnection(AWSAuthConnection):
 
         if destinations:
             self._build_list_params(params, destinations,
-                                   'Destinations.member')
+                                    'Destinations.member')
 
         return self._make_request('SendRawEmail', params)
 
@@ -473,7 +475,7 @@ class SESConnection(AWSAuthConnection):
         """
         params = {}
         self._build_list_params(params, identities,
-                               'Identities.member')
+                                'Identities.member')
         return self._make_request('GetIdentityVerificationAttributes', params)
 
     def verify_domain_identity(self, domain):
@@ -518,4 +520,46 @@ class SESConnection(AWSAuthConnection):
         """
         return self._make_request('DeleteIdentity', {
             'Identity': identity,
+        })
+
+    def set_identity_notification_topic(self, identity, notification_type, sns_topic=None):
+        """Sets an SNS topic to publish bounce or complaint notifications for
+        emails sent with the given identity as the Source. Publishing to topics
+        may only be disabled when feedback forwarding is enabled.
+
+        :type identity: string
+        :param identity: An email address or domain name.
+
+        :type notification_type: string
+        :param notification_type: The type of feedback notifications that will
+                                  be published to the specified topic.
+                                  Valid Values: Bounce | Complaint | Delivery
+
+        :type sns_topic: string or None
+        :param sns_topic: The Amazon Resource Name (ARN) of the Amazon Simple
+                          Notification Service (Amazon SNS) topic.
+        """
+        params = {
+            'Identity': identity,
+            'NotificationType': notification_type
+        }
+        if sns_topic:
+            params['SnsTopic'] = sns_topic
+        return self._make_request('SetIdentityNotificationTopic', params)
+
+    def set_identity_feedback_forwarding_enabled(self, identity, forwarding_enabled=True):
+        """
+        Enables or disables SES feedback notification via email.
+        Feedback forwarding may only be disabled when both complaint and
+        bounce topics are set.
+
+        :type identity: string
+        :param identity: An email address or domain name.
+
+        :type forwarding_enabled: bool
+        :param forwarding_enabled: Specifies whether or not to enable feedback forwarding.
+        """
+        return self._make_request('SetIdentityFeedbackForwardingEnabled', {
+            'Identity': identity,
+            'ForwardingEnabled': 'true' if forwarding_enabled else 'false'
         })

@@ -14,13 +14,15 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import StringIO
 import xml.sax
+
+from boto.compat import StringIO
+
 
 class XmlHandler(xml.sax.ContentHandler):
 
@@ -32,12 +34,14 @@ class XmlHandler(xml.sax.ContentHandler):
     def startElement(self, name, attrs):
         self.current_text = ''
         new_node = self.nodes[-1][1].startElement(name, attrs, self.connection)
-        if new_node != None:
+        if new_node is not None:
             self.nodes.append((name, new_node))
 
     def endElement(self, name):
         self.nodes[-1][1].endElement(name, self.current_text, self.connection)
         if self.nodes[-1][0] == name:
+            if hasattr(self.nodes[-1][1], 'endNode'):
+                self.nodes[-1][1].endNode(self.connection)
             self.nodes.pop()
         self.current_text = ''
 
@@ -53,4 +57,4 @@ class XmlHandlerWrapper(object):
         self.parser.setFeature(xml.sax.handler.feature_external_ges, 0)
 
     def parseString(self, content):
-        return self.parser.parse(StringIO.StringIO(content))
+        return self.parser.parse(StringIO(content))

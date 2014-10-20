@@ -22,12 +22,11 @@
 """
 Represents an SQS Queue
 """
-
-import urlparse
+from boto.compat import urllib
 from boto.sqs.message import Message
 
 
-class Queue:
+class Queue(object):
 
     def __init__(self, connection=None, url=None, message_class=Message):
         self.connection = connection
@@ -40,7 +39,7 @@ class Queue:
 
     def _id(self):
         if self.url:
-            val = urlparse.urlparse(self.url)[2]
+            val = urllib.parse.urlparse(self.url)[2]
         else:
             val = self.url
         return val
@@ -48,7 +47,7 @@ class Queue:
 
     def _name(self):
         if self.url:
-            val = urlparse.urlparse(self.url)[2].split('/')[2]
+            val = urllib.parse.urlparse(self.url)[2].split('/')[2]
         else:
             val = self.url
         return  val
@@ -182,7 +181,8 @@ class Queue:
         """
         return self.connection.remove_permission(self, label)
 
-    def read(self, visibility_timeout=None, wait_time_seconds=None):
+    def read(self, visibility_timeout=None, wait_time_seconds=None,
+             message_attributes=None):
         """
         Read a single message from the queue.
 
@@ -195,11 +195,17 @@ class Queue:
             If a message is available, the call will return sooner than
             wait_time_seconds.
 
+        :type message_attributes: list
+        :param message_attributes: The name(s) of additional message
+            attributes to return. The default is to return no additional
+            message attributes. Use ``['All']`` or ``['.*']`` to return all.
+
         :rtype: :class:`boto.sqs.message.Message`
         :return: A single message or None if queue is empty
         """
         rs = self.get_messages(1, visibility_timeout,
-                               wait_time_seconds=wait_time_seconds)
+                               wait_time_seconds=wait_time_seconds,
+                               message_attributes=message_attributes)
         if len(rs) == 1:
             return rs[0]
         else:
@@ -216,8 +222,8 @@ class Queue:
         :return: The :class:`boto.sqs.message.Message` object that was written.
         """
         new_msg = self.connection.send_message(self,
-                                               message.get_body_encoded(),
-                                               delay_seconds)
+            message.get_body_encoded(), delay_seconds=delay_seconds,
+            message_attributes=message.message_attributes)
         message.id = new_msg.id
         message.md5 = new_msg.md5
         return message
@@ -231,14 +237,16 @@ class Queue:
             tuple represents a single message to be written
             and consists of and ID (string) that must be unique
             within the list of messages, the message body itself
-            which can be a maximum of 64K in length, and an
+            which can be a maximum of 64K in length, an
             integer which represents the delay time (in seconds)
             for the message (0-900) before the message will
-            be delivered to the queue.
+            be delivered to the queue, and an optional dict of
+            message attributes like those passed to ``send_message``
+            in the connection class.
         """
         return self.connection.send_message_batch(self, messages)
 
-    def new_message(self, body=''):
+    def new_message(self, body='', **kwargs):
         """
         Create new message of appropriate class.
 
@@ -248,13 +256,14 @@ class Queue:
         :rtype: :class:`boto.sqs.message.Message`
         :return: A new Message object
         """
-        m = self.message_class(self, body)
+        m = self.message_class(self, body, **kwargs)
         m.queue = self
         return m
 
     # get a variable number of messages, returns a list of messages
     def get_messages(self, num_messages=1, visibility_timeout=None,
-                     attributes=None, wait_time_seconds=None):
+                     attributes=None, wait_time_seconds=None,
+                     message_attributes=None):
         """
         Get a variable number of messages.
 
@@ -278,13 +287,19 @@ class Queue:
             If a message is available, the call will return sooner than
             wait_time_seconds.
 
+        :type message_attributes: list
+        :param message_attributes: The name(s) of additional message
+            attributes to return. The default is to return no additional
+            message attributes. Use ``['All']`` or ``['.*']`` to return all.
+
         :rtype: list
         :return: A list of :class:`boto.sqs.message.Message` objects.
         """
         return self.connection.receive_message(
             self, number_messages=num_messages,
             visibility_timeout=visibility_timeout, attributes=attributes,
-            wait_time_seconds=wait_time_seconds)
+            wait_time_seconds=wait_time_seconds,
+            message_attributes=message_attributes)
 
     def delete_message(self, message):
         """
@@ -350,7 +365,7 @@ class Queue:
         Deprecated.  This is the old 'count' method that actually counts
         the messages by reading them all.  This gives an accurate count but
         is very slow for queues with non-trivial number of messasges.
-        Instead, use get_attribute('ApproximateNumberOfMessages') to take
+        Instead, use get_attributes('ApproximateNumberOfMessages') to take
         advantage of the new SQS capability.  This is retained only for
         the unit tests.
         """
@@ -459,7 +474,7 @@ class Queue:
                 m = Message(self, body)
                 self.write(m)
                 n += 1
-                print 'writing message %d' % n
+                print('writing message %d' % n)
                 body = ''
             else:
                 body = body + l

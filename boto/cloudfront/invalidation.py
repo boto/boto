@@ -20,8 +20,8 @@
 # IN THE SOFTWARE.
 
 import uuid
-import urllib
 
+from boto.compat import urllib
 from boto.resultset import ResultSet
 
 
@@ -71,11 +71,11 @@ class InvalidationBatch(object):
         """Escape a path, make sure it begins with a slash and contains no invalid characters"""
         if not p[0] == "/":
             p = "/%s" % p
-        return urllib.quote(p)
+        return urllib.parse.quote(p)
 
     def to_xml(self):
         """Get this batch as XML"""
-        assert self.connection != None
+        assert self.connection is not None
         s = '<?xml version="1.0" encoding="UTF-8"?>\n'
         s += '<InvalidationBatch xmlns="http://cloudfront.amazonaws.com/doc/%s/">\n' % self.connection.Version
         for p in self.paths:

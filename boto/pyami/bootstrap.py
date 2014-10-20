@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -40,7 +40,7 @@ class Bootstrap(ScriptBase):
     def __init__(self):
         self.working_dir = '/mnt/pyami'
         self.write_metadata()
-        ScriptBase.__init__(self)
+        super(Bootstrap, self).__init__()
 
     def write_metadata(self):
         fp = open(os.path.expanduser(BotoConfigPath), 'w')
@@ -82,7 +82,7 @@ class Bootstrap(ScriptBase):
                 try:
                     self.run('git pull', cwd=location)
                     num_remaining_attempts = 0
-                except Exception, e:
+                except Exception as e:
                     boto.log.info('git pull attempt failed with the following exception. Trying again in a bit. %s', e)
                     time.sleep(2)
             if update.find(':') >= 0:

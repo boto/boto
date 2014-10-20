@@ -22,9 +22,7 @@
 # IN THE SOFTWARE.
 #
 from math import ceil
-import time
-import boto
-from boto.compat import json
+from boto.compat import json, map, six
 import requests
 
 
@@ -37,7 +35,6 @@ class CommitMismatchError(Exception):
 
 
 class SearchResults(object):
-    
     def __init__(self, **attrs):
         self.rid = attrs['info']['rid']
         # self.doc_coverage_pct = attrs['info']['doc-coverage-pct']
@@ -53,7 +50,7 @@ class SearchResults(object):
 
         self.facets = {}
         if 'facets' in attrs:
-            for (facet, values) in attrs['facets'].iteritems():
+            for (facet, values) in attrs['facets'].items():
                 if 'constraints' in values:
                     self.facets[facet] = dict((k, v) for (k, v) in map(lambda x: (x['value'], x['count']), values['constraints']))
 
@@ -80,7 +77,7 @@ class SearchResults(object):
 
 
 class Query(object):
-    
+
     RESULTS_PER_PAGE = 500
 
     def __init__(self, q=None, bq=None, rank=None,
@@ -130,25 +127,25 @@ class Query(object):
             params['facet'] = ','.join(self.facet)
 
         if self.facet_constraints:
-            for k, v in self.facet_constraints.iteritems():
+            for k, v in six.iteritems(self.facet_constraints):
                 params['facet-%s-constraints' % k] = v
 
         if self.facet_sort:
-            for k, v in self.facet_sort.iteritems():
+            for k, v in six.iteritems(self.facet_sort):
                 params['facet-%s-sort' % k] = v
 
         if self.facet_top_n:
-            for k, v in self.facet_top_n.iteritems():
+            for k, v in six.iteritems(self.facet_top_n):
                 params['facet-%s-top-n' % k] = v
 
         if self.t:
-            for k, v in self.t.iteritems():
+            for k, v in six.iteritems(self.t):
                 params['t-%s' % k] = v
         return params
 
 
 class SearchConnection(object):
-    
+
     def __init__(self, domain=None, endpoint=None):
         self.domain = domain
         self.endpoint = endpoint
@@ -210,7 +207,7 @@ class SearchConnection(object):
         :param facet_sort: Rules used to specify the order in which facet
             values should be returned. Allowed values are *alpha*, *count*,
             *max*, *sum*. Use *alpha* to sort alphabetical, and *count* to sort
-            the facet by number of available result. 
+            the facet by number of available result.
             ``{'color': 'alpha', 'size': 'count'}``
 
         :type facet_top_n: dict
@@ -244,10 +241,10 @@ class SearchConnection(object):
         the search string.
 
         >>> search(bq="'Tim*'") # Return documents with words like Tim or Timothy)
-        
+
         Search terms can also be combined. Allowed operators are "and", "or",
         "not", "field", "optional", "token", "phrase", or "filter"
-        
+
         >>> search(bq="(and 'Tim' (field author 'John Smith'))")
 
         Facets allow you to show classification information about the search
@@ -259,12 +256,12 @@ class SearchConnection(object):
         With facet_constraints, facet_top_n and facet_sort more complicated
         constraints can be specified such as returning the top author out of
         John Smith and Mark Smith who have a document with the word Tim in it.
-        
-        >>> search(q='Tim', 
-        ...     facet=['Author'], 
-        ...     facet_constraints={'author': "'John Smith','Mark Smith'"}, 
-        ...     facet=['author'], 
-        ...     facet_top_n={'author': 1}, 
+
+        >>> search(q='Tim',
+        ...     facet=['Author'],
+        ...     facet_constraints={'author': "'John Smith','Mark Smith'"},
+        ...     facet=['author'],
+        ...     facet_top_n={'author': 1},
         ...     facet_sort={'author': 'count'})
         """
 
@@ -289,9 +286,20 @@ class SearchConnection(object):
         params = query.to_params()
 
         r = requests.get(url, params=params)
-        data = json.loads(r.content)
-        data['query'] = query
-        data['search_service'] = self
+        body = r.content.decode('utf-8')
+        try:
+            data = json.loads(body)
+        except ValueError as e:
+            if r.status_code == 403:
+                msg = ''
+                import re
+                g = re.search('<html><body><h1>403 Forbidden</h1>([^<]+)<', body)
+                try:
+                    msg = ': %s' % (g.groups()[0].strip())
+                except AttributeError:
+                    pass
+                raise SearchServiceException('Authentication error from Amazon%s' % msg)
+            raise SearchServiceException("Got non-json response from Amazon. %s" % body, query)
 
         if 'messages' in data and 'error' in data:
             for m in data['messages']:
@@ -300,7 +308,10 @@ class SearchConnection(object):
                         "=> %s" % (params, m['message']), query)
         elif 'error' in data:
             raise SearchServiceException("Unknown error processing search %s"
-                % (params), query)
+                % json.dumps(data), query)
+
+        data['query'] = query
+        data['search_service'] = self
 
         return SearchResults(**data)
 

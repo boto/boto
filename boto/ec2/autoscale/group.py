@@ -98,7 +98,8 @@ class AutoScalingGroup(object):
                  health_check_type=None, health_check_period=None,
                  placement_group=None, vpc_zone_identifier=None,
                  desired_capacity=None, min_size=None, max_size=None,
-                 tags=None, termination_policies=None, **kwargs):
+                 tags=None, termination_policies=None, instance_id=None,
+                 **kwargs):
         """
         Creates a new AutoScalingGroup with the specified name.
 
@@ -129,8 +130,8 @@ class AutoScalingGroup(object):
         :param health_check_type: The service you want the health status from,
             Amazon EC2 or Elastic Load Balancer.
 
-        :type launch_config_name: str or LaunchConfiguration
-        :param launch_config_name: Name of launch configuration (required).
+        :type launch_config: str or LaunchConfiguration
+        :param launch_config: Name of launch configuration (required).
 
         :type load_balancers: list
         :param load_balancers: List of load balancers.
@@ -145,15 +146,22 @@ class AutoScalingGroup(object):
         :param placement_group: Physical location of your cluster placement
             group created in Amazon EC2.
 
-        :type vpc_zone_identifier: str
-        :param vpc_zone_identifier: The subnet identifier of the Virtual
-            Private Cloud.
+        :type vpc_zone_identifier: str or list
+        :param vpc_zone_identifier: A comma-separated string or python list of
+            the subnet identifiers of the Virtual Private Cloud.
+
+        :type tags: list
+        :param tags: List of :class:`boto.ec2.autoscale.tag.Tag`s
 
         :type termination_policies: list
         :param termination_policies: A list of termination policies. Valid values
             are: "OldestInstance", "NewestInstance", "OldestLaunchConfiguration",
             "ClosestToNextInstanceHour", "Default".  If no value is specified,
             the "Default" value is used.
+
+        :type instance_id: str
+        :param instance_id: The ID of the Amazon EC2 instance you want to use
+            to create the Auto Scaling group.
 
         :rtype: :class:`boto.ec2.autoscale.group.AutoScalingGroup`
         :return: An autoscale group.
@@ -180,11 +188,14 @@ class AutoScalingGroup(object):
         self.health_check_type = health_check_type
         self.placement_group = placement_group
         self.autoscaling_group_arn = None
+        if type(vpc_zone_identifier) is list:
+            vpc_zone_identifier = ','.join(vpc_zone_identifier)
         self.vpc_zone_identifier = vpc_zone_identifier
         self.instances = None
         self.tags = tags or None
         termination_policies = termination_policies or []
         self.termination_policies = ListElement(termination_policies)
+        self.instance_id = instance_id
 
     # backwards compatible access to 'cooldown' param
     def _get_cooldown(self):
@@ -248,6 +259,8 @@ class AutoScalingGroup(object):
             self.health_check_type = value
         elif name == 'VPCZoneIdentifier':
             self.vpc_zone_identifier = value
+        elif name == 'InstanceId':
+            self.instance_id = value
         else:
             setattr(self, name, value)
 
@@ -296,11 +309,22 @@ class AutoScalingGroup(object):
     def put_notification_configuration(self, topic, notification_types):
         """
         Configures an Auto Scaling group to send notifications when
-        specified events take place.
+        specified events take place. Valid notification types are:
+        'autoscaling:EC2_INSTANCE_LAUNCH',
+        'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
+        'autoscaling:EC2_INSTANCE_TERMINATE',
+        'autoscaling:EC2_INSTANCE_TERMINATE_ERROR',
+        'autoscaling:TEST_NOTIFICATION'
         """
         return self.connection.put_notification_configuration(self,
                                                               topic,
                                                               notification_types)
+
+    def delete_notification_configuration(self, topic):
+        """
+        Deletes notifications created by put_notification_configuration.
+        """
+        return self.connection.delete_notification_configuration(self, topic)
 
     def suspend_processes(self, scaling_processes=None):
         """

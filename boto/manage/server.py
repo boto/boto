@@ -15,15 +15,14 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
 """
 High-level abstraction of an EC2 server
 """
-from __future__ import with_statement
+
 import boto.ec2
 from boto.mashups.iobject import IObject
 from boto.pyami.config import BotoConfigPath, Config
@@ -32,9 +31,10 @@ from boto.sdb.db.property import StringProperty, IntegerProperty, BooleanPropert
 from boto.manage import propget
 from boto.ec2.zone import Zone
 from boto.ec2.keypair import KeyPair
-import os, time, StringIO
+import os, time
 from contextlib import closing
 from boto.exception import EC2ResponseError
+from boto.compat import six, StringIO
 
 InstanceTypes = ['m1.small', 'm1.large', 'm1.xlarge',
                  'c1.medium', 'c1.xlarge',
@@ -49,7 +49,7 @@ class Bundler(object):
         self.ssh_client = SSHClient(server, uname=uname)
 
     def copy_x509(self, key_file, cert_file):
-        print '\tcopying cert and pk over to /mnt directory on server'
+        print('\tcopying cert and pk over to /mnt directory on server')
         self.ssh_client.open_sftp()
         path, name = os.path.split(key_file)
         self.remote_key_file = '/mnt/%s' % name
@@ -57,7 +57,7 @@ class Bundler(object):
         path, name = os.path.split(cert_file)
         self.remote_cert_file = '/mnt/%s' % name
         self.ssh_client.put_file(cert_file, self.remote_cert_file)
-        print '...complete!'
+        print('...complete!')
 
     def bundle_image(self, prefix, size, ssh_key):
         command = ""
@@ -103,7 +103,7 @@ class Bundler(object):
             ssh_key = self.server.get_ssh_key_file()
         self.copy_x509(key_file, cert_file)
         if not fp:
-            fp = StringIO.StringIO()
+            fp = StringIO()
         fp.write('sudo mv %s /mnt/boto.cfg; ' % BotoConfigPath)
         fp.write('mv ~/.ssh/authorized_keys /mnt/authorized_keys; ')
         if clear_history:
@@ -115,13 +115,13 @@ class Bundler(object):
         fp.write('sudo mv /mnt/boto.cfg %s; ' % BotoConfigPath)
         fp.write('mv /mnt/authorized_keys ~/.ssh/authorized_keys')
         command = fp.getvalue()
-        print 'running the following command on the remote server:'
-        print command
+        print('running the following command on the remote server:')
+        print(command)
         t = self.ssh_client.run(command)
-        print '\t%s' % t[0]
-        print '\t%s' % t[1]
-        print '...complete!'
-        print 'registering image...'
+        print('\t%s' % t[0])
+        print('\t%s' % t[1])
+        print('...complete!')
+        print('registering image...')
         self.image_id = self.server.ec2.register_image(name=prefix, image_location='%s/%s.manifest.xml' % (bucket, prefix))
         return self.image_id
 
@@ -134,10 +134,10 @@ class CommandLineGetter(object):
             if ami.location.find('pyami') >= 0:
                 my_amis.append((ami.location, ami))
         return my_amis
-    
+
     def get_region(self, params):
         region = params.get('region', None)
-        if isinstance(region, str) or isinstance(region, unicode):
+        if isinstance(region, basestring):
             region = boto.ec2.get_region(region)
             params['region'] = region
         if not region:
@@ -171,7 +171,7 @@ class CommandLineGetter(object):
             prop = StringProperty(name='zone', verbose_name='EC2 Availability Zone',
                                   choices=self.ec2.get_all_zones)
             params['zone'] = propget.get(prop)
-            
+
     def get_ami_id(self, params):
         valid = False
         while not valid:
@@ -189,7 +189,7 @@ class CommandLineGetter(object):
 
     def get_group(self, params):
         group = params.get('group', None)
-        if isinstance(group, str) or isinstance(group, unicode):
+        if isinstance(group, basestring):
             group_list = self.ec2.get_all_security_groups()
             for g in group_list:
                 if g.name == group:
@@ -202,7 +202,7 @@ class CommandLineGetter(object):
 
     def get_key(self, params):
         keypair = params.get('keypair', None)
-        if isinstance(keypair, str) or isinstance(keypair, unicode):
+        if isinstance(keypair, basestring):
             key_list = self.ec2.get_all_key_pairs()
             for k in key_list:
                 if k.name == keypair:
@@ -250,7 +250,7 @@ class Server(Model):
     instance_type = CalculatedProperty(verbose_name="Instance Type", calculated_type=str, use_method=True)
     status = CalculatedProperty(verbose_name="Current Status", calculated_type=str, use_method=True)
     launch_time = CalculatedProperty(verbose_name="Server Launch Time", calculated_type=str, use_method=True)
-    console_output = CalculatedProperty(verbose_name="Console Output", calculated_type=file, use_method=True)
+    console_output = CalculatedProperty(verbose_name="Console Output", calculated_type=open, use_method=True)
 
     packages = []
     plugins = []
@@ -271,20 +271,20 @@ class Server(Model):
         """
         Create a new instance based on the specified configuration file or the specified
         configuration and the passed in parameters.
-        
-        If the config_file argument is not None, the configuration is read from there. 
+
+        If the config_file argument is not None, the configuration is read from there.
         Otherwise, the cfg argument is used.
-        
+
         The config file may include other config files with a #import reference. The included
-        config files must reside in the same directory as the specified file. 
-        
-        The logical_volume argument, if supplied, will be used to get the current physical 
-        volume ID and use that as an override of the value specified in the config file. This 
-        may be useful for debugging purposes when you want to debug with a production config 
-        file but a test Volume. 
-        
-        The dictionary argument may be used to override any EC2 configuration values in the 
-        config file. 
+        config files must reside in the same directory as the specified file.
+
+        The logical_volume argument, if supplied, will be used to get the current physical
+        volume ID and use that as an override of the value specified in the config file. This
+        may be useful for debugging purposes when you want to debug with a production config
+        file but a test Volume.
+
+        The dictionary argument may be used to override any EC2 configuration values in the
+        config file.
         """
         if config_file:
             cfg = Config(path=config_file)
@@ -304,8 +304,8 @@ class Server(Model):
         zone = params.get('zone')
         # deal with possibly passed in logical volume:
         if logical_volume != None:
-           cfg.set('EBS', 'logical_volume_name', logical_volume.name) 
-        cfg_fp = StringIO.StringIO()
+           cfg.set('EBS', 'logical_volume_name', logical_volume.name)
+        cfg_fp = StringIO()
         cfg.write(cfg_fp)
         # deal with the possibility that zone and/or keypair are strings read from the config file:
         if isinstance(zone, Zone):
@@ -323,16 +323,16 @@ class Server(Model):
         i = 0
         elastic_ip = params.get('elastic_ip')
         instances = reservation.instances
-        if elastic_ip != None and instances.__len__() > 0:
+        if elastic_ip is not None and instances.__len__() > 0:
             instance = instances[0]
-            print 'Waiting for instance to start so we can set its elastic IP address...'
+            print('Waiting for instance to start so we can set its elastic IP address...')
             # Sometimes we get a message from ec2 that says that the instance does not exist.
             # Hopefully the following delay will giv eec2 enough time to get to a stable state:
-            time.sleep(5) 
+            time.sleep(5)
             while instance.update() != 'running':
                 time.sleep(1)
             instance.use_ip(elastic_ip)
-            print 'set the elastic IP of the first instance to %s' % elastic_ip
+            print('set the elastic IP of the first instance to %s' % elastic_ip)
         for instance in instances:
             s = cls()
             s.ec2 = ec2
@@ -346,14 +346,14 @@ class Server(Model):
             l.append(s)
             i += 1
         return l
-    
+
     @classmethod
     def create_from_instance_id(cls, instance_id, name, description=''):
         regions = boto.ec2.regions()
         for region in regions:
             ec2 = region.connect()
             try:
-                rs = ec2.get_all_instances([instance_id])
+                rs = ec2.get_all_reservations([instance_id])
             except:
                 rs = []
             if len(rs) == 1:
@@ -377,11 +377,11 @@ class Server(Model):
         regions = boto.ec2.regions()
         for region in regions:
             ec2 = region.connect()
-            rs = ec2.get_all_instances()
+            rs = ec2.get_all_reservations()
             for reservation in rs:
                 for instance in reservation.instances:
                     try:
-                        Server.find(instance_id=instance.id).next()
+                        next(Server.find(instance_id=instance.id))
                         boto.log.info('Server for %s already exists' % instance.id)
                     except StopIteration:
                         s = cls()
@@ -393,9 +393,9 @@ class Server(Model):
                         s.put()
                         servers.append(s)
         return servers
-    
+
     def __init__(self, id=None, **kw):
-        Model.__init__(self, id, **kw)
+        super(Server, self).__init__(id, **kw)
         self.ssh_key_file = None
         self.ec2 = None
         self._cmdshell = None
@@ -413,7 +413,7 @@ class Server(Model):
                         self.ec2 = region.connect()
                         if self.instance_id and not self._instance:
                             try:
-                                rs = self.ec2.get_all_instances([self.instance_id])
+                                rs = self.ec2.get_all_reservations([self.instance_id])
                                 if len(rs) >= 1:
                                     for instance in rs[0].instances:
                                         if instance.id == self.instance_id:
@@ -421,7 +421,7 @@ class Server(Model):
                                             self._instance = instance
                             except EC2ResponseError:
                                 pass
-                            
+
     def _status(self):
         status = ''
         if self._instance:
@@ -484,14 +484,14 @@ class Server(Model):
         return kn
 
     def put(self):
-        Model.put(self)
+        super(Server, self).put()
         self._setup_ec2()
 
     def delete(self):
         if self.production:
             raise ValueError("Can't delete a production server")
         #self.stop()
-        Model.delete(self)
+        super(Server, self).delete()
 
     def stop(self):
         if self.production:
@@ -527,7 +527,7 @@ class Server(Model):
 
     def get_cmdshell(self):
         if not self._cmdshell:
-            import cmdshell
+            from boto.manage import cmdshell
             self.get_ssh_key_file()
             self._cmdshell = cmdshell.start(self)
         return self._cmdshell
@@ -553,4 +553,4 @@ class Server(Model):
         return self.run('apt-get -y install %s' % pkg)
 
 
-    
+

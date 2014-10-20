@@ -46,22 +46,31 @@ class Layer1(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  api_version=None, security_token=None,
-                 validate_certs=True):
+                 validate_certs=True, profile_name=None):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         self.region = region
-        AWSQueryConnection.__init__(self, aws_access_key_id,
-                                    aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port,
-                                    proxy_user, proxy_pass,
-                                    self.region.endpoint, debug,
-                                    https_connection_factory, path,
-                                    security_token,
-                                    validate_certs=validate_certs)
+        AWSQueryConnection.__init__(
+            self,
+            host=self.region.endpoint,
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            is_secure=is_secure,
+            port=port,
+            proxy=proxy,
+            proxy_port=proxy_port,
+            proxy_user=proxy_user,
+            proxy_pass=proxy_pass,
+            debug=debug,
+            https_connection_factory=https_connection_factory,
+            path=path,
+            security_token=security_token,
+            validate_certs=validate_certs,
+            profile_name=profile_name)
 
     def _required_auth_capability(self):
-        return ['sign-v2']
+        return ['hmac-v4']
 
     def get_response(self, doc_path, action, params, path='/',
                      parent=None, verb='GET', list_marker=None):
@@ -80,7 +89,7 @@ class Layer1(AWSQueryConnection):
             for p in doc_path:
                 inner = inner.get(p)
             if not inner:
-                return None if list_marker == None else []
+                return None if list_marker is None else []
             if isinstance(inner, list):
                 return inner
             else:
@@ -671,7 +680,7 @@ class Layer1(AWSQueryConnection):
                     'update_stemming_options_result',
                     'stems')
         params = {'DomainName': domain_name,
-                 'Stems': stems}
+                  'Stems': stems}
         return self.get_response(doc_path, 'UpdateStemmingOptions',
                                  params, verb='POST')
 

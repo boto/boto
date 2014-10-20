@@ -86,7 +86,7 @@ def needs_caller_reference(func):
 def api_action(*api):
 
     def decorator(func):
-        action = ''.join(api or map(str.capitalize, func.func_name.split('_')))
+        action = ''.join(api or map(str.capitalize, func.__name__.split('_')))
         response = ResponseFactory(action)
         if hasattr(boto.fps.response, action + 'Response'):
             response = getattr(boto.fps.response, action + 'Response')
@@ -109,7 +109,7 @@ class FPSConnection(AWSQueryConnection):
     def __init__(self, *args, **kw):
         self.currencycode = kw.pop('CurrencyCode', self.currencycode)
         kw.setdefault('host', 'fps.sandbox.amazonaws.com')
-        AWSQueryConnection.__init__(self, *args, **kw)
+        super(FPSConnection, self).__init__(*args, **kw)
 
     def _required_auth_capability(self):
         return ['fps']

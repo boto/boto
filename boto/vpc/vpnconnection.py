@@ -152,7 +152,7 @@ class VpnConnection(TaggedEC2Object):
 
     """
     def __init__(self, connection=None):
-        TaggedEC2Object.__init__(self, connection)
+        super(VpnConnection, self).__init__(connection)
         self.id = None
         self.state = None
         self.customer_gateway_configuration = None
@@ -197,5 +197,8 @@ class VpnConnection(TaggedEC2Object):
         else:
             setattr(self, name, value)
 
-    def delete(self):
-        return self.connection.delete_vpn_connection(self.id)
+    def delete(self, dry_run=False):
+        return self.connection.delete_vpn_connection(
+            self.id,
+            dry_run=dry_run
+        )

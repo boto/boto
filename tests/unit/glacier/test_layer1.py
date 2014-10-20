@@ -34,7 +34,7 @@ class GlacierVaultsOperations(GlacierLayer1ConnectionBase):
                    u'RequestId': None,
                    u'VaultList': [self.vault_info]}
         self.set_http_response(status_code=200, header=self.json_header,
-                               body=json.dumps(content))
+                               body=json.dumps(content).encode('utf-8'))
         api_response = self.service_connection.list_vaults()
         self.assertDictEqual(content, api_response)
 
@@ -42,7 +42,7 @@ class GlacierVaultsOperations(GlacierLayer1ConnectionBase):
         content = copy.copy(self.vault_info)
         content[u'RequestId'] = None
         self.set_http_response(status_code=200, header=self.json_header,
-                               body=json.dumps(content))
+                               body=json.dumps(content).encode('utf-8'))
         api_response = self.service_connection.describe_vault(self.vault_name)
         self.assertDictEqual(content, api_response)
 
@@ -66,7 +66,7 @@ class GlacierJobOperations(GlacierLayer1ConnectionBase):
                    u'Location': None,
                    u'RequestId': None}
         self.set_http_response(status_code=202, header=self.json_header,
-                               body=json.dumps(content))
+                               body=json.dumps(content).encode('utf-8'))
         api_response = self.service_connection.initiate_job(self.vault_name,
                                                             self.job_content)
         self.assertDictEqual(content, api_response)
@@ -76,14 +76,14 @@ class GlacierJobOperations(GlacierLayer1ConnectionBase):
         self.set_http_response(status_code=200, header=header,
                                body=self.job_content)
         response = self.service_connection.get_job_output(self.vault_name,
-                                                         'example-job-id')
+                                                          'example-job-id')
         self.assertEqual(self.job_content, response.read())
 
 
 class GlacierUploadArchiveResets(GlacierLayer1ConnectionBase):
     def test_upload_archive(self):
         fake_data = tempfile.NamedTemporaryFile()
-        fake_data.write('foobarbaz')
+        fake_data.write(b'foobarbaz')
         # First seek to a non zero offset.
         fake_data.seek(2)
         self.set_http_response(status_code=201)

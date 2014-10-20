@@ -74,7 +74,7 @@ Alternatively, edit your boto.cfg with the default ELB endpoint to use::
 Getting Existing Load Balancers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To retrieve any exiting load balancers:
+To retrieve any existing load balancers:
 
 >>> conn.get_all_load_balancers()
 [LoadBalancer:load-balancer-prod, LoadBalancer:load-balancer-staging]
@@ -92,7 +92,7 @@ works very much like a list.
 
 >>> balancers = conn.get_all_load_balancers()
 >>> balancers[0]
-[LoadBalancer:load-balancer-prod]
+LoadBalancer:load-balancer-prod
 
 Creating a Load Balancer
 ------------------------

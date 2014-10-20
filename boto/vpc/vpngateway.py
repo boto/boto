@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -33,7 +33,7 @@ class Attachment(object):
 
     def startElement(self, name, attrs, connection):
         pass
-    
+
     def endElement(self, name, value, connection):
         if name == 'vpcId':
             self.vpc_id = value
@@ -41,11 +41,11 @@ class Attachment(object):
             self.state = value
         else:
             setattr(self, name, value)
-            
+
 class VpnGateway(TaggedEC2Object):
 
     def __init__(self, connection=None):
-        TaggedEC2Object.__init__(self, connection)
+        super(VpnGateway, self).__init__(connection)
         self.id = None
         self.type = None
         self.state = None
@@ -56,14 +56,14 @@ class VpnGateway(TaggedEC2Object):
         return 'VpnGateway:%s' % self.id
 
     def startElement(self, name, attrs, connection):
-        retval = TaggedEC2Object.startElement(self, name, attrs, connection)
+        retval = super(VpnGateway, self).startElement(name, attrs, connection)
         if retval is not None:
             return retval
         if name == 'item':
             att = Attachment()
             self.attachments.append(att)
             return att
-    
+
     def endElement(self, name, value, connection):
         if name == 'vpnGatewayId':
             self.id = value
@@ -78,6 +78,10 @@ class VpnGateway(TaggedEC2Object):
         else:
             setattr(self, name, value)
 
-    def attach(self, vpc_id):
-        return self.connection.attach_vpn_gateway(self.id, vpc_id)
+    def attach(self, vpc_id, dry_run=False):
+        return self.connection.attach_vpn_gateway(
+            self.id,
+            vpc_id,
+            dry_run=dry_run
+        )
 

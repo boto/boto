@@ -14,17 +14,20 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from __future__ import print_function
 
 """
 Represents an SDB Domain
 """
-from boto.sdb.queryresultset import SelectResultSet
 
-class Domain:
+from boto.sdb.queryresultset import SelectResultSet
+from boto.compat import six
+
+class Domain(object):
 
     def __init__(self, connection=None, name=None):
         self.connection = connection
@@ -64,19 +67,19 @@ class Domain:
 
         :type expected_value: list
         :param expected_value: If supplied, this is a list or tuple consisting
-            of a single attribute name and expected value. The list can be 
+            of a single attribute name and expected value. The list can be
             of the form:
 
              * ['name', 'value']
 
-            In which case the call will first verify that the attribute 
+            In which case the call will first verify that the attribute
             "name" of this item has a value of "value".  If it does, the delete
-            will proceed, otherwise a ConditionalCheckFailed error will be 
+            will proceed, otherwise a ConditionalCheckFailed error will be
             returned. The list can also be of the form:
-            
+
              * ['name', True|False]
-            
-            which will simply check for the existence (True) or non-existence 
+
+            which will simply check for the existence (True) or non-existence
             (False) of the attribute.
 
         :type replace: bool
@@ -144,22 +147,22 @@ class Domain:
                            a dict or Item containing the attribute names and keys and list
                            of values to delete as the value.  If no value is supplied,
                            all attribute name/values for the item will be deleted.
-                           
+
         :type expected_value: list
         :param expected_value: If supplied, this is a list or tuple consisting
-            of a single attribute name and expected value. The list can be of 
+            of a single attribute name and expected value. The list can be of
             the form:
 
              * ['name', 'value']
 
             In which case the call will first verify that the attribute "name"
             of this item has a value of "value".  If it does, the delete
-            will proceed, otherwise a ConditionalCheckFailed error will be 
+            will proceed, otherwise a ConditionalCheckFailed error will be
             returned. The list can also be of the form:
 
              * ['name', True|False]
 
-            which will simply check for the existence (True) or 
+            which will simply check for the existence (True) or
             non-existence (False) of the attribute.
 
         :rtype: bool
@@ -171,7 +174,7 @@ class Domain:
     def batch_delete_attributes(self, items):
         """
         Delete multiple items in this domain.
-        
+
         :type items: dict or dict-like object
         :param items: A dictionary-like object.  The keys of the dictionary are
             the item names and the values are either:
@@ -182,7 +185,7 @@ class Domain:
                   will only be deleted if they match the name/value
                   pairs passed in.
                 * None which means that all attributes associated
-                  with the item should be deleted.  
+                  with the item should be deleted.
 
         :rtype: bool
         :return: True if successful
@@ -209,12 +212,12 @@ class Domain:
     def get_item(self, item_name, consistent_read=False):
         """
         Retrieves an item from the domain, along with all of its attributes.
-        
+
         :param string item_name: The name of the item to retrieve.
         :rtype: :class:`boto.sdb.item.Item` or ``None``
-        :keyword bool consistent_read: When set to true, ensures that the most 
+        :keyword bool consistent_read: When set to true, ensures that the most
                                        recent data is returned.
-        :return: The requested item, or ``None`` if there was no match found 
+        :return: The requested item, or ``None`` if there was no match found
         """
         item = self.get_attributes(item_name, consistent_read=consistent_read)
         if item:
@@ -240,26 +243,26 @@ class Domain:
         if not f:
             from tempfile import TemporaryFile
             f = TemporaryFile()
-        print >> f, '<?xml version="1.0" encoding="UTF-8"?>'
-        print >> f, '<Domain id="%s">' % self.name
+        print('<?xml version="1.0" encoding="UTF-8"?>', file=f)
+        print('<Domain id="%s">' % self.name, file=f)
         for item in self:
-            print >> f, '\t<Item id="%s">' % item.name
+            print('\t<Item id="%s">' % item.name, file=f)
             for k in item:
-                print >> f, '\t\t<attribute id="%s">' % k
+                print('\t\t<attribute id="%s">' % k, file=f)
                 values = item[k]
                 if not isinstance(values, list):
                     values = [values]
                 for value in values:
-                    print >> f, '\t\t\t<value><![CDATA[',
-                    if isinstance(value, unicode):
+                    print('\t\t\t<value><![CDATA[', end=' ', file=f)
+                    if isinstance(value, six.text_type):
                         value = value.encode('utf-8', 'replace')
                     else:
-                        value = unicode(value, errors='replace').encode('utf-8', 'replace')
+                        value = six.text_type(value, errors='replace').encode('utf-8', 'replace')
                     f.write(value)
-                    print >> f, ']]></value>'
-                print >> f, '\t\t</attribute>'
-            print >> f, '\t</Item>'
-        print >> f, '</Domain>'
+                    print(']]></value>', file=f)
+                print('\t\t</attribute>', file=f)
+            print('\t</Item>', file=f)
+        print('</Domain>', file=f)
         f.flush()
         f.seek(0)
         return f
@@ -279,7 +282,7 @@ class Domain:
         return self.connection.delete_domain(self)
 
 
-class DomainMetaData:
+class DomainMetaData(object):
 
     def __init__(self, domain=None):
         self.domain = domain
@@ -364,14 +367,14 @@ class UploaderThread(Thread):
     def __init__(self, domain):
         self.db = domain
         self.items = {}
-        Thread.__init__(self)
+        super(UploaderThread, self).__init__()
 
     def run(self):
         try:
             self.db.batch_put_attributes(self.items)
         except:
-            print "Exception using batch put, trying regular put instead"
+            print("Exception using batch put, trying regular put instead")
             for item_name in self.items:
                 self.db.put_attributes(item_name, self.items[item_name])
-        print ".",
+        print(".", end=' ')
         sys.stdout.flush()

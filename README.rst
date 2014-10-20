@@ -1,68 +1,87 @@
 ####
 boto
 ####
-boto 2.9.5
+boto 2.33.0
 
-Released: 28-May-2013
+Released: 08-Oct-2014
 
-.. image:: https://travis-ci.org/boto/boto.png?branch=develop
+.. image:: https://travis-ci.org/boto/boto.svg?branch=develop
         :target: https://travis-ci.org/boto/boto
-        
-.. image:: https://pypip.in/d/boto/badge.png
-        :target: https://crate.io/packages/boto/
+
+.. image:: https://pypip.in/d/boto/badge.svg
+        :target: https://pypi.python.org/pypi/boto/
 
 ************
 Introduction
 ************
 
 Boto is a Python package that provides interfaces to Amazon Web Services.
+Currently, all features work with Python 2.6 and 2.7. Work is under way to
+support Python 3.3+ in the same codebase. Modules are being ported one at
+a time with the help of the open source community, so please check below
+for compatibility with Python 3.3+.
+
+To port a module to Python 3.3+, please view our `Contributing Guidelines`_
+and the `Porting Guide`_. If you would like, you can open an issue to let
+others know about your work in progress. Tests **must** pass on Python
+2.6, 2.7, 3.3, and 3.4 for pull requests to be accepted.
+
 At the moment, boto supports:
 
 * Compute
 
-  * Amazon Elastic Compute Cloud (EC2)
-  * Amazon Elastic Map Reduce (EMR)
-  * AutoScaling
+  * Amazon Elastic Compute Cloud (EC2) (Python 3)
+  * Amazon Elastic Map Reduce (EMR) (Python 3)
+  * AutoScaling (Python 3)
+  * Amazon Kinesis (Python 3)
 
 * Content Delivery
 
-  * Amazon CloudFront
+  * Amazon CloudFront (Python 3)
 
 * Database
 
   * Amazon Relational Data Service (RDS)
-  * Amazon DynamoDB
-  * Amazon SimpleDB
-  * Amazon ElastiCache
-  * Amazon Redshift
+  * Amazon DynamoDB (Python 3)
+  * Amazon SimpleDB (Python 3)
+  * Amazon ElastiCache (Python 3)
+  * Amazon Redshift (Python 3)
 
 * Deployment and Management
 
-  * AWS Elastic Beanstalk
-  * AWS CloudFormation
-  * AWS Data Pipeline
+  * AWS Elastic Beanstalk (Python 3)
+  * AWS CloudFormation (Python 3)
+  * AWS Data Pipeline (Python 3)
+  * AWS Opsworks (Python 3)
+  * AWS CloudTrail (Python 3)
 
 * Identity & Access
 
-  * AWS Identity and Access Management (IAM)
+  * AWS Identity and Access Management (IAM) (Python 3)
 
 * Application Services
 
-  * Amazon CloudSearch
-  * Amazon Simple Workflow Service (SWF)
-  * Amazon Simple Queue Service (SQS)
-  * Amazon Simple Notification Server (SNS)
-  * Amazon Simple Email Service (SES)
+  * Amazon CloudSearch (Python 3)
+  * Amazon Elastic Transcoder (Python 3)
+  * Amazon Simple Workflow Service (SWF) (Python 3)
+  * Amazon Simple Queue Service (SQS) (Python 3)
+  * Amazon Simple Notification Server (SNS) (Python 3)
+  * Amazon Simple Email Service (SES) (Python 3)
+  * Amazon Cognito Identity (Python 3)
+  * Amazon Cognito Sync (Python 3)
 
 * Monitoring
 
-  * Amazon CloudWatch
+  * Amazon CloudWatch (EC2 Only) (Python 3)
+  * Amazon CloudWatch Logs (Python 3)
 
 * Networking
 
-  * Amazon Route53
-  * Amazon Virtual Private Cloud (VPC)
-  * Elastic Load Balancing (ELB)
+  * Amazon Route53 (Python 3)
+  * Amazon Route 53 Domains (Python 3)
+  * Amazon Virtual Private Cloud (VPC) (Python 3)
+  * Elastic Load Balancing (ELB) (Python 3)
+  * AWS Direct Connect (Python 3)
 
 * Payments and Billing
 
@@ -70,8 +89,8 @@ At the moment, boto supports:
 
 * Storage
 
-  * Amazon Simple Storage Service (S3)
-  * Amazon Glacier
+  * Amazon Simple Storage Service (S3) (Python 3)
+  * Amazon Glacier (Python 3)
   * Amazon Elastic Block Store (EBS)
   * Google Cloud Storage
 
@@ -81,17 +100,17 @@ At the moment, boto supports:
 
 * Other
 
-  * Marketplace Web Services
-  * AWS Support
+  * Marketplace Web Services (Python 3)
+  * AWS Support (Python 3)
 
 The goal of boto is to support the full breadth and depth of Amazon
 Web Services.  In addition, boto provides support for other public
 services such as Google Storage in addition to private cloud systems
 like Eucalyptus, OpenStack and Open Nebula.
 
-Boto is developed mainly using Python 2.6.6 and Python 2.7.1 on Mac OSX
+Boto is developed mainly using Python 2.6.6 and Python 2.7.3 on Mac OSX
 and Ubuntu Maverick.  It is known to work on other Linux distributions
-and on Windows.  Boto requires no additional libraries or packages
+and on Windows.  Most of Boto requires no additional libraries or packages
 other than those that are distributed with Python.  Efforts are made
 to keep boto compatible with Python 2.5.x but no guarantees are made.
 
@@ -103,22 +122,22 @@ Install via `pip`_:
 
 ::
 
-	$ pip install boto
+    $ pip install boto
 
 Install from source:
 
 ::
 
-	$ git clone git://github.com/boto/boto.git
-	$ cd boto
-	$ python setup.py install
+    $ git clone git://github.com/boto/boto.git
+    $ cd boto
+    $ python setup.py install
 
 **********
 ChangeLogs
 **********
 
 To see what has changed over time in boto, you can check out the
-`release notes`_ in the wiki.
+release notes at `http://docs.pythonboto.org/en/latest/#release-notes`
 
 ***************************
 Finding Out More About Boto
@@ -153,11 +172,8 @@ following environment variables to ascertain your credentials:
 Credentials and other boto-related settings can also be stored in a
 boto config file.  See `this`_ for details.
 
-Copyright (c) 2006-2012 Mitch Garnaat <mitch@garnaat.com>
-Copyright (c) 2010-2011, Eucalyptus Systems, Inc.
-Copyright (c) 2012 Amazon.com, Inc. or its affiliates.
-All rights reserved.
-
+.. _Contributing Guidelines: https://github.com/boto/boto/blob/develop/CONTRIBUTING
+.. _Porting Guide: http://boto.readthedocs.org/en/latest/porting_guide.html
 .. _pip: http://www.pip-installer.org/
 .. _release notes: https://github.com/boto/boto/wiki
 .. _github.com: http://github.com/boto/boto

@@ -19,14 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import urlparse
-from tests.unit import unittest
+import os
+import socket
+
+from tests.compat import mock, unittest
 from httpretty import HTTPretty
 
-from boto.connection import AWSQueryConnection, AWSAuthConnection
+from boto import UserAgent
+from boto.compat import json, parse_qs
+from boto.connection import AWSQueryConnection, AWSAuthConnection, HTTPRequest
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
-from boto.compat import json
 
 
 class TestListParamsSerialization(unittest.TestCase):
@@ -70,6 +73,7 @@ class MockAWSService(AWSQueryConnection):
     """
 
     APIVersion = '2012-01-01'
+
     def _required_auth_capability(self):
         return ['sign-v2']
 
@@ -79,16 +83,20 @@ class MockAWSService(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  api_version=None, security_token=None,
-                 validate_certs=True):
+                 validate_certs=True, profile_name=None):
         self.region = region
+        if host is None:
+            host = self.region.endpoint
         AWSQueryConnection.__init__(self, aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
-                                    self.region.endpoint, debug,
+                                    host, debug,
                                     https_connection_factory, path,
                                     security_token,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    profile_name=profile_name)
+
 
 class TestAWSAuthConnection(unittest.TestCase):
     def test_get_path(self):
@@ -110,17 +118,113 @@ class TestAWSAuthConnection(unittest.TestCase):
         self.assertEqual(conn.get_path('/folder////image.jpg'), '/folder////image.jpg')
         self.assertEqual(conn.get_path('///folder////image.jpg'), '///folder////image.jpg')
 
+    def test_connection_behind_proxy(self):
+        os.environ['http_proxy'] = "http://john.doe:p4ssw0rd@127.0.0.1:8180"
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False
+        )
+        self.assertEqual(conn.proxy, '127.0.0.1')
+        self.assertEqual(conn.proxy_user, 'john.doe')
+        self.assertEqual(conn.proxy_pass, 'p4ssw0rd')
+        self.assertEqual(conn.proxy_port, '8180')
+        del os.environ['http_proxy']
+
+    def test_get_proxy_url_with_auth(self):
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False,
+            proxy="127.0.0.1",
+            proxy_user="john.doe",
+            proxy_pass="p4ssw0rd",
+            proxy_port="8180"
+        )
+        self.assertEqual(conn.get_proxy_url_with_auth(), 'http://john.doe:p4ssw0rd@127.0.0.1:8180')
+
+    def test_connection_behind_proxy_without_explicit_port(self):
+        os.environ['http_proxy'] = "http://127.0.0.1"
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False,
+            port=8180
+        )
+        self.assertEqual(conn.proxy, '127.0.0.1')
+        self.assertEqual(conn.proxy_port, 8180)
+        del os.environ['http_proxy']
+
+    @mock.patch.object(socket, 'create_connection')
+    @mock.patch('boto.compat.http_client.HTTPResponse')
+    @mock.patch('boto.compat.http_client.ssl')
+    def test_proxy_ssl(self, ssl_mock, http_response_mock,
+                       create_connection_mock):
+        type(http_response_mock.return_value).status = mock.PropertyMock(
+            return_value=200)
+
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False,
+            proxy_port=80
+        )
+        conn.https_validate_certificates = False
+
+        # Attempt to call proxy_ssl and make sure it works
+        conn.proxy_ssl('mockservice.cc-zone-1.amazonaws.com', 80)
+
+    # this tests the proper setting of the host_header in v4 signing
+    def test_host_header_with_nonstandard_port(self):
+        # test standard port first
+        conn = V4AuthConnection(
+            'testhost',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret')
+        request = conn.build_base_http_request(
+            method='POST', path='/', auth_path=None, params=None, headers=None,
+            data='', host=None)
+        conn.set_host_header(request)
+        self.assertEqual(request.headers['Host'], 'testhost')
+
+        # next, test non-standard port
+        conn = V4AuthConnection(
+            'testhost',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            port=8773)
+        request = conn.build_base_http_request(
+            method='POST', path='/', auth_path=None, params=None, headers=None,
+            data='', host=None)
+        conn.set_host_header(request)
+        self.assertEqual(request.headers['Host'], 'testhost:8773')
+
+
+class V4AuthConnection(AWSAuthConnection):
+    def __init__(self, host, aws_access_key_id, aws_secret_access_key, port=443):
+        AWSAuthConnection.__init__(
+            self, host, aws_access_key_id, aws_secret_access_key, port=port)
+
+    def _required_auth_capability(self):
+        return ['hmac-v4']
+
 
 class TestAWSQueryConnection(unittest.TestCase):
     def setUp(self):
-        self.region = RegionInfo(name='cc-zone-1',
-                            endpoint='mockservice.cc-zone-1.amazonaws.com',
-                            connection_cls=MockAWSService)
+        self.region = RegionInfo(
+            name='cc-zone-1',
+            endpoint='mockservice.cc-zone-1.amazonaws.com',
+            connection_cls=MockAWSService)
 
         HTTPretty.enable()
 
     def tearDown(self):
         HTTPretty.disable()
+
 
 class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
     def test_query_connection_basis(self):
@@ -133,6 +237,49 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                    aws_secret_access_key='secret')
 
         self.assertEqual(conn.host, 'mockservice.cc-zone-1.amazonaws.com')
+
+    def test_query_connection_noproxy(self):
+        HTTPretty.register_uri(HTTPretty.POST,
+                               'https://%s/' % self.region.endpoint,
+                               json.dumps({'test': 'secure'}),
+                               content_type='application/json')
+
+        os.environ['no_proxy'] = self.region.endpoint
+
+        conn = self.region.connect(aws_access_key_id='access_key',
+                                   aws_secret_access_key='secret',
+                                   proxy="NON_EXISTENT_HOSTNAME",
+                                   proxy_port="3128")
+
+        resp = conn.make_request('myCmd',
+                                 {'par1': 'foo', 'par2': 'baz'},
+                                 "/",
+                                 "POST")
+        del os.environ['no_proxy']
+        args = parse_qs(HTTPretty.last_request.body)
+        self.assertEqual(args[b'AWSAccessKeyId'], [b'access_key'])
+
+    def test_query_connection_noproxy_nosecure(self):
+        HTTPretty.register_uri(HTTPretty.POST,
+                               'https://%s/' % self.region.endpoint,
+                               json.dumps({'test': 'insecure'}),
+                               content_type='application/json')
+
+        os.environ['no_proxy'] = self.region.endpoint
+
+        conn = self.region.connect(aws_access_key_id='access_key',
+                                   aws_secret_access_key='secret',
+                                   proxy="NON_EXISTENT_HOSTNAME",
+                                   proxy_port="3128",
+                                   is_secure=False)
+
+        resp = conn.make_request('myCmd',
+                                 {'par1': 'foo', 'par2': 'baz'},
+                                 "/",
+                                 "POST")
+        del os.environ['no_proxy']
+        args = parse_qs(HTTPretty.last_request.body)
+        self.assertEqual(args[b'AWSAccessKeyId'], [b'access_key'])
 
     def test_single_command(self):
         HTTPretty.register_uri(HTTPretty.POST,
@@ -147,14 +294,14 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  "/",
                                  "POST")
 
-        args = urlparse.parse_qs(HTTPretty.last_request.body)
-        self.assertEqual(args['AWSAccessKeyId'], ['access_key'])
-        self.assertEqual(args['SignatureMethod'], ['HmacSHA256'])
-        self.assertEqual(args['Version'], [conn.APIVersion])
-        self.assertEqual(args['par1'], ['foo'])
-        self.assertEqual(args['par2'], ['baz'])
+        args = parse_qs(HTTPretty.last_request.body)
+        self.assertEqual(args[b'AWSAccessKeyId'], [b'access_key'])
+        self.assertEqual(args[b'SignatureMethod'], [b'HmacSHA256'])
+        self.assertEqual(args[b'Version'], [conn.APIVersion.encode('utf-8')])
+        self.assertEqual(args[b'par1'], [b'foo'])
+        self.assertEqual(args[b'par2'], [b'baz'])
 
-        self.assertEqual(resp.read(), '{"test": "secure"}')
+        self.assertEqual(resp.read(), b'{"test": "secure"}')
 
     def test_multi_commands(self):
         """Check connection re-use"""
@@ -170,26 +317,26 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                   {'par1': 'foo', 'par2': 'baz'},
                                   "/",
                                   "POST")
-        body1 = urlparse.parse_qs(HTTPretty.last_request.body)
+        body1 = parse_qs(HTTPretty.last_request.body)
 
         resp2 = conn.make_request('myCmd2',
                                   {'par3': 'bar', 'par4': 'narf'},
                                   "/",
                                   "POST")
-        body2 = urlparse.parse_qs(HTTPretty.last_request.body)
+        body2 = parse_qs(HTTPretty.last_request.body)
 
-        self.assertEqual(body1['par1'], ['foo'])
-        self.assertEqual(body1['par2'], ['baz'])
+        self.assertEqual(body1[b'par1'], [b'foo'])
+        self.assertEqual(body1[b'par2'], [b'baz'])
         with self.assertRaises(KeyError):
-            body1['par3']
+            body1[b'par3']
 
-        self.assertEqual(body2['par3'], ['bar'])
-        self.assertEqual(body2['par4'], ['narf'])
+        self.assertEqual(body2[b'par3'], [b'bar'])
+        self.assertEqual(body2[b'par4'], [b'narf'])
         with self.assertRaises(KeyError):
             body2['par1']
 
-        self.assertEqual(resp1.read(), '{"test": "secure"}')
-        self.assertEqual(resp2.read(), '{"test": "secure"}')
+        self.assertEqual(resp1.read(), b'{"test": "secure"}')
+        self.assertEqual(resp2.read(), b'{"test": "secure"}')
 
     def test_non_secure(self):
         HTTPretty.register_uri(HTTPretty.POST,
@@ -205,7 +352,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  "/",
                                  "POST")
 
-        self.assertEqual(resp.read(), '{"test": "normal"}')
+        self.assertEqual(resp.read(), b'{"test": "normal"}')
 
     def test_alternate_port(self):
         HTTPretty.register_uri(HTTPretty.POST,
@@ -222,7 +369,7 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  "/",
                                  "POST")
 
-        self.assertEqual(resp.read(), '{"test": "alternate"}')
+        self.assertEqual(resp.read(), b'{"test": "alternate"}')
 
     def test_temp_failure(self):
         responses = [HTTPretty.Response(body="{'test': 'fail'}", status=500),
@@ -238,7 +385,58 @@ class TestAWSQueryConnectionSimple(TestAWSQueryConnection):
                                  {'par1': 'foo', 'par2': 'baz'},
                                  '/temp_fail/',
                                  'POST')
-        self.assertEqual(resp.read(), "{'test': 'success'}")
+        self.assertEqual(resp.read(), b"{'test': 'success'}")
+
+    def test_connection_close(self):
+        """Check connection re-use after close header is received"""
+        HTTPretty.register_uri(HTTPretty.POST,
+                               'https://%s/' % self.region.endpoint,
+                               json.dumps({'test': 'secure'}),
+                               content_type='application/json',
+                               connection='close')
+
+        conn = self.region.connect(aws_access_key_id='access_key',
+                                   aws_secret_access_key='secret')
+
+        def mock_put_conn(*args, **kwargs):
+            raise Exception('put_http_connection should not be called!')
+
+        conn.put_http_connection = mock_put_conn
+
+        resp1 = conn.make_request('myCmd1',
+                                  {'par1': 'foo', 'par2': 'baz'},
+                                  "/",
+                                  "POST")
+
+        # If we've gotten this far then no exception was raised
+        # by attempting to put the connection back into the pool
+        # Now let's just confirm the close header was actually
+        # set or we have another problem.
+        self.assertEqual(resp1.getheader('connection'), 'close')
+
+    def test_port_pooling(self):
+        conn = self.region.connect(aws_access_key_id='access_key',
+                                   aws_secret_access_key='secret',
+                                   port=8080)
+
+        # Pick a connection, then put it back
+        con1 = conn.get_http_connection(conn.host, conn.port, conn.is_secure)
+        conn.put_http_connection(conn.host, conn.port, conn.is_secure, con1)
+
+        # Pick another connection, which hopefully is the same yet again
+        con2 = conn.get_http_connection(conn.host, conn.port, conn.is_secure)
+        conn.put_http_connection(conn.host, conn.port, conn.is_secure, con2)
+
+        self.assertEqual(con1, con2)
+
+        # Change the port and make sure a new connection is made
+        conn.port = 8081
+
+        con3 = conn.get_http_connection(conn.host, conn.port, conn.is_secure)
+        conn.put_http_connection(conn.host, conn.port, conn.is_secure, con3)
+
+        self.assertNotEqual(con1, con3)
+
 
 class TestAWSQueryStatus(TestAWSQueryConnection):
 
@@ -263,7 +461,7 @@ class TestAWSQueryStatus(TestAWSQueryConnection):
                                content_type='text/xml')
 
         conn = self.region.connect(aws_access_key_id='access_key',
-                aws_secret_access_key='secret')
+                                   aws_secret_access_key='secret')
         with self.assertRaises(BotoServerError):
             resp = conn.get_status('getStatus',
                                    {'par1': 'foo', 'par2': 'baz'},
@@ -282,6 +480,30 @@ class TestAWSQueryStatus(TestAWSQueryConnection):
             resp = conn.get_status('getStatus',
                                    {'par1': 'foo', 'par2': 'baz'},
                                    'status')
+
+
+class TestHTTPRequest(unittest.TestCase):
+    def test_user_agent_not_url_encoded(self):
+        headers = {'Some-Header': u'should be url encoded',
+                   'User-Agent': UserAgent}
+        request = HTTPRequest('PUT', 'https', 'amazon.com', 443, None,
+                              None, {}, headers, 'Body')
+        mock_connection = mock.Mock()
+
+        # Create a method that preserves the headers at the time of
+        # authorization.
+        def mock_add_auth(req, **kwargs):
+            mock_connection.headers_at_auth = req.headers.copy()
+
+        mock_connection._auth_handler.add_auth = mock_add_auth
+
+        request.authorize(mock_connection)
+        # Ensure the headers at authorization are as expected i.e.
+        # the user agent header was not url encoded but the other header was.
+        self.assertEqual(mock_connection.headers_at_auth,
+                         {'Some-Header': 'should%20be%20url%20encoded',
+                          'User-Agent': UserAgent})
+
 
 if __name__ == '__main__':
     unittest.main()

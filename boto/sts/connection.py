@@ -1,5 +1,6 @@
 # Copyright (c) 2011 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2011, Eucalyptus Systems, Inc.
+# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -22,7 +23,8 @@
 
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
-from credentials import Credentials, FederationToken, AssumedRole
+from boto.sts.credentials import Credentials, FederationToken, AssumedRole
+from boto.sts.credentials import DecodeAuthorizationMessage
 import boto
 import boto.utils
 import datetime
@@ -67,23 +69,30 @@ class STSConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 converter=None, validate_certs=True):
+                 converter=None, validate_certs=True, anon=False,
+                 security_token=None, profile_name=None):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint,
                                 connection_cls=STSConnection)
         self.region = region
+        self.anon = anon
         self._mutex = threading.Semaphore()
-        AWSQueryConnection.__init__(self, aws_access_key_id,
+        super(STSConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
                                     self.region.endpoint, debug,
                                     https_connection_factory, path,
-                                    validate_certs=validate_certs)
+                                    validate_certs=validate_certs,
+                                    security_token=security_token,
+                                    profile_name=profile_name)
 
     def _required_auth_capability(self):
-        return ['sign-v2']
+        if self.anon:
+            return ['pure-query']
+        else:
+            return ['hmac-v4']
 
     def _check_token_cache(self, token_key, duration=None, window_seconds=60):
         token = _session_token_cache.get(token_key, None)
@@ -229,7 +238,9 @@ class STSConnection(AWSQueryConnection):
                                 FederationToken, verb='POST')
 
     def assume_role(self, role_arn, role_session_name, policy=None,
-                    duration_seconds=None, external_id=None):
+                    duration_seconds=None, external_id=None,
+                    mfa_serial_number=None,
+                    mfa_token=None):
         """
         Returns a set of temporary security credentials (consisting of
         an access key ID, a secret access key, and a security token)
@@ -319,6 +330,24 @@ class STSConnection(AWSQueryConnection):
             information about the external ID, see `About the External ID`_ in
             Using Temporary Security Credentials .
 
+        :type mfa_serial_number: string
+        :param mfa_serial_number: The identification number of the MFA device that
+            is associated with the user who is making the AssumeRole call.
+            Specify this value if the trust policy of the role being assumed
+            includes a condition that requires MFA authentication. The value is
+            either the serial number for a hardware device (such as
+            GAHT12345678) or an Amazon Resource Name (ARN) for a virtual device
+            (such as arn:aws:iam::123456789012:mfa/user). Minimum length of 9.
+            Maximum length of 256.
+
+        :type mfa_token: string
+        :param mfa_token: The value provided by the MFA device, if the trust
+            policy of the role being assumed requires MFA (that is, if the
+            policy includes a condition that tests for MFA). If the role being
+            assumed requires MFA and if the TokenCode value is missing or
+            expired, the AssumeRole call returns an "access denied" errror.
+            Minimum length of 6. Maximum length of 6.
+
         """
         params = {
             'RoleArn': role_arn,
@@ -330,7 +359,120 @@ class STSConnection(AWSQueryConnection):
             params['DurationSeconds'] = duration_seconds
         if external_id is not None:
             params['ExternalId'] = external_id
+        if mfa_serial_number is not None:
+            params['SerialNumber'] = mfa_serial_number
+        if mfa_token is not None:
+            params['TokenCode'] = mfa_token
         return self.get_object('AssumeRole', params, AssumedRole, verb='POST')
+
+    def assume_role_with_saml(self, role_arn, principal_arn, saml_assertion,
+                              policy=None, duration_seconds=None):
+        """
+        Returns a set of temporary security credentials for users who
+        have been authenticated via a SAML authentication response.
+        This operation provides a mechanism for tying an enterprise
+        identity store or directory to role-based AWS access without
+        user-specific credentials or configuration.
+
+        The temporary security credentials returned by this operation
+        consist of an access key ID, a secret access key, and a
+        security token. Applications can use these temporary security
+        credentials to sign calls to AWS services. The credentials are
+        valid for the duration that you specified when calling
+        `AssumeRoleWithSAML`, which can be up to 3600 seconds (1 hour)
+        or until the time specified in the SAML authentication
+        response's `NotOnOrAfter` value, whichever is shorter.
+
+        The maximum duration for a session is 1 hour, and the minimum
+        duration is 15 minutes, even if values outside this range are
+        specified.
+
+        Optionally, you can pass an AWS IAM access policy to this
+        operation. The temporary security credentials that are
+        returned by the operation have the permissions that are
+        associated with the access policy of the role being assumed,
+        except for any permissions explicitly denied by the policy you
+        pass. This gives you a way to further restrict the permissions
+        for the federated user. These policies and any applicable
+        resource-based policies are evaluated when calls to AWS are
+        made using the temporary security credentials.
+
+        Before your application can call `AssumeRoleWithSAML`, you
+        must configure your SAML identity provider (IdP) to issue the
+        claims required by AWS. Additionally, you must use AWS
+        Identity and Access Management (AWS IAM) to create a SAML
+        provider entity in your AWS account that represents your
+        identity provider, and create an AWS IAM role that specifies
+        this SAML provider in its trust policy.
+
+        Calling `AssumeRoleWithSAML` does not require the use of AWS
+        security credentials. The identity of the caller is validated
+        by using keys in the metadata document that is uploaded for
+        the SAML provider entity for your identity provider.
+
+        For more information, see the following resources:
+
+
+        + `Creating Temporary Security Credentials for SAML
+          Federation`_ in the Using Temporary Security Credentials
+          guide.
+        + `SAML Providers`_ in the Using IAM guide.
+        + `Configuring a Relying Party and Claims in the Using IAM
+          guide. `_
+        + `Creating a Role for SAML-Based Federation`_ in the Using
+          IAM guide.
+
+        :type role_arn: string
+        :param role_arn: The Amazon Resource Name (ARN) of the role that the
+            caller is assuming.
+
+        :type principal_arn: string
+        :param principal_arn: The Amazon Resource Name (ARN) of the SAML
+            provider in AWS IAM that describes the IdP.
+
+        :type saml_assertion: string
+        :param saml_assertion: The base-64 encoded SAML authentication response
+            provided by the IdP.
+        For more information, see `Configuring a Relying Party and Adding
+            Claims`_ in the Using IAM guide.
+
+        :type policy: string
+        :param policy:
+        An AWS IAM policy in JSON format.
+
+        The temporary security credentials that are returned by this operation
+            have the permissions that are associated with the access policy of
+            the role being assumed, except for any permissions explicitly
+            denied by the policy you pass. These policies and any applicable
+            resource-based policies are evaluated when calls to AWS are made
+            using the temporary security credentials.
+
+        The policy must be 2048 bytes or shorter, and its packed size must be
+            less than 450 bytes.
+
+        :type duration_seconds: integer
+        :param duration_seconds:
+        The duration, in seconds, of the role session. The value can range from
+            900 seconds (15 minutes) to 3600 seconds (1 hour). By default, the
+            value is set to 3600 seconds. An expiration can also be specified
+            in the SAML authentication response's `NotOnOrAfter` value. The
+            actual expiration time is whichever value is shorter.
+
+        The maximum duration for a session is 1 hour, and the minimum duration
+            is 15 minutes, even if values outside this range are specified.
+
+        """
+        params = {
+            'RoleArn': role_arn,
+            'PrincipalArn': principal_arn,
+            'SAMLAssertion': saml_assertion,
+        }
+        if policy is not None:
+            params['Policy'] = policy
+        if duration_seconds is not None:
+            params['DurationSeconds'] = duration_seconds
+        return self.get_object('AssumeRoleWithSAML', params, AssumedRole,
+                               verb='POST')
 
     def assume_role_with_web_identity(self, role_arn, role_session_name,
                                       web_identity_token, provider_id=None,
@@ -435,5 +577,58 @@ class STSConnection(AWSQueryConnection):
             'AssumeRoleWithWebIdentity',
             params,
             AssumedRole,
+            verb='POST'
+        )
+
+    def decode_authorization_message(self, encoded_message):
+        """
+        Decodes additional information about the authorization status
+        of a request from an encoded message returned in response to
+        an AWS request.
+
+        For example, if a user is not authorized to perform an action
+        that he or she has requested, the request returns a
+        `Client.UnauthorizedOperation` response (an HTTP 403
+        response). Some AWS actions additionally return an encoded
+        message that can provide details about this authorization
+        failure.
+        Only certain AWS actions return an encoded authorization
+        message. The documentation for an individual action indicates
+        whether that action returns an encoded message in addition to
+        returning an HTTP code.
+        The message is encoded because the details of the
+        authorization status can constitute privileged information
+        that the user who requested the action should not see. To
+        decode an authorization status message, a user must be granted
+        permissions via an IAM policy to request the
+        `DecodeAuthorizationMessage` (
+        `sts:DecodeAuthorizationMessage`) action.
+
+        The decoded message includes the following type of
+        information:
+
+
+        + Whether the request was denied due to an explicit deny or
+          due to the absence of an explicit allow. For more information,
+          see `Determining Whether a Request is Allowed or Denied`_ in
+          Using IAM .
+        + The principal who made the request.
+        + The requested action.
+        + The requested resource.
+        + The values of condition keys in the context of the user's
+          request.
+
+        :type encoded_message: string
+        :param encoded_message: The encoded message that was returned with the
+            response.
+
+        """
+        params = {
+            'EncodedMessage': encoded_message,
+        }
+        return self.get_object(
+            'DecodeAuthorizationMessage',
+            params,
+            DecodeAuthorizationMessage,
             verb='POST'
         )

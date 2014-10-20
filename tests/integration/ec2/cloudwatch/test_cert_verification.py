@@ -24,17 +24,15 @@
 """
 Check that all of the certs on all service endpoints validate.
 """
+from tests.integration import ServiceCertVerificationTest
 
-import unittest
 import boto.ec2.cloudwatch
+from tests.compat import unittest
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class CloudWatchCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     cloudwatch = True
-    ssl = True
+    regions = boto.ec2.cloudwatch.regions()
 
-    def test_certs(self):
-        for region in boto.ec2.cloudwatch.regions():
-            c = region.connect()
-            c.describe_alarms()
+    def sample_service_call(self, conn):
+        conn.describe_alarms()

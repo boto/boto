@@ -73,10 +73,10 @@ Simple example::
 
 A full example::
 
-    >>> from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex
-    >>> from boto.dynamodb2.layer1 import DynamoDBConnection
+    >>> import boto.dynamodb2
+    >>> from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex, AllIndex
     >>> from boto.dynamodb2.table import Table
-    >>> from boto.dynamodb2.types import Number
+    >>> from boto.dynamodb2.types import NUMBER
 
     >>> users = Table.create('users', schema=[
     ...     HashKey('account_type', data_type=NUMBER),
@@ -90,11 +90,7 @@ A full example::
     ...     ])
     ... ],
     ... # If you need to specify custom parameters like keys or region info...
-    ... connection=DynamoDBConnection(
-    ...     aws_access_key_id='key',
-    ...     aws_secret_access_key='key',
-    ...     region='us-west-2'
-    ... ))
+    ... connection= boto.dynamodb2.connect_to_region('us-east-1'))
 
 
 Using an Existing Table
@@ -112,7 +108,9 @@ Lazy example::
 
 Efficient example::
 
+    >>> from boto.dynamodb2.fields import HashKey, RangeKey, AllIndex
     >>> from boto.dynamodb2.table import Table
+    >>> from boto.dynamodb2.types import NUMBER
     >>> users = Table('users', schema=[
     ...     HashKey('account_type', data_type=NUMBER),
     ...     RangeKey('last_name'),
@@ -206,8 +204,8 @@ three choices.
 
 The first is sending all the data with the expectation nothing has changed
 since you read the data. DynamoDB will verify the data is in the original state
-and, if so, will all of the item's data. If that expectation fails, the call
-will fail::
+and, if so, will send all of the item's data. If that expectation fails, the
+call will fail::
 
     >>> johndoe = users.get_item(username='johndoe')
     >>> johndoe['first_name'] = 'Johann'
@@ -275,7 +273,7 @@ both speed up the process & reduce the number of write requests made to the
 service.
 
 Batch writing involves wrapping the calls you want batched in a context manager.
-The context manager immitates the ``Table.put_item`` & ``Table.delete_item``
+The context manager imitates the ``Table.put_item`` & ``Table.delete_item``
 APIs. Getting & using the context manager looks like::
 
     >>> from boto.dynamodb2.table import Table
@@ -312,6 +310,13 @@ manager.
 Querying
 --------
 
+.. warning::
+
+    The ``Table`` object has both a ``query`` & a ``query_2`` method. If you
+    are writing new code, **DO NOT** use ``Table.query``. It presents results
+    in an incorrect order than expected & is strictly present for
+    backward-compatibility.
+
 Manually fetching out each item by itself isn't tenable for large datasets.
 To cope with fetching many records, you can either perform a standard query,
 query via a local secondary index or scan the entire table.
@@ -340,7 +345,7 @@ request.
 
 To run a query for last names starting with the letter "D"::
 
-    >>> names_with_d = users.query(
+    >>> names_with_d = users.query_2(
     ...     account_type__eq='standard_user',
     ...     last_name__beginswith='D'
     ... )
@@ -354,7 +359,7 @@ To run a query for last names starting with the letter "D"::
 You can also reverse results (``reverse=True``) as well as limiting them
 (``limit=2``)::
 
-    >>> rev_with_d = users.query(
+    >>> rev_with_d = users.query_2(
     ...     account_type__eq='standard_user',
     ...     last_name__beginswith='D',
     ...     reverse=True,
@@ -371,12 +376,31 @@ the index name (``index='FirstNameIndex'``) & filter parameters against its
 fields::
 
     # Users within the last hour.
-    >>> recent = users.query(
+    >>> recent = users.query_2(
     ...     account_type__eq='standard_user',
     ...     date_joined__gte=time.time() - (60 * 60),
     ...     index='DateJoinedIndex'
     ... )
 
+    >>> for user in recent:
+    ...     print user['first_name']
+    'Alice'
+    'Jane'
+
+By default, DynamoDB can return a large amount of data per-request (up to 1Mb
+of data). To prevent these requests from drowning other smaller gets, you can
+specify a smaller page size via the ``max_page_size`` argument to
+``Table.query_2`` & ``Table.scan``. Doing so looks like::
+
+    # Small pages yield faster responses & less potential of drowning other
+    # requests.
+    >>> all_users = users.query_2(
+    ...     account_type__eq='standard_user',
+    ...     date_joined__gte=0,
+    ...     max_page_size=10
+    ... )
+
+    # Usage is the same, but now many smaller requests are done.
     >>> for user in recent:
     ...     print user['first_name']
     'Alice'
@@ -407,6 +431,49 @@ Filtering a scan looks like::
     ...     print user['first_name']
     'George'
     'John'
+
+
+The ``ResultSet``
+~~~~~~~~~~~~~~~~~
+
+Both ``Table.query_2`` & ``Table.scan`` return an object called ``ResultSet``.
+It's a lazily-evaluated object that uses the `Iterator protocol`_. It delays
+your queries until you request the next item in the result set.
+
+Typical use is simply a standard ``for`` to iterate over the results::
+
+    >>> result_set = users.scan()
+    >>> for user in result_set:
+    ...     print user['first_name']
+
+However, this throws away results as it fetches more data. As a result, you
+can't index it like a ``list``.
+
+    >>> len(result_set)
+    0
+
+Because it does this, if you need to loop over your results more than once (or
+do things like negative indexing, length checks, etc.), you should wrap it in
+a call to ``list()``. Ex.::
+
+    >>> result_set = users.scan()
+    >>> all_users = list(result_set)
+    # Slice it for every other user.
+    >>> for user in all_users[::2]:
+    ...     print user['first_name']
+
+.. warning::
+
+    Wrapping calls like the above in ``list(...)`` **WILL** cause it to evaluate
+    the **ENTIRE** potentially large data set.
+
+    Appropriate use of the ``limit=...`` kwarg to ``Table.query_2`` &
+    ``Table.scan`` calls are **VERY** important should you chose to do this.
+
+    Alternatively, you can build your own list, using ``for`` on the
+    ``ResultSet`` to lazily build the list (& potentially stop early).
+
+.. _`Iterator protocol`: http://docs.python.org/2/library/stdtypes.html#iterator-types
 
 
 Parallel Scan
@@ -546,6 +613,30 @@ Deleting a table is a simple exercise. When you no longer need a table, simply
 run::
 
     >>> users.delete()
+
+
+DynamoDB Local
+--------------
+
+`Amazon DynamoDB Local`_ is a utility which can be used to mock DynamoDB
+during development. Connecting to a running DynamoDB Local server is easy::
+
+    #!/usr/bin/env python
+    from boto.dynamodb2.layer1 import DynamoDBConnection
+
+
+    # Connect to DynamoDB Local
+    conn = DynamoDBConnection(
+        host='localhost',
+        port=8000,
+        aws_secret_access_key='anything',
+        is_secure=False)
+
+    # List all local tables
+    tables = conn.list_tables()
+
+
+.. _`Amazon DynamoDB Local`: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tools.html
 
 
 Next Steps

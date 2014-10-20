@@ -23,13 +23,21 @@
 """
 Tests for DynamoDB v2 high-level abstractions.
 """
+import os
 import time
 
 from tests.unit import unittest
 from boto.dynamodb2 import exceptions
-from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex
+from boto.dynamodb2.fields import (HashKey, RangeKey, KeysOnlyIndex,
+                                   GlobalKeysOnlyIndex, GlobalIncludeIndex)
+from boto.dynamodb2.items import Item
 from boto.dynamodb2.table import Table
 from boto.dynamodb2.types import NUMBER
+
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 
 class DynamoDBv2Test(unittest.TestCase):
@@ -43,12 +51,12 @@ class DynamoDBv2Test(unittest.TestCase):
         ], throughput={
             'read': 5,
             'write': 5,
-        }, indexes={
+        }, indexes=[
             KeysOnlyIndex('LastNameIndex', parts=[
                 HashKey('username'),
                 RangeKey('last_name')
             ]),
-        })
+        ])
         self.addCleanup(users.delete)
 
         self.assertEqual(len(users.schema), 2)
@@ -99,6 +107,14 @@ class DynamoDBv2Test(unittest.TestCase):
 
         time.sleep(5)
 
+        # Does it exist? It should?
+        self.assertTrue(users.has_item(username='jane', friend_count=3))
+        # But this shouldn't be there...
+        self.assertFalse(users.has_item(
+            username='mrcarmichaeljones',
+            friend_count=72948
+        ))
+
         # Test getting an item & updating it.
         # This is the "safe" variant (only write if there have been no
         # changes).
@@ -146,7 +162,10 @@ class DynamoDBv2Test(unittest.TestCase):
         self.assertEqual(check_name_again['first_name'], 'Joan')
 
         # Reset it.
-        jane.mark_dirty()
+        jane['username'] = 'jane'
+        jane['first_name'] = 'Jane'
+        jane['last_name'] = 'Doe'
+        jane['friend_count'] = 3
         self.assertTrue(jane.save(overwrite=True))
 
         # Test the partial update behavior.
@@ -176,22 +195,53 @@ class DynamoDBv2Test(unittest.TestCase):
         self.assertEqual(partial_jane['first_name'], 'Jacqueline')
 
         # Reset it.
-        jane.mark_dirty()
+        jane['username'] = 'jane'
+        jane['first_name'] = 'Jane'
+        jane['last_name'] = 'Doe'
+        jane['friend_count'] = 3
         self.assertTrue(jane.save(overwrite=True))
 
+        # Ensure that partial saves of a brand-new object work.
+        sadie = Item(users, data={
+            'username': 'sadie',
+            'first_name': 'Sadie',
+            'favorite_band': 'Zedd',
+            'friend_count': 7
+        })
+        self.assertTrue(sadie.partial_save())
+        serverside_sadie = users.get_item(
+            username='sadie',
+            friend_count=7,
+            consistent=True
+        )
+        self.assertEqual(serverside_sadie['first_name'], 'Sadie')
+
         # Test the eventually consistent query.
-        results = users.query(
+        results = users.query_2(
             username__eq='johndoe',
             last_name__eq='Doe',
             index='LastNameIndex',
+            attributes=('username',),
             reverse=True
         )
 
         for res in results:
             self.assertTrue(res['username'] in ['johndoe',])
+            self.assertEqual(list(res.keys()), ['username'])
+
+        # Ensure that queries with attributes don't return the hash key.
+        results = users.query_2(
+            username__eq='johndoe',
+            friend_count__eq=4,
+            attributes=('first_name',)
+        )
+
+        for res in results:
+            self.assertEqual(res['first_name'], 'John')
+            self.assertEqual(list(res.keys()), ['first_name'])
 
         # Test the strongly consistent query.
-        c_results = users.query(
+        c_results = users.query_2(
             username__eq='johndoe',
             last_name__eq='Doe',
             index='LastNameIndex',
@@ -200,18 +250,30 @@ class DynamoDBv2Test(unittest.TestCase):
         )
 
         for res in c_results:
-            self.assertTrue(res['username'] in ['johndoe',])
+            self.assertEqual(res['username'], 'johndoe')
+
+        # Test a query with query filters
+        results = users.query_2(
+            username__eq='johndoe',
+            query_filter={
+                'first_name__beginswith': 'J'
+            },
+            attributes=('first_name',)
+        )
+
+        for res in results:
+            self.assertTrue(res['first_name'] in ['John'])
 
         # Test scans without filters.
         all_users = users.scan(limit=7)
-        self.assertEqual(all_users.next()['username'], 'bob')
-        self.assertEqual(all_users.next()['username'], 'jane')
-        self.assertEqual(all_users.next()['username'], 'johndoe')
+        self.assertEqual(next(all_users)['username'], 'bob')
+        self.assertEqual(next(all_users)['username'], 'jane')
+        self.assertEqual(next(all_users)['username'], 'johndoe')
 
         # Test scans with a filter.
         filtered_users = users.scan(limit=2, username__beginswith='j')
-        self.assertEqual(filtered_users.next()['username'], 'jane')
-        self.assertEqual(filtered_users.next()['username'], 'johndoe')
+        self.assertEqual(next(filtered_users)['username'], 'jane')
+        self.assertEqual(next(filtered_users)['username'], 'johndoe')
 
         # Test deleting a single item.
         johndoe = users.get_item(username='johndoe', friend_count=4)
@@ -226,7 +288,7 @@ class DynamoDBv2Test(unittest.TestCase):
 
         for res in results:
             batch_users.append(res)
-            self.assertTrue(res['first_name'] in ['Bob', 'Jane'])
+            self.assertIn(res['first_name'], ['Bob', 'Jane'])
 
         self.assertEqual(len(batch_users), 2)
 
@@ -246,6 +308,13 @@ class DynamoDBv2Test(unittest.TestCase):
         # Test count, but in a weak fashion. Because lag time.
         self.assertTrue(users.count() > -1)
 
+        # Test query count
+        count = users.query_count(
+            username__eq='bob',
+        )
+
+        self.assertEqual(count, 1)
+
         # Test without LSIs (describe calls shouldn't fail).
         admins = Table.create('admins', schema=[
             HashKey('username')
@@ -263,4 +332,310 @@ class DynamoDBv2Test(unittest.TestCase):
             username__eq='johndoe'
         )
         # But it shouldn't break on more complex tables.
-        res = users.query(username__eq='johndoe')
+        res = users.query_2(username__eq='johndoe')
+
+        # Test putting with/without sets.
+        mau5_created = users.put_item(data={
+            'username': 'mau5',
+            'first_name': 'dead',
+            'last_name': 'mau5',
+            'friend_count': 2,
+            'friends': set(['skrill', 'penny']),
+        })
+        self.assertTrue(mau5_created)
+
+        penny_created = users.put_item(data={
+            'username': 'penny',
+            'first_name': 'Penny',
+            'friend_count': 0,
+            'friends': set([]),
+        })
+        self.assertTrue(penny_created)
+
+        # Test attributes.
+        mau5 = users.get_item(
+            username='mau5',
+            friend_count=2,
+            attributes=['username', 'first_name']
+        )
+        self.assertEqual(mau5['username'], 'mau5')
+        self.assertEqual(mau5['first_name'], 'dead')
+        self.assertTrue('last_name' not in mau5)
+
+    def test_unprocessed_batch_writes(self):
+        # Create a very limited table w/ low throughput.
+        users = Table.create('slow_users', schema=[
+            HashKey('user_id'),
+        ], throughput={
+            'read': 1,
+            'write': 1,
+        })
+        self.addCleanup(users.delete)
+
+        # Wait for it.
+        time.sleep(60)
+
+        with users.batch_write() as batch:
+            for i in range(500):
+                batch.put_item(data={
+                    'user_id': str(i),
+                    'name': 'Droid #{0}'.format(i),
+                })
+
+            # Before ``__exit__`` runs, we should have a bunch of unprocessed
+            # items.
+            self.assertTrue(len(batch._unprocessed) > 0)
+
+        # Post-__exit__, they should all be gone.
+        self.assertEqual(len(batch._unprocessed), 0)
+
+    def test_gsi(self):
+        users = Table.create('gsi_users', schema=[
+            HashKey('user_id'),
+        ], throughput={
+            'read': 5,
+            'write': 3,
+        },
+        global_indexes=[
+            GlobalKeysOnlyIndex('StuffIndex', parts=[
+                HashKey('user_id')
+            ], throughput={
+                'read': 2,
+                'write': 1,
+            }),
+        ])
+        self.addCleanup(users.delete)
+
+        # Wait for it.
+        time.sleep(60)
+
+        users.update(
+            throughput={
+                'read': 3,
+                'write': 4
+            },
+            global_indexes={
+                'StuffIndex': {
+                    'read': 1,
+                    'write': 2
+                }
+            }
+        )
+
+        # Wait again for the changes to finish propagating.
+        time.sleep(150)
+
+    def test_gsi_with_just_hash_key(self):
+        # GSI allows for querying off of different keys. This is behavior we
+        # previously disallowed (due to standard & LSI queries).
+        # See https://forums.aws.amazon.com/thread.jspa?threadID=146212&tstart=0
+        users = Table.create('gsi_query_users', schema=[
+            HashKey('user_id')
+        ], throughput={
+            'read': 5,
+            'write': 3,
+        },
+        global_indexes=[
+            GlobalIncludeIndex('UsernameIndex', parts=[
+                HashKey('username'),
+            ], includes=['user_id', 'username'], throughput={
+                'read': 3,
+                'write': 1,
+            })
+        ])
+        self.addCleanup(users.delete)
+
+        # Wait for it.
+        time.sleep(60)
+
+        users.put_item(data={
+            'user_id': '7',
+            'username': 'johndoe',
+            'first_name': 'John',
+            'last_name': 'Doe',
+        })
+        users.put_item(data={
+            'user_id': '24',
+            'username': 'alice',
+            'first_name': 'Alice',
+            'last_name': 'Expert',
+        })
+        users.put_item(data={
+            'user_id': '35',
+            'username': 'jane',
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+        })
+
+        # Try the main key. Should be fine.
+        rs = users.query_2(
+            user_id__eq='24'
+        )
+        results = sorted([user['username'] for user in rs])
+        self.assertEqual(results, ['alice'])
+
+        # Now try the GSI. Also should work.
+        rs = users.query_2(
+            username__eq='johndoe',
+            index='UsernameIndex'
+        )
+        results = sorted([user['username'] for user in rs])
+        self.assertEqual(results, ['johndoe'])
+
+    def test_query_with_limits(self):
+        # Per the DDB team, it's recommended to do many smaller gets with a
+        # reduced page size.
+        # Clamp down the page size while ensuring that the correct number of
+        # results are still returned.
+        posts = Table.create('posts', schema=[
+            HashKey('thread'),
+            RangeKey('posted_on')
+        ], throughput={
+            'read': 5,
+            'write': 5,
+        })
+        self.addCleanup(posts.delete)
+
+        # Wait for it.
+        time.sleep(60)
+
+        # Add some data.
+        test_data_path = os.path.join(
+            os.path.dirname(__file__),
+            'forum_test_data.json'
+        )
+        with open(test_data_path, 'r') as test_data:
+            data = json.load(test_data)
+
+            with posts.batch_write() as batch:
+                for post in data:
+                    batch.put_item(post)
+
+        time.sleep(5)
+
+        # Test the reduced page size.
+        results = posts.query_2(
+            thread__eq='Favorite chiptune band?',
+            posted_on__gte='2013-12-24T00:00:00',
+            max_page_size=2
+        )
+
+        all_posts = list(results)
+        self.assertEqual(
+            [post['posted_by'] for post in all_posts],
+            ['joe', 'jane', 'joe', 'joe', 'jane', 'joe']
+        )
+        self.assertTrue(results._fetches >= 3)
+
+    def test_query_with_reverse(self):
+        posts = Table.create('more-posts', schema=[
+            HashKey('thread'),
+            RangeKey('posted_on')
+        ], throughput={
+            'read': 5,
+            'write': 5,
+        })
+        self.addCleanup(posts.delete)
+
+        # Wait for it.
+        time.sleep(60)
+
+        # Add some data.
+        test_data_path = os.path.join(
+            os.path.dirname(__file__),
+            'forum_test_data.json'
+        )
+        with open(test_data_path, 'r') as test_data:
+            data = json.load(test_data)
+
+            with posts.batch_write() as batch:
+                for post in data:
+                    batch.put_item(post)
+
+        time.sleep(5)
+
+        # Test the default order (ascending).
+        results = posts.query_2(
+            thread__eq='Favorite chiptune band?',
+            posted_on__gte='2013-12-24T00:00:00'
+        )
+        self.assertEqual(
+            [post['posted_on'] for post in results],
+            [
+                '2013-12-24T12:30:54',
+                '2013-12-24T12:35:40',
+                '2013-12-24T13:45:30',
+                '2013-12-24T14:15:14',
+                '2013-12-24T14:25:33',
+                '2013-12-24T15:22:22',
+            ]
+        )
+
+        # Test the explicit ascending order.
+        results = posts.query_2(
+            thread__eq='Favorite chiptune band?',
+            posted_on__gte='2013-12-24T00:00:00',
+            reverse=False
+        )
+        self.assertEqual(
+            [post['posted_on'] for post in results],
+            [
+                '2013-12-24T12:30:54',
+                '2013-12-24T12:35:40',
+                '2013-12-24T13:45:30',
+                '2013-12-24T14:15:14',
+                '2013-12-24T14:25:33',
+                '2013-12-24T15:22:22',
+            ]
+        )
+
+        # Test the explicit descending order.
+        results = posts.query_2(
+            thread__eq='Favorite chiptune band?',
+            posted_on__gte='2013-12-24T00:00:00',
+            reverse=True
+        )
+        self.assertEqual(
+            [post['posted_on'] for post in results],
+            [
+                '2013-12-24T15:22:22',
+                '2013-12-24T14:25:33',
+                '2013-12-24T14:15:14',
+                '2013-12-24T13:45:30',
+                '2013-12-24T12:35:40',
+                '2013-12-24T12:30:54',
+            ]
+        )
+
+        # Test the old, broken style.
+        results = posts.query(
+            thread__eq='Favorite chiptune band?',
+            posted_on__gte='2013-12-24T00:00:00'
+        )
+        self.assertEqual(
+            [post['posted_on'] for post in results],
+            [
+                '2013-12-24T15:22:22',
+                '2013-12-24T14:25:33',
+                '2013-12-24T14:15:14',
+                '2013-12-24T13:45:30',
+                '2013-12-24T12:35:40',
+                '2013-12-24T12:30:54',
+            ]
+        )
+        results = posts.query(
+            thread__eq='Favorite chiptune band?',
+            posted_on__gte='2013-12-24T00:00:00',
+            reverse=True
+        )
+        self.assertEqual(
+            [post['posted_on'] for post in results],
+            [
+                '2013-12-24T12:30:54',
+                '2013-12-24T12:35:40',
+                '2013-12-24T13:45:30',
+                '2013-12-24T14:15:14',
+                '2013-12-24T14:25:33',
+                '2013-12-24T15:22:22',
+            ]
+        )

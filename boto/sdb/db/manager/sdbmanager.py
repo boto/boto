@@ -24,11 +24,11 @@ import re
 from boto.utils import find_class
 import uuid
 from boto.sdb.db.key import Key
-from boto.sdb.db.model import Model
 from boto.sdb.db.blob import Blob
 from boto.sdb.db.property import ListProperty, MapProperty
 from datetime import datetime, date, time
 from boto.exception import SDBPersistenceError, S3ResponseError
+from boto.compat import map, six, long_type
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -53,12 +53,16 @@ class SDBConverter(object):
     called"encode_<type name>" or "decode_<type name>".
     """
     def __init__(self, manager):
+        # Do a delayed import to prevent possible circular import errors.
+        from boto.sdb.db.model import Model
+        self.model_class = Model
         self.manager = manager
         self.type_map = {bool: (self.encode_bool, self.decode_bool),
                          int: (self.encode_int, self.decode_int),
-                         long: (self.encode_long, self.decode_long),
                          float: (self.encode_float, self.decode_float),
-                         Model: (self.encode_reference, self.decode_reference),
+                         self.model_class: (
+                            self.encode_reference, self.decode_reference
+                         ),
                          Key: (self.encode_reference, self.decode_reference),
                          datetime: (self.encode_datetime, self.decode_datetime),
                          date: (self.encode_date, self.decode_date),
@@ -66,11 +70,13 @@ class SDBConverter(object):
                          Blob: (self.encode_blob, self.decode_blob),
                          str: (self.encode_string, self.decode_string),
                       }
+        if six.PY2:
+            self.type_map[long] = (self.encode_long, self.decode_long)
 
     def encode(self, item_type, value):
         try:
-            if Model in item_type.mro():
-                item_type = Model
+            if self.model_class in item_type.mro():
+                item_type = self.model_class
         except:
             pass
         if item_type in self.type_map:
@@ -103,17 +109,17 @@ class SDBConverter(object):
 
     def encode_map(self, prop, value):
         import urllib
-        if value == None:
+        if value is None:
             return None
         if not isinstance(value, dict):
             raise ValueError('Expected a dict value, got %s' % type(value))
         new_value = []
         for key in value:
             item_type = getattr(prop, "item_type")
-            if Model in item_type.mro():
-                item_type = Model
+            if self.model_class in item_type.mro():
+                item_type = self.model_class
             encoded_value = self.encode(item_type, value[key])
-            if encoded_value != None:
+            if encoded_value is not None:
                 new_value.append('%s:%s' % (urllib.quote(key), encoded_value))
         return new_value
 
@@ -132,7 +138,7 @@ class SDBConverter(object):
             item_type = getattr(prop, "item_type")
             dec_val = {}
             for val in value:
-                if val != None:
+                if val is not None:
                     k, v = self.decode_map_element(item_type, val)
                     try:
                         k = int(k)
@@ -159,7 +165,7 @@ class SDBConverter(object):
         if ":" in value:
             key, value = value.split(':', 1)
             key = urllib.unquote(key)
-        if Model in item_type.mro():
+        if self.model_class in item_type.mro():
             value = item_type(id=value)
         else:
             value = self.decode(item_type, value)
@@ -189,12 +195,12 @@ class SDBConverter(object):
         return int(value)
 
     def encode_long(self, value):
-        value = long(value)
+        value = long_type(value)
         value += 9223372036854775808
         return '%020d' % value
 
     def decode_long(self, value):
-        value = long(value)
+        value = long_type(value)
         value -= 9223372036854775808
         return value
 
@@ -260,7 +266,7 @@ class SDBConverter(object):
         return float(mantissa + 'e' + exponent)
 
     def encode_datetime(self, value):
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, six.string_types):
             return value
         if isinstance(value, datetime):
             return value.strftime(ISO8601)
@@ -281,11 +287,11 @@ class SDBConverter(object):
             else:
                 value = value.split("-")
                 return date(int(value[0]), int(value[1]), int(value[2]))
-        except Exception, e:
+        except Exception:
             return None
 
     def encode_date(self, value):
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, six.string_types):
             return value
         return value.isoformat()
 
@@ -318,7 +324,7 @@ class SDBConverter(object):
     def encode_reference(self, value):
         if value in (None, 'None', '', ' '):
             return None
-        if isinstance(value, str) or isinstance(value, unicode):
+        if isinstance(value, six.string_types):
             return value
         else:
             return value.id
@@ -331,7 +337,7 @@ class SDBConverter(object):
     def encode_blob(self, value):
         if not value:
             return None
-        if isinstance(value, str):
+        if isinstance(value, six.string_types):
             return value
 
         if not value.id:
@@ -347,7 +353,7 @@ class SDBConverter(object):
             else:
                 raise SDBPersistenceError("Invalid Blob ID: %s" % value.id)
 
-        if value.value != None:
+        if value.value is not None:
             key.set_contents_from_string(value.value)
         return value.id
 
@@ -360,7 +366,7 @@ class SDBConverter(object):
             bucket = s3.get_bucket(match.group(1), validate=False)
             try:
                 key = bucket.get_key(match.group(2))
-            except S3ResponseError, e:
+            except S3ResponseError as e:
                 if e.reason != "Forbidden":
                     raise
                 return None
@@ -376,14 +382,14 @@ class SDBConverter(object):
         if not isinstance(value, str):
             return value
         try:
-            return unicode(value, 'utf-8')
+            return six.text_type(value, 'utf-8')
         except:
             # really, this should throw an exception.
             # in the interest of not breaking current
             # systems, however:
             arr = []
             for ch in value:
-                arr.append(unichr(ord(ch)))
+                arr.append(six.unichr(ord(ch)))
             return u"".join(arr)
 
     def decode_string(self, value):
@@ -411,7 +417,7 @@ class SDBManager(object):
         self.converter = SDBConverter(self)
         self._sdb = None
         self._domain = None
-        if consistent == None and hasattr(cls, "__consistent__"):
+        if consistent is None and hasattr(cls, "__consistent__"):
             consistent = cls.__consistent__
         self.consistent = consistent
 
@@ -452,7 +458,7 @@ class SDBManager(object):
                 yield obj
 
     def encode_value(self, prop, value):
-        if value == None:
+        if value is None:
             return None
         if not prop:
             return str(value)
@@ -486,7 +492,7 @@ class SDBManager(object):
                         value = prop.make_value_from_datastore(value)
                         try:
                             setattr(obj, prop.name, value)
-                        except Exception, e:
+                        except Exception as e:
                             boto.log.exception(e)
             obj._loaded = True
 
@@ -518,7 +524,7 @@ class SDBManager(object):
         query_str = "select * from `%s` %s" % (self.domain.name, self._build_filter_part(query.model_class, query.filters, query.sort_by, query.select))
         if query.limit:
             query_str += " limit %s" % query.limit
-        rs = self.domain.select(query_str, max_items=query.limit, next_token = query.next_token)
+        rs = self.domain.select(query_str, max_items=query.limit, next_token=query.next_token)
         query.rs = rs
         return self._object_lister(query.model_class, rs)
 
@@ -540,7 +546,7 @@ class SDBManager(object):
             name = 'itemName()'
         if name != "itemName()":
             name = '`%s`' % name
-        if val == None:
+        if val is None:
             if op in ('is', '='):
                 return "%(name)s is null" % {"name": name}
             elif op in ('is not', '!='):
@@ -577,11 +583,11 @@ class SDBManager(object):
                 order_by_filtered = True
             query_parts.append("(%s)" % select)
 
-        if isinstance(filters, str) or isinstance(filters, unicode):
+        if isinstance(filters, six.string_types):
             query = "WHERE %s AND `__type__` = '%s'" % (filters, cls.__name__)
             if order_by in ["__id__", "itemName()"]:
                 query += " ORDER BY itemName() %s" % order_by_method
-            elif order_by != None:
+            elif order_by is not None:
                 query += " ORDER BY `%s` %s" % (order_by, order_by_method)
             return query
 
@@ -596,7 +602,7 @@ class SDBManager(object):
                 property = cls.find_property(name)
                 if name == order_by:
                     order_by_filtered = True
-                if types.TypeType(value) == types.ListType:
+                if types.TypeType(value) == list:
                     filter_parts_sub = []
                     for val in value:
                         val = self.encode_value(property, val)
@@ -663,14 +669,14 @@ class SDBManager(object):
                 value = self.encode_value(property, value)
             if value == []:
                 value = None
-            if value == None:
+            if value is None:
                 del_attrs.append(property.name)
                 continue
             attrs[property.name] = value
             if property.unique:
                 try:
                     args = {property.name: value}
-                    obj2 = obj.find(**args).next()
+                    obj2 = next(obj.find(**args))
                     if obj2.id != obj.id:
                         raise SDBPersistenceError("Error: %s must be unique!" % property.name)
                 except(StopIteration):
@@ -697,7 +703,7 @@ class SDBManager(object):
         if prop.unique:
             try:
                 args = {prop.name: value}
-                obj2 = obj.find(**args).next()
+                obj2 = next(obj.find(**args))
                 if obj2.id != obj.id:
                     raise SDBPersistenceError("Error: %s must be unique!" % prop.name)
             except(StopIteration):
