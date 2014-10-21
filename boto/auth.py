@@ -1000,7 +1000,8 @@ def detect_potential_sigv4(func):
             # ``boto/iam/connection.py``, as several things there are also
             # endpoint-related.
             if getattr(self.region, 'endpoint', ''):
-                if '.cn-' in self.region.endpoint:
+                if '.cn-' in self.region.endpoint or \
+                        '.eu-central' in self.region.endpoint:
                     return ['hmac-v4']
 
         return func(self)
@@ -1019,7 +1020,7 @@ def detect_potential_s3sigv4(func):
             # If you're making changes here, you should also check
             # ``boto/iam/connection.py``, as several things there are also
             # endpoint-related.
-            if '.cn-' in self.host:
+            if '.cn-' in self.host or '.eu-central' in self.host:
                 return ['hmac-v4-s3']
 
         return func(self)
