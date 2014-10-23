@@ -73,8 +73,8 @@ Currently Supported Services
   * :doc:`Simple Queue Service (SQS) <sqs_tut>` -- (:doc:`API Reference <ref/sqs>`) (Python 3)
   * Simple Notification Service (SNS) -- (:doc:`API Reference <ref/sns>`) (Python 3)
   * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`) (Python 3)
-  * Amazon Cognito Identity -- (:doc:`API Reference <ref/cognito-identity`) (Python 3)
-  * Amazon Cognito Sync -- (:doc:`API Reference <ref/cognito-sync`) (Python 3)
+  * Amazon Cognito Identity -- (:doc:`API Reference <ref/cognito-identity>`) (Python 3)
+  * Amazon Cognito Sync -- (:doc:`API Reference <ref/cognito-sync>`) (Python 3)
 
 * **Monitoring**
 
@@ -135,6 +135,7 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.34.0
    releasenotes/v2.33.0
    releasenotes/v2.32.1
    releasenotes/v2.32.0
