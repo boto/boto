@@ -134,6 +134,33 @@ class TestS3Bucket(AWSMockServiceTestCase):
             pass
         self.assertFalse(mock_head_bucket.called)
 
+    @patch.object(S3Connection, 'head_bucket')
+    @patch.object(Bucket, 'get_xml_acl')
+    def test_bucket_copy_key_acl(self, mocked_get_xml_acl, mock_head_bucket):
+        self.set_http_response(status_code=200)
+        bucket = self.service_connection.create_bucket('mybucket_1')
+
+        try:
+            bucket.copy_key('newkey', 'srcbucket', 'srckey', preserve_acl=True)
+        except:
+            # Will throw because of empty response.
+            pass
+
+        mocked_get_xml_acl.assert_called()
+        args, kwargs = mocked_get_xml_acl.call_args
+        self.assertEqual(kwargs['version_id'], None)
+
+        try:
+            bucket.copy_key('newkey', 'srcbucket', 'srckey', preserve_acl=True, src_version_id='v1')
+        except:
+            # Will throw because of empty response.
+            pass
+
+        mocked_get_xml_acl.assert_called()
+        args, kwargs = mocked_get_xml_acl.call_args
+        self.assertEqual(kwargs['version_id'], 'v1')
+
+
     @patch.object(Bucket, '_get_all')
     def test_bucket_encoding(self, mock_get_all):
         self.set_http_response(status_code=200)
