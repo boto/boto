@@ -19,6 +19,7 @@ def fetch_endpoints():
 
     return resp.text
 
+
 def parse_xml(raw_xml):
     return pq(raw_xml, parser='xml')
 

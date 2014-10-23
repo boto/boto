@@ -44,7 +44,9 @@ class TestVault(unittest.TestCase):
     def tearDown(self):
         self.size_patch.stop()
 
-    def test_upload_archive_small_file(self):
+    @mock.patch('boto.glacier.vault.compute_hashes_from_fileobj',
+                return_value=[b'abc', b'123'])
+    def test_upload_archive_small_file(self, compute_hashes):
         self.getsize.return_value = 1
 
         self.api.upload_archive.return_value = {'ArchiveId': 'archive_id'}
@@ -69,7 +71,7 @@ class TestVault(unittest.TestCase):
         # The write should be created with the default part size of the
         # instance (2 MB).
         self.vault.create_archive_writer.assert_called_with(
-                description=mock.ANY, part_size=self.vault.DefaultPartSize)
+            description=mock.ANY, part_size=self.vault.DefaultPartSize)
 
     def test_large_part_size_is_obeyed(self):
         self.vault.DefaultPartSize = 8 * 1024 * 1024

@@ -23,7 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from __future__ import with_statement, print_function
+from __future__ import print_function
 
 try:
     from setuptools import setup
@@ -76,7 +76,9 @@ setup(name = "boto",
                   "boto.elastictranscoder", "boto.opsworks", "boto.redshift",
                   "boto.dynamodb2", "boto.support", "boto.cloudtrail",
                   "boto.directconnect", "boto.kinesis", "boto.rds2",
-                  "boto.cloudsearch2", "boto.logs", "boto.vendored"],
+                  "boto.cloudsearch2", "boto.logs", "boto.vendored",
+                  "boto.route53.domains", "boto.cognito",
+                  "boto.cognito.identity", "boto.cognito.sync"],
       package_data = {
           "boto.cacerts": ["cacerts.txt"],
           "boto": ["endpoints.json"],

@@ -1,6 +1,7 @@
 from boto.compat import http_client
 from tests.compat import mock, unittest
 
+
 class AWSMockServiceTestCase(unittest.TestCase):
     """Base class for mocking aws services."""
     # This param is used by the unittest module to display a full
@@ -23,6 +24,8 @@ class AWSMockServiceTestCase(unittest.TestCase):
         self.actual_request = None
         self.original_mexe = self.service_connection._mexe
         self.service_connection._mexe = self._mexe_spy
+        self.proxy = None
+        self.use_proxy = False
 
     def create_service_connection(self, **kwargs):
         if self.connection_class is None:
@@ -44,6 +47,7 @@ class AWSMockServiceTestCase(unittest.TestCase):
 
         response.getheaders.return_value = header
         response.msg = dict(header)
+
         def overwrite_header(arg, default=None):
             header_dict = dict(header)
             if arg in header_dict:

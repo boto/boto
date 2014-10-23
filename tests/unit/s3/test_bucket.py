@@ -92,6 +92,8 @@ class TestS3Bucket(AWSMockServiceTestCase):
             'foo': 'true',
             # Ensure Unicode chars get encoded.
             'bar': '☃',
+            # Ensure unicode strings with non-ascii characters get encoded
+            'baz': u'χ',
             # Underscores are bad, m'kay?
             'some_other': 'thing',
             # Change the variant of ``max-keys``.
@@ -104,14 +106,14 @@ class TestS3Bucket(AWSMockServiceTestCase):
         qa = bukket._get_all_query_args(multiple_params)
         self.assertEqual(
             qa,
-            'bar=%E2%98%83&foo=true&max-keys=0&some-other=thing'
+            'bar=%E2%98%83&baz=%CF%87&foo=true&max-keys=0&some-other=thing'
         )
 
         # Multiple params with initial.
         qa = bukket._get_all_query_args(multiple_params, 'initial=1')
         self.assertEqual(
             qa,
-            'initial=1&bar=%E2%98%83&foo=true&max-keys=0&some-other=thing'
+            'initial=1&bar=%E2%98%83&baz=%CF%87&foo=true&max-keys=0&some-other=thing'
         )
 
     @patch.object(S3Connection, 'head_bucket')

@@ -25,6 +25,7 @@ import time
 
 from tests.compat import unittest
 
+
 class TestIAM(unittest.TestCase):
     def test_group_users(self):
         # A very basic test to create a group, a user, add the user

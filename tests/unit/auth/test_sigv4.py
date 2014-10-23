@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 #
 import copy
+import pickle
 import os
 from tests.compat import unittest, mock
 from tests.unit import MockServiceWithConfigTestCase
@@ -29,6 +30,7 @@ from boto.auth import S3HmacAuthV4Handler
 from boto.auth import detect_potential_s3sigv4
 from boto.auth import detect_potential_sigv4
 from boto.connection import HTTPRequest
+from boto.provider import Provider
 from boto.regioninfo import RegionInfo
 
 
@@ -236,6 +238,29 @@ class TestSigV4Handler(unittest.TestCase):
         auth.service_name = 'sqs'
         scope = auth.credential_scope(self.request)
         self.assertEqual(scope, '20121121/us-west-2/sqs/aws4_request')
+
+    def test_pickle_works(self):
+        provider = Provider('aws', access_key='access_key',
+                            secret_key='secret_key')
+        auth = HmacAuthV4Handler('queue.amazonaws.com', None, provider)
+
+        # Pickle it!
+        pickled = pickle.dumps(auth)
+
+        # Now restore it
+        auth2 = pickle.loads(pickled)
+        self.assertEqual(auth.host, auth2.host)
+
+    def test_bytes_header(self):
+        auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
+                                 mock.Mock(), self.provider)
+        request = HTTPRequest(
+            'GET', 'http', 'glacier.us-east-1.amazonaws.com', 80,
+            'x/./././x .html', None, {},
+            {'x-amz-glacier-version': '2012-06-01', 'x-amz-hash': b'f00'}, '')
+        canonical = auth.canonical_request(request)
+
+        self.assertIn('f00', canonical)
 
 
 class TestS3HmacAuthV4Handler(unittest.TestCase):

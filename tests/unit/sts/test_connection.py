@@ -72,9 +72,7 @@ class TestSTSConnection(AWSMockServiceTestCase):
             {'Action': 'AssumeRole',
              'RoleArn': 'arn:role',
              'RoleSessionName': 'mysession'},
-            ignore_params_values=['Timestamp', 'AWSAccessKeyId',
-                                  'SignatureMethod', 'SignatureVersion',
-                                  'Version'])
+            ignore_params_values=['Version'])
         self.assertEqual(response.credentials.access_key, 'accesskey')
         self.assertEqual(response.credentials.secret_key, 'secretkey')
         self.assertEqual(response.credentials.session_token, 'session_token')
@@ -95,9 +93,7 @@ class TestSTSConnection(AWSMockServiceTestCase):
              'RoleSessionName': 'mysession',
              'SerialNumber': 'GAHT12345678',
              'TokenCode': 'abc123'},
-            ignore_params_values=['Timestamp', 'AWSAccessKeyId',
-                                  'SignatureMethod', 'SignatureVersion',
-                                  'Version'])
+            ignore_params_values=['Version'])
         self.assertEqual(response.credentials.access_key, 'accesskey')
         self.assertEqual(response.credentials.secret_key, 'secretkey')
         self.assertEqual(response.credentials.session_token, 'session_token')
@@ -160,16 +156,12 @@ class TestSTSWebIdentityConnection(AWSMockServiceTestCase):
         )
         self.assert_request_parameters({
           'RoleSessionName': 'guestuser',
-          'AWSAccessKeyId': 'aws_access_key_id',
           'RoleArn': arn,
           'WebIdentityToken': wit,
           'ProviderId': 'www.amazon.com',
           'Action': 'AssumeRoleWithWebIdentity'
         }, ignore_params_values=[
-          'SignatureMethod',
-          'Timestamp',
-          'SignatureVersion',
-          'Version',
+          'Version'
         ])
         self.assertEqual(
           response.credentials.access_key.strip(),
@@ -239,11 +231,7 @@ class TestSTSSAMLConnection(AWSMockServiceTestCase):
           'SAMLAssertion': assertion,
           'Action': 'AssumeRoleWithSAML'
         }, ignore_params_values=[
-          'AWSAccessKeyId',
-          'SignatureMethod',
-          'Timestamp',
-          'SignatureVersion',
-          'Version',
+          'Version'
         ])
         self.assertEqual(response.credentials.access_key, 'accesskey')
         self.assertEqual(response.credentials.secret_key, 'secretkey')

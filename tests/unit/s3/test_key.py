@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,8 +21,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from __future__ import with_statement
-
 from tests.compat import mock, unittest
 from tests.unit import AWSMockServiceTestCase
 
@@ -40,6 +39,11 @@ class TestS3Key(AWSMockServiceTestCase):
 
     def default_body(self):
         return "default body"
+
+    def test_unicode_name(self):
+        k = Key()
+        k.name = u'Österreich'
+        print(repr(k))
 
     def test_when_no_restore_header_present(self):
         self.set_http_response(status_code=200)

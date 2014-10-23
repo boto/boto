@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
 from tests.compat import mock
 
 from boto.ec2.elb import ELBConnection

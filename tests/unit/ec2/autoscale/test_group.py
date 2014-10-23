@@ -36,6 +36,7 @@ from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 
 from boto.ec2.autoscale import launchconfig, LaunchConfiguration
 
+
 class TestAutoScaleGroup(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
@@ -80,7 +81,7 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
             'Action': 'CreateAutoScalingGroup',
             'AutoScalingGroupName': 'foo',
             'VPCZoneIdentifier': 'vpc_zone_1',
-            }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
+        }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
 
     def test_autoscaling_group_vpc_zone_identifier_list(self):
         self.set_http_response(status_code=200)
@@ -92,7 +93,7 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
             'Action': 'CreateAutoScalingGroup',
             'AutoScalingGroupName': 'foo',
             'VPCZoneIdentifier': 'vpc_zone_1,vpc_zone_2',
-            }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
+        }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
 
     def test_autoscaling_group_vpc_zone_identifier_multi(self):
         self.set_http_response(status_code=200)
@@ -104,7 +105,7 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
             'Action': 'CreateAutoScalingGroup',
             'AutoScalingGroupName': 'foo',
             'VPCZoneIdentifier': 'vpc_zone_1,vpc_zone_2',
-            }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
+        }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
 
 
 class TestAutoScaleGroupHonorCooldown(AWSMockServiceTestCase):
@@ -128,6 +129,7 @@ class TestAutoScaleGroupHonorCooldown(AWSMockServiceTestCase):
             'DesiredCapacity': 10,
             'HonorCooldown': 'true',
         }, ignore_params_values=['Version'])
+
 
 class TestScheduledGroup(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
@@ -165,6 +167,7 @@ class TestScheduledGroup(AWSMockServiceTestCase):
             'StartTime': '2013-01-01T22:55:31',
             'Recurrence': '0 10 * * *',
         }, ignore_params_values=['Version'])
+
 
 class TestParseAutoScaleGroupResponse(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
@@ -264,6 +267,7 @@ class TestDescribeTerminationPolicies(AWSMockServiceTestCase):
             ['ClosestToNextInstanceHour', 'Default',
              'NewestInstance', 'OldestInstance', 'OldestLaunchConfiguration'])
 
+
 class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
@@ -332,6 +336,7 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
             'LaunchConfigurationNames.member.2': 'my-test2'
         }, ignore_params_values=['Version'])
 
+
 class TestLaunchConfiguration(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
@@ -346,26 +351,24 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
         # This unit test is based on #753 and #1343
         self.set_http_response(status_code=200)
         dev_sdf = EBSBlockDeviceType(snapshot_id='snap-12345')
-        dev_sdg = EBSBlockDeviceType(snapshot_id='snap-12346')
 
         bdm = BlockDeviceMapping()
         bdm['/dev/sdf'] = dev_sdf
-        bdm['/dev/sdg'] = dev_sdg
 
         lc = launchconfig.LaunchConfiguration(
-                connection=self.service_connection,
-                name='launch_config',
-                image_id='123456',
-                instance_type = 'm1.large',
-                user_data = '#!/bin/bash',
-                security_groups = ['group1', 'group2'],
-                spot_price='price',
-                block_device_mappings = [bdm],
-                associate_public_ip_address = True,
-                volume_type='atype',
-                delete_on_termination=False,
-                iops=3000
-                )
+            connection=self.service_connection,
+            name='launch_config',
+            image_id='123456',
+            instance_type='m1.large',
+            user_data='#!/bin/bash',
+            security_groups=['group1'],
+            spot_price='price',
+            block_device_mappings=[bdm],
+            associate_public_ip_address=True,
+            volume_type='atype',
+            delete_on_termination=False,
+            iops=3000
+        )
 
         response = self.service_connection.create_launch_configuration(lc)
 
@@ -374,19 +377,15 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'BlockDeviceMappings.member.1.DeviceName': '/dev/sdf',
             'BlockDeviceMappings.member.1.Ebs.DeleteOnTermination': 'false',
             'BlockDeviceMappings.member.1.Ebs.SnapshotId': 'snap-12345',
-            'BlockDeviceMappings.member.2.DeviceName': '/dev/sdg',
-            'BlockDeviceMappings.member.2.Ebs.DeleteOnTermination': 'false',
-            'BlockDeviceMappings.member.2.Ebs.SnapshotId': 'snap-12346',
             'EbsOptimized': 'false',
             'LaunchConfigurationName': 'launch_config',
             'ImageId': '123456',
-            'UserData': base64.b64encode('#!/bin/bash').decode('utf-8'),
+            'UserData': base64.b64encode(b'#!/bin/bash').decode('utf-8'),
             'InstanceMonitoring.Enabled': 'false',
             'InstanceType': 'm1.large',
             'SecurityGroups.member.1': 'group1',
-            'SecurityGroups.member.2': 'group2',
             'SpotPrice': 'price',
-            'AssociatePublicIpAddress' : 'true',
+            'AssociatePublicIpAddress': 'true',
             'VolumeType': 'atype',
             'DeleteOnTermination': 'false',
             'Iops': 3000,
@@ -526,6 +525,7 @@ class TestDeleteNotificationConfiguration(AWSMockServiceTestCase):
             'TopicARN': 'arn:aws:sns:us-east-1:19890506:AutoScaling-Up',
         }, ignore_params_values=['Version'])
 
+
 class TestAutoScalingTag(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
@@ -549,7 +549,7 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
                 resource_id='sg-00000000',
                 resource_type='auto-scaling-group',
                 propagate_at_launch=True
-                ),
+            ),
             Tag(
                 connection=self.service_connection,
                 key='bravo',
@@ -557,8 +557,7 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
                 resource_id='sg-00000000',
                 resource_type='auto-scaling-group',
                 propagate_at_launch=False
-                )]
-
+            )]
 
         response = self.service_connection.create_or_update_tags(tags)
 
@@ -584,7 +583,6 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
             ('ResourceId', 'sg-01234567', 'resource_id'),
             ('PropagateAtLaunch', 'true', 'propagate_at_launch')]:
                 self.check_tag_attributes_set(i[0], i[1], i[2])
-
 
     def check_tag_attributes_set(self, name, value, attr):
         tag = Tag()
@@ -613,8 +611,8 @@ class TestAttachInstances(AWSMockServiceTestCase):
     def test_attach_instances(self):
         self.set_http_response(status_code=200)
         self.service_connection.attach_instances(
-          'autoscale',
-          ['inst2', 'inst1', 'inst4']
+            'autoscale',
+            ['inst2', 'inst1', 'inst4']
         )
         self.assert_request_parameters({
             'Action': 'AttachInstances',
@@ -651,6 +649,7 @@ class TestGetAccountLimits(AWSMockServiceTestCase):
         self.assertEqual(limits.max_autoscaling_groups, 6)
         self.assertEqual(limits.max_launch_configurations, 3)
 
+
 class TestGetAdjustmentTypes(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
@@ -678,6 +677,7 @@ class TestGetAdjustmentTypes(AWSMockServiceTestCase):
               </ResponseMetadata>
             </DescribeAdjustmentTypesResponse>
         """
+
     def test_autoscaling_adjustment_types(self):
         self.set_http_response(status_code=200)
         response = self.service_connection.get_all_adjustment_types()

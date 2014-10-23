@@ -1,14 +1,14 @@
 ####
 boto
 ####
-boto 2.31.1
+boto 2.33.0
 
-Released: 10-Jul-2014
+Released: 08-Oct-2014
 
-.. image:: https://travis-ci.org/boto/boto.png?branch=develop
+.. image:: https://travis-ci.org/boto/boto.svg?branch=develop
         :target: https://travis-ci.org/boto/boto
 
-.. image:: https://pypip.in/d/boto/badge.png
+.. image:: https://pypip.in/d/boto/badge.svg
         :target: https://pypi.python.org/pypi/boto/
 
 ************
@@ -42,7 +42,7 @@ At the moment, boto supports:
 * Database
 
   * Amazon Relational Data Service (RDS)
-  * Amazon DynamoDB
+  * Amazon DynamoDB (Python 3)
   * Amazon SimpleDB (Python 3)
   * Amazon ElastiCache (Python 3)
   * Amazon Redshift (Python 3)
@@ -67,6 +67,8 @@ At the moment, boto supports:
   * Amazon Simple Queue Service (SQS) (Python 3)
   * Amazon Simple Notification Server (SNS) (Python 3)
   * Amazon Simple Email Service (SES) (Python 3)
+  * Amazon Cognito Identity (Python 3)
+  * Amazon Cognito Sync (Python 3)
 
 * Monitoring
 
@@ -76,6 +78,7 @@ At the moment, boto supports:
 * Networking
 
   * Amazon Route53 (Python 3)
+  * Amazon Route 53 Domains (Python 3)
   * Amazon Virtual Private Cloud (VPC) (Python 3)
   * Elastic Load Balancing (ELB) (Python 3)
   * AWS Direct Connect (Python 3)

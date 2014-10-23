@@ -23,6 +23,8 @@ import hashlib
 import math
 import binascii
 
+from boto.compat import six
+
 
 _MEGABYTE = 1024 * 1024
 DEFAULT_PART_SIZE = 4 * _MEGABYTE
@@ -122,10 +124,19 @@ def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
         are returned in hex.
 
     """
+    # Python 3+, not binary
+    if six.PY3 and hasattr(fileobj, 'mode') and 'b' not in fileobj.mode:
+        raise ValueError('File-like object must be opened in binary mode!')
+
     linear_hash = hashlib.sha256()
     chunks = []
-    chunk = fileobj.read(chunk_size).encode('utf-8')
+    chunk = fileobj.read(chunk_size)
     while chunk:
+        # It's possible to get a file-like object that has no mode (checked
+        # above) and returns something other than bytes (e.g. str). So here
+        # we try to catch that and encode to bytes.
+        if not isinstance(chunk, bytes):
+            chunk = chunk.encode(getattr(fileobj, 'encoding', '') or 'utf-8')
         linear_hash.update(chunk)
         chunks.append(hashlib.sha256(chunk).digest())
         chunk = fileobj.read(chunk_size)
