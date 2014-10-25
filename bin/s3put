@@ -63,7 +63,7 @@ SYNOPSIS
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
           [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
           [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
-          [--header] [--region <name>] [--host <s3_host>]""" + \
+          [--header] [--region <name>] [--host <s3_host>] [-u/--unsecure]""" + \
           usage_flag_multipart_capable + """ path [path...]
 
     Where
@@ -118,6 +118,7 @@ SYNOPSIS
                  classic region. Normally the region is autodetected, but
                  setting this yourself is more efficient.
         host - Hostname override, for using an endpoint other then AWS S3
+        unsecure - Send files using unencrypted HTTP connection.
 """ + usage_string_multipart_capable + """
 
 
@@ -146,7 +147,7 @@ def get_key_name(fullpath, prefix, key_prefix):
 
 def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
                  source_path, offset, bytes, debug, cb, num_cb,
-                 amount_of_retries=10):
+                 amount_of_retries=10, is_secure=True):
     """
     Uploads a part with retries.
     """
@@ -157,7 +158,7 @@ def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
         try:
             if debug == 1:
                 print('Start uploading part #%d ...' % part_num)
-            conn = S3Connection(aws_key, aws_secret)
+            conn = S3Connection(aws_key, aws_secret, is_secure=is_secure)
             conn.debug = debug
             bucket = conn.get_bucket(bucketname)
             for mp in bucket.get_all_multipart_uploads():
@@ -187,7 +188,7 @@ def check_valid_region(conn, region):
 def multipart_upload(bucketname, aws_key, aws_secret, source_path, keyname,
                      reduced, debug, cb, num_cb, acl='private', headers={},
                      guess_mimetype=True, parallel_processes=4,
-                     region=DEFAULT_REGION):
+                     region=DEFAULT_REGION, is_secure=True):
     """
     Parallel multipart upload.
     """
@@ -217,7 +218,7 @@ def multipart_upload(bucketname, aws_key, aws_secret, source_path, keyname,
         part_num = i + 1
         pool.apply_async(_upload_part, [bucketname, aws_key, aws_secret, mp.id,
                                         part_num, source_path, offset, bytes,
-                                        debug, cb, num_cb])
+                                        debug, cb, num_cb, is_secure])
     pool.close()
     pool.join()
 
@@ -264,14 +265,15 @@ def main():
     host = None
     multipart_requested = False
     region = None
+    is_secure = True
 
     try:
         opts, args = getopt.getopt(
-            sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
+            sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wru',
             ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
              'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet',
              'secret_key=', 'no_overwrite', 'reduced', 'header=', 'multipart',
-             'host=', 'region='])
+             'host=', 'region=', 'unsecure'])
     except:
         usage(1)
 
@@ -328,6 +330,8 @@ def main():
                     break
             else:
                 raise ValueError('Invalid region %s specified' % a)
+        if o in ('-u', '--unsecure'):
+            is_secure = False
 
     if len(args) < 1:
         usage(2)
@@ -338,7 +342,8 @@ def main():
 
     connect_args = {
         'aws_access_key_id': aws_access_key_id,
-        'aws_secret_access_key': aws_secret_access_key
+        'aws_secret_access_key': aws_secret_access_key,
+        'is_secure': is_secure
     }
 
     if host:
@@ -428,7 +433,8 @@ def main():
                                  aws_secret_access_key, fullpath, key_name,
                                  reduced, debug, cb, num_cb,
                                  grant or 'private', headers,
-                                 region=region or DEFAULT_REGION)
+                                 region=region or DEFAULT_REGION,
+                                 is_secure=is_secure)
             else:
                 singlepart_upload(b, key_name, fullpath, cb=cb, num_cb=num_cb,
                                   policy=grant, reduced_redundancy=reduced,
