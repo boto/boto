@@ -35,11 +35,10 @@ try:
     import mimetypes
     from multiprocessing import Pool
     from boto.s3.connection import S3Connection
-    from filechunkio import FileChunkIO
     multipart_capable = True
     usage_flag_multipart_capable = """ [--multipart]"""
     usage_string_multipart_capable = """
-        multipart - Upload files as multiple parts. This needs filechunkio.
+        multipart - Upload files as multiple parts.
                     Requires ListBucket, ListMultipartUploadParts,
                     ListBucketMultipartUploads and PutObject permissions."""
 except ImportError as err:
@@ -162,10 +161,11 @@ def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
             bucket = conn.get_bucket(bucketname)
             for mp in bucket.get_all_multipart_uploads():
                 if mp.id == multipart_id:
-                    with FileChunkIO(source_path, 'r', offset=offset,
-                                     bytes=bytes) as fp:
+                    with open(source_path, 'rb') as fp:
+                        fp.seek(offset)
                         mp.upload_part_from_file(fp=fp, part_num=part_num,
-                                                 cb=cb, num_cb=num_cb)
+                                                 cb=cb, num_cb=num_cb,
+                                                 size=bytes)
                     break
         except Exception as exc:
             if retries_left:
