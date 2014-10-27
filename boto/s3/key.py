@@ -930,7 +930,7 @@ class Key(object):
             spos = None
             self.read_from_stream = False
 
-        size = size or self.size or None
+        size = size or self.size
         md5, base64md5 = self.md5, self.base64md5
         iv, envelope_key, master_key = None, None, self.bucket.connection.client_side_encryption_key
         self.delete_metadata('x-amz-iv')
@@ -961,7 +961,7 @@ class Key(object):
 
             # Adjust the size to take the padding into account
             # If the size is a multiple of the block size (16 bytes), a full block will be added
-            if size and not chunked_transfer:
+            if size is not None and not chunked_transfer:
                 size += 16 - size % 16
 
         # If hash_algs is unset and the MD5 hasn't already been computed,

@@ -68,6 +68,7 @@ class S3ClientSideEncryptionTest(unittest.TestCase):
 
             key_name_base = 'foo-{key_content_index}-encrypted-using-key-{encryption_key_index}-method-{method_index}'
             key_contents = [
+                '',   # Empty content, edge case
                 '0123456701234567',   # Small content, multiple of the block size (16)
                 '0123456701234567' + '0',  # Small content, needs padding
                 '0123456701234567' * 2**6,        # 1Kb content, multiple of the block size (16)
@@ -310,6 +311,7 @@ class S3ClientSideEncryptionTestJavaImplementationCompatibility(_TestWithJavaS3G
 
             key_name_base = 'foo-{key_content_index}-encrypted-using-key-{encryption_key_index}'
             key_contents = [
+                '',   # Empty content, edge case
                 '0123456701234567',   # Small content, multiple of the block size (16)
                 '0123456701234567' + '0',  # Small content, needs padding
                 '0123456701234567' * 2**6,        # 1Kb content, multiple of the block size (16)
