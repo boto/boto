@@ -20,6 +20,9 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+import json
+import os
+from Crypto.Cipher import AES
 
 import boto
 from boto import handler
@@ -1746,6 +1749,26 @@ class Bucket(object):
         if metadata is None:
             metadata = {}
 
+        master_key = self.connection.client_side_encryption_key
+        encryption_metadata = {}
+        if master_key:
+            # Generate the key
+            iv = os.urandom(16)
+            iv_base64 = base64.b64encode(iv)
+            envelope_key = bytes(os.urandom(256/8))
+            # Maximum padding because the key size is a multiple of 16
+            envelope_key_padded = envelope_key + ''.join([chr(16)] * 16)
+            envelope_key_encrypted = AES.new(master_key, AES.MODE_ECB).encrypt(envelope_key_padded)
+            envelope_key_encrypted_base64 = base64.b64encode(envelope_key_encrypted)
+
+            # Add the encryption headers
+            encryption_metadata = {
+                'x-amz-iv': iv_base64,
+                'x-amz-key': envelope_key_encrypted_base64,
+                'x-amz-matdesc': '{}',
+            }
+            metadata.update(encryption_metadata)
+
         headers = boto.utils.merge_meta(headers, metadata,
                 self.connection.provider)
         response = self.connection.make_request('POST', self.name, key_name,
@@ -1759,6 +1782,11 @@ class Bucket(object):
             if not isinstance(body, bytes):
                 body = body.encode('utf-8')
             xml.sax.parseString(body, h)
+            if master_key:
+                metadate_key = '{}-{}-metadata'.format(self.name, resp.id)
+                self.connection.client_side_encryption_registry[metadate_key] = json.dumps(encryption_metadata)
+                first_iv_key = '{}-{}-0'.format(self.name, resp.id)
+                self.connection.client_side_encryption_registry[first_iv_key] = encryption_metadata['x-amz-iv']
             return resp
         else:
             raise self.connection.provider.storage_response_error(
