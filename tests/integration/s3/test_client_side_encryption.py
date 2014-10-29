@@ -54,11 +54,11 @@ class S3ClientSideEncryptionTest(unittest.TestCase):
         for encryption_key_index, encryption_key in enumerate(client_side_encryption_keys):
             encryption_key_hex = binascii.b2a_hex(encryption_key)
             encryption_key_base64 = binascii.b2a_base64(encryption_key)
-            print 'Key of size {}, hex={}, base64={}'.format(
+            print('Key of size {}, hex={}, base64={}'.format(
                 8 * len(encryption_key),
                 encryption_key_hex,
                 encryption_key_base64
-            )
+            ))
 
             encrypted_connection = S3Connection(client_side_encryption_key=encryption_key)
             encrypted_bucket = encrypted_connection.get_bucket(self.bucket_name)
@@ -75,7 +75,7 @@ class S3ClientSideEncryptionTest(unittest.TestCase):
                 '0123456801234567' * 2**6 + '0',  # 1Kb content, needs padding
             ]
             for key_content_index, key_content in enumerate(key_contents):
-                print '\tTest using content {}'.format(key_content_index)
+                print('\tTest using content {}'.format(key_content_index))
 
                 methods = [
                     lambda key, content, filename, fp: key.set_contents_from_string(content),
@@ -85,7 +85,7 @@ class S3ClientSideEncryptionTest(unittest.TestCase):
                     # lambda key, content, filename, fp: key.set_contents_from_stream(fp),
                 ]
                 for method_index, method in enumerate(methods):
-                    print '\t\tTest using method {}'.format(method_index)
+                    print('\t\tTest using method {}'.format(method_index))
 
                     key_size = len(key_content)
                     key_name = key_name_base.format(key_content_index=key_content_index,
@@ -190,7 +190,7 @@ class _TestWithJavaS3GatewayMixin(object):
                 url = base_url.format(base_package=base_package, package=package, version=version)
                 jar = '/tmp/{package}-{version}.jar'.format(package=package, version=version)
                 if not os.path.isfile(jar):
-                    print 'Downloading {}'.format(url)
+                    print('Downloading {}'.format(url))
                     urllib.URLopener().retrieve(url, jar)
                 jars.append(jar)
 
@@ -207,7 +207,7 @@ class _TestWithJavaS3GatewayMixin(object):
                 url = base_url.format(path=path, name=name, version=version)
                 jar = '/tmp/{name}-{version}.jar'.format(name=name, version=version)
                 if not os.path.isfile(jar):
-                    print 'Downloading {}'.format(url)
+                    print('Downloading {}'.format(url))
                     urllib.URLopener().retrieve(url, jar)
                 jars.append(jar)
 
@@ -220,7 +220,7 @@ class _TestWithJavaS3GatewayMixin(object):
         import psutil
         for process in psutil.process_iter():
             if 'BotoS3Gateway' in process.cmdline():
-                print 'Stopping gateway...'
+                print('Stopping gateway...')
                 process.kill()
                 time.sleep(1)
 
@@ -297,11 +297,11 @@ class S3ClientSideEncryptionTestJavaImplementationCompatibility(_TestWithJavaS3G
         for encryption_key_index, encryption_key in enumerate(client_side_encryption_keys):
             encryption_key_hex = binascii.b2a_hex(encryption_key)
             encryption_key_base64 = binascii.b2a_base64(encryption_key)
-            print 'Key of size {}, hex={}, base64={}'.format(
+            print('Key of size {}, hex={}, base64={}'.format(
                 8 * len(encryption_key),
                 encryption_key_hex,
                 encryption_key_base64
-            ).replace('\n', '')
+            ).replace('\n', ''))
 
             encrypted_connection = S3Connection(client_side_encryption_key=encryption_key)
             encrypted_bucket = encrypted_connection.get_bucket(self.bucket_name)
@@ -318,7 +318,7 @@ class S3ClientSideEncryptionTestJavaImplementationCompatibility(_TestWithJavaS3G
                 '0123456701234567' * 2**6 + '0',  # 1Kb content, needs padding
             ]
             for key_content_index, key_content in enumerate(key_contents):
-                print '\tTest using content {}'.format(key_content_index)
+                print('\tTest using content {}'.format(key_content_index))
 
                 methods = [
                     lambda a, b, c, d, e, content, filename: self.gateway.entry_point.putString(a, b, c, d,
@@ -327,7 +327,7 @@ class S3ClientSideEncryptionTestJavaImplementationCompatibility(_TestWithJavaS3G
                                                                                               e, filename),
                 ]
                 for method_index, method in enumerate(methods):
-                    print '\t\tTest using method {}'.format(method_index)
+                    print('\t\tTest using method {}'.format(method_index))
 
                     key_size = len(key_content)
                     key_name = key_name_base.format(key_content_index=key_content_index,
