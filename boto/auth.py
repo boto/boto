@@ -773,8 +773,11 @@ class QueryAuthHandler(AuthHandler):
     capability = ['pure-query']
 
     def _escape_value(self, value):
-        # Would normally be ``return urllib.parse.quote(value)``.
-        return value
+        # This is changed from a previous version because this string is
+        # being passed to the query string and query strings must
+        # be url encoded. In particular STS requires the saml_response to
+        # be urlencoded when calling assume_role_with_saml.
+        return urllib.parse.quote(value)
 
     def _build_query_string(self, params):
         keys = list(params.keys())
