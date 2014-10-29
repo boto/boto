@@ -21,6 +21,7 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from io import StringIO
 
 from boto.s3 import user
 from boto.s3 import key
@@ -252,8 +253,6 @@ class MultiPartUpload(object):
         """
         if part_num < 1:
             raise ValueError('Part numbers must be greater than zero')
-        if self.bucket.connection.client_side_encryption_key:
-            raise ValueError('Multipart upload with client-side encryption is not yet supported.')
         query_args = 'uploadId=%s&partNumber=%d' % (self.id, part_num)
         key = self.bucket.new_key(self.key_name)
         key.set_contents_from_file(fp, headers=headers, replace=replace,
@@ -318,9 +317,27 @@ class MultiPartUpload(object):
         :rtype: :class:`boto.s3.multipart.CompletedMultiPartUpload`
         :returns: An object representing the completed upload.
         """
+        master_key = self.bucket.connection.client_side_encryption_key
+        if master_key:
+            final_part_key = '{}-{}-final'.format(self.bucket.name, self.id)
+            final_part_number = self.bucket.connection.client_side_encryption_registry.get(final_part_key, None)
+
+            if final_part_number is None:
+                max_part_number = max([part.part_number for part in self] + [0])
+                self.upload_part_from_file(StringIO(), max_part_number + 1)
+
         xml = self.to_xml()
-        return self.bucket.complete_multipart_upload(self.key_name,
-                                                     self.id, xml)
+        result = self.bucket.complete_multipart_upload(self.key_name,
+                                                       self.id, xml)
+
+        if master_key:
+            # Clean the registry
+            key_prefix = '{}-{}'.format(self.bucket.name, self.id)
+            for key in self.bucket.connection.client_side_encryption_registry.keys():
+                if key.startswith(key_prefix):
+                    del self.bucket.connection.client_side_encryption_registry[key]
+
+        return result
 
     def cancel_upload(self):
         """

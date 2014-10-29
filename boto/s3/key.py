@@ -24,6 +24,7 @@ import email.utils
 import errno
 import hashlib
 from io import RawIOBase
+import json
 import mimetypes
 import os
 import re
@@ -31,6 +32,7 @@ import base64
 import binascii
 import math
 import hashlib
+import urlparse
 from Crypto.Cipher import AES
 import boto.utils
 from boto.compat import BytesIO, six, urllib, encodebytes
@@ -49,13 +51,14 @@ from boto.utils import merge_headers_by_name
 
 class _AESBase(RawIOBase):
 
-    def __init__(self, stream, encryption_key, iv=None):
+    def __init__(self, stream, encryption_key, iv=None, add_padding=True):
         super(RawIOBase, self).__init__()
         self._stream = stream
         self._encryption_key = encryption_key
         self._iv = iv
         self._cipher = None
         self._initial_position = None
+        self._add_padding = add_padding
         self._padding_size = None  # Undefined until the last block has been processed
         self._init()
 
@@ -66,7 +69,9 @@ class _AESBase(RawIOBase):
 
     @property
     def padding_size(self):
-        if not self._padding_size:
+        if not self._add_padding:
+            return 0
+        if self._padding_size is None:
             raise BotoClientError('padding_size will contains a valid value after the last block has been processed')
         return self._padding_size
 
@@ -104,7 +109,11 @@ class _AESEncryptor(_AESBase):
         self._ensure_read_multiple_of_16(n)
         current_block = self._stream.read(n)
 
-        if len(current_block) < n and not self._padding_size:
+        if len(current_block) % 16 > 0 and not self._add_padding:
+            raise IOError('the length of the content is not a multiple of the AES block size (16) '
+                          'and padding is disabled')
+
+        if len(current_block) < n and self._add_padding and self._padding_size is None:
             # End of the stream, add the padding
             self._padding_size = padding_size = 16 - len(current_block) % 16
             # Note: the size of the current block will never be greater than n because:
@@ -955,36 +964,93 @@ class Key(object):
 
         size, size_before_padding = size if size is not None else self.size, size if size is not None else self.size
         md5, base64md5 = self.md5, self.base64md5
-        iv, envelope_key, master_key = None, None, self.bucket.connection.client_side_encryption_key
+        iv, envelope_key, master_key,  = None, None, self.bucket.connection.client_side_encryption_key
+        add_padding, next_iv_key = True, None
         self.delete_metadata('x-amz-iv')
         self.delete_metadata('x-amz-key')
         self.delete_metadata('x-amz-matdesc')
         self.delete_metadata('x-amz-unencrypted-content-length')
         if master_key:
-            # Generate the key
-            iv = os.urandom(16)
-            iv_base64 = base64.b64encode(iv)
-            envelope_key = bytes(os.urandom(256/8))
-            # Maximum padding because the key size is a multiple of 16
-            envelope_key_padded = envelope_key + ''.join([chr(16)] * 16)
-            envelope_key_encrypted = AES.new(master_key, AES.MODE_ECB).encrypt(envelope_key_padded)
-            envelope_key_encrypted_base64 = base64.b64encode(envelope_key_encrypted)
+            if not query_args or 'uploadId' not in query_args:
+                # Generate the key
+                iv = os.urandom(16)
+                iv_base64 = base64.b64encode(iv)
+                envelope_key = bytes(os.urandom(256/8))
+                # Maximum padding because the key size is a multiple of 16
+                envelope_key_padded = envelope_key + ''.join([chr(16)] * 16)
+                envelope_key_encrypted = AES.new(master_key, AES.MODE_ECB).encrypt(envelope_key_padded)
+                envelope_key_encrypted_base64 = base64.b64encode(envelope_key_encrypted)
 
-            # Add the encryption headers
-            self.set_metadata('x-amz-iv', iv_base64)
-            self.set_metadata('x-amz-key', envelope_key_encrypted_base64)
-            self.set_metadata('x-amz-matdesc', '{}')
-            if size:
-                self.set_metadata('x-amz-unencrypted-content-length', size)
+                # Add the encryption headers
+                self.set_metadata('x-amz-iv', iv_base64)
+                self.set_metadata('x-amz-key', envelope_key_encrypted_base64)
+                self.set_metadata('x-amz-matdesc', '{}')
+                if size:
+                    self.set_metadata('x-amz-unencrypted-content-length', size)
+
+            else:
+                # Multipart upload
+                query_args_dict = urlparse.parse_qs(query_args)
+                upload_id = query_args_dict['uploadId'][0]
+                part_number = int(query_args_dict['partNumber'][0])
+
+                final_part_key = '{}-{}-final'.format(self.bucket.name, upload_id)
+                final_part_number = self.bucket.connection.client_side_encryption_registry.get(final_part_key, None)
+
+                if size is None or chunked_transfer:
+                    # This is not supported because we need to know if we have to add the padding
+                    # before instantiating the encryptor.
+                    #
+                    # Only the last black can be smaller than 5MB. Therefore, if the last block is smaller than
+                    # 5MB and we don't know that we are processing it, we won't add the padding and we won't
+                    # be able to add it later because S3 won't accept a second part of less than 5MB.
+                    raise BotoClientError('Multipart upload with client-side encryption and '
+                                          'chuncked transfer are exclusive')
+
+                if final_part_number is not None and final_part_number < part_number:
+                    raise BotoClientError(
+                        'Invalid part. Please check that the size of part {} was greater than '
+                        '5MB and a multiple of the AES block size (16).'.format(final_part_number))
+
+                iv_key = '{}-{}-{}'.format(self.bucket.name, upload_id, part_number-1)
+                if not iv_key in self.bucket.connection.client_side_encryption_registry:
+                    raise BotoClientError(
+                        'Previous initialisation vector not found. Please upload the parts in order when '
+                        'using client-side encryption')
+
+                iv_base64 = self.bucket.connection.client_side_encryption_registry[iv_key]
+                iv = base64.b64decode(iv_base64)
+                next_iv_key = '{}-{}-{}'.format(self.bucket.name, upload_id, part_number)
+
+                metadata_key = '{}-{}-metadata'.format(self.bucket.name, upload_id)
+                metadata = json.loads(self.bucket.connection.client_side_encryption_registry[metadata_key])
+                envelope_key_base64_with_padding = metadata['x-amz-key']
+                envelope_key_encrypted = base64.b64decode(envelope_key_base64_with_padding)[:-16]
+                envelope_key = AES.new(master_key, AES.MODE_ECB).decrypt(envelope_key_encrypted)
+
+                if size < 5e6 or size % 16 > 0:
+                    # The first time we see a file with these characteristics, we can't tell if it's the last part
+                    # of the file or an error of the user (part too small or size not a multiple of the block size).
+                    #
+                    # The part will be treated as the last part of the file and if it's not, the user
+                    # will get an error message when trying to upload the next part.
+                    add_padding = True
+                    self.bucket.connection.client_side_encryption_registry[final_part_key] = part_number
+                else:
+                    # The part could be a regular or the last part of the file.
+                    #
+                    # It will be treated as a regular part and if it's not, a padding-only part will be added when
+                    # completing the upload.
+                    add_padding = False
 
             # Adjust the size to take the padding into account
             # If the size is a multiple of the block size (16 bytes), a full block will be added
-            if size is not None and not chunked_transfer:
+            if size is not None and not chunked_transfer and add_padding:
                 size += 16 - size % 16
 
             # Adjust the md5
             if base64md5:
-                encryptor = _AESEncryptor(MaxSizeFileWrapper(fp, size_before_padding), envelope_key, iv)
+                encryptor = _AESEncryptor(MaxSizeFileWrapper(fp, size_before_padding), envelope_key, iv, add_padding)
                 md5, base64md5, _ = compute_hash(encryptor, size=size)
 
         # If hash_algs is unset and the MD5 hasn't already been computed,
@@ -1009,7 +1075,7 @@ class Key(object):
 
             if master_key:
                 # Replace the stream
-                sender_fp = _AESEncryptor(MaxSizeFileWrapper(fp, size_before_padding), envelope_key, iv)
+                sender_fp = _AESEncryptor(MaxSizeFileWrapper(fp, size_before_padding), envelope_key, iv, add_padding)
 
             # If the caller explicitly specified host header, tell putrequest
             # not to add a second host header. Similarly for accept-encoding.
@@ -1097,6 +1163,9 @@ class Key(object):
             self.size = data_len
             if master_key:
                 self.size = self.size - sender_fp.padding_size
+                if next_iv_key is not None:
+                    next_iv_base64 = base64.b64encode(chunk[-16:])
+                    self.bucket.connection.client_side_encryption_registry[next_iv_key] = next_iv_base64
 
             for alg in digesters:
                 self.local_hashes[alg] = digesters[alg].digest()
