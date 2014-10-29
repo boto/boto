@@ -171,7 +171,8 @@ class S3Connection(AWSAuthConnection):
                  calling_format=DefaultCallingFormat, path='/',
                  provider='aws', bucket_class=Bucket, security_token=None,
                  suppress_consec_slashes=True, anon=False,
-                 validate_certs=None, profile_name=None, client_side_encryption_key=None):
+                 validate_certs=None, profile_name=None, client_side_encryption_key=None,
+                 client_side_encryption_registry=None):
         no_host_provided = False
         if host is NoHostProvided:
             no_host_provided = True
@@ -182,6 +183,9 @@ class S3Connection(AWSAuthConnection):
         self.bucket_class = bucket_class
         self.anon = anon
         self.client_side_encryption_key = client_side_encryption_key
+        self.client_side_encryption_registry = client_side_encryption_registry
+        if self.client_side_encryption_registry is None:
+            self.client_side_encryption_registry = {}
         super(S3Connection, self).__init__(host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
