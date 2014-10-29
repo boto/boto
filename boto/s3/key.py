@@ -32,7 +32,7 @@ import base64
 import binascii
 import math
 import hashlib
-import urlparse
+from boto.compat import parse_qs
 from Crypto.Cipher import AES
 import boto.utils
 from boto.compat import BytesIO, six, urllib, encodebytes
@@ -990,7 +990,7 @@ class Key(object):
 
             else:
                 # Multipart upload
-                query_args_dict = urlparse.parse_qs(query_args)
+                query_args_dict = parse_qs(query_args)
                 upload_id = query_args_dict['uploadId'][0]
                 part_number = int(query_args_dict['partNumber'][0])
 
