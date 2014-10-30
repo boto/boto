@@ -72,6 +72,13 @@ class STSConnection(AWSQueryConnection):
                  https_connection_factory=None, region=None, path='/',
                  converter=None, validate_certs=True, anon=False,
                  security_token=None, profile_name=None):
+        """
+        :type anon: boolean
+        :param anon: If this parameter is True, the ``STSConnection`` object
+            will make anonymous requests, and it will not use AWS
+            Credentials or even search for AWS Credentials to make these
+            requests.
+        """
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint,
