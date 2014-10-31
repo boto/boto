@@ -186,6 +186,29 @@ class _Delegator(object):
         raise AttributeError(key)
 
 
+class MaxSizeFileWrapper(object):
+    """
+    Read at most until the current position + size from the underlying stream
+    """
+    def __init__(self, fp, size=None):
+        self._fp = fp
+        self._size = size
+        self._initial_position = fp.tell()
+
+    def read(self, n=-1):
+        if self._size is None:
+            return self._fp.read(n)
+
+        max_n = self._size - (self._fp.tell() - self._initial_position)
+        if n == -1:
+            return self._fp.read(max_n)
+        else:
+            return self._fp.read(min(n, max_n))
+
+    def __getattr__(self, key):
+        return getattr(self._fp, key)
+
+
 class Key(object):
     """
     Represents a key (object) in an S3 bucket.
@@ -930,7 +953,7 @@ class Key(object):
             spos = None
             self.read_from_stream = False
 
-        size = size or self.size
+        size, size_before_padding = size if size is not None else self.size, size if size is not None else self.size
         md5, base64md5 = self.md5, self.base64md5
         iv, envelope_key, master_key = None, None, self.bucket.connection.client_side_encryption_key
         self.delete_metadata('x-amz-iv')
@@ -954,15 +977,15 @@ class Key(object):
             if size:
                 self.set_metadata('x-amz-unencrypted-content-length', size)
 
-            # Adjust the md5
-            if base64md5:
-                encryptor = _AESEncryptor(fp, envelope_key, iv)
-                md5, base64md5, _ = compute_hash(encryptor)
-
             # Adjust the size to take the padding into account
             # If the size is a multiple of the block size (16 bytes), a full block will be added
             if size is not None and not chunked_transfer:
                 size += 16 - size % 16
+
+            # Adjust the md5
+            if base64md5:
+                encryptor = _AESEncryptor(MaxSizeFileWrapper(fp, size_before_padding), envelope_key, iv)
+                md5, base64md5, _ = compute_hash(encryptor, size=size)
 
         # If hash_algs is unset and the MD5 hasn't already been computed,
         # default to an MD5 hash_alg to hash the data on-the-fly.
@@ -986,7 +1009,7 @@ class Key(object):
 
             if master_key:
                 # Replace the stream
-                sender_fp = _AESEncryptor(sender_fp, envelope_key, iv)
+                sender_fp = _AESEncryptor(MaxSizeFileWrapper(fp, size_before_padding), envelope_key, iv)
 
             # If the caller explicitly specified host header, tell putrequest
             # not to add a second host header. Similarly for accept-encoding.
@@ -1032,7 +1055,7 @@ class Key(object):
                 cb(data_len, cb_size)
 
             bytes_togo = size
-            if bytes_togo and bytes_togo < self.BufferSize:
+            if bytes_togo is not None and bytes_togo < self.BufferSize:
                 chunk = sender_fp.read(bytes_togo)
             else:
                 chunk = sender_fp.read(self.BufferSize)

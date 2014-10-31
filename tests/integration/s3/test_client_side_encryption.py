@@ -9,6 +9,7 @@ import time
 import urllib
 import binascii
 import urllib2
+from StringIO import StringIO
 from pip.vendor.distlib.version import NormalizedVersion
 
 from boto.s3.connection import S3Connection
@@ -77,10 +78,18 @@ class S3ClientSideEncryptionTest(unittest.TestCase):
             for key_content_index, key_content in enumerate(key_contents):
                 print('\tTest using content {}'.format(key_content_index))
 
+                def set_content_from_file_with_too_much_content(key, content, filename, fp):
+                    """
+                    Add extra content add the end of the file to make sure that the size parameter works properly
+                    """
+                    content = fp.read()
+                    key.set_contents_from_file(StringIO(content + 'abcde'), size=len(content))
+
                 methods = [
                     lambda key, content, filename, fp: key.set_contents_from_string(content),
                     lambda key, content, filename, fp: key.set_contents_from_filename(filename),
                     lambda key, content, filename, fp: key.set_contents_from_file(fp),
+                    set_content_from_file_with_too_much_content,
                     # BotoClientError: s3 does not support chunked transfer
                     # lambda key, content, filename, fp: key.set_contents_from_stream(fp),
                 ]
