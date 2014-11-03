@@ -176,10 +176,22 @@ class DynamoDBConnection(AWSQueryConnection):
         if 'host' not in kwargs:
             kwargs['host'] = region.endpoint
 
+        if boto.config.has_option('DynamoDB', 'endpoint'):
+            kwargs['host'] = boto.config.get('DynamoDB', 'endpoint')
+
+        if boto.config.has_option('DynamoDB', 'port'):
+            kwargs['port'] = boto.config.getint('DynamoDB', 'port')
+
+        if boto.config.has_option('DynamoDB', 'is_secure'):
+            kwargs['is_secure'] = boto.config.getbool(
+                'DynamoDB', 'is_secure', True)
+
         super(DynamoDBConnection, self).__init__(**kwargs)
         self.region = region
         self._validate_checksums = boto.config.getbool(
             'DynamoDB', 'validate_checksums', validate_checksums)
+
+
         self.throughput_exceeded_events = 0
 
     def _required_auth_capability(self):
