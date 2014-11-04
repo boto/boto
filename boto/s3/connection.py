@@ -177,7 +177,7 @@ class S3Connection(AWSAuthConnection):
             no_host_provided = True
             host = self.DefaultHost
         if isinstance(calling_format, six.string_types):
-            calling_format=boto.utils.find_class(calling_format)()
+            calling_format=boto.utils.find_class(__module__, calling_format)()
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         self.anon = anon
