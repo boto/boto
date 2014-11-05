@@ -1,5 +1,6 @@
 # Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2014, Steven Richards <sbrichards@mit.edu>
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +39,11 @@ class S3RegionInfo(RegionInfo):
         :rtype: Connection object
         :return: The connection to this regions endpoint
         """
+        for key in kw_params.keys(): #replace self.endpoint if host endpoint param specified
+            if key == 'host':
+                self.endpoint = kw_params[key]
+                del kw_params[key]
+
         if self.connection_cls:
             return self.connection_cls(host=self.endpoint, **kw_params)
 
