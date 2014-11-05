@@ -903,7 +903,7 @@ class AWSAuthConnection(object):
         boto.log.debug('Params: %s' % request.params)
         response = None
         body = None
-        e = None
+        ex = None
         if override_num_retries is None:
             num_retries = config.getint('Boto', 'num_retries', self.num_retries)
         else:
@@ -1002,6 +1002,7 @@ class AWSAuthConnection(object):
                 connection = self.new_http_connection(request.host, request.port,
                                                       self.is_secure)
                 response = e.response
+                ex = e
             except self.http_exceptions as e:
                 for unretryable in self.http_unretryable_exceptions:
                     if isinstance(e, unretryable):
@@ -1013,6 +1014,7 @@ class AWSAuthConnection(object):
                                e.__class__.__name__)
                 connection = self.new_http_connection(request.host, request.port,
                                                       self.is_secure)
+                ex = e
             time.sleep(next_sleep)
             i += 1
         # If we made it here, it's because we have exhausted our retries
@@ -1023,8 +1025,8 @@ class AWSAuthConnection(object):
             self.request_hook.handle_request_data(request, response, error=True)
         if response:
             raise BotoServerError(response.status, response.reason, body)
-        elif e:
-            raise
+        elif ex:
+            raise ex
         else:
             msg = 'Please report this exception as a Boto Issue!'
             raise BotoClientError(msg)
