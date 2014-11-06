@@ -25,6 +25,7 @@
 This module provides an interface to the Elastic Compute Cloud (EC2)
 load balancing service from AWS.
 """
+from boto.auth import detect_potential_sigv4
 from boto.connection import AWSQueryConnection
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.ec2.elb.loadbalancer import LoadBalancer, LoadBalancerZones
@@ -97,6 +98,7 @@ class ELBConnection(AWSQueryConnection):
                                             validate_certs=validate_certs,
                                             profile_name=profile_name)
 
+    @detect_potential_sigv4
     def _required_auth_capability(self):
         return ['ec2']
 
