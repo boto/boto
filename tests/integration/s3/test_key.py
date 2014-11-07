@@ -27,8 +27,9 @@ Some unit tests for S3 Key
 
 from tests.unit import unittest
 import time
-from boto.compat import six, StringIO, urllib
 
+import boto.s3
+from boto.compat import six, StringIO, urllib
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
@@ -459,3 +460,30 @@ class S3KeyTest(unittest.TestCase):
         kn = self.bucket.new_key("testkey_for_sse_c")
         ks = kn.get_contents_as_string(headers=header)
         self.assertEqual(ks, content.encode('utf-8'))
+
+
+class S3KeySigV4Test(unittest.TestCase):
+    def setUp(self):
+        self.conn = boto.s3.connect_to_region('eu-central-1')
+        self.bucket_name = 'boto-sigv4-key-%d' % int(time.time())
+        self.bucket = self.conn.create_bucket(self.bucket_name,
+                                              location='eu-central-1')
+
+    def tearDown(self):
+        for key in self.bucket:
+            key.delete()
+        self.bucket.delete()
+
+    def test_put_get_with_non_string_headers_key(self):
+        k = Key(self.bucket)
+        k.key = 'foobar'
+        body = 'This is a test of S3'
+        # A content-length header will be added to this request since it
+        # has a body.
+        k.set_contents_from_string(body)
+        # Set a header that has an integer. This checks for a bug where
+        # the sigv4 signer assumes that all of the headers are strings.
+        headers = {'Content-Length': 0}
+        from_s3_key = self.bucket.get_key('foobar', headers=headers)
+        self.assertEqual(from_s3_key.get_contents_as_string().decode('utf-8'),
+                         body)
