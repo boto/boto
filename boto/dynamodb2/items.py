@@ -1,7 +1,5 @@
 from copy import deepcopy
 
-from boto.dynamodb2.types import Dynamizer
-
 
 class NEWVALUE(object):
     # A marker for new data added.
@@ -69,7 +67,7 @@ class Item(object):
         self._loaded = loaded
         self._orig_data = {}
         self._data = data
-        self._dynamizer = Dynamizer()
+        self._dynamizer = table._dynamizer
 
         if self._data is None:
             self._data = {}

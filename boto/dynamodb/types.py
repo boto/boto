@@ -52,8 +52,12 @@ def float_to_decimal(f):
     return result
 
 
-def is_num(n):
-    types = (int, long_type, float, Decimal)
+def is_num(n, boolean_as_int=True):
+    if boolean_as_int:
+        types = (int, long_type, float, Decimal, bool)
+    else:
+        types = (int, long_type, float, Decimal)
+
     return isinstance(n, types) or n in types
 
 
@@ -95,7 +99,7 @@ def convert_binary(n):
     return Binary(base64.b64decode(n))
 
 
-def get_dynamodb_type(val):
+def get_dynamodb_type(val, use_boolean=True):
     """
     Take a scalar Python value and return a string representing
     the corresponding Amazon DynamoDB type.  If the value passed in is
@@ -104,10 +108,11 @@ def get_dynamodb_type(val):
     dynamodb_type = None
     if val is None:
         dynamodb_type = 'NULL'
-    elif isinstance(val, bool):
-        dynamodb_type = 'BOOL'
     elif is_num(val):
-        dynamodb_type = 'N'
+        if isinstance(val, bool) and use_boolean:
+            dynamodb_type = 'BOOL'
+        else:
+            dynamodb_type = 'N'
     elif is_str(val):
         dynamodb_type = 'S'
     elif isinstance(val, (set, frozenset)):
@@ -372,7 +377,16 @@ class Dynamizer(object):
         return [self.decode(i) for i in attr]
 
 
-class LossyFloatDynamizer(Dynamizer):
+class NonBooleanDynamizer(Dynamizer):
+    """Casting boolean type to numeric types.
+
+    This class is provided for backward compatibility.
+    """
+    def _get_dynamodb_type(self, attr):
+        return get_dynamodb_type(attr, use_boolean=False)
+
+
+class LossyFloatDynamizer(NonBooleanDynamizer):
     """Use float/int instead of Decimal for numeric types.
 
     This class is provided for backwards compatibility.  Instead of

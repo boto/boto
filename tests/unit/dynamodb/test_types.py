@@ -80,6 +80,10 @@ class TestDynamizer(unittest.TestCase):
         with self.assertRaises(DynamoDBNumberError):
             dynamizer.encode(1.1)
 
+    def test_non_boolean_conversions(self):
+        dynamizer = types.NonBooleanDynamizer()
+        self.assertEqual(dynamizer.encode(True), {'N': '1'})
+
     def test_lossy_float_conversions(self):
         dynamizer = types.LossyFloatDynamizer()
         # Just testing the differences here, specifically float conversions:
