@@ -359,7 +359,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
 
         for header in headers_to_sign:
             c_name = header.lower().strip()
-            raw_value = headers_to_sign[header]
+            raw_value = str(headers_to_sign[header])
             if '"' in raw_value:
                 c_value = raw_value.strip()
             else:
