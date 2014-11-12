@@ -426,12 +426,13 @@ class Key(object):
         :param validate_dst_bucket: If True, will validate the dst_bucket
             by using an extra list request.
         """
+        bucket_name = dst_bucket or self.bucket.name
         if new_storage_class == 'STANDARD':
-            return self.copy(self.bucket.name, self.name,
+            return self.copy(bucket_name, self.name,
                              reduced_redundancy=False, preserve_acl=True,
                              validate_dst_bucket=validate_dst_bucket)
         elif new_storage_class == 'REDUCED_REDUNDANCY':
-            return self.copy(self.bucket.name, self.name,
+            return self.copy(bucket_name, self.name,
                              reduced_redundancy=True, preserve_acl=True,
                              validate_dst_bucket=validate_dst_bucket)
         else:
