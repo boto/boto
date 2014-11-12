@@ -1028,7 +1028,7 @@ class Key(object):
                 envelope_key_encrypted = base64.b64decode(envelope_key_base64_with_padding)[:-16]
                 envelope_key = AES.new(master_key, AES.MODE_ECB).decrypt(envelope_key_encrypted)
 
-                if size < 5e6 or size % 16 > 0:
+                if size < 5*2**20 or size % 16 > 0:
                     # The first time we see a file with these characteristics, we can't tell if it's the last part
                     # of the file or an error of the user (part too small or size not a multiple of the block size).
                     #
