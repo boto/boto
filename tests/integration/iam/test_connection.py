@@ -27,6 +27,8 @@ from tests.compat import unittest
 
 
 class TestIAM(unittest.TestCase):
+    iam = True
+
     def test_group_users(self):
         # A very basic test to create a group, a user, add the user
         # to the group and then delete everything
