@@ -81,7 +81,7 @@ class KeyPair(EC2Object):
             file_path = os.path.join(directory_path, '%s.pem' % self.name)
             if os.path.exists(file_path):
                 raise BotoClientError('%s already exists, it will not be overwritten' % file_path)
-            with open(file_path, 'wb') as fp:
+            with open(file_path, 'w') as fp:
                 fp.write(self.material)
             os.chmod(file_path, 0o600)
             return True
