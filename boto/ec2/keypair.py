@@ -82,7 +82,7 @@ class KeyPair(EC2Object):
             if os.path.exists(file_path):
                 raise BotoClientError('%s already exists, it will not be overwritten' % file_path)
             with open(file_path, 'wb') as fp:
-                fp.write(self.material.encode('ascii'))
+                fp.write(self.material)
             os.chmod(file_path, 0o600)
             return True
         else:
