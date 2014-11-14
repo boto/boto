@@ -548,8 +548,8 @@ class KinesisConnection(AWSQueryConnection):
         :type data: blob
         :param data: The data blob to put into the record, which is
             Base64-encoded when the blob is serialized.
-            The maximum size of the data blob (the payload after
-            Base64-decoding) is 50 kilobytes (KB)
+            The maximum size of a data blob (the data payload
+            before Base64-encoding) is 50 kilobytes (KB)
             Set `b64_encode` to disable automatic Base64 encoding.
 
         :type partition_key: string
