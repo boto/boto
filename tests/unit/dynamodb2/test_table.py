@@ -823,6 +823,12 @@ class ItemTestCase(unittest.TestCase):
         self.assertFalse(self.create_item({}))
 
 
+class ItemFromItemTestCase(ItemTestCase):
+    def setUp(self):
+        super(ItemFromItemTestCase, self).setUp()
+        self.johndoe = self.create_item(self.johndoe)
+
+
 def fake_results(name, greeting='hello', exclusive_start_key=None, limit=None):
     if exclusive_start_key is None:
         exclusive_start_key = -1
