@@ -2,7 +2,7 @@
 >>> import datetime
 >>> from _init_environment import MTurkConnection, mturk_host
 >>> from boto.mturk.question import Question, QuestionContent, AnswerSpecification, FreeTextAnswer
->>> 
+>>>
 >>> conn = MTurkConnection(host=mturk_host)
 >>> keywords=['boto', 'test', 'doctest']
 >>> hit_type_rs = conn.register_hit_type('Boto Test HIT type',
@@ -38,6 +38,7 @@ u'...'
 ...                                 lifetime=60*65,
 ...                                 max_assignments=2,
 ...                                 annotation='An annotation from boto create_hit_from_hit_type test',
+...                                 unique_request_token='A unique token',
 ...                                 response_groups=['Minimal',
 ...                                                  'HITDetail',
 ...                                                  'HITQuestion',
@@ -97,6 +98,10 @@ u'HIT Type for testing Boto'
 # annotation is correct
 >>> hit.RequesterAnnotation
 u'An annotation from boto create_hit_from_hit_type test'
+
+# unique request token is correct
+>>> hit.UniqueRequestToken
+u'A unique token'
 
 # not reviewed yet
 >>> hit.HITReviewStatus
