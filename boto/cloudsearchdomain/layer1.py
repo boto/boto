@@ -52,7 +52,6 @@ class CloudSearchDomainConnection(AWSAuthConnection):
         "DocumentServiceException": exceptions.DocumentServiceException,
     }
 
-
     def __init__(self, **kwargs):
         region = kwargs.get('region')
         if not region:
