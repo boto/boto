@@ -29,6 +29,12 @@ class CloudSearchDomainConnectionTest(AWSMockServiceTestCase):
         "SearchPartitionCount": 0
       }"""
 
+    def create_service_connection(self, **kwargs):
+        if kwargs.get('host', None) is None:
+            kwargs['host'] = 'search-demo.us-east-1.cloudsearch.amazonaws.com'
+        return super(CloudSearchDomainConnectionTest, self).\
+            create_service_connection(**kwargs)
+
     def test_get_search_service(self):
         layer1 = CloudSearchConnection(aws_access_key_id='aws_access_key_id',
                                        aws_secret_access_key='aws_secret_access_key',
@@ -111,3 +117,11 @@ class CloudSearchDomainConnectionTest(AWSMockServiceTestCase):
         headers = self.actual_request.headers
 
         self.assertIsNotNone(headers.get('Authorization'))
+
+    def test_no_host_provided(self):
+        # A host must be provided or a error is thrown.
+        with self.assertRaises(ValueError):
+            CloudSearchDomainConnection(
+                aws_access_key_id='aws_access_key_id',
+                aws_secret_access_key='aws_secret_access_key'
+            )

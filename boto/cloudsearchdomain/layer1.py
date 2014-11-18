@@ -60,7 +60,12 @@ class CloudSearchDomainConnection(AWSAuthConnection):
         else:
             del kwargs['region']
         if kwargs.get('host', None) is None:
-            kwargs['host'] = region.endpoint
+            raise ValueError(
+                'The argument, host, must be provided when creating a '
+                'CloudSearchDomainConnection because its methods require the '
+                'specific domain\'s endpoint in order to successfully make '
+                'requests to that CloudSearch Domain.'
+            )
         super(CloudSearchDomainConnection, self).__init__(**kwargs)
         self.region = region
     
