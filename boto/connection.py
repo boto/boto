@@ -793,17 +793,17 @@ class AWSAuthConnection(object):
         else:
             sock = socket.create_connection((self.proxy, int(self.proxy_port)))
         boto.log.debug("Proxy connection: CONNECT %s HTTP/1.0\r\n", host)
-        sock.sendall("CONNECT %s HTTP/1.0\r\n" % host)
-        sock.sendall("User-Agent: %s\r\n" % UserAgent)
+        sock.sendall(("CONNECT %s HTTP/1.0\r\n" % host).encode())
+        sock.sendall(("User-Agent: %s\r\n" % UserAgent).encode())
         if self.proxy_user and self.proxy_pass:
             for k, v in self.get_proxy_auth_header().items():
-                sock.sendall("%s: %s\r\n" % (k, v))
+                sock.sendall(("%s: %s\r\n" % (k, v)).encode())
             # See discussion about this config option at
             # https://groups.google.com/forum/?fromgroups#!topic/boto-dev/teenFvOq2Cc
             if config.getbool('Boto', 'send_crlf_after_proxy_auth_headers', False):
-                sock.sendall("\r\n")
+                sock.sendall("\r\n".encode())
         else:
-            sock.sendall("\r\n")
+            sock.sendall("\r\n".encode())
         resp = http_client.HTTPResponse(sock, strict=True, debuglevel=self.debug)
         resp.begin()
 
