@@ -180,7 +180,7 @@
         "us-gov-west-1": "us-gov-west-1.elasticmapreduce.amazonaws.com",
         "us-west-1": "us-west-1.elasticmapreduce.amazonaws.com",
         "us-west-2": "us-west-2.elasticmapreduce.amazonaws.com",
-        "eu-central-1": "eu-central-1.elasticmapreduce.amazonaws.com"
+        "eu-central-1": "elasticmapreduce.eu-central-1.amazonaws.com"
     },
     "elastictranscoder": {
         "ap-northeast-1": "elastictranscoder.ap-northeast-1.amazonaws.com",
