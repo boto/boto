@@ -64,6 +64,10 @@ class StepId(Arg):
     pass
 
 
+class SupportedProduct(Arg):
+    pass
+
+
 class JobFlowStepList(EmrObject):
     def __ini__(self, connection=None):
         self.connection = connection
@@ -190,6 +194,9 @@ class JobFlow(EmrObject):
         elif name == 'BootstrapActions':
             self.bootstrapactions = ResultSet([('member', BootstrapAction)])
             return self.bootstrapactions
+        elif name == 'SupportedProducts':
+            self.supported_products = ResultSet([('member', SupportedProduct)])
+            return self.supported_products
         else:
             return None
 

@@ -42,6 +42,21 @@ JOB_FLOW_EXAMPLE = b"""
           <StartDateTime>2009-01-28T21:49:16Z</StartDateTime>
           <State>STARTING</State>
         </ExecutionStatusDetail>
+        <BootstrapActions>
+          <member>
+            <BootstrapActionConfig>
+              <ScriptBootstrapAction>
+                <Args/>
+                <Path>s3://elasticmapreduce/libs/hue/install-hue</Path>
+              </ScriptBootstrapAction>
+              <Name>Install Hue</Name>
+            </BootstrapActionConfig>
+          </member>
+        </BootstrapActions>
+        <VisibleToAllUsers>true</VisibleToAllUsers>
+        <SupportedProducts>
+          <member>Hue</member>
+        </SupportedProducts>
         <Name>MyJobFlowName</Name>
         <LogUri>mybucket/subdir/</LogUri>
         <Steps>
