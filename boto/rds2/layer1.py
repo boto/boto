@@ -3761,7 +3761,7 @@ class RDSConnection(AWSQueryConnection):
         body = response.read()
         boto.log.debug(body)
         if type(body) == bytes:
-            body = body.decode(encoding='UTF-8')
+            body = body.decode('utf-8')
         if response.status == 200:
             return json.loads(body)
         else:
