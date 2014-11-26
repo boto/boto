@@ -1079,18 +1079,30 @@ class Table(object):
             using=FILTER_OPERATORS
         )
 
-        raw_results = self.connection.query(
-            self.table_name,
-            index_name=index,
-            consistent_read=consistent,
-            select='COUNT',
-            key_conditions=key_conditions,
-            query_filter=built_query_filter,
-            conditional_operator=conditional_operator,
-            limit=limit,
-            scan_index_forward=scan_index_forward,
-        )
-        return int(raw_results.get('Count', 0))
+        count = 0
+        exclusive_start_key = None
+        while(True):
+            raw_results = self.connection.query(
+                self.table_name,
+                index_name=index,
+                consistent_read=consistent,
+                select='COUNT',
+                key_conditions=key_conditions,
+                query_filter=built_query_filter,
+                conditional_operator=conditional_operator,
+                limit=limit,
+                exclusive_start_key=exclusive_start_key,
+                scan_index_forward=scan_index_forward,
+            )
+            count += int(raw_results.get('Count', 0))
+
+            if 'LastEvaluatedKey' in raw_results and raw_results['LastEvaluatedKey']:
+                exclusive_start_key=raw_results['LastEvaluatedKey']
+            else:
+                break
+
+        return count
+        
 
     def _query(self, limit=None, index=None, reverse=False, consistent=False,
                exclusive_start_key=None, select=None, attributes_to_get=None,
