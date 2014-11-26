@@ -27,7 +27,7 @@ from tests.unit import AWSMockServiceTestCase
 
 from boto.emr.connection import EmrConnection
 from boto.emr.emrobject import BootstrapAction, BootstrapActionList, \
-                               ClusterStatus, ClusterSummaryList, \
+                               ClusterStateChangeReason, ClusterStatus, ClusterSummaryList, \
                                ClusterSummary, ClusterTimeline, InstanceInfo, \
                                InstanceList, InstanceGroupInfo, \
                                InstanceGroup, InstanceGroupList, JobFlow, \
@@ -110,6 +110,9 @@ class TestListClusters(AWSMockServiceTestCase):
         self.assertEqual(response.clusters[0].status.timeline.readydatetime, '2014-01-24T01:25:26Z')
         self.assertEqual(response.clusters[0].status.timeline.enddatetime, '2014-01-24T02:19:46Z')
 
+        self.assertTrue(isinstance(response.clusters[0].status.statechangereason, ClusterStateChangeReason))
+        self.assertEqual(response.clusters[0].status.statechangereason.code, 'USER_REQUEST')
+        self.assertEqual(response.clusters[0].status.statechangereason.message, 'Terminated by user request')
 
     def test_list_clusters_created_before(self):
         self.set_http_response(status_code=200)

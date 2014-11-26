@@ -208,6 +208,11 @@ class ClusterTimeline(EmrObject):
         'EndDateTime'
     ])
 
+class ClusterStateChangeReason(EmrObject):
+    Fields = set([
+        'Code',
+        'Message'
+    ])
 
 class ClusterStatus(EmrObject):
     Fields = set([
@@ -224,6 +229,9 @@ class ClusterStatus(EmrObject):
         if name == 'Timeline':
             self.timeline = ClusterTimeline()
             return self.timeline
+        elif name == 'StateChangeReason':
+            self.statechangereason = ClusterStateChangeReason()
+            return self.statechangereason
         else:
             return None
 
