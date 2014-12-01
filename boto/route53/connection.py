@@ -47,6 +47,19 @@ HZXML = """<?xml version="1.0" encoding="UTF-8"?>
   </HostedZoneConfig>
 </CreateHostedZoneRequest>"""
 
+HZPXML = """<?xml version="1.0" encoding="UTF-8"?>
+<CreateHostedZoneRequest xmlns="%(xmlns)s">
+  <Name>%(name)s</Name>
+  <VPC>
+    <VPCId>%(VPCId)s</VPCId>
+    <VPCRegion>%(VPCRegion)s</VPCRegion>
+  </VPC>
+  <CallerReference>%(caller_ref)s</CallerReference>
+  <HostedZoneConfig>
+    <Comment>%(comment)s</Comment>
+  </HostedZoneConfig>
+</CreateHostedZoneRequest>"""
+
 # boto.set_stream_logger('dns')
 
 
@@ -162,7 +175,8 @@ class Route53Connection(AWSAuthConnection):
             if zone['Name'] == hosted_zone_name:
                 return self.get_hosted_zone(zone['Id'].split('/')[-1])
 
-    def create_hosted_zone(self, domain_name, caller_ref=None, comment=''):
+    def create_hosted_zone(self, domain_name, caller_ref=None, comment='', 
+                           private_zone=False, VPCId=None, VPCRegion=None):
         """
         Create a new Hosted Zone.  Returns a Python data structure with
         information about the newly created Hosted Zone.
@@ -192,11 +206,20 @@ class Route53Connection(AWSAuthConnection):
         """
         if caller_ref is None:
             caller_ref = str(uuid.uuid4())
-        params = {'name': domain_name,
-                  'caller_ref': caller_ref,
-                  'comment': comment,
-                  'xmlns': self.XMLNameSpace}
-        xml_body = HZXML % params
+        if private_zone:
+            params = {'name': domain_name,
+                      'caller_ref': caller_ref,
+                      'comment': comment,
+                      'VPCId' : VPCId,
+                      'VPCRegion' : VPCRegion,
+                      'xmlns': self.XMLNameSpace}
+            xml_body = HZPXML % params
+        else:
+            params = {'name': domain_name,
+                      'caller_ref': caller_ref,
+                      'comment': comment,
+                      'xmlns': self.XMLNameSpace}
+            xml_body = HZXML % params
         uri = '/%s/hostedzone' % self.Version
         response = self.make_request('POST', uri,
                                      {'Content-Type': 'text/xml'}, xml_body)
@@ -451,7 +474,7 @@ class Route53Connection(AWSAuthConnection):
         h.parse(body)
         return e
 
-    def create_zone(self, name):
+    def create_zone(self, name, private_zone=False, VPCId=None, VPCRegion=None):
         """
         Create a new Hosted Zone.  Returns a Zone object for the newly
         created Hosted Zone.
@@ -466,7 +489,7 @@ class Route53Connection(AWSAuthConnection):
             the Amazon Route 53 delegation servers returned in
             response to this request.
         """
-        zone = self.create_hosted_zone(name)
+        zone = self.create_hosted_zone(name, private_zone=private_zone, VPCId=VPCId, VPCRegion=VPCRegion)
         return Zone(self, zone['CreateHostedZoneResponse']['HostedZone'])
 
     def get_zone(self, name):
