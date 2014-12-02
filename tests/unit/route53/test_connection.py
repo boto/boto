@@ -533,8 +533,6 @@ class TestCreateHealthCheckRoute53IpAddress(AWSMockServiceTestCase):
 class TestGetCheckerIpRanges(AWSMockServiceTestCase):
     connection_class = Route53Connection
 
-    super
-
     def default_body(self):
         return b"""
 <GetCheckerIpRangesResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
