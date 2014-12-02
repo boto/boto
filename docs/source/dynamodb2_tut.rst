@@ -629,6 +629,7 @@ during development. Connecting to a running DynamoDB Local server is easy::
     conn = DynamoDBConnection(
         host='localhost',
         port=8000,
+        aws_access_key_id='anything',
         aws_secret_access_key='anything',
         is_secure=False)
 

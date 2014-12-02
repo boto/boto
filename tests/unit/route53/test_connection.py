@@ -530,6 +530,36 @@ class TestCreateHealthCheckRoute53IpAddress(AWSMockServiceTestCase):
 
 
 @attr(route53=True)
+class TestGetCheckerIpRanges(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def default_body(self):
+        return b"""
+<GetCheckerIpRangesResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+   <CheckerIpRanges>
+      <member>54.183.255.128/26</member>
+      <member>54.228.16.0/26</member>
+      <member>54.232.40.64/26</member>
+      <member>177.71.207.128/26</member>
+      <member>176.34.159.192/26</member>
+   </CheckerIpRanges>
+</GetCheckerIpRangesResponse>
+        """
+
+    def test_get_checker_ip_ranges(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_checker_ip_ranges()
+        ip_ranges = response['GetCheckerIpRangesResponse']['CheckerIpRanges']
+
+        self.assertEqual(len(ip_ranges), 5)
+        self.assertIn('54.183.255.128/26', ip_ranges)
+        self.assertIn('54.228.16.0/26', ip_ranges)
+        self.assertIn('54.232.40.64/26', ip_ranges)
+        self.assertIn('177.71.207.128/26', ip_ranges)
+        self.assertIn('176.34.159.192/26', ip_ranges)
+
+
+@attr(route53=True)
 class TestCreateHealthCheckRoute53FQDN(AWSMockServiceTestCase):
     connection_class = Route53Connection
 
