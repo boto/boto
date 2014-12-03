@@ -51,8 +51,8 @@ HZPXML = """<?xml version="1.0" encoding="UTF-8"?>
 <CreateHostedZoneRequest xmlns="%(xmlns)s">
   <Name>%(name)s</Name>
   <VPC>
-    <VPCId>%(VPCId)s</VPCId>
-    <VPCRegion>%(VPCRegion)s</VPCRegion>
+    <VPCId>%(vpc_id)s</VPCId>
+    <VPCRegion>%(vpc_region)s</VPCRegion>
   </VPC>
   <CallerReference>%(caller_ref)s</CallerReference>
   <HostedZoneConfig>
@@ -176,7 +176,7 @@ class Route53Connection(AWSAuthConnection):
                 return self.get_hosted_zone(zone['Id'].split('/')[-1])
 
     def create_hosted_zone(self, domain_name, caller_ref=None, comment='', 
-                           private_zone=False, VPCId=None, VPCRegion=None):
+                           private_zone=False, vpc_id=None, vpc_region=None):
         """
         Create a new Hosted Zone.  Returns a Python data structure with
         information about the newly created Hosted Zone.
@@ -210,8 +210,8 @@ class Route53Connection(AWSAuthConnection):
             params = {'name': domain_name,
                       'caller_ref': caller_ref,
                       'comment': comment,
-                      'VPCId' : VPCId,
-                      'VPCRegion' : VPCRegion,
+                      'vpc_id' : vpc_id,
+                      'vpc_region' : vpc_region,
                       'xmlns': self.XMLNameSpace}
             xml_body = HZPXML % params
         else:
@@ -474,7 +474,7 @@ class Route53Connection(AWSAuthConnection):
         h.parse(body)
         return e
 
-    def create_zone(self, name, private_zone=False, VPCId=None, VPCRegion=None):
+    def create_zone(self, name, private_zone=False, vpc_id=None, vpc_region=None):
         """
         Create a new Hosted Zone.  Returns a Zone object for the newly
         created Hosted Zone.
@@ -489,7 +489,7 @@ class Route53Connection(AWSAuthConnection):
             the Amazon Route 53 delegation servers returned in
             response to this request.
         """
-        zone = self.create_hosted_zone(name, private_zone=private_zone, VPCId=VPCId, VPCRegion=VPCRegion)
+        zone = self.create_hosted_zone(name, private_zone=private_zone, vpc_id=vpc_id, vpc_region=vpc_region)
         return Zone(self, zone['CreateHostedZoneResponse']['HostedZone'])
 
     def get_zone(self, name):
