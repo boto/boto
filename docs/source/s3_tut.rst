@@ -143,7 +143,7 @@ guessing.  The other thing to note is that boto does stream the content
 to and from S3 so you should be able to send and receive large files without
 any problem.
 
-When fetching a key that has already exists, you have two options. If you're
+When fetching a key that already exists, you have two options. If you're
 uncertain whether a key exists (or if you need the metadata set on it, you can
 call ``Bucket.get_key(key_name_here)``. However, if you're sure a key already
 exists within a bucket, you can skip the check for a key on the server.
