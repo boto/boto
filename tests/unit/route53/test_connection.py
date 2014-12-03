@@ -101,6 +101,14 @@ class TestRoute53Connection(AWSMockServiceTestCase):
         # Unpatch.
         self.service_connection._retry_handler = orig_retry
 
+    def test_private_zone_invalid_vpc_400(self):
+        self.set_http_response(status_code=400, header=[
+            ['Code', 'InvalidVPCId'],
+        ])
+
+        with self.assertRaises(DNSServerError) as err:
+            self.service_connection.create_hosted_zone("example.com.", private_zone=True)
+        self.assertTrue('It failed.' in str(err.exception))
 
 @attr(route53=True)
 class TestCreateZoneRoute53(AWSMockServiceTestCase):
@@ -196,12 +204,11 @@ class TestCreatePrivateZoneRoute53(AWSMockServiceTestCase):
         """
     def test_create_private_zone(self):
         self.set_http_response(status_code=201)
-        response = self.service_connection.create_zone("example.com.", private_zone=True, VPCId='vpc-1a2b3c4d', VPCRegion='us-east-1')
+        response = self.service_connection.create_hosted_zone("example.com.", private_zone=True, VPCId='vpc-1a2b3c4d', VPCRegion='us-east-1')
 
-        self.assertTrue(isinstance(response, Zone))
-        
-        
         self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['Config']['PrivateZone'], u'true')
+        self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['VPC']['VPCId'], u'vpc-1a2b3c4d')
+        self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['VPC']['VPCRegion'], u'us-east-1')
 
 
 
