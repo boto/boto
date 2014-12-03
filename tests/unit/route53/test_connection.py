@@ -153,7 +153,7 @@ class TestCreateZoneRoute53(AWSMockServiceTestCase):
         self.assertEqual(response['CreateHostedZoneResponse']['DelegationSet']['NameServers'],
                          ['ns-100.awsdns-01.com', 'ns-1000.awsdns-01.co.uk', 'ns-1000.awsdns-01.org', 'ns-900.awsdns-01.net'])
 
-        self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['Config']['PrivateZone'], ['false'])
+        self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['Config']['PrivateZone'], u'false')
 
 @attr(route53=True)
 class TestGetZoneRoute53(AWSMockServiceTestCase):
