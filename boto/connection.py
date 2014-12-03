@@ -903,7 +903,7 @@ class AWSAuthConnection(object):
         boto.log.debug('Params: %s' % request.params)
         response = None
         body = None
-        e = None
+        exception = None
         if override_num_retries is None:
             num_retries = config.getint('Boto', 'num_retries', self.num_retries)
         else:
@@ -998,11 +998,13 @@ class AWSAuthConnection(object):
                     response = None
                     continue
             except PleaseRetryException as e:
+                exception = e
                 boto.log.debug('encountered a retry exception: %s' % e)
                 connection = self.new_http_connection(request.host, request.port,
                                                       self.is_secure)
                 response = e.response
             except self.http_exceptions as e:
+                exception = e
                 for unretryable in self.http_unretryable_exceptions:
                     if isinstance(e, unretryable):
                         boto.log.debug(
@@ -1023,7 +1025,7 @@ class AWSAuthConnection(object):
             self.request_hook.handle_request_data(request, response, error=True)
         if response:
             raise BotoServerError(response.status, response.reason, body)
-        elif e:
+        elif exception:
             raise
         else:
             msg = 'Please report this exception as a Boto Issue!'
