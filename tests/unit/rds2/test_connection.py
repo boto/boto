@@ -40,6 +40,7 @@ class TestRDS2Connection(AWSMockServiceTestCase):
         "DescribeDBInstancesResult": {
             "DBInstances": [{
                 "DBInstance": {
+                    "StorageType": "io1",
                     "Iops": 2000,
                     "BackupRetentionPeriod": 1,
                     "MultiAZ": false,
@@ -154,6 +155,7 @@ class TestRDS2Connection(AWSMockServiceTestCase):
         self.assertEqual(db['PreferredMaintenanceWindow'],
                          'wed:06:30-wed:07:00')
         self.assertEqual(db['MultiAZ'], False)
+        self.assertEqual(db['StorageType'], 'io1')
         self.assertEqual(db['Iops'], 2000)
         self.assertEqual(db['PendingModifiedValues'], None)
         self.assertEqual(
