@@ -2663,6 +2663,33 @@ class TableTestCase(unittest.TestCase):
         self.assertIn('limit', mock_query.call_args[1])
         self.assertEqual(10, mock_query.call_args[1]['limit'])
 
+    def test_query_count_paginated(self):
+        def return_side_effect(*args, **kwargs):
+            if kwargs.get('exclusive_start_key'):
+                return {'Count': 10, 'LastEvaluatedKey': None}
+            else:
+                return {
+                    'Count': 20,
+                    'LastEvaluatedKey': {
+                        'username': {
+                            'S': 'johndoe'
+                        },
+                        'date_joined': {
+                            'N': '4118642633'
+                        }
+                    }
+                }
+
+        with mock.patch.object(
+                self.users.connection,
+                'query',
+                side_effect=return_side_effect
+        ) as mock_query:
+            count = self.users.query_count(username__eq='johndoe')
+            self.assertTrue(isinstance(count, int))
+            self.assertEqual(30, count)
+            self.assertEqual(mock_query.call_count, 2)
+
     def test_private_batch_get(self):
         expected = {
             "ConsumedCapacity": {
