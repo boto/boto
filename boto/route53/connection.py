@@ -203,6 +203,17 @@ class Route53Connection(AWSAuthConnection):
         :param comment: Any comments you want to include about the hosted
             zone.
 
+        :type private_zone: bool
+        :param private_zone: Set True if creating a private hosted zone.
+
+        :type vpc_id: str
+        :param vpc_id: When creating a private hosted zone, the VPC Id to
+            associate to is required.
+
+        :type vpc_region: str
+        :param vpc_id: When creating a private hosted zone, the region of
+            the associated VPC is required.
+
         """
         if caller_ref is None:
             caller_ref = str(uuid.uuid4())
@@ -488,6 +499,17 @@ class Route53Connection(AWSAuthConnection):
             It is also the name you will delegate from your registrar to
             the Amazon Route 53 delegation servers returned in
             response to this request.
+
+        :type private_zone: bool
+        :param private_zone: Set True if creating a private hosted zone.
+
+        :type vpc_id: str
+        :param vpc_id: When creating a private hosted zone, the VPC Id to
+            associate to is required.
+
+        :type vpc_region: str
+        :param vpc_id: When creating a private hosted zone, the region of
+            the associated VPC is required.
         """
         zone = self.create_hosted_zone(name, private_zone=private_zone, vpc_id=vpc_id, vpc_region=vpc_region)
         return Zone(self, zone['CreateHostedZoneResponse']['HostedZone'])
