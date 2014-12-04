@@ -101,6 +101,14 @@ class TestRoute53Connection(AWSMockServiceTestCase):
         # Unpatch.
         self.service_connection._retry_handler = orig_retry
 
+    def test_private_zone_invalid_vpc_400(self):
+        self.set_http_response(status_code=400, header=[
+            ['Code', 'InvalidVPCId'],
+        ])
+
+        with self.assertRaises(DNSServerError) as err:
+            self.service_connection.create_hosted_zone("example.com.", private_zone=True)
+        self.assertTrue('It failed.' in str(err.exception))
 
 @attr(route53=True)
 class TestCreateZoneRoute53(AWSMockServiceTestCase):
@@ -153,7 +161,56 @@ class TestCreateZoneRoute53(AWSMockServiceTestCase):
         self.assertEqual(response['CreateHostedZoneResponse']['DelegationSet']['NameServers'],
                          ['ns-100.awsdns-01.com', 'ns-1000.awsdns-01.co.uk', 'ns-1000.awsdns-01.org', 'ns-900.awsdns-01.net'])
 
-        self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['Config']['PrivateZone'], ['false'])
+        self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['Config']['PrivateZone'], u'false')
+
+@attr(route53=True)
+class TestCreatePrivateZoneRoute53(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestCreatePrivateZoneRoute53, self).setUp()
+
+    def default_body(self):
+        return b"""
+<CreateHostedZoneResponse xmlns="https://route53.amazonaws.com/doc/2012-02-29/">
+    <HostedZone>
+        <Id>/hostedzone/Z11111</Id>
+        <Name>example.com.</Name>
+        <VPC>
+           <VPCId>vpc-1a2b3c4d</VPCId>
+           <VPCRegion>us-east-1</VPCRegion>
+        </VPC>
+        <CallerReference>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</CallerReference>
+        <Config>
+            <Comment></Comment>
+            <PrivateZone>true</PrivateZone>
+        </Config>
+        <ResourceRecordSetCount>2</ResourceRecordSetCount>
+    </HostedZone>
+    <ChangeInfo>
+        <Id>/change/C1111111111111</Id>
+        <Status>PENDING</Status>
+        <SubmittedAt>2014-02-02T10:19:29.928Z</SubmittedAt>
+    </ChangeInfo>
+    <DelegationSet>
+        <NameServers>
+            <NameServer>ns-100.awsdns-01.com</NameServer>
+            <NameServer>ns-1000.awsdns-01.co.uk</NameServer>
+            <NameServer>ns-1000.awsdns-01.org</NameServer>
+            <NameServer>ns-900.awsdns-01.net</NameServer>
+        </NameServers>
+    </DelegationSet>
+</CreateHostedZoneResponse>
+        """
+    def test_create_private_zone(self):
+        self.set_http_response(status_code=201)
+        response = self.service_connection.create_hosted_zone("example.com.", private_zone=True, VPCId='vpc-1a2b3c4d', VPCRegion='us-east-1')
+
+        self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['Config']['PrivateZone'], u'true')
+        self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['VPC']['VPCId'], u'vpc-1a2b3c4d')
+        self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['VPC']['VPCRegion'], u'us-east-1')
+
+
 
 @attr(route53=True)
 class TestGetZoneRoute53(AWSMockServiceTestCase):

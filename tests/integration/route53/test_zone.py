@@ -27,7 +27,7 @@ from tests.compat import unittest
 from nose.plugins.attrib import attr
 from boto.route53.connection import Route53Connection
 from boto.exception import TooManyRecordsException
-
+from boto.vpc import VPCConnection
 
 @attr(route53=True)
 class TestRoute53Zone(unittest.TestCase):
@@ -160,6 +160,30 @@ class TestRoute53Zone(unittest.TestCase):
         self.zone.delete_cname('www.%s' % self.base_domain)
         self.zone.delete_mx(self.base_domain)
         self.zone.delete()
+
+@attr(route53=True)
+class TestRoute53PrivateZone(unittest.TestCase):
+    @classmethod
+    def setUpClass(self):
+        self.route53 = Route53Connection()
+        self.base_domain = 'boto-private-zone-test-%s.com' % str(int(time.time()))
+        self.vpc = VPCConnection()
+        self.test_vpc = self.vpc.create_vpc(cidr_block='10.11.12.13/16')
+        # tag the vpc to make it easily identifiable if things go spang
+        self.test_vpc.add_tag("Name", self.base_domain)
+        zone = self.route53.get_zone(self.base_domain)
+        if zone is not None:
+            zone.delete()
+
+    def test_create_private_zone(self):
+        zone = self.route53.create_hosted_zone(self.base_domain, private_zone=True, VPCId=self.test_vpc.id, VPCRegion='us-east-1')
+
+    @classmethod
+    def tearDownClass(self):
+        zone = self.route53.get_zone(self.base_domain)
+        if zone is not None:
+            zone.delete()
+        self.test_vpc.delete()
 
 if __name__ == '__main__':
     unittest.main(verbosity=3)
