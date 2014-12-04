@@ -168,7 +168,7 @@ class TestRoute53PrivateZone(unittest.TestCase):
         self.route53 = Route53Connection()
         self.base_domain = 'boto-private-zone-test-%s.com' % str(int(time.time()))
         self.vpc = VPCConnection()
-        self.test_vpc = self.vpc.create_vpc(cidr_block='10.11.12.13/16')
+        self.test_vpc = self.vpc.create_vpc(cidr_block='10.11.0.0/16')
         # tag the vpc to make it easily identifiable if things go spang
         self.test_vpc.add_tag("Name", self.base_domain)
         zone = self.route53.get_zone(self.base_domain)
@@ -176,7 +176,7 @@ class TestRoute53PrivateZone(unittest.TestCase):
             zone.delete()
 
     def test_create_private_zone(self):
-        zone = self.route53.create_hosted_zone(self.base_domain, private_zone=True, VPCId=self.test_vpc.id, VPCRegion='us-east-1')
+        zone = self.route53.create_hosted_zone(self.base_domain, private_zone=True, vpc_id=self.test_vpc.id, vpc_region='us-east-1')
 
     @classmethod
     def tearDownClass(self):
