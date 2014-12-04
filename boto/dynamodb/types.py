@@ -114,6 +114,10 @@ def get_dynamodb_type(val):
             dynamodb_type = 'BS'
     elif is_binary(val):
         dynamodb_type = 'B'
+    elif isinstance(val, dict):
+        return 'M'
+    elif isinstance(val, list):
+        return 'L'
     if dynamodb_type is None:
         msg = 'Unsupported type "%s" for value "%s"' % (type(val), val)
         raise TypeError(msg)
@@ -266,10 +270,13 @@ class Dynamizer(object):
 
     def _encode_n(self, attr):
         try:
-            if isinstance(attr, float) and not hasattr(Decimal, 'from_float'):
-                # python2.6 does not support creating Decimals directly
-                # from floats so we have to do this ourself.
-                n = str(float_to_decimal(attr))
+            if isinstance(attr, float):
+                if not hasattr(Decimal, 'from_float'):
+                    # python2.6 does not support creating Decimals directly
+                    # from floats so we have to do this ourself.
+                    n = str(float_to_decimal(attr))
+                else:
+                    n = str(DYNAMODB_CONTEXT.create_decimal(repr(attr)))
             else:
                 n = str(DYNAMODB_CONTEXT.create_decimal(attr))
             if list(filter(lambda x: x in n, ('Infinity', 'NaN'))):
@@ -301,13 +308,22 @@ class Dynamizer(object):
     def _encode_bs(self, attr):
         return [self._encode_b(n) for n in attr]
 
+    def _encode_m(self, attr):
+        result = {}
+        for k, v in attr.items():
+            result[k] = self.encode(v)
+        return result
+
+    def _encode_l(self, attr):
+        return [self.encode(v) for v in attr]
+
     def decode(self, attr):
         """
         Takes the format returned by DynamoDB and constructs
         the appropriate python type.
 
         """
-        if len(attr) > 1 or not attr:
+        if isinstance(attr, (int, float, Decimal)) or len(attr) > 1 or not attr:
             return attr
         dynamodb_type = list(attr.keys())[0]
         if dynamodb_type.lower() == dynamodb_type:
@@ -337,6 +353,15 @@ class Dynamizer(object):
 
     def _decode_bs(self, attr):
         return set(map(self._decode_b, attr))
+        
+    def _decode_l(self, attr):
+        return [self.decode(v) for v in attr]
+
+    def _decode_m(self, attr):
+        result = {}
+        for k, v in attr.items():
+            result[k] = self.decode(v)
+        return result
 
 
 class LossyFloatDynamizer(Dynamizer):
