@@ -39,7 +39,6 @@ class S3RegionInfo(RegionInfo):
         :rtype: Connection object
         :return: The connection to this regions endpoint
         """
-
         if self.connection_cls:
             return self.connection_cls(host=self.endpoint, **kw_params)
 
@@ -62,8 +61,14 @@ def regions():
 def connect_to_region(region_name, **kw_params):
     for region in regions():
         if 'host' in kw_params.keys():
-            region.endpoint = kw_params['host']
-            del kw_params['host']
+            # Make sure the host specified is not nothing
+            if kw_params['host'] not in ['', None]:
+                region.endpoint = kw_params['host']
+                del kw_params['host']
+                return region.connect(**kw_params)
+            # If it is nothing then remove it from kw_params and proceed with default
+            else:
+                del kw_params['host']
         if region.name == region_name:
             return region.connect(**kw_params)
     return None
