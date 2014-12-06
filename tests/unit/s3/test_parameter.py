@@ -42,13 +42,17 @@ class S3SpecifyHost(unittest.TestCase):
     s3 = True
 
     def testWithNonAWSHost(self):
-        connect_args = dict({'host':'www.not-a-website.com'})
+        connect_args = dict({'host':'www.not-a-website.com',
+                             'aws_access_key_id':'less',
+                             'aws_secret_access_key':'more'})
         connection = boto.s3.connect_to_region('us-east-1', **connect_args)
         self.assertEquals('S3Connection:www.not-a-website.com', str(connection))
         self.assertEquals(boto.s3.connection.S3Connection, type(connection))
 
     def testSuccessWithHostOverrideRegion(self):
-        connect_args = dict({'host':'s3.amazonaws.com'})
+        connect_args = dict({'host':'s3.amazonaws.com',
+                             'aws_access_key_id':'less',
+                             'aws_secret_access_key':'more'})
         connection = boto.s3.connect_to_region('us-west-2', **connect_args)
         self.assertEquals('S3Connection:s3.amazonaws.com', str(connection))
         self.assertEquals(boto.s3.connection.S3Connection, type(connection))
@@ -64,13 +68,17 @@ class S3SpecifyHost(unittest.TestCase):
         self.assertEquals(boto.s3.connection.S3Connection, type(connection))
 
     def testDefaultWithInvalidHost(self):
-        connect_args = dict({'host':''})
+        connect_args = dict({'host':'',
+                             'aws_access_key_id':'less',
+                             'aws_secret_access_key':'more'})
         connection = boto.s3.connect_to_region('us-west-2', **connect_args)
         self.assertEquals('S3Connection:s3-us-west-2.amazonaws.com', str(connection))
         self.assertEquals(boto.s3.connection.S3Connection, type(connection))
 
     def testDefaultWithInvalidHostNone(self):
-        connect_args = dict({'host':None})
+        connect_args = dict({'host':None,
+                             'aws_access_key_id':'less',
+                             'aws_secret_access_key':'more'})
         connection = boto.s3.connect_to_region('us-east-1', **connect_args)
         self.assertEquals('S3Connection:s3.amazonaws.com', str(connection))
         self.assertEquals(boto.s3.connection.S3Connection, type(connection))
