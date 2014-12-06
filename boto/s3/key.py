@@ -426,21 +426,17 @@ class Key(object):
         :param validate_dst_bucket: If True, will validate the dst_bucket
             by using an extra list request.
         """
-        if new_storage_class == 'STANDARD':
+        if new_storage_class in ('STANDARD', 'REDUCED_REDUNDANCY'):
             return self.copy(self.bucket.name, self.name,
-                             reduced_redundancy=False, preserve_acl=True,
-                             validate_dst_bucket=validate_dst_bucket)
-        elif new_storage_class == 'REDUCED_REDUNDANCY':
-            return self.copy(self.bucket.name, self.name,
-                             reduced_redundancy=True, preserve_acl=True,
+                             storage_class=new_storage_class, preserve_acl=True,
                              validate_dst_bucket=validate_dst_bucket)
         else:
             raise BotoClientError('Invalid storage class: %s' %
                                   new_storage_class)
 
     def copy(self, dst_bucket, dst_key, metadata=None,
-             reduced_redundancy=False, preserve_acl=False,
-             encrypt_key=False, validate_dst_bucket=True):
+             storage_class='STANDARD', preserve_acl=False, encrypt_key=False, 
+             validate_dst_bucket=True):
         """
         Copy this Key to another bucket.
 
@@ -456,8 +452,9 @@ class Key(object):
             source key being copied.  If no metadata is supplied, the
             source key's metadata will be copied to the new key.
 
-        :type reduced_redundancy: bool
-        :param reduced_redundancy: If True, this will force the
+        :type storage_class: string
+        :param storage_class: The storage class of the new key.  STANDARD 
+            is default.  If REDUCED_REDUNDANCY, this will force the
             storage class of the new Key to be REDUCED_REDUNDANCY
             regardless of the storage class of the key being copied.
             The Reduced Redundancy Storage (RRS) feature of S3,
@@ -487,10 +484,6 @@ class Key(object):
         """
         dst_bucket = self.bucket.connection.lookup(dst_bucket,
                                                    validate_dst_bucket)
-        if reduced_redundancy:
-            storage_class = 'REDUCED_REDUNDANCY'
-        else:
-            storage_class = self.storage_class
         return dst_bucket.copy_key(dst_key, self.bucket.name,
                                    self.name, metadata,
                                    storage_class=storage_class,
