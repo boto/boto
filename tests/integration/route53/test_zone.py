@@ -177,7 +177,8 @@ class TestRoute53PrivateZone(unittest.TestCase):
 
     def test_create_private_zone(self):
         zone = self.route53.create_hosted_zone(self.base_domain, private_zone=True, 
-                                               vpc_id=self.test_vpc.id, vpc_region='us-east-1')
+                                               vpc_id=self.test_vpc.id, 
+                                               vpc_region='us-east-1')
 
     @classmethod
     def tearDownClass(self):
