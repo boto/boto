@@ -159,6 +159,22 @@ class LaunchConfiguration(object):
         :type associate_public_ip_address: bool
         :param associate_public_ip_address: Used for Auto Scaling groups that launch instances into an Amazon Virtual Private Cloud.
             Specifies whether to assign a public IP address to each instance launched in a Amazon VPC.
+
+        :type volume_type: string
+        :param volume_type: The type of the volume.
+            Valid values are: standard | io1 | gp2.
+
+        :type delete_on_termination: bool
+        :param delete_on_termination: Whether the device will be deleted
+            when the instance is terminated.
+
+        :type iops: int
+        :param iops: The provisioned IOPs you want to associate with this volume.
+
+        :type use_block_device_types: bool
+        :param use_block_device_types: Specifies whether to return
+            described Launch Configs with block device mappings containing.
+
         """
         self.connection = connection
         self.name = name
