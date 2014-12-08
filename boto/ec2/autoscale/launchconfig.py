@@ -160,7 +160,7 @@ class LaunchConfiguration(object):
         :param associate_public_ip_address: Used for Auto Scaling groups that launch instances into an Amazon Virtual Private Cloud.
             Specifies whether to assign a public IP address to each instance launched in a Amazon VPC.
 
-        :type volume_type: string
+        :type volume_type: str
         :param volume_type: The type of the volume.
             Valid values are: standard | io1 | gp2.
 
