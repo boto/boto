@@ -335,7 +335,8 @@ class Route53Connection(AWSAuthConnection):
             raise exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
-        e = boto.jsonresponse.Element(list_marker='HealthChecks', item_marker=('HealthCheck',))
+        e = boto.jsonresponse.Element(list_marker='HealthChecks', 
+                                      item_marker=('HealthCheck',))
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
@@ -511,7 +512,8 @@ class Route53Connection(AWSAuthConnection):
         :param vpc_id: When creating a private hosted zone, the region of
             the associated VPC is required.
         """
-        zone = self.create_hosted_zone(name, private_zone=private_zone, vpc_id=vpc_id, vpc_region=vpc_region)
+        zone = self.create_hosted_zone(name, private_zone=private_zone, 
+                                       vpc_id=vpc_id, vpc_region=vpc_region)
         return Zone(self, zone['CreateHostedZoneResponse']['HostedZone'])
 
     def get_zone(self, name):

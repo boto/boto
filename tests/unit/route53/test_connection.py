@@ -159,7 +159,8 @@ class TestCreateZoneRoute53(AWSMockServiceTestCase):
         response = self.service_connection.create_hosted_zone("example.com.", "my_ref", "this is a comment")
 
         self.assertEqual(response['CreateHostedZoneResponse']['DelegationSet']['NameServers'],
-                         ['ns-100.awsdns-01.com', 'ns-1000.awsdns-01.co.uk', 'ns-1000.awsdns-01.org', 'ns-900.awsdns-01.net'])
+                         ['ns-100.awsdns-01.com', 'ns-1000.awsdns-01.co.uk', 
+                             'ns-1000.awsdns-01.org', 'ns-900.awsdns-01.net'])
 
         self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['Config']['PrivateZone'], u'false')
 
@@ -204,7 +205,8 @@ class TestCreatePrivateZoneRoute53(AWSMockServiceTestCase):
         """
     def test_create_private_zone(self):
         self.set_http_response(status_code=201)
-        response = self.service_connection.create_hosted_zone("example.com.", private_zone=True, vpc_id='vpc-1a2b3c4d', vpc_region='us-east-1')
+        response = self.service_connection.create_hosted_zone("example.com.", private_zone=True, 
+                                                              vpc_id='vpc-1a2b3c4d', vpc_region='us-east-1')
 
         self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['Config']['PrivateZone'], u'true')
         self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']['VPC']['VPCId'], u'vpc-1a2b3c4d')
@@ -305,7 +307,8 @@ class TestGetHostedZoneRoute53(AWSMockServiceTestCase):
         self.assertEqual(response['GetHostedZoneResponse']['HostedZone']['Id'], '/hostedzone/Z1111')
         self.assertEqual(response['GetHostedZoneResponse']['HostedZone']['Name'], 'example.com.')
         self.assertEqual(response['GetHostedZoneResponse']['DelegationSet']['NameServers'],
-                         ['ns-1000.awsdns-40.org', 'ns-200.awsdns-30.com', 'ns-900.awsdns-50.net', 'ns-1000.awsdns-00.co.uk'])
+                         ['ns-1000.awsdns-40.org', 'ns-200.awsdns-30.com', 
+                          'ns-900.awsdns-50.net', 'ns-1000.awsdns-00.co.uk'])
 
 
 @attr(route53=True)
