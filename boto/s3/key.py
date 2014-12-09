@@ -495,7 +495,8 @@ class Key(object):
                                    self.name, metadata,
                                    storage_class=storage_class,
                                    preserve_acl=preserve_acl,
-                                   encrypt_key=encrypt_key)
+                                   encrypt_key=encrypt_key,
+                                   src_version_id=self.version_id)
 
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
