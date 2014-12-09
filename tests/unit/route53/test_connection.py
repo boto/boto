@@ -160,7 +160,7 @@ class TestCreateZoneRoute53(AWSMockServiceTestCase):
         self.set_http_response(status_code=201)
         response = self.service_connection.create_hosted_zone("example.com.",
                                                               "my_ref",
-                                                              "this is a comment")
+                                                              "a comment")
 
         self.assertEqual(response['CreateHostedZoneResponse']
                                  ['DelegationSet']['NameServers'],
@@ -216,18 +216,18 @@ class TestCreatePrivateZoneRoute53(AWSMockServiceTestCase):
 
     def test_create_private_zone(self):
         self.set_http_response(status_code=201)
-        response = self.service_connection.create_hosted_zone("example.com.",
-                                                              private_zone=True,
-                                                              vpc_id='vpc-1a2b3c4d',
-                                                              vpc_region='us-east-1'
-                                                              )
+        r = self.service_connection.create_hosted_zone("example.com.",
+                                                       private_zone=True,
+                                                       vpc_id='vpc-1a2b3c4d',
+                                                       vpc_region='us-east-1'
+                                                       )
 
-        self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']
-                                 ['Config']['PrivateZone'], u'true')
-        self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']
-                                 ['VPC']['VPCId'], u'vpc-1a2b3c4d')
-        self.assertEqual(response['CreateHostedZoneResponse']['HostedZone']
-                                 ['VPC']['VPCRegion'], u'us-east-1')
+        self.assertEqual(r['CreateHostedZoneResponse']['HostedZone']
+                          ['Config']['PrivateZone'], u'true')
+        self.assertEqual(r['CreateHostedZoneResponse']['HostedZone']
+                          ['VPC']['VPCId'], u'vpc-1a2b3c4d')
+        self.assertEqual(r['CreateHostedZoneResponse']['HostedZone']
+                          ['VPC']['VPCRegion'], u'us-east-1')
 
 
 @attr(route53=True)
@@ -320,9 +320,14 @@ class TestGetHostedZoneRoute53(AWSMockServiceTestCase):
         self.set_http_response(status_code=201)
         response = self.service_connection.get_hosted_zone("Z1111")
 
-        self.assertEqual(response['GetHostedZoneResponse']['HostedZone']['Id'], '/hostedzone/Z1111')
-        self.assertEqual(response['GetHostedZoneResponse']['HostedZone']['Name'], 'example.com.')
-        self.assertEqual(response['GetHostedZoneResponse']['DelegationSet']['NameServers'],
+        self.assertEqual(response['GetHostedZoneResponse']
+                                 ['HostedZone']['Id'],
+                         '/hostedzone/Z1111')
+        self.assertEqual(response['GetHostedZoneResponse']
+                                 ['HostedZone']['Name'],
+                         'example.com.')
+        self.assertEqual(response['GetHostedZoneResponse']
+                                 ['DelegationSet']['NameServers'],
                          ['ns-1000.awsdns-40.org', 'ns-200.awsdns-30.com',
                           'ns-900.awsdns-50.net', 'ns-1000.awsdns-00.co.uk'])
 
@@ -414,7 +419,9 @@ class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
 
     def test_get_all_rr_sets(self):
         self.set_http_response(status_code=200)
-        response = self.service_connection.get_all_rrsets("Z1111", "A", "example.com.")
+        response = self.service_connection.get_all_rrsets("Z1111",
+                                                          "A",
+                                                          "example.com.")
 
         self.assertIn(self.actual_request.path,
                       ("/2013-04-01/hostedzone/Z1111/rrset?type=A&name=example.com.",
