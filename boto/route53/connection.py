@@ -175,7 +175,7 @@ class Route53Connection(AWSAuthConnection):
             if zone['Name'] == hosted_zone_name:
                 return self.get_hosted_zone(zone['Id'].split('/')[-1])
 
-    def create_hosted_zone(self, domain_name, caller_ref=None, comment='', 
+    def create_hosted_zone(self, domain_name, caller_ref=None, comment='',
                            private_zone=False, vpc_id=None, vpc_region=None):
         """
         Create a new Hosted Zone.  Returns a Python data structure with
@@ -221,8 +221,8 @@ class Route53Connection(AWSAuthConnection):
             params = {'name': domain_name,
                       'caller_ref': caller_ref,
                       'comment': comment,
-                      'vpc_id' : vpc_id,
-                      'vpc_region' : vpc_region,
+                      'vpc_id': vpc_id,
+                      'vpc_region': vpc_region,
                       'xmlns': self.XMLNameSpace}
             xml_body = HZPXML % params
         else:
@@ -335,7 +335,7 @@ class Route53Connection(AWSAuthConnection):
             raise exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
-        e = boto.jsonresponse.Element(list_marker='HealthChecks', 
+        e = boto.jsonresponse.Element(list_marker='HealthChecks',
                                       item_marker=('HealthCheck',))
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
@@ -486,7 +486,8 @@ class Route53Connection(AWSAuthConnection):
         h.parse(body)
         return e
 
-    def create_zone(self, name, private_zone=False, vpc_id=None, vpc_region=None):
+    def create_zone(self, name, private_zone=False,
+                    vpc_id=None, vpc_region=None):
         """
         Create a new Hosted Zone.  Returns a Zone object for the newly
         created Hosted Zone.
@@ -512,7 +513,7 @@ class Route53Connection(AWSAuthConnection):
         :param vpc_id: When creating a private hosted zone, the region of
             the associated VPC is required.
         """
-        zone = self.create_hosted_zone(name, private_zone=private_zone, 
+        zone = self.create_hosted_zone(name, private_zone=private_zone,
                                        vpc_id=vpc_id, vpc_region=vpc_region)
         return Zone(self, zone['CreateHostedZoneResponse']['HostedZone'])
 
