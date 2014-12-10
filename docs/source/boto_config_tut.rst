@@ -182,6 +182,10 @@ For example::
   Provide an absolute path to a custom JSON file, which gets merged into the
   defaults. (This can also be specified with the ``BOTO_ENDPOINTS``
   environment variable instead.)
+:endpoints_default: Should the default regions/endpoints file be loaded when
+  using a custom file. This setting will take effect when any alternate file is
+  specified (see ``endpoints_path``). Note that if this value is set to True,
+  entries in a custom file will still override entries in the default file.
 
 These settings will default to::
 
@@ -193,6 +197,7 @@ These settings will default to::
     http_socket_timeout = 60
     send_crlf_after_proxy_auth_headers = False
     endpoints_path = /path/to/my/boto/endpoints.json
+    endpoints_default = True
 
 You can control the timeouts and number of retries used when retrieving
 information from the Metadata Service (this is used for retrieving credentials

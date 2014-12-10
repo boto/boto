@@ -90,16 +90,29 @@ class TestEndpointLoading(unittest.TestCase):
         self.assertTrue('us-east-1' in endpoints['ec2'])
         self.assertFalse('test-1' in endpoints['ec2'])
 
-        # With ENV overrides.
-        os.environ['BOTO_ENDPOINTS'] = os.path.join(
+        custom_endpoints_path = os.path.join(
             os.path.dirname(__file__),
             'test_endpoints.json'
         )
+
+        # With ENV overrides.
+        os.environ['BOTO_ENDPOINTS'] = custom_endpoints_path
         self.addCleanup(os.environ.pop, 'BOTO_ENDPOINTS')
         endpoints = load_regions()
         self.assertTrue('us-east-1' in endpoints['ec2'])
         self.assertTrue('test-1' in endpoints['ec2'])
         self.assertEqual(endpoints['ec2']['test-1'], 'ec2.test-1.amazonaws.com')
+
+        # With config value overrides
+        boto.config.add_section('Boto')
+        self.addCleanup(boto.config.remove_section, 'Boto')
+        boto.config.set('Boto', 'endpoints_default', 'False')
+        self.addCleanup(boto.config.remove_option, 'Boto', 'endpoints_default')
+        boto.config.set('Boto', 'endpoints_path', custom_endpoints_path)
+        self.addCleanup(boto.config.remove_option, 'Boto', 'endpoints_path')
+        endpoints = load_regions()
+        self.assertTrue('us-east-1' not in endpoints['ec2'])
+        self.assertTrue('test-1' in endpoints['ec2'])
 
     def test_get_regions(self):
         # With defaults.
