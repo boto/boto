@@ -88,7 +88,6 @@ class KeyFile():
     result = self.key.read(size)
     # we might not have read all of `size`, so increment by the actual amount read
     self.location += len(result)
-    assert len(result) == size or self.location == self.key.size
     return result
 
   def close(self):
