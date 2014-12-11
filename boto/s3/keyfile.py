@@ -85,8 +85,13 @@ class KeyFile():
     self.location = pos
 
   def read(self, size):
+    if self.location >= self.key.size:
+      # FIXME: maybe this is wrong if encoding is binary? Not sure how to
+      # decide whether we want to return b'' or '' for Python 3
+      return ''
     result = self.key.read(size)
-    # we might not have read all of `size`, so increment by the actual amount read
+    # We might not have read all of `size`, so increment by the actual amount
+    # read. This is consistent with normal file FDs.
     self.location += len(result)
     return result
 
