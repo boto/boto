@@ -62,6 +62,7 @@ class TestListClusters(AWSMockServiceTestCase):
           </Timeline>
         </Status>
         <Name>analytics test</Name>
+        <NormalizedInstanceHours>10</NormalizedInstanceHours>
       </member>
       <member>
         <Id>j-aaaaaaaaaaaab</Id>
@@ -78,6 +79,7 @@ class TestListClusters(AWSMockServiceTestCase):
           </Timeline>
         </Status>
         <Name>test job</Name>
+        <NormalizedInstanceHours>20</NormalizedInstanceHours>
       </member>
     </Clusters>
   </ListClustersResult>
@@ -99,10 +101,13 @@ class TestListClusters(AWSMockServiceTestCase):
         self.assertTrue(isinstance(response, ClusterSummaryList))
 
         self.assertEqual(len(response.clusters), 2)
+
         self.assertTrue(isinstance(response.clusters[0], ClusterSummary))
         self.assertEqual(response.clusters[0].name, 'analytics test')
+        self.assertEqual(response.clusters[0].normalizedinstancehours, '10')
 
         self.assertTrue(isinstance(response.clusters[0].status, ClusterStatus))
+        self.assertEqual(response.clusters[0].status.state, 'TERMINATED')
 
         self.assertTrue(isinstance(response.clusters[0].status.timeline, ClusterTimeline))
 
@@ -561,6 +566,9 @@ class TestDescribeCluster(AWSMockServiceTestCase):
         </member>
       </Applications>
       <TerminationProtected>false</TerminationProtected>
+      <MasterPublicDnsName>ec2-184-0-0-1.us-west-1.compute.amazonaws.com</MasterPublicDnsName>
+      <NormalizedInstanceHours>10</NormalizedInstanceHours>
+      <ServiceRole>my-service-role</ServiceRole>
     </Cluster>
   </DescribeClusterResult>
   <ResponseMetadata>
@@ -590,6 +598,9 @@ class TestDescribeCluster(AWSMockServiceTestCase):
         self.assertEqual(response.status.state, 'TERMINATED')
         self.assertEqual(response.applications[0].name, 'hadoop')
         self.assertEqual(response.applications[0].version, '1.0.3')
+        self.assertEqual(response.masterpublicdnsname, 'ec2-184-0-0-1.us-west-1.compute.amazonaws.com')
+        self.assertEqual(response.normalizedinstancehours, '10')
+        self.assertEqual(response.servicerole, 'my-service-role')
 
         self.assert_request_parameters({
             'Action': 'DescribeCluster',
