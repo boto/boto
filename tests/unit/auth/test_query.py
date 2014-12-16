@@ -72,7 +72,7 @@ class TestQueryAuthHandler(unittest.TestCase):
                                  Mock(), self.provider)
         req = copy.copy(self.request)
         auth.add_auth(req)
-        self.assertEqual(req.path,
-            '/?Action=AssumeRoleWithWebIdentity' + \
+        self.assertEqual(req.body,
+            'Action=AssumeRoleWithWebIdentity' + \
             '&ProviderId=2012-06-01&RoleSessionName=web-identity-federation' + \
             '&Version=2011-06-15&WebIdentityToken=Atza%7CIQEBLjAsAhRkcxQ')

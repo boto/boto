@@ -803,13 +803,11 @@ class QueryAuthHandler(AuthHandler):
         qs = self._build_query_string(
             http_request.params
         )
-        boto.log.debug('query_string: %s' % qs)
-        headers['Content-Type'] = 'application/json; charset=UTF-8'
-        http_request.body = ''
-        # if this is a retried request, the qs from the previous try will
-        # already be there, we need to get rid of that and rebuild it
-        http_request.path = http_request.path.split('?')[0]
-        http_request.path = http_request.path + '?' + qs
+        boto.log.debug('query_string in body: %s' % qs)
+        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        # This will be  a POST so the query string should go into the body
+        # as opposed to being in the uri
+        http_request.body = qs
 
 
 class QuerySignatureHelper(HmacKeys):
