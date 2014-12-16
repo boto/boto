@@ -43,6 +43,7 @@ class SearchResults(object):
         self.docs = attrs['hits']['hit']
         self.start = attrs['hits']['start']
         self.query = attrs['query']
+        self.cursor = attrs['hits'].get('cursor')
         self.search_service = attrs['search_service']
 
         self.facets = {}
@@ -79,7 +80,8 @@ class Query(object):
 
     def __init__(self, q=None, parser=None, fq=None, expr=None,
                  return_fields=None, size=10, start=0, sort=None,
-                 facet=None, highlight=None, partial=None, options=None):
+                 facet=None, highlight=None, partial=None, options=None,
+                 cursor=None):
 
         self.q = q
         self.parser = parser
@@ -93,6 +95,7 @@ class Query(object):
         self.partial = partial
         self.options = options
         self.page = 0
+        self.cursor = cursor
         self.update_size(size)
 
     def update_size(self, new_size):
@@ -142,6 +145,9 @@ class Query(object):
 
         if self.sort:
             params['sort'] = ','.join(self.sort)
+
+        if self.cursor:
+            params['cursor'] = self.cursor
 
         return params
 
@@ -233,14 +239,14 @@ class SearchConnection(object):
 
     def build_query(self, q=None, parser=None, fq=None, rank=None, return_fields=None,
                     size=10, start=0, facet=None, highlight=None, sort=None,
-                    partial=None, options=None):
+                    partial=None, options=None, cursor=None):
         return Query(q=q, parser=parser, fq=fq, expr=rank, return_fields=return_fields,
                      size=size, start=start, facet=facet, highlight=highlight,
-                     sort=sort, partial=partial, options=options)
+                     sort=sort, partial=partial, options=options, cursor=cursor)
 
     def search(self, q=None, parser=None, fq=None, rank=None, return_fields=None,
                size=10, start=0, facet=None, highlight=None, sort=None, partial=None,
-               options=None):
+               options=None, cursor=None):
         """
         Send a query to CloudSearch
 
@@ -293,6 +299,9 @@ class SearchConnection(object):
             Specified as a string in JSON format.
             ``{fields: ['title^5', 'description']}``
 
+        :type cursor: str
+        :param cursor: The cursor id for iterating on query results.
+
         :rtype: :class:`boto.cloudsearch2.search.SearchResults`
         :return: Returns the results of this search
 
@@ -332,7 +341,8 @@ class SearchConnection(object):
                                  return_fields=return_fields,
                                  size=size, start=start, facet=facet,
                                  highlight=highlight, sort=sort,
-                                 partial=partial, options=options)
+                                 partial=partial, options=options,
+                                 cursor=cursor)
         return self(query)
 
     def _search_with_auth(self, params):
