@@ -66,12 +66,18 @@ class SearchResults(object):
         :rtype: :class:`boto.cloudsearch2.search.SearchResults`
         :return: the following page of search results
         """
-        if self.query.page <= self.num_pages_needed:
-            self.query.start += self.query.real_size
-            self.query.page += 1
-            return self.search_service(self.query)
+        if self.cursor is None:
+            if self.query.page <= self.num_pages_needed:
+                self.query.start += self.query.real_size
+                self.query.page += 1
+                return self.search_service(self.query)
+            else:
+                raise StopIteration
         else:
-            raise StopIteration
+            if not self.docs:
+                raise StopIteration
+            self.query.cursor = self.cursor
+            return self.search_service(self.query)
 
 
 class Query(object):
