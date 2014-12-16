@@ -83,6 +83,9 @@ class Query(object):
                  facet=None, highlight=None, partial=None, options=None,
                  cursor=None):
 
+        if cursor is not None:
+            start = None  # start can't coexist with cursor
+
         self.q = q
         self.parser = parser
         self.fq = fq
@@ -109,7 +112,10 @@ class Query(object):
         :rtype: dict
         :return: search parameters
         """
-        params = {'start': self.start, 'size': self.real_size}
+        params = {'size': self.real_size}
+
+        if self.start is not None:
+            params['start'] = self.start
 
         if self.q:
             params['q'] = self.q
