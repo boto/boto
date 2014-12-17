@@ -292,7 +292,7 @@ class MWSConnection(AWSQueryConnection):
             return path
         splat = path.split('/')
         splat[-2] += '_Sandbox'
-        return splat.join('/')
+        return '/'.join(splat)
 
     def _required_auth_capability(self):
         return ['mws']
