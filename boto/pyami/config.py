@@ -42,10 +42,15 @@ if 'BOTO_CONFIG' in os.environ:
     BotoConfigLocations = [expanduser(os.environ['BOTO_CONFIG'])]
 
 # If there's a BOTO_PATH variable set, we use anything there
-# as the current configuration locations, split with colons
+# as the current configuration locations.  The path is split with colons
+# by default, but accepts an alternate character in the BOTO_PATH_SPLIT_CHAR
+# variable so that drive letter paths can work in Windows.
 elif 'BOTO_PATH' in os.environ:
     BotoConfigLocations = []
-    for path in os.environ['BOTO_PATH'].split(":"):
+    boto_path_split_char = ":"
+    if 'BOTO_PATH_SPLIT_CHAR' in os.environ:
+        boto_path_split_char = os.environ['BOTO_PATH_SPLIT_CHAR']
+    for path in os.environ['BOTO_PATH'].split(boto_path_split_char):
         BotoConfigLocations.append(expanduser(path))
 
 
