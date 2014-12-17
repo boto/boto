@@ -212,6 +212,63 @@ class TestProvider(unittest.TestCase):
             if not imported:
                 del sys.modules['keyring']
 
+
+    def test_keyring_is_used_for_profile_in_config(self):
+        self.config = {
+            'profile dev': {
+                'aws_access_key_id': 'dev_access_key',
+                'keyring': 'dev'
+            }
+        }
+
+        import sys
+        try:
+            import keyring
+            imported = True
+        except ImportError:
+            sys.modules['keyring'] = keyring = type(mock)('keyring', '')
+            imported = False
+
+        try:
+            with mock.patch('keyring.get_password', create=True):
+                keyring.get_password.side_effect = (
+                    lambda kr, login: kr+login+'pw')
+                p = provider.Provider('aws', profile_name='dev')
+                self.assertEqual(p.access_key, 'dev_access_key')
+                self.assertEqual(p.secret_key, 'devdev_access_keypw')
+                self.assertIsNone(p.security_token)
+        finally:
+            if not imported:
+                del sys.modules['keyring']
+
+    def test_keyring_is_used_for_profile_in_shared(self):
+        self.shared_config = {
+            'dev': {
+                'aws_access_key_id': 'dev_access_key',
+                'keyring': 'dev'
+            }
+        }
+
+        import sys
+        try:
+            import keyring
+            imported = True
+        except ImportError:
+            sys.modules['keyring'] = keyring = type(mock)('keyring', '')
+            imported = False
+
+        try:
+            with mock.patch('keyring.get_password', create=True):
+                keyring.get_password.side_effect = (
+                    lambda kr, login: kr+login+'pw')
+                p = provider.Provider('aws', profile_name='dev')
+                self.assertEqual(p.access_key, 'dev_access_key')
+                self.assertEqual(p.secret_key, 'devdev_access_keypw')
+                self.assertIsNone(p.security_token)
+        finally:
+            if not imported:
+                del sys.modules['keyring']
+
     def test_passed_in_values_beat_env_vars(self):
         self.environ['AWS_ACCESS_KEY_ID'] = 'env_access_key'
         self.environ['AWS_SECRET_ACCESS_KEY'] = 'env_secret_key'

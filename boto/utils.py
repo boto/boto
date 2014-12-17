@@ -862,6 +862,15 @@ def get_utf8_value(value):
 
     return value
 
+def get_keyring_password(service, name):
+    try:
+        import keyring
+    except ImportError:
+        boto.log.error("The keyring module could not be imported. "
+                       "For keyring support, install the keyring "
+                       "module.")
+        raise
+    return keyring.get_password(service, name)
 
 def mklist(value):
     if not isinstance(value, list):

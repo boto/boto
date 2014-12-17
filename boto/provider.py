@@ -308,10 +308,22 @@ class Provider(object):
             self.secret_key = os.environ[secret_key_name.upper()]
             boto.log.debug("Using secret key found in environment variable.")
         elif profile_name is not None:
-            if shared.has_option(profile_name, secret_key_name):
+            if shared.has_option(profile_name, "keyring"):
+                keyring_name = shared.get(profile_name, 'keyring')
+                from boto.utils import get_keyring_password
+                self.secret_key = get_keyring_password(keyring_name, self.access_key)
+                boto.log.debug("Using secret key found in keyring of shared credential file: "
+                               "profile %s." % profile_name)
+            elif shared.has_option(profile_name, secret_key_name):
                 self.secret_key = shared.get(profile_name, secret_key_name)
                 boto.log.debug("Using secret key found in shared credential "
                                "file for profile %s." % profile_name)
+            elif config.has_option("profile %s" % profile_name, "keyring"):
+                keyring_name = config.get("profile %s" % profile_name, 'keyring')
+                from boto.utils import get_keyring_password
+                self.secret_key = get_keyring_password(keyring_name, self.access_key)
+                boto.log.debug("Using secret key found in keyring: "
+                               "profile %s." % profile_name)
             elif config.has_option("profile %s" % profile_name, secret_key_name):
                 self.secret_key = config.get("profile %s" % profile_name,
                                              secret_key_name)
@@ -328,15 +340,8 @@ class Provider(object):
             boto.log.debug("Using secret key found in config file.")
         elif config.has_option('Credentials', 'keyring'):
             keyring_name = config.get('Credentials', 'keyring')
-            try:
-                import keyring
-            except ImportError:
-                boto.log.error("The keyring module could not be imported. "
-                               "For keyring support, install the keyring "
-                               "module.")
-                raise
-            self.secret_key = keyring.get_password(
-                keyring_name, self.access_key)
+            from boto.utils import get_keyring_password
+            self.secret_key = get_keyring_password(keyring_name, self.access_key)
             boto.log.debug("Using secret key found in keyring.")
 
         if security_token is not None:
