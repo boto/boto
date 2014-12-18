@@ -487,3 +487,48 @@ class S3KeySigV4Test(unittest.TestCase):
         from_s3_key = self.bucket.get_key('foobar', headers=headers)
         self.assertEqual(from_s3_key.get_contents_as_string().decode('utf-8'),
                          body)
+
+
+class S3KeyVersionCopyTest(unittest.TestCase):
+    def setUp(self):
+        self.conn = S3Connection()
+        self.bucket_name = 'boto-key-version-copy-%d' % int(time.time())
+        self.bucket = self.conn.create_bucket(self.bucket_name)
+        self.bucket.configure_versioning(True)
+        
+    def tearDown(self):
+        for key in self.bucket.list_versions():
+            key.delete()
+        self.bucket.delete()
+        
+    def test_key_overwrite_and_copy(self):
+        first_content = "abcdefghijklm"
+        second_content = "nopqrstuvwxyz"
+        k = Key(self.bucket, 'testkey')
+        k.set_contents_from_string(first_content)
+        # Wait for S3's eventual consistency (may not be necessary)
+        while self.bucket.get_key('testkey') is None:
+            time.sleep(5)
+        # Get the first version_id
+        first_key = self.bucket.get_key('testkey')
+        first_version_id = first_key.version_id
+        # Overwrite the key
+        k = Key(self.bucket, 'testkey')
+        k.set_contents_from_string(second_content)
+        # Wait for eventual consistency
+        while True:
+            second_key = self.bucket.get_key('testkey')
+            if second_key is None or second_key.version_id == first_version_id:
+                time.sleep(5)
+            else:
+                break
+        # Copy first key (no longer the current version) to a new key
+        source_key = self.bucket.get_key('testkey',
+                                          version_id=first_version_id)
+        source_key.copy(self.bucket, 'copiedkey')
+        while self.bucket.get_key('copiedkey') is None:
+            time.sleep(5)
+        copied_key = self.bucket.get_key('copiedkey')
+        copied_key_contents = copied_key.get_contents_as_string()
+        self.assertEqual(first_content, copied_key_contents)
+
