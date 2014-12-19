@@ -379,7 +379,7 @@ class S3Connection(AWSAuthConnection):
 
     def generate_url(self, expires_in, method, bucket='', key='', headers=None,
                      query_auth=True, force_http=False, response_headers=None,
-                     expires_in_absolute=False, version_id=None):
+                     expires_in_absolute=False, version_id=None, query_parameters=None):
         if self._auth_handler.capability[0] == 'hmac-v4-s3' and query_auth:
             # Handle the special sigv4 case
             return self.generate_url_sigv4(expires_in, method, bucket=bucket,
@@ -400,6 +400,9 @@ class S3Connection(AWSAuthConnection):
             extra_qp.append("versionId=%s" % version_id)
         if response_headers:
             for k, v in response_headers.items():
+                extra_qp.append("%s=%s" % (k, urllib.parse.quote(v)))
+        if query_parameters:
+            for k, v in query_parameters.items():
                 extra_qp.append("%s=%s" % (k, urllib.parse.quote(v)))
         if self.provider.security_token:
             headers['x-amz-security-token'] = self.provider.security_token
