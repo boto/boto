@@ -340,7 +340,7 @@ class Table(object):
             self.indexes = self._introspect_indexes(raw_indexes)
 
         if not self.global_indexes:
-            # Build the index information as well.
+            # Build the global index information as well.
             raw_global_indexes = result['Table'].get('GlobalSecondaryIndexes', [])
             self.global_indexes = self._introspect_indexes(raw_global_indexes)
 
