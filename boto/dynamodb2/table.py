@@ -301,10 +301,10 @@ class Table(object):
         """
         Describes the current structure of the table in DynamoDB.
 
-        This information will be used to update the ``schema``, ``indexes``
-        and ``throughput`` information on the ``Table``. Some calls, such as
-        those involving creating keys or querying, will require this
-        information to be populated.
+        This information will be used to update the ``schema``, ``indexes``,
+        ``global_indexes`` and ``throughput`` information on the ``Table``. Some
+        calls, such as those involving creating keys or querying, will require
+        this information to be populated.
 
         It also returns the full raw data structure from DynamoDB, in the
         event you'd like to parse out additional information (such as the
