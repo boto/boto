@@ -340,16 +340,15 @@ class Queue(object):
         """
         return self.connection.delete_queue(self)
 
+    def purge(self):
+        """
+        Purge all messages in the queue.
+        """
+        return self.connection.purge_queue(self)
+
     def clear(self, page_size=10, vtimeout=10):
-        """Utility function to remove all messages from a queue"""
-        n = 0
-        l = self.get_messages(page_size, vtimeout)
-        while l:
-            for m in l:
-                self.delete_message(m)
-                n += 1
-            l = self.get_messages(page_size, vtimeout)
-        return n
+        """Deprecated utility function to remove all messages from a queue"""
+        return self.purge()
 
     def count(self, page_size=10, vtimeout=10):
         """

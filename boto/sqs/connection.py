@@ -111,6 +111,18 @@ class SQSConnection(AWSQueryConnection):
         """
         return self.get_status('DeleteQueue', None, queue.id)
 
+    def purge_queue(self, queue):
+        """
+        Purge all messages in an SQS Queue.
+
+        :type queue: A Queue object
+        :param queue: The SQS queue to be purged
+
+        :rtype: bool
+        :return: True if the command succeeded, False otherwise
+        """
+        return self.get_status('PurgeQueue', None, queue.id)
+
     def get_queue_attributes(self, queue, attribute='All'):
         """
         Gets one or all attributes of a Queue
