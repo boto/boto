@@ -403,7 +403,10 @@ class S3Connection(AWSAuthConnection):
                 extra_qp.append("%s=%s" % (k, urllib.parse.quote(v)))
         if query_parameters:
             for k, v in query_parameters.items():
-                extra_qp.append("%s=%s" % (k, urllib.parse.quote(v)))
+                if v:
+                    extra_qp.append("%s=%s" % (k, urllib.parse.quote(v)))
+                else:
+                    extra_qp.append("%s" % k)
         if self.provider.security_token:
             headers['x-amz-security-token'] = self.provider.security_token
         if extra_qp:
