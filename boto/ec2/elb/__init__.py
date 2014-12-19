@@ -459,6 +459,23 @@ class ELBConnection(AWSQueryConnection):
         return self.get_object('DescribeLoadBalancerAttributes',
                                params, LbAttributes)
 
+    def get_all_tags(self, load_balancer_names):
+        """Gets all tags of a Load Balancer
+
+        :type load_balancer_name: string
+        :param load_balancer_name: The name of the Load Balancer
+
+        :rtype: boto.ec2.elb.tag.LbTagSet
+        :return: The tags associated with the Load Balancer.
+        """
+        from boto.ec2.elb.tag import LbTagSet
+        params = {}
+        self.build_list_params(params,
+                               load_balancer_names,
+                               'LoadBalancerNames.memeber.%d')
+        return self.get_object('DescribeTags',
+                        params, LbTagSet)
+
     def get_lb_attribute(self, load_balancer_name, attribute):
         """Gets an attribute of a Load Balancer
 

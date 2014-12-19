@@ -126,6 +126,7 @@ class LoadBalancer(object):
         self.scheme = None
         self.backends = None
         self._attributes = None
+        self._tags = None
 
     def __repr__(self):
         return 'LoadBalancer:%s' % self.name
@@ -221,6 +222,21 @@ class LoadBalancer(object):
         if not self._attributes or force:
             self._attributes = self.connection.get_all_lb_attributes(self.name)
         return self._attributes
+
+    def get_tags(self, force=False):
+        """
+        Gets LbTagSet, the tags wills be cached.
+
+        :type force: bool
+        :param force: Ignore cache value and reload.
+
+        :rtype: boto.ec2.elb.tag.LbTagSet
+        :return: The LbTagSet object
+        """
+        if not self._tags or force:
+            self._tags = self.connection.get_all_tags(self.name)
+        return self._tags
+
 
     def is_cross_zone_load_balancing(self, force=False):
         """
