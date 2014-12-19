@@ -624,10 +624,11 @@ class Bucket(object):
 
     def generate_url(self, expires_in, method='GET', headers=None,
                      force_http=False, response_headers=None,
-                     expires_in_absolute=False):
+                     expires_in_absolute=False, query_parameters=None):
         return self.connection.generate_url(expires_in, method, self.name,
                                             headers=headers,
                                             force_http=force_http,
+                                            query_parameters=query_parameters,
                                             response_headers=response_headers,
                                             expires_in_absolute=expires_in_absolute)
 
