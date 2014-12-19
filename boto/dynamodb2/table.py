@@ -306,7 +306,7 @@ class Table(object):
         those involving creating keys or querying, will require this
         information to be populated.
 
-        It also returns the full raw datastructure from DynamoDB, in the
+        It also returns the full raw data structure from DynamoDB, in the
         event you'd like to parse out additional information (such as the
         ``ItemCount`` or usage information).
 
@@ -338,6 +338,11 @@ class Table(object):
             # Build the index information as well.
             raw_indexes = result['Table'].get('LocalSecondaryIndexes', [])
             self.indexes = self._introspect_indexes(raw_indexes)
+
+        if not self.global_indexes:
+            # Build the index information as well.
+            raw_global_indexes = result['Table'].get('GlobalSecondaryIndexes', [])
+            self.global_indexes = self._introspect_indexes(raw_global_indexes)
 
         # This is leaky.
         return result
