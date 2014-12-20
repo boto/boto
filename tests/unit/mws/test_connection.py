@@ -197,7 +197,7 @@ doc/2009-01-01/">
         # Create one-off connection class that has self._sandboxed = True
         conn = MWSConnection(https_connection_factory=self.https_connection_factory,
             aws_access_key_id='aws_access_key_id',
-            aws_secret_access_key='aws_secret_access_key'
+            aws_secret_access_key='aws_secret_access_key',
             sandbox=True)
         self.assertEqual(conn._sandboxify('a/bogus/path'), 'a/bogus_Sandbox/path')
 
