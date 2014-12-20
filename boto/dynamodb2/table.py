@@ -297,6 +297,39 @@ class Table(object):
 
         return indexes
 
+    def _introspect_global_indexes(self, raw_global_indexes):
+        """
+        Given a raw global index structure back from a DynamoDB response, parse
+        out & build the high-level Python objects that represent them.
+        """
+        indexes = []
+
+        for field in raw_global_indexes:
+            index_klass = GlobalAllIndex
+            kwargs = {
+                'parts': []
+            }
+
+            if field['Projection']['ProjectionType'] == 'ALL':
+                index_klass = GlobalAllIndex
+            elif field['Projection']['ProjectionType'] == 'KEYS_ONLY':
+                index_klass = GlobalKeysOnlyIndex
+            elif field['Projection']['ProjectionType'] == 'INCLUDE':
+                index_klass = GlobalIncludeIndex
+                kwargs['includes'] = field['Projection']['NonKeyAttributes']
+            else:
+                raise exceptions.UnknownIndexFieldError(
+                    "%s was seen, but is unknown. Please report this at "
+                    "https://github.com/boto/boto/issues." % \
+                    field['Projection']['ProjectionType']
+                )
+
+            name = field['IndexName']
+            kwargs['parts'] = self._introspect_schema(field['KeySchema'], None)
+            indexes.append(index_klass(name, **kwargs))
+
+        return indexes
+
     def describe(self):
         """
         Describes the current structure of the table in DynamoDB.
@@ -342,7 +375,7 @@ class Table(object):
         if not self.global_indexes:
             # Build the global index information as well.
             raw_global_indexes = result['Table'].get('GlobalSecondaryIndexes', [])
-            self.global_indexes = self._introspect_indexes(raw_global_indexes)
+            self.global_indexes = self._introspect_global_indexes(raw_global_indexes)
 
         # This is leaky.
         return result
