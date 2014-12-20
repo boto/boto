@@ -656,7 +656,7 @@ class DynamoDBv2Test(unittest.TestCase):
             'read': 5,
             'write': 5
         }, global_indexes=[
-            GlobalAllIndex('EmailGSIIndex', part=[
+            GlobalAllIndex('EmailGSIIndex', parts=[
                 HashKey('email')
             ], throughput={
                 'read': 1,
