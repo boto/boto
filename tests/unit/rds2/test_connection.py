@@ -203,6 +203,15 @@ class TestRDS2Connection(AWSMockServiceTestCase):
             'mydbsubnetgroup'
         )
 
+    def test_make_request_byte_decoding(self):
+        bytes_body = b'{"Error":{"Code":"DBInstanceAlreadyExists","Message":"DB Instance already exists","Type":"Sender"},"RequestId":"12345678-1234-1234-1234-000000000000"}'
+        self.create_response(status_code=200, body=bytes_body)
+        
+        try:
+            self.service_connection.create_db_instance("db-master-1", 10, 'db.m1.small', 'postgres', 'root', 'hunter2')
+        except TypeError:
+            self.fail("TypeError raised, probably due to failure to decode HTTP response body.")
+
 
 if __name__ == '__main__':
     unittest.main()
