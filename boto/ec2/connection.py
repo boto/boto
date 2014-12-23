@@ -104,9 +104,8 @@ class EC2Connection(AWSQueryConnection):
         if api_version:
             self.APIVersion = api_version
 
-    @detect_potential_sigv4
     def _required_auth_capability(self):
-        return ['ec2']
+        return ['hmac-v4']
 
     def get_params(self):
         """
