@@ -263,7 +263,10 @@ class Cluster(EmrObject):
         'RunningAmiVersion',
         'AutoTerminate',
         'TerminationProtected',
-        'VisibleToAllUsers'
+        'VisibleToAllUsers',
+        'MasterPublicDnsName',
+        'NormalizedInstanceHours',
+        'ServiceRole'
     ])
 
     def __init__(self, connection=None):
@@ -290,11 +293,23 @@ class Cluster(EmrObject):
             return None
 
 
-class ClusterSummary(Cluster):
+class ClusterSummary(EmrObject):
     Fields = set([
         'Id',
-        'Name'
+        'Name',
+        'NormalizedInstanceHours'
     ])
+
+    def __init__(self, connection):
+        self.connection = connection
+        self.status = None
+
+    def startElement(self, name, attrs, connection):
+        if name == 'Status':
+            self.status = ClusterStatus()
+            return self.status
+        else:
+            return None
 
 
 class ClusterSummaryList(EmrObject):

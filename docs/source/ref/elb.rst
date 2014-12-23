@@ -47,15 +47,21 @@ boto.ec2.elb.loadbalancer
    :undoc-members:
 
 boto.ec2.elb.policies
--------------------------
+---------------------
 
 .. automodule:: boto.ec2.elb.policies
    :members:
    :undoc-members:
 
 boto.ec2.elb.securitygroup
--------------------------
+--------------------------
 
 .. automodule:: boto.ec2.elb.securitygroup
+   :members:
+   :undoc-members:
+
+boto.ec2.elb.attributes
+-----------------------
+.. automodule:: boto.ec2.elb.attributes
    :members:
    :undoc-members:
