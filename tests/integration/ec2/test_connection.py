@@ -33,6 +33,7 @@ import socket
 from nose.plugins.attrib import attr
 from boto.ec2.connection import EC2Connection
 from boto.exception import EC2ResponseError
+import boto.ec2
 
 
 class EC2ConnectionTest(unittest.TestCase):
@@ -239,3 +240,7 @@ class EC2ConnectionTest(unittest.TestCase):
 
         # And kill it.
         rs.instances[0].terminate()
+
+    def test_can_get_all_instances_sigv4(self):
+        connection = boto.ec2.connect_to_region('eu-central-1')
+        self.assertTrue(isinstance(connection.get_all_instances(), list))
