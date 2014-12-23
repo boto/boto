@@ -699,7 +699,6 @@ class TestCloudFormationSetStackPolicy(CloudFormationConnectionBase):
         api_response = self.service_connection.set_stack_policy('stack-id',
             stack_policy_body='{}')
         self.assertDictEqual(api_response, {'SetStackPolicyResult': {'Some': 'content'}})
-        self.assertIsInstance(api_response, dict)
         self.assert_request_parameters({
             'Action': 'SetStackPolicy',
             'ContentType': 'JSON',
