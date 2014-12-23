@@ -57,6 +57,10 @@ class RDSConnection(AWSQueryConnection):
     the next instance reboot or during the maintenance window. For
     more information on Amazon RDS concepts and usage scenarios, go to
     the `Amazon RDS User Guide`_.
+
+    .. _Amazon RDS User Guide: http://docs.aws.amazon.com/AmazonRDS/latest/\
+    UserGuide/Welcome.html
+
     """
     APIVersion = "2013-09-09"
     DefaultRegionName = "us-east-1"
@@ -146,11 +150,10 @@ class RDSConnection(AWSQueryConnection):
             subscription you want to add a source identifier to.
 
         :type source_identifier: string
-        :param source_identifier:
-        The identifier of the event source to be added. An identifier must
-            begin with a letter and must contain only ASCII letters, digits,
-            and hyphens; it cannot end with a hyphen or contain two consecutive
-            hyphens.
+        :param source_identifier: The identifier of the event source to be
+            added. An identifier must begin with a letter and must contain only
+            ASCII letters, digits, and hyphens; it cannot end with a hyphen or
+            contain two consecutive hyphens.
 
         Constraints:
 
@@ -187,7 +190,7 @@ class RDSConnection(AWSQueryConnection):
         :type resource_name: string
         :param resource_name: The Amazon RDS resource the tags will be added
             to. This value is an Amazon Resource Name (ARN). For information
-            about creating an ARN, see ` Constructing an RDS Amazon Resource
+            about creating an ARN, see `Constructing an RDS Amazon Resource
             Name (ARN)`_.
 
         :type tags: list
@@ -223,8 +226,10 @@ class RDSConnection(AWSQueryConnection):
         Region to an Amazon RDS DB instance in another. You cannot
         authorize ingress from a VPC security group in one VPC to an
         Amazon RDS DB instance in another.
-        For an overview of CIDR ranges, go to the `Wikipedia
-        Tutorial`_.
+        For an overview of CIDR ranges, go to the `Wikipedia Tutorial`_.
+
+        .. _Wikipedia Tutorial: http://en.wikipedia.org/wiki/Classless_Inter-\
+        Domain_Routing
 
         :type db_security_group_name: string
         :param db_security_group_name: The name of the DB security group to add
@@ -406,8 +411,9 @@ class RDSConnection(AWSQueryConnection):
         :type db_instance_class: string
         :param db_instance_class: The compute and memory capacity of the DB
             instance.
-        Valid Values: `db.t1.micro | db.m1.small | db.m1.medium | db.m1.large |
-            db.m1.xlarge | db.m2.xlarge |db.m2.2xlarge | db.m2.4xlarge`
+        Valid Values: `db.t1.micro` | `db.m1.small` | `db.m1.medium` | \
+            `db.m1.large` | `db.m1.xlarge` | `db.m2.xlarge` | `db.m2.2xlarge` `
+            | `db.m2.4xlarge`
 
         :type engine: string
         :param engine: The name of the database engine to be used for this
@@ -416,8 +422,8 @@ class RDSConnection(AWSQueryConnection):
             `sqlserver-ee` | `sqlserver-se` | `sqlserver-ex` | `sqlserver-web`
 
         :type master_username: string
-        :param master_username:
-        The name of master user for the client DB instance.
+        :param master_username: The name of master user for the client DB
+            instance.
 
         **MySQL**
 
@@ -502,18 +508,20 @@ class RDSConnection(AWSQueryConnection):
 
         Default: A 30-minute window selected at random from an 8-hour block of
             time per region, occurring on a random day of the week. To see the
-            time blocks available, see ` Adjusting the Preferred Maintenance
+            time blocks available, see `Adjusting the Preferred Maintenance
             Window`_ in the Amazon RDS User Guide.
 
         Valid Days: Mon, Tue, Wed, Thu, Fri, Sat, Sun
 
         Constraints: Minimum 30-minute window.
 
+        .. _Adjusting the Preferred Maintenance Window: http://docs.aws.amazon\
+        .com/AmazonRDS/latest/UserGuide/AdjustingTheMaintenanceWindow.html
+
         :type db_parameter_group_name: string
-        :param db_parameter_group_name:
-        The name of the DB parameter group to associate with this DB instance.
-            If this argument is omitted, the default DBParameterGroup for the
-            specified engine will be used.
+        :param db_parameter_group_name: The name of the DB parameter group to
+            associate with this DB instance. If this argument is omitted, the
+            default DBParameterGroup for the specified engine will be used.
 
         Constraints:
 
@@ -523,10 +531,10 @@ class RDSConnection(AWSQueryConnection):
         + Cannot end with a hyphen or contain two consecutive hyphens
 
         :type backup_retention_period: integer
-        :param backup_retention_period:
-        The number of days for which automated backups are retained. Setting
-            this parameter to a positive number enables backups. Setting this
-            parameter to 0 disables automated backups.
+        :param backup_retention_period: The number of days for which automated
+            backups are retained. Setting this parameter to a positive number
+            enables backups. Setting this parameter to 0 disables automated
+            backups.
 
         Default: 1
 
@@ -603,8 +611,8 @@ class RDSConnection(AWSQueryConnection):
 
         :type license_model: string
         :param license_model: License model information for this DB instance.
-        Valid values: `license-included` | `bring-your-own-license` | `general-
-            public-license`
+            Valid values: `license-included` | `bring-your-own-license` |
+            `general-public-license`
 
         :type iops: integer
         :param iops: The amount of Provisioned IOPS (input/output operations
@@ -1070,7 +1078,7 @@ class RDSConnection(AWSQueryConnection):
             events. For example, if you want to be notified of events generated
             by a DB instance, you would set this parameter to db-instance. if
             this value is not specified, all events are returned.
-        Valid values: db-instance | db-parameter-group | db-security-group |
+        Valid values: db-instance | db-parameter-group | db-security-group | \
             db-snapshot
 
         :type event_categories: list
@@ -1079,13 +1087,15 @@ class RDSConnection(AWSQueryConnection):
             for a given SourceType in the `Events`_ topic in the Amazon RDS
             User Guide or by using the **DescribeEventCategories** action.
 
+        .. _Events: http://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/\
+        USER_Events.html#USER_Events.ListingCategories
+
         :type source_ids: list
-        :param source_ids:
-        The list of identifiers of the event sources for which events will be
-            returned. If not specified, then all sources are included in the
-            response. An identifier must begin with a letter and must contain
-            only ASCII letters, digits, and hyphens; it cannot end with a
-            hyphen or contain two consecutive hyphens.
+        :param source_ids: The list of identifiers of the event sources for
+            which events will be returned. If not specified, then all sources
+            are included in the response. An identifier must begin with a
+            letter and must contain only ASCII letters, digits, and hyphens;
+            it cannot end with a hyphen or contain two consecutive hyphens.
 
         Constraints:
 
@@ -1205,9 +1215,8 @@ class RDSConnection(AWSQueryConnection):
         reverted once submitted.
 
         :type db_instance_identifier: string
-        :param db_instance_identifier:
-        The DB instance identifier for the DB instance to be deleted. This
-            parameter isn't case sensitive.
+        :param db_instance_identifier: The DB instance identifier for the DB
+            instance to be deleted. This parameter isn't case sensitive.
 
         Constraints:
 
@@ -1227,9 +1236,8 @@ class RDSConnection(AWSQueryConnection):
         Default: `False`
 
         :type final_db_snapshot_identifier: string
-        :param final_db_snapshot_identifier:
-        The DBSnapshotIdentifier of the new DBSnapshot created when
-            SkipFinalSnapshot is set to `False`.
+        :param final_db_snapshot_identifier: The DBSnapshotIdentifier of the
+            new DBSnapshot created when SkipFinalSnapshot is set to `False`.
 
         Specifying this parameter and also setting the SkipFinalShapshot
             parameter to true results in an error.
@@ -1261,8 +1269,7 @@ class RDSConnection(AWSQueryConnection):
         DB instances.
 
         :type db_parameter_group_name: string
-        :param db_parameter_group_name:
-        The name of the DB parameter group.
+        :param db_parameter_group_name: The name of the DB parameter group.
 
         Constraints:
 
@@ -1285,8 +1292,8 @@ class RDSConnection(AWSQueryConnection):
         any DB instances.
 
         :type db_security_group_name: string
-        :param db_security_group_name:
-        The name of the DB security group to delete.
+        :param db_security_group_name: The name of the DB security group to
+            delete.
 
         You cannot delete the default DB security group.
 
@@ -1330,8 +1337,8 @@ class RDSConnection(AWSQueryConnection):
         with any DB instances.
 
         :type db_subnet_group_name: string
-        :param db_subnet_group_name:
-        The name of the database subnet group to delete.
+        :param db_subnet_group_name: The name of the database subnet group to
+            delete.
 
         You cannot delete the default subnet group.
 
@@ -1369,8 +1376,7 @@ class RDSConnection(AWSQueryConnection):
         Deletes an existing option group.
 
         :type option_group_name: string
-        :param option_group_name:
-        The name of the option group to be deleted.
+        :param option_group_name: The name of the option group to be deleted.
 
         You cannot delete default option groups.
 
@@ -1397,8 +1403,8 @@ class RDSConnection(AWSQueryConnection):
         Example: `5.1.49`
 
         :type db_parameter_group_family: string
-        :param db_parameter_group_family:
-        The name of a specific DB parameter group family to return details for.
+        :param db_parameter_group_family: The name of a specific DB parameter
+            group family to return details for.
 
         Constraints:
 
@@ -1463,10 +1469,9 @@ class RDSConnection(AWSQueryConnection):
         supports pagination.
 
         :type db_instance_identifier: string
-        :param db_instance_identifier:
-        The user-supplied instance identifier. If this parameter is specified,
-            information from only the specific DB instance is returned. This
-            parameter isn't case sensitive.
+        :param db_instance_identifier: The user-supplied instance identifier.
+            If this parameter is specified, information from only the specific
+            DB instance is returned. This parameter isn't case sensitive.
 
         Constraints:
 
@@ -1518,9 +1523,8 @@ class RDSConnection(AWSQueryConnection):
         Returns a list of DB log files for the DB instance.
 
         :type db_instance_identifier: string
-        :param db_instance_identifier:
-        The customer-assigned name of the DB instance that contains the log
-            files you want to list.
+        :param db_instance_identifier: The customer-assigned name of the DB
+            instance that contains the log files you want to list.
 
         Constraints:
 
@@ -1578,8 +1582,8 @@ class RDSConnection(AWSQueryConnection):
         only the description of the specified DB parameter group.
 
         :type db_parameter_group_name: string
-        :param db_parameter_group_name:
-        The name of a specific DB parameter group to return details for.
+        :param db_parameter_group_name: The name of a specific DB parameter
+            group to return details for.
 
         Constraints:
 
@@ -1631,8 +1635,8 @@ class RDSConnection(AWSQueryConnection):
         parameter group.
 
         :type db_parameter_group_name: string
-        :param db_parameter_group_name:
-        The name of a specific DB parameter group to return details for.
+        :param db_parameter_group_name: The name of a specific DB parameter
+            group to return details for.
 
         Constraints:
 
@@ -1732,10 +1736,9 @@ class RDSConnection(AWSQueryConnection):
         pagination.
 
         :type db_instance_identifier: string
-        :param db_instance_identifier:
-        A DB instance identifier to retrieve the list of DB snapshots for.
-            Cannot be used in conjunction with `DBSnapshotIdentifier`. This
-            parameter is not case sensitive.
+        :param db_instance_identifier: A DB instance identifier to retrieve the
+            list of DB snapshots for. Cannot be used in conjunction with
+            `DBSnapshotIdentifier`. This parameter is not case sensitive.
 
         Constraints:
 
@@ -1745,10 +1748,9 @@ class RDSConnection(AWSQueryConnection):
         + Cannot end with a hyphen or contain two consecutive hyphens
 
         :type db_snapshot_identifier: string
-        :param db_snapshot_identifier:
-        A specific DB snapshot identifier to describe. Cannot be used in
-            conjunction with `DBInstanceIdentifier`. This value is stored as a
-            lowercase string.
+        :param db_snapshot_identifier:  A specific DB snapshot identifier to
+            describe. Cannot be used in conjunction with
+            `DBInstanceIdentifier`. This value is stored as a lowercase string.
 
         Constraints:
 
@@ -1812,8 +1814,7 @@ class RDSConnection(AWSQueryConnection):
         DBSubnetGroupName is specified, the list will contain only the
         descriptions of the specified DBSubnetGroup.
 
-        For an overview of CIDR ranges, go to the `Wikipedia
-        Tutorial`_.
+        For an overview of CIDR ranges, go to the `Wikipedia Tutorial`_.
 
         :type db_subnet_group_name: string
         :param db_subnet_group_name: The name of the DB subnet group to return
@@ -1897,13 +1898,13 @@ class RDSConnection(AWSQueryConnection):
         """
         Displays a list of categories for all event source types, or,
         if specified, for a specified source type. You can see a list
-        of the event categories and source types in the ` Events`_
+        of the event categories and source types in the `Events`_
         topic in the Amazon RDS User Guide.
 
         :type source_type: string
         :param source_type: The type of source that will be generating the
             events.
-        Valid values: db-instance | db-parameter-group | db-security-group |
+        Valid values: db-instance | db-parameter-group | db-security-group | \
             db-snapshot
 
         """
@@ -1979,9 +1980,9 @@ class RDSConnection(AWSQueryConnection):
         past hour of events are returned.
 
         :type source_identifier: string
-        :param source_identifier:
-        The identifier of the event source for which events will be returned.
-            If not specified, then all sources are included in the response.
+        :param source_identifier: The identifier of the event source for which
+            events will be returned. If not specified, then all sources are
+            included in the response.
 
         Constraints:
 
@@ -2004,14 +2005,16 @@ class RDSConnection(AWSQueryConnection):
         :type start_time: timestamp
         :param start_time: The beginning of the time interval to retrieve
             events for, specified in ISO 8601 format. For more information
-            about ISO 8601, go to the `ISO8601 Wikipedia page.`_
+            about ISO 8601, go to the `ISO8601 Wikipedia page`_.
         Example: 2009-07-08T18:00Z
 
         :type end_time: timestamp
         :param end_time: The end of the time interval for which to retrieve
             events, specified in ISO 8601 format. For more information about
-            ISO 8601, go to the `ISO8601 Wikipedia page.`_
+            ISO 8601, go to the `ISO8601 Wikipedia page`_.
         Example: 2009-07-08T18:00Z
+
+        .. _ISO8601 Wikipedia page: https://en.wikipedia.org/wiki/ISO_8601
 
         :type duration: integer
         :param duration: The number of minutes to retrieve events for.
@@ -2418,9 +2421,8 @@ class RDSConnection(AWSQueryConnection):
         Downloads the last line of the specified log file.
 
         :type db_instance_identifier: string
-        :param db_instance_identifier:
-        The customer-assigned name of the DB instance that contains the log
-            files you want to list.
+        :param db_instance_identifier: The customer-assigned name of the DB
+            instance that contains the log files you want to list.
 
         Constraints:
 
@@ -2464,8 +2466,17 @@ class RDSConnection(AWSQueryConnection):
         :type resource_name: string
         :param resource_name: The Amazon RDS resource with tags to be listed.
             This value is an Amazon Resource Name (ARN). For information about
-            creating an ARN, see ` Constructing an RDS Amazon Resource Name
+            creating an ARN, see `Constructing an RDS Amazon Resource Name
             (ARN)`_.
+
+        .. _Tagging Amazon RDS Resources: http://docs.aws.amazon.com/AmazonRDS\
+        /latest/UserGuide/USER_Tagging.html
+
+        .. _Constructing an RDS Amazon Resource Name (ARN): http://docs.aws.\
+        amazon.com/AmazonRDS/latest/UserGuide/USER_Tagging.html#USER_Tagging.\
+        ARN
+
+        ..
 
         """
         params = {'ResourceName': resource_name, }
@@ -2494,8 +2505,8 @@ class RDSConnection(AWSQueryConnection):
         parameters and the new values in the request.
 
         :type db_instance_identifier: string
-        :param db_instance_identifier:
-        The DB instance identifier. This value is stored as a lowercase string.
+        :param db_instance_identifier: The DB instance identifier. This value
+            is stored as a lowercase string.
 
         Constraints:
 
@@ -2570,10 +2581,9 @@ class RDSConnection(AWSQueryConnection):
             db.m1.xlarge | db.m2.xlarge | db.m2.2xlarge | db.m2.4xlarge`
 
         :type db_security_groups: list
-        :param db_security_groups:
-        A list of DB security groups to authorize on this DB instance. Changing
-            this parameter does not result in an outage and the change is
-            asynchronously applied as soon as possible.
+        :param db_security_groups: A list of DB security groups to authorize on
+            this DB instance. Changing this parameter does not result in an
+            outage and the change is asynchronously applied as soon as possible.
 
         Constraints:
 
@@ -2583,9 +2593,9 @@ class RDSConnection(AWSQueryConnection):
         + Cannot end with a hyphen or contain two consecutive hyphens
 
         :type vpc_security_group_ids: list
-        :param vpc_security_group_ids:
-        A list of EC2 VPC security groups to authorize on this DB instance.
-            This change is asynchronously applied as soon as possible.
+        :param vpc_security_group_ids: A list of EC2 VPC security groups to
+            authorize on this DB instance. This change is asynchronously
+            applied as soon as possible.
 
         Constraints:
 
@@ -2607,9 +2617,9 @@ class RDSConnection(AWSQueryConnection):
         Default: `False`
 
         :type master_user_password: string
-        :param master_user_password:
-        The new password for the DB instance master user. Can be any printable
-            ASCII character except "/", '"', or "@".
+        :param master_user_password: The new password for the DB instance
+            master user. Can be any printable ASCII character except "/", '"',
+            or "@".
 
         Changing this parameter does not result in an outage and the change is
             asynchronously applied as soon as possible. Between the time of the
@@ -2662,12 +2672,11 @@ class RDSConnection(AWSQueryConnection):
               replicas or if the DB instance is a read replica
 
         :type preferred_backup_window: string
-        :param preferred_backup_window:
-        The daily time range during which automated backups are created if
-            automated backups are enabled, as determined by the
-            `BackupRetentionPeriod`. Changing this parameter does not result in
-            an outage and the change is asynchronously applied as soon as
-            possible.
+        :param preferred_backup_window: The daily time range during which
+            automated backups are created if automated backups are enabled, as
+            determined by the `BackupRetentionPeriod`. Changing this parameter
+            does not result in an outage and the change is asynchronously
+            applied as soon as possible.
 
         Constraints:
 
@@ -2782,9 +2791,9 @@ class RDSConnection(AWSQueryConnection):
             DB instance
 
         :type new_db_instance_identifier: string
-        :param new_db_instance_identifier:
-        The new DB instance identifier for the DB instance when renaming a DB
-            Instance. This value is stored as a lowercase string.
+        :param new_db_instance_identifier: The new DB instance identifier for
+            the DB instance when renaming a DB Instance. This value is stored
+            as a lowercase string.
 
         Constraints:
 
@@ -2857,8 +2866,7 @@ class RDSConnection(AWSQueryConnection):
         parameters.
 
         :type db_parameter_group_name: string
-        :param db_parameter_group_name:
-        The name of the DB parameter group.
+        :param db_parameter_group_name: The name of the DB parameter group.
 
         Constraints:
 
@@ -2869,11 +2877,11 @@ class RDSConnection(AWSQueryConnection):
         + Cannot end with a hyphen or contain two consecutive hyphens
 
         :type parameters: list
-        :param parameters:
-        An array of parameter names, values, and the apply method for the
-            parameter update. At least one parameter name, value, and apply
-            method must be supplied; subsequent arguments are optional. A
-            maximum of 20 parameters may be modified in a single request.
+        :param parameters: An array of parameter names, values, and the apply
+            method for the parameter update. At least one parameter name,
+            value, and apply method must be supplied; subsequent arguments are
+            optional. A maximum of 20 parameters may be modified in a single
+            request.
 
         Valid Values (for the application method): `immediate | pending-reboot`
 
@@ -2953,7 +2961,7 @@ class RDSConnection(AWSQueryConnection):
             events. For example, if you want to be notified of events generated
             by a DB instance, you would set this parameter to db-instance. if
             this value is not specified, all events are returned.
-        Valid values: db-instance | db-parameter-group | db-security-group |
+        Valid values: db-instance | db-parameter-group | db-security-group | \
             db-snapshot
 
         :type event_categories: list
@@ -3051,10 +3059,9 @@ class RDSConnection(AWSQueryConnection):
         Example: mydbinstance
 
         :type backup_retention_period: integer
-        :param backup_retention_period:
-        The number of days to retain automated backups. Setting this parameter
-            to a positive number enables backups. Setting this parameter to 0
-            disables automated backups.
+        :param backup_retention_period: The number of days to retain automated
+            backups. Setting this parameter to a positive number enables
+            backups. Setting this parameter to 0 disables automated backups.
 
         Default: 1
 
@@ -3153,9 +3160,8 @@ class RDSConnection(AWSQueryConnection):
         rollback activity for in-transit transactions.
 
         :type db_instance_identifier: string
-        :param db_instance_identifier:
-        The DB instance identifier. This parameter is stored as a lowercase
-            string.
+        :param db_instance_identifier: The DB instance identifier. This
+            parameter is stored as a lowercase string.
 
         Constraints:
 
@@ -3215,7 +3221,7 @@ class RDSConnection(AWSQueryConnection):
         :type resource_name: string
         :param resource_name: The Amazon RDS resource the tags will be removed
             from. This value is an Amazon Resource Name (ARN). For information
-            about creating an ARN, see ` Constructing an RDS Amazon Resource
+            about creating an ARN, see `Constructing an RDS Amazon Resource
             Name (ARN)`_.
 
         :type tag_keys: list
@@ -3245,8 +3251,7 @@ class RDSConnection(AWSQueryConnection):
         restart or `RebootDBInstance` request.
 
         :type db_parameter_group_name: string
-        :param db_parameter_group_name:
-        The name of the DB parameter group.
+        :param db_parameter_group_name: The name of the DB parameter group.
 
         Constraints:
 
@@ -3316,8 +3321,7 @@ class RDSConnection(AWSQueryConnection):
         security group.
 
         :type db_instance_identifier: string
-        :param db_instance_identifier:
-        The identifier for the DB snapshot to restore from.
+        :param db_instance_identifier: The identifier for the DB snapshot to restore from.
 
         Constraints:
 
@@ -3405,8 +3409,7 @@ class RDSConnection(AWSQueryConnection):
             public-license`
 
         :type db_name: string
-        :param db_name:
-        The database name for the restored DB instance.
+        :param db_name: The database name for the restored DB instance.
 
 
         This parameter doesn't apply to the MySQL engine.
@@ -3508,8 +3511,8 @@ class RDSConnection(AWSQueryConnection):
         instance is created with the default DB security group.
 
         :type source_db_instance_identifier: string
-        :param source_db_instance_identifier:
-        The identifier of the source DB instance from which to restore.
+        :param source_db_instance_identifier: The identifier of the source DB
+            instance from which to restore.
 
         Constraints:
 
@@ -3520,8 +3523,8 @@ class RDSConnection(AWSQueryConnection):
         + Cannot end with a hyphen or contain two consecutive hyphens
 
         :type target_db_instance_identifier: string
-        :param target_db_instance_identifier:
-        The name of the new database instance to be created.
+        :param target_db_instance_identifier: The name of the new database
+            instance to be created.
 
         Constraints:
 
@@ -3618,8 +3621,7 @@ class RDSConnection(AWSQueryConnection):
             public-license`
 
         :type db_name: string
-        :param db_name:
-        The database name for the restored DB instance.
+        :param db_name: The database name for the restored DB instance.
 
 
         This parameter is not used for the MySQL engine.
