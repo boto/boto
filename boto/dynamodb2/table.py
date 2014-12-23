@@ -24,6 +24,18 @@ class Table(object):
     """
     max_batch_get = 100
 
+    _PROJECTION_TYPE_TO_INDEX = dict(
+        global_indexes=dict(
+            ALL=GlobalAllIndex,
+            KEYS_ONLY=GlobalKeysOnlyIndex,
+            INCLUDE=GlobalIncludeIndex,
+        ), local_indexes=dict(
+            ALL=AllIndex,
+            KEYS_ONLY=KeysOnlyIndex,
+            INCLUDE=IncludeIndex,
+        )
+    )
+
     def __init__(self, table_name, schema=None, throughput=None, indexes=None,
                  global_indexes=None, connection=None):
         """
@@ -264,25 +276,25 @@ class Table(object):
 
         return schema
 
-    def _introspect_indexes(self, raw_indexes):
+    def _introspect_all_indexes(self, raw_indexes, map_indexes_projection):
         """
-        Given a raw index structure back from a DynamoDB response, parse
-        out & build the high-level Python objects that represent them.
+        Given a raw index/global index structure back from a DynamoDB response,
+        parse out & build the high-level Python objects that represent them.
         """
         indexes = []
 
         for field in raw_indexes:
-            index_klass = AllIndex
+            index_klass = map_indexes_projection.get('ALL')
             kwargs = {
                 'parts': []
             }
 
             if field['Projection']['ProjectionType'] == 'ALL':
-                index_klass = AllIndex
+                index_klass = map_indexes_projection.get('ALL')
             elif field['Projection']['ProjectionType'] == 'KEYS_ONLY':
-                index_klass = KeysOnlyIndex
+                index_klass = map_indexes_projection.get('KEYS_ONLY')
             elif field['Projection']['ProjectionType'] == 'INCLUDE':
-                index_klass = IncludeIndex
+                index_klass = map_indexes_projection.get('INCLUDE')
                 kwargs['includes'] = field['Projection']['NonKeyAttributes']
             else:
                 raise exceptions.UnknownIndexFieldError(
@@ -296,39 +308,23 @@ class Table(object):
             indexes.append(index_klass(name, **kwargs))
 
         return indexes
+
+    def _introspect_indexes(self, raw_indexes):
+        """
+        Given a raw index structure back from a DynamoDB response, parse
+        out & build the high-level Python objects that represent them.
+        """
+        return self._introspect_all_indexes(
+            raw_indexes, self._PROJECTION_TYPE_TO_INDEX.get('local_indexes'))
 
     def _introspect_global_indexes(self, raw_global_indexes):
         """
         Given a raw global index structure back from a DynamoDB response, parse
         out & build the high-level Python objects that represent them.
         """
-        indexes = []
-
-        for field in raw_global_indexes:
-            index_klass = GlobalAllIndex
-            kwargs = {
-                'parts': []
-            }
-
-            if field['Projection']['ProjectionType'] == 'ALL':
-                index_klass = GlobalAllIndex
-            elif field['Projection']['ProjectionType'] == 'KEYS_ONLY':
-                index_klass = GlobalKeysOnlyIndex
-            elif field['Projection']['ProjectionType'] == 'INCLUDE':
-                index_klass = GlobalIncludeIndex
-                kwargs['includes'] = field['Projection']['NonKeyAttributes']
-            else:
-                raise exceptions.UnknownIndexFieldError(
-                    "%s was seen, but is unknown. Please report this at "
-                    "https://github.com/boto/boto/issues." % \
-                    field['Projection']['ProjectionType']
-                )
-
-            name = field['IndexName']
-            kwargs['parts'] = self._introspect_schema(field['KeySchema'], None)
-            indexes.append(index_klass(name, **kwargs))
-
-        return indexes
+        return self._introspect_all_indexes(
+            raw_global_indexes,
+            self._PROJECTION_TYPE_TO_INDEX.get('global_indexes'))
 
     def describe(self):
         """
