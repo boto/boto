@@ -2476,8 +2476,6 @@ class RDSConnection(AWSQueryConnection):
         amazon.com/AmazonRDS/latest/UserGuide/USER_Tagging.html#USER_Tagging.\
         ARN
 
-        ..
-
         """
         params = {'ResourceName': resource_name, }
         return self._make_request(
