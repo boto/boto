@@ -182,7 +182,7 @@ class Queue(object):
         return self.connection.remove_permission(self, label)
 
     def read(self, visibility_timeout=None, wait_time_seconds=None,
-             message_attributes=None):
+             message_attributes=None, attributes=None):
         """
         Read a single message from the queue.
 
@@ -200,10 +200,18 @@ class Queue(object):
             attributes to return. The default is to return no additional
             message attributes. Use ``['All']`` or ``['.*']`` to return all.
 
+        :type attributes: str
+        :param attributes: The name of additional attribute to return
+            with response or All if you want all attributes.  The
+            default is to return no additional attributes.  Valid
+            values: All SenderId SentTimestamp ApproximateReceiveCount
+            ApproximateFirstReceiveTimestamp
+
         :rtype: :class:`boto.sqs.message.Message`
         :return: A single message or None if queue is empty
         """
         rs = self.get_messages(1, visibility_timeout,
+                               attributes=attributes,
                                wait_time_seconds=wait_time_seconds,
                                message_attributes=message_attributes)
         if len(rs) == 1:
