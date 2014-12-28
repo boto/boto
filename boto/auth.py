@@ -690,7 +690,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
             modified_req.params = copy_params
 
         raw_qs = parsed_path.query
-        existing_qs = urllib.parse.parse_qs(
+        existing_qs = boto.utils.parse_qs_safe(
             raw_qs,
             keep_blank_values=True
         )

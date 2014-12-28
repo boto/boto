@@ -104,6 +104,33 @@ def unquote_v(nv):
         return (nv[0], urllib.parse.unquote(nv[1]))
 
 
+def parse_qs_safe(qs, keep_blank_values=False, strict_parsing=False,
+                  encoding='utf-8', errors='replace'):
+    """Parse a query handling unicode arguments properly in Python 2."""
+    if six.PY3:
+        return urllib.parse.parse_qs(qs, keep_blank_values, strict_parsing,
+                                     encoding, errors)
+    else:
+        is_text_type = isinstance(qs, six.text_type)
+        if is_text_type:
+            qs = qs.encode('ascii')  # URL encoding uses ASCII code points only
+
+        qs_dict = urllib.parse.parse_qs(qs, keep_blank_values, strict_parsing)
+
+        if is_text_type:
+            return decode_qs_dict(qs_dict, encoding, errors)
+        return qs_dict
+
+
+def decode_qs_dict(qs_dict, encoding='utf-8', errors='replace'):
+    result = {}
+    for (name, value) in qs_dict.items():
+        decoded_name = name.decode(encoding, errors)
+        decoded_value = [item.decode(encoding, errors) for item in value]
+        result[decoded_name] = decoded_value
+    return result
+
+
 def canonical_string(method, path, headers, expires=None,
                      provider=None):
     """

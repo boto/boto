@@ -447,6 +447,27 @@ class TestS3HmacAuthV4Handler(unittest.TestCase):
             'delete': ''
         })
 
+    def test_unicode_query_string(self):
+        request = HTTPRequest(
+            method='HEAD',
+            protocol='https',
+            host='awesome-bucket.s3-us-west-2.amazonaws.com',
+            port=443,
+            path=u'/?max-keys=1&prefix=El%20Ni%C3%B1o',
+            auth_path=u'/awesome-bucket/?max-keys=1&prefix=El%20Ni%C3%B1o',
+            params={},
+            headers={},
+            body=''
+        )
+
+        mod_req = self.auth.mangle_path_and_params(request)
+        self.assertEqual(mod_req.path, u'/?max-keys=1&prefix=El%20Ni%C3%B1o')
+        self.assertEqual(mod_req.auth_path, u'/awesome-bucket/')
+        self.assertEqual(mod_req.params, {
+            u'max-keys': u'1',
+            u'prefix': u'El Ni\xf1o',
+        })
+
     def test_canonical_request(self):
         expected = """GET
 /
