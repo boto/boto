@@ -342,13 +342,13 @@ class TestS3HmacAuthV4Handler(unittest.TestCase):
     def test_canonical_uri(self):
         request = HTTPRequest(
             'GET', 'https', 's3-us-west-2.amazonaws.com', 443,
-            'x/./././x .html', None, {},
+            'x/./././~x .html', None, {},
             {}, ''
         )
         canonical_uri = self.auth.canonical_uri(request)
         # S3 doesn't canonicalize the way other SigV4 services do.
         # This just urlencoded, no normalization of the path.
-        self.assertEqual(canonical_uri, 'x/./././x%20.html')
+        self.assertEqual(canonical_uri, 'x/./././~x%20.html')
 
     def test_determine_service_name(self):
         # What we wish we got.
