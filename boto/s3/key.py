@@ -238,7 +238,8 @@ class Key(object):
         # version of the Key.  In that case, we don't really want to
         # overwrite the version_id in this Key object.  Comprende?
         if self.version_id is None or force:
-            self.version_id = resp.getheader(provider.version_id, None)
+            version_id = resp.getheader(provider.version_id, None)
+            self.version_id = version_id if version_id != 'null' else None
         self.source_version_id = resp.getheader(provider.copy_source_version_id,
                                                 None)
         if resp.getheader(provider.delete_marker, 'false') == 'true':

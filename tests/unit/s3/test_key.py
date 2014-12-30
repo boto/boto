@@ -45,6 +45,12 @@ class TestS3Key(AWSMockServiceTestCase):
         k.name = u'Österreich'
         print(repr(k))
 
+    def test_no_version_set_when_null_returned(self):
+        self.set_http_response(status_code=200, header=[('x-amz-version-id', 'null')])
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.get_key('myglacierkey')
+        self.assertIsNone(k.version_id)
+
     def test_when_no_restore_header_present(self):
         self.set_http_response(status_code=200)
         b = Bucket(self.service_connection, 'mybucket')
