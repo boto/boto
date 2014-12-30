@@ -488,6 +488,19 @@ class S3KeySigV4Test(unittest.TestCase):
         self.assertEqual(from_s3_key.get_contents_as_string().decode('utf-8'),
                          body)
 
+    def test_head_put_get_with_non_ascii_key(self):
+        k = Key(self.bucket)
+        k.key = u'''pt-Olá_ch-你好_ko-안녕_ru-Здравствуйте%20,.<>~`!@#$%^&()_-+='"'''
+        body = 'This is a test of S3'
+
+        k.set_contents_from_string(body)
+        from_s3_key = self.bucket.get_key(k.key, validate=True)
+        self.assertEqual(from_s3_key.get_contents_as_string().decode('utf-8'),
+                         body)
+
+        keys = self.bucket.get_all_keys(prefix=k.key, max_keys=1)
+        self.assertEqual(1, len(keys))
+
 
 class S3KeyVersionCopyTest(unittest.TestCase):
     def setUp(self):
