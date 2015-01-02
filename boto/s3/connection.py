@@ -375,7 +375,7 @@ class S3Connection(AWSAuthConnection):
 
     def generate_url(self, expires_in, method, bucket='', key='', headers=None,
                      query_auth=True, force_http=False, response_headers=None,
-                     expires_in_absolute=False, version_id=None):
+                     expires_in_absolute=False, version_id=None, extra_qp=[]):
         if self._auth_handler.capability[0] == 'hmac-v4-s3':
             # Handle the special sigv4 case
             return self.generate_url_sigv4(expires_in, method, bucket=bucket,
@@ -391,7 +391,6 @@ class S3Connection(AWSAuthConnection):
         auth_path = self.get_path(auth_path)
         # optional version_id and response_headers need to be added to
         # the query param list.
-        extra_qp = []
         if version_id is not None:
             extra_qp.append("versionId=%s" % version_id)
         if response_headers:
