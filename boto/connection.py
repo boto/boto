@@ -752,8 +752,9 @@ class AWSAuthConnection(object):
                     host, ca_certs=self.ca_certificates_file,
                     **http_connection_kwargs)
             else:
-                connection = http_client.HTTPSConnection(
-                    host, **http_connection_kwargs)
+                connection = https_connection.NonCertValidatingHTTPSConnection(
+                    host, ca_certs=self.ca_certificates_file,
+                    **http_connection_kwargs)
         else:
             boto.log.debug('establishing HTTP connection: kwargs=%s' %
                            http_connection_kwargs)
