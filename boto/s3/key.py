@@ -44,16 +44,20 @@ from boto.utils import compute_md5, compute_hash
 from boto.utils import find_matching_headers
 from boto.utils import merge_headers_by_name
 
-
 class Key(object):
     """
     Represents a key (object) in an S3 bucket.
 
     :ivar bucket: The parent :class:`boto.s3.bucket.Bucket`.
     :ivar name: The name of this Key object.
-    :ivar metadata: A dictionary containing user metadata that you
+    :ivar metadata: A dictionary containing metadata that you
         wish to store with the object or that has been retrieved from
         an existing object.
+
+        Metadata names should be in lowercase. System metadata (HTTP headers)
+        can also be accessed as key fields. That is, key.cache_control
+        is a shortcut to key.metadata['cache-control'], etc.
+        The same does not hold for custom metadata.
     :ivar cache_control: The value of the `Cache-Control` HTTP header.
     :ivar content_type: The value of the `Content-Type` HTTP header.
     :ivar content_encoding: The value of the `Content-Encoding` HTTP header.
@@ -61,8 +65,13 @@ class Key(object):
         header.
     :ivar content_language: The value of the `Content-Language` HTTP header.
     :ivar etag: The `etag` associated with this object.
+    :ivar content_md5: The value of the `Content-MD5` HTTP header.
+    :ivar x_robots_tag: The value of the `X-Robots-Tag' HTTP header.
+    :ivar expires: The value of the `Expires` HTTP header.
+    :ivar content_length: The value of the `Content-Length' HTTP header.
+    :ivar date: The value of the `Date` HTTP header.
     :ivar last_modified: The string timestamp representing the last
-        time this object was modified in S3.
+        time this object was modified in S3. Included in HTTP headers.
     :ivar owner: The ID of the owner of this object.
     :ivar storage_class: The storage class of the object.  Currently, one of:
         STANDARD | REDUCED_REDUNDANCY | GLACIER
@@ -97,8 +106,12 @@ class Key(object):
     # Metadata fields, whether user-settable or not, other than custom
     # metadata fields (i.e., those beginning with a provider specific prefix
     # like x-amz-meta).
+    # It seems that you can set date, but only to a time close enough to
+    # the current time. Best to regard it non-user-settable.
     base_fields = (base_user_settable_fields |
                    set(["last-modified", "content-length", "date", "etag"]))
+    _underscore_base_fields = set(map(lambda f: f.replace('-', '_'),
+                                      base_fields))
 
 
 
@@ -315,7 +328,7 @@ class Key(object):
                     end_range = re.sub('.*/(.*)', '\\1', value)
                     self.size = int(end_range)
                 elif name.lower() in Key.base_fields:
-                    self.__dict__[name.lower().replace('-', '_')] = value
+                    self.set_metadata(name, value)
             self.handle_version_headers(self.resp)
             self.handle_encryption_headers(self.resp)
             self.handle_restore_headers(self.resp)
@@ -545,23 +558,40 @@ class Key(object):
         return self.bucket.delete_key(self.name, version_id=self.version_id,
                                       headers=headers)
 
+    def __getattr__(self, name):
+        if name.lower() in Key._underscore_base_fields:
+            name = name.lower().replace('_', '-')
+            return self.metadata.get(name)
+        else:
+            return object.__getattr__(self, name)
+
+
+    def __setattr__(self, name, value):
+        if name.lower() in Key._underscore_base_fields:
+            name = name.lower().replace('_', '-')
+            self.set_metadata(name, value)
+        else:
+            object.__setattr__(self, name, value)
+
     def get_metadata(self, name):
-        return self.metadata.get(name)
+        name = name.lower()
+        if name in Key.base_fields:
+            # For non-existent system metadata, return None.
+            return self.metadata.get(name)
+        else:
+            # For non-existent custom metadata, raise KeyError.
+            return self.metadata[name]
 
     def set_metadata(self, name, value):
-        # Ensure that metadata that is vital to signing is in the correct
-        # case. Applies to ``Content-Type`` & ``Content-MD5``.
-        if name.lower() == 'content-type':
-            self.metadata['Content-Type'] = value
-        elif name.lower() == 'content-md5':
-            self.metadata['Content-MD5'] = value
-        else:
+        name = name.lower()
+        if value is not None:
             self.metadata[name] = value
-        if name.lower() in Key.base_user_settable_fields:
-            self.__dict__[name.lower().replace('-', '_')] = value
+        elif name in self.metadata:
+            del self.metadata[name]
 
     def update_metadata(self, d):
-        self.metadata.update(d)
+        for k, v in d.iteritems():
+            self.set_metadata(k, v)
 
     # convenience methods for setting/getting ACL
     def set_acl(self, acl_str, headers=None):
@@ -697,6 +727,7 @@ class Key(object):
         if encrypt_key:
             headers[provider.server_side_encryption_header] = 'AES256'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
+        del headers['Content-Type']
 
         return self.bucket.connection.generate_url(expires_in, method,
                                                    self.bucket.name, self.name,
@@ -1839,38 +1870,31 @@ class Key(object):
                                   display_name=display_name)
         self.set_acl(policy, headers=headers)
 
-    def _normalize_metadata(self, metadata):
+    @staticmethod
+    def _normalize_metadata(metadata):
         if type(metadata) == set:
             norm_metadata = set()
             for k in metadata:
                 norm_metadata.add(k.lower())
         else:
             norm_metadata = {}
-            for k in metadata:
-                norm_metadata[k.lower()] = metadata[k]
+            for k, v in metadata.iteritems():
+                norm_metadata[k.lower()] = v
         return norm_metadata
 
-    def _get_remote_metadata(self, headers=None):
+    def _get_remote_metadata(self):
         """
         Extracts metadata from existing URI into a dict, so we can
         overwrite/delete from it to form the new set of metadata to apply to a
         key.
         """
-        metadata = {}
-        for underscore_name in self._underscore_base_user_settable_fields:
-            if hasattr(self, underscore_name):
-                value = getattr(self, underscore_name)
-                if value:
-                    # Generate HTTP field name corresponding to "_" named field.
-                    field_name = underscore_name.replace('_', '-')
-                    metadata[field_name.lower()] = value
-        # self.metadata contains custom metadata, which are all user-settable.
         prefix = self.provider.metadata_prefix
-        for underscore_name in self.metadata:
-            field_name = underscore_name.replace('_', '-')
-            metadata['%s%s' % (prefix, field_name.lower())] = (
-                self.metadata[underscore_name])
-        return metadata
+        res = { }
+        for key, value in self.metadata.iteritems():
+            if key.lower() not in Key.base_fields:
+                key = '%s%s' % (prefix, key.lower())
+            res[key] = value
+        return res
 
     def set_remote_metadata(self, metadata_plus, metadata_minus, preserve_acl,
                             headers=None):

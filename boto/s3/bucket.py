@@ -205,8 +205,7 @@ class Bucket(object):
             provider = self.connection.provider
             k.metadata = boto.utils.get_aws_metadata(response.msg, provider)
             for field in Key.base_fields:
-                k.__dict__[field.lower().replace('-', '_')] = \
-                    response.getheader(field)
+                k.set_metadata(field, response.getheader(field))
             # the following machinations are a workaround to the fact that
             # apache/fastcgi omits the content-length header on HEAD
             # requests when the content-length is zero.
@@ -862,6 +861,7 @@ class Bucket(object):
         if provider.storage_class_header and storage_class:
             headers[provider.storage_class_header] = storage_class
         if metadata is not None:
+            metadata = Key._normalize_metadata(metadata)
             headers[provider.metadata_directive_header] = 'REPLACE'
             headers = boto.utils.merge_meta(headers, metadata, provider)
         elif not query_args:  # Can't use this header with multi-part copy.
@@ -1745,6 +1745,8 @@ class Bucket(object):
             headers[provider.server_side_encryption_header] = 'AES256'
         if metadata is None:
             metadata = {}
+        else:
+            metadata = Key._normalize_metadata(metadata)
 
         headers = boto.utils.merge_meta(headers, metadata,
                 self.connection.provider)
