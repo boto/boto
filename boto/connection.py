@@ -747,14 +747,16 @@ class AWSAuthConnection(object):
                 connection = self.proxy_ssl(host, is_secure and 443 or 80)
             elif self.https_connection_factory:
                 connection = self.https_connection_factory(host)
-            elif self.https_validate_certificates and HAVE_HTTPS_CONNECTION:
-                connection = https_connection.CertValidatingHTTPSConnection(
-                    host, ca_certs=self.ca_certificates_file,
-                    **http_connection_kwargs)
+            elif HAVE_HTTPS_CONNECTION:
+                if self.https_validate_certificates:
+                    conn_cls = https_connection.CertValidatingHTTPSConnection
+                else:
+                    conn_cls = https_connection.NonCertValidatingHTTPSConnection
+
+                http_connection_kwargs["ca_certs"] = self.ca_certificates_file
+                connection = conn_cls(host, **http_connection_kwargs)
             else:
-                connection = https_connection.NonCertValidatingHTTPSConnection(
-                    host, ca_certs=self.ca_certificates_file,
-                    **http_connection_kwargs)
+                connection = http_client.HTTPSConnection(host, **http_connection_kwargs)
         else:
             boto.log.debug('establishing HTTP connection: kwargs=%s' %
                            http_connection_kwargs)
