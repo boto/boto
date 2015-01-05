@@ -114,9 +114,10 @@ class LocaleRequirement(Requirement):
     A Qualification requirement based on the Worker's location. The Worker's location is specified by the Worker to Mechanical Turk when the Worker creates his account.
     """
 
-    def __init__(self, comparator, locale, required_to_preview=False):
+    def __init__(self, comparator, locale, required_to_preview=False, subdivision=''):
         super(LocaleRequirement, self).__init__(qualification_type_id="00000000000000000071", comparator=comparator, integer_value=None, required_to_preview=required_to_preview)
         self.locale = locale
+        self.subdivision = subdivision
 
     def get_as_params(self):
         params =  {
@@ -124,6 +125,10 @@ class LocaleRequirement(Requirement):
             "Comparator": self.comparator,
             'LocaleValue.Country': self.locale,
         }
+        #subdivision only included if set and only valid for US states.  
+        #Uses ISO 3166-2 2 character codes.  Ex. CA for California
+        if self.subdivision:
+            params['LocaleValue.Subdivision'] = self.subdivision
         if self.required_to_preview:
             params['RequiredToPreview'] = "true"
         return params
