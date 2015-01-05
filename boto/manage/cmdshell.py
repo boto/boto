@@ -404,4 +404,4 @@ def sshclient_from_instance(instance, ssh_key_file,
                     private key.
     """
     s = FakeServer(instance, ssh_key_file)
-    return SSHClient(s, host_key_file, user_name, ssh_pwd)
+    return SSHClient(s, host_key_file, user_name, None, ssh_pwd)
