@@ -108,7 +108,7 @@ class STSConnection(AWSQueryConnection):
 
     def _required_auth_capability(self):
         if self.anon:
-            return ['pure-query']
+            return ['sts-anon']
         else:
             return ['hmac-v4']
 
