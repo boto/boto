@@ -23,11 +23,11 @@ import copy
 from mock import Mock
 from tests.unit import unittest
 
-from boto.auth import QueryAuthHandler
+from boto.auth import STSAnonHandler
 from boto.connection import HTTPRequest
 
 
-class TestQueryAuthHandler(unittest.TestCase):
+class TestSTSAnonHandler(unittest.TestCase):
     def setUp(self):
         self.provider = Mock()
         self.provider.access_key = 'access_key'
@@ -51,8 +51,8 @@ class TestQueryAuthHandler(unittest.TestCase):
         )
 
     def test_escape_value(self):
-        auth = QueryAuthHandler('sts.amazonaws.com',
-                                 Mock(), self.provider)
+        auth = STSAnonHandler('sts.amazonaws.com',
+                              Mock(), self.provider)
         # This is changed from a previous version because this string is
         # being passed to the query string and query strings must
         # be url encoded.
@@ -60,19 +60,19 @@ class TestQueryAuthHandler(unittest.TestCase):
         self.assertEqual(value, 'Atza%7CIQEBLjAsAhRkcxQ')
 
     def test_build_query_string(self):
-        auth = QueryAuthHandler('sts.amazonaws.com',
-                                 Mock(), self.provider)
+        auth = STSAnonHandler('sts.amazonaws.com',
+                              Mock(), self.provider)
         query_string = auth._build_query_string(self.request.params)
         self.assertEqual(query_string, 'Action=AssumeRoleWithWebIdentity' + \
             '&ProviderId=2012-06-01&RoleSessionName=web-identity-federation' + \
             '&Version=2011-06-15&WebIdentityToken=Atza%7CIQEBLjAsAhRkcxQ')
 
     def test_add_auth(self):
-        auth = QueryAuthHandler('sts.amazonaws.com',
-                                 Mock(), self.provider)
+        auth = STSAnonHandler('sts.amazonaws.com',
+                              Mock(), self.provider)
         req = copy.copy(self.request)
         auth.add_auth(req)
-        self.assertEqual(req.path,
-            '/?Action=AssumeRoleWithWebIdentity' + \
+        self.assertEqual(req.body,
+            'Action=AssumeRoleWithWebIdentity' + \
             '&ProviderId=2012-06-01&RoleSessionName=web-identity-federation' + \
             '&Version=2011-06-15&WebIdentityToken=Atza%7CIQEBLjAsAhRkcxQ')

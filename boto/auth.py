@@ -771,16 +771,15 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
                                     urllib.parse.urlencode(req.params))
 
 
-class QueryAuthHandler(AuthHandler):
+class STSAnonHandler(AuthHandler):
     """
     Provides pure query construction (no actual signing).
 
-    Mostly useful for STS' ``assume_role_with_web_identity``.
-
-    Does **NOT** escape query string values!
+    Used for making anonymous STS request for operations like
+    ``assume_role_with_web_identity``.
     """
 
-    capability = ['pure-query']
+    capability = ['sts-anon']
 
     def _escape_value(self, value):
         # This is changed from a previous version because this string is
@@ -803,13 +802,11 @@ class QueryAuthHandler(AuthHandler):
         qs = self._build_query_string(
             http_request.params
         )
-        boto.log.debug('query_string: %s' % qs)
-        headers['Content-Type'] = 'application/json; charset=UTF-8'
-        http_request.body = ''
-        # if this is a retried request, the qs from the previous try will
-        # already be there, we need to get rid of that and rebuild it
-        http_request.path = http_request.path.split('?')[0]
-        http_request.path = http_request.path + '?' + qs
+        boto.log.debug('query_string in body: %s' % qs)
+        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        # This will be  a POST so the query string should go into the body
+        # as opposed to being in the uri
+        http_request.body = qs
 
 
 class QuerySignatureHelper(HmacKeys):
