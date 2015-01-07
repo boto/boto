@@ -1042,6 +1042,22 @@ def merge_headers_by_name(name, headers):
     return ','.join(str(headers[h]) for h in matching_headers
                     if headers[h] is not None)
 
+def squash_headers_by_name(name, headers, value=None):
+    """
+    Takes a specific header name and a dict of headers
+    {"name": "value"}. Squashes all headers with the given
+    case-insensitive name into the one header of the given
+    name also adding a new value if not None and removes
+    any other version of the header name.
+
+    """
+    matching_headers = find_matching_headers(name, headers)
+    vals = [value] if value is not None else []
+    for h in matching_headers:
+        if headers[h] is not None:
+            vals.append(headers[h])
+        del headers[h]
+    headers[name] = ','.join(vals)
 
 class RequestHook(object):
     """

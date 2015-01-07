@@ -356,6 +356,7 @@ class HTTPRequest(object):
         else:
             self.headers = headers
         self.body = body
+        self.sigv4 = {}
 
     def __str__(self):
         return (('method:(%s) protocol:(%s) host(%s) port(%s) path(%s) '
@@ -382,7 +383,6 @@ class HTTPRequest(object):
             if 'Transfer-Encoding' not in self.headers or \
                     self.headers['Transfer-Encoding'] != 'chunked':
                 self.headers['Content-Length'] = str(len(self.body))
-
 
 class HTTPResponse(http_client.HTTPResponse):
 
@@ -936,8 +936,7 @@ class AWSAuthConnection(object):
                 boto.log.debug('Final headers: %s' % request.headers)
                 request.start_time = datetime.now()
                 if callable(sender):
-                    response = sender(connection, request.method, request.path,
-                                      request.body, request.headers)
+                    response = sender(connection, request)
                 else:
                     connection.request(request.method, request.path,
                                        request.body, request.headers)
@@ -951,7 +950,7 @@ class AWSAuthConnection(object):
                                                         'chunked', False):
                     response.chunked = 0
                 if callable(retry_handler):
-                    status = retry_handler(response, i, next_sleep)
+                    status = retry_handler(response, i, next_sleep, request)
                     if status:
                         msg, i, next_sleep = status
                         if msg:
@@ -980,6 +979,34 @@ class AWSAuthConnection(object):
                                                  self.is_secure, connection)
                     if self.request_hook is not None:
                         self.request_hook.handle_request_data(request, response)
+                    sigv4_redirect = config.getbool('s3', 'sigv4_redirect', True)
+                    from boto.s3.connection import S3Connection
+                    if (response.status == 400 and sigv4_redirect and
+                        isinstance(self, S3Connection)):
+                        # Java AWS client, does an automatic redirect when it
+                        # detects the endpoint requires V4 Signatures.
+                        # This code does the same thing.
+                        body = response.read()
+                        if (body is not None and
+                            body.find('AWS4-HMAC-SHA256') != -1):
+                            msg = 'Attempting to re-send the request to '
+                            msg += request.host
+                            msg += ' with AWS V4 authentication. To avoid this '
+                            msg += 'warning in the future, please use '
+                            msg += 'a region-specific endpoint to access '
+                            msg += 'buckets located in regions that require '
+                            msg += 'V4 signing.'
+                            print(msg)
+                            boto.log.debug(msg)
+                            self.use_sigv4 = True
+                            self._auth_handler = auth.get_auth_handler(
+                                              request.host,
+                                              config, self.provider,
+                                              self._required_auth_capability())
+                            connection = self.get_http_connection(request.host,
+                                              request.port, self.is_secure)
+                            response = None
+                            continue
                     return response
                 else:
                     scheme, request.host, request.path, \
@@ -1011,8 +1038,8 @@ class AWSAuthConnection(object):
                             'encountered unretryable %s exception, re-raising' %
                             e.__class__.__name__)
                         raise
-                boto.log.debug('encountered %s exception, reconnecting' %
-                               e.__class__.__name__)
+                boto.log.debug('encountered %s exception %s, reconnecting' %
+                               (e.__class__.__name__, e))
                 connection = self.new_http_connection(request.host, request.port,
                                                       self.is_secure)
                 ex = e

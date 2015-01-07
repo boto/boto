@@ -126,7 +126,7 @@ class Layer1(AWSAuthConnection):
         boto.log.debug(response_body)
         return json.loads(response_body, object_hook=object_hook)
 
-    def _retry_handler(self, response, i, next_sleep):
+    def _retry_handler(self, response, i, next_sleep, request):
         status = None
         if response.status == 400:
             response_body = response.read().decode('utf-8')

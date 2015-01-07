@@ -167,9 +167,9 @@ class ResettingFileSender(object):
         self._archive = archive
         self._starting_offset = archive.tell()
 
-    def __call__(self, connection, method, path, body, headers):
+    def __call__(self, connection, req):
         try:
-            connection.request(method, path, self._archive, headers)
+            connection.request(req.method, req.path, self._archive, req.headers)
             return connection.getresponse()
         finally:
             self._archive.seek(self._starting_offset)

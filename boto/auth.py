@@ -485,13 +485,16 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         sts.append(sha256(canonical_request.encode('utf-8')).hexdigest())
         return '\n'.join(sts)
 
-    def signature(self, http_request, string_to_sign):
+    def signing_key(self, http_request):
         key = self._provider.secret_key
         k_date = self._sign(('AWS4' + key).encode('utf-8'),
                             http_request.timestamp)
         k_region = self._sign(k_date, http_request.region_name)
         k_service = self._sign(k_region, http_request.service_name)
-        k_signing = self._sign(k_service, 'aws4_request')
+        return self._sign(k_service, 'aws4_request')
+
+    def signature(self, http_request, string_to_sign):
+        k_signing = self.signing_key(http_request)
         return self._sign(k_signing, string_to_sign, hex=True)
 
     def add_auth(self, req, **kwargs):
@@ -714,7 +717,49 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
 
         return super(S3HmacAuthV4Handler, self).payload(http_request)
 
+    def signing_key(self, http_request):
+        k_signing = super(S3HmacAuthV4Handler,
+                          self).signing_key(http_request)
+        http_request.sigv4['signing_key'] = k_signing
+        return k_signing
+
+    def signature(self, http_request, string_to_sign):
+        signature = super(S3HmacAuthV4Handler,
+                          self).signature(http_request, string_to_sign)
+        http_request.sigv4['signature'] = signature
+        return signature
+
+    def chunk_string_to_sign(self, http_request, chunk):
+        sts = ['AWS4-HMAC-SHA256-PAYLOAD']
+        sts.append(http_request.headers['X-Amz-Date'])
+        sts.append(self.credential_scope(http_request))
+        sts.append(http_request.sigv4['signature'])
+        sts.append(sha256('').hexdigest())
+        sts.append(sha256(chunk).hexdigest())
+        return '\n'.join(sts)
+
+    def chunk_signature(self, http_request, chunk):
+        sts = self.chunk_string_to_sign(http_request, chunk)
+        k_signing = http_request.sigv4['signing_key']
+        signature = self._sign(k_signing, sts, hex=True)
+        http_request.sigv4['signature'] = signature
+        return signature
+
+    def chunk_header(self, http_request, chunk):
+        signature = self.chunk_signature(http_request, chunk)
+        return '%x;chunk-signature=%s\r\n' % (len(chunk), signature)
+
+    def chunk_extra_size(self, chunk_len):
+        # each aws-chunk adds this many bytes to the length
+        #  17 ';chunk-signature='
+        # +64 signature hex digest
+        # + 4 '\r\n\r\n'
+        # =85
+        return 85 + len('%x' % chunk_len)
+
     def add_auth(self, req, **kwargs):
+        if 'X-Amzn-Authorization' in req.headers:
+            req.sigv4 = {}
         if 'x-amz-content-sha256' not in req.headers:
             if '_sha256' in req.headers:
                 req.headers['x-amz-content-sha256'] = req.headers.pop('_sha256')
@@ -1027,6 +1072,9 @@ def detect_potential_sigv4(func):
 
 def detect_potential_s3sigv4(func):
     def _wrapper(self):
+        if self.use_sigv4:
+            return ['hmac-v4-s3']
+
         if os.environ.get('S3_USE_SIGV4', False):
             return ['hmac-v4-s3']
 
@@ -1043,3 +1091,42 @@ def detect_potential_s3sigv4(func):
 
         return func(self)
     return _wrapper
+
+def sigv4_streaming():
+    """Return the method to use for the SigV4 payload.
+
+    AWS allows S3 requests using signature V4 to be transferred using
+    three different methods:
+
+    0 - Don't do streaming. The entire payload is checksummed and
+        used as part of the signature. The payload is sent in one shot.
+        This method requires the entire payload to be read twice, once to
+        calculate the checksum and again while sending the data in
+        the request.
+
+    1 - Do standard streaming. The request headers are signed first,
+        then the body is sent using a special 'aws-chunked' content-encoding.
+        Each chunk is checksummed and signed on the go. This method is the
+        standard payload method if not specified.
+
+    2 - This is also a streaming method but uses the chunked
+        transfer-encoding header to transfer the data piece by piece.
+        This uses HTTP chunking on top of aws-chunked.
+
+    Returns:
+        One of 0,1,2
+    """
+    default = 1
+
+    streaming = os.environ.get('S3_SIGV4_STREAMING')
+    if streaming is not None:
+        if streaming in ['0','1','2']:
+            return int(streaming)
+        else:
+            return default
+
+    streaming = boto.config.getint('s3', 'sigv4_streaming', default)
+    if streaming >= 0 and streaming <= 2:
+        return streaming
+
+    return default

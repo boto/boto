@@ -579,7 +579,7 @@ class Route53Connection(AWSAuthConnection):
                 value = "%s." % value
             return value
 
-    def _retry_handler(self, response, i, next_sleep):
+    def _retry_handler(self, response, i, next_sleep, request):
         status = None
         boto.log.debug("Saw HTTP status: %s" % response.status)
 
