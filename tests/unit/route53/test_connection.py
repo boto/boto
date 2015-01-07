@@ -571,6 +571,49 @@ class TestTruncatedGetAllRRSetsRoute53(AWSMockServiceTestCase):
 
 
 @attr(route53=True)
+class TestCreateHealthCheckRoute53EmptyResourcePath(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestCreateHealthCheckRoute53EmptyResourcePath, self).setUp()
+
+    def default_body(self):
+        return b"""
+<CreateHealthCheckResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+   <HealthCheck>
+      <Id>34778cf8-e31e-4974-bad0-b108bd1623d3</Id>
+      <CallerReference>2fa48c8f-76ef-4253-9874-8bcb2b0d7694</CallerReference>
+      <HealthCheckConfig>
+         <IPAddress>74.125.228.81</IPAddress>
+         <Port>443</Port>
+         <Type>TCP</Type>
+         <SearchString>OK</SearchString>
+         <RequestInterval>30</RequestInterval>
+         <FailureThreshold>3</FailureThreshold>
+      </HealthCheckConfig>
+   </HealthCheck>
+</CreateHealthCheckResponse>
+        """
+
+    def test_create_health_check_empty_resource_path(self):
+        self.set_http_response(status_code=201)
+        hc = HealthCheck(ip_addr='74.125.228.81', port=443, hc_type='HTTPS_STR_MATCH', string_match='OK')
+        hc_xml = hc.to_xml()
+        self.assertFalse('<ResourcePath>' in hc_xml)
+
+        response = self.service_connection.create_health_check(hc)
+        hc_resp = response['CreateHealthCheckResponse']['HealthCheck']['HealthCheckConfig']
+        with open('/tmp/output', 'w') as f:
+            f.write(str(hc_resp))
+        self.assertEqual(hc_resp['IPAddress'], '74.125.228.81')
+        self.assertFalse('ResourcePath' in hc_resp.keys())
+        self.assertEqual(hc_resp['Type'], 'TCP')
+        self.assertEqual(hc_resp['Port'], '443')
+        self.assertEqual(hc_resp['SearchString'], 'OK')
+        self.assertEqual(response['CreateHealthCheckResponse']['HealthCheck']['Id'], '34778cf8-e31e-4974-bad0-b108bd1623d3')
+
+
+@attr(route53=True)
 class TestCreateHealthCheckRoute53IpAddress(AWSMockServiceTestCase):
     connection_class = Route53Connection
 
