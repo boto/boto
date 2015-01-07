@@ -91,7 +91,7 @@ class MetricAlarm(object):
                           is compared.
 
         :type period: int
-        :param period: The period in seconds over which teh specified
+        :param period: The period in seconds over which the specified
                        statistic is applied.
 
         :type evaluation_periods: int

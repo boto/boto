@@ -98,7 +98,7 @@ class ELBConnection(AWSQueryConnection):
                                             profile_name=profile_name)
 
     def _required_auth_capability(self):
-        return ['ec2']
+        return ['hmac-v4']
 
     def build_list_params(self, params, items, label):
         if isinstance(items, six.string_types):

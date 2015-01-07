@@ -183,7 +183,6 @@ class BatchGetResultSet(ResultSet):
         results = self.the_callable(*args, **kwargs)
 
         if not len(results.get('results', [])):
-            self._results_left = False
             return
 
         self._results.extend(results['results'])

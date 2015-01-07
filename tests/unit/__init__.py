@@ -63,11 +63,10 @@ class AWSMockServiceTestCase(unittest.TestCase):
         request_params = self.actual_request.params.copy()
         if ignore_params_values is not None:
             for param in ignore_params_values:
-                # We still want to check that the ignore_params_values params
-                # are in the request parameters, we just don't need to check
-                # their value.
-                self.assertIn(param, request_params)
-                del request_params[param]
+                try:
+                    del request_params[param]
+                except KeyError:
+                    pass
         self.assertDictEqual(request_params, params)
 
     def set_http_response(self, status_code, reason='', header=[], body=None):

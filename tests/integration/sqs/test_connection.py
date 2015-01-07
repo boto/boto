@@ -242,15 +242,11 @@ class SQSConnectionTest(unittest.TestCase):
     def test_get_messages_attributes(self):
         conn = SQSConnection()
         current_timestamp = int(time.time())
-        queue_name = 'test%d' % int(time.time())
-        test = conn.create_queue(queue_name)
-        self.addCleanup(conn.delete_queue, test)
+        test = self.create_temp_queue(conn)
         time.sleep(65)
 
         # Put a message in the queue.
-        m1 = Message()
-        m1.set_body('This is a test message.')
-        test.write(m1)
+        self.put_queue_message(test)
         self.assertEqual(test.count(), 1)
 
         # Check all attributes.
@@ -265,9 +261,7 @@ class SQSConnectionTest(unittest.TestCase):
             self.assertTrue(first_rec >= current_timestamp)
 
         # Put another message in the queue.
-        m2 = Message()
-        m2.set_body('This is another test message.')
-        test.write(m2)
+        self.put_queue_message(test)
         self.assertEqual(test.count(), 1)
 
         # Check a specific attribute.
@@ -279,3 +273,32 @@ class SQSConnectionTest(unittest.TestCase):
             self.assertEqual(msg.attributes['ApproximateReceiveCount'], '1')
             with self.assertRaises(KeyError):
                 msg.attributes['ApproximateFirstReceiveTimestamp']
+
+    def test_queue_purge(self):
+        conn = SQSConnection()
+        test = self.create_temp_queue(conn)
+        time.sleep(65)
+
+        # Put some messages in the queue.
+        for x in range(0, 4):
+            self.put_queue_message(test)
+        self.assertEqual(test.count(), 4)
+
+        # Now purge the queue
+        conn.purge_queue(test)
+
+        # Now assert queue count is 0
+        self.assertEqual(test.count(), 0)
+
+    def create_temp_queue(self, conn):
+        current_timestamp = int(time.time())
+        queue_name = 'test%d' % int(time.time())
+        test = conn.create_queue(queue_name)
+        self.addCleanup(conn.delete_queue, test)
+
+        return test
+
+    def put_queue_message(self, queue):
+        m1 = Message()
+        m1.set_body('This is a test message.')
+        queue.write(m1)

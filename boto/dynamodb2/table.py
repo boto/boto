@@ -1003,7 +1003,7 @@ class Table(object):
 
     def query_count(self, index=None, consistent=False, conditional_operator=None,
                     query_filter=None, scan_index_forward=True, limit=None,
-                    **filter_kwargs):
+                    exclusive_start_key=None, **filter_kwargs):
         """
         Queries the exact count of matching items in a DynamoDB table.
 
@@ -1033,6 +1033,9 @@ class Table(object):
 
         + `AND` - True if all filter conditions evaluate to true (default)
         + `OR` - True if at least one filter condition evaluates to true
+
+        Optionally accept a ``exclusive_start_key`` which is used to get
+        the remaining items when a query cannot return the complete count.
 
         Returns an integer which represents the exact amount of matched
         items.
@@ -1079,18 +1082,29 @@ class Table(object):
             using=FILTER_OPERATORS
         )
 
-        raw_results = self.connection.query(
-            self.table_name,
-            index_name=index,
-            consistent_read=consistent,
-            select='COUNT',
-            key_conditions=key_conditions,
-            query_filter=built_query_filter,
-            conditional_operator=conditional_operator,
-            limit=limit,
-            scan_index_forward=scan_index_forward,
-        )
-        return int(raw_results.get('Count', 0))
+        count_buffer = 0
+        last_evaluated_key = exclusive_start_key
+
+        while True:
+            raw_results = self.connection.query(
+                self.table_name,
+                index_name=index,
+                consistent_read=consistent,
+                select='COUNT',
+                key_conditions=key_conditions,
+                query_filter=built_query_filter,
+                conditional_operator=conditional_operator,
+                limit=limit,
+                scan_index_forward=scan_index_forward,
+                exclusive_start_key=last_evaluated_key
+            )
+
+            count_buffer += int(raw_results.get('Count', 0))
+            last_evaluated_key = raw_results.get('LastEvaluatedKey')
+            if not last_evaluated_key or count_buffer < 1:
+                break
+
+        return count_buffer
 
     def _query(self, limit=None, index=None, reverse=False, consistent=False,
                exclusive_start_key=None, select=None, attributes_to_get=None,

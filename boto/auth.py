@@ -51,6 +51,16 @@ except ImportError:
     sha256 = None
 
 
+# Region detection strings to determine if SigV4 should be used
+# by default.
+SIGV4_DETECT = [
+    '.cn-',
+    # In eu-central we support both host styles for S3
+    '.eu-central',
+    '-eu-central',
+]
+
+
 class HmacKeys(object):
     """Key based Auth handler helper."""
 
@@ -345,7 +355,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         for param in sorted(http_request.params):
             value = boto.utils.get_utf8_value(http_request.params[param])
             l.append('%s=%s' % (urllib.parse.quote(param, safe='-_.~'),
-                                urllib.parse.quote(value.decode('utf-8'), safe='-_.~')))
+                                urllib.parse.quote(value, safe='-_.~')))
         return '&'.join(l)
 
     def canonical_headers(self, headers_to_sign):
@@ -359,7 +369,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
 
         for header in headers_to_sign:
             c_name = header.lower().strip()
-            raw_value = headers_to_sign[header]
+            raw_value = str(headers_to_sign[header])
             if '"' in raw_value:
                 c_value = raw_value.strip()
             else:
@@ -494,10 +504,25 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         if self._provider.security_token:
             req.headers['X-Amz-Security-Token'] = self._provider.security_token
         qs = self.query_string(req)
-        if qs and req.method == 'POST':
+
+        qs_to_post = qs
+
+        # We do not want to include any params that were mangled into
+        # the params if performing s3-sigv4 since it does not
+        # belong in the body of a post for some requests.  Mangled
+        # refers to items in the query string URL being added to the
+        # http response params. However, these params get added to
+        # the body of the request, but the query string URL does not
+        # belong in the body of the request. ``unmangled_resp`` is the
+        # response that happened prior to the mangling.  This ``unmangled_req``
+        # kwarg will only appear for s3-sigv4.
+        if 'unmangled_req' in kwargs:
+            qs_to_post = self.query_string(kwargs['unmangled_req'])
+
+        if qs_to_post and req.method == 'POST':
             # Stash request parameters into post body
             # before we generate the signature.
-            req.body = qs
+            req.body = qs_to_post
             req.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
             req.headers['Content-Length'] = str(len(req.body))
         else:
@@ -548,6 +573,17 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         # Requote, this time addressing all characters.
         encoded = urllib.parse.quote(unquoted)
         return encoded
+
+    def canonical_query_string(self, http_request):
+        # Note that we just do not return an empty string for
+        # POST request. Query strings in url are included in canonical
+        # query string.
+        l = []
+        for param in sorted(http_request.params):
+            value = boto.utils.get_utf8_value(http_request.params[param])
+            l.append('%s=%s' % (urllib.parse.quote(param, safe='-_.~'),
+                                urllib.parse.quote(value, safe='-_.~')))
+        return '&'.join(l)
 
     def host_header(self, host, http_request):
         port = http_request.port
@@ -641,6 +677,13 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
 
         if modified_req.params is None:
             modified_req.params = {}
+        else:
+            # To keep the original request object untouched. We must make
+            # a copy of the params dictionary. Because the copy of the
+            # original request directly refers to the params dictionary
+            # of the original request.
+            copy_params = req.params.copy()
+            modified_req.params = copy_params
 
         raw_qs = parsed_path.query
         existing_qs = urllib.parse.parse_qs(
@@ -670,9 +713,10 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
                 req.headers['x-amz-content-sha256'] = req.headers.pop('_sha256')
             else:
                 req.headers['x-amz-content-sha256'] = self.payload(req)
-
-        req = self.mangle_path_and_params(req)
-        return super(S3HmacAuthV4Handler, self).add_auth(req, **kwargs)
+        updated_req = self.mangle_path_and_params(req)
+        return super(S3HmacAuthV4Handler, self).add_auth(updated_req,
+                                                         unmangled_req=req,
+                                                         **kwargs)
 
     def presign(self, req, expires, iso_date=None):
         """
@@ -727,20 +771,22 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
                                     urllib.parse.urlencode(req.params))
 
 
-class QueryAuthHandler(AuthHandler):
+class STSAnonHandler(AuthHandler):
     """
     Provides pure query construction (no actual signing).
 
-    Mostly useful for STS' ``assume_role_with_web_identity``.
-
-    Does **NOT** escape query string values!
+    Used for making anonymous STS request for operations like
+    ``assume_role_with_web_identity``.
     """
 
-    capability = ['pure-query']
+    capability = ['sts-anon']
 
     def _escape_value(self, value):
-        # Would normally be ``return urllib.parse.quote(value)``.
-        return value
+        # This is changed from a previous version because this string is
+        # being passed to the query string and query strings must
+        # be url encoded. In particular STS requires the saml_response to
+        # be urlencoded when calling assume_role_with_saml.
+        return urllib.parse.quote(value)
 
     def _build_query_string(self, params):
         keys = list(params.keys())
@@ -756,13 +802,11 @@ class QueryAuthHandler(AuthHandler):
         qs = self._build_query_string(
             http_request.params
         )
-        boto.log.debug('query_string: %s' % qs)
-        headers['Content-Type'] = 'application/json; charset=UTF-8'
-        http_request.body = ''
-        # if this is a retried request, the qs from the previous try will
-        # already be there, we need to get rid of that and rebuild it
-        http_request.path = http_request.path.split('?')[0]
-        http_request.path = http_request.path + '?' + qs
+        boto.log.debug('query_string in body: %s' % qs)
+        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        # This will be  a POST so the query string should go into the body
+        # as opposed to being in the uri
+        http_request.body = qs
 
 
 class QuerySignatureHelper(HmacKeys):
@@ -966,8 +1010,9 @@ def detect_potential_sigv4(func):
             # ``boto/iam/connection.py``, as several things there are also
             # endpoint-related.
             if getattr(self.region, 'endpoint', ''):
-                if '.cn-' in self.region.endpoint:
-                    return ['hmac-v4']
+                for test in SIGV4_DETECT:
+                    if test in self.region.endpoint:
+                        return ['hmac-v4']
 
         return func(self)
     return _wrapper
@@ -985,8 +1030,9 @@ def detect_potential_s3sigv4(func):
             # If you're making changes here, you should also check
             # ``boto/iam/connection.py``, as several things there are also
             # endpoint-related.
-            if '.cn-' in self.host:
-                return ['hmac-v4-s3']
+            for test in SIGV4_DETECT:
+                if test in self.host:
+                    return ['hmac-v4-s3']
 
         return func(self)
     return _wrapper

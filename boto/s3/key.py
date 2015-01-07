@@ -426,12 +426,13 @@ class Key(object):
         :param validate_dst_bucket: If True, will validate the dst_bucket
             by using an extra list request.
         """
+        bucket_name = dst_bucket or self.bucket.name
         if new_storage_class == 'STANDARD':
-            return self.copy(self.bucket.name, self.name,
+            return self.copy(bucket_name, self.name,
                              reduced_redundancy=False, preserve_acl=True,
                              validate_dst_bucket=validate_dst_bucket)
         elif new_storage_class == 'REDUCED_REDUNDANCY':
-            return self.copy(self.bucket.name, self.name,
+            return self.copy(bucket_name, self.name,
                              reduced_redundancy=True, preserve_acl=True,
                              validate_dst_bucket=validate_dst_bucket)
         else:
@@ -495,7 +496,8 @@ class Key(object):
                                    self.name, metadata,
                                    storage_class=storage_class,
                                    preserve_acl=preserve_acl,
-                                   encrypt_key=encrypt_key)
+                                   encrypt_key=encrypt_key,
+                                   src_version_id=self.version_id)
 
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
@@ -934,7 +936,10 @@ class Key(object):
         # the auth mechanism (because closures). Detect if it's SigV4 & embelish
         # while we can before the auth calculations occur.
         if 'hmac-v4-s3' in self.bucket.connection._required_auth_capability():
-            headers['_sha256'] = compute_hash(fp, hash_algorithm=hashlib.sha256)[0]
+            kwargs = {'fp': fp, 'hash_algorithm': hashlib.sha256}
+            if size is not None:
+                kwargs['size'] = size
+            headers['_sha256'] = compute_hash(**kwargs)[0]
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
         resp = self.bucket.connection.make_request(
@@ -1670,7 +1675,7 @@ class Key(object):
             the second representing the size of the to be transmitted
             object.
 
-        :type cb: int
+        :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the
             cb parameter this parameter determines the granularity of
             the callback by defining the maximum number of times the
