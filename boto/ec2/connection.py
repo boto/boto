@@ -3190,6 +3190,78 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('AuthorizeSecurityGroupIngress',
                                params, verb='POST')
 
+    def authorize_security_group_rules(self,
+                                       group_name=None,
+                                       group_id=None,
+                                       rules=None,
+                                       dry_run=False):
+        '''
+        Add new rules to a security group.
+
+        :type group_name: string
+        :param group_name: The name of the security group you are adding the rule to.
+
+        :type group_id: string
+        :param group_id: ID of the EC2 or VPC security group to modify.  This is required for VPC security groups
+            and can be used instead of group_name for EC2 security groups.
+
+        :type rules: list
+        :param rules: list of rules to add. This should be a list of dictionaries.
+            For each rule, it accepts the same paramters as `authorize_security_group`.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful.
+        '''
+
+        params = {}
+
+        if group_name:
+            params['GroupName'] = group_name
+        if group_id:
+            params['GroupId'] = group_id
+        if dry_run:
+            params['DryRun'] = 'true'
+
+        src_group_index = 1
+
+        for idx, rule in enumerate(rules):
+            param_prefix = 'IpPermissions.%d.' % (idx + 1)
+            src_group_authorized = False
+            if 'src_security_group_name' in rule and rule['src_security_group_name']:
+                param_name = param_prefix + 'Groups.%d.GroupName' % src_group_index
+                params[param_name] = rule['src_security_group_name']
+                src_group_authorized = True
+            if 'src_security_group_group_id' in rule and rule['src_security_group_group_id']:
+                param_name = param_prefix + 'Groups.%d.GroupId' % src_group_index
+                params[param_name] = rule['src_security_group_group_id']
+                src_group_authorized = True
+            if 'src_security_group_owner_id' in rule and rule['src_security_group_owner_id']:
+                param_name = param_prefix + 'Groups.%d.UserId' % src_group_index
+                params[param_name] = rule['src_security_group_owner_id']
+            if src_group_authorized:
+                src_group_index += 1  # increase src group counter
+            if 'ip_protocol' in rule and rule['ip_protocol']:
+                param_name = param_prefix + 'IpProtocol'
+                params[param_name] = rule['ip_protocol']
+            if 'from_port' in rule and rule['from_port']:
+                param_name = param_prefix + 'FromPort'
+                params[param_name] = rule['from_port']
+            if 'to_port' in rule and rule['to_port']:
+                param_name = param_prefix + 'ToPort'
+                params[param_name] = rule['to_port']
+            if 'cidr_ip' in rule and rule['cidr_ip']:
+                cidr_ip = rule['cidr_ip']
+                if not isinstance(cidr_ip, list):
+                    cidr_ip = [cidr_ip]
+                for i, single_cidr_ip in enumerate(cidr_ip):
+                    param_name = param_prefix + 'IpRanges.%d.CidrIp' % (i + 1)
+                    params[param_name] = single_cidr_ip
+
+        return self.get_status('AuthorizeSecurityGroupIngress', params, verb='POST')
+
     def authorize_security_group_egress(self,
                                         group_id,
                                         ip_protocol,
@@ -3378,6 +3450,84 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_status('RevokeSecurityGroupIngress',
                                params, verb='POST')
+
+    def revoke_security_group_rules(self,
+                                    group_name=None,
+                                    group_id=None,
+                                    rules=None,
+                                    dry_run=False):
+        """
+        Remove existing rules from an existing security group.
+
+        :type group_name: string
+        :param group_name: The name of the security group you are removing the rule from.
+
+        :type group_id: string
+        :param group_id: ID of the EC2 or VPC security group to modify.  This is required for VPC security groups
+            and can be used instead of group_name for EC2 security groups.
+
+        :type src_security_group_group_id: string
+        :param src_security_group_group_id: The ID of the security group
+            for which you are revoking access.  Can be used instead of src_security_group_name
+
+        :type rules: list
+        :param rules: list of rules to add. This should be a list of dictionaries.
+            For each rule, it accepts the same paramters as `revoke_security_group`.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful.
+        """
+
+        params = {}
+        if group_name is not None:
+            params['GroupName'] = group_name
+        if group_id is not None:
+            params['GroupId'] = group_id
+        if dry_run:
+            params['DryRun'] = 'true'
+
+        src_group_index = 1
+
+        for idx, rule in enumerate(rules):
+            param_prefix = 'IpPermissions.%d.' % (idx + 1)
+            src_group_authorized = False
+            if 'src_security_group_name' in rule and rule['src_security_group_name']:
+                param_name = param_prefix + 'Groups.%d.GroupName' % src_group_index
+                params[param_name] = rule['src_security_group_name']
+                src_group_authorized = True
+            if 'src_security_group_group_id' in rule and rule['src_security_group_group_id']:
+                param_name = param_prefix + 'Groups.%d.GroupId' % src_group_index
+                params[param_name] = rule['src_security_group_group_id']
+                src_group_authorized = True
+            if 'src_security_group_owner_id' in rule and rule['src_security_group_owner_id']:
+                param_name = param_prefix + 'Groups.%d.UserId' % src_group_index
+                params[param_name] = rule['src_security_group_owner_id']
+            if src_group_authorized:
+                src_group_index += 1  # increase src group counter
+            if 'src_security_group_group_id' in rule and rule['src_security_group_group_id']:
+                param_name = param_prefix + 'Groups.1.GroupId'
+                params[param_name] = rule['src_security_group_group_id']
+            if 'ip_protocol' in rule and rule['ip_protocol']:
+                param_name = param_prefix + 'IpProtocol'
+                params[param_name] = rule['ip_protocol']
+            if 'from_port' in rule and rule['from_port'] is not None:
+                param_name = param_prefix + 'FromPort'
+                params[param_name] = rule['from_port']
+            if 'to_port' in rule and rule['to_port'] is not None:
+                param_name = param_prefix + 'ToPort'
+                params[param_name] = rule['to_port']
+            if 'cidr_ip' in rule and rule['cidr_ip']:
+                cidr_ip = rule['cidr_ip']
+                if not isinstance(cidr_ip, list):
+                    cidr_ip = [cidr_ip]
+                for i, single_cidr_ip in enumerate(cidr_ip):
+                    param_name = param_prefix + 'IpRanges.%d.CidrIp' % (i + 1)
+                    params[param_name] = single_cidr_ip
+
+        return self.get_status('RevokeSecurityGroupIngress', params, verb='POST')
 
     def revoke_security_group_egress(self,
                                      group_id,

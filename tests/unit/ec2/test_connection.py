@@ -1638,5 +1638,75 @@ class TestCreateVolume(TestEC2ConnectionBase):
         self.assertEqual(result.id, 'vol-1a2b3c4d')
         self.assertTrue(result.encrypted)
 
+
+class TestAuthorizeSecurityGroupRules(TestEC2ConnectionBase):
+
+    def default_body(self):
+        return b"""
+            <AuthorizeSecurityGroupIngressResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
+                <requestId>a0c359b1-7892-42ff-a95c-18d29f295323</requestId>
+                <return>true</return>
+            </AuthorizeSecurityGroupIngressResponse>
+        """
+
+    def test_authorize_security_group_rules(self):
+        rules_to_authorize = [
+            {
+                'from_port': 80,
+                'to_port': 443,
+                'ip_protocol': 'tcp',
+                'cidr_ip': [
+                    '10.72.1.1/32',
+                    '10.72.1.2/32',
+                    '10.72.1.3/32'
+                ]
+            },
+            {
+                'from_port': 8080,
+                'to_port': 8888,
+                'ip_protocol': 'tcp',
+                'src_security_group_id': 'sg-02b2d767'
+            }
+        ]
+
+        self.set_http_response(status_code=200)
+        result = self.ec2.authorize_security_group_rules(group_id='sg-188cf17d', rules=rules_to_authorize)
+        self.assertTrue(result)
+
+
+class TestRevokeSecurityGroupRules(TestEC2ConnectionBase):
+
+    def default_body(self):
+        return b"""
+            <RevokeSecurityGroupIngressResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
+                <requestId>7dd01528-2523-4d62-b627-b2b7cc6fc8e9</requestId>
+                <return>true</return>
+            </RevokeSecurityGroupIngressResponse>
+        """
+
+    def test_revoke_security_group_rules(self):
+        rules_to_revoke = [
+            {
+                'from_port': 80,
+                'to_port': 443,
+                'ip_protocol': 'tcp',
+                'cidr_ip': [
+                    '10.72.1.1/32',
+                    '10.72.1.2/32',
+                    '10.72.1.3/32'
+                ]
+            },
+            {
+                'from_port': 8080,
+                'to_port': 8888,
+                'ip_protocol': 'tcp',
+                'src_security_group_id': 'sg-02b2d767'
+            }
+        ]
+        self.set_http_response(status_code=200)
+        result = self.ec2.revoke_security_group_rules(group_id='sg-188cf17d', rules=rules_to_revoke)
+        self.assertTrue(result)
+
+
 if __name__ == '__main__':
     unittest.main()
