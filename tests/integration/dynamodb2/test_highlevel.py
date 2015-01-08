@@ -279,8 +279,14 @@ class DynamoDBv2Test(unittest.TestCase):
         johndoe = users.get_item(username='johndoe', friend_count=4)
         johndoe.delete()
 
+        # Set batch get limit to ensure keys with no results are
+        # handled correctly.
+        users.max_batch_get = 2
+
         # Test the eventually consistent batch get.
         results = users.batch_get(keys=[
+            {'username': 'noone', 'friend_count': 4},
+            {'username': 'nothere', 'friend_count': 10},
             {'username': 'bob', 'friend_count': 1},
             {'username': 'jane', 'friend_count': 3}
         ])

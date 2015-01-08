@@ -47,6 +47,19 @@ HZXML = """<?xml version="1.0" encoding="UTF-8"?>
   </HostedZoneConfig>
 </CreateHostedZoneRequest>"""
 
+HZPXML = """<?xml version="1.0" encoding="UTF-8"?>
+<CreateHostedZoneRequest xmlns="%(xmlns)s">
+  <Name>%(name)s</Name>
+  <VPC>
+    <VPCId>%(vpc_id)s</VPCId>
+    <VPCRegion>%(vpc_region)s</VPCRegion>
+  </VPC>
+  <CallerReference>%(caller_ref)s</CallerReference>
+  <HostedZoneConfig>
+    <Comment>%(comment)s</Comment>
+  </HostedZoneConfig>
+</CreateHostedZoneRequest>"""
+
 # boto.set_stream_logger('dns')
 
 
@@ -162,7 +175,8 @@ class Route53Connection(AWSAuthConnection):
             if zone['Name'] == hosted_zone_name:
                 return self.get_hosted_zone(zone['Id'].split('/')[-1])
 
-    def create_hosted_zone(self, domain_name, caller_ref=None, comment=''):
+    def create_hosted_zone(self, domain_name, caller_ref=None, comment='',
+                           private_zone=False, vpc_id=None, vpc_region=None):
         """
         Create a new Hosted Zone.  Returns a Python data structure with
         information about the newly created Hosted Zone.
@@ -189,14 +203,34 @@ class Route53Connection(AWSAuthConnection):
         :param comment: Any comments you want to include about the hosted
             zone.
 
+        :type private_zone: bool
+        :param private_zone: Set True if creating a private hosted zone.
+
+        :type vpc_id: str
+        :param vpc_id: When creating a private hosted zone, the VPC Id to
+            associate to is required.
+
+        :type vpc_region: str
+        :param vpc_id: When creating a private hosted zone, the region of
+            the associated VPC is required.
+
         """
         if caller_ref is None:
             caller_ref = str(uuid.uuid4())
-        params = {'name': domain_name,
-                  'caller_ref': caller_ref,
-                  'comment': comment,
-                  'xmlns': self.XMLNameSpace}
-        xml_body = HZXML % params
+        if private_zone:
+            params = {'name': domain_name,
+                      'caller_ref': caller_ref,
+                      'comment': comment,
+                      'vpc_id': vpc_id,
+                      'vpc_region': vpc_region,
+                      'xmlns': self.XMLNameSpace}
+            xml_body = HZPXML % params
+        else:
+            params = {'name': domain_name,
+                      'caller_ref': caller_ref,
+                      'comment': comment,
+                      'xmlns': self.XMLNameSpace}
+            xml_body = HZXML % params
         uri = '/%s/hostedzone' % self.Version
         response = self.make_request('POST', uri,
                                      {'Content-Type': 'text/xml'}, xml_body)
@@ -301,7 +335,25 @@ class Route53Connection(AWSAuthConnection):
             raise exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
-        e = boto.jsonresponse.Element(list_marker='HealthChecks', item_marker=('HealthCheck',))
+        e = boto.jsonresponse.Element(list_marker='HealthChecks',
+                                      item_marker=('HealthCheck',))
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e
+
+    def get_checker_ip_ranges(self):
+        """
+        Return a list of Route53 healthcheck IP ranges
+        """
+        uri = '/%s/checkeripranges' % self.Version
+        response = self.make_request('GET', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element(list_marker='CheckerIpRanges', item_marker=('member',))
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
@@ -451,7 +503,8 @@ class Route53Connection(AWSAuthConnection):
         h.parse(body)
         return e
 
-    def create_zone(self, name):
+    def create_zone(self, name, private_zone=False,
+                    vpc_id=None, vpc_region=None):
         """
         Create a new Hosted Zone.  Returns a Zone object for the newly
         created Hosted Zone.
@@ -465,8 +518,20 @@ class Route53Connection(AWSAuthConnection):
             It is also the name you will delegate from your registrar to
             the Amazon Route 53 delegation servers returned in
             response to this request.
+
+        :type private_zone: bool
+        :param private_zone: Set True if creating a private hosted zone.
+
+        :type vpc_id: str
+        :param vpc_id: When creating a private hosted zone, the VPC Id to
+            associate to is required.
+
+        :type vpc_region: str
+        :param vpc_id: When creating a private hosted zone, the region of
+            the associated VPC is required.
         """
-        zone = self.create_hosted_zone(name)
+        zone = self.create_hosted_zone(name, private_zone=private_zone,
+                                       vpc_id=vpc_id, vpc_region=vpc_region)
         return Zone(self, zone['CreateHostedZoneResponse']['HostedZone'])
 
     def get_zone(self, name):

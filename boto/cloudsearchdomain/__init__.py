@@ -1,5 +1,4 @@
-# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.
-# All rights reserved.
+# Copyright (c) 2014 Amazon.com, Inc. or its affiliates. All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,29 +18,24 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
-import boto
-import time
-
-from tests.compat import unittest
+#
+from boto.regioninfo import RegionInfo, get_regions
 
 
-class TestIAM(unittest.TestCase):
-    iam = True
+def regions():
+    """
+    Get all available regions for the Amazon CloudSearch Domain service.
 
-    def test_group_users(self):
-        # A very basic test to create a group, a user, add the user
-        # to the group and then delete everything
-        iam = boto.connect_iam()
+    :rtype: list
+    :return: A list of :class:`boto.regioninfo.RegionInfo`
+    """
+    from boto.cloudsearchdomain.layer1 import CloudSearchDomainConnection
+    return get_regions('cloudsearchdomain',
+                       connection_cls=CloudSearchDomainConnection)
 
-        name = 'boto-test-%d' % time.time()
-        username = 'boto-test-user-%d' % time.time()
 
-        iam.create_group(name)
-        iam.create_user(username)
-
-        iam.add_user_to_group(name, username)
-
-        iam.remove_user_from_group(name, username)
-        iam.delete_user(username)
-        iam.delete_group(name)
+def connect_to_region(region_name, **kw_params):
+    for region in regions():
+        if region.name == region_name:
+            return region.connect(**kw_params)
+    return None

@@ -67,6 +67,7 @@ STORAGE_CREATE_ERROR = 'StorageCreateError'
 STORAGE_DATA_ERROR = 'StorageDataError'
 STORAGE_PERMISSIONS_ERROR = 'StoragePermissionsError'
 STORAGE_RESPONSE_ERROR = 'StorageResponseError'
+NO_CREDENTIALS_PROVIDED = object()
 
 
 class ProfileNotFoundError(ValueError):

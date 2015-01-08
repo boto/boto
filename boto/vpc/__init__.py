@@ -1685,3 +1685,144 @@ class VPCConnection(EC2Connection):
         return self.get_object('AcceptVpcPeeringConnection', params, 
                                VpcPeeringConnection)
 
+    def get_all_classic_link_vpcs(self, vpc_ids=None, filters=None,
+                                   dry_run=False):
+        """
+        Describes the ClassicLink status of one or more VPCs.
+
+        :type vpc_ids: list
+        :param vpc_ids: A list of strings with the desired VPC ID's
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters. Each tuple
+            or dict item consists of a filter key and a filter value.
+
+        :rtype: list
+        :return: A list of :class:`boto.vpc.vpc.VPC`
+        """
+        params = {}
+        if vpc_ids:
+            self.build_list_params(params, vpc_ids, 'VpcId')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribeVpcClassicLink', params, [('item', VPC)],
+                             verb='POST')
+
+    def attach_classic_link_vpc(self, vpc_id, instance_id, groups,
+                                dry_run=False):
+        """
+        Links  an EC2-Classic instance to a ClassicLink-enabled VPC through one
+        or more of the VPC's security groups. You cannot link an EC2-Classic
+        instance to more than one VPC at a time. You can only link an instance
+        that's in the running state. An instance is automatically unlinked from
+        a VPC when it's stopped. You can link it to the VPC again when you
+        restart it.
+
+        After you've linked an instance, you cannot  change  the VPC security
+        groups  that are associated with it. To change the security groups, you
+        must first unlink the instance, and then link it again.
+
+        Linking your instance to a VPC is sometimes referred  to  as  attaching
+        your instance.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of a ClassicLink-enabled VPC.
+
+        :type intance_id: str
+        :param instance_is: The ID of a ClassicLink-enabled VPC.
+
+        :tye groups: list
+        :param groups: The ID of one or more of the VPC's security groups.
+            You cannot specify security groups from a different VPC. The
+            members of the list can be
+            :class:`boto.ec2.securitygroup.SecurityGroup` objects or
+            strings of the id's of the security groups.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {'VpcId': vpc_id, 'InstanceId': instance_id}
+        if dry_run:
+            params['DryRun'] = 'true'
+        l = []
+        for group in groups:
+            if hasattr(group, 'id'):
+                l.append(group.id)
+            else:
+                l.append(group)
+        self.build_list_params(params, l, 'SecurityGroupId')
+        return self.get_status('AttachClassicLinkVpc', params)
+
+    def detach_classic_link_vpc(self, vpc_id, instance_id, dry_run=False):
+        """
+        Unlinks a linked EC2-Classic instance from a VPC. After the instance
+        has been unlinked, the VPC security groups are no longer associated
+        with it. An instance is automatically unlinked from a VPC when
+        it's stopped.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the instance to unlink from the VPC.
+
+        :type intance_id: str
+        :param instance_is: The ID of the VPC to which the instance is linked.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {'VpcId': vpc_id, 'InstanceId': instance_id}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('DetachClassicLinkVpc', params)
+
+    def disable_vpc_classic_link(self, vpc_id, dry_run=False):
+        """
+        Disables  ClassicLink  for  a VPC. You cannot disable ClassicLink for a
+        VPC that has EC2-Classic instances linked to it.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {'VpcId': vpc_id}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('DisableVpcClassicLink', params)
+
+    def enable_vpc_classic_link(self, vpc_id, dry_run=False):
+        """
+        Enables a VPC for ClassicLink. You can then link EC2-Classic instances
+        to your ClassicLink-enabled VPC to allow communication over private IP
+        addresses. You cannot enable your VPC for ClassicLink if any of your
+        VPC's route tables have existing routes for address ranges within the
+        10.0.0.0/8 IP address range, excluding local routes for VPCs in the
+        10.0.0.0/16 and 10.1.0.0/16 IP address ranges.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {'VpcId': vpc_id}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('EnableVpcClassicLink', params)

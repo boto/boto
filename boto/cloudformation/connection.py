@@ -884,5 +884,4 @@ class CloudFormationConnection(AWSQueryConnection):
             params['StackPolicyURL'] = stack_policy_url
 
         response = self._do_request('SetStackPolicy', params, '/', 'POST')
-        return response['SetStackPolicyResponse']\
-                       ['SetStackPolicyResult']
+        return response['SetStackPolicyResponse']

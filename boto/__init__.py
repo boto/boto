@@ -38,7 +38,7 @@ import logging.config
 from boto.compat import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.34.0'
+__version__ = '2.35.0'
 Version = __version__  # for backware compatibility
 
 # http://bugs.python.org/issue7980
@@ -664,6 +664,7 @@ def connect_cloudsearch(aws_access_key_id=None,
 
 def connect_cloudsearch2(aws_access_key_id=None,
                          aws_secret_access_key=None,
+                         sign_request=False,
                          **kwargs):
     """
     :type aws_access_key_id: string
@@ -672,12 +673,35 @@ def connect_cloudsearch2(aws_access_key_id=None,
     :type aws_secret_access_key: string
     :param aws_secret_access_key: Your AWS Secret Access Key
 
+    :type sign_request: bool
+    :param sign_request: whether or not to sign search and
+        upload requests
+
     :rtype: :class:`boto.cloudsearch2.layer2.Layer2`
     :return: A connection to Amazon's CloudSearch2 service
     """
     from boto.cloudsearch2.layer2 import Layer2
     return Layer2(aws_access_key_id, aws_secret_access_key,
+                  sign_request=sign_request,
                   **kwargs)
+
+
+def connect_cloudsearchdomain(aws_access_key_id=None,
+                              aws_secret_access_key=None,
+                              **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.cloudsearchdomain.layer1.CloudSearchDomainConnection`
+    :return: A connection to Amazon's CloudSearch Domain service
+    """
+    from boto.cloudsearchdomain.layer1 import CloudSearchDomainConnection
+    return CloudSearchDomainConnection(aws_access_key_id,
+                                       aws_secret_access_key, **kwargs)
 
 
 def connect_beanstalk(aws_access_key_id=None,

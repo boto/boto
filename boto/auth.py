@@ -51,6 +51,16 @@ except ImportError:
     sha256 = None
 
 
+# Region detection strings to determine if SigV4 should be used
+# by default.
+SIGV4_DETECT = [
+    '.cn-',
+    # In eu-central we support both host styles for S3
+    '.eu-central',
+    '-eu-central',
+]
+
+
 class HmacKeys(object):
     """Key based Auth handler helper."""
 
@@ -359,7 +369,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
 
         for header in headers_to_sign:
             c_name = header.lower().strip()
-            raw_value = headers_to_sign[header]
+            raw_value = str(headers_to_sign[header])
             if '"' in raw_value:
                 c_value = raw_value.strip()
             else:
@@ -761,20 +771,22 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
                                     urllib.parse.urlencode(req.params))
 
 
-class QueryAuthHandler(AuthHandler):
+class STSAnonHandler(AuthHandler):
     """
     Provides pure query construction (no actual signing).
 
-    Mostly useful for STS' ``assume_role_with_web_identity``.
-
-    Does **NOT** escape query string values!
+    Used for making anonymous STS request for operations like
+    ``assume_role_with_web_identity``.
     """
 
-    capability = ['pure-query']
+    capability = ['sts-anon']
 
     def _escape_value(self, value):
-        # Would normally be ``return urllib.parse.quote(value)``.
-        return value
+        # This is changed from a previous version because this string is
+        # being passed to the query string and query strings must
+        # be url encoded. In particular STS requires the saml_response to
+        # be urlencoded when calling assume_role_with_saml.
+        return urllib.parse.quote(value)
 
     def _build_query_string(self, params):
         keys = list(params.keys())
@@ -790,13 +802,11 @@ class QueryAuthHandler(AuthHandler):
         qs = self._build_query_string(
             http_request.params
         )
-        boto.log.debug('query_string: %s' % qs)
-        headers['Content-Type'] = 'application/json; charset=UTF-8'
-        http_request.body = ''
-        # if this is a retried request, the qs from the previous try will
-        # already be there, we need to get rid of that and rebuild it
-        http_request.path = http_request.path.split('?')[0]
-        http_request.path = http_request.path + '?' + qs
+        boto.log.debug('query_string in body: %s' % qs)
+        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        # This will be  a POST so the query string should go into the body
+        # as opposed to being in the uri
+        http_request.body = qs
 
 
 class QuerySignatureHelper(HmacKeys):
@@ -1000,9 +1010,9 @@ def detect_potential_sigv4(func):
             # ``boto/iam/connection.py``, as several things there are also
             # endpoint-related.
             if getattr(self.region, 'endpoint', ''):
-                if '.cn-' in self.region.endpoint or \
-                        '.eu-central' in self.region.endpoint:
-                    return ['hmac-v4']
+                for test in SIGV4_DETECT:
+                    if test in self.region.endpoint:
+                        return ['hmac-v4']
 
         return func(self)
     return _wrapper
@@ -1020,8 +1030,9 @@ def detect_potential_s3sigv4(func):
             # If you're making changes here, you should also check
             # ``boto/iam/connection.py``, as several things there are also
             # endpoint-related.
-            if '.cn-' in self.host or '.eu-central' in self.host:
-                return ['hmac-v4-s3']
+            for test in SIGV4_DETECT:
+                if test in self.host:
+                    return ['hmac-v4-s3']
 
         return func(self)
     return _wrapper

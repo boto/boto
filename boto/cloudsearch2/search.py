@@ -23,6 +23,7 @@
 from math import ceil
 from boto.compat import json, map, six
 import requests
+from boto.cloudsearchdomain.layer1 import CloudSearchDomainConnection
 
 SIMPLE = 'simple'
 STRUCTURED = 'structured'
@@ -144,6 +145,62 @@ class Query(object):
 
         return params
 
+    def to_domain_connection_params(self):
+        """
+        Transform search parameters from instance properties to a dictionary
+        that CloudSearchDomainConnection can accept
+
+        :rtype: dict
+        :return: search parameters
+        """
+        params = {'start': self.start, 'size': self.real_size}
+
+        if self.q:
+            params['q'] = self.q
+
+        if self.parser:
+            params['query_parser'] = self.parser
+
+        if self.fq:
+            params['filter_query'] = self.fq
+
+        if self.expr:
+            expr = {}
+            for k, v in six.iteritems(self.expr):
+                expr['expr.%s' % k] = v
+
+            params['expr'] = expr
+
+        if self.facet:
+            facet = {}
+            for k, v in six.iteritems(self.facet):
+                if not isinstance(v, six.string_types):
+                    v = json.dumps(v)
+                facet['facet.%s' % k] = v
+
+            params['facet'] = facet
+
+        if self.highlight:
+            highlight = {}
+            for k, v in six.iteritems(self.highlight):
+                highlight['highlight.%s' % k] = v
+
+            params['highlight'] = highlight
+
+        if self.options:
+            params['query_options'] = self.options
+
+        if self.return_fields:
+            params['ret'] = ','.join(self.return_fields)
+
+        if self.partial is not None:
+            params['partial'] = self.partial
+
+        if self.sort:
+            params['sort'] = ','.join(self.sort)
+
+        return params
+
 
 class SearchConnection(object):
 
@@ -152,12 +209,27 @@ class SearchConnection(object):
         self.endpoint = endpoint
         self.session = requests.Session()
 
-        # Copy proxy settings from connection
-        if self.domain and self.domain.layer1 and self.domain.layer1.use_proxy:
-            self.session.proxies['http'] = self.domain.layer1.get_proxy_url_with_auth()
-
+        # Endpoint needs to be set before initializing CloudSearchDomainConnection
         if not endpoint:
             self.endpoint = domain.search_service_endpoint
+
+        # Copy proxy settings from connection and check if request should be signed
+        self.sign_request = False
+        if self.domain and self.domain.layer1:
+            if self.domain.layer1.use_proxy:
+                self.session.proxies['http'] = self.domain.layer1.get_proxy_url_with_auth()
+
+            self.sign_request = getattr(self.domain.layer1, 'sign_request', False)
+
+            if self.sign_request:
+                layer1 = self.domain.layer1
+                self.domain_connection = CloudSearchDomainConnection(
+                    host=self.endpoint,
+                    aws_access_key_id=layer1.aws_access_key_id,
+                    aws_secret_access_key=layer1.aws_secret_access_key,
+                    region=layer1.region,
+                    provider=layer1.provider
+                )
 
     def build_query(self, q=None, parser=None, fq=None, rank=None, return_fields=None,
                     size=10, start=0, facet=None, highlight=None, sort=None,
@@ -263,6 +335,15 @@ class SearchConnection(object):
                                  partial=partial, options=options)
         return self(query)
 
+    def _search_with_auth(self, params):
+        return self.domain_connection.search(params.pop("q", ""), **params)
+
+    def _search_without_auth(self, params, api_version):
+        url = "http://%s/%s/search" % (self.endpoint, api_version)
+        resp = self.session.get(url, params=params)
+
+        return {'body': resp.content.decode('utf-8'), 'status_code': resp.status_code}
+
     def __call__(self, query):
         """Make a call to CloudSearch
 
@@ -273,26 +354,30 @@ class SearchConnection(object):
         :return: search results
         """
         api_version = '2013-01-01'
-        if self.domain:
+        if self.domain and self.domain.layer1:
             api_version = self.domain.layer1.APIVersion
-        url = "http://%s/%s/search" % (self.endpoint, api_version)
-        params = query.to_params()
 
-        r = self.session.get(url, params=params)
-        _body = r.content.decode('utf-8')
-        try:
-            data = json.loads(_body)
-        except ValueError:
-            if r.status_code == 403:
-                msg = ''
-                import re
-                g = re.search('<html><body><h1>403 Forbidden</h1>([^<]+)<', _body)
-                try:
-                    msg = ': %s' % (g.groups()[0].strip())
-                except AttributeError:
-                    pass
-                raise SearchServiceException('Authentication error from Amazon%s' % msg)
-            raise SearchServiceException("Got non-json response from Amazon. %s" % _body, query)
+        if self.sign_request:
+            data = self._search_with_auth(query.to_domain_connection_params())
+        else:
+            r = self._search_without_auth(query.to_params(), api_version)
+
+            _body = r['body']
+            _status_code = r['status_code']
+
+            try:
+                data = json.loads(_body)
+            except ValueError:
+                if _status_code == 403:
+                    msg = ''
+                    import re
+                    g = re.search('<html><body><h1>403 Forbidden</h1>([^<]+)<', _body)
+                    try:
+                        msg = ': %s' % (g.groups()[0].strip())
+                    except AttributeError:
+                        pass
+                    raise SearchServiceException('Authentication error from Amazon%s' % msg)
+                raise SearchServiceException("Got non-json response from Amazon. %s" % _body, query)
 
         if 'messages' in data and 'error' in data:
             for m in data['messages']:

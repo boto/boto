@@ -393,3 +393,89 @@ class TestCreateVirtualMFADevice(AWSMockServiceTestCase):
                                   ['create_virtual_mfa_device_result']
                                   ['virtual_mfa_device']
                                   ['serial_number'], 'arn:aws:iam::123456789012:mfa/ExampleName')
+
+class TestGetAccountPasswordPolicy(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+            <GetAccountPasswordPolicyResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+              <GetAccountPasswordPolicyResult>
+                <PasswordPolicy>
+                  <AllowUsersToChangePassword>true</AllowUsersToChangePassword>
+                  <RequireUppercaseCharacters>true</RequireUppercaseCharacters>
+                  <RequireSymbols>true</RequireSymbols>
+                  <ExpirePasswords>false</ExpirePasswords>
+                  <PasswordReusePrevention>12</PasswordReusePrevention>
+                  <RequireLowercaseCharacters>true</RequireLowercaseCharacters>
+                  <MaxPasswordAge>90</MaxPasswordAge>
+                  <HardExpiry>false</HardExpiry>
+                  <RequireNumbers>true</RequireNumbers>
+                  <MinimumPasswordLength>12</MinimumPasswordLength>
+                </PasswordPolicy>
+              </GetAccountPasswordPolicyResult>
+              <ResponseMetadata>
+                <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+              </ResponseMetadata>
+            </GetAccountPasswordPolicyResponse>
+        """
+
+    def test_get_account_password_policy(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_account_password_policy()
+
+        self.assert_request_parameters(
+            {
+                'Action': 'GetAccountPasswordPolicy',
+            },
+            ignore_params_values=['Version'])
+        self.assertEquals(response['get_account_password_policy_response']
+                          ['get_account_password_policy_result']['password_policy']
+                          ['minimum_password_length'], '12')
+
+
+class TestUpdateAccountPasswordPolicy(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+            <UpdateAccountPasswordPolicyResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+               <ResponseMetadata>
+                  <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+               </ResponseMetadata>
+            </UpdateAccountPasswordPolicyResponse>
+        """
+
+    def test_update_account_password_policy(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.update_account_password_policy(minimum_password_length=88)
+
+        self.assert_request_parameters(
+            {
+                'Action': 'UpdateAccountPasswordPolicy',
+                'MinimumPasswordLength': 88
+            },
+            ignore_params_values=['Version'])
+
+
+class TestDeleteAccountPasswordPolicy(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+            <DeleteAccountPasswordPolicyResponse>
+              <ResponseMetadata>
+                <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+              </ResponseMetadata>
+            </DeleteAccountPasswordPolicyResponse>
+        """
+
+    def test_delete_account_password_policy(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.delete_account_password_policy()
+
+        self.assert_request_parameters(
+            {
+                'Action': 'DeleteAccountPasswordPolicy'
+            },
+            ignore_params_values=['Version'])

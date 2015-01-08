@@ -1,5 +1,4 @@
-# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.
-# All rights reserved.
+# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,29 +18,18 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+#
+from tests.unit import AWSMockServiceTestCase
+from boto.glacier.layer1 import Layer1
+from boto.glacier.response import GlacierResponse
 
-import boto
-import time
+class TestResponse(AWSMockServiceTestCase):
+    connection_class = Layer1
 
-from tests.compat import unittest
+    def test_204_body_isnt_passed_to_json(self):
+        response = self.create_response(status_code=204,header=[('Content-Type','application/json')])
+        result = GlacierResponse(response,response.getheaders())
+        self.assertEquals(result.status, response.status)
 
-
-class TestIAM(unittest.TestCase):
-    iam = True
-
-    def test_group_users(self):
-        # A very basic test to create a group, a user, add the user
-        # to the group and then delete everything
-        iam = boto.connect_iam()
-
-        name = 'boto-test-%d' % time.time()
-        username = 'boto-test-user-%d' % time.time()
-
-        iam.create_group(name)
-        iam.create_user(username)
-
-        iam.add_user_to_group(name, username)
-
-        iam.remove_user_from_group(name, username)
-        iam.delete_user(username)
-        iam.delete_group(name)
+if __name__ == '__main__':
+    unittest.main()

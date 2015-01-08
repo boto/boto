@@ -123,7 +123,7 @@ class ResourceRecordSets(ResultSet):
             a value that determines which region this should be associated with
             for the latency-based routing
 
-        :type alias_evaluate_target_health: Boolean
+        :type alias_evaluate_target_health: bool
         :param alias_evaluate_target_health: *Required for alias resource record
             sets* Indicates whether this Resource Record Set should respect the
             health status of any health checks associated with the ALIAS target
