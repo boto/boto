@@ -1,7 +1,7 @@
 boto v2.35.0
 ===========
 
-:date: 2015/01/07
+:date: 2015/01/08
 
 This release adds support for Amazon EC2 Classic Link which allows users
 to link classic instances to Classic Link enabled VPCs,
