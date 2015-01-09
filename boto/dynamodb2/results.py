@@ -180,6 +180,9 @@ class BatchGetResultSet(ResultSet):
         kwargs['keys'] = self._keys_left[:self._max_batch_get]
         self._keys_left = self._keys_left[self._max_batch_get:]
 
+        if len(self._keys_left) <= 0:
+            self._results_left = False
+
         results = self.the_callable(*args, **kwargs)
 
         if not len(results.get('results', [])):
@@ -193,8 +196,8 @@ class BatchGetResultSet(ResultSet):
             # missing keys ever making it here.
             self._keys_left.insert(offset, key_data)
 
-        if len(self._keys_left) <= 0:
-            self._results_left = False
+        if len(self._keys_left) > 0:
+            self._results_left = True
 
         # Decrease the limit, if it's present.
         if self.call_kwargs.get('limit'):
