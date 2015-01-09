@@ -1130,6 +1130,13 @@ class BatchGetResultSetTestCase(unittest.TestCase):
         # Make sure we won't check for results in the future.
         self.assertFalse(self.results._results_left)
 
+    def test_fetch_more_empty(self):
+        self.results.to_call(lambda keys: {'results': [], 'last_key': None}) 
+
+        self.results.fetch_more()
+        self.assertEqual(self.results._results, [])
+        self.assertRaises(StopIteration, self.results.next)
+
     def test_iteration(self):
         # First page.
         self.assertEqual(next(self.results), 'hello alice')
