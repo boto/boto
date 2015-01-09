@@ -20,3 +20,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+
+import os
+import tempfile
+import atexit
+
+
+class CAcerts:
+    """This allows boto to work when imported from zip file using
+    zipimport module.
+    """
+    def __init__(self):
+        cacerts_file = os.path.join(os.path.dirname(__file__), "cacerts.txt")
+        try:
+            __loader__
+        except NameError:
+            self.cacerts_file = os.path.abspath(cacerts_file)
+        else:
+            def cleanup(f):
+                f.close()
+
+            self.cacerts_temp = tempfile.NamedTemporaryFile()
+            self.cacerts_temp.write(__loader__.get_data(cacerts_file))
+            self.cacerts_temp.flush()
+
+            atexit.register(cleanup, self.cacerts_temp)
+
+            self.cacerts_file = self.cacerts_temp.name
+
