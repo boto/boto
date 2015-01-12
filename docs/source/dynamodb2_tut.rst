@@ -89,8 +89,8 @@ A full example::
     ...         HashKey('account_type', data_type=NUMBER),
     ...     ])
     ... ],
-    ... # If you need to specify custom parameters like keys or region info...
-    ... connection= boto.dynamodb2.connect_to_region('us-east-1'))
+    ... # If you need to specify custom parameters, such as credentials or region, use the following:
+    ... Table.create('users', connection=boto.dynamodb2.connect_to_region('us-east-1'))
 
 
 Using an Existing Table
