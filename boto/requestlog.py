@@ -25,7 +25,7 @@ class RequestLogger(RequestHook):
         duration = (td.microseconds + long_type(td.seconds + td.days * 24 * 3600) * 1e6) / 1e6
 
         # write output including timestamp, status code, response time, response size, request action
-        self.request_log_queue.put("'%s', '%s', '%s', '%s', '%s'\n" % (time, response.status, duration, len, request.params['Action']))
+        self.request_log_queue.put("'%s', '%s', '%s', '%s', '%s'\n" % (time, response.status, duration, len, request.params.get('Action')))
 
     def _request_log_worker(self):
         while True:
