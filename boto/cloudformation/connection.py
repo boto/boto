@@ -98,7 +98,8 @@ class CloudFormationConnection(AWSQueryConnection):
     def _build_create_or_update_params(self, stack_name, template_body,
             template_url, parameters, disable_rollback, timeout_in_minutes,
             notification_arns, capabilities, on_failure, stack_policy_body,
-            stack_policy_url, tags, stack_policy_during_update_body=None,
+            stack_policy_url, tags, use_previous_template=None,
+            stack_policy_during_update_body=None,
             stack_policy_during_update_url=None):
         """
         Helper that creates JSON parameters needed by a Stack Create or
@@ -117,16 +118,20 @@ class CloudFormationConnection(AWSQueryConnection):
         :param template_body: Structure containing the template body. (For more
             information, go to `Template Anatomy`_ in the AWS CloudFormation
             User Guide.)
-        Conditional: You must pass `TemplateBody` or `TemplateURL`. If both are
-            passed, only `TemplateBody` is used.
+        Conditional: You must pass either `UsePreviousTemplate` or one of
+            `TemplateBody` or `TemplateUrl`. If both `TemplateBody` and
+            `TemplateUrl` are passed, only `TemplateBody` is used.
+            `TemplateBody`.
 
         :type template_url: string
         :param template_url: Location of file containing the template body. The
             URL must point to a template (max size: 307,200 bytes) located in
             an S3 bucket in the same region as the stack. For more information,
             go to the `Template Anatomy`_ in the AWS CloudFormation User Guide.
-        Conditional: You must pass `TemplateURL` or `TemplateBody`. If both are
-            passed, only `TemplateBody` is used.
+        Conditional: You must pass either `UsePreviousTemplate` or one of
+            `TemplateBody` or `TemplateUrl`. If both `TemplateBody` and
+            `TemplateUrl` are passed, only `TemplateBody` is used.
+            `TemplateBody`.
 
         :type parameters: list
         :param parameters: A list of key/value tuples that specify input
@@ -186,6 +191,13 @@ class CloudFormationConnection(AWSQueryConnection):
             propagated to EC2 resources that are created as part of the stack.
             A maximum number of 10 tags can be specified.
 
+        :type use_previous_template: boolean
+        :param use_previous_template: Set to `True` to use the previous
+            template instead of uploading a new one via `TemplateBody` or
+            `TemplateURL`.
+        Conditional: You must pass either `UsePreviousTemplate` or one of
+            `TemplateBody` or `TemplateUrl`.
+
         :type stack_policy_during_update_body: string
         :param stack_policy_during_update_body: Structure containing the
             temporary overriding stack policy body. If you pass
@@ -217,6 +229,8 @@ class CloudFormationConnection(AWSQueryConnection):
             params['TemplateBody'] = template_body
         if template_url:
             params['TemplateURL'] = template_url
+        if use_previous_template is not None:
+            params['UsePreviousTemplate'] = self.encode_bool(use_previous_template)
         if template_body and template_url:
             boto.log.warning("If both TemplateBody and TemplateURL are"
                 " specified, only TemplateBody will be honored by the API")
@@ -383,6 +397,7 @@ class CloudFormationConnection(AWSQueryConnection):
     def update_stack(self, stack_name, template_body=None, template_url=None,
             parameters=None, notification_arns=None, disable_rollback=False,
             timeout_in_minutes=None, capabilities=None, tags=None,
+            use_previous_template=None,
             stack_policy_during_update_body=None,
             stack_policy_during_update_url=None,
             stack_policy_body=None, stack_policy_url=None):
@@ -421,16 +436,26 @@ class CloudFormationConnection(AWSQueryConnection):
         :param template_body: Structure containing the template body. (For more
             information, go to `Template Anatomy`_ in the AWS CloudFormation
             User Guide.)
-        Conditional: You must pass `TemplateBody` or `TemplateURL`. If both are
-            passed, only `TemplateBody` is used.
+        Conditional: You must pass either `UsePreviousTemplate` or one of
+            `TemplateBody` or `TemplateUrl`. If both `TemplateBody` and
+            `TemplateUrl` are passed, only `TemplateBody` is used.
 
         :type template_url: string
         :param template_url: Location of file containing the template body. The
-            URL must point to a template located in an S3 bucket in the same
-            region as the stack. For more information, go to `Template
-            Anatomy`_ in the AWS CloudFormation User Guide.
-        Conditional: You must pass `TemplateURL` or `TemplateBody`. If both are
-            passed, only `TemplateBody` is used.
+            URL must point to a template (max size: 307,200 bytes) located in
+            an S3 bucket in the same region as the stack. For more information,
+            go to the `Template Anatomy`_ in the AWS CloudFormation User Guide.
+        Conditional: You must pass either `UsePreviousTemplate` or one of
+            `TemplateBody` or `TemplateUrl`. If both `TemplateBody` and
+            `TemplateUrl` are passed, only `TemplateBody` is used.
+            `TemplateBody`.
+
+        :type use_previous_template: boolean
+        :param use_previous_template: Set to `True` to use the previous
+            template instead of uploading a new one via `TemplateBody` or
+            `TemplateURL`.
+        Conditional: You must pass either `UsePreviousTemplate` or one of
+            `TemplateBody` or `TemplateUrl`.
 
         :type parameters: list
         :param parameters: A list of key/value tuples that specify input
@@ -497,8 +522,8 @@ class CloudFormationConnection(AWSQueryConnection):
         params = self._build_create_or_update_params(stack_name, template_body,
             template_url, parameters, disable_rollback, timeout_in_minutes,
             notification_arns, capabilities, None, stack_policy_body,
-            stack_policy_url, tags, stack_policy_during_update_body,
-            stack_policy_during_update_url)
+            stack_policy_url, tags, use_previous_template,
+            stack_policy_during_update_body, stack_policy_during_update_url)
         body = self._do_request('UpdateStack', params, '/', 'POST')
         return body['UpdateStackResponse']['UpdateStackResult']['StackId']
 
