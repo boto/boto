@@ -29,7 +29,8 @@ import time
 from tests.unit import unittest
 from boto.dynamodb2 import exceptions
 from boto.dynamodb2.fields import (HashKey, RangeKey, KeysOnlyIndex,
-                                   GlobalKeysOnlyIndex, GlobalIncludeIndex)
+                                   GlobalKeysOnlyIndex, GlobalIncludeIndex,
+                                   GlobalAllIndex)
 from boto.dynamodb2.items import Item
 from boto.dynamodb2.table import Table
 from boto.dynamodb2.types import NUMBER
@@ -645,3 +646,73 @@ class DynamoDBv2Test(unittest.TestCase):
                 '2013-12-24T15:22:22',
             ]
         )
+
+    def test_query_after_describe_with_gsi(self):
+        # Create a table to using gsi to reproduce the error mentioned on issue
+        # https://github.com/boto/boto/issues/2828
+        users = Table.create('more_gsi_query_users', schema=[
+            HashKey('user_id')
+        ], throughput={
+            'read': 5,
+            'write': 5
+        }, global_indexes=[
+            GlobalAllIndex('EmailGSIIndex', parts=[
+                HashKey('email')
+            ], throughput={
+                'read': 1,
+                'write': 1
+            })
+        ])
+
+        # Add this function to be called after tearDown()
+        self.addCleanup(users.delete)
+
+        # Wait for it.
+        time.sleep(60)
+
+        # populate a couple of items in it
+        users.put_item(data={
+            'user_id': '7',
+            'username': 'johndoe',
+            'first_name': 'John',
+            'last_name': 'Doe',
+            'email': 'johndoe@johndoe.com',
+        })
+        users.put_item(data={
+            'user_id': '24',
+            'username': 'alice',
+            'first_name': 'Alice',
+            'last_name': 'Expert',
+            'email': 'alice@alice.com',
+        })
+        users.put_item(data={
+            'user_id': '35',
+            'username': 'jane',
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'jane@jane.com',
+        })
+
+        # Try the GSI. it should work.
+        rs = users.query_2(
+            email__eq='johndoe@johndoe.com',
+            index='EmailGSIIndex'
+        )
+
+        for rs_item in rs:
+            self.assertEqual(rs_item['username'], ['johndoe'])
+
+        # The issue arises when we're introspecting the table and try to
+        # query_2 after call describe method
+        users_hit_api = Table('more_gsi_query_users')
+        users_hit_api.describe()
+
+        # Try the GSI. This is what os going wrong on #2828 issue. It should
+        # work fine now.
+        rs = users_hit_api.query_2(
+            email__eq='johndoe@johndoe.com',
+            index='EmailGSIIndex'
+        )
+
+        for rs_item in rs:
+            self.assertEqual(rs_item['username'], ['johndoe'])
