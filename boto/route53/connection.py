@@ -152,8 +152,8 @@ class Route53Connection(AWSAuthConnection):
             raise exception.DNSServerError(response.status,
                                            response.reason,
                                            body)
-        e = boto.jsonresponse.Element(list_marker='NameServers',
-                                      item_marker=('NameServer',))
+        e = boto.jsonresponse.Element(list_marker=('NameServers','VPCs'),
+                                      item_marker=('NameServer','VPC',))
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
