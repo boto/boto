@@ -1,4 +1,5 @@
 # Copyright (c) 2014 Tellybug, Matt Millar
+# Copyright (c) 2015 Steven Richards <sbrichards@mit.edu>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -34,7 +35,7 @@ POST /2013-04-01/healthcheck HTTP/1.1
       <Port>port on the endpoint to check</Port>
       <Type>HTTP | HTTPS | HTTP_STR_MATCH | HTTPS_STR_MATCH | TCP</Type>
       <ResourcePath>path of the file that
-         you want Amazon Route 53 to request</ResourcePath>
+         you want Amazon Route 53 to request if type is not TCP</ResourcePath>
       <FullyQualifiedDomainName>domain name of the
          endpoint to check</FullyQualifiedDomainName>
       <SearchString>if Type is HTTP_STR_MATCH or HTTPS_STR_MATCH,
@@ -56,7 +57,7 @@ class HealthCheck(object):
             %(ip_addr_part)s
             <Port>%(port)s</Port>
             <Type>%(type)s</Type>
-            <ResourcePath>%(resource_path)s</ResourcePath>
+            %(resource_path_part)s
             %(fqdn_part)s
             %(string_match_part)s
             %(request_interval)s
@@ -72,9 +73,11 @@ class HealthCheck(object):
 
     XMLRequestIntervalPart = """<RequestInterval>%(request_interval)d</RequestInterval>"""
 
+    XMLResourcePathPart = """<ResourcePath>%(resource_path)s</ResourcePath>"""
+
     valid_request_intervals = (10, 30)
 
-    def __init__(self, ip_addr, port, hc_type, resource_path, fqdn=None, string_match=None, request_interval=30, failure_threshold=3):
+    def __init__(self, ip_addr, port, hc_type, resource_path=None, fqdn=None, string_match=None, request_interval=30, failure_threshold=3):
         """
         HealthCheck object
 
@@ -111,6 +114,10 @@ class HealthCheck(object):
         self.string_match = string_match
         self.failure_threshold = failure_threshold
 
+        if self.resource_path != None and self.hc_type == 'TCP':
+            self.resource_path = None
+            raise AttributeError("TCP health checks must not have a resource path specificed.")
+
         if request_interval in self.valid_request_intervals:
             self.request_interval = request_interval
         else:
@@ -127,13 +134,16 @@ class HealthCheck(object):
             'ip_addr_part': '',
             'port': self.port,
             'type': self.hc_type,
-            'resource_path': self.resource_path,
             'fqdn_part': "",
+            'resource_path_part': "",
             'string_match_part': "",
             'request_interval': (self.XMLRequestIntervalPart %
                                  {'request_interval': self.request_interval}),
             'failure_threshold': self.failure_threshold,
         }
+        if self.resource_path is not None:
+            params['resource_path_part'] = self.XMLResourcePathPart % {'resource_path': self.resource_path}
+
         if self.fqdn is not None:
             params['fqdn_part'] = self.XMLFQDNPart % {'fqdn': self.fqdn}
 
