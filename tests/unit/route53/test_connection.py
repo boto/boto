@@ -313,6 +313,16 @@ class TestGetHostedZoneRoute53(AWSMockServiceTestCase):
             <NameServer>ns-1000.awsdns-00.co.uk</NameServer>
         </NameServers>
     </DelegationSet>
+    <VPCs>
+      <VPC>
+         <VPCRegion>eu-west-1</VPCRegion>
+         <VPCId>vpc-12345</VPCId>
+      </VPC>
+      <VPC>
+         <VPCRegion>us-west-1</VPCRegion>
+         <VPCId>vpc-78900</VPCId>
+      </VPC>
+   </VPCs> 
 </GetHostedZoneResponse>
 """
 
@@ -330,7 +340,18 @@ class TestGetHostedZoneRoute53(AWSMockServiceTestCase):
                                  ['DelegationSet']['NameServers'],
                          ['ns-1000.awsdns-40.org', 'ns-200.awsdns-30.com',
                           'ns-900.awsdns-50.net', 'ns-1000.awsdns-00.co.uk'])
-
+        self.assertEqual(response['GetHostedZoneResponse']
+                                 ['VPCs'][0]['VPCRegion'],
+                         'eu-west-1')
+        self.assertEqual(response['GetHostedZoneResponse']
+                                 ['VPCs'][0]['VPCId'],
+                         'vpc-12345')
+        self.assertEqual(response['GetHostedZoneResponse']
+                                 ['VPCs'][1]['VPCRegion'],
+                         'us-west-1')
+        self.assertEqual(response['GetHostedZoneResponse']
+                                 ['VPCs'][1]['VPCId'],
+                         'vpc-78900')
 
 @attr(route53=True)
 class TestGetAllRRSetsRoute53(AWSMockServiceTestCase):
