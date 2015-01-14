@@ -45,7 +45,7 @@ if 'BOTO_CONFIG' in os.environ:
 # as the current configuration locations, split with colons
 elif 'BOTO_PATH' in os.environ:
     BotoConfigLocations = []
-    for path in os.environ['BOTO_PATH'].split(":"):
+    for path in os.environ['BOTO_PATH'].split(os.path.pathsep):
         BotoConfigLocations.append(expanduser(path))
 
 
