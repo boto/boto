@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -67,23 +67,43 @@ class KinesisConnection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['hmac-v4']
 
+    def add_tags_to_stream(self, stream_name, tags):
+        """
+        Adds or updates tags for the specified Amazon Kinesis stream.
+        Each stream can have up to 10 tags.
+
+        If tags have already been assigned to the stream,
+        `AddTagsToStream` overwrites any existing tags that correspond
+        to the specified tag keys.
+
+        :type stream_name: string
+        :param stream_name: The name of the stream.
+
+        :type tags: map
+        :param tags: The set of key-value pairs to use to create the tags.
+
+        """
+        params = {'StreamName': stream_name, 'Tags': tags, }
+        return self.make_request(action='AddTagsToStream',
+                                 body=json.dumps(params))
+
     def create_stream(self, stream_name, shard_count):
         """
-        This operation adds a new Amazon Kinesis stream to your AWS
-        account. A stream captures and transports data records that
-        are continuously emitted from different data sources or
-        producers . Scale-out within an Amazon Kinesis stream is
-        explicitly supported by means of shards, which are uniquely
-        identified groups of data records in an Amazon Kinesis stream.
+        Creates a Amazon Kinesis stream. A stream captures and
+        transports data records that are continuously emitted from
+        different data sources or producers . Scale-out within an
+        Amazon Kinesis stream is explicitly supported by means of
+        shards, which are uniquely identified groups of data records
+        in an Amazon Kinesis stream.
 
         You specify and control the number of shards that a stream is
-        composed of. Each shard can support up to 5 read transactions
-        per second up to a maximum total of 2 MB of data read per
-        second. Each shard can support up to 1000 write transactions
-        per second up to a maximum total of 1 MB data written per
-        second. You can add shards to a stream if the amount of data
-        input increases and you can remove shards if the amount of
-        data input decreases.
+        composed of. Each open shard can support up to 5 read
+        transactions per second, up to a maximum total of 2 MB of data
+        read per second. Each shard can support up to 1000 records
+        written per second, up to a maximum total of 1 MB data written
+        per second. You can add shards to a stream if the amount of
+        data input increases and you can remove shards if the amount
+        of data input decreases.
 
         The stream name identifies the stream. The name is scoped to
         the AWS account used by the application. It is also scoped by
@@ -93,27 +113,26 @@ class KinesisConnection(AWSQueryConnection):
 
         `CreateStream` is an asynchronous operation. Upon receiving a
         `CreateStream` request, Amazon Kinesis immediately returns and
-        sets the stream status to CREATING. After the stream is
-        created, Amazon Kinesis sets the stream status to ACTIVE. You
-        should perform read and write operations only on an ACTIVE
-        stream.
+        sets the stream status to `CREATING`. After the stream is
+        created, Amazon Kinesis sets the stream status to `ACTIVE`.
+        You should perform read and write operations only on an
+        `ACTIVE` stream.
 
         You receive a `LimitExceededException` when making a
         `CreateStream` request if you try to do one of the following:
 
 
-        + Have more than five streams in the CREATING state at any
+        + Have more than five streams in the `CREATING` state at any
           point in time.
         + Create more shards than are authorized for your account.
 
 
-        **Note:** The default limit for an AWS account is two shards
-        per stream. If you need to create a stream with more than two
-        shards, contact AWS Support to increase the limit on your
-        account.
+        The default limit for an AWS account is 10 shards per stream.
+        If you need to create a stream with more than 10 shards,
+        `contact AWS Support`_ to increase the limit on your account.
 
-        You can use the `DescribeStream` operation to check the stream
-        status, which is returned in `StreamStatus`.
+        You can use `DescribeStream` to check the stream status, which
+        is returned in `StreamStatus`.
 
         `CreateStream` has a limit of 5 transactions per second per
         account.
@@ -130,9 +149,9 @@ class KinesisConnection(AWSQueryConnection):
         :param shard_count: The number of shards that the stream will use. The
             throughput of the stream is a function of the number of shards;
             more shards are required for greater provisioned throughput.
-        **Note:** The default limit for an AWS account is two shards per
-            stream. If you need to create a stream with more than two shards,
-            contact AWS Support to increase the limit on your account.
+        **Note:** The default limit for an AWS account is 10 shards per stream.
+            If you need to create a stream with more than 10 shards, `contact
+            AWS Support`_ to increase the limit on your account.
 
         """
         params = {
@@ -144,23 +163,23 @@ class KinesisConnection(AWSQueryConnection):
 
     def delete_stream(self, stream_name):
         """
-        This operation deletes a stream and all of its shards and
-        data. You must shut down any applications that are operating
-        on the stream before you delete the stream. If an application
-        attempts to operate on a deleted stream, it will receive the
-        exception `ResourceNotFoundException`.
+        Deletes a stream and all its shards and data. You must shut
+        down any applications that are operating on the stream before
+        you delete the stream. If an application attempts to operate
+        on a deleted stream, it will receive the exception
+        `ResourceNotFoundException`.
 
-        If the stream is in the ACTIVE state, you can delete it. After
-        a `DeleteStream` request, the specified stream is in the
-        DELETING state until Amazon Kinesis completes the deletion.
+        If the stream is in the `ACTIVE` state, you can delete it.
+        After a `DeleteStream` request, the specified stream is in the
+        `DELETING` state until Amazon Kinesis completes the deletion.
 
         **Note:** Amazon Kinesis might continue to accept data read
-        and write operations, such as PutRecord and GetRecords, on a
-        stream in the DELETING state until the stream deletion is
-        complete.
+        and write operations, such as PutRecord, PutRecords, and
+        GetRecords, on a stream in the `DELETING` state until the
+        stream deletion is complete.
 
         When you delete a stream, any shards in that stream are also
-        deleted.
+        deleted, and any tags are dissociated from the stream.
 
         You can use the DescribeStream operation to check the state of
         the stream, which is returned in `StreamStatus`.
@@ -179,17 +198,17 @@ class KinesisConnection(AWSQueryConnection):
     def describe_stream(self, stream_name, limit=None,
                         exclusive_start_shard_id=None):
         """
-        This operation returns the following information about the
-        stream: the current status of the stream, the stream Amazon
-        Resource Name (ARN), and an array of shard objects that
-        comprise the stream. For each shard object there is
-        information about the hash key and sequence number ranges that
-        the shard spans, and the IDs of any earlier shards that played
-        in a role in a MergeShards or SplitShard operation that
-        created the shard. A sequence number is the identifier
-        associated with every record ingested in the Amazon Kinesis
-        stream. The sequence number is assigned by the Amazon Kinesis
-        service when a record is put into the stream.
+        Describes the specified stream.
+
+        The information about the stream includes its current status,
+        its Amazon Resource Name (ARN), and an array of shard objects.
+        For each shard object, there is information about the hash key
+        and sequence number ranges that the shard spans, and the IDs
+        of any earlier shards that played in a role in creating the
+        shard. A sequence number is the identifier associated with
+        every record ingested in the Amazon Kinesis stream. The
+        sequence number is assigned when a record is put into the
+        stream.
 
         You can limit the number of returned shards using the `Limit`
         parameter. The number of shards in a stream may be too large
@@ -198,11 +217,11 @@ class KinesisConnection(AWSQueryConnection):
         output. `HasMoreShards` is set to `True` when there is more
         data available.
 
-        If there are more shards available, you can request more
-        shards by using the shard ID of the last shard returned by the
-        `DescribeStream` request, in the `ExclusiveStartShardId`
-        parameter in a subsequent request to `DescribeStream`.
-        `DescribeStream` is a paginated operation.
+        `DescribeStream` is a paginated operation. If there are more
+        shards available, you can request them using the shard ID of
+        the last shard returned. Specify this ID in the
+        `ExclusiveStartShardId` parameter in a subsequent request to
+        `DescribeStream`.
 
         `DescribeStream` has a limit of 10 transactions per second per
         account.
@@ -215,7 +234,7 @@ class KinesisConnection(AWSQueryConnection):
 
         :type exclusive_start_shard_id: string
         :param exclusive_start_shard_id: The shard ID of the shard to start
-            with for the stream description.
+            with.
 
         """
         params = {'StreamName': stream_name, }
@@ -228,52 +247,72 @@ class KinesisConnection(AWSQueryConnection):
 
     def get_records(self, shard_iterator, limit=None, b64_decode=True):
         """
-        This operation returns one or more data records from a shard.
-        A `GetRecords` operation request can retrieve up to 10 MB of
-        data.
+        Gets data records from a shard.
 
-        You specify a shard iterator for the shard that you want to
-        read data from in the `ShardIterator` parameter. The shard
-        iterator specifies the position in the shard from which you
-        want to start reading data records sequentially. A shard
-        iterator specifies this position using the sequence number of
-        a data record in the shard. For more information about the
-        shard iterator, see GetShardIterator.
+        Specify a shard iterator using the `ShardIterator` parameter.
+        The shard iterator specifies the position in the shard from
+        which you want to start reading data records sequentially. If
+        there are no records available in the portion of the shard
+        that the iterator points to, `GetRecords` returns an empty
+        list. Note that it might take multiple calls to get to a
+        portion of the shard that contains records.
 
-        `GetRecords` may return a partial result if the response size
-        limit is exceeded. You will get an error, but not a partial
-        result if the shard's provisioned throughput is exceeded, the
-        shard iterator has expired, or an internal processing failure
-        has occurred. Clients can request a smaller amount of data by
-        specifying a maximum number of returned records using the
-        `Limit` parameter. The `Limit` parameter can be set to an
-        integer value of up to 10,000. If you set the value to an
-        integer greater than 10,000, you will receive
-        `InvalidArgumentException`.
+        You can scale by provisioning multiple shards. Your
+        application should have one thread per shard, each reading
+        continuously from its stream. To read from a stream
+        continually, call `GetRecords` in a loop. Use GetShardIterator
+        to get the shard iterator to specify in the first `GetRecords`
+        call. `GetRecords` returns a new shard iterator in
+        `NextShardIterator`. Specify the shard iterator returned in
+        `NextShardIterator` in subsequent calls to `GetRecords`. Note
+        that if the shard has been closed, the shard iterator can't
+        return more data and `GetRecords` returns `null` in
+        `NextShardIterator`. You can terminate the loop when the shard
+        is closed, or when the shard iterator reaches the record with
+        the sequence number or other attribute that marks it as the
+        last record to process.
 
-        A new shard iterator is returned by every `GetRecords` request
-        in `NextShardIterator`, which you use in the `ShardIterator`
-        parameter of the next `GetRecords` request. When you
-        repeatedly read from an Amazon Kinesis stream use a
-        GetShardIterator request to get the first shard iterator to
-        use in your first `GetRecords` request and then use the shard
-        iterator returned in `NextShardIterator` for subsequent reads.
+        Each data record can be up to 50 KB in size, and each shard
+        can read up to 2 MB per second. You can ensure that your calls
+        don't exceed the maximum supported size or throughput by using
+        the `Limit` parameter to specify the maximum number of records
+        that `GetRecords` can return. Consider your average record
+        size when determining this limit. For example, if your average
+        record size is 40 KB, you can limit the data returned to about
+        1 MB per call by specifying 25 as the limit.
 
-        `GetRecords` can return `null` for the `NextShardIterator` to
-        reflect that the shard has been closed and that the requested
-        shard iterator would never have returned more data.
+        The size of the data returned by `GetRecords` will vary
+        depending on the utilization of the shard. The maximum size of
+        data that `GetRecords` can return is 10 MB. If a call returns
+        10 MB of data, subsequent calls made within the next 5 seconds
+        throw `ProvisionedThroughputExceededException`. If there is
+        insufficient provisioned throughput on the shard, subsequent
+        calls made within the next 1 second throw
+        `ProvisionedThroughputExceededException`. Note that
+        `GetRecords` won't return any data when it throws an
+        exception. For this reason, we recommend that you wait one
+        second between calls to `GetRecords`; however, it's possible
+        that the application will get exceptions for longer than 1
+        second.
 
-        If no items can be processed because of insufficient
-        provisioned throughput on the shard involved in the request,
-        `GetRecords` throws `ProvisionedThroughputExceededException`.
+        To detect whether the application is falling behind in
+        processing, add a timestamp to your records and note how long
+        it takes to process them. You can also monitor how much data
+        is in a stream using the CloudWatch metrics for write
+        operations ( `PutRecord` and `PutRecords`). For more
+        information, see `Monitoring Amazon Kinesis with Amazon
+        CloudWatch`_ in the Amazon Kinesis Developer Guide .
 
         :type shard_iterator: string
         :param shard_iterator: The position in the shard from which you want to
-            start sequentially reading data records.
+            start sequentially reading data records. A shard iterator specifies
+            this position using the sequence number of a data record in the
+            shard.
 
         :type limit: integer
-        :param limit: The maximum number of records to return, which can be set
-            to a value of up to 10,000.
+        :param limit: The maximum number of records to return. Specify a value
+            of up to 10,000. If you specify a value that is greater than
+            10,000, `GetRecords` throws `InvalidArgumentException`.
 
         :type b64_decode: boolean
         :param b64_decode: Decode the Base64-encoded ``Data`` field of records.
@@ -297,32 +336,31 @@ class KinesisConnection(AWSQueryConnection):
     def get_shard_iterator(self, stream_name, shard_id, shard_iterator_type,
                            starting_sequence_number=None):
         """
-        This operation returns a shard iterator in `ShardIterator`.
-        The shard iterator specifies the position in the shard from
-        which you want to start reading data records sequentially. A
-        shard iterator specifies this position using the sequence
-        number of a data record in a shard. A sequence number is the
-        identifier associated with every record ingested in the Amazon
-        Kinesis stream. The sequence number is assigned by the Amazon
-        Kinesis service when a record is put into the stream.
+        Gets a shard iterator. A shard iterator expires five minutes
+        after it is returned to the requester.
 
-        You must specify the shard iterator type in the
-        `GetShardIterator` request. For example, you can set the
-        `ShardIteratorType` parameter to read exactly from the
+        A shard iterator specifies the position in the shard from
+        which to start reading data records sequentially. A shard
+        iterator specifies this position using the sequence number of
+        a data record in a shard. A sequence number is the identifier
+        associated with every record ingested in the Amazon Kinesis
+        stream. The sequence number is assigned when a record is put
+        into the stream.
+
+        You must specify the shard iterator type. For example, you can
+        set the `ShardIteratorType` parameter to read exactly from the
         position denoted by a specific sequence number by using the
-        AT_SEQUENCE_NUMBER shard iterator type, or right after the
-        sequence number by using the AFTER_SEQUENCE_NUMBER shard
+        `AT_SEQUENCE_NUMBER` shard iterator type, or right after the
+        sequence number by using the `AFTER_SEQUENCE_NUMBER` shard
         iterator type, using sequence numbers returned by earlier
-        PutRecord, GetRecords or DescribeStream requests. You can
-        specify the shard iterator type TRIM_HORIZON in the request to
-        cause `ShardIterator` to point to the last untrimmed record in
-        the shard in the system, which is the oldest data record in
-        the shard. Or you can point to just after the most recent
-        record in the shard, by using the shard iterator type LATEST,
-        so that you always read the most recent data in the shard.
-
-        **Note:** Each shard iterator expires five minutes after it is
-        returned to the requester.
+        calls to PutRecord, PutRecords, GetRecords, or DescribeStream.
+        You can specify the shard iterator type `TRIM_HORIZON` in the
+        request to cause `ShardIterator` to point to the last
+        untrimmed record in the shard in the system, which is the
+        oldest data record in the shard. Or you can point to just
+        after the most recent record in the shard, by using the shard
+        iterator type `LATEST`, so that you always read the most
+        recent data in the shard.
 
         When you repeatedly read from an Amazon Kinesis stream use a
         GetShardIterator request to get the first shard iterator to to
@@ -333,18 +371,16 @@ class KinesisConnection(AWSQueryConnection):
         `NextShardIterator`, which you use in the `ShardIterator`
         parameter of the next `GetRecords` request.
 
-        If a `GetShardIterator` request is made too often, you will
-        receive a `ProvisionedThroughputExceededException`. For more
-        information about throughput limits, see the `Amazon Kinesis
-        Developer Guide`_.
+        If a `GetShardIterator` request is made too often, you receive
+        a `ProvisionedThroughputExceededException`. For more
+        information about throughput limits, see GetRecords.
 
-        `GetShardIterator` can return `null` for its `ShardIterator`
-        to indicate that the shard has been closed and that the
-        requested iterator will return no more data. A shard can be
-        closed by a SplitShard or MergeShards operation.
+        If the shard is closed, the iterator can't return more data,
+        and `GetShardIterator` returns `null` for its `ShardIterator`.
+        A shard can be closed using SplitShard or MergeShards.
 
         `GetShardIterator` has a limit of 5 transactions per second
-        per account per shard.
+        per account per open shard.
 
         :type stream_name: string
         :param stream_name: The name of the stream.
@@ -386,10 +422,7 @@ class KinesisConnection(AWSQueryConnection):
 
     def list_streams(self, limit=None, exclusive_start_stream_name=None):
         """
-        This operation returns an array of the names of all the
-        streams that are associated with the AWS account making the
-        `ListStreams` request. A given AWS account can have many
-        streams active at one time.
+        Lists your streams.
 
         The number of streams may be too large to return from a single
         call to `ListStreams`. You can limit the number of returned
@@ -426,46 +459,74 @@ class KinesisConnection(AWSQueryConnection):
         return self.make_request(action='ListStreams',
                                  body=json.dumps(params))
 
+    def list_tags_for_stream(self, stream_name, exclusive_start_tag_key=None,
+                             limit=None):
+        """
+        Lists the tags for the specified Amazon Kinesis stream.
+
+        :type stream_name: string
+        :param stream_name: The name of the stream.
+
+        :type exclusive_start_tag_key: string
+        :param exclusive_start_tag_key: The key to use as the starting point
+            for the list of tags. If this parameter is set, `ListTagsForStream`
+            gets all tags that occur after `ExclusiveStartTagKey`.
+
+        :type limit: integer
+        :param limit: The number of tags to return. If this number is less than
+            the total number of tags associated with the stream, `HasMoreTags`
+            is set to `True`. To list additional tags, set
+            `ExclusiveStartTagKey` to the last key in the response.
+
+        """
+        params = {'StreamName': stream_name, }
+        if exclusive_start_tag_key is not None:
+            params['ExclusiveStartTagKey'] = exclusive_start_tag_key
+        if limit is not None:
+            params['Limit'] = limit
+        return self.make_request(action='ListTagsForStream',
+                                 body=json.dumps(params))
+
     def merge_shards(self, stream_name, shard_to_merge,
                      adjacent_shard_to_merge):
         """
-        This operation merges two adjacent shards in a stream and
-        combines them into a single shard to reduce the stream's
-        capacity to ingest and transport data. Two shards are
-        considered adjacent if the union of the hash key ranges for
-        the two shards form a contiguous set with no gaps. For
-        example, if you have two shards, one with a hash key range of
-        276...381 and the other with a hash key range of 382...454,
-        then you could merge these two shards into a single shard that
-        would have a hash key range of 276...454. After the merge, the
-        single child shard receives data for all hash key values
-        covered by the two parent shards.
+        Merges two adjacent shards in a stream and combines them into
+        a single shard to reduce the stream's capacity to ingest and
+        transport data. Two shards are considered adjacent if the
+        union of the hash key ranges for the two shards form a
+        contiguous set with no gaps. For example, if you have two
+        shards, one with a hash key range of 276...381 and the other
+        with a hash key range of 382...454, then you could merge these
+        two shards into a single shard that would have a hash key
+        range of 276...454. After the merge, the single child shard
+        receives data for all hash key values covered by the two
+        parent shards.
 
         `MergeShards` is called when there is a need to reduce the
         overall capacity of a stream because of excess capacity that
-        is not being used. The operation requires that you specify the
-        shard to be merged and the adjacent shard for a given stream.
-        For more information about merging shards, see the `Amazon
-        Kinesis Developer Guide`_.
+        is not being used. You must specify the shard to be merged and
+        the adjacent shard for a stream. For more information about
+        merging shards, see `Merge Two Shards`_ in the Amazon Kinesis
+        Developer Guide .
 
-        If the stream is in the ACTIVE state, you can call
-        `MergeShards`. If a stream is in CREATING or UPDATING or
-        DELETING states, then Amazon Kinesis returns a
+        If the stream is in the `ACTIVE` state, you can call
+        `MergeShards`. If a stream is in the `CREATING`, `UPDATING`,
+        or `DELETING` state, `MergeShards` returns a
         `ResourceInUseException`. If the specified stream does not
-        exist, Amazon Kinesis returns a `ResourceNotFoundException`.
+        exist, `MergeShards` returns a `ResourceNotFoundException`.
 
-        You can use the DescribeStream operation to check the state of
-        the stream, which is returned in `StreamStatus`.
+        You can use DescribeStream to check the state of the stream,
+        which is returned in `StreamStatus`.
 
         `MergeShards` is an asynchronous operation. Upon receiving a
         `MergeShards` request, Amazon Kinesis immediately returns a
-        response and sets the `StreamStatus` to UPDATING. After the
+        response and sets the `StreamStatus` to `UPDATING`. After the
         operation is completed, Amazon Kinesis sets the `StreamStatus`
-        to ACTIVE. Read and write operations continue to work while
-        the stream is in the UPDATING state.
+        to `ACTIVE`. Read and write operations continue to work while
+        the stream is in the `UPDATING` state.
 
-        You use the DescribeStream operation to determine the shard
-        IDs that are specified in the `MergeShards` request.
+        You use DescribeStream to determine the shard IDs that are
+        specified in the `MergeShards` request.
 
         If you try to operate on too many streams in parallel using
         CreateStream, DeleteStream, `MergeShards` or SplitShard, you
@@ -597,61 +658,163 @@ class KinesisConnection(AWSQueryConnection):
         return self.make_request(action='PutRecord',
                                  body=json.dumps(params))
 
+    def put_records(self, records, stream_name, b64_encode=True):
+        """
+        Puts (writes) multiple data records from a producer into an
+        Amazon Kinesis stream in a single call (also referred to as a
+        `PutRecords` request). Use this operation to send data from a
+        data producer into the Amazon Kinesis stream for real-time
+        ingestion and processing. Each shard can support up to 1000
+        records written per second, up to a maximum total of 1 MB data
+        written per second.
+
+        You must specify the name of the stream that captures, stores,
+        and transports the data; and an array of request `Records`,
+        with each record in the array requiring a partition key and
+        data blob.
+
+        The data blob can be any type of data; for example, a segment
+        from a log file, geographic/location data, website clickstream
+        data, and so on.
+
+        The partition key is used by Amazon Kinesis as input to a hash
+        function that maps the partition key and associated data to a
+        specific shard. An MD5 hash function is used to map partition
+        keys to 128-bit integer values and to map associated data
+        records to shards. As a result of this hashing mechanism, all
+        data records with the same partition key map to the same shard
+        within the stream. For more information, see `Partition Key`_
+        in the Amazon Kinesis Developer Guide .
+
+        Each record in the `Records` array may include an optional
+        parameter, `ExplicitHashKey`, which overrides the partition
+        key to shard mapping. This parameter allows a data producer to
+        determine explicitly the shard where the record is stored. For
+        more information, see `Adding Multiple Records with
+        PutRecords`_ in the Amazon Kinesis Developer Guide .
+
+        The `PutRecords` response includes an array of response
+        `Records`. Each record in the response array directly
+        correlates with a record in the request array using natural
+        ordering, from the top to the bottom of the request and
+        response. The response `Records` array always includes the
+        same number of records as the request array.
+
+        The response `Records` array includes both successfully and
+        unsuccessfully processed records. Amazon Kinesis attempts to
+        process all records in each `PutRecords` request. A single
+        record failure does not stop the processing of subsequent
+        records.
+
+        A successfully-processed record includes `ShardId` and
+        `SequenceNumber` values. The `ShardId` parameter identifies
+        the shard in the stream where the record is stored. The
+        `SequenceNumber` parameter is an identifier assigned to the
+        put record, unique to all records in the stream.
+
+        An unsuccessfully-processed record includes `ErrorCode` and
+        `ErrorMessage` values. `ErrorCode` reflects the type of error
+        and can be one of the following values:
+        `ProvisionedThroughputExceededException` or `InternalFailure`.
+        `ErrorMessage` provides more detailed information about the
+        `ProvisionedThroughputExceededException` exception including
+        the account ID, stream name, and shard ID of the record that
+        was throttled.
+
+        Data records are accessible for only 24 hours from the time
+        that they are added to an Amazon Kinesis stream.
+
+        :type records: list
+        :param records: The records associated with the request.
+
+        :type stream_name: string
+        :param stream_name: The stream name associated with the request.
+
+        :type b64_encode: boolean
+        :param b64_encode: Whether to Base64 encode `data`. Can be set to
+            ``False`` if `data` is already encoded to prevent double encoding.
+
+        """
+        params = {'Records': records, 'StreamName': stream_name, }
+        if b64_encode:
+            for i in range(len(params['Records'])):
+                record = params['Records'][i]
+                params['Records'][i] = base64.b64encode(
+                    record.encode('utf-8')).decode('utf-8')
+        return self.make_request(action='PutRecords',
+                                 body=json.dumps(params))
+
+    def remove_tags_from_stream(self, stream_name, tag_keys):
+        """
+        Deletes tags from the specified Amazon Kinesis stream.
+
+        If you specify a tag that does not exist, it is ignored.
+
+        :type stream_name: string
+        :param stream_name: The name of the stream.
+
+        :type tag_keys: list
+        :param tag_keys: A list of tag keys. Each corresponding tag is removed
+            from the stream.
+
+        """
+        params = {'StreamName': stream_name, 'TagKeys': tag_keys, }
+        return self.make_request(action='RemoveTagsFromStream',
+                                 body=json.dumps(params))
+
     def split_shard(self, stream_name, shard_to_split, new_starting_hash_key):
         """
-        This operation splits a shard into two new shards in the
-        stream, to increase the stream's capacity to ingest and
-        transport data. `SplitShard` is called when there is a need to
-        increase the overall capacity of stream because of an expected
-        increase in the volume of data records being ingested.
+        Splits a shard into two new shards in the stream, to increase
+        the stream's capacity to ingest and transport data.
+        `SplitShard` is called when there is a need to increase the
+        overall capacity of stream because of an expected increase in
+        the volume of data records being ingested.
 
-        `SplitShard` can also be used when a given shard appears to be
+        You can also use `SplitShard` when a shard appears to be
         approaching its maximum utilization, for example, when the set
         of producers sending data into the specific shard are suddenly
         sending more than previously anticipated. You can also call
-        the `SplitShard` operation to increase stream capacity, so
-        that more Amazon Kinesis applications can simultaneously read
-        data from the stream for real-time processing.
+        `SplitShard` to increase stream capacity, so that more Amazon
+        Kinesis applications can simultaneously read data from the
+        stream for real-time processing.
 
-        The `SplitShard` operation requires that you specify the shard
-        to be split and the new hash key, which is the position in the
-        shard where the shard gets split in two. In many cases, the
-        new hash key might simply be the average of the beginning and
-        ending hash key, but it can be any hash key value in the range
-        being mapped into the shard. For more information about
-        splitting shards, see the `Amazon Kinesis Developer Guide`_.
+        You must specify the shard to be split and the new hash key,
+        which is the position in the shard where the shard gets split
+        in two. In many cases, the new hash key might simply be the
+        average of the beginning and ending hash key, but it can be
+        any hash key value in the range being mapped into the shard.
+        For more information about splitting shards, see `Split a
+        Shard`_ in the Amazon Kinesis Developer Guide .
 
-        You can use the DescribeStream operation to determine the
-        shard ID and hash key values for the `ShardToSplit` and
-        `NewStartingHashKey` parameters that are specified in the
-        `SplitShard` request.
+        You can use DescribeStream to determine the shard ID and hash
+        key values for the `ShardToSplit` and `NewStartingHashKey`
+        parameters that are specified in the `SplitShard` request.
 
         `SplitShard` is an asynchronous operation. Upon receiving a
         `SplitShard` request, Amazon Kinesis immediately returns a
-        response and sets the stream status to UPDATING. After the
+        response and sets the stream status to `UPDATING`. After the
         operation is completed, Amazon Kinesis sets the stream status
-        to ACTIVE. Read and write operations continue to work while
-        the stream is in the UPDATING state.
+        to `ACTIVE`. Read and write operations continue to work while
+        the stream is in the `UPDATING` state.
 
         You can use `DescribeStream` to check the status of the
         stream, which is returned in `StreamStatus`. If the stream is
-        in the ACTIVE state, you can call `SplitShard`. If a stream is
-        in CREATING or UPDATING or DELETING states, then Amazon
-        Kinesis returns a `ResourceInUseException`.
+        in the `ACTIVE` state, you can call `SplitShard`. If a stream
+        is in `CREATING` or `UPDATING` or `DELETING` states,
+        `DescribeStream` returns a `ResourceInUseException`.
 
-        If the specified stream does not exist, Amazon Kinesis returns
-        a `ResourceNotFoundException`. If you try to create more
-        shards than are authorized for your account, you receive a
-        `LimitExceededException`.
+        If the specified stream does not exist, `DescribeStream`
+        returns a `ResourceNotFoundException`. If you try to create
+        more shards than are authorized for your account, you receive
+        a `LimitExceededException`.
 
-        **Note:** The default limit for an AWS account is two shards
-        per stream. If you need to create a stream with more than two
-        shards, contact AWS Support to increase the limit on your
-        account.
+        The default limit for an AWS account is 10 shards per stream.
+        If you need to create a stream with more than 10 shards,
+        `contact AWS Support`_ to increase the limit on your account.
 
         If you try to operate on too many streams in parallel using
         CreateStream, DeleteStream, MergeShards or SplitShard, you
-        will receive a `LimitExceededException`.
+        receive a `LimitExceededException`.
 
         `SplitShard` has limit of 5 transactions per second per
         account.
