@@ -55,13 +55,32 @@ class TestKinesis(unittest.TestCase):
         else:
             raise TimeoutError('Stream is still not active, aborting...')
 
+        # Make a tag.
+        kinesis.add_tags_to_stream(stream_name='test', tags={'foo': 'bar'})
+
+        # Check that the correct tag is there.
+        response = kinesis.list_tags_for_stream(stream_name='test')
+        self.assertEqual(len(response['Tags']), 1)
+        self.assertEqual(response['Tags'][0],
+                         {'Key':'foo', 'Value': 'bar'})
+
+        # Remove the tag and ensure it is removed.
+        kinesis.remove_tags_from_stream(stream_name='test', tag_keys=['foo'])
+        response = kinesis.list_tags_for_stream(stream_name='test')
+        self.assertEqual(len(response['Tags']), 0)
+
         # Get ready to process some data from the stream
         response = kinesis.get_shard_iterator('test', shard_id, 'TRIM_HORIZON')
         shard_iterator = response['ShardIterator']
 
         # Write some data to the stream
         data = 'Some data ...'
+        record = {
+            'Data': data,
+            'PartitionKey': data,
+        }
         response = kinesis.put_record('test', data, data)
+        response = kinesis.put_records([record, record.copy()], 'test')
 
         # Wait for the data to show up
         tries = 0
@@ -78,8 +97,9 @@ class TestKinesis(unittest.TestCase):
             raise TimeoutError('No records found, aborting...')
 
         # Read the data, which should be the same as what we wrote
-        self.assertEqual(1, len(response['Records']))
-        self.assertEqual(data, response['Records'][0]['Data'])
+        self.assertEqual(3, len(response['Records']))
+        for i in range(3):
+            self.assertEqual(data, response['Records'][i]['Data'])
 
     def test_describe_non_existent_stream(self):
         with self.assertRaises(ResourceNotFoundException) as cm:

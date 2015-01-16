@@ -738,9 +738,9 @@ class KinesisConnection(AWSQueryConnection):
         params = {'Records': records, 'StreamName': stream_name, }
         if b64_encode:
             for i in range(len(params['Records'])):
-                record = params['Records'][i]
-                params['Records'][i] = base64.b64encode(
-                    record.encode('utf-8')).decode('utf-8')
+                params['Records'][i]['Data'] = base64.b64encode(
+                    params['Records'][i]['Data'].encode('utf-8')).\
+                        decode('utf-8')
         return self.make_request(action='PutRecords',
                                  body=json.dumps(params))
 
