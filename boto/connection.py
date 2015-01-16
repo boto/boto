@@ -793,18 +793,18 @@ class AWSAuthConnection(object):
         else:
             sock = socket.create_connection((self.proxy, int(self.proxy_port)))
         boto.log.debug("Proxy connection: CONNECT %s HTTP/1.0\r\n", host)
-        sock.sendall("CONNECT %s HTTP/1.0\r\n" % host)
-        sock.sendall("User-Agent: %s\r\n" % UserAgent)
+        sock.sendall(bytes(("CONNECT %s HTTP/1.0\r\n" % host), "utf-8"))
+        sock.sendall(bytes(("User-Agent: %s\r\n" % UserAgent), "utf-8"))
         if self.proxy_user and self.proxy_pass:
             for k, v in self.get_proxy_auth_header().items():
-                sock.sendall("%s: %s\r\n" % (k, v))
+                sock.sendall(bytes("%s: %s\r\n" % (k, v), "utf-8"))
             # See discussion about this config option at
             # https://groups.google.com/forum/?fromgroups#!topic/boto-dev/teenFvOq2Cc
             if config.getbool('Boto', 'send_crlf_after_proxy_auth_headers', False):
-                sock.sendall("\r\n")
+                sock.sendall(bytes("\r\n", "utf-8"))
         else:
-            sock.sendall("\r\n")
-        resp = http_client.HTTPResponse(sock, strict=True, debuglevel=self.debug)
+            sock.sendall(bytes("\r\n", "utf-8"))
+        resp = http_client.HTTPResponse(sock, debuglevel=self.debug)
         resp.begin()
 
         if resp.status != 200:
@@ -1224,3 +1224,4 @@ class AWSQueryConnection(AWSAuthConnection):
             boto.log.error('%s %s' % (response.status, response.reason))
             boto.log.error('%s' % body)
             raise self.ResponseError(response.status, response.reason, body)
+
