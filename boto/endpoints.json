@@ -242,7 +242,7 @@
         "ap-southeast-1": "kms.ap-southeast-1.amazonaws.com",
         "ap-northeast-1": "kms.ap-northeast-1.amazonaws.com",
         "sa-east-1": "kms.sa-east-1.amazonaws.com"
-    }
+    },
     "logs": {
         "us-east-1": "logs.us-east-1.amazonaws.com",
         "us-west-2": "logs.us-west-2.amazonaws.com",

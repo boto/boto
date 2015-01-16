@@ -26,6 +26,8 @@ from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 from boto.exception import JSONResponseError
 from boto.kms import exceptions
+from boto.compat import six
+import base64
 
 
 class KMSConnection(AWSQueryConnection):
@@ -272,13 +274,23 @@ class KMSConnection(AWSQueryConnection):
             can be used to provide long term permissions to perform decryption.
 
         """
+        if ciphertext_blob is not None:
+            if not isinstance(ciphertext_blob, six.binary_type):
+                raise TypeError(
+                    "Argument ``ciphertext_blob`` is "
+                    "modeled as a blob. Value must be bytes.")
+            ciphertext_blob = base64.b64encode(ciphertext_blob)
         params = {'CiphertextBlob': ciphertext_blob, }
         if encryption_context is not None:
             params['EncryptionContext'] = encryption_context
         if grant_tokens is not None:
             params['GrantTokens'] = grant_tokens
-        return self.make_request(action='Decrypt',
-                                 body=json.dumps(params))
+        response = self.make_request(action='Decrypt',
+                                     body=json.dumps(params))
+        if response.get('Plaintext') is not None:
+            response['Plaintext'] = base64.b64decode(
+                response['Plaintext'].encode('utf-8'))
+        return response
 
     def delete_alias(self, alias_name):
         """
@@ -387,13 +399,23 @@ class KMSConnection(AWSQueryConnection):
             can be used to provide long term permissions to perform encryption.
 
         """
+        if plaintext is not None:
+            if not isinstance(plaintext, six.binary_type):
+                raise TypeError(
+                    "Argument ``plaintext`` is "
+                    "modeled as a blob. Value must be bytes.")
+            plaintext = base64.b64encode(plaintext)
         params = {'KeyId': key_id, 'Plaintext': plaintext, }
         if encryption_context is not None:
             params['EncryptionContext'] = encryption_context
         if grant_tokens is not None:
             params['GrantTokens'] = grant_tokens
-        return self.make_request(action='Encrypt',
-                                 body=json.dumps(params))
+        response = self.make_request(action='Encrypt',
+                                     body=json.dumps(params))
+        if response.get('CiphertextBlob') is not None:
+            response['CiphertextBlob'] = base64.b64decode(
+                response['CiphertextBlob'].encode('utf-8'))
+        return response
 
     def generate_data_key(self, key_id, encryption_context=None,
                           number_of_bytes=None, key_spec=None,
@@ -436,8 +458,15 @@ class KMSConnection(AWSQueryConnection):
             params['KeySpec'] = key_spec
         if grant_tokens is not None:
             params['GrantTokens'] = grant_tokens
-        return self.make_request(action='GenerateDataKey',
-                                 body=json.dumps(params))
+        response = self.make_request(action='GenerateDataKey',
+                                     body=json.dumps(params))
+        if response.get('CiphertextBlob') is not None:
+            response['CiphertextBlob'] = base64.b64decode(
+                response['CiphertextBlob'].encode('utf-8'))
+        if response.get('Plaintext') is not None:
+            response['Plaintext'] = base64.b64decode(
+                response['Plaintext'].encode('utf-8'))
+        return response
 
     def generate_data_key_without_plaintext(self, key_id,
                                             encryption_context=None,
@@ -480,8 +509,12 @@ class KMSConnection(AWSQueryConnection):
             params['NumberOfBytes'] = number_of_bytes
         if grant_tokens is not None:
             params['GrantTokens'] = grant_tokens
-        return self.make_request(action='GenerateDataKeyWithoutPlaintext',
-                                 body=json.dumps(params))
+        response = self.make_request(action='GenerateDataKeyWithoutPlaintext',
+                                     body=json.dumps(params))
+        if response.get('CiphertextBlob') is not None:
+            response['CiphertextBlob'] = base64.b64decode(
+                response['CiphertextBlob'].encode('utf-8'))
+        return response
 
     def generate_random(self, number_of_bytes=None):
         """
@@ -496,8 +529,12 @@ class KMSConnection(AWSQueryConnection):
         params = {}
         if number_of_bytes is not None:
             params['NumberOfBytes'] = number_of_bytes
-        return self.make_request(action='GenerateRandom',
-                                 body=json.dumps(params))
+        response = self.make_request(action='GenerateRandom',
+                                     body=json.dumps(params))
+        if response.get('Plaintext') is not None:
+            response['Plaintext'] = base64.b64decode(
+                response['Plaintext'].encode('utf-8'))
+        return response
 
     def get_key_policy(self, key_id, policy_name):
         """
@@ -693,6 +730,12 @@ class KMSConnection(AWSQueryConnection):
             permissions for the encryption and decryption process.
 
         """
+        if ciphertext_blob is not None:
+            if not isinstance(ciphertext_blob, six.binary_type):
+                raise TypeError(
+                    "Argument ``ciphertext_blob`` is "
+                    "modeled as a blob. Value must be bytes.")
+            ciphertext_blob = base64.b64encode(ciphertext_blob)
         params = {
             'CiphertextBlob': ciphertext_blob,
             'DestinationKeyId': destination_key_id,
@@ -703,8 +746,12 @@ class KMSConnection(AWSQueryConnection):
             params['DestinationEncryptionContext'] = destination_encryption_context
         if grant_tokens is not None:
             params['GrantTokens'] = grant_tokens
-        return self.make_request(action='ReEncrypt',
-                                 body=json.dumps(params))
+        response = self.make_request(action='ReEncrypt',
+                                     body=json.dumps(params))
+        if response.get('CiphertextBlob') is not None:
+            response['CiphertextBlob'] = base64.b64decode(
+                response['CiphertextBlob'].encode('utf-8'))
+        return response
 
     def retire_grant(self, grant_token):
         """
