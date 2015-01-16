@@ -84,22 +84,28 @@ class TestKinesis(unittest.TestCase):
 
         # Wait for the data to show up
         tries = 0
+        num_collected = 0
+        num_expected_records = 3
+        collected_records = []
         while tries < 100:
             tries += 1
             time.sleep(1)
 
             response = kinesis.get_records(shard_iterator)
             shard_iterator = response['NextShardIterator']
-
-            if len(response['Records']):
+            for record in response['Records']:
+                if 'Data' in record:
+                    collected_records.append(record['Data'])
+                    num_collected += 1
+            if num_collected >= num_expected_records:
+                self.assertEqual(num_expected_records, num_collected)
                 break
         else:
             raise TimeoutError('No records found, aborting...')
 
         # Read the data, which should be the same as what we wrote
-        self.assertEqual(3, len(response['Records']))
-        for i in range(3):
-            self.assertEqual(data, response['Records'][i]['Data'])
+        for record in collected_records:
+            self.assertEqual(data, record)
 
     def test_describe_non_existent_stream(self):
         with self.assertRaises(ResourceNotFoundException) as cm:

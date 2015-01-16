@@ -28,6 +28,7 @@ from boto.regioninfo import RegionInfo
 from boto.exception import JSONResponseError
 from boto.kinesis import exceptions
 from boto.compat import json
+from boto.compat import six
 
 
 class KinesisConnection(AWSQueryConnection):
@@ -652,7 +653,7 @@ class KinesisConnection(AWSQueryConnection):
         if sequence_number_for_ordering is not None:
             params['SequenceNumberForOrdering'] = sequence_number_for_ordering
         if b64_encode:
-            if not isinstance(params['Data'], bytes):
+            if not isinstance(params['Data'], six.binary_type):
                 params['Data'] = params['Data'].encode('utf-8')
             params['Data'] = base64.b64encode(params['Data']).decode('utf-8')
         return self.make_request(action='PutRecord',
@@ -738,9 +739,11 @@ class KinesisConnection(AWSQueryConnection):
         params = {'Records': records, 'StreamName': stream_name, }
         if b64_encode:
             for i in range(len(params['Records'])):
+                data = params['Records'][i]['Data']
+                if not isinstance(data, six.binary_type):
+                    params['Records'][i]['Data'] = data.encode('utf-8')
                 params['Records'][i]['Data'] = base64.b64encode(
-                    params['Records'][i]['Data'].encode('utf-8')).\
-                        decode('utf-8')
+                    data).decode('utf-8')
         return self.make_request(action='PutRecords',
                                  body=json.dumps(params))
 
