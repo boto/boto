@@ -59,10 +59,11 @@ Currently Supported Services
   * Opsworks -- (:doc:`API Reference <ref/opsworks>`) (Python 3)
   * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`) (Python 3)
 
-* **Identity & Access**
+* **Administration & Security**
 
   * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`) (Python 3)
   * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`) (Python 3)
+  * Key Management Service (KMS) -- (:doc:`API Reference <ref/kms>`) (Python 3)
 
 * **Application Services**
 

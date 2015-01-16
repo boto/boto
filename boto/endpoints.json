@@ -232,6 +232,17 @@
         "ap-northeast-1": "kinesis.ap-northeast-1.amazonaws.com",
         "eu-central-1": "kinesis.eu-central-1.amazonaws.com"
     },
+    "kms": {
+        "us-east-1": "kms.us-east-1.amazonaws.com",
+        "us-west-1": "kms.us-west-1.amazonaws.com",
+        "us-west-2": "kms.us-west-2.amazonaws.com",
+        "eu-west-1": "kms.eu-west-1.amazonaws.com",
+        "eu-central-1": "kms.eu-central-1.amazonaws.com",
+        "ap-southeast-2": "kms.ap-southeast-2.amazonaws.com",
+        "ap-southeast-1": "kms.ap-southeast-1.amazonaws.com",
+        "ap-northeast-1": "kms.ap-northeast-1.amazonaws.com",
+        "sa-east-1": "kms.sa-east-1.amazonaws.com"
+    }
     "logs": {
         "us-east-1": "logs.us-east-1.amazonaws.com",
         "us-west-2": "logs.us-west-2.amazonaws.com",
