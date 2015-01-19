@@ -19,13 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+import os
+
 from boto.compat import json
 from boto.exception import JSONResponseError
 from boto.connection import AWSAuthConnection
 from boto.regioninfo import RegionInfo
 from boto.awslambda import exceptions
-from boto.compat import six
-import base64
 
 
 class AWSLambdaConnection(AWSAuthConnection):
@@ -220,19 +220,18 @@ class AWSLambdaConnection(AWSAuthConnection):
             function as input.
 
         """
-        if invoke_args is not None:
-            if not isinstance(invoke_args, six.binary_type):
-                raise TypeError(
-                    "Argument ``invoke_args`` is "
-                    "modeled as a blob. Value must be bytes.")
-            invoke_args = base64.b64encode(invoke_args)
-
         uri = '/2014-11-13/functions/{0}/invoke-async/'.format(function_name)
-        params = {'InvokeArgs': invoke_args, }
         headers = {}
         query_params = {}
+        try:
+            content_length = str(len(invoke_args))
+        except (TypeError, AttributeError):
+            # If a file like object is provided, try to retrieve
+            # the file size via fstat.
+            content_length = str(os.fstat(invoke_args.fileno()).st_size)
+        headers['Content-Length'] = content_length
         return self.make_request('POST', uri, expected_status=202,
-                                 data=json.dumps(params), headers=headers,
+                                 data=invoke_args, headers=headers,
                                  params=query_params)
 
     def list_event_sources(self, event_source_arn=None, function_name=None,
@@ -458,15 +457,7 @@ class AWSLambdaConnection(AWSAuthConnection):
             value is 128 MB. The value must be a multiple of 64 MB.
 
         """
-        if function_zip is not None:
-            if not isinstance(function_zip, six.binary_type):
-                raise TypeError(
-                    "Argument ``function_zip`` is "
-                    "modeled as a blob. Value must be bytes.")
-            function_zip = base64.b64encode(function_zip)
-
         uri = '/2014-11-13/functions/{0}'.format(function_name)
-        params = {'FunctionZip': function_zip, }
         headers = {}
         query_params = {}
         if runtime is not None:
@@ -483,8 +474,16 @@ class AWSLambdaConnection(AWSAuthConnection):
             query_params['Timeout'] = timeout
         if memory_size is not None:
             query_params['MemorySize'] = memory_size
+
+        try:
+            content_length = str(len(function_zip))
+        except (TypeError, AttributeError):
+            # If a file like object is provided, try to retrieve
+            # the file size via fstat.
+            content_length = str(os.fstat(function_zip.fileno()).st_size)
+        headers['Content-Length'] = content_length
         return self.make_request('PUT', uri, expected_status=201,
-                                 data=json.dumps(params), headers=headers,
+                                 data=function_zip, headers=headers,
                                  params=query_params)
 
     def make_request(self, verb, resource, headers=None, data='',
@@ -493,7 +492,9 @@ class AWSLambdaConnection(AWSAuthConnection):
             headers = {}
         response = AWSAuthConnection.make_request(
             self, verb, resource, headers=headers, data=data, params=params)
-        body = json.loads(response.read().decode('utf-8'))
+        body = response.read().decode('utf-8')
+        if body:
+            body = json.loads(body)
         if response.status == expected_status:
             return body
         else:
