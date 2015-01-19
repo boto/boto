@@ -36,6 +36,7 @@ Currently Supported Services
   * :doc:`Elastic MapReduce (EMR) <emr_tut>` -- (:doc:`API Reference <ref/emr>`) (Python 3)
   * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`) (Python 3)
   * Kinesis -- (:doc:`API Reference <ref/kinesis>`) (Python 3)
+  * Lambda -- (:doc:`API Reference <ref/awslambda>`) (Python 3)
 
 * **Content Delivery**
 
