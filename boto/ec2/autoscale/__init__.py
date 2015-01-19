@@ -259,6 +259,14 @@ class AutoScaleConnection(AWSQueryConnection):
             params['DeleteOnTermination'] = 'false'
         if launch_config.iops:
             params['Iops'] = launch_config.iops
+        if launch_config.classic_link_vpc_id:
+            params['ClassicLinkVPCId'] = launch_config.classic_link_vpc_id
+        if launch_config.classic_link_vpc_security_groups:
+            self.build_list_params(
+                params,
+                launch_config.classic_link_vpc_security_groups,
+                'ClassicLinkVPCSecurityGroups'
+            )
         return self.get_object('CreateLaunchConfiguration', params,
                                Request, verb='POST')
 
