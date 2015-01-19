@@ -24,6 +24,8 @@ from boto.exception import JSONResponseError
 from boto.connection import AWSAuthConnection
 from boto.regioninfo import RegionInfo
 from boto.awslambda import exceptions
+from boto.compat import six
+import base64
 
 
 class AWSLambdaConnection(AWSAuthConnection):
@@ -58,7 +60,7 @@ class AWSLambdaConnection(AWSAuthConnection):
         else:
             del kwargs['region']
         kwargs['host'] = region.endpoint
-        super(LambdaConnection, self).__init__(**kwargs)
+        super(AWSLambdaConnection, self).__init__(**kwargs)
         self.region = region
 
     def _required_auth_capability(self):
@@ -114,6 +116,7 @@ class AWSLambdaConnection(AWSAuthConnection):
             the Amazon Kinesis Service API Reference.
 
         """
+
         uri = '/2014-11-13/event-source-mappings/'
         params = {
             'EventSource': event_source,
@@ -141,6 +144,7 @@ class AWSLambdaConnection(AWSAuthConnection):
         :param function_name: The Lambda function to delete.
 
         """
+
         uri = '/2014-11-13/functions/{0}'.format(function_name)
         return self.make_request('DELETE', uri, expected_status=204)
 
@@ -156,6 +160,7 @@ class AWSLambdaConnection(AWSAuthConnection):
         :param uuid: The AWS Lambda assigned ID of the event source mapping.
 
         """
+
         uri = '/2014-11-13/event-source-mappings/{0}'.format(uuid)
         return self.make_request('GET', uri, expected_status=200)
 
@@ -175,6 +180,7 @@ class AWSLambdaConnection(AWSAuthConnection):
         :param function_name: The Lambda function name.
 
         """
+
         uri = '/2014-11-13/functions/{0}'.format(function_name)
         return self.make_request('GET', uri, expected_status=200)
 
@@ -192,6 +198,7 @@ class AWSLambdaConnection(AWSAuthConnection):
             want to retrieve the configuration information.
 
         """
+
         uri = '/2014-11-13/functions/{0}/configuration'.format(function_name)
         return self.make_request('GET', uri, expected_status=200)
 
@@ -213,6 +220,13 @@ class AWSLambdaConnection(AWSAuthConnection):
             function as input.
 
         """
+        if invoke_args is not None:
+            if not isinstance(invoke_args, six.binary_type):
+                raise TypeError(
+                    "Argument ``invoke_args`` is "
+                    "modeled as a blob. Value must be bytes.")
+            invoke_args = base64.b64encode(invoke_args)
+
         uri = '/2014-11-13/functions/{0}/invoke-async/'.format(function_name)
         params = {'InvokeArgs': invoke_args, }
         headers = {}
@@ -250,6 +264,7 @@ class AWSLambdaConnection(AWSAuthConnection):
             than 0.
 
         """
+
         uri = '/2014-11-13/event-source-mappings/'
         params = {}
         headers = {}
@@ -287,6 +302,7 @@ class AWSLambdaConnection(AWSAuthConnection):
             be greater than 0.
 
         """
+
         uri = '/2014-11-13/functions/'
         params = {}
         headers = {}
@@ -312,6 +328,7 @@ class AWSLambdaConnection(AWSAuthConnection):
         :param uuid: The event source mapping ID.
 
         """
+
         uri = '/2014-11-13/event-source-mappings/{0}'.format(uuid)
         return self.make_request('DELETE', uri, expected_status=204)
 
@@ -360,6 +377,7 @@ class AWSLambdaConnection(AWSAuthConnection):
             The default value is 128 MB. The value must be a multiple of 64 MB.
 
         """
+
         uri = '/2014-11-13/functions/{0}/configuration'.format(function_name)
         params = {}
         headers = {}
@@ -440,6 +458,13 @@ class AWSLambdaConnection(AWSAuthConnection):
             value is 128 MB. The value must be a multiple of 64 MB.
 
         """
+        if function_zip is not None:
+            if not isinstance(function_zip, six.binary_type):
+                raise TypeError(
+                    "Argument ``function_zip`` is "
+                    "modeled as a blob. Value must be bytes.")
+            function_zip = base64.b64encode(function_zip)
+
         uri = '/2014-11-13/functions/{0}'.format(function_name)
         params = {'FunctionZip': function_zip, }
         headers = {}
@@ -468,8 +493,10 @@ class AWSLambdaConnection(AWSAuthConnection):
             headers = {}
         response = AWSAuthConnection.make_request(
             self, verb, resource, headers=headers, data=data, params=params)
-        body = json.load(response)
+        body = json.loads(response.read().decode('utf-8'))
         if response.status == expected_status:
             return body
         else:
-            raise JSONResponseError(response.status, response.reason, body)
+            error_type = response.getheader('x-amzn-ErrorType').split(':')[0]
+            error_class = self._faults.get(error_type, self.ResponseError)
+            raise error_class(response.status, response.reason, body)
