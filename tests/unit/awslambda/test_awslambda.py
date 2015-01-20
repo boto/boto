@@ -77,9 +77,8 @@ class TestAWSLambda(AWSMockServiceTestCase):
                 mode='event',
                 runtime='nodejs'
             )
-            # Ensure the body is a file like object by checking that it
-            # can be read.
-            self.assertTrue(hasattr(self.actual_request.body, 'read'))
+            self.assertEqual(self.actual_request.body.read(),
+                             function_data)
             self.assertEqual(
                 self.actual_request.headers['Content-Length'],
                 str(len(function_data))
