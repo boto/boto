@@ -7,8 +7,8 @@ from boto.dynamodb2.fields import (HashKey, RangeKey,
 from boto.dynamodb2.items import Item
 from boto.dynamodb2.layer1 import DynamoDBConnection
 from boto.dynamodb2.results import ResultSet, BatchGetResultSet
-from boto.dynamodb2.types import (Dynamizer, FILTER_OPERATORS, QUERY_OPERATORS,
-                                  STRING)
+from boto.dynamodb2.types import (NonBooleanDynamizer, Dynamizer, FILTER_OPERATORS,
+                                  QUERY_OPERATORS, STRING)
 from boto.exception import JSONResponseError
 
 
@@ -23,6 +23,18 @@ class Table(object):
     ``users`` table or a ``forums`` table.
     """
     max_batch_get = 100
+
+    _PROJECTION_TYPE_TO_INDEX = dict(
+        global_indexes=dict(
+            ALL=GlobalAllIndex,
+            KEYS_ONLY=GlobalKeysOnlyIndex,
+            INCLUDE=GlobalIncludeIndex,
+        ), local_indexes=dict(
+            ALL=AllIndex,
+            KEYS_ONLY=KeysOnlyIndex,
+            INCLUDE=IncludeIndex,
+        )
+    )
 
     def __init__(self, table_name, schema=None, throughput=None, indexes=None,
                  global_indexes=None, connection=None):
@@ -109,6 +121,9 @@ class Table(object):
         if throughput is not None:
             self.throughput = throughput
 
+        self._dynamizer = NonBooleanDynamizer()
+
+    def use_boolean(self):
         self._dynamizer = Dynamizer()
 
     @classmethod
@@ -264,25 +279,25 @@ class Table(object):
 
         return schema
 
-    def _introspect_indexes(self, raw_indexes):
+    def _introspect_all_indexes(self, raw_indexes, map_indexes_projection):
         """
-        Given a raw index structure back from a DynamoDB response, parse
-        out & build the high-level Python objects that represent them.
+        Given a raw index/global index structure back from a DynamoDB response,
+        parse out & build the high-level Python objects that represent them.
         """
         indexes = []
 
         for field in raw_indexes:
-            index_klass = AllIndex
+            index_klass = map_indexes_projection.get('ALL')
             kwargs = {
                 'parts': []
             }
 
             if field['Projection']['ProjectionType'] == 'ALL':
-                index_klass = AllIndex
+                index_klass = map_indexes_projection.get('ALL')
             elif field['Projection']['ProjectionType'] == 'KEYS_ONLY':
-                index_klass = KeysOnlyIndex
+                index_klass = map_indexes_projection.get('KEYS_ONLY')
             elif field['Projection']['ProjectionType'] == 'INCLUDE':
-                index_klass = IncludeIndex
+                index_klass = map_indexes_projection.get('INCLUDE')
                 kwargs['includes'] = field['Projection']['NonKeyAttributes']
             else:
                 raise exceptions.UnknownIndexFieldError(
@@ -297,16 +312,33 @@ class Table(object):
 
         return indexes
 
+    def _introspect_indexes(self, raw_indexes):
+        """
+        Given a raw index structure back from a DynamoDB response, parse
+        out & build the high-level Python objects that represent them.
+        """
+        return self._introspect_all_indexes(
+            raw_indexes, self._PROJECTION_TYPE_TO_INDEX.get('local_indexes'))
+
+    def _introspect_global_indexes(self, raw_global_indexes):
+        """
+        Given a raw global index structure back from a DynamoDB response, parse
+        out & build the high-level Python objects that represent them.
+        """
+        return self._introspect_all_indexes(
+            raw_global_indexes,
+            self._PROJECTION_TYPE_TO_INDEX.get('global_indexes'))
+
     def describe(self):
         """
         Describes the current structure of the table in DynamoDB.
 
-        This information will be used to update the ``schema``, ``indexes``
-        and ``throughput`` information on the ``Table``. Some calls, such as
-        those involving creating keys or querying, will require this
-        information to be populated.
+        This information will be used to update the ``schema``, ``indexes``,
+        ``global_indexes`` and ``throughput`` information on the ``Table``. Some
+        calls, such as those involving creating keys or querying, will require
+        this information to be populated.
 
-        It also returns the full raw datastructure from DynamoDB, in the
+        It also returns the full raw data structure from DynamoDB, in the
         event you'd like to parse out additional information (such as the
         ``ItemCount`` or usage information).
 
@@ -338,6 +370,11 @@ class Table(object):
             # Build the index information as well.
             raw_indexes = result['Table'].get('LocalSecondaryIndexes', [])
             self.indexes = self._introspect_indexes(raw_indexes)
+
+        if not self.global_indexes:
+            # Build the global index information as well.
+            raw_global_indexes = result['Table'].get('GlobalSecondaryIndexes', [])
+            self.global_indexes = self._introspect_global_indexes(raw_global_indexes)
 
         # This is leaky.
         return result

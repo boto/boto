@@ -138,7 +138,8 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
             tags={'TagKey': 'TagValue'},
             notification_arns=['arn:notify1', 'arn:notify2'],
             disable_rollback=True,
-            timeout_in_minutes=20
+            timeout_in_minutes=20,
+            use_previous_template=True
         )
         self.assert_request_parameters({
             'Action': 'UpdateStack',
@@ -155,6 +156,7 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
             'TimeoutInMinutes': 20,
             'TemplateBody': SAMPLE_TEMPLATE,
             'TemplateURL': 'http://url',
+            'UsePreviousTemplate': 'true',
         })
 
     def test_update_stack_with_minimum_args(self):
