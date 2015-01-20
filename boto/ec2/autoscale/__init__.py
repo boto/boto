@@ -819,6 +819,22 @@ class AutoScaleConnection(AWSQueryConnection):
 
         return self.get_status('SetDesiredCapacity', params)
 
+    def build_filter_params(self, params, filters):
+        if not isinstance(filters, dict):
+            filters = dict(filters)
+
+        i = 1
+        for name in filters:
+            params['Filters.member.%d.Name' % i] = name
+            value = filters[name]
+            if not isinstance(value, list):
+                value = [value]
+            j = 1
+            for v in value:
+                params['Filters.member.%d.Values.member.%d' % (i, j)] = v
+                j += 1
+            i += 1
+
     # Tag methods
 
     def get_all_tags(self, filters=None, max_records=None, next_token=None):
@@ -831,8 +847,12 @@ class AutoScaleConnection(AWSQueryConnection):
         parameter.
 
         :type filters: dict
-        :param filters: The value of the filter type used to identify
-            the tags to be returned.  NOT IMPLEMENTED YET.
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
 
         :type max_records: int
         :param max_records: Maximum number of tags to return.
@@ -846,6 +866,8 @@ class AutoScaleConnection(AWSQueryConnection):
             params['MaxRecords'] = max_records
         if next_token:
             params['NextToken'] = next_token
+        if filters:
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeTags', params,
                              [('member', Tag)])
 
