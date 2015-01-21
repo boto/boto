@@ -329,7 +329,7 @@ class Bucket(S3Bucket):
         response = self.connection.make_request('GET', self.name, key_name,
                                                 query_args=query_args,
                                                 headers=headers)
-        body = response.read()
+        body = response.read().decode('utf-8')
         if response.status != 200:
             if response.status == 403:
                 match = ERROR_DETAILS_REGEX.search(body)
@@ -348,7 +348,7 @@ class Bucket(S3Bucket):
         body = self._get_xml_acl_helper(key_name, headers, query_args)
         acl = ACL(self)
         h = handler.XmlHandler(acl, self)
-        xml.sax.parseString(body, h)
+        xml.sax.parseString(body.encode('utf-8'), h)
         return acl
 
     def get_acl(self, key_name='', headers=None, version_id=None,

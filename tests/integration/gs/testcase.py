@@ -84,7 +84,7 @@ class GSTestCase(unittest.TestCase):
         b = self._conn.create_bucket(self._MakeBucketName())
         return b
 
-    def _MakeKey(self, data='', bucket=None, set_contents=True):
+    def _MakeKey(self, data=b'', bucket=None, set_contents=True):
         """Creates and returns a Key with provided data. If no bucket is given,
         a temporary bucket is created."""
         if data and not set_contents:

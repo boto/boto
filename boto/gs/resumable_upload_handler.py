@@ -19,13 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 import errno
-import httplib
 import os
 import random
 import re
 import socket
 import time
-import urlparse
 from hashlib import md5
 from boto import config, UserAgent
 from boto.connection import AWSAuthConnection
@@ -33,6 +31,7 @@ from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.s3.keyfile import KeyFile
+from boto.compat import long_type, urllib, http_client
 
 """
 Handler for Google Cloud Storage resumable uploads. See
@@ -54,7 +53,7 @@ save the state needed to allow retrying later, in a separate process
 class ResumableUploadHandler(object):
 
     BUFFER_SIZE = 8192
-    RETRYABLE_EXCEPTIONS = (httplib.HTTPException, IOError, socket.error,
+    RETRYABLE_EXCEPTIONS = (http_client.HTTPException, IOError, socket.error,
                             socket.gaierror)
 
     # (start, end) response indicating server has nothing (upload protocol uses
@@ -139,7 +138,7 @@ class ResumableUploadHandler(object):
 
         Raises InvalidUriError if URI is syntactically invalid.
         """
-        parse_result = urlparse.urlparse(uri)
+        parse_result = urllib.parse.urlparse(uri)
         if (parse_result.scheme.lower() not in ['http', 'https'] or
             not parse_result.netloc):
             raise InvalidUriError('Invalid tracker URI (%s)' % uri)
@@ -237,8 +236,8 @@ class ResumableUploadHandler(object):
             # Parse 'bytes=<from>-<to>' range_spec.
             m = re.search('bytes=(\d+)-(\d+)', range_spec)
             if m:
-                server_start = long(m.group(1))
-                server_end = long(m.group(2))
+                server_start = long_type(m.group(1))
+                server_end = long_type(m.group(2))
                 got_valid_response = True
         else:
             # No Range header, which means the server does not yet have
@@ -510,7 +509,7 @@ class ResumableUploadHandler(object):
         """
         if key.bucket.connection.debug >= 1:
             print('Checking md5 against etag.')
-        if key.md5 != etag.strip('"\''):
+        if key.md5 != etag.strip(b'"\''):
             # Call key.open_read() before attempting to delete the
             # (incorrect-content) key, so we perform that request on a
             # different HTTP connection. This is neededb because httplib
@@ -657,7 +656,7 @@ class ResumableUploadHandler(object):
 
                 # Upload succceded, so remove the tracker file (if have one).
                 self._remove_tracker_file()
-                self._check_final_md5(key, etag)
+                self._check_final_md5(key, etag.encode('ascii'))
                 key.generation = self.generation
                 if debug >= 1:
                     print('Resumable upload complete.')

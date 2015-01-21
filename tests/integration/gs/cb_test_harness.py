@@ -68,7 +68,7 @@ class CallbackTestHarness(object):
             if self.fp_to_change and self.fp_change_pos is not None:
                 cur_pos = self.fp_to_change.tell()
                 self.fp_to_change.seek(self.fp_change_pos)
-                self.fp_to_change.write('abc')
+                self.fp_to_change.write(b'abc')
                 self.fp_to_change.seek(cur_pos)
                 if self.delay_after_change:
                     time.sleep(self.delay_after_change)

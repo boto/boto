@@ -23,10 +23,10 @@
 
 """Integration tests for GS versioning support."""
 
-import StringIO
 import os
 import tempfile
 from xml import sax
+from io import BytesIO
 
 from boto import handler
 from boto.exception import GSResponseError
@@ -43,35 +43,35 @@ class GSGenerationConditionalsTest(GSTestCase):
     def testConditionalSetContentsFromFile(self):
         b = self._MakeBucket()
         k = b.new_key("foo")
-        s1 = "test1"
-        fp = StringIO.StringIO(s1)
+        s1 = b"test1"
+        fp = BytesIO(s1)
         with self.assertRaisesRegexp(GSResponseError, VERSION_MISMATCH):
             k.set_contents_from_file(fp, if_generation=999)
 
-        fp = StringIO.StringIO(s1)
+        fp = BytesIO(s1)
         k.set_contents_from_file(fp, if_generation=0)
         g1 = k.generation
 
-        s2 = "test2"
-        fp = StringIO.StringIO(s2)
+        s2 = b"test2"
+        fp = BytesIO(s2)
         with self.assertRaisesRegexp(GSResponseError, VERSION_MISMATCH):
             k.set_contents_from_file(fp, if_generation=int(g1)+1)
 
-        fp = StringIO.StringIO(s2)
+        fp = BytesIO(s2)
         k.set_contents_from_file(fp, if_generation=g1)
         self.assertEqual(k.get_contents_as_string(), s2)
 
     def testConditionalSetContentsFromString(self):
         b = self._MakeBucket()
         k = b.new_key("foo")
-        s1 = "test1"
+        s1 = b"test1"
         with self.assertRaisesRegexp(GSResponseError, VERSION_MISMATCH):
             k.set_contents_from_string(s1, if_generation=999)
 
         k.set_contents_from_string(s1, if_generation=0)
         g1 = k.generation
 
-        s2 = "test2"
+        s2 = b"test2"
         with self.assertRaisesRegexp(GSResponseError, VERSION_MISMATCH):
             k.set_contents_from_string(s2, if_generation=int(g1)+1)
 
@@ -79,8 +79,8 @@ class GSGenerationConditionalsTest(GSTestCase):
         self.assertEqual(k.get_contents_as_string(), s2)
 
     def testConditionalSetContentsFromFilename(self):
-        s1 = "test1"
-        s2 = "test2"
+        s1 = b"test1"
+        s2 = b"test2"
         f1 = tempfile.NamedTemporaryFile(prefix="boto-gs-test", delete=False)
         f2 = tempfile.NamedTemporaryFile(prefix="boto-gs-test", delete=False)
         fname1 = f1.name
@@ -155,22 +155,22 @@ class GSGenerationConditionalsTest(GSTestCase):
     def testConditionalSetContentsFromStream(self):
         b = self._MakeBucket()
         k = b.new_key("foo")
-        s1 = "test1"
-        fp = StringIO.StringIO(s1)
+        s1 = b"test1"
+        fp = BytesIO(s1)
         with self.assertRaisesRegexp(GSResponseError, VERSION_MISMATCH):
             k.set_contents_from_stream(fp, if_generation=999)
 
-        fp = StringIO.StringIO(s1)
+        fp = BytesIO(s1)
         k.set_contents_from_stream(fp, if_generation=0)
         g1 = k.generation
 
         k = b.get_key("foo")
-        s2 = "test2"
-        fp = StringIO.StringIO(s2)
+        s2 = b"test2"
+        fp = BytesIO(s2)
         with self.assertRaisesRegexp(GSResponseError, VERSION_MISMATCH):
             k.set_contents_from_stream(fp, if_generation=int(g1)+1)
 
-        fp = StringIO.StringIO(s2)
+        fp = BytesIO(s2)
         k.set_contents_from_stream(fp, if_generation=g1)
         self.assertEqual(k.get_contents_as_string(), s2)
 
@@ -229,9 +229,9 @@ class GSGenerationConditionalsTest(GSTestCase):
         self.assertEqual(str(mg1), "1")
 
         acl_xml = (
-            '<ACCESSControlList><EntrIes><Entry>'    +
-            '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
-            '</Entry></EntrIes></ACCESSControlList>')
+            b'<ACCESSControlList><EntrIes><Entry>'
+            b'<Scope type="AllUsers"></Scope><Permission>READ</Permission>'
+            b'</Entry></EntrIes></ACCESSControlList>')
         acl = ACL()
         h = handler.XmlHandler(acl, b)
         sax.parseString(acl_xml, h)

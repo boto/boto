@@ -827,9 +827,6 @@ class Key(object):
             else:
                 chunk = fp.read(self.BufferSize)
 
-            if not isinstance(chunk, bytes):
-                chunk = chunk.encode('utf-8')
-
             if spos is None:
                 # read at least something from a non-seekable fp.
                 self.read_from_stream = True
@@ -837,9 +834,9 @@ class Key(object):
                 chunk_len = len(chunk)
                 data_len += chunk_len
                 if chunked_transfer:
-                    http_conn.send('%x;\r\n' % chunk_len)
+                    http_conn.send(('%x;\r\n' % chunk_len).encode('utf-8'))
                     http_conn.send(chunk)
-                    http_conn.send('\r\n')
+                    http_conn.send(b'\r\n')
                 else:
                     http_conn.send(chunk)
                 for alg in digesters:
@@ -867,9 +864,9 @@ class Key(object):
                 self.local_hashes[alg] = digesters[alg].digest()
 
             if chunked_transfer:
-                http_conn.send('0\r\n')
-                    # http_conn.send("Content-MD5: %s\r\n" % self.base64md5)
-                http_conn.send('\r\n')
+                http_conn.send(b'0\r\n')
+                # http_conn.send(b"Content-MD5: %s\r\n" % self.base64md5)
+                http_conn.send(b'\r\n')
 
             if cb and (cb_count <= 1 or i > 0) and data_len > 0:
                 cb(data_len, cb_size)

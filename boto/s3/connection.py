@@ -645,6 +645,8 @@ class S3Connection(AWSAuthConnection):
                      retry_handler=None):
         if isinstance(bucket, self.bucket_class):
             bucket = bucket.name
+        if isinstance(bucket, bytes):
+            bucket = bucket.decode('utf-8')
         if isinstance(key, Key):
             key = key.name
         path = self.calling_format.build_path_base(bucket, key)
