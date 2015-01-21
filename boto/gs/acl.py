@@ -209,7 +209,7 @@ class Entry(object):
             pass
         elif name.lower() == PERMISSION.lower():
             value = value.strip()
-            if not value in SupportedPermissions:
+            if value not in SupportedPermissions:
                 raise InvalidAclError('Invalid Permission "%s"' % value)
             self.permission = value
         else:
