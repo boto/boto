@@ -1018,6 +1018,29 @@ def connect_codedeploy(aws_access_key_id=None,
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
         **kwargs
+    ) 
+
+
+def connect_configservice(aws_access_key_id=None,
+                          aws_secret_access_key=None,
+                          **kwargs):
+    """
+    Connect to AWS Config
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.kms.layer1.ConfigServiceConnection`
+    :return: A connection to the AWS Config service
+    """
+    from boto.configservice.layer1 import ConfigServiceConnection
+    return ConfigServiceConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
     )
 
 

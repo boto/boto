@@ -66,6 +66,7 @@ Currently Supported Services
   * Identity and Access Management (IAM) -- (:doc:`API Reference <ref/iam>`) (Python 3)
   * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`) (Python 3)
   * Key Management Service (KMS) -- (:doc:`API Reference <ref/kms>`) (Python 3)
+  * Config -- (:doc:`API Reference <ref/configservice>`) (Python 3)
 
 * **Application Services**
 
