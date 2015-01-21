@@ -274,12 +274,11 @@ class KMSConnection(AWSQueryConnection):
             can be used to provide long term permissions to perform decryption.
 
         """
-        if ciphertext_blob is not None:
-            if not isinstance(ciphertext_blob, six.binary_type):
-                raise TypeError(
-                    "Argument ``ciphertext_blob`` is "
-                    "modeled as a blob. Value must be bytes.")
-            ciphertext_blob = base64.b64encode(ciphertext_blob)
+        if not isinstance(ciphertext_blob, six.binary_type):
+            raise TypeError(
+                "Value of argument ``ciphertext_blob`` "
+                "must be of type %s." % six.binary_type)
+        ciphertext_blob = base64.b64encode(ciphertext_blob)
         params = {'CiphertextBlob': ciphertext_blob, }
         if encryption_context is not None:
             params['EncryptionContext'] = encryption_context
@@ -399,12 +398,11 @@ class KMSConnection(AWSQueryConnection):
             can be used to provide long term permissions to perform encryption.
 
         """
-        if plaintext is not None:
-            if not isinstance(plaintext, six.binary_type):
-                raise TypeError(
-                    "Argument ``plaintext`` is "
-                    "modeled as a blob. Value must be bytes.")
-            plaintext = base64.b64encode(plaintext)
+        if not isinstance(plaintext, six.binary_type):
+            raise TypeError(
+                "Value of argument ``plaintext`` "
+                "must be of type %s." % six.binary_type)
+        plaintext = base64.b64encode(plaintext)
         params = {'KeyId': key_id, 'Plaintext': plaintext, }
         if encryption_context is not None:
             params['EncryptionContext'] = encryption_context
@@ -730,12 +728,11 @@ class KMSConnection(AWSQueryConnection):
             permissions for the encryption and decryption process.
 
         """
-        if ciphertext_blob is not None:
-            if not isinstance(ciphertext_blob, six.binary_type):
-                raise TypeError(
-                    "Argument ``ciphertext_blob`` is "
-                    "modeled as a blob. Value must be bytes.")
-            ciphertext_blob = base64.b64encode(ciphertext_blob)
+        if not isinstance(ciphertext_blob, six.binary_type):
+            raise TypeError(
+                "Value of argument ``ciphertext_blob`` "
+                "must be of type %s." % six.binary_type)
+        ciphertext_blob = base64.b64encode(ciphertext_blob)
         params = {
             'CiphertextBlob': ciphertext_blob,
             'DestinationKeyId': destination_key_id,
