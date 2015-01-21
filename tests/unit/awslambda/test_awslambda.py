@@ -22,10 +22,12 @@
 import tempfile
 import shutil
 import os
+import socket
 
 from boto.compat import json
 from boto.awslambda.layer1 import AWSLambdaConnection
 from tests.unit import AWSMockServiceTestCase
+from tests.compat import mock
 
 
 class TestAWSLambda(AWSMockServiceTestCase):
@@ -87,4 +89,29 @@ class TestAWSLambda(AWSMockServiceTestCase):
                 self.actual_request.path,
                 '/2014-11-13/functions/my-function?Handler=myhandler&Mode'
                 '=event&Role=myrole&Runtime=nodejs'
+            )
+
+    def test_upload_function_unseekable_file_no_tell(self):
+        sock = socket.socket()
+        with self.assertRaises(TypeError):
+            self.service_connection.upload_function(
+                function_name='my-function',
+                function_zip=sock,
+                role='myrole',
+                handler='myhandler',
+                mode='event',
+                runtime='nodejs'
+            )
+
+    def test_upload_function_unseekable_file_cannot_tell(self):
+        mock_file = mock.Mock()
+        mock_file.tell.side_effect = IOError
+        with self.assertRaises(TypeError):
+            self.service_connection.upload_function(
+                function_name='my-function',
+                function_zip=mock_file,
+                role='myrole',
+                handler='myhandler',
+                mode='event',
+                runtime='nodejs'
             )

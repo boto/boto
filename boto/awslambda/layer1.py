@@ -226,8 +226,15 @@ class AWSLambdaConnection(AWSAuthConnection):
         try:
             content_length = str(len(invoke_args))
         except (TypeError, AttributeError):
-            # If a file like object is provided, try to retrieve
+            # If a file like object is provided and seekable, try to retrieve
             # the file size via fstat.
+            try:
+                invoke_args.tell()
+            except (AttributeError, OSError, IOError):
+                raise TypeError(
+                    "File-like object passed to parameter "
+                    "``invoke_args`` must be seekable."
+                )
             content_length = str(os.fstat(invoke_args.fileno()).st_size)
         headers['Content-Length'] = content_length
         return self.make_request('POST', uri, expected_status=202,
@@ -478,8 +485,15 @@ class AWSLambdaConnection(AWSAuthConnection):
         try:
             content_length = str(len(function_zip))
         except (TypeError, AttributeError):
-            # If a file like object is provided, try to retrieve
+            # If a file like object is provided and seekable, try to retrieve
             # the file size via fstat.
+            try:
+                function_zip.tell()
+            except (AttributeError, OSError, IOError):
+                raise TypeError(
+                    "File-like object passed to parameter "
+                    "``function_zip`` must be seekable."
+                )
             content_length = str(os.fstat(function_zip.fileno()).st_size)
         headers['Content-Length'] = content_length
         return self.make_request('PUT', uri, expected_status=201,
