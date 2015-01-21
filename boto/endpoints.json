@@ -87,6 +87,10 @@
         "us-west-2": "monitoring.us-west-2.amazonaws.com",
         "eu-central-1": "monitoring.eu-central-1.amazonaws.com"
     },
+    "codedeploy": {
+        "us-east-1": "codedeploy.us-east-1.amazonaws.com",
+        "us-west-2": "codedeploy.us-west-2.amazonaws.com"
+    },
     "cognito-identity": {
         "us-east-1": "cognito-identity.us-east-1.amazonaws.com"
     },

@@ -55,6 +55,7 @@ At the moment, boto supports:
   * AWS Data Pipeline (Python 3)
   * AWS Opsworks (Python 3)
   * AWS CloudTrail (Python 3)
+  * AWS CodeDeploy (Python 3)
 
 * Administration & Security
 

@@ -998,6 +998,29 @@ def connect_awslambda(aws_access_key_id=None,
     )
 
 
+def connect_codedeploy(aws_access_key_id=None,
+                       aws_secret_access_key=None,
+                       **kwargs):
+    """
+    Connect to AWS CodeDeploy
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.cognito.sync.layer1.CodeDeployConnection`
+    :return: A connection to the AWS CodeDeploy service
+    """
+    from boto.codedeploy.layer1 import CodeDeployConnection
+    return CodeDeployConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
                 bucket_storage_uri_class=BucketStorageUri,
                 suppress_consec_slashes=True, is_latest=False):

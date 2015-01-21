@@ -59,6 +59,7 @@ Currently Supported Services
   * Data Pipeline -- (:doc:`API Reference <ref/datapipeline>`) (Python 3)
   * Opsworks -- (:doc:`API Reference <ref/opsworks>`) (Python 3)
   * CloudTrail -- (:doc:`API Reference <ref/cloudtrail>`) (Python 3)
+  * CodeDeploy -- (:doc:`API Reference <ref/codedeploy>`) (Python 3)
 
 * **Administration & Security**
 
