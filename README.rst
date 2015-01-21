@@ -55,9 +55,10 @@ At the moment, boto supports:
   * AWS Opsworks (Python 3)
   * AWS CloudTrail (Python 3)
 
-* Identity & Access
+* Administration & Security
 
   * AWS Identity and Access Management (IAM) (Python 3)
+  * AWS Key Management Service (KMS) (Python 3)
 
 * Application Services
 

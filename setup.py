@@ -79,7 +79,7 @@ setup(name = "boto",
                   "boto.cloudsearch2", "boto.logs", "boto.vendored",
                   "boto.route53.domains", "boto.cognito",
                   "boto.cognito.identity", "boto.cognito.sync",
-                  "boto.cloudsearchdomain"],
+                  "boto.cloudsearchdomain", "boto.kms"],
       package_data = {
           "boto.cacerts": ["cacerts.txt"],
           "boto": ["endpoints.json"],
