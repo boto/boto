@@ -365,7 +365,8 @@
         "us-east-1": "sts.amazonaws.com",
         "us-gov-west-1": "sts.us-gov-west-1.amazonaws.com",
         "us-west-1": "sts.amazonaws.com",
-        "us-west-2": "sts.amazonaws.com"
+        "us-west-2": "sts.amazonaws.com",
+        "eu-central-1": "sts.amazonaws.com"
     },
     "support": {
         "us-east-1": "support.us-east-1.amazonaws.com",
