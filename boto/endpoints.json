@@ -152,6 +152,9 @@
         "us-west-2": "ec2.us-west-2.amazonaws.com",
         "eu-central-1": "ec2.eu-central-1.amazonaws.com"
     },
+    "ec2containerservice": {
+        "us-east-1": "ecs.us-east-1.amazonaws.com"
+    },
     "elasticache": {
         "ap-northeast-1": "elasticache.ap-northeast-1.amazonaws.com",
         "ap-southeast-1": "elasticache.ap-southeast-1.amazonaws.com",

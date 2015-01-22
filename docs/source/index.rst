@@ -37,6 +37,7 @@ Currently Supported Services
   * :doc:`Auto Scaling <autoscale_tut>` -- (:doc:`API Reference <ref/autoscale>`) (Python 3)
   * Kinesis -- (:doc:`API Reference <ref/kinesis>`) (Python 3)
   * Lambda -- (:doc:`API Reference <ref/awslambda>`) (Python 3)
+  * EC2 Container Service (ECS) -- (:doc:`API Reference <ref/ec2containerservice>`) (Python 3)
 
 * **Content Delivery**
 
