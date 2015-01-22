@@ -20,6 +20,10 @@ class ResourceConflictException(BotoServerError):
     pass
 
 
+class DeveloperUserAlreadyRegisteredException(BotoServerError):
+    pass
+
+
 class TooManyRequestsException(BotoServerError):
     pass
 
