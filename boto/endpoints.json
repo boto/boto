@@ -97,6 +97,9 @@
     "cognito-sync": {
         "us-east-1": "cognito-sync.us-east-1.amazonaws.com"
     },
+    "configservice": {
+        "us-east-1": "config.us-east-1.amazonaws.com"
+    },
     "datapipeline": {
         "us-east-1": "datapipeline.us-east-1.amazonaws.com",
         "us-west-2": "datapipeline.us-west-2.amazonaws.com",
