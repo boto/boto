@@ -35,6 +35,7 @@ At the moment, boto supports:
   * AutoScaling (Python 3)
   * Amazon Kinesis (Python 3)
   * AWS Lambda (Python 3)
+  * Amazon EC2 Container Service (Python 3)
 
 * Content Delivery
 

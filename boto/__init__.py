@@ -1067,6 +1067,22 @@ def connect_cloudhsm(aws_access_key_id=None,
     )
 
 
+def connect_ec2containerservice(aws_access_key_id=None,
+                                aws_secret_access_key=None,
+                                **kwargs):
+    """
+    Connect to Amazon EC2 Container Service
+    rtype: :class:`boto.ec2containerservice.layer1.EC2ContainerServiceConnection`
+    :return: A connection to the Amazon EC2 Container Service
+    """
+    from boto.ec2containerservice.layer1 import EC2ContainerServiceConnection
+    return EC2ContainerServiceConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
                 bucket_storage_uri_class=BucketStorageUri,
                 suppress_consec_slashes=True, is_latest=False):
