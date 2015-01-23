@@ -67,6 +67,7 @@ Currently Supported Services
   * Security Token Service (STS) -- (:doc:`API Reference <ref/sts>`) (Python 3)
   * Key Management Service (KMS) -- (:doc:`API Reference <ref/kms>`) (Python 3)
   * Config -- (:doc:`API Reference <ref/configservice>`) (Python 3)
+  * CloudHSM -- (:doc:`API Reference <ref/cloudhsm>`) (Python 3)
 
 * **Application Services**
 

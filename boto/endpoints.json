@@ -41,6 +41,13 @@
         "us-west-2": "cloudfront.amazonaws.com",
         "eu-central-1": "cloudfront.amazonaws.com"
     },
+    "cloudhsm": {
+        "us-east-1": "cloudhsm.us-east-1.amazonaws.com",
+        "us-west-2": "cloudhsm.us-west-2.amazonaws.com",
+        "eu-west-1": "cloudhsm.eu-west-1.amazonaws.com",
+        "eu-central-1": "cloudhsm.eu-central-1.amazonaws.com",
+        "ap-southeast-2": "cloudhsm.ap-southeast-2.amazonaws.com"
+    },
     "cloudsearch": {
         "ap-southeast-1": "cloudsearch.ap-southeast-1.amazonaws.com",
         "ap-southeast-2": "cloudsearch.ap-southeast-2.amazonaws.com",

@@ -81,7 +81,7 @@ setup(name = "boto",
                   "boto.cognito.identity", "boto.cognito.sync",
                   "boto.cloudsearchdomain", "boto.kms",
                   "boto.awslamba", "boto.codedeploy", "boto.configservice",
-                 ]
+                  "boto.cloudhsm"],
       package_data = {
           "boto.cacerts": ["cacerts.txt"],
           "boto": ["endpoints.json"],

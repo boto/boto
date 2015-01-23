@@ -62,6 +62,7 @@ At the moment, boto supports:
   * AWS Identity and Access Management (IAM) (Python 3)
   * AWS Key Management Service (KMS) (Python 3)
   * AWS Config (Python 3)
+  * AWS CloudHSM (Python 3)
 
 * Application Services
 
