@@ -34,6 +34,7 @@ At the moment, boto supports:
   * Amazon Elastic Map Reduce (EMR) (Python 3)
   * AutoScaling (Python 3)
   * Amazon Kinesis (Python 3)
+  * AWS Lambda (Python 3)
 
 * Content Delivery
 
