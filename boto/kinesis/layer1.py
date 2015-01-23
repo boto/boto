@@ -741,7 +741,7 @@ class KinesisConnection(AWSQueryConnection):
             for i in range(len(params['Records'])):
                 data = params['Records'][i]['Data']
                 if not isinstance(data, six.binary_type):
-                    params['Records'][i]['Data'] = data.encode('utf-8')
+                    data = data.encode('utf-8')
                 params['Records'][i]['Data'] = base64.b64encode(
                     data).decode('utf-8')
         return self.make_request(action='PutRecords',
