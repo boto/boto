@@ -80,7 +80,7 @@ setup(name = "boto",
                   "boto.route53.domains", "boto.cognito",
                   "boto.cognito.identity", "boto.cognito.sync",
                   "boto.cloudsearchdomain", "boto.kms",
-                  "boto.awslamba", "boto.codedeploy", "boto.configservice",
+                  "boto.awslambda", "boto.codedeploy", "boto.configservice",
                   "boto.cloudhsm", "boto.ec2containerservice"],
       package_data = {
           "boto.cacerts": ["cacerts.txt"],
