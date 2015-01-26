@@ -591,8 +591,9 @@ class KinesisConnection(AWSQueryConnection):
         if sequence_number_for_ordering is not None:
             params['SequenceNumberForOrdering'] = sequence_number_for_ordering
         if b64_encode:
-            params['Data'] = base64.b64encode(
-                params['Data'].encode('utf-8')).decode('utf-8')
+            if not isinstance(params['Data'], bytes):
+                params['Data'] = params['Data'].encode('utf-8')
+            params['Data'] = base64.b64encode(params['Data']).decode('utf-8')
         return self.make_request(action='PutRecord',
                                  body=json.dumps(params))
 
