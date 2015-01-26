@@ -621,7 +621,7 @@ class TestAutoScalingTagFilter(AWSMockServiceTestCase):
         filters = {
                 'key': 'bravo',
                 'value': ['sierra']
-        }#
+        }
 
         response = self.service_connection.get_all_tags(filters=filters)
 
