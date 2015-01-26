@@ -618,24 +618,6 @@ class TestAutoScalingTagFilter(AWSMockServiceTestCase):
     def test_get_all_tags(self):
         self.set_http_response(status_code=200)
 
-        tags = [
-            Tag(
-                connection=self.service_connection,
-                key='alpha',
-                value='tango',
-                resource_id='sg-00000000',
-                resource_type='auto-scaling-group',
-                propagate_at_launch=True
-            ),
-            Tag(
-                connection=self.service_connection,
-                key='bravo',
-                value='sierra',
-                resource_id='sg-00000000',
-                resource_type='auto-scaling-group',
-                propagate_at_launch=False
-            )]
-
         filters = {
                 'key': 'bravo',
                 'value': ['sierra']
