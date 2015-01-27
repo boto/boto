@@ -14,7 +14,7 @@ The first step in accessing S3 is to create a connection to the service.
 There are two ways to do this in boto.  The first is:
 
 >>> from boto.s3.connection import S3Connection
->>> conn = S3Connection('<aws access key>', '<aws secret key>')
+>>> conn = S3Connection('<aws access key>', '<aws secret key>', security_token='<security token>')
 
 At this point the variable conn will point to an S3Connection object.  In
 this example, the AWS access key and AWS secret key are passed in to the
@@ -26,6 +26,14 @@ method explicitely.  Alternatively, you can set the environment variables:
 and then call the constructor without any arguments, like this:
 
 >>> conn = S3Connection()
+
+Actually, the latest version allows to call:
+
+>>> conn = S3Connection()
+
+without having set any of the environment variables mentioned above. 
+S3Connection constructor calls implicitly _populate_keys_from_metadata_server 
+function when no arguments are passed and sets required AWS access key and AWS secret key automatically.
 
 There is also a shortcut function in the boto package, called connect_s3
 that may provide a slightly easier means of creating a connection::
