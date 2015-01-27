@@ -284,7 +284,7 @@ class TestRestoreDBInstanceFromDBSnapshot(AWSMockServiceTestCase):
             'AvailabilityZone': 'us-east-1a',
             'MultiAZ': 'false',
             'AutoMinorVersionUpgrade': 'true'
-            }, ignore_params_values=['Version'])
+            }, ignore_params_values=['Version','PubliclyAccessible',])
         self.assertIsInstance(response, DBInstance)
         self.assertEqual(response.id, 'myrestoreddbinstance')
         self.assertEqual(response.status, 'creating')
