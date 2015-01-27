@@ -1207,11 +1207,17 @@ class RDSConnection(AWSQueryConnection):
         return self.get_object('DeleteDBSnapshot', params, DBSnapshot)
 
     def restore_dbinstance_from_dbsnapshot(self, identifier, instance_id,
-                                           instance_class, port=None,
+                                           dbinstance_class, port=None,
                                            availability_zone=None,
+                                           db_subnet_group_name=None,
                                            multi_az=None,
+                                           publicly_accessible=None,
                                            auto_minor_version_upgrade=None,
-                                           db_subnet_group_name=None):
+                                           license_model=None,
+                                           db_name=None, engine=None,
+                                           iops=None,
+                                           option_group_name=None):
+
         """
         Create a new DBInstance from a DB snapshot.
 
@@ -1222,11 +1228,21 @@ class RDSConnection(AWSQueryConnection):
         :param instance_id: The source identifier for the RDS instance from
                               which the snapshot is created.
 
-        :type instance_class: str
-        :param instance_class: The compute and memory capacity of the
+        :type dbinstance_class: str
+        :param dbinstance_class: The compute and memory capacity of the
                                DBInstance.  Valid values are:
-                               db.m1.small | db.m1.large | db.m1.xlarge |
-                               db.m2.2xlarge | db.m2.4xlarge
+                               * db.t1.micro
+                               * db.m1.small
+                               * db.m3.medium
+                               * db.m3.large
+                               * db.m3.xlarge
+                               * db.m3.2xlarge
+                               * db.m2.xlarge
+                               * db.m2.2xlarge
+                               * db.m2.4xlarge
+                               * db.m1.medium
+                               * db.m1.large
+                               * db.m1.xlarge
 
         :type port: int
         :param port: Port number on which database accepts connections.
@@ -1236,39 +1252,109 @@ class RDSConnection(AWSQueryConnection):
         :param availability_zone: Name of the availability zone to place
                                   DBInstance into.
 
-        :type multi_az: bool
-        :param multi_az: If True, specifies the DB Instance will be
-                         deployed in multiple availability zones.
-                         Default is the API default.
-
-        :type auto_minor_version_upgrade: bool
-        :param auto_minor_version_upgrade: Indicates that minor engine
-                                           upgrades will be applied
-                                           automatically to the Read Replica
-                                           during the maintenance window.
-                                           Default is the API default.
-
         :type db_subnet_group_name: str
         :param db_subnet_group_name: A DB Subnet Group to associate with this DB Instance.
                                      If there is no DB Subnet Group, then it is a non-VPC DB
                                      instance.
+
+        :type multi_az: boolean
+        :param multi_az: Specifies if the DB instance is a Multi-AZ deployment.
+        Constraint: You cannot specify the AvailabilityZone parameter if the
+            MultiAZ parameter is set to `True`.
+
+        :type publicly_accessible: boolean
+        :param publicly_accessible: Specifies the accessibility options for the
+            DB instance. A value of true specifies an Internet-facing instance
+            with a publicly resolvable DNS name, which resolves to a public IP
+            address. A value of false specifies an internal instance with a DNS
+            name that resolves to a private IP address.
+        Default: The default behavior varies depending on whether a VPC has
+            been requested or not. The following list shows the default
+            behavior in each case.
+
+
+        + **Default VPC:**true
+        + **VPC:**false
+
+
+        If no DB subnet group has been specified as part of the request and the
+            PubliclyAccessible value has not been set, the DB instance will be
+            publicly accessible. If a specific DB subnet group has been
+            specified as part of the request and the PubliclyAccessible value
+            has not been set, the DB instance will be private.
+
+        :type auto_minor_version_upgrade: boolean
+        :param auto_minor_version_upgrade: Indicates that minor version
+            upgrades will be applied automatically to the DB instance during
+            the maintenance window.
+
+        :type license_model: string
+        :param license_model: License model information for the restored DB
+            instance.
+        Default: Same as source.
+
+        Valid values: `license-included` | `bring-your-own-license` | `general-
+            public-license`
+
+        :type db_name: string
+        :param db_name:
+        The database name for the restored DB instance.
+
+
+        This parameter is not used for the MySQL engine.
+
+        :type engine: string
+        :param engine: The database engine to use for the new instance.
+        Default: The same as source
+
+        Constraint: Must be compatible with the engine of the source
+
+        Example: `oracle-ee`
+
+        :type iops: integer
+        :param iops: The amount of Provisioned IOPS (input/output operations
+            per second) to be initially allocated for the DB instance.
+        Constraints: Must be an integer greater than 1000.
+
+        :type option_group_name: string
+        :param option_group_name: The name of the option group to be used for
+            the restored DB instance.
+        Permanent options, such as the TDE option for Oracle Advanced Security
+            TDE, cannot be removed from an option group, and that option group
+            cannot be removed from a DB instance once it is associated with a
+            DB instance
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The newly created DBInstance
         """
         params = {'DBSnapshotIdentifier': identifier,
                   'DBInstanceIdentifier': instance_id,
-                  'DBInstanceClass': instance_class}
+                  'DBInstanceClass': dbinstance_class}
         if port:
             params['Port'] = port
         if availability_zone:
             params['AvailabilityZone'] = availability_zone
-        if multi_az is not None:
-            params['MultiAZ'] = str(multi_az).lower()
-        if auto_minor_version_upgrade is not None:
-            params['AutoMinorVersionUpgrade'] = str(auto_minor_version_upgrade).lower()
         if db_subnet_group_name is not None:
             params['DBSubnetGroupName'] = db_subnet_group_name
+        if multi_az is not None:
+            params['MultiAZ'] = str(
+                multi_az).lower()
+        if publicly_accessible is not None:
+            params['PubliclyAccessible'] = str(
+                publicly_accessible).lower()
+        if auto_minor_version_upgrade is not None:
+            params['AutoMinorVersionUpgrade'] = str(
+                auto_minor_version_upgrade).lower()
+        if license_model is not None:
+            params['LicenseModel'] = license_model
+        if db_name is not None:
+            params['DBName'] = db_name
+        if engine is not None:
+            params['Engine'] = engine
+        if iops is not None:
+            params['Iops'] = iops
+        if option_group_name is not None:
+            params['OptionGroupName'] = option_group_name
         return self.get_object('RestoreDBInstanceFromDBSnapshot',
                                params, DBInstance)
 
@@ -1279,7 +1365,14 @@ class RDSConnection(AWSQueryConnection):
                                               dbinstance_class=None,
                                               port=None,
                                               availability_zone=None,
-                                              db_subnet_group_name=None):
+                                              db_subnet_group_name=None,
+                                              multi_az=None,
+                                              publicly_accessible=None,
+                                              auto_minor_version_upgrade=None,
+                                              license_model=None,
+                                              db_name=None, engine=None,
+                                              iops=None,
+                                              option_group_name=None):
 
         """
         Create a new DBInstance from a point in time.
@@ -1298,11 +1391,21 @@ class RDSConnection(AWSQueryConnection):
         :param restore_time: The date and time to restore from.  Only
                              used if use_latest is False.
 
-        :type instance_class: str
-        :param instance_class: The compute and memory capacity of the
+        :type dbinstance_class: str
+        :param dbinstance_class: The compute and memory capacity of the
                                DBInstance.  Valid values are:
-                               db.m1.small | db.m1.large | db.m1.xlarge |
-                               db.m2.2xlarge | db.m2.4xlarge
+                               * db.t1.micro
+                               * db.m1.small
+                               * db.m3.medium
+                               * db.m3.large
+                               * db.m3.xlarge
+                               * db.m3.2xlarge
+                               * db.m2.xlarge
+                               * db.m2.2xlarge
+                               * db.m2.4xlarge
+                               * db.m1.medium
+                               * db.m1.large
+                               * db.m1.xlarge
 
         :type port: int
         :param port: Port number on which database accepts connections.
@@ -1316,6 +1419,73 @@ class RDSConnection(AWSQueryConnection):
         :param db_subnet_group_name: A DB Subnet Group to associate with this DB Instance.
                                      If there is no DB Subnet Group, then it is a non-VPC DB
                                      instance.
+
+        :type multi_az: boolean
+        :param multi_az: Specifies if the DB instance is a Multi-AZ deployment.
+        Constraint: You cannot specify the AvailabilityZone parameter if the
+            MultiAZ parameter is set to `True`.
+
+        :type publicly_accessible: boolean
+        :param publicly_accessible: Specifies the accessibility options for the
+            DB instance. A value of true specifies an Internet-facing instance
+            with a publicly resolvable DNS name, which resolves to a public IP
+            address. A value of false specifies an internal instance with a DNS
+            name that resolves to a private IP address.
+        Default: The default behavior varies depending on whether a VPC has
+            been requested or not. The following list shows the default
+            behavior in each case.
+
+
+        + **Default VPC:**true
+        + **VPC:**false
+
+
+        If no DB subnet group has been specified as part of the request and the
+            PubliclyAccessible value has not been set, the DB instance will be
+            publicly accessible. If a specific DB subnet group has been
+            specified as part of the request and the PubliclyAccessible value
+            has not been set, the DB instance will be private.
+
+        :type auto_minor_version_upgrade: boolean
+        :param auto_minor_version_upgrade: Indicates that minor version
+            upgrades will be applied automatically to the DB instance during
+            the maintenance window.
+
+        :type license_model: string
+        :param license_model: License model information for the restored DB
+            instance.
+        Default: Same as source.
+
+        Valid values: `license-included` | `bring-your-own-license` | `general-
+            public-license`
+
+        :type db_name: string
+        :param db_name:
+        The database name for the restored DB instance.
+
+
+        This parameter is not used for the MySQL engine.
+
+        :type engine: string
+        :param engine: The database engine to use for the new instance.
+        Default: The same as source
+
+        Constraint: Must be compatible with the engine of the source
+
+        Example: `oracle-ee`
+
+        :type iops: integer
+        :param iops: The amount of Provisioned IOPS (input/output operations
+            per second) to be initially allocated for the DB instance.
+        Constraints: Must be an integer greater than 1000.
+
+        :type option_group_name: string
+        :param option_group_name: The name of the option group to be used for
+            the restored DB instance.
+        Permanent options, such as the TDE option for Oracle Advanced Security
+            TDE, cannot be removed from an option group, and that option group
+            cannot be removed from a DB instance once it is associated with a
+            DB instance
 
         :rtype: :class:`boto.rds.dbinstance.DBInstance`
         :return: The newly created DBInstance
@@ -1334,6 +1504,25 @@ class RDSConnection(AWSQueryConnection):
             params['AvailabilityZone'] = availability_zone
         if db_subnet_group_name is not None:
             params['DBSubnetGroupName'] = db_subnet_group_name
+        if multi_az is not None:
+            params['MultiAZ'] = str(
+                multi_az).lower()
+        if publicly_accessible is not None:
+            params['PubliclyAccessible'] = str(
+                publicly_accessible).lower()
+        if auto_minor_version_upgrade is not None:
+            params['AutoMinorVersionUpgrade'] = str(
+                auto_minor_version_upgrade).lower()
+        if license_model is not None:
+            params['LicenseModel'] = license_model
+        if db_name is not None:
+            params['DBName'] = db_name
+        if engine is not None:
+            params['Engine'] = engine
+        if iops is not None:
+            params['Iops'] = iops
+        if option_group_name is not None:
+            params['OptionGroupName'] = option_group_name
         return self.get_object('RestoreDBInstanceToPointInTime',
                                params, DBInstance)
 
