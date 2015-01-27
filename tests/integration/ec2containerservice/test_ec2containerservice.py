@@ -1,4 +1,4 @@
-# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2015 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,36 +19,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from boto.exception import BotoServerError
+
+import boto
+from boto.ec2containerservice.exceptions import ClientException
+from tests.compat import unittest
 
 
-class LimitExceededException(BotoServerError):
-    pass
+class TestEC2ContainerService(unittest.TestCase):
+    def setUp(self):
+        self.ecs = boto.connect_ec2containerservice()
 
+    def test_list_clusters(self):
+        response = self.ecs.list_clusters()
+        self.assertIn('clusterArns',
+                      response['ListClustersResponse']['ListClustersResult'])
 
-class ResourceConflictException(BotoServerError):
-    pass
-
-
-class InvalidConfigurationException(BotoServerError):
-    pass
-
-
-class TooManyRequestsException(BotoServerError):
-    pass
-
-
-class InvalidParameterException(BotoServerError):
-    pass
-
-
-class ResourceNotFoundException(BotoServerError):
-    pass
-
-
-class InternalErrorException(BotoServerError):
-    pass
-
-
-class NotAuthorizedException(BotoServerError):
-    pass
+    def test_handle_not_found_exception(self):
+        with self.assertRaises(ClientException):
+            # Try to stop a task with an invalid arn.
+            self.ecs.stop_task(task='foo')

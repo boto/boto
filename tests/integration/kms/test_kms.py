@@ -19,36 +19,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from boto.exception import BotoServerError
+
+import boto
+from boto.kms.exceptions import NotFoundException
+from tests.compat import unittest
 
 
-class LimitExceededException(BotoServerError):
-    pass
+class TestKMS(unittest.TestCase):
+    def setUp(self):
+        self.kms = boto.connect_kms()
 
+    def test_list_keys(self):
+        response = self.kms.list_keys()
+        self.assertIn('Keys', response)
 
-class ResourceConflictException(BotoServerError):
-    pass
-
-
-class InvalidConfigurationException(BotoServerError):
-    pass
-
-
-class TooManyRequestsException(BotoServerError):
-    pass
-
-
-class InvalidParameterException(BotoServerError):
-    pass
-
-
-class ResourceNotFoundException(BotoServerError):
-    pass
-
-
-class InternalErrorException(BotoServerError):
-    pass
-
-
-class NotAuthorizedException(BotoServerError):
-    pass
+    def test_handle_not_found_exception(self):
+        with self.assertRaises(NotFoundException):
+            # Describe some key that does not exists
+            self.kms.describe_key(
+                key_id='nonexistant_key',
+            )

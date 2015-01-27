@@ -38,7 +38,7 @@ import logging.config
 from boto.compat import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.35.2'
+__version__ = '2.36.0'
 Version = __version__  # for backware compatibility
 
 # http://bugs.python.org/issue7980
@@ -946,6 +946,137 @@ def connect_cognito_sync(aws_access_key_id=None,
     """
     from boto.cognito.sync.layer1 import CognitoSyncConnection
     return CognitoSyncConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_kms(aws_access_key_id=None,
+                aws_secret_access_key=None,
+                **kwargs):
+    """
+    Connect to AWS Key Management Service
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.kms.layer1.KMSConnection`
+    :return: A connection to the AWS Key Management Service
+    """
+    from boto.kms.layer1 import KMSConnection
+    return KMSConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_awslambda(aws_access_key_id=None,
+                      aws_secret_access_key=None,
+                      **kwargs):
+    """
+    Connect to AWS Lambda
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.awslambda.layer1.AWSLambdaConnection`
+    :return: A connection to the AWS Lambda service
+    """
+    from boto.awslambda.layer1 import AWSLambdaConnection
+    return AWSLambdaConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_codedeploy(aws_access_key_id=None,
+                       aws_secret_access_key=None,
+                       **kwargs):
+    """
+    Connect to AWS CodeDeploy
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.cognito.sync.layer1.CodeDeployConnection`
+    :return: A connection to the AWS CodeDeploy service
+    """
+    from boto.codedeploy.layer1 import CodeDeployConnection
+    return CodeDeployConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    ) 
+
+
+def connect_configservice(aws_access_key_id=None,
+                          aws_secret_access_key=None,
+                          **kwargs):
+    """
+    Connect to AWS Config
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.kms.layer1.ConfigServiceConnection`
+    :return: A connection to the AWS Config service
+    """
+    from boto.configservice.layer1 import ConfigServiceConnection
+    return ConfigServiceConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_cloudhsm(aws_access_key_id=None,
+                     aws_secret_access_key=None,
+                     **kwargs):
+    """
+    Connect to AWS CloudHSM
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.cloudhsm.layer1.CloudHSMConnection`
+    :return: A connection to the AWS CloudHSM service
+    """
+    from boto.cloudhsm.layer1 import CloudHSMConnection
+    return CloudHSMConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_ec2containerservice(aws_access_key_id=None,
+                                aws_secret_access_key=None,
+                                **kwargs):
+    """
+    Connect to Amazon EC2 Container Service
+    rtype: :class:`boto.ec2containerservice.layer1.EC2ContainerServiceConnection`
+    :return: A connection to the Amazon EC2 Container Service
+    """
+    from boto.ec2containerservice.layer1 import EC2ContainerServiceConnection
+    return EC2ContainerServiceConnection(
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
         **kwargs

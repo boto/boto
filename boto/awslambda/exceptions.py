@@ -1,4 +1,4 @@
-# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2015 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -22,23 +22,7 @@
 from boto.exception import BotoServerError
 
 
-class LimitExceededException(BotoServerError):
-    pass
-
-
-class ResourceConflictException(BotoServerError):
-    pass
-
-
-class InvalidConfigurationException(BotoServerError):
-    pass
-
-
-class TooManyRequestsException(BotoServerError):
-    pass
-
-
-class InvalidParameterException(BotoServerError):
+class InvalidRequestContentException(BotoServerError):
     pass
 
 
@@ -46,9 +30,9 @@ class ResourceNotFoundException(BotoServerError):
     pass
 
 
-class InternalErrorException(BotoServerError):
+class InvalidParameterValueException(BotoServerError):
     pass
 
 
-class NotAuthorizedException(BotoServerError):
+class ServiceException(BotoServerError):
     pass

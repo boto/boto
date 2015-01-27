@@ -12,6 +12,11 @@
         "us-west-2": "autoscaling.us-west-2.amazonaws.com",
         "eu-central-1": "autoscaling.eu-central-1.amazonaws.com"
     },
+    "awslambda": {
+        "us-east-1": "lambda.us-east-1.amazonaws.com",
+        "us-west-2": "lambda.us-west-2.amazonaws.com",
+        "eu-west-1": "lambda.eu-west-1.amazonaws.com"
+    },
     "cloudformation": {
         "ap-northeast-1": "cloudformation.ap-northeast-1.amazonaws.com",
         "ap-southeast-1": "cloudformation.ap-southeast-1.amazonaws.com",
@@ -35,6 +40,13 @@
         "us-west-1": "cloudfront.amazonaws.com",
         "us-west-2": "cloudfront.amazonaws.com",
         "eu-central-1": "cloudfront.amazonaws.com"
+    },
+    "cloudhsm": {
+        "us-east-1": "cloudhsm.us-east-1.amazonaws.com",
+        "us-west-2": "cloudhsm.us-west-2.amazonaws.com",
+        "eu-west-1": "cloudhsm.eu-west-1.amazonaws.com",
+        "eu-central-1": "cloudhsm.eu-central-1.amazonaws.com",
+        "ap-southeast-2": "cloudhsm.ap-southeast-2.amazonaws.com"
     },
     "cloudsearch": {
         "ap-southeast-1": "cloudsearch.ap-southeast-1.amazonaws.com",
@@ -82,11 +94,18 @@
         "us-west-2": "monitoring.us-west-2.amazonaws.com",
         "eu-central-1": "monitoring.eu-central-1.amazonaws.com"
     },
+    "codedeploy": {
+        "us-east-1": "codedeploy.us-east-1.amazonaws.com",
+        "us-west-2": "codedeploy.us-west-2.amazonaws.com"
+    },
     "cognito-identity": {
         "us-east-1": "cognito-identity.us-east-1.amazonaws.com"
     },
     "cognito-sync": {
         "us-east-1": "cognito-sync.us-east-1.amazonaws.com"
+    },
+    "configservice": {
+        "us-east-1": "config.us-east-1.amazonaws.com"
     },
     "datapipeline": {
         "us-east-1": "datapipeline.us-east-1.amazonaws.com",
@@ -132,6 +151,9 @@
         "us-west-1": "ec2.us-west-1.amazonaws.com",
         "us-west-2": "ec2.us-west-2.amazonaws.com",
         "eu-central-1": "ec2.eu-central-1.amazonaws.com"
+    },
+    "ec2containerservice": {
+        "us-east-1": "ecs.us-east-1.amazonaws.com"
     },
     "elasticache": {
         "ap-northeast-1": "elasticache.ap-northeast-1.amazonaws.com",
@@ -231,6 +253,17 @@
         "ap-southeast-2": "kinesis.ap-southeast-2.amazonaws.com",
         "ap-northeast-1": "kinesis.ap-northeast-1.amazonaws.com",
         "eu-central-1": "kinesis.eu-central-1.amazonaws.com"
+    },
+    "kms": {
+        "us-east-1": "kms.us-east-1.amazonaws.com",
+        "us-west-1": "kms.us-west-1.amazonaws.com",
+        "us-west-2": "kms.us-west-2.amazonaws.com",
+        "eu-west-1": "kms.eu-west-1.amazonaws.com",
+        "eu-central-1": "kms.eu-central-1.amazonaws.com",
+        "ap-southeast-2": "kms.ap-southeast-2.amazonaws.com",
+        "ap-southeast-1": "kms.ap-southeast-1.amazonaws.com",
+        "ap-northeast-1": "kms.ap-northeast-1.amazonaws.com",
+        "sa-east-1": "kms.sa-east-1.amazonaws.com"
     },
     "logs": {
         "us-east-1": "logs.us-east-1.amazonaws.com",
@@ -354,7 +387,8 @@
         "us-east-1": "sts.amazonaws.com",
         "us-gov-west-1": "sts.us-gov-west-1.amazonaws.com",
         "us-west-1": "sts.amazonaws.com",
-        "us-west-2": "sts.amazonaws.com"
+        "us-west-2": "sts.amazonaws.com",
+        "eu-central-1": "sts.amazonaws.com"
     },
     "support": {
         "us-east-1": "support.us-east-1.amazonaws.com",

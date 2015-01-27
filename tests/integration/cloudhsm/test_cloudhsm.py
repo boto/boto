@@ -1,4 +1,4 @@
-# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2015 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,36 +19,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from boto.exception import BotoServerError
+
+import boto
+from tests.compat import unittest
+from boto.cloudhsm.exceptions import InvalidRequestException
 
 
-class LimitExceededException(BotoServerError):
-    pass
+class TestCloudHSM(unittest.TestCase):
+    def setUp(self):
+        self.cloudhsm = boto.connect_cloudhsm()
 
+    def test_hapgs(self):
+        label = 'my-hapg'
+        response = self.cloudhsm.create_hapg(label=label)
+        hapg_arn = response['HapgArn']
+        self.addCleanup(self.cloudhsm.delete_hapg, hapg_arn)
 
-class ResourceConflictException(BotoServerError):
-    pass
+        response = self.cloudhsm.list_hapgs()
+        self.assertIn(hapg_arn, response['HapgList'])
 
-
-class InvalidConfigurationException(BotoServerError):
-    pass
-
-
-class TooManyRequestsException(BotoServerError):
-    pass
-
-
-class InvalidParameterException(BotoServerError):
-    pass
-
-
-class ResourceNotFoundException(BotoServerError):
-    pass
-
-
-class InternalErrorException(BotoServerError):
-    pass
-
-
-class NotAuthorizedException(BotoServerError):
-    pass
+    def test_validation_exception(self):
+        invalid_arn = 'arn:aws:cloudhsm:us-east-1:123456789012:hapg-55214b8d'
+        with self.assertRaises(InvalidRequestException):
+            self.cloudhsm.describe_hapg(invalid_arn)

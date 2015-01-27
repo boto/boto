@@ -12,33 +12,61 @@
 from boto.exception import BotoServerError
 
 
+class InvalidGrantTokenException(BotoServerError):
+    pass
+
+
+class DisabledException(BotoServerError):
+    pass
+
+
 class LimitExceededException(BotoServerError):
     pass
 
 
-class ResourceConflictException(BotoServerError):
+class DependencyTimeoutException(BotoServerError):
     pass
 
 
-class DeveloperUserAlreadyRegisteredException(BotoServerError):
+class InvalidMarkerException(BotoServerError):
     pass
 
 
-class TooManyRequestsException(BotoServerError):
+class AlreadyExistsException(BotoServerError):
     pass
 
 
-class InvalidParameterException(BotoServerError):
+class InvalidCiphertextException(BotoServerError):
     pass
 
 
-class ResourceNotFoundException(BotoServerError):
+class KeyUnavailableException(BotoServerError):
     pass
 
 
-class InternalErrorException(BotoServerError):
+class InvalidAliasNameException(BotoServerError):
     pass
 
 
-class NotAuthorizedException(BotoServerError):
+class UnsupportedOperationException(BotoServerError):
+    pass
+
+
+class InvalidArnException(BotoServerError):
+    pass
+
+
+class KMSInternalException(BotoServerError):
+    pass
+
+
+class InvalidKeyUsageException(BotoServerError):
+    pass
+
+
+class MalformedPolicyDocumentException(BotoServerError):
+    pass
+
+
+class NotFoundException(BotoServerError):
     pass

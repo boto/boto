@@ -68,6 +68,7 @@ import base64
 import boto
 
 from boto.compat import StringIO
+from boto.compat import six
 from boto.sqs.attributes import Attributes
 from boto.sqs.messageattributes import MessageAttributes
 from boto.exception import SQSDecodeError
@@ -163,7 +164,9 @@ class Message(RawMessage):
     """
 
     def encode(self, value):
-        return base64.b64encode(value.encode('utf-8')).decode('utf-8')
+        if not isinstance(value, six.binary_type):
+            value = value.encode('utf-8')
+        return base64.b64encode(value).decode('utf-8')
 
     def decode(self, value):
         try:
