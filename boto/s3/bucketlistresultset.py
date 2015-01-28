@@ -114,7 +114,9 @@ class VersionedBucketListResultSet(object):
 
 def multipart_upload_lister(bucket, key_marker='',
                             upload_id_marker='',
-                            headers=None, encoding_type=None):
+                            headers=None,
+                            encoding_type=None,
+                            prefix=None):
     """
     A generator function for listing multipart uploads in a bucket.
     """
@@ -124,7 +126,8 @@ def multipart_upload_lister(bucket, key_marker='',
         rs = bucket.get_all_multipart_uploads(key_marker=key_marker,
                                               upload_id_marker=upload_id_marker,
                                               headers=headers,
-                                              encoding_type=encoding_type)
+                                              encoding_type=encoding_type,
+                                              prefix=prefix)
         for k in rs:
             yield k
         key_marker = rs.next_key_marker
