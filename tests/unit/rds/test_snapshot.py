@@ -290,7 +290,114 @@ class TestRestoreDBInstanceFromDBSnapshot(AWSMockServiceTestCase):
         self.assertEqual(response.status, 'creating')
         self.assertEqual(response.instance_class, 'db.m1.large')
         self.assertEqual(response.multi_az, False)
+
+class TestRestoreDBInstanceFromPointInTime(AWSMockServiceTestCase):
+    connection_class = RDSConnection
+
+    def default_body(self): 
+        return """
+        <RestoreDBInstanceToPointInTimeResponse xmlns="http://rds.amazonaws.com/doc/2013-05-15/">
+            <RestoreDBInstanceToPointInTimeResult>
+                <DBInstance>
+                    <BackupRetentionPeriod>10</BackupRetentionPeriod>
+                    <DBInstanceStatus>creating</DBInstanceStatus>
+                    <MultiAZ>false</MultiAZ>
+                    <VpcSecurityGroups>
+                        <VpcSecurityGroupMembership>
+                            <Status>active</Status>
+                            <VpcSecurityGroupId>sg-test69a0</VpcSecurityGroupId>
+                            </VpcSecurityGroupMembership>
+                        </VpcSecurityGroups>
+                    <DBInstanceIdentifier>neworadbinstance</DBInstanceIdentifier>
+                    <PreferredBackupWindow>09:24-09:54</PreferredBackupWindow>
+                    <PreferredMaintenanceWindow>wed:10:26-wed:10:56</PreferredMaintenanceWindow>
+                    <ReadReplicaDBInstanceIdentifiers/>
+                    <Engine>oracle-se1</Engine>
+                    <PendingModifiedValues/>
+                    <CharacterSetName>WE8MSWIN1252</CharacterSetName>
+                    <LicenseModel>license-included</LicenseModel>
+                    <DBSubnetGroup>
+                        <VpcId>vpc-6fd7700a</VpcId>
+                        <SubnetGroupStatus>Complete</SubnetGroupStatus>
+                        <DBSubnetGroupDescription>test dbsubnetgroup</DBSubnetGroupDescription>
+                        <DBSubnetGroupName>sng-oracle</DBSubnetGroupName>
+                        <Subnets>
+                            <Subnet>
+                                <SubnetStatus>Active</SubnetStatus>
+                                <SubnetIdentifier>subnet-test6e00</SubnetIdentifier>
+                                <SubnetAvailabilityZone>
+                                    <Name>us-west-2a</Name>
+                                    <ProvisionedIopsCapable>false</ProvisionedIopsCapable>
+                                </SubnetAvailabilityZone>
+                            </Subnet>
+                            <Subnet>\n            
+                                <SubnetStatus>Active</SubnetStatus>\n            
+                                <SubnetIdentifier>subnet-testfcd1</SubnetIdentifier>\n            
+                                <SubnetAvailabilityZone>              
+                                    <Name>us-west-2c</Name>              
+                                    <ProvisionedIopsCapable>false</ProvisionedIopsCapable>            
+                                </SubnetAvailabilityZone>          
+                            </Subnet>        
+                        </Subnets>
+                    </DBSubnetGroup>      
+                    <EngineVersion>11.2.0.3.v1</EngineVersion>      
+                    <DBParameterGroups>        
+                        <DBParameterGroup>          
+                            <ParameterApplyStatus>in-sync</ParameterApplyStatus>          
+                            <DBParameterGroupName>default.oracle-se1-11.2</DBParameterGroupName>        
+                        </DBParameterGroup>      
+                    </DBParameterGroups>      
+                    <OptionGroupMemberships>        
+                        <OptionGroupMembership>          
+                            <OptionGroupName>oracle-options</OptionGroupName>          
+                            <Status>pending-apply</Status>        
+                        </OptionGroupMembership>      
+                    </OptionGroupMemberships>      
+                    <PubliclyAccessible>false</PubliclyAccessible>      
+                    <DBSecurityGroups/>
+                    <DBName>PWMB</DBName>      
+                    <AutoMinorVersionUpgrade>true</AutoMinorVersionUpgrade>      
+                    <AllocatedStorage>20</AllocatedStorage>      
+                    <MasterUsername>dba</MasterUsername>      
+                    <DBInstanceClass>db.m1.small</DBInstanceClass>    
+                </DBInstance>  
+            </RestoreDBInstanceToPointInTimeResult>  
+            <ResponseMetadata>    
+                <RequestId>6cdb305c-a725-11e4-9f43-0b07042aded5</RequestId>  
+            </ResponseMetadata>
+        </RestoreDBInstanceToPointInTimeResponse>
+        """
         
+        
+    def test_restore_dbinstance_from_dbsnapshot(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.restore_dbinstance_from_point_in_time(source_instance_id="oradbinstance",
+                                                                                 target_instance_id="neworadbinstance",
+                                                                                 use_latest=True,
+                                                                                 dbinstance_class="db.m1.small",
+                                                                                 db_subnet_group_name="sng-oracle",
+                                                                                 license_model="license-included",
+                                                                                 option_group_name="oracle-options",
+                                                                                 engine="oracle-se1")
+      
+        self.assert_request_parameters({
+            'Action': 'RestoreDBInstanceToPointInTime',
+            'SourceDBInstanceIdentifier': 'oradbinstance',
+            'TargetDBInstanceIdentifier': 'neworadbinstance',
+            'DBInstanceClass': 'db.m1.small',
+            'DBSubnetGroupName': 'sng-oracle',
+            'Engine': 'oracle-se1',
+            'LicenseModel': 'license-included',
+            'OptionGroupName': 'oracle-options',
+            'UseLatestRestorableTime': 'true'
+            }, ignore_params_values=['Version'])
+        self.assertIsInstance(response, DBInstance)
+        self.assertEqual(response.id, 'neworadbinstance')
+        self.assertEqual(response.status, 'creating')
+        self.assertEqual(response.instance_class, 'db.m1.small')
+        self.assertEqual(response.multi_az, False)
+
+
         
 if __name__ == '__main__':
     unittest.main()
