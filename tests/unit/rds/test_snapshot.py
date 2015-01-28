@@ -369,7 +369,7 @@ class TestRestoreDBInstanceFromPointInTime(AWSMockServiceTestCase):
         """
         
         
-    def test_restore_dbinstance_from_dbsnapshot(self):
+    def test_restore_dbinstance_from_pointintime(self):
         self.set_http_response(status_code=200)
         response = self.service_connection.restore_dbinstance_from_point_in_time(source_instance_id="oradbinstance",
                                                                                  target_instance_id="neworadbinstance",
