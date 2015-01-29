@@ -92,6 +92,7 @@ At the moment, boto supports:
   * Amazon Simple Email Service (SES) (Python 3)
   * Amazon Cognito Identity (Python 3)
   * Amazon Cognito Sync (Python 3)
+  * Amazon Machine Learning (Python 3)
 
 * Monitoring
 

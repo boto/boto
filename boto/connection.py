@@ -931,7 +931,8 @@ class AWSAuthConnection(object):
                 # not include the port.
                 if 's3' not in self._required_auth_capability():
                     if not getattr(self, 'anon', False):
-                        self.set_host_header(request)
+                        if not request.headers.get('Host'):
+                            self.set_host_header(request)
                 boto.log.debug('Final headers: %s' % request.headers)
                 request.start_time = datetime.now()
                 if callable(sender):

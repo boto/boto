@@ -279,6 +279,10 @@
         "us-east-1": "opsworks.us-east-1.amazonaws.com",
         "eu-central-1": "opsworks.eu-central-1.amazonaws.com"
     },
+    "machinelearning": {
+        "us-east-1": "machinelearning.us-east-1.amazonaws.com",
+        "us-west-2": "machinelearning.us-west-2.amazonaws.com"
+    },
     "rds": {
         "ap-northeast-1": "rds.ap-northeast-1.amazonaws.com",
         "ap-southeast-1": "rds.ap-southeast-1.amazonaws.com",
