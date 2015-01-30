@@ -1536,7 +1536,8 @@ class TableTestCase(unittest.TestCase):
             provisioned_throughput={
                 'WriteCapacityUnits': 2,
                 'ReadCapacityUnits': 7
-            }
+            },
+            attribute_definitions=None
         )
 
         with mock.patch.object(
