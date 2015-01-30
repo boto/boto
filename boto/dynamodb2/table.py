@@ -443,6 +443,122 @@ class Table(object):
         )
         return True
 
+    def update_2(self, throughput=None, global_indexes=None):
+        """
+        Updates table attributes in DynamoDB.
+
+        Currently, the only thing you can modify about a table after it has
+        been created is the throughput.
+
+        Requires a ``throughput`` parameter, which should be a
+        dictionary. If provided, it should specify a ``read`` & ``write`` key,
+        both of which should have an integer value associated with them.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # For a read-heavier application...
+            >>> users.update_2(throughput={
+            ...     'read': 20,
+            ...     'write': 10,
+            ... })
+            True
+
+            # To also update the global index(es) throughput.
+            >>> users.update_2(throughput={
+            ...     'read': 20,
+            ...     'write': 10,
+            ... },
+            ... global_secondary_indexes={
+            ...     'update': {
+            ...         'TheIndexNameHere': {
+            ...             'read': 15,
+            ...             'write': 5,
+            ...         }
+            ...      }
+            ... })
+
+            # To create a global index(es)
+            >>> users.update_2(global_secondary_indexes={
+            ...     'create': {
+            ...         GlobalAllIndex('TheIndexNameHere', parts=[
+            ...             HashKey('requiredHashkey', data_type=STRING),
+            ...             RangeKey('optionalRangeKey', data_type=STRING)
+            ...         ],
+            ...         throughput={
+            ...             'read': 2,
+            ...             'write': 1,
+            ...         }),
+            ...      }
+            ... })
+
+            # To delete a global index(es)
+            >>> users.update_2(global_secondary_indexes={
+            ...     'delete': {
+            ...         'TheIndexNameHere'
+            ...      }
+            ... })
+            True
+
+        """
+
+        data = None
+
+        if throughput:
+            self.throughput = throughput
+            data = {
+                'ReadCapacityUnits': int(self.throughput['read']),
+                'WriteCapacityUnits': int(self.throughput['write']),
+            }
+
+        gsi_data = None
+        gsi_data_attr_def = None
+
+        if global_indexes:
+            gsi_data = []
+
+            for gsi_operation_key, gsi_operation_value in global_indexes.items():
+                if gsi_operation_key == 'delete':
+
+                    gsi_data.append({
+                        "Delete": {
+                            "IndexName": gsi_operation_value
+                        },
+                    })
+
+                elif gsi_operation_key == 'update':
+
+                    for gsi_update_key, gsi_throughput in gsi_operation_value.items():
+                        gsi_data.append({
+                            "Update": {
+                                "IndexName": gsi_update_key,
+                                "ProvisionedThroughput": {
+                                    "ReadCapacityUnits": int(gsi_throughput['read']),
+                                    "WriteCapacityUnits": int(gsi_throughput['write']),
+                                },
+                            },
+                        })
+                elif gsi_operation_key == 'create':
+
+                    gsi_data.append({
+                        "Create": gsi_operation_value.schema()
+                    })
+
+                    gsi_data_attr_def = []
+
+                    for attr_def in gsi_operation_value.parts:
+                        gsi_data_attr_def.append(attr_def.definition())
+
+
+        self.connection.update_table(
+            self.table_name,
+            provisioned_throughput=data,
+            global_secondary_index_updates=gsi_data,
+            attribute_definitions=gsi_data_attr_def
+        )
+        return True
+
     def delete(self):
         """
         Deletes a table in DynamoDB.
