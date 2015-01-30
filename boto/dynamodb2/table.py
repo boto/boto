@@ -137,9 +137,9 @@ class Table(object):
         to define the key structure of the table.
 
         **IMPORTANT** - You should consider the usage pattern of your table
-        up-front, as the schema & indexes can **NOT** be modified once the
-        table is created, requiring the creation of a new table & migrating
-        the data should you wish to revise it.
+        up-front, as the schema can **NOT** be modified once the table is
+        created, requiring the creation of a new table & migrating the data
+        should you wish to revise it.
 
         **IMPORTANT** - If the table already exists in DynamoDB, additional
         calls to this method will result in an error. If you just need
@@ -499,8 +499,7 @@ class Table(object):
                                 "WriteCapacityUnits": int(gsi_operation_value['write']),
                             },
                         },
-                     })
-
+                    })
 
         self.connection.update_table(
             self.table_name,
