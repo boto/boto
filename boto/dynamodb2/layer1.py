@@ -169,7 +169,7 @@ class DynamoDBConnection(AWSQueryConnection):
                     break
 
         # Only set host if it isn't manually overwritten
-        if 'host' not in kwargs:
+        if kwargs.get('host') is None:
             kwargs['host'] = region.endpoint
 
         super(DynamoDBConnection, self).__init__(**kwargs)
