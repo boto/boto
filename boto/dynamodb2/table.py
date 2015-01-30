@@ -379,16 +379,21 @@ class Table(object):
         # This is leaky.
         return result
 
-    def update(self, throughput, global_indexes=None):
+    def update(self, throughput=None, global_indexes=None):
         """
-        Updates table attributes in DynamoDB.
+        Updates table attributes and global indexes in DynamoDB.
 
-        Currently, the only thing you can modify about a table after it has
-        been created is the throughput.
+        Now, you can modify table's throughput , create/update/delete global
+        indexes at any time.
 
-        Requires a ``throughput`` parameter, which should be a
+        Optionally accepts a ``throughput`` parameter, which should be a
         dictionary. If provided, it should specify a ``read`` & ``write`` key,
         both of which should have an integer value associated with them.
+
+        Optionally accepts a ``global_indexes`` parameter, which should be a
+        dictionary. If provided, it should specify a different key structure
+        depending on the operation you want to perform ( ``create``, ``update``,
+        ``delete``).
 
         Returns ``True`` on success.
 
@@ -403,70 +408,6 @@ class Table(object):
 
             # To also update the global index(es) throughput.
             >>> users.update(throughput={
-            ...     'read': 20,
-            ...     'write': 10,
-            ... },
-            ... global_secondary_indexes={
-            ...     'TheIndexNameHere': {
-            ...         'read': 15,
-            ...         'write': 5,
-            ...     }
-            ... })
-            True
-
-        """
-        self.throughput = throughput
-        data = {
-            'ReadCapacityUnits': int(self.throughput['read']),
-            'WriteCapacityUnits': int(self.throughput['write']),
-        }
-        gsi_data = None
-
-        if global_indexes:
-            gsi_data = []
-
-            for gsi_name, gsi_throughput in global_indexes.items():
-                gsi_data.append({
-                    "Update": {
-                        "IndexName": gsi_name,
-                        "ProvisionedThroughput": {
-                            "ReadCapacityUnits": int(gsi_throughput['read']),
-                            "WriteCapacityUnits": int(gsi_throughput['write']),
-                        },
-                    },
-                })
-
-        self.connection.update_table(
-            self.table_name,
-            provisioned_throughput=data,
-            global_secondary_index_updates=gsi_data
-        )
-        return True
-
-    def update_2(self, throughput=None, global_indexes=None):
-        """
-        Updates table attributes in DynamoDB.
-
-        Currently, the only thing you can modify about a table after it has
-        been created is the throughput.
-
-        Requires a ``throughput`` parameter, which should be a
-        dictionary. If provided, it should specify a ``read`` & ``write`` key,
-        both of which should have an integer value associated with them.
-
-        Returns ``True`` on success.
-
-        Example::
-
-            # For a read-heavier application...
-            >>> users.update_2(throughput={
-            ...     'read': 20,
-            ...     'write': 10,
-            ... })
-            True
-
-            # To also update the global index(es) throughput.
-            >>> users.update_2(throughput={
             ...     'read': 20,
             ...     'write': 10,
             ... },
@@ -480,7 +421,7 @@ class Table(object):
             ... })
 
             # To create a global index(es)
-            >>> users.update_2(global_secondary_indexes={
+            >>> users.update(global_secondary_indexes={
             ...     'create': {
             ...         GlobalAllIndex('TheIndexNameHere', parts=[
             ...             HashKey('requiredHashkey', data_type=STRING),
@@ -494,10 +435,8 @@ class Table(object):
             ... })
 
             # To delete a global index(es)
-            >>> users.update_2(global_secondary_indexes={
-            ...     'delete': {
-            ...         'TheIndexNameHere'
-            ...      }
+            >>> users.update(global_secondary_indexes={
+            ...     'delete': 'TheIndexNameHere'
             ... })
             True
 
@@ -549,6 +488,18 @@ class Table(object):
 
                     for attr_def in gsi_operation_value.parts:
                         gsi_data_attr_def.append(attr_def.definition())
+                else:
+                    # Provide backward compatibility for the old dict structure
+                    # this method was used to receive as a parameter
+                    gsi_data.append({
+                        "Update": {
+                            "IndexName": gsi_operation_key,
+                            "ProvisionedThroughput": {
+                                "ReadCapacityUnits": int(gsi_operation_value['read']),
+                                "WriteCapacityUnits": int(gsi_operation_value['write']),
+                            },
+                        },
+                     })
 
 
         self.connection.update_table(
