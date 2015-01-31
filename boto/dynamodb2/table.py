@@ -383,17 +383,15 @@ class Table(object):
         """
         Updates table attributes and global indexes in DynamoDB.
 
-        Now, you can modify table's throughput , create/update/delete global
-        indexes at any time.
-
         Optionally accepts a ``throughput`` parameter, which should be a
         dictionary. If provided, it should specify a ``read`` & ``write`` key,
         both of which should have an integer value associated with them.
 
         Optionally accepts a ``global_indexes`` parameter, which should be a
-        dictionary. If provided, it should specify a different key structure
-        depending on the operation you want to perform ( ``create``, ``update``,
-        ``delete``).
+        dictionary. If provided, it should specify the index name, which is also
+        a dict containing a ``read`` & ``write`` key, both of which
+        should have an integer value associated with them. If you are writing
+        new code, please use ``Table.update_global_secondary_index``.
 
         Returns ``True`` on success.
 
@@ -412,34 +410,12 @@ class Table(object):
             ...     'write': 10,
             ... },
             ... global_secondary_indexes={
-            ...     'update': {
-            ...         'TheIndexNameHere': {
-            ...             'read': 15,
-            ...             'write': 5,
-            ...         }
-            ...      }
-            ... })
-
-            # To create a global index(es)
-            >>> users.update(global_secondary_indexes={
-            ...     'create': {
-            ...         GlobalAllIndex('TheIndexNameHere', parts=[
-            ...             HashKey('requiredHashkey', data_type=STRING),
-            ...             RangeKey('optionalRangeKey', data_type=STRING)
-            ...         ],
-            ...         throughput={
-            ...             'read': 2,
-            ...             'write': 1,
-            ...         }),
-            ...      }
-            ... })
-
-            # To delete a global index(es)
-            >>> users.update(global_secondary_indexes={
-            ...     'delete': 'TheIndexNameHere'
+            ...     'TheIndexNameHere': {
+            ...         'read': 15,
+            ...         'write': 5,
+            ...     }
             ... })
             True
-
         """
 
         data = None
@@ -452,60 +428,152 @@ class Table(object):
             }
 
         gsi_data = None
-        gsi_data_attr_def = None
 
         if global_indexes:
             gsi_data = []
 
-            for gsi_operation_key, gsi_operation_value in global_indexes.items():
-                if gsi_operation_key == 'delete':
-
-                    gsi_data.append({
-                        "Delete": {
-                            "IndexName": gsi_operation_value
+            for gsi_name, gsi_throughput in global_indexes.items():
+                gsi_data.append({
+                    "Update": {
+                        "IndexName": gsi_name,
+                        "ProvisionedThroughput": {
+                            "ReadCapacityUnits": int(gsi_throughput['read']),
+                            "WriteCapacityUnits": int(gsi_throughput['write']),
                         },
-                    })
-
-                elif gsi_operation_key == 'update':
-
-                    for gsi_update_key, gsi_throughput in gsi_operation_value.items():
-                        gsi_data.append({
-                            "Update": {
-                                "IndexName": gsi_update_key,
-                                "ProvisionedThroughput": {
-                                    "ReadCapacityUnits": int(gsi_throughput['read']),
-                                    "WriteCapacityUnits": int(gsi_throughput['write']),
-                                },
-                            },
-                        })
-                elif gsi_operation_key == 'create':
-
-                    gsi_data.append({
-                        "Create": gsi_operation_value.schema()
-                    })
-
-                    gsi_data_attr_def = []
-
-                    for attr_def in gsi_operation_value.parts:
-                        gsi_data_attr_def.append(attr_def.definition())
-                else:
-                    # Provide backward compatibility for the old dict structure
-                    # this method was used to receive as a parameter
-                    gsi_data.append({
-                        "Update": {
-                            "IndexName": gsi_operation_key,
-                            "ProvisionedThroughput": {
-                                "ReadCapacityUnits": int(gsi_operation_value['read']),
-                                "WriteCapacityUnits": int(gsi_operation_value['write']),
-                            },
-                        },
-                    })
+                    },
+                })
 
         self.connection.update_table(
             self.table_name,
             provisioned_throughput=data,
             global_secondary_index_updates=gsi_data,
+        )
+        return True
+
+    def create_global_secondary_index(self, global_index):
+        """
+        Creates a global index in DynamoDB after the table has been created.
+
+        Requires a ``global_indexes`` parameter, which should be a
+        ``GlobalBaseIndexField`` subclass representing the desired index.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # To create a global index
+            >>> users.create_global_secondary_index(
+            ...     global_index=GlobalAllIndex(
+            ...         'TheIndexNameHere', parts=[
+            ...             HashKey('requiredHashkey', data_type=STRING),
+            ...             RangeKey('optionalRangeKey', data_type=STRING)
+            ...         ],
+            ...         throughput={
+            ...             'read': 2,
+            ...             'write': 1,
+            ...         })
+            ... )
+            True
+
+        """
+
+        gsi_data = None
+        gsi_data_attr_def = None
+
+        if global_index:
+            gsi_data = []
+            gsi_data_attr_def = []
+
+            gsi_data.append({
+                "Create": global_index.schema()
+            })
+
+            for attr_def in global_index.parts:
+                gsi_data_attr_def.append(attr_def.definition())
+
+        self.connection.update_table(
+            self.table_name,
+            global_secondary_index_updates=gsi_data,
             attribute_definitions=gsi_data_attr_def
+        )
+        return True
+
+    def delete_global_secondary_index(self, global_index_name):
+        """
+        Deletes a global index in DynamoDB after the table has been created.
+
+        Requires a ``global_index_name`` parameter, which should be a simple
+        string of the name of the global secondary index.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # To delete a global index
+            >>> users.delete_global_secondary_index('TheIndexNameHere')
+            True
+
+        """
+
+        gsi_data = None
+
+        if global_index_name:
+            gsi_data = [
+                {
+                    "Delete": {
+                        "IndexName": global_index_name
+                    }
+                }
+            ]
+
+        self.connection.update_table(
+            self.table_name,
+            global_secondary_index_updates=gsi_data,
+        )
+        return True
+
+    def update_global_secondary_index(self, global_index):
+        """
+        Updates a global index in DynamoDB after the table has been created.
+
+        Requires a ``global_indexes`` parameter, which should be a
+        dictionary. If provided, it should specify the index name, which is also
+        a dict containing a ``read`` & ``write`` key, both of which
+        should have an integer value associated with them.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # To update a global index
+            >>> users.update_global_secondary_index(global_index={
+            ...     'TheIndexNameHere': {
+            ...         'read': 15,
+            ...         'write': 5,
+            ...     }
+            ... })
+            True
+
+        """
+        gsi_data = None
+
+        if global_index:
+            gsi_data = []
+
+            for gsi_name, gsi_throughput in global_index.items():
+                gsi_data.append({
+                    "Update": {
+                        "IndexName": gsi_name,
+                        "ProvisionedThroughput": {
+                            "ReadCapacityUnits": int(gsi_throughput['read']),
+                            "WriteCapacityUnits": int(gsi_throughput['write']),
+                        },
+                    },
+                })
+
+        self.connection.update_table(
+            self.table_name,
+            global_secondary_index_updates=gsi_data,
         )
         return True
 

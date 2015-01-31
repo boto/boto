@@ -741,12 +741,10 @@ class DynamoDBv2Test(unittest.TestCase):
         time.sleep(60)
 
         # Update a GSI throughput. it should work.
-        users.update(global_indexes={
-            'update': {
-                'EmailGSIIndex': {
-                    'read': 2,
-                    'write': 1,
-                }
+        users.update_global_secondary_index(global_index={
+            'EmailGSIIndex': {
+                'read': 2,
+                'write': 1,
             }
         })
 
@@ -757,8 +755,8 @@ class DynamoDBv2Test(unittest.TestCase):
         # purposes. it should work.
         users.update(global_indexes={
             'EmailGSIIndex': {
-                'read': 2,
-                'write': 1,
+                'read': 3,
+                'write': 2,
             }
         })
 
@@ -766,18 +764,20 @@ class DynamoDBv2Test(unittest.TestCase):
         time.sleep(60)
 
         # Delete a GSI. it should work.
-        users.update(global_indexes={
-            'delete': 'EmailGSIIndex'
-        })
+        users.delete_global_secondary_index('EmailGSIIndex')
 
-        users.update(global_indexes={
-            'create': GlobalAllIndex('AddressGSIIndex', parts=[
+        # Wait for it.
+        time.sleep(60)
+
+        # Create a GSI. it should work.
+        users.create_global_secondary_index(
+            global_index=GlobalAllIndex(
+                'AddressGSIIndex', parts=[
                     HashKey('address', data_type=STRING)
                 ], throughput={
                     'read': 1,
                     'write': 1,
                 })
-
-        })
+        )
         # Wait for it. This operation usually takes much longer than the others
-        time.sleep(60*5)
+        time.sleep(60*10)
