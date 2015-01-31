@@ -443,12 +443,20 @@ class Table(object):
                     },
                 })
 
-        self.connection.update_table(
-            self.table_name,
-            provisioned_throughput=data,
-            global_secondary_index_updates=gsi_data,
-        )
-        return True
+        if throughput or global_indexes:
+            self.connection.update_table(
+                self.table_name,
+                provisioned_throughput=data,
+                global_secondary_index_updates=gsi_data,
+            )
+
+            return True
+        else:
+            msg = 'You need to provide either the throughput or the ' \
+                  'global_indexes to update method'
+            boto.log.error(msg)
+
+            return False
 
     def create_global_secondary_index(self, global_index):
         """
@@ -477,9 +485,6 @@ class Table(object):
 
         """
 
-        gsi_data = None
-        gsi_data_attr_def = None
-
         if global_index:
             gsi_data = []
             gsi_data_attr_def = []
@@ -491,12 +496,19 @@ class Table(object):
             for attr_def in global_index.parts:
                 gsi_data_attr_def.append(attr_def.definition())
 
-        self.connection.update_table(
-            self.table_name,
-            global_secondary_index_updates=gsi_data,
-            attribute_definitions=gsi_data_attr_def
-        )
-        return True
+            self.connection.update_table(
+                self.table_name,
+                global_secondary_index_updates=gsi_data,
+                attribute_definitions=gsi_data_attr_def
+            )
+
+            return True
+        else:
+            msg = 'You need to provide the global_index to ' \
+                  'create_global_secondary_index method'
+            boto.log.error(msg)
+
+            return False
 
     def delete_global_secondary_index(self, global_index_name):
         """
@@ -515,8 +527,6 @@ class Table(object):
 
         """
 
-        gsi_data = None
-
         if global_index_name:
             gsi_data = [
                 {
@@ -526,11 +536,18 @@ class Table(object):
                 }
             ]
 
-        self.connection.update_table(
-            self.table_name,
-            global_secondary_index_updates=gsi_data,
-        )
-        return True
+            self.connection.update_table(
+                self.table_name,
+                global_secondary_index_updates=gsi_data,
+            )
+
+            return True
+        else:
+            msg = 'You need to provide the global index name to ' \
+                  'delete_global_secondary_index method'
+            boto.log.error(msg)
+
+            return False
 
     def update_global_secondary_index(self, global_index):
         """
@@ -555,7 +572,6 @@ class Table(object):
             True
 
         """
-        gsi_data = None
 
         if global_index:
             gsi_data = []
@@ -571,11 +587,17 @@ class Table(object):
                     },
                 })
 
-        self.connection.update_table(
-            self.table_name,
-            global_secondary_index_updates=gsi_data,
-        )
-        return True
+            self.connection.update_table(
+                self.table_name,
+                global_secondary_index_updates=gsi_data,
+            )
+            return True
+        else:
+            msg = 'You need to provide the global index to ' \
+                  'update_global_secondary_index method'
+            boto.log.error(msg)
+
+            return False
 
     def delete(self):
         """
