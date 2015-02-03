@@ -719,7 +719,7 @@ class DynamoDBv2Test(unittest.TestCase):
 
     def test_update_table_online_indexing_support(self):
         # Create a table using gsi to test the DynamoDB online indexing support
-        # https://github.com/boto/boto/issues/2828
+        # https://github.com/boto/boto/pull/2925
         users = Table.create('online_indexing_support_users', schema=[
             HashKey('user_id')
         ], throughput={
@@ -740,8 +740,16 @@ class DynamoDBv2Test(unittest.TestCase):
         # Wait for it.
         time.sleep(60)
 
+        # Fetch fresh table desc from DynamoDB
+        users.describe()
+
+        # Assert if everything is fine so far
+        self.assertEqual(len(users.global_indexes), 1)
+        self.assertEqual(users.global_indexes[0].throughput['read'], 2)
+        self.assertEqual(users.global_indexes[0].throughput['write'], 2)
+
         # Update a GSI throughput. it should work.
-        users.update_global_secondary_index(global_index={
+        users.update_global_secondary_index(global_indexes={
             'EmailGSIIndex': {
                 'read': 2,
                 'write': 1,
@@ -750,6 +758,14 @@ class DynamoDBv2Test(unittest.TestCase):
 
         # Wait for it.
         time.sleep(60)
+
+        # Fetch fresh table desc from DynamoDB
+        users.describe()
+
+        # Assert if everything is fine so far
+        self.assertEqual(len(users.global_indexes), 1)
+        self.assertEqual(users.global_indexes[0].throughput['read'], 2)
+        self.assertEqual(users.global_indexes[0].throughput['write'], 1)
 
         # Update a GSI throughput using the old fashion way for compatibility
         # purposes. it should work.
@@ -763,11 +779,25 @@ class DynamoDBv2Test(unittest.TestCase):
         # Wait for it.
         time.sleep(60)
 
+        # Fetch fresh table desc from DynamoDB
+        users.describe()
+
+        # Assert if everything is fine so far
+        self.assertEqual(len(users.global_indexes), 1)
+        self.assertEqual(users.global_indexes[0].throughput['read'], 3)
+        self.assertEqual(users.global_indexes[0].throughput['write'], 2)
+
         # Delete a GSI. it should work.
         users.delete_global_secondary_index('EmailGSIIndex')
 
         # Wait for it.
         time.sleep(60)
+
+        # Fetch fresh table desc from DynamoDB
+        users.describe()
+
+        # Assert if everything is fine so far
+        self.assertEqual(len(users.global_indexes), 0)
 
         # Create a GSI. it should work.
         users.create_global_secondary_index(
@@ -781,3 +811,11 @@ class DynamoDBv2Test(unittest.TestCase):
         )
         # Wait for it. This operation usually takes much longer than the others
         time.sleep(60*10)
+
+        # Fetch fresh table desc from DynamoDB
+        users.describe()
+
+        # Assert if everything is fine so far
+        self.assertEqual(len(users.global_indexes), 1)
+        self.assertEqual(users.global_indexes[0].throughput['read'], 3)
+        self.assertEqual(users.global_indexes[0].throughput['write'], 2)
