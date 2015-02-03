@@ -549,9 +549,9 @@ class Table(object):
 
             return False
 
-    def update_global_secondary_index(self, global_index):
+    def update_global_secondary_index(self, global_indexes):
         """
-        Updates a global index in DynamoDB after the table has been created.
+        Updates a global index(es) in DynamoDB after the table has been created.
 
         Requires a ``global_indexes`` parameter, which should be a
         dictionary. If provided, it should specify the index name, which is also
@@ -563,7 +563,7 @@ class Table(object):
         Example::
 
             # To update a global index
-            >>> users.update_global_secondary_index(global_index={
+            >>> users.update_global_secondary_index(global_indexes={
             ...     'TheIndexNameHere': {
             ...         'read': 15,
             ...         'write': 5,
@@ -573,10 +573,10 @@ class Table(object):
 
         """
 
-        if global_index:
+        if global_indexes:
             gsi_data = []
 
-            for gsi_name, gsi_throughput in global_index.items():
+            for gsi_name, gsi_throughput in global_indexes.items():
                 gsi_data.append({
                     "Update": {
                         "IndexName": gsi_name,
@@ -593,7 +593,7 @@ class Table(object):
             )
             return True
         else:
-            msg = 'You need to provide the global index to ' \
+            msg = 'You need to provide the global indexes to ' \
                   'update_global_secondary_index method'
             boto.log.error(msg)
 
