@@ -653,12 +653,13 @@ class Distribution(object):
         Requires the rsa library be installed.
         """
         try:
-            import rsa
+            import OpenSSL.crypto as ssl
         except ImportError:
-            raise NotImplementedError("Boto depends on the python rsa "
+            raise NotImplementedError("Boto depends on the pyOpenSSL"
                                       "library to generate signed URLs for "
                                       "CloudFront")
         # Make sure only one of private_key_file and private_key_string is set
+
         if private_key_file and private_key_string:
             raise ValueError("Only specify the private_key_file or the private_key_string not both")
         if not private_key_file and not private_key_string:
@@ -673,8 +674,8 @@ class Distribution(object):
                 private_key_string = private_key_file.read()
 
         # Sign it!
-        private_key = rsa.PrivateKey.load_pkcs1(private_key_string)
-        signature = rsa.sign(str(message), private_key, 'SHA-1')
+        key = ssl.load_privatekey(ssl.FILETYPE_PEM, private_key_string)
+        signature = ssl.sign(key, str(message), 'sha1')
         return signature
 
     @staticmethod
