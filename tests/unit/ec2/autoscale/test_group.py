@@ -615,11 +615,26 @@ class TestAutoScalingTagFilter(AWSMockServiceTestCase):
         </DescribeTagsResponse>
         """
 
-    def test_get_all_tags(self):
+    def test_get_all_tags_key(self):
         self.set_http_response(status_code=200)
 
         filters = {
-                'key': 'bravo',
+                'key': 'bravo'
+        }
+
+        response = self.service_connection.get_all_tags(filters=filters)
+
+        self.assert_request_parameters({
+            'Action': 'DescribeTags',
+            'Filters.member.1.Name': 'key',
+            'Filters.member.1.Values.member.1': 'bravo'
+        }, ignore_params_values=['Version'])
+
+
+    def test_get_all_tags_value(self):
+        self.set_http_response(status_code=200)
+
+        filters = {
                 'value': ['sierra']
         }
 
@@ -629,8 +644,6 @@ class TestAutoScalingTagFilter(AWSMockServiceTestCase):
             'Action': 'DescribeTags',
             'Filters.member.1.Name': 'value',
             'Filters.member.1.Values.member.1': 'sierra',
-            'Filters.member.2.Name': 'key',
-            'Filters.member.2.Values.member.1': 'bravo'
         }, ignore_params_values=['Version'])
 
 
