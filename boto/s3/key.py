@@ -1043,6 +1043,10 @@ class Key(object):
         uploads, the delay in calculating MD5 is avoided but with a
         penalty of inability to verify the integrity of the uploaded
         data.
+        
+        .. note::
+        
+            Some providers, including S3, do not support this method.
 
         :type fp: file
         :param fp: the file whose contents are to be uploaded
