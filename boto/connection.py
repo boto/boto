@@ -381,7 +381,7 @@ class HTTPRequest(object):
         if 'Content-Length' not in self.headers:
             if 'Transfer-Encoding' not in self.headers or \
                     self.headers['Transfer-Encoding'] != 'chunked':
-                self.headers['Content-Length'] = len(self.body)
+                self.headers['Content-Length'] = str(len(self.body))
 
 
 class HTTPResponse(http_client.HTTPResponse):
