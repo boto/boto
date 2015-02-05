@@ -81,26 +81,26 @@ class Key(object):
         <Days>%s</Days>
       </RestoreRequest>"""
 
-
     BufferSize = boto.config.getint('Boto', 'key_buffer_size', 8192)
 
     # The object metadata fields a user can set, other than custom metadata
     # fields (i.e., those beginning with a provider-specific prefix like
     # x-amz-meta).
-    base_user_settable_fields = set(["cache-control", "content-disposition",
-                                    "content-encoding", "content-language",
-                                    "content-md5", "content-type",
-                                     "x-robots-tag", "expires"])
+    base_user_settable_fields_capitalized = set([
+        "Cache-Control", "Content-Disposition",
+        "Content-Encoding", "Content-Language",
+        "Content-MD5", "Content-Type",
+        "X-Robots-Tag", "Expires"])
+    base_user_settable_fields = set([header.lower() for header in
+                                     base_user_settable_fields_capitalized])
     _underscore_base_user_settable_fields = set()
     for f in base_user_settable_fields:
-      _underscore_base_user_settable_fields.add(f.replace('-', '_'))
+        _underscore_base_user_settable_fields.add(f.replace('-', '_'))
     # Metadata fields, whether user-settable or not, other than custom
     # metadata fields (i.e., those beginning with a provider specific prefix
     # like x-amz-meta).
     base_fields = (base_user_settable_fields |
                    set(["last-modified", "content-length", "date", "etag"]))
-
-
 
     def __init__(self, bucket=None, name=None):
         self.bucket = bucket
