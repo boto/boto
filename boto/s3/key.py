@@ -545,6 +545,31 @@ class Key(object):
         return self.bucket.delete_key(self.name, version_id=self.version_id,
                                       headers=headers)
 
+    def user_settable_metadata(self):
+        """
+        Returns the HTTP header metadata that is normally stored directly on a
+        key object as attributes (which do not make it into the object's
+        'metadata' attribute).
+        """
+        def _metadata():
+            for mdname in self.base_user_settable_fields_capitalized:
+                attr_name = mdname.lower().replace('-', '_')
+                if hasattr(self, attr_name):
+                    mdval = getattr(self, attr_name)
+                    if mdval is not None:
+                        yield mdname, mdval
+        return dict(_metadata())
+
+    def full_metadata(self):
+        """
+        Returns all metadata in a form that can be used to update an existing
+        key conveniently.  This includes the HTTP header metadata that is
+        normally missing from the 'metadata' attribute.
+        """
+        metadata = self.user_settable_metadata()
+        metadata.update(self.metadata)
+        return metadata
+
     def get_metadata(self, name):
         return self.metadata.get(name)
 
