@@ -404,9 +404,9 @@ class LoadBalancer(object):
 
     def apply_security_groups(self, security_groups):
         """
-        Applies security groups to the load balancer.
-        Applying security groups that are already registered with the
-        Load Balancer has no effect.
+        Associates one or more security groups with the load balancer.
+        The provided security groups will override any currently applied
+        security groups.
 
         :type security_groups: string or List of strings
         :param security_groups: The name of the security group(s) to add.
