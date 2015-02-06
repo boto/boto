@@ -503,7 +503,7 @@ class Route53Connection(AWSAuthConnection):
         h.parse(body)
         return e
 
-    def create_zone(self, name, private_zone=False,
+    def create_zone(self, name, comment='', private_zone=False,
                     vpc_id=None, vpc_region=None):
         """
         Create a new Hosted Zone.  Returns a Zone object for the newly
@@ -530,7 +530,8 @@ class Route53Connection(AWSAuthConnection):
         :param vpc_id: When creating a private hosted zone, the region of
             the associated VPC is required.
         """
-        zone = self.create_hosted_zone(name, private_zone=private_zone,
+        zone = self.create_hosted_zone(name, comment=comment,
+                                       private_zone=private_zone,
                                        vpc_id=vpc_id, vpc_region=vpc_region)
         return Zone(self, zone['CreateHostedZoneResponse']['HostedZone'])
 
