@@ -53,7 +53,7 @@ class SwfL1WorkflowExecutionTest(SimpleWorkflowLayer1TestBase):
         # Construct the decision response.
         decisions = Layer1Decisions()
         if event['eventType'] == 'WorkflowExecutionStarted':
-            activity_id = str(uuid.uuid1())
+            activity_id = str(uuid.uuid4())
             decisions.schedule_activity_task(activity_id,
                 self._activity_type_name, self._activity_type_version,
                 task_list=self._task_list,
