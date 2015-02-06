@@ -371,10 +371,9 @@ class Table(object):
             raw_indexes = result['Table'].get('LocalSecondaryIndexes', [])
             self.indexes = self._introspect_indexes(raw_indexes)
 
-        if not self.global_indexes:
-            # Build the global index information as well.
-            raw_global_indexes = result['Table'].get('GlobalSecondaryIndexes', [])
-            self.global_indexes = self._introspect_global_indexes(raw_global_indexes)
+        # Build the global index information as well.
+        raw_global_indexes = result['Table'].get('GlobalSecondaryIndexes', [])
+        self.global_indexes = self._introspect_global_indexes(raw_global_indexes)
 
         # This is leaky.
         return result
@@ -465,6 +464,9 @@ class Table(object):
         Requires a ``global_indexes`` parameter, which should be a
         ``GlobalBaseIndexField`` subclass representing the desired index.
 
+        To update ``global_indexes`` information on the ``Table``, you'll need
+        to call ``Table.describe``.
+
         Returns ``True`` on success.
 
         Example::
@@ -517,6 +519,9 @@ class Table(object):
         Requires a ``global_index_name`` parameter, which should be a simple
         string of the name of the global secondary index.
 
+        To update ``global_indexes`` information on the ``Table``, you'll need
+        to call ``Table.describe``.
+
         Returns ``True`` on success.
 
         Example::
@@ -557,6 +562,9 @@ class Table(object):
         dictionary. If provided, it should specify the index name, which is also
         a dict containing a ``read`` & ``write`` key, both of which
         should have an integer value associated with them.
+
+        To update ``global_indexes`` information on the ``Table``, you'll need
+        to call ``Table.describe``.
 
         Returns ``True`` on success.
 
