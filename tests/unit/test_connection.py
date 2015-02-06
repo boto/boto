@@ -524,6 +524,16 @@ class TestHTTPRequest(unittest.TestCase):
                          {'Some-Header': 'should%20be%20url%20encoded',
                           'User-Agent': UserAgent})
 
+    def test_content_length_str(self):
+        request = HTTPRequest('PUT', 'https', 'amazon.com', 443, None,
+                              None, {}, {}, 'Body')
+        mock_connection = mock.Mock()
+        request.authorize(mock_connection)
+
+        # Ensure Content-Length header is a str. This is more explicit than
+        # relying on other code cast the value later. (Python 2.7.0, for
+        # example, assumes headers are of type str.)
+        self.assertIsInstance(request.headers['Content-Length'], str)
 
 if __name__ == '__main__':
     unittest.main()
