@@ -1,9 +1,9 @@
 ####
 boto
 ####
-boto 2.35.1
+boto 2.36.0
 
-Released: 09-Jan-2015
+Released: 27-Jan-2015
 
 .. image:: https://travis-ci.org/boto/boto.svg?branch=develop
         :target: https://travis-ci.org/boto/boto
@@ -34,6 +34,8 @@ At the moment, boto supports:
   * Amazon Elastic Map Reduce (EMR) (Python 3)
   * AutoScaling (Python 3)
   * Amazon Kinesis (Python 3)
+  * AWS Lambda (Python 3)
+  * Amazon EC2 Container Service (Python 3)
 
 * Content Delivery
 
@@ -54,10 +56,14 @@ At the moment, boto supports:
   * AWS Data Pipeline (Python 3)
   * AWS Opsworks (Python 3)
   * AWS CloudTrail (Python 3)
+  * AWS CodeDeploy (Python 3)
 
-* Identity & Access
+* Administration & Security
 
   * AWS Identity and Access Management (IAM) (Python 3)
+  * AWS Key Management Service (KMS) (Python 3)
+  * AWS Config (Python 3)
+  * AWS CloudHSM (Python 3)
 
 * Application Services
 

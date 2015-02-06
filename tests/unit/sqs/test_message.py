@@ -23,6 +23,7 @@ from tests.unit import unittest
 
 from boto.sqs.message import MHMessage
 from boto.sqs.message import RawMessage
+from boto.sqs.message import Message
 from boto.sqs.bigmessage import BigMessage
 from boto.exception import SQSDecodeError
 
@@ -68,6 +69,20 @@ class TestEncodeMessage(unittest.TestCase):
         message = context.exception.message
         self.assertEquals(message.id, sample_value)
         self.assertEquals(message.receipt_handle, sample_value)
+
+    @attr(sqs=True)
+    def test_encode_bytes_message(self):
+        message = Message()
+        body = b'\x00\x01\x02\x03\x04\x05'
+        message.set_body(body)
+        self.assertEqual(message.get_body_encoded(), 'AAECAwQF')
+
+    @attr(sqs=True)
+    def test_encode_string_message(self):
+        message = Message()
+        body = 'hello world'
+        message.set_body(body)
+        self.assertEqual(message.get_body_encoded(), 'aGVsbG8gd29ybGQ=')
 
 
 class TestBigMessage(unittest.TestCase):

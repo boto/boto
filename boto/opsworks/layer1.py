@@ -65,12 +65,18 @@ class OpsWorksConnection(AWSQueryConnection):
     endpoint. You can then use the API to direct AWS OpsWorks to
     create stacks in any AWS Region.
 
-    **Chef Version**
+    **Chef Versions**
 
     When you call CreateStack, CloneStack, or UpdateStack we recommend
     you use the `ConfigurationManager` parameter to specify the Chef
-    version, 0.9, 11.4, or 11.10. The default value is currently 11.4.
-    For more information, see `Chef Versions`_.
+    version, 0.9, 11.4, or 11.10. The default value is currently
+    11.10. For more information, see `Chef Versions`_.
+
+    You can still specify Chef 0.9 for your stack, but new features
+    are not available for Chef 0.9 stacks, and support is scheduled to
+    end on July 24, 2014. We do not recommend using Chef 0.9 for new
+    stacks, and we recommend migrating your existing Chef 0.9 stacks
+    to Chef 11.10 as soon as possible.
     """
     APIVersion = "2013-02-18"
     DefaultRegionName = "us-east-1"
@@ -99,6 +105,33 @@ class OpsWorksConnection(AWSQueryConnection):
 
     def _required_auth_capability(self):
         return ['hmac-v4']
+
+    def assign_instance(self, instance_id, layer_ids):
+        """
+        Assign a registered instance to a custom layer. You cannot use
+        this action with instances that were created with AWS
+        OpsWorks.
+
+        **Required Permissions**: To use this action, an IAM user must
+        have a Manage permissions level for the stack or an attached
+        policy that explicitly grants permissions. For more
+        information on user permissions, see `Managing User
+        Permissions`_.
+
+        :type instance_id: string
+        :param instance_id: The instance ID.
+
+        :type layer_ids: list
+        :param layer_ids: The layer ID, which must correspond to a custom
+            layer. You cannot assign a registered instance to a built-in layer.
+
+        """
+        params = {
+            'InstanceId': instance_id,
+            'LayerIds': layer_ids,
+        }
+        return self.make_request(action='AssignInstance',
+                                 body=json.dumps(params))
 
     def assign_volume(self, volume_id, instance_id=None):
         """
@@ -159,6 +192,13 @@ class OpsWorksConnection(AWSQueryConnection):
         specified layer. For more information, see `Elastic Load
         Balancing`_.
 
+
+        You must create the Elastic Load Balancing instance
+        separately, by using the Elastic Load Balancing console, API,
+        or CLI. For more information, see ` Elastic Load Balancing
+        Developer Guide`_.
+
+
         **Required Permissions**: To use this action, an IAM user must
         have a Manage permissions level for the stack, or an attached
         policy that explicitly grants permissions. For more
@@ -214,7 +254,7 @@ class OpsWorksConnection(AWSQueryConnection):
         :type vpc_id: string
         :param vpc_id: The ID of the VPC that the cloned stack is to be
             launched into. It must be in the specified region. All instances
-            will be launched into this VPC, and you cannot change the ID later.
+            are launched into this VPC, and you cannot change the ID later.
 
         + If your account supports EC2 Classic, the default value is no VPC.
         + If your account does not support EC2 Classic, the default value is
@@ -246,14 +286,20 @@ class OpsWorksConnection(AWSQueryConnection):
             pairs to be added to the cloned stack.
 
         :type service_role_arn: string
-        :param service_role_arn: The stack AWS Identity and Access Management
-            (IAM) role, which allows AWS OpsWorks to work with AWS resources on
-            your behalf. You must set this parameter to the Amazon Resource
-            Name (ARN) for an existing IAM role. If you create a stack by using
-            the AWS OpsWorks console, it creates the role for you. You can
-            obtain an existing stack's IAM ARN programmatically by calling
-            DescribePermissions. For more information about IAM ARNs, see
-            `Using Identifiers`_.
+        :param service_role_arn:
+        The stack AWS Identity and Access Management (IAM) role, which allows
+            AWS OpsWorks to work with AWS resources on your behalf. You must
+            set this parameter to the Amazon Resource Name (ARN) for an
+            existing IAM role. If you create a stack by using the AWS OpsWorks
+            console, it creates the role for you. You can obtain an existing
+            stack's IAM ARN programmatically by calling DescribePermissions.
+            For more information about IAM ARNs, see `Using Identifiers`_.
+
+
+        You must set this parameter to a valid service role ARN or the action
+            will fail; there is no default value. You can specify the source
+            stack's service role ARN, if you prefer, but you must do so
+            explicitly.
 
         :type default_instance_profile_arn: string
         :param default_instance_profile_arn: The ARN of an IAM profile that is
@@ -261,9 +307,16 @@ class OpsWorksConnection(AWSQueryConnection):
             information about IAM ARNs, see `Using Identifiers`_.
 
         :type default_os: string
-        :param default_os: The cloned stack's default operating system, which
-            must be set to `Amazon Linux` or `Ubuntu 12.04 LTS`. The default
-            option is `Amazon Linux`.
+        :param default_os: The stacks's operating system, which must be set to
+            one of the following.
+
+        + Standard operating systems: an Amazon Linux version such as `Amazon
+              Linux 2014.09`, `Ubuntu 12.04 LTS`, or `Ubuntu 14.04 LTS`.
+        + Custom AMIs: `Custom`. You specify the custom AMI you want to use
+              when you create instances.
+
+
+        The default option is the current Amazon Linux version.
 
         :type hostname_theme: string
         :param hostname_theme: The stack's host name theme, with spaces are
@@ -296,12 +349,13 @@ class OpsWorksConnection(AWSQueryConnection):
             For more information, see the `VpcId` parameter description.
 
         :type default_subnet_id: string
-        :param default_subnet_id: The stack's default subnet ID. All instances
-            will be launched into this subnet unless you specify otherwise when
-            you create the instance. If you also specify a value for
-            `DefaultAvailabilityZone`, the subnet must be in the same zone. For
-            information on default values and when this parameter is required,
-            see the `VpcId` parameter description.
+        :param default_subnet_id: The stack's default VPC subnet ID. This
+            parameter is required if you specify a value for the `VpcId`
+            parameter. All instances are launched into this subnet unless you
+            specify otherwise when you create the instance. If you also specify
+            a value for `DefaultAvailabilityZone`, the subnet must be in that
+            zone. For information on default values and when this parameter is
+            required, see the `VpcId` parameter description.
 
         :type custom_json: string
         :param custom_json: A string that contains user-defined, custom JSON.
@@ -424,7 +478,7 @@ class OpsWorksConnection(AWSQueryConnection):
     def create_app(self, stack_id, name, type, shortname=None,
                    description=None, data_sources=None, app_source=None,
                    domains=None, enable_ssl=None, ssl_configuration=None,
-                   attributes=None):
+                   attributes=None, environment=None):
         """
         Creates an app for a specified stack. For more information,
         see `Creating Apps`_.
@@ -474,6 +528,17 @@ class OpsWorksConnection(AWSQueryConnection):
         :param attributes: One or more user-defined key/value pairs to be added
             to the stack attributes.
 
+        :type environment: list
+        :param environment:
+        An array of `EnvironmentVariable` objects that specify environment
+            variables to be associated with the app. You can specify up to ten
+            environment variables. After you deploy the app, these variables
+            are defined on the associated app server instance.
+
+        This parameter is supported only by Chef 11.10 stacks. If you have
+            specified one or more environment variables, you cannot modify the
+            stack's Chef version.
+
         """
         params = {'StackId': stack_id, 'Name': name, 'Type': type, }
         if shortname is not None:
@@ -492,24 +557,16 @@ class OpsWorksConnection(AWSQueryConnection):
             params['SslConfiguration'] = ssl_configuration
         if attributes is not None:
             params['Attributes'] = attributes
+        if environment is not None:
+            params['Environment'] = environment
         return self.make_request(action='CreateApp',
                                  body=json.dumps(params))
 
     def create_deployment(self, stack_id, command, app_id=None,
                           instance_ids=None, comment=None, custom_json=None):
         """
-        Deploys a stack or app.
-
-
-        + App deployment generates a `deploy` event, which runs the
-          associated recipes and passes them a JSON stack configuration
-          object that includes information about the app.
-        + Stack deployment runs the `deploy` recipes but does not
-          raise an event.
-
-
-        For more information, see `Deploying Apps`_ and `Run Stack
-        Commands`_.
+        Runs deployment or stack commands. For more information, see
+        `Deploying Apps`_ and `Run Stack Commands`_.
 
         **Required Permissions**: To use this action, an IAM user must
         have a Deploy or Manage permissions level for the stack, or an
@@ -588,43 +645,36 @@ class OpsWorksConnection(AWSQueryConnection):
             in the API Name column of the Available Instance Types table.
 
         :type auto_scaling_type: string
-        :param auto_scaling_type:
-        The instance auto scaling type, which has three possible values:
-
-
-        + **AlwaysRunning**: A 24/7 instance, which is not affected by auto
-              scaling.
-        + **TimeBasedAutoScaling**: A time-based auto scaling instance, which
-              is started and stopped based on a specified schedule. To specify
-              the schedule, call SetTimeBasedAutoScaling.
-        + **LoadBasedAutoScaling**: A load-based auto scaling instance, which
-              is started and stopped based on load metrics. To use load-based
-              auto scaling, you must enable it for the instance layer and
-              configure the thresholds by calling SetLoadBasedAutoScaling.
+        :param auto_scaling_type: For load-based or time-based instances, the
+            type.
 
         :type hostname: string
         :param hostname: The instance host name.
 
         :type os: string
-        :param os: The instance operating system, which must be set to one of
+        :param os: The instance's operating system, which must be set to one of
             the following.
 
-        + Standard operating systems: `Amazon Linux` or `Ubuntu 12.04 LTS`
+        + Standard operating systems: an Amazon Linux version such as `Amazon
+              Linux 2014.09`, `Ubuntu 12.04 LTS`, or `Ubuntu 14.04 LTS`.
         + Custom AMIs: `Custom`
 
 
-        The default option is `Amazon Linux`. If you set this parameter to
-            `Custom`, you must use the CreateInstance action's AmiId parameter
-            to specify the custom AMI that you want to use. For more
-            information on the standard operating systems, see `Operating
+        The default option is the current Amazon Linux version. If you set this
+            parameter to `Custom`, you must use the CreateInstance action's
+            AmiId parameter to specify the custom AMI that you want to use. For
+            more information on the standard operating systems, see `Operating
             Systems`_For more information on how to use custom AMIs with
             OpsWorks, see `Using Custom AMIs`_.
 
         :type ami_id: string
-        :param ami_id: A custom AMI ID to be used to create the instance. The
-            AMI should be based on one of the standard AWS OpsWorks APIs:
-            Amazon Linux or Ubuntu 12.04 LTS. For more information, see
-            `Instances`_
+        :param ami_id:
+        A custom AMI ID to be used to create the instance. The AMI should be
+            based on one of the standard AWS OpsWorks AMIs: Amazon Linux,
+            Ubuntu 12.04 LTS, or Ubuntu 14.04 LTS. For more information, see
+            `Instances`_.
+
+        If you specify a custom AMI, you must set `Os` to `Custom`.
 
         :type ssh_key_name: string
         :param ssh_key_name: The instance SSH key name.
@@ -655,13 +705,17 @@ class OpsWorksConnection(AWSQueryConnection):
             information, see `Storage for the Root Device`_.
 
         :type install_updates_on_boot: boolean
-        :param install_updates_on_boot: Whether to install operating system and
-            package updates when the instance boots. The default value is
-            `True`. To control when updates are installed, set this value to
-            `False`. You must then update your instances manually by using
-            CreateDeployment to run the `update_dependencies` stack command or
-            manually running `yum` (Amazon Linux) or `apt-get` (Ubuntu) on the
-            instances.
+        :param install_updates_on_boot:
+        Whether to install operating system and package updates when the
+            instance boots. The default value is `True`. To control when
+            updates are installed, set this value to `False`. You must then
+            update your instances manually by using CreateDeployment to run the
+            `update_dependencies` stack command or manually running `yum`
+            (Amazon Linux) or `apt-get` (Ubuntu) on the instances.
+
+
+        We strongly recommend using the default value of `True` to ensure that
+            your instances have the latest security updates.
 
         :type ebs_optimized: boolean
         :param ebs_optimized: Whether to create an Amazon EBS-optimized
@@ -707,10 +761,21 @@ class OpsWorksConnection(AWSQueryConnection):
                      auto_assign_elastic_ips=None,
                      auto_assign_public_ips=None, custom_recipes=None,
                      install_updates_on_boot=None,
-                     use_ebs_optimized_instances=None):
+                     use_ebs_optimized_instances=None,
+                     lifecycle_event_configuration=None):
         """
         Creates a layer. For more information, see `How to Create a
         Layer`_.
+
+
+        You should use **CreateLayer** for noncustom layer types such
+        as PHP App Server only if the stack does not have an existing
+        layer of that type. A stack can have at most one instance of
+        each noncustom layer; if you attempt to create a second
+        instance, **CreateLayer** fails. A stack can have an arbitrary
+        number of custom layers, so you can call **CreateLayer** as
+        many times as you like for that layer type.
+
 
         **Required Permissions**: To use this action, an IAM user must
         have a Manage permissions level for the stack, or an attached
@@ -722,22 +787,8 @@ class OpsWorksConnection(AWSQueryConnection):
         :param stack_id: The layer stack ID.
 
         :type type: string
-        :param type:
-        The layer type. A stack cannot have more than one built-in layer of the
-            same type. It can have any number of custom layers. This parameter
-            must be set to one of the following:
-
-
-        + custom: A custom layer
-        + db-master: A MySQL layer
-        + java-app: A Java App Server layer
-        + rails-app: A Rails App Server layer
-        + lb: An HAProxy layer
-        + memcached: A Memcached layer
-        + monitoring-master: A Ganglia layer
-        + nodejs-app: A Node.js App Server layer
-        + php-app: A PHP App Server layer
-        + web: A Static Web Server layer
+        :param type: The layer type. A stack cannot have more than one built-in
+            layer of the same type. It can have any number of custom layers.
 
         :type name: string
         :param name: The layer name, which is used by the console.
@@ -789,17 +840,27 @@ class OpsWorksConnection(AWSQueryConnection):
             layer custom recipes.
 
         :type install_updates_on_boot: boolean
-        :param install_updates_on_boot: Whether to install operating system and
-            package updates when the instance boots. The default value is
-            `True`. To control when updates are installed, set this value to
-            `False`. You must then update your instances manually by using
-            CreateDeployment to run the `update_dependencies` stack command or
-            manually running `yum` (Amazon Linux) or `apt-get` (Ubuntu) on the
-            instances.
+        :param install_updates_on_boot:
+        Whether to install operating system and package updates when the
+            instance boots. The default value is `True`. To control when
+            updates are installed, set this value to `False`. You must then
+            update your instances manually by using CreateDeployment to run the
+            `update_dependencies` stack command or manually running `yum`
+            (Amazon Linux) or `apt-get` (Ubuntu) on the instances.
+
+
+        We strongly recommend using the default value of `True`, to ensure that
+            your instances have the latest security updates.
 
         :type use_ebs_optimized_instances: boolean
         :param use_ebs_optimized_instances: Whether to use Amazon EBS-optimized
             instances.
+
+        :type lifecycle_event_configuration: dict
+        :param lifecycle_event_configuration: A LifeCycleEventConfiguration
+            object that you can use to configure the Shutdown event to specify
+            an execution timeout and enable or disable Elastic Load Balancer
+            connection draining.
 
         """
         params = {
@@ -830,6 +891,8 @@ class OpsWorksConnection(AWSQueryConnection):
             params['InstallUpdatesOnBoot'] = install_updates_on_boot
         if use_ebs_optimized_instances is not None:
             params['UseEbsOptimizedInstances'] = use_ebs_optimized_instances
+        if lifecycle_event_configuration is not None:
+            params['LifecycleEventConfiguration'] = lifecycle_event_configuration
         return self.make_request(action='CreateLayer',
                                  body=json.dumps(params))
 
@@ -860,8 +923,8 @@ class OpsWorksConnection(AWSQueryConnection):
 
         :type vpc_id: string
         :param vpc_id: The ID of the VPC that the stack is to be launched into.
-            It must be in the specified region. All instances will be launched
-            into this VPC, and you cannot change the ID later.
+            It must be in the specified region. All instances are launched into
+            this VPC, and you cannot change the ID later.
 
         + If your account supports EC2 Classic, the default value is no VPC.
         + If your account does not support EC2 Classic, the default value is
@@ -905,9 +968,16 @@ class OpsWorksConnection(AWSQueryConnection):
             information about IAM ARNs, see `Using Identifiers`_.
 
         :type default_os: string
-        :param default_os: The stack's default operating system, which must be
-            set to `Amazon Linux` or `Ubuntu 12.04 LTS`. The default option is
-            `Amazon Linux`.
+        :param default_os: The stack's operating system, which must be set to
+            one of the following.
+
+        + Standard operating systems: an Amazon Linux version such as `Amazon
+              Linux 2014.09`, `Ubuntu 12.04 LTS`, or `Ubuntu 14.04 LTS`.
+        + Custom AMIs: `Custom`. You specify the custom AMI you want to use
+              when you create instances.
+
+
+        The default option is the current Amazon Linux version.
 
         :type hostname_theme: string
         :param hostname_theme: The stack's host name theme, with spaces are
@@ -940,12 +1010,13 @@ class OpsWorksConnection(AWSQueryConnection):
             information, see the `VpcId` parameter description.
 
         :type default_subnet_id: string
-        :param default_subnet_id: The stack's default subnet ID. All instances
-            will be launched into this subnet unless you specify otherwise when
-            you create the instance. If you also specify a value for
-            `DefaultAvailabilityZone`, the subnet must be in that zone. For
-            information on default values and when this parameter is required,
-            see the `VpcId` parameter description.
+        :param default_subnet_id: The stack's default VPC subnet ID. This
+            parameter is required if you specify a value for the `VpcId`
+            parameter. All instances are launched into this subnet unless you
+            specify otherwise when you create the instance. If you also specify
+            a value for `DefaultAvailabilityZone`, the subnet must be in that
+            zone. For information on default values and when this parameter is
+            required, see the `VpcId` parameter description.
 
         :type custom_json: string
         :param custom_json: A string that contains user-defined, custom JSON.
@@ -1111,9 +1182,11 @@ class OpsWorksConnection(AWSQueryConnection):
     def delete_instance(self, instance_id, delete_elastic_ip=None,
                         delete_volumes=None):
         """
-        Deletes a specified instance. You must stop an instance before
-        you can delete it. For more information, see `Deleting
-        Instances`_.
+        Deletes a specified instance, which terminates the associated
+        Amazon EC2 instance. You must stop an instance before you can
+        delete it.
+
+        For more information, see `Deleting Instances`_.
 
         **Required Permissions**: To use this action, an IAM user must
         have a Manage permissions level for the stack, or an attached
@@ -1144,8 +1217,8 @@ class OpsWorksConnection(AWSQueryConnection):
     def delete_layer(self, layer_id):
         """
         Deletes a specified layer. You must first stop and then delete
-        all associated instances. For more information, see `How to
-        Delete a Layer`_.
+        all associated instances or unassign registered instances. For
+        more information, see `How to Delete a Layer`_.
 
         **Required Permissions**: To use this action, an IAM user must
         have a Manage permissions level for the stack, or an attached
@@ -1164,8 +1237,8 @@ class OpsWorksConnection(AWSQueryConnection):
     def delete_stack(self, stack_id):
         """
         Deletes a specified stack. You must first delete all
-        instances, layers, and apps. For more information, see `Shut
-        Down a Stack`_.
+        instances, layers, and apps or deregister registered
+        instances. For more information, see `Shut Down a Stack`_.
 
         **Required Permissions**: To use this action, an IAM user must
         have a Manage permissions level for the stack, or an attached
@@ -1218,9 +1291,36 @@ class OpsWorksConnection(AWSQueryConnection):
         return self.make_request(action='DeregisterElasticIp',
                                  body=json.dumps(params))
 
+    def deregister_instance(self, instance_id):
+        """
+        Deregister a registered Amazon EC2 or on-premises instance.
+        This action removes the instance from the stack and returns it
+        to your control. This action can not be used with instances
+        that were created with AWS OpsWorks.
+
+        **Required Permissions**: To use this action, an IAM user must
+        have a Manage permissions level for the stack or an attached
+        policy that explicitly grants permissions. For more
+        information on user permissions, see `Managing User
+        Permissions`_.
+
+        :type instance_id: string
+        :param instance_id: The instance ID.
+
+        """
+        params = {'InstanceId': instance_id, }
+        return self.make_request(action='DeregisterInstance',
+                                 body=json.dumps(params))
+
     def deregister_rds_db_instance(self, rds_db_instance_arn):
         """
         Deregisters an Amazon RDS instance.
+
+        **Required Permissions**: To use this action, an IAM user must
+        have a Manage permissions level for the stack, or an attached
+        policy that explicitly grants permissions. For more
+        information on user permissions, see `Managing User
+        Permissions`_.
 
         :type rds_db_instance_arn: string
         :param rds_db_instance_arn: The Amazon RDS instance's ARN.
@@ -1254,7 +1354,9 @@ class OpsWorksConnection(AWSQueryConnection):
         """
         Requests a description of a specified set of apps.
 
+
         You must specify at least one of the parameters.
+
 
         **Required Permissions**: To use this action, an IAM user must
         have a Show, Deploy, or Manage permissions level for the
@@ -1286,7 +1388,9 @@ class OpsWorksConnection(AWSQueryConnection):
         """
         Describes the results of specified commands.
 
+
         You must specify at least one of the parameters.
+
 
         **Required Permissions**: To use this action, an IAM user must
         have a Show, Deploy, or Manage permissions level for the
@@ -1326,7 +1430,9 @@ class OpsWorksConnection(AWSQueryConnection):
         """
         Requests a description of a specified set of deployments.
 
+
         You must specify at least one of the parameters.
+
 
         **Required Permissions**: To use this action, an IAM user must
         have a Show, Deploy, or Manage permissions level for the
@@ -1365,7 +1471,9 @@ class OpsWorksConnection(AWSQueryConnection):
         """
         Describes `Elastic IP addresses`_.
 
+
         You must specify at least one of the parameters.
+
 
         **Required Permissions**: To use this action, an IAM user must
         have a Show, Deploy, or Manage permissions level for the
@@ -1404,7 +1512,9 @@ class OpsWorksConnection(AWSQueryConnection):
         """
         Describes a stack's Elastic Load Balancing instances.
 
+
         You must specify at least one of the parameters.
+
 
         **Required Permissions**: To use this action, an IAM user must
         have a Show, Deploy, or Manage permissions level for the
@@ -1434,7 +1544,9 @@ class OpsWorksConnection(AWSQueryConnection):
         """
         Requests a description of a set of instances.
 
+
         You must specify at least one of the parameters.
+
 
         **Required Permissions**: To use this action, an IAM user must
         have a Show, Deploy, or Manage permissions level for the
@@ -1474,7 +1586,9 @@ class OpsWorksConnection(AWSQueryConnection):
         Requests a description of one or more layers in a specified
         stack.
 
+
         You must specify at least one of the parameters.
+
 
         **Required Permissions**: To use this action, an IAM user must
         have a Show, Deploy, or Manage permissions level for the
@@ -1504,7 +1618,9 @@ class OpsWorksConnection(AWSQueryConnection):
         Describes load-based auto scaling configurations for specified
         layers.
 
+
         You must specify at least one of the parameters.
+
 
         **Required Permissions**: To use this action, an IAM user must
         have a Show, Deploy, or Manage permissions level for the
@@ -1539,8 +1655,6 @@ class OpsWorksConnection(AWSQueryConnection):
         """
         Describes the permissions for a specified stack.
 
-        You must specify at least one of the parameters.
-
         **Required Permissions**: To use this action, an IAM user must
         have a Manage permissions level for the stack, or an attached
         policy that explicitly grants permissions. For more
@@ -1563,11 +1677,14 @@ class OpsWorksConnection(AWSQueryConnection):
         return self.make_request(action='DescribePermissions',
                                  body=json.dumps(params))
 
-    def describe_raid_arrays(self, instance_id=None, raid_array_ids=None):
+    def describe_raid_arrays(self, instance_id=None, stack_id=None,
+                             raid_array_ids=None):
         """
         Describe an instance's RAID arrays.
 
+
         You must specify at least one of the parameters.
+
 
         **Required Permissions**: To use this action, an IAM user must
         have a Show, Deploy, or Manage permissions level for the
@@ -1580,6 +1697,9 @@ class OpsWorksConnection(AWSQueryConnection):
             `DescribeRaidArrays` returns descriptions of the RAID arrays
             associated with the specified instance.
 
+        :type stack_id: string
+        :param stack_id: The stack ID.
+
         :type raid_array_ids: list
         :param raid_array_ids: An array of RAID array IDs. If you use this
             parameter, `DescribeRaidArrays` returns descriptions of the
@@ -1590,6 +1710,8 @@ class OpsWorksConnection(AWSQueryConnection):
         params = {}
         if instance_id is not None:
             params['InstanceId'] = instance_id
+        if stack_id is not None:
+            params['StackId'] = stack_id
         if raid_array_ids is not None:
             params['RaidArrayIds'] = raid_array_ids
         return self.make_request(action='DescribeRaidArrays',
@@ -1598,6 +1720,12 @@ class OpsWorksConnection(AWSQueryConnection):
     def describe_rds_db_instances(self, stack_id, rds_db_instance_arns=None):
         """
         Describes Amazon RDS instances.
+
+        **Required Permissions**: To use this action, an IAM user must
+        have a Show, Deploy, or Manage permissions level for the
+        stack, or an attached policy that explicitly grants
+        permissions. For more information on user permissions, see
+        `Managing User Permissions`_.
 
         :type stack_id: string
         :param stack_id: The stack ID that the instances are registered with.
@@ -1653,6 +1781,24 @@ class OpsWorksConnection(AWSQueryConnection):
         return self.make_request(action='DescribeServiceErrors',
                                  body=json.dumps(params))
 
+    def describe_stack_provisioning_parameters(self, stack_id):
+        """
+        Requests a description of a stack's provisioning parameters.
+
+        **Required Permissions**: To use this action, an IAM user must
+        have a Show, Deploy, or Manage permissions level for the stack
+        or an attached policy that explicitly grants permissions. For
+        more information on user permissions, see `Managing User
+        Permissions`_.
+
+        :type stack_id: string
+        :param stack_id: The stack ID
+
+        """
+        params = {'StackId': stack_id, }
+        return self.make_request(action='DescribeStackProvisioningParameters',
+                                 body=json.dumps(params))
+
     def describe_stack_summary(self, stack_id):
         """
         Describes the number of layers and apps in a specified stack,
@@ -1700,6 +1846,10 @@ class OpsWorksConnection(AWSQueryConnection):
         Describes time-based auto scaling configurations for specified
         instances.
 
+
+        You must specify at least one of the parameters.
+
+
         **Required Permissions**: To use this action, an IAM user must
         have a Show, Deploy, or Manage permissions level for the
         stack, or an attached policy that explicitly grants
@@ -1739,7 +1889,9 @@ class OpsWorksConnection(AWSQueryConnection):
         """
         Describes an instance's Amazon EBS volumes.
 
+
         You must specify at least one of the parameters.
+
 
         **Required Permissions**: To use this action, an IAM user must
         have a Show, Deploy, or Manage permissions level for the
@@ -1890,10 +2042,80 @@ class OpsWorksConnection(AWSQueryConnection):
         return self.make_request(action='RegisterElasticIp',
                                  body=json.dumps(params))
 
+    def register_instance(self, stack_id, hostname=None, public_ip=None,
+                          private_ip=None, rsa_public_key=None,
+                          rsa_public_key_fingerprint=None,
+                          instance_identity=None):
+        """
+        Registers instances with a specified stack that were created
+        outside of AWS OpsWorks.
+
+        We do not recommend using this action to register instances.
+        The complete registration operation has two primary steps,
+        installing the AWS OpsWorks agent on the instance and
+        registering the instance with the stack. `RegisterInstance`
+        handles only the second step. You should instead use the AWS
+        CLI `register` command, which performs the entire registration
+        operation.
+
+        **Required Permissions**: To use this action, an IAM user must
+        have a Manage permissions level for the stack or an attached
+        policy that explicitly grants permissions. For more
+        information on user permissions, see `Managing User
+        Permissions`_.
+
+        :type stack_id: string
+        :param stack_id: The ID of the stack that the instance is to be
+            registered with.
+
+        :type hostname: string
+        :param hostname: The instance's hostname.
+
+        :type public_ip: string
+        :param public_ip: The instance's public IP address.
+
+        :type private_ip: string
+        :param private_ip: The instance's private IP address.
+
+        :type rsa_public_key: string
+        :param rsa_public_key: The instances public RSA key. This key is used
+            to encrypt communication between the instance and the service.
+
+        :type rsa_public_key_fingerprint: string
+        :param rsa_public_key_fingerprint: The instances public RSA key
+            fingerprint.
+
+        :type instance_identity: dict
+        :param instance_identity: An InstanceIdentity object that contains the
+            instance's identity.
+
+        """
+        params = {'StackId': stack_id, }
+        if hostname is not None:
+            params['Hostname'] = hostname
+        if public_ip is not None:
+            params['PublicIp'] = public_ip
+        if private_ip is not None:
+            params['PrivateIp'] = private_ip
+        if rsa_public_key is not None:
+            params['RsaPublicKey'] = rsa_public_key
+        if rsa_public_key_fingerprint is not None:
+            params['RsaPublicKeyFingerprint'] = rsa_public_key_fingerprint
+        if instance_identity is not None:
+            params['InstanceIdentity'] = instance_identity
+        return self.make_request(action='RegisterInstance',
+                                 body=json.dumps(params))
+
     def register_rds_db_instance(self, stack_id, rds_db_instance_arn,
                                  db_user, db_password):
         """
         Registers an Amazon RDS instance with a stack.
+
+        **Required Permissions**: To use this action, an IAM user must
+        have a Manage permissions level for the stack, or an attached
+        policy that explicitly grants permissions. For more
+        information on user permissions, see `Managing User
+        Permissions`_.
 
         :type stack_id: string
         :param stack_id: The stack ID.
@@ -1950,6 +2172,14 @@ class OpsWorksConnection(AWSQueryConnection):
         Specify the load-based auto scaling configuration for a
         specified layer. For more information, see `Managing Load with
         Time-based and Load-based Instances`_.
+
+
+        To use load-based auto scaling, you must create a set of load-
+        based auto scaling instances. Load-based auto scaling operates
+        only on the instances from that set, so you must ensure that
+        you have created enough instances to handle the maximum
+        anticipated load.
+
 
         **Required Permissions**: To use this action, an IAM user must
         have a Manage permissions level for the stack, or an attached
@@ -2141,6 +2371,28 @@ class OpsWorksConnection(AWSQueryConnection):
         return self.make_request(action='StopStack',
                                  body=json.dumps(params))
 
+    def unassign_instance(self, instance_id):
+        """
+        Unassigns a registered instance from all of it's layers. The
+        instance remains in the stack as an unassigned instance and
+        can be assigned to another layer, as needed. You cannot use
+        this action with instances that were created with AWS
+        OpsWorks.
+
+        **Required Permissions**: To use this action, an IAM user must
+        have a Manage permissions level for the stack or an attached
+        policy that explicitly grants permissions. For more
+        information on user permissions, see `Managing User
+        Permissions`_.
+
+        :type instance_id: string
+        :param instance_id: The instance ID.
+
+        """
+        params = {'InstanceId': instance_id, }
+        return self.make_request(action='UnassignInstance',
+                                 body=json.dumps(params))
+
     def unassign_volume(self, volume_id):
         """
         Unassigns an assigned Amazon EBS volume. The volume remains
@@ -2164,7 +2416,7 @@ class OpsWorksConnection(AWSQueryConnection):
     def update_app(self, app_id, name=None, description=None,
                    data_sources=None, type=None, app_source=None,
                    domains=None, enable_ssl=None, ssl_configuration=None,
-                   attributes=None):
+                   attributes=None, environment=None):
         """
         Updates a specified app.
 
@@ -2207,6 +2459,17 @@ class OpsWorksConnection(AWSQueryConnection):
         :param attributes: One or more user-defined key/value pairs to be added
             to the stack attributes.
 
+        :type environment: list
+        :param environment:
+        An array of `EnvironmentVariable` objects that specify environment
+            variables to be associated with the app. You can specify up to ten
+            environment variables. After you deploy the app, these variables
+            are defined on the associated app server instances.
+
+        This parameter is supported only by Chef 11.10 stacks. If you have
+            specified one or more environment variables, you cannot modify the
+            stack's Chef version.
+
         """
         params = {'AppId': app_id, }
         if name is not None:
@@ -2227,6 +2490,8 @@ class OpsWorksConnection(AWSQueryConnection):
             params['SslConfiguration'] = ssl_configuration
         if attributes is not None:
             params['Attributes'] = attributes
+        if environment is not None:
+            params['Environment'] = environment
         return self.make_request(action='UpdateApp',
                                  body=json.dumps(params))
 
@@ -2282,40 +2547,36 @@ class OpsWorksConnection(AWSQueryConnection):
             in the API Name column of the Available Instance Types table.
 
         :type auto_scaling_type: string
-        :param auto_scaling_type:
-        The instance's auto scaling type, which has three possible values:
-
-
-        + **AlwaysRunning**: A 24/7 instance, which is not affected by auto
-              scaling.
-        + **TimeBasedAutoScaling**: A time-based auto scaling instance, which
-              is started and stopped based on a specified schedule.
-        + **LoadBasedAutoScaling**: A load-based auto scaling instance, which
-              is started and stopped based on load metrics.
+        :param auto_scaling_type: For load-based or time-based instances, the
+            type.
 
         :type hostname: string
         :param hostname: The instance host name.
 
         :type os: string
-        :param os: The instance operating system, which must be set to one of
+        :param os: The instance's operating system, which must be set to one of
             the following.
 
-        + Standard operating systems: `Amazon Linux` or `Ubuntu 12.04 LTS`
+        + Standard operating systems: An Amazon Linux version such as `Amazon
+              Linux 2014.09`, `Ubuntu 12.04 LTS`, or `Ubuntu 14.04 LTS`.
         + Custom AMIs: `Custom`
 
 
-        The default option is `Amazon Linux`. If you set this parameter to
-            `Custom`, you must use the CreateInstance action's AmiId parameter
-            to specify the custom AMI that you want to use. For more
-            information on the standard operating systems, see `Operating
-            Systems`_For more information on how to use custom AMIs with
-            OpsWorks, see `Using Custom AMIs`_.
+        The default option is the current Amazon Linux version, such as `Amazon
+            Linux 2014.09`. If you set this parameter to `Custom`, you must use
+            the CreateInstance action's AmiId parameter to specify the custom
+            AMI that you want to use. For more information on the standard
+            operating systems, see `Operating Systems`_For more information on
+            how to use custom AMIs with OpsWorks, see `Using Custom AMIs`_.
 
         :type ami_id: string
-        :param ami_id: A custom AMI ID to be used to create the instance. The
-            AMI should be based on one of the standard AWS OpsWorks APIs:
-            Amazon Linux or Ubuntu 12.04 LTS. For more information, see
+        :param ami_id:
+        A custom AMI ID to be used to create the instance. The AMI should be
+            based on one of the standard AWS OpsWorks AMIs: Amazon Linux,
+            Ubuntu 12.04 LTS, or Ubuntu 14.04 LTS. For more information, see
             `Instances`_
+
+        If you specify a custom AMI, you must set `Os` to `Custom`.
 
         :type ssh_key_name: string
         :param ssh_key_name: The instance SSH key name.
@@ -2327,13 +2588,17 @@ class OpsWorksConnection(AWSQueryConnection):
             see `Instance Families and Types`_.
 
         :type install_updates_on_boot: boolean
-        :param install_updates_on_boot: Whether to install operating system and
-            package updates when the instance boots. The default value is
-            `True`. To control when updates are installed, set this value to
-            `False`. You must then update your instances manually by using
-            CreateDeployment to run the `update_dependencies` stack command or
-            manually running `yum` (Amazon Linux) or `apt-get` (Ubuntu) on the
-            instances.
+        :param install_updates_on_boot:
+        Whether to install operating system and package updates when the
+            instance boots. The default value is `True`. To control when
+            updates are installed, set this value to `False`. You must then
+            update your instances manually by using CreateDeployment to run the
+            `update_dependencies` stack command or manually running `yum`
+            (Amazon Linux) or `apt-get` (Ubuntu) on the instances.
+
+
+        We strongly recommend using the default value of `True`, to ensure that
+            your instances have the latest security updates.
 
         :type ebs_optimized: boolean
         :param ebs_optimized: Whether this is an Amazon EBS-optimized instance.
@@ -2370,7 +2635,8 @@ class OpsWorksConnection(AWSQueryConnection):
                      auto_assign_elastic_ips=None,
                      auto_assign_public_ips=None, custom_recipes=None,
                      install_updates_on_boot=None,
-                     use_ebs_optimized_instances=None):
+                     use_ebs_optimized_instances=None,
+                     lifecycle_event_configuration=None):
         """
         Updates a specified layer.
 
@@ -2433,17 +2699,24 @@ class OpsWorksConnection(AWSQueryConnection):
             layer's custom recipes.
 
         :type install_updates_on_boot: boolean
-        :param install_updates_on_boot: Whether to install operating system and
-            package updates when the instance boots. The default value is
-            `True`. To control when updates are installed, set this value to
-            `False`. You must then update your instances manually by using
-            CreateDeployment to run the `update_dependencies` stack command or
-            manually running `yum` (Amazon Linux) or `apt-get` (Ubuntu) on the
-            instances.
+        :param install_updates_on_boot:
+        Whether to install operating system and package updates when the
+            instance boots. The default value is `True`. To control when
+            updates are installed, set this value to `False`. You must then
+            update your instances manually by using CreateDeployment to run the
+            `update_dependencies` stack command or manually running `yum`
+            (Amazon Linux) or `apt-get` (Ubuntu) on the instances.
+
+
+        We strongly recommend using the default value of `True`, to ensure that
+            your instances have the latest security updates.
 
         :type use_ebs_optimized_instances: boolean
         :param use_ebs_optimized_instances: Whether to use Amazon EBS-optimized
             instances.
+
+        :type lifecycle_event_configuration: dict
+        :param lifecycle_event_configuration:
 
         """
         params = {'LayerId': layer_id, }
@@ -2473,6 +2746,8 @@ class OpsWorksConnection(AWSQueryConnection):
             params['InstallUpdatesOnBoot'] = install_updates_on_boot
         if use_ebs_optimized_instances is not None:
             params['UseEbsOptimizedInstances'] = use_ebs_optimized_instances
+        if lifecycle_event_configuration is not None:
+            params['LifecycleEventConfiguration'] = lifecycle_event_configuration
         return self.make_request(action='UpdateLayer',
                                  body=json.dumps(params))
 
@@ -2499,6 +2774,12 @@ class OpsWorksConnection(AWSQueryConnection):
                                db_password=None):
         """
         Updates an Amazon RDS instance.
+
+        **Required Permissions**: To use this action, an IAM user must
+        have a Manage permissions level for the stack, or an attached
+        policy that explicitly grants permissions. For more
+        information on user permissions, see `Managing User
+        Permissions`_.
 
         :type rds_db_instance_arn: string
         :param rds_db_instance_arn: The Amazon RDS instance's ARN.
@@ -2548,11 +2829,18 @@ class OpsWorksConnection(AWSQueryConnection):
             to the stack attributes.
 
         :type service_role_arn: string
-        :param service_role_arn: The stack AWS Identity and Access Management
-            (IAM) role, which allows AWS OpsWorks to work with AWS resources on
-            your behalf. You must set this parameter to the Amazon Resource
-            Name (ARN) for an existing IAM role. For more information about IAM
-            ARNs, see `Using Identifiers`_.
+        :param service_role_arn:
+        The stack AWS Identity and Access Management (IAM) role, which allows
+            AWS OpsWorks to work with AWS resources on your behalf. You must
+            set this parameter to the Amazon Resource Name (ARN) for an
+            existing IAM role. For more information about IAM ARNs, see `Using
+            Identifiers`_.
+
+
+        You must set this parameter to a valid service role ARN or the action
+            will fail; there is no default value. You can specify the stack's
+            current service role ARN, if you prefer, but you must do so
+            explicitly.
 
         :type default_instance_profile_arn: string
         :param default_instance_profile_arn: The ARN of an IAM profile that is
@@ -2560,9 +2848,16 @@ class OpsWorksConnection(AWSQueryConnection):
             information about IAM ARNs, see `Using Identifiers`_.
 
         :type default_os: string
-        :param default_os: The stack's default operating system, which must be
-            set to `Amazon Linux` or `Ubuntu 12.04 LTS`. The default option is
-            `Amazon Linux`.
+        :param default_os: The stack's operating system, which must be set to
+            one of the following.
+
+        + Standard operating systems: an Amazon Linux version such as `Amazon
+              Linux 2014.09`, `Ubuntu 12.04 LTS`, or `Ubuntu 14.04 LTS`.
+        + Custom AMIs: `Custom`. You specify the custom AMI you want to use
+              when you create instances.
+
+
+        The default option is the current Amazon Linux version.
 
         :type hostname_theme: string
         :param hostname_theme: The stack's new host name theme, with spaces are
@@ -2595,11 +2890,13 @@ class OpsWorksConnection(AWSQueryConnection):
             information, see CreateStack.
 
         :type default_subnet_id: string
-        :param default_subnet_id: The stack's default subnet ID. All instances
-            will be launched into this subnet unless you specify otherwise when
-            you create the instance. If you also specify a value for
-            `DefaultAvailabilityZone`, the subnet must be in that zone. For
-            more information, see CreateStack.
+        :param default_subnet_id: The stack's default VPC subnet ID. This
+            parameter is required if you specify a value for the `VpcId`
+            parameter. All instances are launched into this subnet unless you
+            specify otherwise when you create the instance. If you also specify
+            a value for `DefaultAvailabilityZone`, the subnet must be in that
+            zone. For information on default values and when this parameter is
+            required, see the `VpcId` parameter description.
 
         :type custom_json: string
         :param custom_json: A string that contains user-defined, custom JSON.
@@ -2794,3 +3091,4 @@ class OpsWorksConnection(AWSQueryConnection):
             exception_class = self._faults.get(fault_name, self.ResponseError)
             raise exception_class(response.status, response.reason,
                                   body=json_body)
+

@@ -26,7 +26,7 @@ from boto.dynamodb.schema import Schema
 from boto.dynamodb.item import Item
 from boto.dynamodb.batch import BatchList, BatchWriteList
 from boto.dynamodb.types import get_dynamodb_type, Dynamizer, \
-        LossyFloatDynamizer
+        LossyFloatDynamizer, NonBooleanDynamizer
 
 
 class TableGenerator(object):
@@ -154,7 +154,7 @@ class Layer2(object):
                              profile_name=profile_name)
         self.dynamizer = dynamizer()
 
-    def use_decimals(self):
+    def use_decimals(self, use_boolean=False):
         """
         Use the ``decimal.Decimal`` type for encoding/decoding numeric types.
 
@@ -164,7 +164,7 @@ class Layer2(object):
 
         """
         # Eventually this should be made the default dynamizer.
-        self.dynamizer = Dynamizer()
+        self.dynamizer = Dynamizer() if use_boolean else NonBooleanDynamizer()
 
     def dynamize_attribute_updates(self, pending_updates):
         """
