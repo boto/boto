@@ -137,9 +137,9 @@ class Table(object):
         to define the key structure of the table.
 
         **IMPORTANT** - You should consider the usage pattern of your table
-        up-front, as the schema & indexes can **NOT** be modified once the
-        table is created, requiring the creation of a new table & migrating
-        the data should you wish to revise it.
+        up-front, as the schema can **NOT** be modified once the table is
+        created, requiring the creation of a new table & migrating the data
+        should you wish to revise it.
 
         **IMPORTANT** - If the table already exists in DynamoDB, additional
         calls to this method will result in an error. If you just need
@@ -371,24 +371,26 @@ class Table(object):
             raw_indexes = result['Table'].get('LocalSecondaryIndexes', [])
             self.indexes = self._introspect_indexes(raw_indexes)
 
-        if not self.global_indexes:
-            # Build the global index information as well.
-            raw_global_indexes = result['Table'].get('GlobalSecondaryIndexes', [])
-            self.global_indexes = self._introspect_global_indexes(raw_global_indexes)
+        # Build the global index information as well.
+        raw_global_indexes = result['Table'].get('GlobalSecondaryIndexes', [])
+        self.global_indexes = self._introspect_global_indexes(raw_global_indexes)
 
         # This is leaky.
         return result
 
-    def update(self, throughput, global_indexes=None):
+    def update(self, throughput=None, global_indexes=None):
         """
-        Updates table attributes in DynamoDB.
+        Updates table attributes and global indexes in DynamoDB.
 
-        Currently, the only thing you can modify about a table after it has
-        been created is the throughput.
-
-        Requires a ``throughput`` parameter, which should be a
+        Optionally accepts a ``throughput`` parameter, which should be a
         dictionary. If provided, it should specify a ``read`` & ``write`` key,
         both of which should have an integer value associated with them.
+
+        Optionally accepts a ``global_indexes`` parameter, which should be a
+        dictionary. If provided, it should specify the index name, which is also
+        a dict containing a ``read`` & ``write`` key, both of which
+        should have an integer value associated with them. If you are writing
+        new code, please use ``Table.update_global_secondary_index``.
 
         Returns ``True`` on success.
 
@@ -413,13 +415,17 @@ class Table(object):
             ...     }
             ... })
             True
-
         """
-        self.throughput = throughput
-        data = {
-            'ReadCapacityUnits': int(self.throughput['read']),
-            'WriteCapacityUnits': int(self.throughput['write']),
-        }
+
+        data = None
+
+        if throughput:
+            self.throughput = throughput
+            data = {
+                'ReadCapacityUnits': int(self.throughput['read']),
+                'WriteCapacityUnits': int(self.throughput['write']),
+            }
+
         gsi_data = None
 
         if global_indexes:
@@ -436,12 +442,170 @@ class Table(object):
                     },
                 })
 
-        self.connection.update_table(
-            self.table_name,
-            provisioned_throughput=data,
-            global_secondary_index_updates=gsi_data
-        )
-        return True
+        if throughput or global_indexes:
+            self.connection.update_table(
+                self.table_name,
+                provisioned_throughput=data,
+                global_secondary_index_updates=gsi_data,
+            )
+
+            return True
+        else:
+            msg = 'You need to provide either the throughput or the ' \
+                  'global_indexes to update method'
+            boto.log.error(msg)
+
+            return False
+
+    def create_global_secondary_index(self, global_index):
+        """
+        Creates a global index in DynamoDB after the table has been created.
+
+        Requires a ``global_indexes`` parameter, which should be a
+        ``GlobalBaseIndexField`` subclass representing the desired index.
+
+        To update ``global_indexes`` information on the ``Table``, you'll need
+        to call ``Table.describe``.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # To create a global index
+            >>> users.create_global_secondary_index(
+            ...     global_index=GlobalAllIndex(
+            ...         'TheIndexNameHere', parts=[
+            ...             HashKey('requiredHashkey', data_type=STRING),
+            ...             RangeKey('optionalRangeKey', data_type=STRING)
+            ...         ],
+            ...         throughput={
+            ...             'read': 2,
+            ...             'write': 1,
+            ...         })
+            ... )
+            True
+
+        """
+
+        if global_index:
+            gsi_data = []
+            gsi_data_attr_def = []
+
+            gsi_data.append({
+                "Create": global_index.schema()
+            })
+
+            for attr_def in global_index.parts:
+                gsi_data_attr_def.append(attr_def.definition())
+
+            self.connection.update_table(
+                self.table_name,
+                global_secondary_index_updates=gsi_data,
+                attribute_definitions=gsi_data_attr_def
+            )
+
+            return True
+        else:
+            msg = 'You need to provide the global_index to ' \
+                  'create_global_secondary_index method'
+            boto.log.error(msg)
+
+            return False
+
+    def delete_global_secondary_index(self, global_index_name):
+        """
+        Deletes a global index in DynamoDB after the table has been created.
+
+        Requires a ``global_index_name`` parameter, which should be a simple
+        string of the name of the global secondary index.
+
+        To update ``global_indexes`` information on the ``Table``, you'll need
+        to call ``Table.describe``.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # To delete a global index
+            >>> users.delete_global_secondary_index('TheIndexNameHere')
+            True
+
+        """
+
+        if global_index_name:
+            gsi_data = [
+                {
+                    "Delete": {
+                        "IndexName": global_index_name
+                    }
+                }
+            ]
+
+            self.connection.update_table(
+                self.table_name,
+                global_secondary_index_updates=gsi_data,
+            )
+
+            return True
+        else:
+            msg = 'You need to provide the global index name to ' \
+                  'delete_global_secondary_index method'
+            boto.log.error(msg)
+
+            return False
+
+    def update_global_secondary_index(self, global_indexes):
+        """
+        Updates a global index(es) in DynamoDB after the table has been created.
+
+        Requires a ``global_indexes`` parameter, which should be a
+        dictionary. If provided, it should specify the index name, which is also
+        a dict containing a ``read`` & ``write`` key, both of which
+        should have an integer value associated with them.
+
+        To update ``global_indexes`` information on the ``Table``, you'll need
+        to call ``Table.describe``.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # To update a global index
+            >>> users.update_global_secondary_index(global_indexes={
+            ...     'TheIndexNameHere': {
+            ...         'read': 15,
+            ...         'write': 5,
+            ...     }
+            ... })
+            True
+
+        """
+
+        if global_indexes:
+            gsi_data = []
+
+            for gsi_name, gsi_throughput in global_indexes.items():
+                gsi_data.append({
+                    "Update": {
+                        "IndexName": gsi_name,
+                        "ProvisionedThroughput": {
+                            "ReadCapacityUnits": int(gsi_throughput['read']),
+                            "WriteCapacityUnits": int(gsi_throughput['write']),
+                        },
+                    },
+                })
+
+            self.connection.update_table(
+                self.table_name,
+                global_secondary_index_updates=gsi_data,
+            )
+            return True
+        else:
+            msg = 'You need to provide the global indexes to ' \
+                  'update_global_secondary_index method'
+            boto.log.error(msg)
+
+            return False
 
     def delete(self):
         """

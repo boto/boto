@@ -33,7 +33,7 @@ from boto.dynamodb2.fields import (HashKey, RangeKey, KeysOnlyIndex,
                                    GlobalAllIndex)
 from boto.dynamodb2.items import Item
 from boto.dynamodb2.table import Table
-from boto.dynamodb2.types import NUMBER
+from boto.dynamodb2.types import NUMBER, STRING
 
 try:
     import json
@@ -716,3 +716,106 @@ class DynamoDBv2Test(unittest.TestCase):
 
         for rs_item in rs:
             self.assertEqual(rs_item['username'], ['johndoe'])
+
+    def test_update_table_online_indexing_support(self):
+        # Create a table using gsi to test the DynamoDB online indexing support
+        # https://github.com/boto/boto/pull/2925
+        users = Table.create('online_indexing_support_users', schema=[
+            HashKey('user_id')
+        ], throughput={
+            'read': 5,
+            'write': 5
+        }, global_indexes=[
+            GlobalAllIndex('EmailGSIIndex', parts=[
+                HashKey('email')
+            ], throughput={
+                'read': 2,
+                'write': 2
+            })
+        ])
+
+        # Add this function to be called after tearDown()
+        self.addCleanup(users.delete)
+
+        # Wait for it.
+        time.sleep(60)
+
+        # Fetch fresh table desc from DynamoDB
+        users.describe()
+
+        # Assert if everything is fine so far
+        self.assertEqual(len(users.global_indexes), 1)
+        self.assertEqual(users.global_indexes[0].throughput['read'], 2)
+        self.assertEqual(users.global_indexes[0].throughput['write'], 2)
+
+        # Update a GSI throughput. it should work.
+        users.update_global_secondary_index(global_indexes={
+            'EmailGSIIndex': {
+                'read': 2,
+                'write': 1,
+            }
+        })
+
+        # Wait for it.
+        time.sleep(60)
+
+        # Fetch fresh table desc from DynamoDB
+        users.describe()
+
+        # Assert if everything is fine so far
+        self.assertEqual(len(users.global_indexes), 1)
+        self.assertEqual(users.global_indexes[0].throughput['read'], 2)
+        self.assertEqual(users.global_indexes[0].throughput['write'], 1)
+
+        # Update a GSI throughput using the old fashion way for compatibility
+        # purposes. it should work.
+        users.update(global_indexes={
+            'EmailGSIIndex': {
+                'read': 3,
+                'write': 2,
+            }
+        })
+
+        # Wait for it.
+        time.sleep(60)
+
+        # Fetch fresh table desc from DynamoDB
+        users.describe()
+
+        # Assert if everything is fine so far
+        self.assertEqual(len(users.global_indexes), 1)
+        self.assertEqual(users.global_indexes[0].throughput['read'], 3)
+        self.assertEqual(users.global_indexes[0].throughput['write'], 2)
+
+        # Delete a GSI. it should work.
+        users.delete_global_secondary_index('EmailGSIIndex')
+
+        # Wait for it.
+        time.sleep(60)
+
+        # Fetch fresh table desc from DynamoDB
+        users.describe()
+
+        # Assert if everything is fine so far
+        self.assertEqual(len(users.global_indexes), 0)
+
+        # Create a GSI. it should work.
+        users.create_global_secondary_index(
+            global_index=GlobalAllIndex(
+                'AddressGSIIndex', parts=[
+                    HashKey('address', data_type=STRING)
+                ], throughput={
+                    'read': 1,
+                    'write': 1,
+                })
+        )
+        # Wait for it. This operation usually takes much longer than the others
+        time.sleep(60*10)
+
+        # Fetch fresh table desc from DynamoDB
+        users.describe()
+
+        # Assert if everything is fine so far
+        self.assertEqual(len(users.global_indexes), 1)
+        self.assertEqual(users.global_indexes[0].throughput['read'], 1)
+        self.assertEqual(users.global_indexes[0].throughput['write'], 1)
