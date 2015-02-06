@@ -23,7 +23,7 @@
 
 try:
     import paramiko
-    from boto.manage.cmdshell import SSHClient
+    from boto.manage.cmdshell import SSHClient, sshclient_from_instance
 except ImportError:
     paramiko = None
     SSHClient = None
@@ -31,8 +31,8 @@ except ImportError:
 from tests.compat import mock, unittest
 
 
-class TestSSHTimeout(unittest.TestCase):
-    @unittest.skipIf(not paramiko, 'Paramiko missing')
+@unittest.skipIf(not paramiko, 'Paramiko missing')
+class TestSSH(unittest.TestCase):
     def test_timeout(self):
         client_tmp = paramiko.SSHClient
 
@@ -52,3 +52,28 @@ class TestSSHTimeout(unittest.TestCase):
         test2 = SSHClient(server, timeout=30)
 
         self.assertEqual(test2._ssh_client.connect.call_args[1]['timeout'], 30)
+
+    def test_client_from_instance(self):
+        client_tmp = paramiko.SSHClient
+
+        def client_mock():
+            client = client_tmp()
+            client.connect = mock.Mock(name='connect')
+            return client
+
+        paramiko.SSHClient = client_mock
+        key_file_mock = paramiko.RSAKey.from_private_key_file = mock.Mock()
+
+        instance = mock.Mock()
+        instance.id = 'i-123456'
+        instance.dns_name = 'i-123456.amazonaws.com'
+
+        client = sshclient_from_instance(instance, 'key_file',
+                                         user_name='ec2-user', ssh_pwd='foo')
+        key_file_mock.assert_called_once_with(
+            'key_file', password='foo'
+        )
+        client._ssh_client.connect.assert_called_once_with(
+            instance.dns_name, username='ec2-user',
+            pkey=key_file_mock.return_value, timeout=None
+        )
