@@ -358,11 +358,12 @@ class FPSConnection(AWSQueryConnection):
 
     @requires(['SubscriptionId'])
     @api_action()
-    def get_transactions_for_subscription(self, action, response, **kw):
+    def get_transactions_for_subscription(self, action, _, **kw):
         """
         Returns the transactions for a given subscriptionID.
         """
-        return self.get_object(action, kw, response)
+        return self.get_list(action, kw,
+                [('SubscriptionTransaction', boto.fps.response.Transaction)])
 
     @requires(['SubscriptionId'])
     @api_action()
