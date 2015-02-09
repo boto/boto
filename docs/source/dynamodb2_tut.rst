@@ -88,7 +88,7 @@ A full example::
     ...         'write': 1,
     ...     })
     ... ],
-    ... # If you need to specify custom parameters, such as credentials or region, 
+    ... # If you need to specify custom parameters, such as credentials or region,
     ... # use the following:
     ... # connection=boto.dynamodb2.connect_to_region('us-east-1')
     ... )
