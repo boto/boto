@@ -23,7 +23,7 @@ from tests.unit import AWSMockServiceTestCase
 
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
-from boto.s3.lifecycle import Rule, Lifecycle, Transition
+from boto.s3.lifecycle import Rule, Lifecycle, Transition, NoncurrentVersionTransition
 
 
 class TestS3LifeCycle(AWSMockServiceTestCase):
@@ -74,9 +74,15 @@ class TestS3LifeCycle(AWSMockServiceTestCase):
 
     def test_expiration_with_no_transition(self):
         lifecycle = Lifecycle()
-        lifecycle.add_rule('myid', 'prefix', 'Enabled', 30)
+        lifecycle.add_rule('myid', 'prefix', 'Enabled', expiration=30)
         xml = lifecycle.to_xml()
         self.assertIn('<Expiration><Days>30</Days></Expiration>', xml)
+
+    def test_noncurrent_version_expiration_with_no_transition(self):
+        lifecycle = Lifecycle()
+        lifecycle.add_rule('myid', 'prefix', 'Enabled', noncurrentVersionExpiration=30)
+        xml = lifecycle.to_xml()
+        self.assertIn('<NoncurrentVersionExpiration><NoncurrentDays>30</NoncurrentDays></NoncurrentVersionExpiration>', xml)
 
     def test_expiration_is_optional(self):
         t = Transition(days=30, storage_class='GLACIER')
@@ -87,6 +93,14 @@ class TestS3LifeCycle(AWSMockServiceTestCase):
             '<Transition><StorageClass>GLACIER</StorageClass><Days>30</Days>',
             xml)
 
+    def test_noncurrent_version_expiration_is_optional(self):
+        t = NoncurrentVersionTransition(noncurrentDays=30, storage_class='GLACIER')
+        r = Rule('myid', 'prefix', 'Enabled', noncurrentVersionExpiration=None, noncurrentVersionTransition=t)
+        xml = r.to_xml()
+        self.assertIn(
+            '<NoncurrentVersionTransition><StorageClass>GLACIER</StorageClass>'
+            '<NoncurrentDays>30</NoncurrentDays>', xml)
+
     def test_expiration_with_expiration_and_transition(self):
         t = Transition(date='2012-11-30T00:00:000Z', storage_class='GLACIER')
         r = Rule('myid', 'prefix', 'Enabled', expiration=30, transition=t)
@@ -95,3 +109,14 @@ class TestS3LifeCycle(AWSMockServiceTestCase):
             '<Transition><StorageClass>GLACIER</StorageClass>'
             '<Date>2012-11-30T00:00:000Z</Date>', xml)
         self.assertIn('<Expiration><Days>30</Days></Expiration>', xml)
+
+    def test_noncurrent_version_expiration_with_non_current_version_expiration_and_noncurrent_version_transition(self):
+        t = NoncurrentVersionTransition(noncurrentDays="10", storage_class='GLACIER')
+        r = Rule('myid', 'prefix', 'Enabled', noncurrentVersionExpiration=30, noncurrentVersionTransition=t)
+        xml = r.to_xml()
+        self.assertIn(
+            '<NoncurrentVersionTransition><StorageClass>GLACIER</StorageClass>'
+            '<NoncurrentDays>10</NoncurrentDays>', xml)
+        self.assertIn(
+            '<NoncurrentVersionExpiration><NoncurrentDays>30</NoncurrentDays>'
+            '</NoncurrentVersionExpiration>', xml)
