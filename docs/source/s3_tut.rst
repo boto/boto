@@ -401,6 +401,25 @@ those values later::
     'This is the second metadata value'
     >>>
 
+Updating Metadata of existing Key Objects
+-----------------------------------------
+In addition to user metadata, S3 allows certain HTTP headers to be set as
+metadata.  When an existing Key object is retrieved, the values of headers are
+placed in similarly-named attributes, and are not available via get_metadata.
+To retrieve these header values in dictionary form, the user_settable_metadata
+method may be used.  To retrive both these headers and the user metadata, use
+the full_metadata method.
+
+The goal of these methods is to support adding/removing specific metadata of
+existing S3 objects without having to manually recreate the metadata that
+should be preserved.  Here is an example that adds a Cache-Control while
+remaining agnostic to other metadata that may already be present::
+
+    >>> k = b.get_key('has_other_metadata_that_should_be_preserved')
+    >>> metadata = k.full_metadata()
+    >>> metadata['Cache-Control'] = 'public, max-age=86400'
+    >>> k.copy(b.name, k.name, metadata=metadata, preserve_acl=True)
+
 Setting/Getting/Deleting CORS Configuration on a Bucket
 -------------------------------------------------------
 
