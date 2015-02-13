@@ -220,7 +220,8 @@
         "us-east-1": "glacier.us-east-1.amazonaws.com",
         "us-west-1": "glacier.us-west-1.amazonaws.com",
         "us-west-2": "glacier.us-west-2.amazonaws.com",
-        "eu-central-1": "glacier.eu-central-1.amazonaws.com"
+        "eu-central-1": "glacier.eu-central-1.amazonaws.com",
+        "us-gov-west-1": "glacier.us-gov-west-1.amazonaws.com"
     },
     "iam": {
         "ap-northeast-1": "iam.amazonaws.com",
