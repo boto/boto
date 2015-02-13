@@ -111,9 +111,12 @@ def upload_files(vault_name, filenames, region, access_key=None, secret_key=None
     glacier_vault = layer2.get_vault(vault_name)
     for filename in filenames:
         if isfile(filename):
-            print('Uploading %s to %s' % (filename, vault_name))
-            glacier_vault.upload_archive(filename, description = basename(filename))
-
+            sys.stdout.write('Uploading %s to %s...' % (filename, vault_name))
+            sys.stdout.flush()
+            archive_id = glacier_vault.upload_archive(
+                filename,
+                description = basename(filename))
+            print(' done. Vault returned ArchiveID %s' % archive_id)
 
 def main():
     if len(sys.argv) < 2:
