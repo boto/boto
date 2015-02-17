@@ -229,6 +229,147 @@ class TestCreatePrivateZoneRoute53(AWSMockServiceTestCase):
         self.assertEqual(r['CreateHostedZoneResponse']['HostedZone']
                           ['VPC']['VPCRegion'], u'us-east-1')
 
+@attr(route53=True)
+class TestAssociateVPCWithHostedZoneRoute53(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestAssociateVPCWithHostedZoneRoute53, self).setUp()
+
+    def default_body(self):
+        return b"""
+<AssociateVPCWithHostedZoneResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+   <ChangeInfo>
+      <Id>/change/C1111</Id>
+      <Status>PENDING</Status>
+      <SubmittedAt>2014-02-02T10:19:29.928Z</SubmittedAt>
+   </ChangeInfo>
+</AssociateVPCWithHostedZoneResponse>
+        """
+
+    def test_associate_vpc_with_hosted_zone(self):
+        self.set_http_response(status_code=201)
+        r = self.service_connection.associate_vpc_with_hosted_zone(hosted_zone_id='Z1111',
+                                                                   vpc_id='vpc-1a2b3c4d',
+                                                                   vpc_region='us-east-1')
+
+        self.assertEqual(r['AssociateVPCWithHostedZoneResponse']['ChangeInfo']
+                          ['Id'], u'/change/C1111')
+
+    def test_associate_vpc_no_such_hosted_zone_400(self):
+        self.set_http_response(status_code=400, header=[
+            ['Code', 'NoSuchHostedZone'],
+        ])
+
+        with self.assertRaises(DNSServerError) as err:
+            self.service_connection.associate_vpc_with_hosted_zone(hosted_zone_id='Z1111',
+                                                                   vpc_id='vpc-1a2b3c4d',
+                                                                   vpc_region='us-east-1')
+            self.assertTrue('It failed.' in srt(err.exception))
+
+    def test_associate_vpc_invalid_vpc_id_400(self):
+        self.set_http_response(status_code=400, header=[
+            ['Code', 'InvalidVPCId'],
+        ])
+
+        with self.assertRaises(DNSServerError) as err:
+            self.service_connection.associate_vpc_with_hosted_zone(hosted_zone_id='Z1111',
+                                                                   vpc_id='vpc-1a2b3c4d',
+                                                                   vpc_region='us-east-1')
+            self.assertTrue('It failed.' in srt(err.exception))
+
+    def test_associate_vpc_conflicting_domain_400(self):
+        self.set_http_response(status_code=400, header=[
+            ['Code', 'ConflictingDomainExists'],
+        ])
+
+        with self.assertRaises(DNSServerError) as err:
+            self.service_connection.associate_vpc_with_hosted_zone(hosted_zone_id='Z1111',
+                                                                   vpc_id='vpc-1a2b3c4d',
+                                                                   vpc_region='us-east-1')
+            self.assertTrue('It failed.' in srt(err.exception))
+
+    def test_associate_vpc_public_zone_400(self):
+        self.set_http_response(status_code=400, header=[
+            ['Code', 'PublicZoneVPCAssociation'],
+        ])
+
+        with self.assertRaises(DNSServerError) as err:
+            self.service_connection.associate_vpc_with_hosted_zone(hosted_zone_id='Z1111',
+                                                                   vpc_id='vpc-1a2b3c4d',
+                                                                   vpc_region='us-east-1')
+            self.assertTrue('It failed.' in srt(err.exception))
+
+@attr(route53=True)
+class TestDisassociateVPCFromHostedZoneRoute53(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestDisassociateVPCFromHostedZoneRoute53, self).setUp()
+
+    def default_body(self):
+        return b"""
+<DisassociateVPCFromHostedZoneResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+   <ChangeInfo>
+      <Id>/change/C1111</Id>
+      <Status>PENDING</Status>
+      <SubmittedAt>2014-02-02T10:19:29.928Z</SubmittedAt>
+   </ChangeInfo>
+</DisassociateVPCFromHostedZoneResponse>
+        """
+
+    def test_disassociate_vpc_from_hosted_zone(self):
+        self.set_http_response(status_code=201)
+        r = self.service_connection.disassociate_vpc_from_hosted_zone("example.com.",
+                                                                      vpc_id='vpc-1a2b3c4d',
+                                                                      vpc_region='us-east-1')
+
+        self.assertEqual(r['DisassociateVPCFromHostedZoneResponse']['ChangeInfo']
+                          ['Id'], u'/change/C1111')
+
+    def test_disassociate_vpc_no_such_hosted_zone_400(self):
+        self.set_http_response(status_code=400, header=[
+            ['Code', 'NoSuchHostedZone'],
+        ])
+
+        with self.assertRaises(DNSServerError) as err:
+            self.service_connection.disassociate_vpc_from_hosted_zone(hosted_zone_id='Z1111',
+                                                                      vpc_id='vpc-1a2b3c4d',
+                                                                      vpc_region='us-east-1')
+            self.assertTrue('It failed.' in srt(err.exception))
+
+    def test_disassociate_vpc_invalid_vpc_id_400(self):
+        self.set_http_response(status_code=400, header=[
+            ['Code', 'InvalidVPCId'],
+        ])
+
+        with self.assertRaises(DNSServerError) as err:
+            self.service_connection.disassociate_vpc_from_hosted_zone(hosted_zone_id='Z1111',
+                                                                      vpc_id='vpc-1a2b3c4d',
+                                                                      vpc_region='us-east-1')
+            self.assertTrue('It failed.' in srt(err.exception))
+
+    def test_disassociate_vpc_conflicting_domain_400(self):
+        self.set_http_response(status_code=400, header=[
+            ['Code', 'ConflictingDomainExists'],
+        ])
+
+        with self.assertRaises(DNSServerError) as err:
+            self.service_connection.disassociate_vpc_from_hosted_zone(hosted_zone_id='Z1111',
+                                                                      vpc_id='vpc-1a2b3c4d',
+                                                                      vpc_region='us-east-1')
+            self.assertTrue('It failed.' in srt(err.exception))
+
+    def test_disassociate_vpc_public_zone_400(self):
+        self.set_http_response(status_code=400, header=[
+            ['Code', 'PublicZoneVPCAssociation'],
+        ])
+
+        with self.assertRaises(DNSServerError) as err:
+            self.service_connection.disassociate_vpc_from_hosted_zone(hosted_zone_id='Z1111',
+                                                                      vpc_id='vpc-1a2b3c4d',
+                                                                      vpc_region='us-east-1')
+            self.assertTrue('It failed.' in srt(err.exception))
 
 @attr(route53=True)
 class TestGetZoneRoute53(AWSMockServiceTestCase):

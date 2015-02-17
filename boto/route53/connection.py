@@ -268,6 +268,101 @@ class Route53Connection(AWSAuthConnection):
         h.parse(body)
         return e
 
+    # Private Hosted Zone VPC Association
+    POSTAssocXMLBody = """<?xml version="1.0" encoding="UTF-8"?>
+    <AssociateVPCWithHostedZoneRequest xmlns="%(xmlns)s">
+      <VPC>
+        <VPCId>%(vpc_id)s</VPCId>
+        <VPCRegion>%(vpc_region)s</VPCRegion>
+      </VPC>
+      <Comment>%(comment)s</Comment>
+    </AssociateVPCWithHostedZoneRequest>
+    """
+
+    POSTDisassocXMLBody = """<?xml version="1.0" encoding="UTF-8"?>
+    <DisassociateVPCFromHostedZoneRequest xmlns="%(xmlns)s">
+      <VPC>
+        <VPCId>%(vpc_id)s</VPCId>
+        <VPCRegion>%(vpc_region)s</VPCRegion>
+      </VPC>
+      <Comment>%(comment)s</Comment>
+    </DisassociateVPCFromHostedZoneRequest>
+    """
+    def associate_vpc_with_hosted_zone(self, hosted_zone_id=None,
+                                       vpc_id=None, vpc_region=None,
+                                       comment=''):
+        """Associates an Amazon Virtual Private with from an Amazon Route 53
+        private hosted zone.
+
+        :type hosted_zone_id: str
+        :param hosted_zone_id: The hosted zone's id
+
+        :type vpc_id: str
+        :param vpc_id: The VPC's id
+
+        :type vpc_region: str
+        :param vpc_region: The AWS region containing the VPC
+
+        """
+        params = {'vpc_id': vpc_id,
+                  'vpc_region': vpc_region,
+                  'comment': comment,
+                  'xmlns': self.XMLNameSpace}
+        xml_body = self.POSTAssocXMLBody % params
+        uri = '/%s/hostedzone/%s/associatevpc' % (self.Version, hosted_zone_id)
+        response = self.make_request('POST', uri,
+                                     {'Context-Type': 'text/xml'}, xml_body)
+
+        body = response.read()
+        boto.log.debug(body)
+        if response.status not in (200, 201):
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        else:
+            e = boto.jsonresponse.Element()
+            h = boto.jsonresponse.XmlHandler(e, None)
+            h.parse(body)
+            return e
+
+    def disassociate_vpc_from_hosted_zone(self, hosted_zone_id=None,
+                                          vpc_id=None,
+                                          vpc_region=None, comment=''):
+        """Disassociates an Amazon Virtual Private Cloud from an Amazon Route
+        53 private hosted zone.
+
+        :type hosted_zone_id: str
+        :param hosted_zone_id: The hosted zone's id
+
+        :type vpc_id: str
+        :param vpc_id: The VPC's id
+
+        :type vpc_region: str
+        :param vpc_region: The AWS region containing the VPC
+
+        """
+        params = {'vpc_id': vpc_id,
+                  'vpc_region': vpc_region,
+                  'comment': comment,
+                  'xmlns': self.XMLNameSpace}
+        xml_body = self.POSTDisassocXMLBody % params
+        uri = '/%s/hostedzone/%s/disassociatevpc' % (self.Version, hosted_zone_id)
+        response = self.make_request('POST', uri,
+                                     {'Context-Type': 'text/xml'}, xml_body)
+
+        body = response.read()
+        boto.log.debug(body)
+
+        if response.status not in (200, 201):
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        else:
+            e = boto.jsonresponse.Element()
+            h = boto.jsonresponse.XmlHandler(e, None)
+            h.parse(body)
+            return e
+
     # Health checks
 
     POSTHCXMLBody = """<CreateHealthCheckRequest xmlns="%(xmlns)s">

@@ -411,6 +411,16 @@ class Zone(object):
         """
         self.route53connection.delete_hosted_zone(self.id)
 
+    def associate_vpc(self, vpc_id, vpc_region):
+        """Associate this private zone with the specified Amazon Virtual Private Cloud.
+        """
+        self.route53connection.associate_vpc_with_hosted_zone(self.id, vpc_id, vpc_region)
+
+    def disassociate_vpc(self, vpc_id, vpc_region):
+        """Disassociate this private zone from the specified Amazon Virtual Private Cloud.
+        """
+        self.route53connection.disassociate_vpc_from_hosted_zone(self.id, vpc_id, vpc_region)
+
     def get_nameservers(self):
         """ Get the list of nameservers for this zone."""
         ns = self.find_records(self.name, 'NS')

@@ -167,30 +167,41 @@ class TestRoute53Zone(unittest.TestCase):
 
 @attr(route53=True)
 class TestRoute53PrivateZone(unittest.TestCase):
+
     @classmethod
     def setUpClass(self):
-        time_str = str(int(time.time()))
-        self.route53 = Route53Connection()
-        self.base_domain = 'boto-private-zone-test-%s.com' % time_str
+        route53 = Route53Connection()
+        self.base_domain = 'boto-private-zone-test-%s.com' % str(int(time.time()))
         self.vpc = VPCConnection()
         self.test_vpc = self.vpc.create_vpc(cidr_block='10.11.0.0/16')
         # tag the vpc to make it easily identifiable if things go spang
         self.test_vpc.add_tag("Name", self.base_domain)
-        self.zone = self.route53.get_zone(self.base_domain)
-        if self.zone is not None:
-            self.zone.delete()
 
-    def test_create_private_zone(self):
-        self.zone = self.route53.create_hosted_zone(self.base_domain,
-                                                    private_zone=True,
-                                                    vpc_id=self.test_vpc.id,
-                                                    vpc_region='us-east-1')
+        self.test_vpc_2 = self.vpc.create_vpc(cidr_block='10.12.0.0/16')
+        self.test_vpc_2.add_tag("Name", self.base_domain)
+
+        zone = route53.get_zone(self.base_domain)
+        if zone is not None:
+            zone.delete()
+        self.zone = route53.create_zone(self.base_domain,
+                                        private_zone=True,
+                                        vpc_id=self.test_vpc.id,
+                                        vpc_region='us-east-1')
+
+    def test_associate_vpc(self):
+        self.zone.associate_vpc(vpc_id=self.test_vpc_2.id,
+                                vpc_region='us-east-1')
+
+    def test_disassociate_vpc(self):
+        self.zone.disassociate_vpc(vpc_id=self.test_vpc.id,
+                                   vpc_region='us-east-1')
 
     @classmethod
     def tearDownClass(self):
         if self.zone is not None:
             self.zone.delete()
         self.test_vpc.delete()
+        self.test_vpc_2.delete()
 
 if __name__ == '__main__':
     unittest.main(verbosity=3)
