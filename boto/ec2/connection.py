@@ -126,12 +126,11 @@ class EC2Connection(AWSQueryConnection):
             filters = dict(filters)
 
         i = 1
-        for name in filters:
+        for name, value in six.iteritems(filters):
             aws_name = name
             if not aws_name.startswith('tag:'):
                 aws_name = name.replace('_', '-')
             params['Filter.%d.Name' % i] = aws_name
-            value = filters[name]
             if not isinstance(value, list):
                 value = [value]
             j = 1
