@@ -78,6 +78,7 @@ class Domain(SWFBase):
             act_args.update({
                 'aws_access_key_id': self.aws_access_key_id,
                 'aws_secret_access_key': self.aws_secret_access_key,
+                'region': self.region,
                 'domain': self.name,
             })
             act_objects.append(ActivityType(**act_args))
@@ -95,6 +96,7 @@ class Domain(SWFBase):
             wf_args.update({
                 'aws_access_key_id': self.aws_access_key_id,
                 'aws_secret_access_key': self.aws_secret_access_key,
+                'region': self.region,
                 'domain': self.name,
             })
             
@@ -127,6 +129,7 @@ class Domain(SWFBase):
             exe_args.update({
                 'aws_access_key_id': self.aws_access_key_id,
                 'aws_secret_access_key': self.aws_secret_access_key,
+                'region': self.region,
                 'domain': self.name,
             })
             
@@ -272,7 +275,8 @@ class WorkflowType(SWFBase):
         return WorkflowExecution(name=self.name, version=self.version,
                runId=run_id, domain=self.domain, workflowId=workflow_id,
                aws_access_key_id=self.aws_access_key_id,
-               aws_secret_access_key=self.aws_secret_access_key)
+               aws_secret_access_key=self.aws_secret_access_key,
+               region=self.region)
 
 class WorkflowExecution(SWFBase):
 
