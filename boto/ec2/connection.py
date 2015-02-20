@@ -131,7 +131,7 @@ class EC2Connection(AWSQueryConnection):
             if not aws_name.startswith('tag:'):
                 aws_name = name.replace('_', '-')
             params['Filter.%d.Name' % i] = aws_name
-            if not isinstance(value, list):
+            if not isinstance(value, (list, tuple)):
                 value = [value]
             j = 1
             for v in value:
