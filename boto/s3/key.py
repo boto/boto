@@ -770,7 +770,6 @@ class Key(object):
         # default to an MD5 hash_alg to hash the data on-the-fly.
         if hash_algs is None and not self.md5:
             hash_algs = {'md5': md5}
-        digesters = dict((alg, hash_algs[alg]()) for alg in hash_algs or {})
 
         def sender(http_conn, request):
             # This function is called repeatedly for temporary retries
@@ -784,6 +783,8 @@ class Key(object):
                 # avoid setting bad data.
                 raise provider.storage_data_error(
                     'Cannot retry failed request. fp does not support seeking.')
+            # likewise, the digesters should be reset for repeated calls
+            digesters = dict((alg, hash_algs[alg]()) for alg in hash_algs or {})
 
             method = request.method
             path = request.path
