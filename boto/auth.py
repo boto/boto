@@ -603,8 +603,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         Select the headers from the request that need to be included
         in the StringToSign.
         """
-        host_header_value = self.host_header(self.host, http_request)
-        headers_to_sign = {'Host': host_header_value}
+        headers_to_sign = {}
         for name, value in http_request.headers.items():
             lname = name.lower()
             # Hooray for the only difference! The main SigV4 signer only does
@@ -612,6 +611,8 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
             # signed, except for authorization itself.
             if lname not in ['authorization']:
                 headers_to_sign[name] = value
+        # Add the Host last to ensure it's correct.
+        headers_to_sign['Host'] = self.host_header(self.host, http_request)
         return headers_to_sign
 
     def determine_region_name(self, host):
