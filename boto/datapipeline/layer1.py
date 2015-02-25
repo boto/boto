@@ -113,7 +113,7 @@ class DataPipelineConnection(AWSQueryConnection):
         return self.make_request(action='ActivatePipeline',
                                  body=json.dumps(params))
 
-    def create_pipeline(self, name, unique_id, description=None):
+    def create_pipeline(self, name, unique_id, description=None, tags=None):
         """
         Creates a new empty pipeline. When this action succeeds, you
         can then use the PutPipelineDefinition action to populate the
@@ -143,10 +143,18 @@ class DataPipelineConnection(AWSQueryConnection):
         :type description: string
         :param description: The description of the new pipeline.
 
+        :type tags: list
+        :param tags: A list of tags to associate with a pipeline at creation
+            time. Tags let you control access to pipelines. For more
+            information, see Controlling User Access to Pipelines in the AWS
+            Data Pipeline Developer Guide.
+
         """
         params = {'name': name, 'uniqueId': unique_id, }
         if description is not None:
             params['description'] = description
+        if tags is not None:
+            params['tags'] = tags
         return self.make_request(action='CreatePipeline',
                                  body=json.dumps(params))
 
