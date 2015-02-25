@@ -1198,6 +1198,34 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteSubnet', params)
 
+    def modify_subnet_attribute(self, subnet_id,
+                                map_public_ip_on_launch=None, dry_run=False):
+        """
+        Modifies the specified attribute of the specified subnet.
+        You can only modify one attribute at a time.
+
+        :type subnet_id: str
+        :param subnet_id: The ID of the subnet to be modified.
+
+        :type map_public_ip_on_launch: bool
+        :param map_public_ip_on_launch: Specifies whether instances launched in
+            the subnet should be automatically assigned a public IP when
+            launched.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        """
+        params = {'SubnetId': subnet_id}
+        if map_public_ip_on_launch is not None:
+            if map_public_ip_on_launch:
+                params['MapPublicIpOnLaunch.Value'] = 'true'
+            else:
+                params['MapPublicIpOnLaunch.Value'] = 'false'
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('ModifySubnetAttribute', params)
+
     # DHCP Options
 
     def get_all_dhcp_options(self, dhcp_options_ids=None, filters=None, dry_run=False):
