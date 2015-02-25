@@ -11,7 +11,7 @@ class TestDomain(unittest.TestCase):
         self.domain = Domain(name='test-domain', description='My test domain')
         self.domain.aws_access_key_id = 'inheritable access key'
         self.domain.aws_secret_access_key = 'inheritable secret key'
-	self.domain.region = 'test-region'
+        self.domain.region = 'test-region'
 
     def test_domain_instantiation(self):
         self.assertEquals('test-domain', self.domain.name)
