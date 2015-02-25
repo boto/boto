@@ -38,6 +38,7 @@ from email.utils import formatdate
 import hmac
 import os
 import posixpath
+import re
 
 from boto.compat import urllib, encodebytes, parse_qs_safe
 from boto.auth_handler import AuthHandler
@@ -619,49 +620,36 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         return headers_to_sign
 
     def determine_region_name(self, host):
-        # S3's different format(s) of representing region/service from the
-        # rest of AWS makes this hurt too.
-        #
-        # Possible domain formats:
-        # - s3.amazonaws.com (Classic)
-        # - s3-us-west-2.amazonaws.com (Specific region)
-        # - bukkit.s3.amazonaws.com (Vhosted Classic)
-        # - bukkit.s3-ap-northeast-1.amazonaws.com (Vhosted specific region)
-        # - s3.cn-north-1.amazonaws.com.cn - (Beijing region)
-        # - bukkit.s3.cn-north-1.amazonaws.com.cn - (Vhosted Beijing region)
-        parts = self.split_host_parts(host)
-
-        if self.region_name is not None:
-            region_name = self.region_name
+        # lookup the region/endpoint map to determine the region name to
+        # use for the given host. As some endpoints also interchange
+        # s3- and s3., we translate all '-' characters to '.' for matching.
+        port = host.rfind(':')
+        if port == -1:
+            dothost = host.replace('-','.')
         else:
-            # Classic URLs - s3-us-west-2.amazonaws.com
-            if len(parts) == 3:
-                region_name = self.clean_region_name(parts[0])
-
-                # Special-case for Classic.
-                if region_name == 's3':
-                    region_name = 'us-east-1'
-            else:
-                # Iterate over the parts in reverse order.
-                for offset, part in enumerate(reversed(parts)):
-                    part = part.lower()
-
-                    # Look for the first thing starting with 's3'.
-                    # Until there's a ``.s3`` TLD, we should be OK. :P
-                    if part == 's3':
-                        # If it's by itself, the region is the previous part.
-                        region_name = parts[-offset]
-
-                        # Unless it's Vhosted classic
-                        if region_name == 'amazonaws':
-                            region_name = 'us-east-1'
-
-                        break
-                    elif part.startswith('s3-'):
-                        region_name = self.clean_region_name(part)
-                        break
-
-        return region_name
+            dothost = host[:port].replace('-','.')
+        from boto.s3 import regions
+        for ri in regions():
+            if dothost.endswith(ri.endpoint.replace('-','.')):
+                return ri.name
+        # No match using endpoints. Before asking the user to specify a
+        # custom endpoint, see if we can guess the region by grabbing it
+        # out of hostname. We handle the following with optional ports:
+        #   - s3.region.xyz
+        #   - bucket.s3.region.xyz
+        #   - s3-region.domain.xyz
+        #   - s3.region.domain.xyz
+        #   - bucket.s3-region.domain.xyz
+        #   - bucket.s3.region.domain.xyz
+        m = re.match('^(.+\.)*s3[-\.]([^\.]+)\..+', host)
+        if m and m.lastindex == 2:
+            return m.group(2)
+        msg = 'Cannot detect region name from the endpoint/host "%s" ' % host
+        msg += 'for Signature V4. You can add additional region/endpoint '
+        msg += 'mappings by creating an endpoints.json file and pointing '
+        msg += 'Boto at it using the config \'Boto\' \'endpoints_path\'. '
+        msg += 'The file format should be: {"s3":{"region":"endpoint"}}.'
+        raise BotoClientError(msg)
 
     def determine_service_name(self, host):
         # Should this signing mechanism ever be used for anything else, this

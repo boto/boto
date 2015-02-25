@@ -51,12 +51,24 @@ def regions():
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
     from boto.s3.connection import S3Connection
-    return get_regions(
+    regions = get_regions(
         's3',
         region_cls=S3RegionInfo,
         connection_cls=S3Connection
     )
 
+    # The endpoints.json file unfortunately maps region to endpoints and
+    # not the other way around so if a region has more than one endpoint
+    # which is sometimes the case for S3, it can't be represented.
+    # As we are dealing with a list of S3RegionInfo objects here, we can
+    # add back in the secondary ones here.
+    regions.append(S3RegionInfo(name='us-east-1',
+                                endpoint='s3-external-1.amazonaws.com',
+                                connection_cls=S3Connection))
+    regions.append(S3RegionInfo(name='eu-central-1',
+                                endpoint='s3-eu-central-1.amazonaws.com',
+                                connection_cls=S3Connection))
+    return regions
 
 def connect_to_region(region_name, **kw_params):
     for region in regions():
