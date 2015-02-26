@@ -827,7 +827,7 @@ class Route53DomainsConnection(AWSQueryConnection):
         Required: Yes
 
         :type nameservers: list
-        :param nameservers: A list of new name servers for the domain.
+        :param nameservers: A list of new name servers for the domain, each as a dictionary of the form {'Name': name}.
         Type: Complex
 
         Children: `Name`, `GlueIps`
