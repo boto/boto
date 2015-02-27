@@ -46,6 +46,8 @@ class ParameterGroup(dict):
             self.description = value
         elif name == 'Engine':
             self.engine = value
+        elif name == 'Parameters':
+             self[self._current_param.name] = self._current_param
         else:
             setattr(self, name, value)
 
