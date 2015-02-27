@@ -413,8 +413,9 @@ concept, this is akin to what DynamoDB does.
 
 .. warning::
 
-    Scans are consistent & run over the entire table, so relatively speaking,
-    they're more expensive than plain queries or queries against an LSI.
+    Scans are eventually consistent & run over the entire table, so
+    relatively speaking, they're more expensive than plain queries or queries
+    against an LSI.
 
 An example scan of all records in the table looks like::
 
