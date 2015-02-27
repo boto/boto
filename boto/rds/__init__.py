@@ -453,7 +453,7 @@ class RDSConnection(AWSQueryConnection):
         # Remove any params set to None
         _params = {}
         for k, v in params.items():
-           if v is not None: _params[k] = v
+            if v is not None: _params[k] = v
         params = _params
 
         return self.get_object('CreateDBInstance', params, DBInstance)
