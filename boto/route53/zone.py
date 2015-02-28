@@ -246,8 +246,7 @@ class Zone(object):
         region = None
         if identifier is not None:
             try:
-                int(identifier[1])
-                weight = identifier[1]
+                weight = int(identifier[1])
             except:
                 region = identifier[1]
 
