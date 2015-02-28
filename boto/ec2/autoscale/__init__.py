@@ -37,6 +37,8 @@ from boto.ec2.autoscale.launchconfig import LaunchConfiguration
 from boto.ec2.autoscale.group import AutoScalingGroup
 from boto.ec2.autoscale.group import ProcessType
 from boto.ec2.autoscale.activity import Activity
+from boto.ec2.autoscale.lifecycle import LifecycleHook
+from boto.ec2.autoscale.lifecycle import LifecycleHookTypes
 from boto.ec2.autoscale.policy import AdjustmentType
 from boto.ec2.autoscale.policy import MetricCollectionTypes
 from boto.ec2.autoscale.policy import ScalingPolicy
@@ -746,6 +748,204 @@ class AutoScaleConnection(AWSQueryConnection):
                   'TopicARN': topic}
         self.build_list_params(params, notification_types, 'NotificationTypes')
         return self.get_status('PutNotificationConfiguration', params)
+
+    def put_lifecycle_hook(self, autoscale_group, hook_name, default_result=None,
+                           heartbeat_timeout=None, lifecycle_transition=None,
+                           notification_metadata=None,
+                           notification_target_arn=None, role_arn=None):
+        """
+        Create or update a lifecycle hook for the specified Auto Scaling Group.
+
+        A lifecycle hook tells Auto Scaling that you want to perform an action
+        on an instance that is not actively in service; for example, either when
+        the instance launches or before the instance terminates.
+
+        :type autoscale_group: str or
+            :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param autoscale_group: The Auto Scaling group to put the lifecycle
+            hook on.
+
+        :type hook_name: str
+        :param hook_name: Name of lifecycle hook.
+
+        :type default_result: str
+        :param default_result: Defines the action the Auto Scaling group should
+            take when the lifecycle hook timeout elapses or if an unexpected
+            failure occurs. The value for this parameter can be either CONTINUE
+            or ABANDON.  The default value for this parameter is ABANDON.
+
+        :type heartbeat_timeout: int
+        :param heartbeat_timeout: Defines the amount of time, in seconds, that
+            can elapse before the lifecycle hook times out. When the lifecycle
+            hook times out, Auto Scaling performs the action defined in the
+            DefaultResult parameter. You can prevent the lifecycle hook from
+            timing out by calling RecordLifecycleActionHeartbeat. The default
+            value for this parameter is 3600 seconds (1 hour).
+
+        :type lifecycle_transition: str
+        :param lifecycle_transition: The instance state to which you want to
+            attach the lifecycle hook. This parameter is required for new
+            lifecycle hooks, but optional when updating existing hooks.
+
+        :type notification_metadata: str
+        :param notification_metadata: Contains additional information
+            that you want to include any time Auto Scaling sends a message
+            to the notification target.
+
+        :type notification_target_arn: str
+
+	:param notification_target_arn: The ARN of the notification target
+            that Auto Scaling will use to notify you when an instance is in
+            the transition state for the lifecycle hook. This ARN target can be
+            either an SQS queue or an SNS topic. This parameter is required for
+            new lifecycle hooks, but optional when updating existing hooks.
+
+        :type role_arn: str
+        :param role_arn: The ARN of the IAM role that allows the Auto Scaling
+            group to publish to the specified notification target.
+            This parameter is required for new lifecycle hooks, but
+            optional when updating existing hooks.
+        """
+        asg_name = autoscale_group
+        if isinstance(autoscale_group, AutoScalingGroup):
+            asg_name = autoscale_group.name
+
+        params = {'AutoScalingGroupName': asg_name,
+                  'LifecycleHookName': hook_name}
+
+        if default_result:
+            params['DefaultResult'] = default_result
+        if heartbeat_timeout:
+            params['HeartbeatTimeout'] = heartbeat_timeout
+        if lifecycle_transition:
+            params['LifecycleTransition'] = lifecycle_transition
+        if notification_metadata:
+            params['NotificationMetadata'] =  notification_metadata
+        if notification_target_arn:
+            params['NotificationTargetARN'] = notification_target_arn
+        if role_arn:
+            params['RoleARN'] = role_arn
+        return self.get_status('PutLifecycleHook', params)
+
+    def delete_lifecycle_hook(self, autoscale_group, hook_name):
+        """
+        Deletes the specified lifecycle hook.
+
+        If there are any outstanding lifecycle actions, they are completed
+        first (ABANDON for launching instances, CONTINUE for terminating
+        instances).
+
+        :type autoscale_group: str or
+            :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param autoscale_group: The Auto Scaling group to put the lifecycle
+            hook on.
+
+        :type hook_name: str
+        :param hook_name: Name of lifecycle hook.
+        """
+        asg_name = autoscale_group
+        if isinstance(autoscale_group, AutoScalingGroup):
+            asg_name = autoscale_group.name
+
+        params = {'AutoScalingGroupName': asg_name,
+                  'LifecycleHookName': hook_name}
+
+        return self.get_status('DeleteLifecycleHook', params)
+
+    def complete_lifecycle_action(self, autoscale_group, hook_name,
+                                  action_result, action_token):
+        """
+        Completes the lifecycle action for the associated token initiated under
+        the given lifecycle hook with the specified result.
+
+        :type autoscale_group: str or
+            :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param autoscale_group: The Auto Scaling group to put the
+            lifecycle hook on.
+
+        :type hook_name: str
+        :param hook_name: Name of lifecycle hook.
+
+        :type action_result: str
+        :param action_result: The action for the group to take. This parameter
+            can be either CONTINUE or ABANDON.
+
+        :type action_token: str
+        :param action_token: A token that uniquely identifies a specific
+            lifecycle action associated with an instance. Auto Scaling sends
+            this token to the notification target you specified when you
+            created the lifecycle hook.
+        """
+        asg_name = autoscale_group
+        if isinstance(autoscale_group, AutoScalingGroup):
+            asg_name = autoscale_group.name
+
+        params = {'AutoScalingGroupName': asg_name,
+                  'LifecycleHookName': hook_name,
+                  'LifecycleActionResult': action_result,
+                  'LifecycleActionToken': action_token}
+
+        return self.get_status('CompleteLifecycleAction', params)
+
+    def record_lifecycle_action_heartbeat(self, autoscale_group, hook_name,
+                                          action_token):
+        """
+        Records a heartbeat for the lifecycle action associated with a specific
+        token. This extends the timeout by the length of time defined by the
+        HeartbeatTimeout parameter of PutLifecycleHook.
+
+        :type autoscale_group: str or
+            :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param autoscale_group: The Auto Scaling group to put the lifecycle
+            hook on.
+
+        :type hook_name: str
+        :param hook_name: Name of lifecycle hook.
+
+        :type action_token: str
+        :param action_token: A token that uniquely identifies a specific
+            lifecycle action associated with an instance. Auto Scaling sends
+            this token to the notification target you specified when you
+            created the lifecycle hook.
+        """
+        asg_name = autoscale_group
+        if isinstance(autoscale_group, AutoScalingGroup):
+            asg_name = autoscale_group.name
+
+        params = {'AutoScalingGroupName': asg_name,
+                  'LifecycleHookName': hook_name,
+                  'LifecycleActionToken': action_token}
+
+        return self.get_status('RecordLifecycleActionHeartbeat', params)
+
+    def get_lifecycle_hook_types(self):
+        """Gets all valid types of lifecycle hooks.
+
+        These values can then be used as the lifecycle_transition arg
+        when creating and updating lifecycle hooks.
+        """
+        return self.get_object('DescribeLifecycleHookTypes',
+                               {}, LifecycleHookTypes)
+
+    def get_lifecycle_hooks(self, autoscale_group, hook_names=None):
+        """
+        Describes the lifecycle hooks for the specified Auto Scaling group.
+
+        :type autoscale_group: str or
+            :class:`boto.ec2.autoscale.group.AutoScalingGroup` object
+        :param autoscale_group: The Auto Scaling group to put the lifecycle
+            hook on.
+        """
+        asg_name = autoscale_group
+        if isinstance(autoscale_group, AutoScalingGroup):
+            asg_name = autoscale_group.name
+
+        params = {'AutoScalingGroupName': asg_name}
+        if hook_names:
+            self.build_list_params(params, hook_names, 'LifecycleHookNames')
+
+        return self.get_list('DescribeLifecycleHooks', params,
+                             [('member', LifecycleHook)])
 
     def delete_notification_configuration(self, autoscale_group, topic):
         """
