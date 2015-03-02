@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -28,10 +28,11 @@ CannedACLStrings = ['private', 'public-read',
                     'log-delivery-write']
 
 
-class Policy:
+class Policy(object):
 
     def __init__(self, parent=None):
         self.parent = parent
+        self.namespace = None
         self.acl = None
 
     def __repr__(self):
@@ -50,6 +51,9 @@ class Policy:
         return "<Policy: %s>" % ", ".join(grants)
 
     def startElement(self, name, attrs, connection):
+        if name == 'AccessControlPolicy':
+            self.namespace = attrs.get('xmlns', None)
+            return None
         if name == 'Owner':
             self.owner = User(self)
             return self.owner
@@ -68,13 +72,17 @@ class Policy:
             setattr(self, name, value)
 
     def to_xml(self):
-        s = '<AccessControlPolicy>'
+        if self.namespace is not None:
+            s = '<AccessControlPolicy xmlns="{0}">'.format(self.namespace)
+        else:
+            s = '<AccessControlPolicy>'
         s += self.owner.to_xml()
         s += self.acl.to_xml()
         s += '</AccessControlPolicy>'
         return s
 
-class ACL:
+
+class ACL(object):
 
     def __init__(self, policy=None):
         self.policy = policy
@@ -111,8 +119,9 @@ class ACL:
             s += grant.to_xml()
         s += '</AccessControlList>'
         return s
-        
-class Grant:
+
+
+class Grant(object):
 
     NameSpace = 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
 
@@ -160,5 +169,3 @@ class Grant:
         s += '<Permission>%s</Permission>' % self.permission
         s += '</Grant>'
         return s
-        
-            

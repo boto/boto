@@ -3,7 +3,7 @@ Helper class for creating decision responses.
 """
 
 
-class Layer1Decisions:
+class Layer1Decisions(object):
     """
     Use this object to build a list of decisions for a decision response.
     Each method call will add append a new decision.  Retrieve the list
@@ -167,7 +167,7 @@ class Layer1Decisions:
         if task_list is not None:
             attrs['taskList'] = {'name': task_list}
         if start_to_close_timeout is not None:
-            attrs['startToCloseTimeout'] = start_to_close_timeout
+            attrs['taskStartToCloseTimeout'] = start_to_close_timeout
         if workflow_type_version is not None:
             attrs['workflowTypeVersion'] = workflow_type_version
         self._data.append(o)

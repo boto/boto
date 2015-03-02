@@ -20,7 +20,8 @@
 # IN THE SOFTWARE.
 #
 
-from regioninfo import SQSRegionInfo
+from boto.sqs.regioninfo import SQSRegionInfo
+from boto.regioninfo import get_regions
 
 
 def regions():
@@ -30,23 +31,12 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.sqs.regioninfo.RegionInfo`
     """
-    return [SQSRegionInfo(name='us-east-1',
-                          endpoint='queue.amazonaws.com'),
-            SQSRegionInfo(name='eu-west-1',
-                          endpoint='eu-west-1.queue.amazonaws.com'),
-            SQSRegionInfo(name='us-west-1',
-                          endpoint='us-west-1.queue.amazonaws.com'),
-            SQSRegionInfo(name='us-west-2',
-                          endpoint='us-west-2.queue.amazonaws.com'),
-            SQSRegionInfo(name='sa-east-1',
-                          endpoint='sa-east-1.queue.amazonaws.com'),
-            SQSRegionInfo(name='ap-northeast-1',
-                          endpoint='ap-northeast-1.queue.amazonaws.com'),
-            SQSRegionInfo(name='ap-southeast-1',
-                          endpoint='ap-southeast-1.queue.amazonaws.com'),
-            SQSRegionInfo(name='ap-southeast-2',
-                          endpoint='ap-southeast-2.queue.amazonaws.com')
-            ]
+    from boto.sqs.connection import SQSConnection
+    return get_regions(
+        'sqs',
+        region_cls=SQSRegionInfo,
+        connection_cls=SQSConnection
+    )
 
 
 def connect_to_region(region_name, **kw_params):

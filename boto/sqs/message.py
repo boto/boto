@@ -14,7 +14,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -28,7 +28,7 @@ Message are here:
     http://docs.amazonwebservices.com/AWSSimpleQueueService/2008-01-01/SQSDeveloperGuide/Query_QuerySendMessage.html
 
 So, at it's simplest level a Message just needs to allow a developer to store bytes in it and get the bytes
-back out.  However, to allow messages to have richer semantics, the Message class must support the 
+back out.  However, to allow messages to have richer semantics, the Message class must support the
 following interfaces:
 
 The constructor for the Message class must accept a keyword parameter "queue" which is an instance of a
@@ -64,19 +64,23 @@ in the format in which it would be stored in SQS.
 """
 
 import base64
-import StringIO
-from boto.sqs.attributes import Attributes
-from boto.exception import SQSDecodeError
+
 import boto
 
-class RawMessage:
+from boto.compat import StringIO
+from boto.compat import six
+from boto.sqs.attributes import Attributes
+from boto.sqs.messageattributes import MessageAttributes
+from boto.exception import SQSDecodeError
+
+class RawMessage(object):
     """
     Base class for SQS messages.  RawMessage does not encode the message
     in any way.  Whatever you store in the body of the message is what
     will be written to SQS and whatever is returned from SQS is stored
     directly into the body of the message.
     """
-    
+
     def __init__(self, queue=None, body=''):
         self.queue = queue
         self.set_body(body)
@@ -84,6 +88,8 @@ class RawMessage:
         self.receipt_handle = None
         self.md5 = None
         self.attributes = Attributes(self)
+        self.message_attributes = MessageAttributes(self)
+        self.md5_message_attributes = None
 
     def __len__(self):
         return len(self.encode(self._body))
@@ -91,19 +97,26 @@ class RawMessage:
     def startElement(self, name, attrs, connection):
         if name == 'Attribute':
             return self.attributes
+        if name == 'MessageAttribute':
+            return self.message_attributes
         return None
 
     def endElement(self, name, value, connection):
         if name == 'Body':
-            self.set_body(self.decode(value))
+            self.set_body(value)
         elif name == 'MessageId':
             self.id = value
         elif name == 'ReceiptHandle':
             self.receipt_handle = value
-        elif name == 'MD5OfMessageBody':
+        elif name == 'MD5OfBody':
             self.md5 = value
+        elif name == 'MD5OfMessageAttributes':
+            self.md5_message_attributes = value
         else:
             setattr(self, name, value)
+
+    def endNode(self, connection):
+        self.set_body(self.decode(self.get_body()))
 
     def encode(self, value):
         """Transform body object into serialized byte array format."""
@@ -112,14 +125,14 @@ class RawMessage:
     def decode(self, value):
         """Transform seralized byte array into any object."""
         return value
- 
+
     def set_body(self, body):
         """Override the current body for this object, using decoded format."""
         self._body = body
 
     def get_body(self):
         return self._body
-    
+
     def get_body_encoded(self):
         """
         This method is really a semi-private method used by the Queue.write
@@ -137,25 +150,27 @@ class RawMessage:
             self.queue.connection.change_message_visibility(self.queue,
                                                             self.receipt_handle,
                                                             visibility_timeout)
-    
+
 class Message(RawMessage):
     """
     The default Message class used for SQS queues.  This class automatically
     encodes/decodes the message body using Base64 encoding to avoid any
     illegal characters in the message body.  See:
 
-    http://developer.amazonwebservices.com/connect/thread.jspa?messageID=49680%EC%88%90
+    https://forums.aws.amazon.com/thread.jspa?threadID=13067
 
     for details on why this is a good idea.  The encode/decode is meant to
     be transparent to the end-user.
     """
-    
+
     def encode(self, value):
-        return base64.b64encode(value)
+        if not isinstance(value, six.binary_type):
+            value = value.encode('utf-8')
+        return base64.b64encode(value).decode('utf-8')
 
     def decode(self, value):
         try:
-            value = base64.b64decode(value)
+            value = base64.b64decode(value.encode('utf-8')).decode('utf-8')
         except:
             boto.log.warning('Unable to decode message')
             return value
@@ -174,14 +189,14 @@ class MHMessage(Message):
     """
 
     def __init__(self, queue=None, body=None, xml_attrs=None):
-        if body == None or body == '':
+        if body is None or body == '':
             body = {}
-        Message.__init__(self, queue, body)
+        super(MHMessage, self).__init__(queue, body)
 
     def decode(self, value):
         try:
             msg = {}
-            fp = StringIO.StringIO(value)
+            fp = StringIO(value)
             line = fp.readline()
             while line:
                 delim = line.find(':')
@@ -198,6 +213,9 @@ class MHMessage(Message):
         for item in value.items():
             s = s + '%s: %s\n' % (item[0], item[1])
         return s
+
+    def __contains__(self, key):
+        return key in self._body
 
     def __getitem__(self, key):
         if key in self._body:
@@ -242,12 +260,12 @@ class EncodedMHMessage(MHMessage):
 
     def decode(self, value):
         try:
-            value = base64.b64decode(value)
+            value = base64.b64decode(value.encode('utf-8')).decode('utf-8')
         except:
             raise SQSDecodeError('Unable to decode message', self)
-        return MHMessage.decode(self, value)
+        return super(EncodedMHMessage, self).decode(value)
 
     def encode(self, value):
-        value = MHMessage.encode(self, value)
-        return base64.b64encode(value)
-    
+        value = super(EncodedMHMessage, self).encode(value)
+        return base64.b64encode(value.encode('utf-8')).decode('utf-8')
+

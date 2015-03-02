@@ -20,16 +20,15 @@
 # IN THE SOFTWARE.
 #
 
-from tests.unit import unittest
+from tests.integration import ServiceCertVerificationTest
+
 import boto.elastictranscoder
+from tests.compat import unittest
 
 
-class CertVerificationTest(unittest.TestCase):
-
+class ElasticTranscoderCertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
     elastictranscoder = True
-    ssl = True
+    regions = boto.elastictranscoder.regions()
 
-    def test_certs(self):
-        for region in boto.elastictranscoder.regions():
-            c = region.connect()
-            c.list_pipelines()
+    def sample_service_call(self, conn):
+        conn.list_pipelines()

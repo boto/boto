@@ -26,7 +26,11 @@ Exception classes - Subclassing allows you to check for specific errors
 """
 import base64
 import xml.sax
+
+import boto
+
 from boto import handler
+from boto.compat import json, StandardError
 from boto.resultset import ResultSet
 
 
@@ -34,9 +38,8 @@ class BotoClientError(StandardError):
     """
     General Boto Client error (error accessing AWS)
     """
-
     def __init__(self, reason, *args):
-        StandardError.__init__(self, reason, *args)
+        super(BotoClientError, self).__init__(reason, *args)
         self.reason = reason
 
     def __repr__(self):
@@ -45,9 +48,10 @@ class BotoClientError(StandardError):
     def __str__(self):
         return 'BotoClientError: %s' % self.reason
 
-class SDBPersistenceError(StandardError):
 
+class SDBPersistenceError(StandardError):
     pass
+
 
 class StoragePermissionsError(BotoClientError):
     """
@@ -55,11 +59,13 @@ class StoragePermissionsError(BotoClientError):
     """
     pass
 
+
 class S3PermissionsError(StoragePermissionsError):
     """
     Permissions error when accessing a bucket or key on S3.
     """
     pass
+
 
 class GSPermissionsError(StoragePermissionsError):
     """
@@ -67,38 +73,79 @@ class GSPermissionsError(StoragePermissionsError):
     """
     pass
 
-class BotoServerError(StandardError):
 
+class BotoServerError(StandardError):
     def __init__(self, status, reason, body=None, *args):
-        StandardError.__init__(self, status, reason, body, *args)
+        super(BotoServerError, self).__init__(status, reason, body, *args)
         self.status = status
         self.reason = reason
         self.body = body or ''
         self.request_id = None
         self.error_code = None
-        self.error_message = None
+        self._error_message = None
+        self.message = ''
         self.box_usage = None
+
+        if isinstance(self.body, bytes):
+            try:
+                self.body = self.body.decode('utf-8')
+            except UnicodeDecodeError:
+                boto.log.debug('Unable to decode body from bytes!')
 
         # Attempt to parse the error response. If body isn't present,
         # then just ignore the error response.
         if self.body:
-            try:
-                h = handler.XmlHandlerWrapper(self, self)
-                h.parseString(self.body)
-            except (TypeError, xml.sax.SAXParseException), pe:
-                # Remove unparsable message body so we don't include garbage
-                # in exception. But first, save self.body in self.error_message
-                # because occasionally we get error messages from Eucalyptus
-                # that are just text strings that we want to preserve.
-                self.error_message = self.body
-                self.body = None
+            # Check if it looks like a ``dict``.
+            if hasattr(self.body, 'items'):
+                # It's not a string, so trying to parse it will fail.
+                # But since it's data, we can work with that.
+                self.request_id = self.body.get('RequestId', None)
+
+                if 'Error' in self.body:
+                    # XML-style
+                    error = self.body.get('Error', {})
+                    self.error_code = error.get('Code', None)
+                    self.message = error.get('Message', None)
+                else:
+                    # JSON-style.
+                    self.message = self.body.get('message', None)
+            else:
+                try:
+                    h = handler.XmlHandlerWrapper(self, self)
+                    h.parseString(self.body)
+                except (TypeError, xml.sax.SAXParseException):
+                    # What if it's JSON? Let's try that.
+                    try:
+                        parsed = json.loads(self.body)
+
+                        if 'RequestId' in parsed:
+                            self.request_id = parsed['RequestId']
+                        if 'Error' in parsed:
+                            if 'Code' in parsed['Error']:
+                                self.error_code = parsed['Error']['Code']
+                            if 'Message' in parsed['Error']:
+                                self.message = parsed['Error']['Message']
+
+                    except (TypeError, ValueError):
+                        # Remove unparsable message body so we don't include garbage
+                        # in exception. But first, save self.body in self.error_message
+                        # because occasionally we get error messages from Eucalyptus
+                        # that are just text strings that we want to preserve.
+                        self.message = self.body
+                        self.body = None
 
     def __getattr__(self, name):
-        if name == 'message':
-            return self.error_message
+        if name == 'error_message':
+            return self.message
         if name == 'code':
             return self.error_code
         raise AttributeError
+
+    def __setattr__(self, name, value):
+        if name == 'error_message':
+            self.message = value
+        else:
+            super(BotoServerError, self).__setattr__(name, value)
 
     def __repr__(self):
         return '%s: %s %s\n%s' % (self.__class__.__name__,
@@ -117,7 +164,7 @@ class BotoServerError(StandardError):
         elif name == 'Code':
             self.error_code = value
         elif name == 'Message':
-            self.error_message = value
+            self.message = value
         elif name == 'BoxUsage':
             self.box_usage = value
         return None
@@ -125,11 +172,11 @@ class BotoServerError(StandardError):
     def _cleanupParsedProperties(self):
         self.request_id = None
         self.error_code = None
-        self.error_message = None
+        self.message = None
         self.box_usage = None
 
-class ConsoleOutput:
 
+class ConsoleOutput(object):
     def __init__(self, parent=None):
         self.parent = parent
         self.instance_id = None
@@ -148,19 +195,21 @@ class ConsoleOutput:
         else:
             setattr(self, name, value)
 
+
 class StorageCreateError(BotoServerError):
     """
     Error creating a bucket or key on a storage service.
     """
     def __init__(self, status, reason, body=None):
         self.bucket = None
-        BotoServerError.__init__(self, status, reason, body)
+        super(StorageCreateError, self).__init__(status, reason, body)
 
     def endElement(self, name, value, connection):
         if name == 'BucketName':
             self.bucket = value
         else:
-            return BotoServerError.endElement(self, name, value, connection)
+            return super(StorageCreateError, self).endElement(name, value, connection)
+
 
 class S3CreateError(StorageCreateError):
     """
@@ -168,11 +217,13 @@ class S3CreateError(StorageCreateError):
     """
     pass
 
+
 class GSCreateError(StorageCreateError):
     """
     Error creating a bucket or key on GS.
     """
     pass
+
 
 class StorageCopyError(BotoServerError):
     """
@@ -180,17 +231,20 @@ class StorageCopyError(BotoServerError):
     """
     pass
 
+
 class S3CopyError(StorageCopyError):
     """
     Error copying a key on S3.
     """
     pass
 
+
 class GSCopyError(StorageCopyError):
     """
     Error copying a key on GS.
     """
     pass
+
 
 class SQSError(BotoServerError):
     """
@@ -199,10 +253,10 @@ class SQSError(BotoServerError):
     def __init__(self, status, reason, body=None):
         self.detail = None
         self.type = None
-        BotoServerError.__init__(self, status, reason, body)
+        super(SQSError, self).__init__(status, reason, body)
 
     def startElement(self, name, attrs, connection):
-        return BotoServerError.startElement(self, name, attrs, connection)
+        return super(SQSError, self).startElement(name, attrs, connection)
 
     def endElement(self, name, value, connection):
         if name == 'Detail':
@@ -210,19 +264,20 @@ class SQSError(BotoServerError):
         elif name == 'Type':
             self.type = value
         else:
-            return BotoServerError.endElement(self, name, value, connection)
+            return super(SQSError, self).endElement(name, value, connection)
 
     def _cleanupParsedProperties(self):
-        BotoServerError._cleanupParsedProperties(self)
+        super(SQSError, self)._cleanupParsedProperties()
         for p in ('detail', 'type'):
             setattr(self, p, None)
+
 
 class SQSDecodeError(BotoClientError):
     """
     Error when decoding an SQS message.
     """
     def __init__(self, reason, message):
-        BotoClientError.__init__(self, reason, message)
+        super(SQSDecodeError, self).__init__(reason, message)
         self.message = message
 
     def __repr__(self):
@@ -231,27 +286,31 @@ class SQSDecodeError(BotoClientError):
     def __str__(self):
         return 'SQSDecodeError: %s' % self.reason
 
+
 class StorageResponseError(BotoServerError):
     """
     Error in response from a storage service.
     """
     def __init__(self, status, reason, body=None):
         self.resource = None
-        BotoServerError.__init__(self, status, reason, body)
+        super(StorageResponseError, self).__init__(status, reason, body)
 
     def startElement(self, name, attrs, connection):
-        return BotoServerError.startElement(self, name, attrs, connection)
+        return super(StorageResponseError, self).startElement(
+            name, attrs, connection)
 
     def endElement(self, name, value, connection):
         if name == 'Resource':
             self.resource = value
         else:
-            return BotoServerError.endElement(self, name, value, connection)
+            return super(StorageResponseError, self).endElement(
+                name, value, connection)
 
     def _cleanupParsedProperties(self):
-        BotoServerError._cleanupParsedProperties(self)
+        super(StorageResponseError, self)._cleanupParsedProperties()
         for p in ('resource'):
             setattr(self, p, None)
+
 
 class S3ResponseError(StorageResponseError):
     """
@@ -259,23 +318,24 @@ class S3ResponseError(StorageResponseError):
     """
     pass
 
+
 class GSResponseError(StorageResponseError):
     """
     Error in response from GS.
     """
     pass
 
+
 class EC2ResponseError(BotoServerError):
     """
     Error in response from EC2.
     """
-
     def __init__(self, status, reason, body=None):
         self.errors = None
         self._errorResultSet = []
-        BotoServerError.__init__(self, status, reason, body)
-        self.errors = [ (e.error_code, e.error_message) \
-                for e in self._errorResultSet ]
+        super(EC2ResponseError, self).__init__(status, reason, body)
+        self.errors = [
+            (e.error_code, e.error_message) for e in self._errorResultSet]
         if len(self.errors):
             self.error_code, self.error_message = self.errors[0]
 
@@ -290,13 +350,14 @@ class EC2ResponseError(BotoServerError):
         if name == 'RequestID':
             self.request_id = value
         else:
-            return None # don't call subclass here
+            return None  # don't call subclass here
 
     def _cleanupParsedProperties(self):
-        BotoServerError._cleanupParsedProperties(self)
+        super(EC2ResponseError, self)._cleanupParsedProperties()
         self._errorResultSet = []
         for p in ('errors'):
             setattr(self, p, None)
+
 
 class JSONResponseError(BotoServerError):
     """
@@ -336,8 +397,8 @@ class EmrResponseError(BotoServerError):
     """
     pass
 
-class _EC2Error:
 
+class _EC2Error(object):
     def __init__(self, connection=None):
         self.connection = connection
         self.error_code = None
@@ -354,11 +415,13 @@ class _EC2Error:
         else:
             return None
 
+
 class SDBResponseError(BotoServerError):
     """
     Error in responses from SDB.
     """
     pass
+
 
 class AWSConnectionError(BotoClientError):
     """
@@ -366,11 +429,13 @@ class AWSConnectionError(BotoClientError):
     """
     pass
 
+
 class StorageDataError(BotoClientError):
     """
     Error receiving data from a storage service.
     """
     pass
+
 
 class S3DataError(StorageDataError):
     """
@@ -378,36 +443,50 @@ class S3DataError(StorageDataError):
     """
     pass
 
+
 class GSDataError(StorageDataError):
     """
     Error receiving data from GS.
     """
     pass
 
+
 class InvalidUriError(Exception):
     """Exception raised when URI is invalid."""
 
     def __init__(self, message):
-        Exception.__init__(self, message)
+        super(InvalidUriError, self).__init__(message)
         self.message = message
+
 
 class InvalidAclError(Exception):
     """Exception raised when ACL XML is invalid."""
 
     def __init__(self, message):
-        Exception.__init__(self, message)
+        super(InvalidAclError, self).__init__(message)
         self.message = message
+
 
 class InvalidCorsError(Exception):
     """Exception raised when CORS XML is invalid."""
 
     def __init__(self, message):
-        Exception.__init__(self, message)
+        super(InvalidCorsError, self).__init__(message)
         self.message = message
+
 
 class NoAuthHandlerFound(Exception):
     """Is raised when no auth handlers were found ready to authenticate."""
     pass
+
+
+class InvalidLifecycleConfigError(Exception):
+    """Exception raised when GCS lifecycle configuration XML is invalid."""
+
+    def __init__(self, message):
+        super(InvalidLifecycleConfigError, self).__init__(message)
+        self.message = message
+
 
 # Enum class for resumable upload failure disposition.
 class ResumableTransferDisposition(object):
@@ -433,6 +512,7 @@ class ResumableTransferDisposition(object):
     # upload ID.
     ABORT = 'ABORT'
 
+
 class ResumableUploadException(Exception):
     """
     Exception raised for various resumable upload problems.
@@ -441,13 +521,14 @@ class ResumableUploadException(Exception):
     """
 
     def __init__(self, message, disposition):
-        Exception.__init__(self, message, disposition)
+        super(ResumableUploadException, self).__init__(message, disposition)
         self.message = message
         self.disposition = disposition
 
     def __repr__(self):
         return 'ResumableUploadException("%s", %s)' % (
             self.message, self.disposition)
+
 
 class ResumableDownloadException(Exception):
     """
@@ -457,13 +538,14 @@ class ResumableDownloadException(Exception):
     """
 
     def __init__(self, message, disposition):
-        Exception.__init__(self, message, disposition)
+        super(ResumableDownloadException, self).__init__(message, disposition)
         self.message = message
         self.disposition = disposition
 
     def __repr__(self):
         return 'ResumableDownloadException("%s", %s)' % (
             self.message, self.disposition)
+
 
 class TooManyRecordsException(Exception):
     """
@@ -472,5 +554,20 @@ class TooManyRecordsException(Exception):
     """
 
     def __init__(self, message):
-        Exception.__init__(self, message)
+        super(TooManyRecordsException, self).__init__(message)
         self.message = message
+
+
+class PleaseRetryException(Exception):
+    """
+    Indicates a request should be retried.
+    """
+    def __init__(self, message, response=None):
+        self.message = message
+        self.response = response
+
+    def __repr__(self):
+        return 'PleaseRetryException("%s", %s)' % (
+            self.message,
+            self.response
+        )

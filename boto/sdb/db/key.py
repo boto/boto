@@ -50,10 +50,10 @@ class Key(object):
         return self.id
 
     def has_id_or_name(self):
-        return self.id != None
+        return self.id is not None
 
     def parent(self):
         raise NotImplementedError("Key parents are not currently supported")
-        
+
     def __str__(self):
         return self.id_or_name()

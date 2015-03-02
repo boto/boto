@@ -27,6 +27,16 @@ If you want to install ``boto`` from source::
     cd boto
     python setup.py install
 
+.. note::
+
+    For most services, this is enough to get going. However, to support
+    everything Boto ships with, you should additionally run
+    ``pip install -r requirements.txt``.
+
+    This installs all additional, non-stdlib modules, enabling use of things
+    like ``boto.cloudsearch``, ``boto.manage`` & ``boto.mashups``, as well as
+    covering everything needed for the test suite.
+
 
 Using Virtual Environments
 --------------------------

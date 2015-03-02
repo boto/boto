@@ -60,3 +60,11 @@ boto.ec2.autoscale.scheduled
 .. automodule:: boto.ec2.autoscale.scheduled
    :members:   
    :undoc-members:
+
+
+boto.ec2.autoscale.tag
+----------------------------
+
+.. automodule:: boto.ec2.autoscale.tag
+   :members:   
+   :undoc-members:

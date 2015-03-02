@@ -15,7 +15,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -26,12 +26,12 @@ Represents an EC2 Elastic Block Store Snapshot
 from boto.ec2.ec2object import TaggedEC2Object
 from boto.ec2.zone import Zone
 
+
 class Snapshot(TaggedEC2Object):
-    
     AttrName = 'createVolumePermission'
-    
+
     def __init__(self, connection=None):
-        TaggedEC2Object.__init__(self, connection)
+        super(Snapshot, self).__init__(connection)
         self.id = None
         self.volume_id = None
         self.status = None
@@ -41,6 +41,7 @@ class Snapshot(TaggedEC2Object):
         self.owner_alias = None
         self.volume_size = None
         self.description = None
+        self.encrypted = None
 
     def __repr__(self):
         return 'Snapshot:%s' % self.id
@@ -65,6 +66,8 @@ class Snapshot(TaggedEC2Object):
                 self.volume_size = value
         elif name == 'description':
             self.description = value
+        elif name == 'encrypted':
+            self.encrypted = (value.lower() == 'true')
         else:
             setattr(self, name, value)
 
@@ -72,7 +75,7 @@ class Snapshot(TaggedEC2Object):
         self.progress = updated.progress
         self.status = updated.status
 
-    def update(self, validate=False):
+    def update(self, validate=False, dry_run=False):
         """
         Update the data associated with this snapshot by querying EC2.
 
@@ -83,39 +86,49 @@ class Snapshot(TaggedEC2Object):
                          raise a ValueError exception if no data is
                          returned from EC2.
         """
-        rs = self.connection.get_all_snapshots([self.id])
+        rs = self.connection.get_all_snapshots([self.id], dry_run=dry_run)
         if len(rs) > 0:
             self._update(rs[0])
         elif validate:
             raise ValueError('%s is not a valid Snapshot ID' % self.id)
         return self.progress
-    
-    def delete(self):
-        return self.connection.delete_snapshot(self.id)
 
-    def get_permissions(self):
-        attrs = self.connection.get_snapshot_attribute(self.id, self.AttrName)
+    def delete(self, dry_run=False):
+        return self.connection.delete_snapshot(self.id, dry_run=dry_run)
+
+    def get_permissions(self, dry_run=False):
+        attrs = self.connection.get_snapshot_attribute(
+            self.id,
+            self.AttrName,
+            dry_run=dry_run
+        )
         return attrs.attrs
 
-    def share(self, user_ids=None, groups=None):
+    def share(self, user_ids=None, groups=None, dry_run=False):
         return self.connection.modify_snapshot_attribute(self.id,
                                                          self.AttrName,
                                                          'add',
                                                          user_ids,
-                                                         groups)
+                                                         groups,
+                                                         dry_run=dry_run)
 
-    def unshare(self, user_ids=None, groups=None):
+    def unshare(self, user_ids=None, groups=None, dry_run=False):
         return self.connection.modify_snapshot_attribute(self.id,
                                                          self.AttrName,
                                                          'remove',
                                                          user_ids,
-                                                         groups)
+                                                         groups,
+                                                         dry_run=dry_run)
 
-    def reset_permissions(self):
-        return self.connection.reset_snapshot_attribute(self.id,
-                                                        self.AttrName)
+    def reset_permissions(self, dry_run=False):
+        return self.connection.reset_snapshot_attribute(
+            self.id,
+            self.AttrName,
+            dry_run=dry_run
+        )
 
-    def create_volume(self, zone, size=None, volume_type=None, iops=None):
+    def create_volume(self, zone, size=None, volume_type=None, iops=None,
+                      dry_run=False):
         """
         Create a new EBS Volume from this Snapshot
 
@@ -128,7 +141,7 @@ class Snapshot(TaggedEC2Object):
 
         :type volume_type: string
         :param volume_type: The type of the volume. (optional).  Valid
-            values are: standard | io1.
+            values are: standard | io1 | gp2.
 
         :type iops: int
         :param iops: The provisioned IOPs you want to associate with
@@ -136,11 +149,18 @@ class Snapshot(TaggedEC2Object):
         """
         if isinstance(zone, Zone):
             zone = zone.name
-        return self.connection.create_volume(size, zone, self.id, volume_type, iops)
+        return self.connection.create_volume(
+            size,
+            zone,
+            self.id,
+            volume_type,
+            iops,
+            self.encrypted,
+            dry_run=dry_run
+        )
 
 
-class SnapshotAttribute:
-
+class SnapshotAttribute(object):
     def __init__(self, parent=None):
         self.snapshot_id = None
         self.attrs = {}
@@ -165,6 +185,3 @@ class SnapshotAttribute:
             self.snapshot_id = value
         else:
             setattr(self, name, value)
-
-
-            

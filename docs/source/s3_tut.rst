@@ -53,7 +53,7 @@ later, first let's just create a bucket.  That can be accomplished like this::
         raise S3CreateError(response.status, response.reason)
     boto.exception.S3CreateError: S3Error[409]: Conflict
 
-Whoa.  What happended there?  Well, the thing you have to know about
+Whoa.  What happened there?  Well, the thing you have to know about
 buckets is that they are kind of like domain names.  It's one flat name
 space that everyone who uses S3 shares.  So, someone has already create
 a bucket called "mybucket" in S3 and that means no one else can grab that
@@ -117,7 +117,7 @@ this worked, quit out of the interpreter and start it up again.  Then::
 
     >>> import boto
     >>> c = boto.connect_s3()
-    >>> b = c.create_bucket('mybucket') # substitute your bucket name here
+    >>> b = c.get_bucket('mybucket') # substitute your bucket name here
     >>> from boto.s3.key import Key
     >>> k = Key(b)
     >>> k.key = 'foobar'
@@ -143,6 +143,79 @@ guessing.  The other thing to note is that boto does stream the content
 to and from S3 so you should be able to send and receive large files without
 any problem.
 
+When fetching a key that already exists, you have two options. If you're
+uncertain whether a key exists (or if you need the metadata set on it, you can
+call ``Bucket.get_key(key_name_here)``. However, if you're sure a key already
+exists within a bucket, you can skip the check for a key on the server.
+
+::
+
+    >>> import boto
+    >>> c = boto.connect_s3()
+    >>> b = c.get_bucket('mybucket') # substitute your bucket name here
+
+    # Will hit the API to check if it exists.
+    >>> possible_key = b.get_key('mykey') # substitute your key name here
+
+    # Won't hit the API.
+    >>> key_we_know_is_there = b.get_key('mykey', validate=False)
+
+
+Storing Large Data
+------------------
+
+At times the data you may want to store will be hundreds of megabytes or
+more in size. S3 allows you to split such files into smaller components.
+You upload each component in turn and then S3 combines them into the final
+object. While this is fairly straightforward, it requires a few extra steps
+to be taken. The example below makes use of the FileChunkIO module, so
+``pip install FileChunkIO`` if it isn't already installed.
+
+::
+
+    >>> import math, os
+    >>> import boto
+    >>> from filechunkio import FileChunkIO
+
+    # Connect to S3
+    >>> c = boto.connect_s3()
+    >>> b = c.get_bucket('mybucket')
+
+    # Get file info
+    >>> source_path = 'path/to/your/file.ext'
+    >>> source_size = os.stat(source_path).st_size
+
+    # Create a multipart upload request
+    >>> mp = b.initiate_multipart_upload(os.path.basename(source_path))
+
+    # Use a chunk size of 50 MiB (feel free to change this)
+    >>> chunk_size = 52428800
+    >>> chunk_count = int(math.ceil(source_size / chunk_size))
+
+    # Send the file parts, using FileChunkIO to create a file-like object
+    # that points to a certain byte range within the original file. We
+    # set bytes to never exceed the original file size.
+    >>> for i in range(chunk_count + 1):
+    >>>     offset = chunk_size * i
+    >>>     bytes = min(chunk_size, source_size - offset)
+    >>>     with FileChunkIO(source_path, 'r', offset=offset,
+                             bytes=bytes) as fp:
+    >>>         mp.upload_part_from_file(fp, part_num=i + 1)
+
+    # Finish the upload
+    >>> mp.complete_upload()
+
+It is also possible to upload the parts in parallel using threads. The
+``s3put`` script that ships with Boto provides an example of doing so
+using a thread pool.
+
+Note that if you forget to call either ``mp.complete_upload()`` or
+``mp.cancel_upload()`` you will be left with an incomplete upload and
+charged for the storage consumed by the uploaded parts. A call to
+``bucket.get_all_multipart_uploads()`` can help to show lost multipart
+upload parts.
+
+
 Accessing A Bucket
 ------------------
 
@@ -150,12 +223,32 @@ Once a bucket exists, you can access it by getting the bucket. For example::
 
     >>> mybucket = conn.get_bucket('mybucket') # Substitute in your bucket name
     >>> mybucket.list()
-    <listing of keys in the bucket)
+    ...listing of keys in the bucket...
 
 By default, this method tries to validate the bucket's existence. You can
 override this behavior by passing ``validate=False``.::
 
     >>> nonexistent = conn.get_bucket('i-dont-exist-at-all', validate=False)
+
+.. versionchanged:: 2.25.0
+.. warning::
+
+    If ``validate=False`` is passed, no request is made to the service (no
+    charge/communication delay). This is only safe to do if you are **sure**
+    the bucket exists.
+
+    If the default ``validate=True`` is passed, a request is made to the
+    service to ensure the bucket exists. Prior to Boto v2.25.0, this fetched
+    a list of keys (but with a max limit set to ``0``, always returning an empty
+    list) in the bucket (& included better error messages), at an
+    increased expense. As of Boto v2.25.0, this now performs a HEAD request
+    (less expensive but worse error messages).
+
+    If you were relying on parsing the error message before, you should call
+    something like::
+
+        bucket = conn.get_bucket('<bucket_name>', validate=False)
+        bucket.get_all_keys(maxkeys=0)
 
 If the bucket does not exist, a ``S3ResponseError`` will commonly be thrown. If
 you'd rather not deal with any exceptions, you can use the ``lookup`` method.::
@@ -165,6 +258,7 @@ you'd rather not deal with any exceptions, you can use the ``lookup`` method.::
     ...     print "No such bucket!"
     ...
     No such bucket!
+
 
 Deleting A Bucket
 -----------------
@@ -384,7 +478,7 @@ under ``logs/*`` to transition to Glacier 30 days after the object is created.
 We can now configure the bucket with this lifecycle policy::
 
     >>> bucket.configure_lifecycle(lifecycle)
-True
+    True
 
 You can also retrieve the current lifecycle policy for the bucket::
 

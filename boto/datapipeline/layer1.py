@@ -1,4 +1,4 @@
-# Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -30,13 +30,49 @@ from boto.datapipeline import exceptions
 
 class DataPipelineConnection(AWSQueryConnection):
     """
-    This is the AWS Data Pipeline API Reference. This guide provides
+    This is the AWS Data Pipeline API Reference . This guide provides
     descriptions and samples of the AWS Data Pipeline API.
+
+    AWS Data Pipeline is a web service that configures and manages a
+    data-driven workflow called a pipeline. AWS Data Pipeline handles
+    the details of scheduling and ensuring that data dependencies are
+    met so your application can focus on processing the data.
+
+    The AWS Data Pipeline API implements two main sets of
+    functionality. The first set of actions configure the pipeline in
+    the web service. You call these actions to create a pipeline and
+    define data sources, schedules, dependencies, and the transforms
+    to be performed on the data.
+
+    The second set of actions are used by a task runner application
+    that calls the AWS Data Pipeline API to receive the next task
+    ready for processing. The logic for performing the task, such as
+    querying the data, running data analysis, or converting the data
+    from one format to another, is contained within the task runner.
+    The task runner performs the task assigned to it by the web
+    service, reporting progress to the web service as it does so. When
+    the task is done, the task runner reports the final success or
+    failure of the task to the web service.
+
+    AWS Data Pipeline provides an open-source implementation of a task
+    runner called AWS Data Pipeline Task Runner. AWS Data Pipeline
+    Task Runner provides logic for common data management scenarios,
+    such as performing database queries and running data analysis
+    using Amazon Elastic MapReduce (Amazon EMR). You can use AWS Data
+    Pipeline Task Runner as your task runner, or you can write your
+    own task runner to provide custom data management.
+
+    The AWS Data Pipeline API uses the Signature Version 4 protocol
+    for signing requests. For more information about how to sign a
+    request with this protocol, see `Signature Version 4 Signing
+    Process`_. In the code examples in this reference, the Signature
+    Version 4 Request parameters are represented as AuthParams.
     """
     APIVersion = "2012-10-29"
     DefaultRegionName = "us-east-1"
     DefaultRegionEndpoint = "datapipeline.us-east-1.amazonaws.com"
     ServiceName = "DataPipeline"
+    TargetPrefix = "DataPipeline"
     ResponseError = JSONResponseError
 
     _faults = {
@@ -47,16 +83,14 @@ class DataPipelineConnection(AWSQueryConnection):
         "InternalServiceError": exceptions.InternalServiceError,
     }
 
-
     def __init__(self, **kwargs):
-        region = kwargs.get('region')
+        region = kwargs.pop('region', None)
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         kwargs['host'] = region.endpoint
-        AWSQueryConnection.__init__(self, **kwargs)
+        super(DataPipelineConnection, self).__init__(**kwargs)
         self.region = region
-
 
     def _required_auth_capability(self):
         return ['hmac-v4']
@@ -65,6 +99,11 @@ class DataPipelineConnection(AWSQueryConnection):
         """
         Validates a pipeline and initiates processing. If the pipeline
         does not pass validation, activation fails.
+
+        Call this action to start processing pipeline tasks of a
+        pipeline you've created using the CreatePipeline and
+        PutPipelineDefinition actions. A pipeline cannot be modified
+        after it has been successfully activated.
 
         :type pipeline_id: string
         :param pipeline_id: The identifier of the pipeline to activate.
@@ -76,8 +115,8 @@ class DataPipelineConnection(AWSQueryConnection):
 
     def create_pipeline(self, name, unique_id, description=None):
         """
-        Creates a new empty pipeline. When this action succeeds, you can
-        then use the PutPipelineDefinition action to populate the
+        Creates a new empty pipeline. When this action succeeds, you
+        can then use the PutPipelineDefinition action to populate the
         pipeline.
 
         :type name: string
@@ -113,11 +152,17 @@ class DataPipelineConnection(AWSQueryConnection):
 
     def delete_pipeline(self, pipeline_id):
         """
-        Permanently deletes a pipeline, its pipeline definition and its
-        run history. You cannot query or restore a deleted pipeline. AWS
-        Data Pipeline will attempt to cancel instances associated with
-        the pipeline that are currently being processed by task runners.
-        Deleting a pipeline cannot be undone.
+        Permanently deletes a pipeline, its pipeline definition and
+        its run history. You cannot query or restore a deleted
+        pipeline. AWS Data Pipeline will attempt to cancel instances
+        associated with the pipeline that are currently being
+        processed by task runners. Deleting a pipeline cannot be
+        undone.
+
+        To temporarily pause a pipeline instead of deleting it, call
+        SetStatus with the status set to Pause on individual
+        components. Components that are paused by SetStatus can be
+        resumed.
 
         :type pipeline_id: string
         :param pipeline_id: The identifier of the pipeline to be deleted.
@@ -134,34 +179,36 @@ class DataPipelineConnection(AWSQueryConnection):
         with the pipeline. Object definitions are composed of a set of
         fields that define the properties of the object.
 
-        :type object_ids: list
-        :param object_ids: Identifiers of the pipeline objects that contain the
-            definitions to be described. You can pass as many as 25 identifiers
-            in a single call to DescribeObjects
-
-        :type marker: string
-        :param marker: The starting point for the results to be returned. The
-            first time you call DescribeObjects, this value should be empty. As
-            long as the action returns HasMoreResults as True, you can call
-            DescribeObjects again and pass the marker value from the response
-            to retrieve the next set of results.
-
         :type pipeline_id: string
         :param pipeline_id: Identifier of the pipeline that contains the object
             definitions.
 
+        :type object_ids: list
+        :param object_ids: Identifiers of the pipeline objects that contain the
+            definitions to be described. You can pass as many as 25 identifiers
+            in a single call to DescribeObjects.
+
         :type evaluate_expressions: boolean
-        :param evaluate_expressions:
+        :param evaluate_expressions: Indicates whether any expressions in the
+            object should be evaluated when the object descriptions are
+            returned.
+
+        :type marker: string
+        :param marker: The starting point for the results to be returned. The
+            first time you call DescribeObjects, this value should be empty. As
+            long as the action returns `HasMoreResults` as `True`, you can call
+            DescribeObjects again and pass the marker value from the response
+            to retrieve the next set of results.
 
         """
         params = {
-            'objectIds': object_ids,
             'pipelineId': pipeline_id,
+            'objectIds': object_ids,
         }
-        if marker is not None:
-            params['marker'] = marker
         if evaluate_expressions is not None:
             params['evaluateExpressions'] = evaluate_expressions
+        if marker is not None:
+            params['marker'] = marker
         return self.make_request(action='DescribeObjects',
                                  body=json.dumps(params))
 
@@ -172,9 +219,12 @@ class DataPipelineConnection(AWSQueryConnection):
         identifier, its current state, and the user account that owns
         the pipeline. Using account credentials, you can retrieve
         metadata about pipelines that you or your IAM users have
-        created. If you are using an IAM user account, you can retrieve
-        metadata about only those pipelines you have read permission
-        for.
+        created. If you are using an IAM user account, you can
+        retrieve metadata about only those pipelines you have read
+        permission for.
+
+        To retrieve the full pipeline definition instead of metadata
+        about the pipeline, call the GetPipelineDefinition action.
 
         :type pipeline_ids: list
         :param pipeline_ids: Identifiers of the pipelines to describe. You can
@@ -189,24 +239,24 @@ class DataPipelineConnection(AWSQueryConnection):
 
     def evaluate_expression(self, pipeline_id, expression, object_id):
         """
-        Evaluates a string in the context of a specified object. A task
-        runner can use this action to evaluate SQL queries stored in
-        Amazon S3.
+        Evaluates a string in the context of a specified object. A
+        task runner can use this action to evaluate SQL queries stored
+        in Amazon S3.
 
         :type pipeline_id: string
         :param pipeline_id: The identifier of the pipeline.
 
-        :type expression: string
-        :param expression: The expression to evaluate.
-
         :type object_id: string
         :param object_id: The identifier of the object.
+
+        :type expression: string
+        :param expression: The expression to evaluate.
 
         """
         params = {
             'pipelineId': pipeline_id,
-            'expression': expression,
             'objectId': object_id,
+            'expression': expression,
         }
         return self.make_request(action='EvaluateExpression',
                                  body=json.dumps(params))
@@ -222,6 +272,10 @@ class DataPipelineConnection(AWSQueryConnection):
 
         :type version: string
         :param version: The version of the pipeline definition to retrieve.
+            This parameter accepts the values `latest` (default) and `active`.
+            Where `latest` indicates the last definition saved to the pipeline
+            and `active` indicates the last definition of the pipeline that was
+            activated.
 
         """
         params = {'pipelineId': pipeline_id, }
@@ -232,14 +286,14 @@ class DataPipelineConnection(AWSQueryConnection):
 
     def list_pipelines(self, marker=None):
         """
-        Returns a list of pipeline identifiers for all active pipelines.
-        Identifiers are returned only for pipelines you have permission
-        to access.
+        Returns a list of pipeline identifiers for all active
+        pipelines. Identifiers are returned only for pipelines you
+        have permission to access.
 
         :type marker: string
         :param marker: The starting point for the results to be returned. The
             first time you call ListPipelines, this value should be empty. As
-            long as the action returns HasMoreResults as True, you can call
+            long as the action returns `HasMoreResults` as `True`, you can call
             ListPipelines again and pass the marker value from the response to
             retrieve the next set of results.
 
@@ -253,32 +307,43 @@ class DataPipelineConnection(AWSQueryConnection):
     def poll_for_task(self, worker_group, hostname=None,
                       instance_identity=None):
         """
-        Task runners call this action to receive a task to perform from
-        AWS Data Pipeline. The task runner specifies which tasks it can
-        perform by setting a value for the workerGroup parameter of the
-        PollForTask call. The task returned by PollForTask may come from
-        any of the pipelines that match the workerGroup value passed in
-        by the task runner and that was launched using the IAM user
-        credentials specified by the task runner.
+        Task runners call this action to receive a task to perform
+        from AWS Data Pipeline. The task runner specifies which tasks
+        it can perform by setting a value for the workerGroup
+        parameter of the PollForTask call. The task returned by
+        PollForTask may come from any of the pipelines that match the
+        workerGroup value passed in by the task runner and that was
+        launched using the IAM user credentials specified by the task
+        runner.
+
+        If tasks are ready in the work queue, PollForTask returns a
+        response immediately. If no tasks are available in the queue,
+        PollForTask uses long-polling and holds on to a poll
+        connection for up to a 90 seconds during which time the first
+        newly scheduled task is handed to the task runner. To
+        accomodate this, set the socket timeout in your task runner to
+        90 seconds. The task runner should not call PollForTask again
+        on the same `workerGroup` until it receives a response, and
+        this may take up to 90 seconds.
 
         :type worker_group: string
         :param worker_group: Indicates the type of task the task runner is
             configured to accept and process. The worker group is set as a
             field on objects in the pipeline when they are created. You can
-            only specify a single value for workerGroup in the call to
-            PollForTask. There are no wildcard values permitted in workerGroup,
-            the string must be an exact, case-sensitive, match.
+            only specify a single value for `workerGroup` in the call to
+            PollForTask. There are no wildcard values permitted in
+            `workerGroup`, the string must be an exact, case-sensitive, match.
 
         :type hostname: string
         :param hostname: The public DNS name of the calling task runner.
 
-        :type instance_identity: structure
+        :type instance_identity: dict
         :param instance_identity: Identity information for the Amazon EC2
             instance that is hosting the task runner. You can get this value by
-            calling the URI, http://169.254.169.254/latest/meta-data/instance-
-            id, from the EC2 instance. For more information, go to Instance
-            Metadata in the Amazon Elastic Compute Cloud User Guide. Passing in
-            this value proves that your task runner is running on an EC2
+            calling the URI, `http://169.254.169.254/latest/meta-data/instance-
+            id`, from the EC2 instance. For more information, go to `Instance
+            Metadata`_ in the Amazon Elastic Compute Cloud User Guide. Passing
+            in this value proves that your task runner is running on an EC2
             instance, and ensures the proper AWS Data Pipeline service charges
             are applied to your pipeline.
 
@@ -298,17 +363,33 @@ class DataPipelineConnection(AWSQueryConnection):
         populate a new pipeline or to update an existing pipeline that
         has not yet been activated.
 
-        :type pipeline_objects: list
-        :param pipeline_objects: The objects that define the pipeline. These
-            will overwrite the existing pipeline definition.
+        PutPipelineDefinition also validates the configuration as it
+        adds it to the pipeline. Changes to the pipeline are saved
+        unless one of the following three validation errors exists in
+        the pipeline.
+
+        #. An object is missing a name or identifier field.
+        #. A string or reference field is empty.
+        #. The number of objects in the pipeline exceeds the maximum
+           allowed objects.
+
+
+
+        Pipeline object definitions are passed to the
+        PutPipelineDefinition action and returned by the
+        GetPipelineDefinition action.
 
         :type pipeline_id: string
         :param pipeline_id: The identifier of the pipeline to be configured.
 
+        :type pipeline_objects: list
+        :param pipeline_objects: The objects that define the pipeline. These
+            will overwrite the existing pipeline definition.
+
         """
         params = {
-            'pipelineObjects': pipeline_objects,
             'pipelineId': pipeline_id,
+            'pipelineObjects': pipeline_objects,
         }
         return self.make_request(action='PutPipelineDefinition',
                                  body=json.dumps(params))
@@ -319,39 +400,46 @@ class DataPipelineConnection(AWSQueryConnection):
         Queries a pipeline for the names of objects that match a
         specified set of conditions.
 
-        :type marker: string
-        :param marker: The starting point for the results to be returned. The
-            first time you call QueryObjects, this value should be empty. As
-            long as the action returns HasMoreResults as True, you can call
-            QueryObjects again and pass the marker value from the response to
-            retrieve the next set of results.
+        The objects returned by QueryObjects are paginated and then
+        filtered by the value you set for query. This means the action
+        may return an empty result set with a value set for marker. If
+        `HasMoreResults` is set to `True`, you should continue to call
+        QueryObjects, passing in the returned value for marker, until
+        `HasMoreResults` returns `False`.
 
-        :type query: structure
+        :type pipeline_id: string
+        :param pipeline_id: Identifier of the pipeline to be queried for object
+            names.
+
+        :type query: dict
         :param query: Query that defines the objects to be returned. The Query
             object can contain a maximum of ten selectors. The conditions in
             the query are limited to top-level String fields in the object.
             These filters can be applied to components, instances, and
             attempts.
 
-        :type pipeline_id: string
-        :param pipeline_id: Identifier of the pipeline to be queried for object
-            names.
+        :type sphere: string
+        :param sphere: Specifies whether the query applies to components or
+            instances. Allowable values: `COMPONENT`, `INSTANCE`, `ATTEMPT`.
+
+        :type marker: string
+        :param marker: The starting point for the results to be returned. The
+            first time you call QueryObjects, this value should be empty. As
+            long as the action returns `HasMoreResults` as `True`, you can call
+            QueryObjects again and pass the marker value from the response to
+            retrieve the next set of results.
 
         :type limit: integer
         :param limit: Specifies the maximum number of object names that
             QueryObjects will return in a single call. The default value is
             100.
 
-        :type sphere: string
-        :param sphere: Specifies whether the query applies to components or
-            instances. Allowable values: COMPONENT, INSTANCE, ATTEMPT.
-
         """
         params = {'pipelineId': pipeline_id, 'sphere': sphere, }
-        if marker is not None:
-            params['marker'] = marker
         if query is not None:
             params['query'] = query
+        if marker is not None:
+            params['marker'] = marker
         if limit is not None:
             params['limit'] = limit
         return self.make_request(action='QueryObjects',
@@ -360,20 +448,20 @@ class DataPipelineConnection(AWSQueryConnection):
     def report_task_progress(self, task_id):
         """
         Updates the AWS Data Pipeline service on the progress of the
-        calling task runner. When the task runner is assigned a task, it
-        should call ReportTaskProgress to acknowledge that it has the
-        task within 2 minutes. If the web service does not recieve this
-        acknowledgement within the 2 minute window, it will assign the
-        task in a subsequent PollForTask call. After this initial
-        acknowledgement, the task runner only needs to report progress
-        every 15 minutes to maintain its ownership of the task. You can
-        change this reporting time from 15 minutes by specifying a
-        reportProgressTimeout field in your pipeline. If a task runner
-        does not report its status after 5 minutes, AWS Data Pipeline
-        will assume that the task runner is unable to process the task
-        and will reassign the task in a subsequent response to
-        PollForTask. task runners should call ReportTaskProgress every
-        60 seconds.
+        calling task runner. When the task runner is assigned a task,
+        it should call ReportTaskProgress to acknowledge that it has
+        the task within 2 minutes. If the web service does not recieve
+        this acknowledgement within the 2 minute window, it will
+        assign the task in a subsequent PollForTask call. After this
+        initial acknowledgement, the task runner only needs to report
+        progress every 15 minutes to maintain its ownership of the
+        task. You can change this reporting time from 15 minutes by
+        specifying a `reportProgressTimeout` field in your pipeline.
+        If a task runner does not report its status after 5 minutes,
+        AWS Data Pipeline will assume that the task runner is unable
+        to process the task and will reassign the task in a subsequent
+        response to PollForTask. task runners should call
+        ReportTaskProgress every 60 seconds.
 
         :type task_id: string
         :param task_id: Identifier of the task assigned to the task runner.
@@ -388,22 +476,12 @@ class DataPipelineConnection(AWSQueryConnection):
     def report_task_runner_heartbeat(self, taskrunner_id, worker_group=None,
                                      hostname=None):
         """
-        Task runners call ReportTaskRunnerHeartbeat to indicate that
-        they are operational. In the case of AWS Data Pipeline Task
-        Runner launched on a resource managed by AWS Data Pipeline, the
-        web service can use this call to detect when the task runner
-        application has failed and restart a new instance.
-
-        :type worker_group: string
-        :param worker_group: Indicates the type of task the task runner is
-            configured to accept and process. The worker group is set as a
-            field on objects in the pipeline when they are created. You can
-            only specify a single value for workerGroup in the call to
-            ReportTaskRunnerHeartbeat. There are no wildcard values permitted
-            in workerGroup, the string must be an exact, case-sensitive, match.
-
-        :type hostname: string
-        :param hostname: The public DNS name of the calling task runner.
+        Task runners call ReportTaskRunnerHeartbeat every 15 minutes
+        to indicate that they are operational. In the case of AWS Data
+        Pipeline Task Runner launched on a resource managed by AWS
+        Data Pipeline, the web service can use this call to detect
+        when the task runner application has failed and restart a new
+        instance.
 
         :type taskrunner_id: string
         :param taskrunner_id: The identifier of the task runner. This value
@@ -412,6 +490,18 @@ class DataPipelineConnection(AWSQueryConnection):
             Pipeline, the web service provides a unique identifier when it
             launches the application. If you have written a custom task runner,
             you should assign a unique identifier for the task runner.
+
+        :type worker_group: string
+        :param worker_group: Indicates the type of task the task runner is
+            configured to accept and process. The worker group is set as a
+            field on objects in the pipeline when they are created. You can
+            only specify a single value for `workerGroup` in the call to
+            ReportTaskRunnerHeartbeat. There are no wildcard values permitted
+            in `workerGroup`, the string must be an exact, case-sensitive,
+            match.
+
+        :type hostname: string
+        :param hostname: The public DNS name of the calling task runner.
 
         """
         params = {'taskrunnerId': taskrunner_id, }
@@ -425,9 +515,12 @@ class DataPipelineConnection(AWSQueryConnection):
     def set_status(self, object_ids, status, pipeline_id):
         """
         Requests that the status of an array of physical or logical
-        pipeline objects be updated in the pipeline. This update may not
-        occur immediately, but is eventually consistent. The status that
-        can be set depends on the type of object.
+        pipeline objects be updated in the pipeline. This update may
+        not occur immediately, but is eventually consistent. The
+        status that can be set depends on the type of object.
+
+        :type pipeline_id: string
+        :param pipeline_id: Identifies the pipeline that contains the objects.
 
         :type object_ids: list
         :param object_ids: Identifies an array of objects. The corresponding
@@ -436,47 +529,28 @@ class DataPipelineConnection(AWSQueryConnection):
 
         :type status: string
         :param status: Specifies the status to be set on all the objects in
-            objectIds. For components, this can be either PAUSE or RESUME. For
-            instances, this can be either CANCEL, RERUN, or MARK\_FINISHED.
-
-        :type pipeline_id: string
-        :param pipeline_id: Identifies the pipeline that contains the objects.
+            `objectIds`. For components, this can be either `PAUSE` or
+            `RESUME`. For instances, this can be either `CANCEL`, `RERUN`, or
+            `MARK_FINISHED`.
 
         """
         params = {
+            'pipelineId': pipeline_id,
             'objectIds': object_ids,
             'status': status,
-            'pipelineId': pipeline_id,
         }
         return self.make_request(action='SetStatus',
                                  body=json.dumps(params))
 
-    def set_task_status(self, task_id, task_status, error_code=None,
+    def set_task_status(self, task_id, task_status, error_id=None,
                         error_message=None, error_stack_trace=None):
         """
-        Notifies AWS Data Pipeline that a task is completed and provides
-        information about the final status. The task runner calls this
-        action regardless of whether the task was sucessful. The task
-        runner does not need to call SetTaskStatus for tasks that are
-        canceled by the web service during a call to ReportTaskProgress.
-
-        :type error_code: integer
-        :param error_code: If an error occurred during the task, specifies a
-            numerical value that represents the error. This value is set on the
-            physical attempt object. It is used to display error information to
-            the user. The web service does not parse this value.
-
-        :type error_message: string
-        :param error_message: If an error occurred during the task, specifies a
-            text description of the error. This value is set on the physical
-            attempt object. It is used to display error information to the
-            user. The web service does not parse this value.
-
-        :type error_stack_trace: string
-        :param error_stack_trace: If an error occurred during the task,
-            specifies the stack trace associated with the error. This value is
-            set on the physical attempt object. It is used to display error
-            information to the user. The web service does not parse this value.
+        Notifies AWS Data Pipeline that a task is completed and
+        provides information about the final status. The task runner
+        calls this action regardless of whether the task was
+        sucessful. The task runner does not need to call SetTaskStatus
+        for tasks that are canceled by the web service during a call
+        to ReportTaskProgress.
 
         :type task_id: string
         :param task_id: Identifies the task assigned to the task runner. This
@@ -484,14 +558,34 @@ class DataPipelineConnection(AWSQueryConnection):
             action.
 
         :type task_status: string
-        :param task_status: If FINISHED, the task successfully completed. If
-            FAILED the task ended unsuccessfully. The FALSE value is used by
-            preconditions.
+        :param task_status: If `FINISHED`, the task successfully completed. If
+            `FAILED` the task ended unsuccessfully. The `FALSE` value is used
+            by preconditions.
+
+        :type error_id: string
+        :param error_id: If an error occurred during the task, this value
+            specifies an id value that represents the error. This value is set
+            on the physical attempt object. It is used to display error
+            information to the user. It should not start with string "Service_"
+            which is reserved by the system.
+
+        :type error_message: string
+        :param error_message: If an error occurred during the task, this value
+            specifies a text description of the error. This value is set on the
+            physical attempt object. It is used to display error information to
+            the user. The web service does not parse this value.
+
+        :type error_stack_trace: string
+        :param error_stack_trace: If an error occurred during the task, this
+            value specifies the stack trace associated with the error. This
+            value is set on the physical attempt object. It is used to display
+            error information to the user. The web service does not parse this
+            value.
 
         """
         params = {'taskId': task_id, 'taskStatus': task_status, }
-        if error_code is not None:
-            params['errorCode'] = error_code
+        if error_id is not None:
+            params['errorId'] = error_id
         if error_message is not None:
             params['errorMessage'] = error_message
         if error_stack_trace is not None:
@@ -501,28 +595,28 @@ class DataPipelineConnection(AWSQueryConnection):
 
     def validate_pipeline_definition(self, pipeline_objects, pipeline_id):
         """
-        Tests the pipeline definition with a set of validation checks to
-        ensure that it is well formed and can run without error.
-
-        :type pipeline_objects: list
-        :param pipeline_objects: A list of objects that define the pipeline
-            changes to validate against the pipeline.
+        Tests the pipeline definition with a set of validation checks
+        to ensure that it is well formed and can run without error.
 
         :type pipeline_id: string
         :param pipeline_id: Identifies the pipeline whose definition is to be
             validated.
 
+        :type pipeline_objects: list
+        :param pipeline_objects: A list of objects that define the pipeline
+            changes to validate against the pipeline.
+
         """
         params = {
-            'pipelineObjects': pipeline_objects,
             'pipelineId': pipeline_id,
+            'pipelineObjects': pipeline_objects,
         }
         return self.make_request(action='ValidatePipelineDefinition',
                                  body=json.dumps(params))
 
     def make_request(self, action, body):
         headers = {
-            'X-Amz-Target': '%s.%s' % (self.ServiceName, action),
+            'X-Amz-Target': '%s.%s' % (self.TargetPrefix, action),
             'Host': self.region.endpoint,
             'Content-Type': 'application/x-amz-json-1.1',
             'Content-Length': str(len(body)),
@@ -532,7 +626,7 @@ class DataPipelineConnection(AWSQueryConnection):
             headers=headers, data=body)
         response = self._mexe(http_request, sender=None,
                               override_num_retries=10)
-        response_body = response.read()
+        response_body = response.read().decode('utf-8')
         boto.log.debug(response_body)
         if response.status == 200:
             if response_body:
@@ -543,4 +637,3 @@ class DataPipelineConnection(AWSQueryConnection):
             exception_class = self._faults.get(fault_name, self.ResponseError)
             raise exception_class(response.status, response.reason,
                                   body=json_body)
-

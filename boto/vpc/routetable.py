@@ -29,7 +29,7 @@ from boto.resultset import ResultSet
 class RouteTable(TaggedEC2Object):
 
     def __init__(self, connection=None):
-        TaggedEC2Object.__init__(self, connection)
+        super(RouteTable, self).__init__(connection)
         self.id = None
         self.vpc_id = None
         self.routes = []
@@ -67,6 +67,8 @@ class Route(object):
         self.destination_cidr_block = None
         self.gateway_id = None
         self.instance_id = None
+        self.interface_id = None
+        self.vpc_peering_connection_id = None
         self.state = None
 
     def __repr__(self):
@@ -82,6 +84,10 @@ class Route(object):
             self.gateway_id = value
         elif name == 'instanceId':
             self.instance_id = value
+        elif name == 'networkInterfaceId':
+            self.interface_id = value
+        elif name == 'vpcPeeringConnectionId':
+            self.vpc_peering_connection_id = value
         elif name == 'state':
             self.state = value
 

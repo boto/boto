@@ -23,7 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from __future__ import with_statement
+from __future__ import print_function
 
 try:
     from setuptools import setup
@@ -36,9 +36,9 @@ import sys
 
 from boto import __version__
 
-if sys.version_info <= (2, 4):
-    error = "ERROR: boto requires Python Version 2.5 or above...exiting."
-    print >> sys.stderr, error
+if sys.version_info <= (2, 5):
+    error = "ERROR: boto requires Python Version 2.6 or above...exiting."
+    print(error, file=sys.stderr)
     sys.exit(1)
 
 def readme():
@@ -74,8 +74,18 @@ setup(name = "boto",
                   "boto.swf", "boto.mws", "boto.cloudsearch", "boto.glacier",
                   "boto.beanstalk", "boto.datapipeline", "boto.elasticache",
                   "boto.elastictranscoder", "boto.opsworks", "boto.redshift",
-                  "boto.dynamodb2", "boto.support"],
-      package_data = {"boto.cacerts": ["cacerts.txt"]},
+                  "boto.dynamodb2", "boto.support", "boto.cloudtrail",
+                  "boto.directconnect", "boto.kinesis", "boto.rds2",
+                  "boto.cloudsearch2", "boto.logs", "boto.vendored",
+                  "boto.route53.domains", "boto.cognito",
+                  "boto.cognito.identity", "boto.cognito.sync",
+                  "boto.cloudsearchdomain", "boto.kms",
+                  "boto.awslambda", "boto.codedeploy", "boto.configservice",
+                  "boto.cloudhsm", "boto.ec2containerservice"],
+      package_data = {
+          "boto.cacerts": ["cacerts.txt"],
+          "boto": ["endpoints.json"],
+      },
       license = "MIT",
       platforms = "Posix; MacOS X; Windows",
       classifiers = ["Development Status :: 5 - Production/Stable",
@@ -84,8 +94,10 @@ setup(name = "boto",
                      "Operating System :: OS Independent",
                      "Topic :: Internet",
                      "Programming Language :: Python :: 2",
-                     "Programming Language :: Python :: 2.5",
                      "Programming Language :: Python :: 2.6",
-                     "Programming Language :: Python :: 2.7"],
+                     "Programming Language :: Python :: 2.7",
+                     "Programming Language :: Python :: 3",
+                     "Programming Language :: Python :: 3.3",
+                     "Programming Language :: Python :: 3.4"],
       **extra
       )

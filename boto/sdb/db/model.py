@@ -14,16 +14,16 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.sdb.db.manager import get_manager
 from boto.sdb.db.property import Property
 from boto.sdb.db.key import Key
 from boto.sdb.db.query import Query
 import boto
+from boto.compat import filter
 
 class ModelMeta(type):
     "Metaclass for all Models"
@@ -32,6 +32,10 @@ class ModelMeta(type):
         super(ModelMeta, cls).__init__(name, bases, dict)
         # Make sure this is a subclass of Model - mainly copied from django ModelBase (thanks!)
         cls.__sub_classes__ = []
+
+        # Do a delayed import to prevent possible circular import errors.
+        from boto.sdb.db.manager import get_manager
+
         try:
             if filter(lambda b: issubclass(b, Model), bases):
                 for base in bases:
@@ -52,7 +56,7 @@ class ModelMeta(type):
             # 'Model' isn't defined yet, meaning we're looking at our own
             # Model class, defined below.
             pass
-        
+
 class Model(object):
     __metaclass__ = ModelMeta
     __consistent__ = False # Consistent is set off by default
@@ -67,13 +71,13 @@ class Model(object):
     @classmethod
     def kind(cls):
         return cls.__name__
-    
+
     @classmethod
     def _get_by_id(cls, id, manager=None):
         if not manager:
             manager = cls._manager
         return manager.get_object(cls, id)
-            
+
     @classmethod
     def get_by_id(cls, ids=None, parent=None):
         if isinstance(ids, list):
@@ -102,7 +106,7 @@ class Model(object):
     @classmethod
     def get_or_insert(key_name, **kw):
         raise NotImplementedError("get_or_insert not currently supported")
-            
+
     @classmethod
     def properties(cls, hidden=True):
         properties = []
@@ -163,7 +167,7 @@ class Model(object):
                 # so if it fails we just revert to it's default value
                 try:
                     setattr(self, key, kw[key])
-                except Exception, e:
+                except Exception as e:
                     boto.log.exception(e)
 
     def __repr__(self):
@@ -171,7 +175,7 @@ class Model(object):
 
     def __str__(self):
         return str(self.id)
-    
+
     def __eq__(self, other):
         return other and isinstance(other, Model) and self.id == other.id
 
@@ -191,8 +195,8 @@ class Model(object):
         """
         Save this object as it is, with an optional expected value
 
-        :param expected_value: Optional tuple of Attribute, and Value that 
-            must be the same in order to save this object. If this 
+        :param expected_value: Optional tuple of Attribute, and Value that
+            must be the same in order to save this object. If this
             condition is not met, an SDBResponseError will be raised with a
             Confict status code.
         :type expected_value: tuple or list
@@ -237,7 +241,7 @@ class Model(object):
         return self
 
     save_attributes = put_attributes
-        
+
     def delete(self):
         self._manager.delete_object(self)
 
@@ -251,9 +255,9 @@ class Model(object):
         props = {}
         for prop in self.properties(hidden=False):
             props[prop.name] = getattr(self, prop.name)
-        obj = {'properties' : props,
-               'id' : self.id}
-        return {self.__class__.__name__ : obj}
+        obj = {'properties': props,
+               'id': self.id}
+        return {self.__class__.__name__: obj}
 
     def to_xml(self, doc=None):
         xmlmanager = self.get_xmlmanager()
@@ -267,7 +271,7 @@ class Model(object):
             return cls
         for sc in cls.__sub_classes__:
             r = sc.find_subclass(name)
-            if r != None:
+            if r is not None:
                 return r
 
 class Expando(Model):
@@ -290,5 +294,3 @@ class Expando(Model):
                 object.__setattr__(self, name, value)
                 return value
         raise AttributeError
-
-    

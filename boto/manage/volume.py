@@ -14,12 +14,12 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from __future__ import print_function
 
-from __future__ import with_statement
 from boto.sdb.db.model import Model
 from boto.sdb.db.property import StringProperty, IntegerProperty, ListProperty, ReferenceProperty, CalculatedProperty
 from boto.manage.server import Server
@@ -33,7 +33,7 @@ import datetime
 
 
 class CommandLineGetter(object):
-    
+
     def get_region(self, params):
         if not params.get('region', None):
             prop = self.cls.find_property('region_name')
@@ -44,7 +44,7 @@ class CommandLineGetter(object):
             prop = StringProperty(name='zone', verbose_name='EC2 Availability Zone',
                                   choices=self.ec2.get_all_zones)
             params['zone'] = propget.get(prop)
-            
+
     def get_name(self, params):
         if not params.get('name', None):
             prop = self.cls.find_property('name')
@@ -136,7 +136,7 @@ class Volume(Model):
         if size < self.size:
             size = self.size
         ec2 = self.get_ec2_connection()
-        if self.zone_name == None or self.zone_name == '':
+        if self.zone_name is None or self.zone_name == '':
             # deal with the migration case where the zone is not set in the logical volume:
             current_volume = ec2.get_all_volumes([self.volume_id])[0]
             self.zone_name = current_volume.zone
@@ -151,11 +151,11 @@ class Volume(Model):
         v.zone_name = self.zone_name
         v.put()
         return v
-    
+
     def get_ec2_connection(self):
         if self.server:
             return self.server.ec2
-        if not hasattr(self, 'ec2') or self.ec2 == None:
+        if not hasattr(self, 'ec2') or self.ec2 is None:
             self.ec2 = boto.ec2.connect_to_region(self.region_name)
         return self.ec2
 
@@ -199,7 +199,7 @@ class Volume(Model):
 
     def attach(self, server=None):
         if self.attachment_state == 'attached':
-            print 'already attached'
+            print('already attached')
             return None
         if server:
             self.server = server
@@ -209,8 +209,8 @@ class Volume(Model):
 
     def detach(self, force=False):
         state = self.attachment_state
-        if state == 'available' or state == None or state == 'detaching':
-            print 'already detached'
+        if state == 'available' or state is None or state == 'detaching':
+            print('already detached')
             return None
         ec2 = self.get_ec2_connection()
         ec2.detach_volume(self.volume_id, self.server.instance_id, self.device, force)
@@ -218,7 +218,7 @@ class Volume(Model):
         self.put()
 
     def checkfs(self, use_cmd=None):
-        if self.server == None:
+        if self.server is None:
             raise ValueError('server attribute must be set to run this command')
         # detemine state of file system on volume, only works if attached
         if use_cmd:
@@ -233,7 +233,7 @@ class Volume(Model):
         return True
 
     def wait(self):
-        if self.server == None:
+        if self.server is None:
             raise ValueError('server attribute must be set to run this command')
         with closing(self.server.get_cmdshell()) as cmd:
             # wait for the volume device to appear
@@ -243,7 +243,7 @@ class Volume(Model):
                 time.sleep(10)
 
     def format(self):
-        if self.server == None:
+        if self.server is None:
             raise ValueError('server attribute must be set to run this command')
         status = None
         with closing(self.server.get_cmdshell()) as cmd:
@@ -253,7 +253,7 @@ class Volume(Model):
         return status
 
     def mount(self):
-        if self.server == None:
+        if self.server is None:
             raise ValueError('server attribute must be set to run this command')
         boto.log.info('handle_mount_point')
         with closing(self.server.get_cmdshell()) as cmd:
@@ -302,7 +302,7 @@ class Volume(Model):
         # we need to freeze the XFS file system
         try:
             self.freeze()
-            if self.server == None:
+            if self.server is None:
                 snapshot = self.get_ec2_connection().create_snapshot(self.volume_id)
             else:
                 snapshot = self.server.ec2.create_snapshot(self.volume_id)
@@ -353,9 +353,9 @@ class Volume(Model):
                                      day=now.day, tzinfo=now.tzinfo)
         # Keep the first snapshot from each day of the previous week
         one_week = datetime.timedelta(days=7, seconds=60*60)
-        print midnight-one_week, midnight
+        print(midnight-one_week, midnight)
         previous_week = self.get_snapshot_range(snaps, midnight-one_week, midnight)
-        print previous_week
+        print(previous_week)
         if not previous_week:
             return snaps
         current_day = None
@@ -396,7 +396,7 @@ class Volume(Model):
                     boto.log.info('Deleting %s(%s) for %s' % (snap, snap.date, self.name))
                     snap.delete()
         return snaps
-                
+
     def grow(self, size):
         pass
 
@@ -411,10 +411,10 @@ class Volume(Model):
             self.detach()
             ec2 = self.get_ec2_connection()
             ec2.delete_volume(self.volume_id)
-        Model.delete(self)
+        super(Volume, self).delete()
 
     def archive(self):
         # snapshot volume, trim snaps, delete volume-id
         pass
-    
+
 

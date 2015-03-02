@@ -23,7 +23,8 @@ import base64
 import binascii
 import os
 import re
-import StringIO
+
+from boto.compat import StringIO
 from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
 from boto.s3.keyfile import KeyFile
@@ -109,6 +110,9 @@ class Key(S3Key):
         self.metageneration = resp.getheader('x-goog-metageneration', None)
         self.generation = resp.getheader('x-goog-generation', None)
 
+    def handle_restore_headers(self, response):
+        return
+
     def handle_addl_headers(self, headers):
         for key, value in headers:
             if key == 'x-goog-hash':
@@ -117,7 +121,48 @@ class Key(S3Key):
                     self.cloud_hashes[alg] = binascii.a2b_base64(b64_digest)
             elif key == 'x-goog-component-count':
                 self.component_count = int(value)
+            elif key == 'x-goog-generation':
+                self.generation = value
+            # Use x-goog-stored-content-encoding and
+            # x-goog-stored-content-length to indicate original content length
+            # and encoding, which are transcoding-invariant (so are preferable
+            # over using content-encoding and size headers).
+            elif key == 'x-goog-stored-content-encoding':
+                self.content_encoding = value
+            elif key == 'x-goog-stored-content-length':
+                self.size = int(value)
 
+    def open_read(self, headers=None, query_args='',
+                  override_num_retries=None, response_headers=None):
+        """
+        Open this key for reading
+
+        :type headers: dict
+        :param headers: Headers to pass in the web request
+
+        :type query_args: string
+        :param query_args: Arguments to pass in the query string
+            (ie, 'torrent')
+
+        :type override_num_retries: int
+        :param override_num_retries: If not None will override configured
+            num_retries parameter for underlying GET.
+
+        :type response_headers: dict
+        :param response_headers: A dictionary containing HTTP
+            headers/values that will override any headers associated
+            with the stored object in the response.  See
+            http://goo.gl/EWOPb for details.
+        """
+        # For GCS we need to include the object generation in the query args.
+        # The rest of the processing is handled in the parent class.
+        if self.generation:
+            if query_args:
+                query_args += '&'
+            query_args += 'generation=%s' % self.generation
+        super(Key, self).open_read(headers=headers, query_args=query_args,
+                                   override_num_retries=override_num_retries,
+                                   response_headers=response_headers)
 
     def get_file(self, fp, headers=None, cb=None, num_cb=10,
                  torrent=False, version_id=None, override_num_retries=None,
@@ -178,7 +223,7 @@ class Key(S3Key):
             with the stored object in the response. See
             http://goo.gl/sMkcC for details.
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             if res_download_handler:
                 res_download_handler.get_file(self, fp, headers, cb, num_cb,
                                               torrent=torrent,
@@ -267,9 +312,10 @@ class Key(S3Key):
                                  chunked_transfer=chunked_transfer, size=size,
                                  hash_algs=hash_algs)
 
-    def delete(self):
+    def delete(self, headers=None):
         return self.bucket.delete_key(self.name, version_id=self.version_id,
-                                      generation=self.generation)
+                                      generation=self.generation,
+                                      headers=headers)
 
     def add_email_grant(self, permission, email_address):
         """
@@ -365,19 +411,20 @@ class Key(S3Key):
         contents.
 
         :type fp: file
-        :param fp: the file whose contents are to be uploaded
+        :param fp: The file whose contents are to be uploaded.
 
         :type headers: dict
-        :param headers: additional HTTP headers to be sent with the PUT request.
+        :param headers: (optional) Additional HTTP headers to be sent with the
+            PUT request.
 
         :type replace: bool
-        :param replace: If this parameter is False, the method will first check
-            to see if an object exists in the bucket with the same key. If it
-            does, it won't overwrite it. The default value is True which will
-            overwrite the object.
+        :param replace: (optional) If this parameter is False, the method will
+            first check to see if an object exists in the bucket with the same
+            key. If it does, it won't overwrite it. The default value is True
+            which will overwrite the object.
 
         :type cb: function
-        :param cb: a callback function that will be called to report
+        :param cb: (optional) Callback function that will be called to report
             progress on the upload. The callback should accept two integer
             parameters, the first representing the number of bytes that have
             been successfully transmitted to GS and the second representing the
@@ -390,43 +437,44 @@ class Key(S3Key):
             during the file transfer.
 
         :type policy: :class:`boto.gs.acl.CannedACLStrings`
-        :param policy: A canned ACL policy that will be applied to the new key
-            in GS.
+        :param policy: (optional) A canned ACL policy that will be applied to
+            the new key in GS.
 
-        :type md5: A tuple containing the hexdigest version of the MD5 checksum
-            of the file as the first element and the Base64-encoded version of
-            the plain checksum as the second element. This is the same format
-            returned by the compute_md5 method.
-        :param md5: If you need to compute the MD5 for any reason prior to
-            upload, it's silly to have to do it twice so this param, if present,
-            will be used as the MD5 values of the file. Otherwise, the checksum
-            will be computed.
+        :type md5: tuple
+        :param md5: (optional) A tuple containing the hexdigest version of the
+            MD5 checksum of the file as the first element and the
+            Base64-encoded version of the plain checksum as the second element.
+            This is the same format returned by the compute_md5 method.
 
-        :type res_upload_handler: ResumableUploadHandler
-        :param res_upload_handler: If provided, this handler will perform the
-            upload.
+            If you need to compute the MD5 for any reason prior to upload, it's
+            silly to have to do it twice so this param, if present, will be
+            used as the MD5 values of the file. Otherwise, the checksum will be
+            computed.
+
+        :type res_upload_handler: :py:class:`boto.gs.resumable_upload_handler.ResumableUploadHandler`
+        :param res_upload_handler: (optional) If provided, this handler will
+            perform the upload.
 
         :type size: int
-        :param size: (optional) The Maximum number of bytes to read from
-            the file pointer (fp). This is useful when uploading
-            a file in multiple parts where you are splitting the
-            file up into different ranges to be uploaded. If not
-            specified, the default behaviour is to read all bytes
-            from the file pointer. Less bytes may be available.
+        :param size: (optional) The Maximum number of bytes to read from the
+            file pointer (fp). This is useful when uploading a file in multiple
+            parts where you are splitting the file up into different ranges to
+            be uploaded. If not specified, the default behaviour is to read all
+            bytes from the file pointer. Less bytes may be available.
+
             Notes:
 
-                1. The "size" parameter currently cannot be used when
-                   a resumable upload handler is given but is still
-                   useful for uploading part of a file as implemented
-                   by the parent class.
-                2. At present Google Cloud Storage does not support
-                   multipart uploads.
+                1. The "size" parameter currently cannot be used when a
+                   resumable upload handler is given but is still useful for
+                   uploading part of a file as implemented by the parent class.
+                2. At present Google Cloud Storage does not support multipart
+                   uploads.
 
         :type rewind: bool
-        :param rewind: (optional) If True, the file pointer (fp) will be 
-                       rewound to the start before any bytes are read from
-                       it. The default behaviour is False which reads from
-                       the current position of the file pointer (fp).
+        :param rewind: (optional) If True, the file pointer (fp) will be
+            rewound to the start before any bytes are read from it. The default
+            behaviour is False which reads from the current position of the
+            file pointer (fp).
 
         :type if_generation: int
         :param if_generation: (optional) If set to a generation number, the
@@ -486,7 +534,7 @@ class Key(S3Key):
 
         if hasattr(fp, 'name'):
             self.path = fp.name
-        if self.bucket != None:
+        if self.bucket is not None:
             if isinstance(fp, KeyFile):
                 # Avoid EOF seek for KeyFile case as it's very inefficient.
                 key = fp.getkey()
@@ -510,12 +558,12 @@ class Key(S3Key):
                 fp.seek(spos)
                 size = self.size
 
-            if md5 == None:
+            if md5 is None:
                 md5 = self.compute_md5(fp, size)
             self.md5 = md5[0]
             self.base64md5 = md5[1]
 
-            if self.name == None:
+            if self.name is None:
                 self.name = self.md5
 
             if not replace:
@@ -543,44 +591,47 @@ class Key(S3Key):
         parameters.
 
         :type filename: string
-        :param filename: The name of the file that you want to put onto GS
+        :param filename: The name of the file that you want to put onto GS.
 
         :type headers: dict
-        :param headers: Additional headers to pass along with the request to GS.
+        :param headers: (optional) Additional headers to pass along with the
+            request to GS.
 
         :type replace: bool
-        :param replace: If True, replaces the contents of the file if it
-            already exists.
+        :param replace: (optional) If True, replaces the contents of the file
+            if it already exists.
 
         :type cb: function
-        :param cb: (optional) a callback function that will be called to report
-            progress on the download. The callback should accept two integer
+        :param cb: (optional) Callback function that will be called to report
+            progress on the upload. The callback should accept two integer
             parameters, the first representing the number of bytes that have
-            been successfully transmitted from GS and the second representing
-            the total number of bytes that need to be transmitted.
+            been successfully transmitted to GS and the second representing the
+            total number of bytes that need to be transmitted.
 
-        :type cb: int
+        :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the cb
             parameter this parameter determines the granularity of the callback
             by defining the maximum number of times the callback will be called
             during the file transfer.
 
-        :type policy: :class:`boto.gs.acl.CannedACLStrings`
-        :param policy: A canned ACL policy that will be applied to the new key
-            in GS.
+        :type policy: :py:attribute:`boto.gs.acl.CannedACLStrings`
+        :param policy: (optional) A canned ACL policy that will be applied to
+            the new key in GS.
 
-        :type md5: A tuple containing the hexdigest version of the MD5 checksum
-            of the file as the first element and the Base64-encoded version of
-            the plain checksum as the second element. This is the same format
-            returned by the compute_md5 method.
-        :param md5: If you need to compute the MD5 for any reason prior to
-            upload, it's silly to have to do it twice so this param, if present,
-            will be used as the MD5 values of the file. Otherwise, the checksum
-            will be computed.
+        :type md5: tuple
+        :param md5: (optional) A tuple containing the hexdigest version of the
+            MD5 checksum of the file as the first element and the
+            Base64-encoded version of the plain checksum as the second element.
+            This is the same format returned by the compute_md5 method.
 
-        :type res_upload_handler: ResumableUploadHandler
-        :param res_upload_handler: If provided, this handler will perform the
-            upload.
+            If you need to compute the MD5 for any reason prior to upload, it's
+            silly to have to do it twice so this param, if present, will be
+            used as the MD5 values of the file. Otherwise, the checksum will be
+            computed.
+
+        :type res_upload_handler: :py:class:`boto.gs.resumable_upload_handler.ResumableUploadHandler`
+        :param res_upload_handler: (optional) If provided, this handler will
+            perform the upload.
 
         :type if_generation: int
         :param if_generation: (optional) If set to a generation number, the
@@ -654,7 +705,7 @@ class Key(S3Key):
         self.md5 = None
         self.base64md5 = None
 
-        fp = StringIO.StringIO(get_utf8_value(s))
+        fp = StringIO(get_utf8_value(s))
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5,
                                         if_generation=if_generation)
@@ -750,7 +801,7 @@ class Key(S3Key):
             the acl will only be updated if its current metageneration number is
             this value.
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             self.bucket.set_acl(acl_or_str, self.name, headers=headers,
                                 generation=generation,
                                 if_generation=if_generation,
@@ -767,7 +818,7 @@ class Key(S3Key):
 
         :rtype: :class:`.gs.acl.ACL`
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.get_acl(self.name, headers=headers,
                                        generation=generation)
 
@@ -782,7 +833,7 @@ class Key(S3Key):
 
         :rtype: str
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.get_xml_acl(self.name, headers=headers,
                                            generation=generation)
 
@@ -810,7 +861,7 @@ class Key(S3Key):
             the acl will only be updated if its current metageneration number is
             this value.
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.set_xml_acl(acl_str, self.name, headers=headers,
                                            generation=generation,
                                            if_generation=if_generation,
@@ -841,7 +892,7 @@ class Key(S3Key):
             the acl will only be updated if its current metageneration number is
             this value.
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.set_canned_acl(
                 acl_str,
                 self.name,
@@ -889,3 +940,7 @@ class Key(S3Key):
         if resp.status < 200 or resp.status > 299:
             raise self.bucket.connection.provider.storage_response_error(
                 resp.status, resp.reason, resp.read())
+
+        # Return the generation so that the result URI can be built with this
+        # for automatic parallel uploads.
+        return resp.getheader('x-goog-generation')

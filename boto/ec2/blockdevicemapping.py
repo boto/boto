@@ -38,7 +38,8 @@ class BlockDeviceType(object):
                  delete_on_termination=False,
                  size=None,
                  volume_type=None,
-                 iops=None):
+                 iops=None,
+                 encrypted=None):
         self.connection = connection
         self.ephemeral_name = ephemeral_name
         self.no_device = no_device
@@ -50,31 +51,35 @@ class BlockDeviceType(object):
         self.size = size
         self.volume_type = volume_type
         self.iops = iops
+        self.encrypted = encrypted
 
     def startElement(self, name, attrs, connection):
         pass
 
     def endElement(self, name, value, connection):
+        lname = name.lower()
         if name == 'volumeId':
             self.volume_id = value
-        elif name == 'virtualName':
+        elif lname == 'virtualname':
             self.ephemeral_name = value
-        elif name == 'NoDevice':
+        elif lname == 'nodevice':
             self.no_device = (value == 'true')
-        elif name == 'snapshotId':
+        elif lname == 'snapshotid':
             self.snapshot_id = value
-        elif name == 'volumeSize':
+        elif lname == 'volumesize':
             self.size = int(value)
-        elif name == 'status':
+        elif lname == 'status':
             self.status = value
-        elif name == 'attachTime':
+        elif lname == 'attachtime':
             self.attach_time = value
-        elif name == 'deleteOnTermination':
+        elif lname == 'deleteontermination':
             self.delete_on_termination = (value == 'true')
-        elif name == 'volumeType':
+        elif lname == 'volumetype':
             self.volume_type = value
-        elif name == 'iops':
+        elif lname == 'iops':
             self.iops = int(value)
+        elif lname == 'encrypted':
+            self.encrypted = (value == 'true')
         else:
             setattr(self, name, value)
 
@@ -105,20 +110,30 @@ class BlockDeviceMapping(dict):
         self.current_value = None
 
     def startElement(self, name, attrs, connection):
-        if name == 'ebs' or name == 'virtualName':
+        lname = name.lower()
+        if lname in ['ebs', 'virtualname']:
             self.current_value = BlockDeviceType(self)
             return self.current_value
 
     def endElement(self, name, value, connection):
-        if name == 'device' or name == 'deviceName':
+        lname = name.lower()
+        if lname in ['device', 'devicename']:
             self.current_name = value
-        elif name == 'item':
+        elif lname in ['item', 'member']:
             self[self.current_name] = self.current_value
 
-    def build_list_params(self, params, prefix=''):
+    def ec2_build_list_params(self, params, prefix=''):
+        pre = '%sBlockDeviceMapping' % prefix
+        return self._build_list_params(params, prefix=pre)
+
+    def autoscale_build_list_params(self, params, prefix=''):
+        pre = '%sBlockDeviceMappings.member' % prefix
+        return self._build_list_params(params, prefix=pre)
+
+    def _build_list_params(self, params, prefix=''):
         i = 1
         for dev_name in self:
-            pre = '%sBlockDeviceMapping.%d' % (prefix, i)
+            pre = '%s.%d' % (prefix, i)
             params['%s.DeviceName' % pre] = dev_name
             block_dev = self[dev_name]
             if block_dev.ephemeral_name:
@@ -139,4 +154,12 @@ class BlockDeviceMapping(dict):
                         params['%s.Ebs.VolumeType' % pre] = block_dev.volume_type
                     if block_dev.iops is not None:
                         params['%s.Ebs.Iops' % pre] = block_dev.iops
+                    # The encrypted flag (even if False) cannot be specified for the root EBS
+                    # volume.
+                    if block_dev.encrypted is not None:
+                        if block_dev.encrypted:
+                            params['%s.Ebs.Encrypted' % pre] = 'true'
+                        else:
+                            params['%s.Ebs.Encrypted' % pre] = 'false'
+
             i += 1

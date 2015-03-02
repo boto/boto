@@ -22,8 +22,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import user
-import key
+from boto.s3 import user
+from boto.s3 import key
 from boto import handler
 import xml.sax
 
@@ -199,7 +199,8 @@ class MultiPartUpload(object):
         else:
             setattr(self, name, value)
 
-    def get_all_parts(self, max_parts=None, part_number_marker=None):
+    def get_all_parts(self, max_parts=None, part_number_marker=None,
+                      encoding_type=None):
         """
         Return the uploaded parts of this MultiPart Upload.  This is
         a lower-level method that requires you to manually page through
@@ -213,6 +214,8 @@ class MultiPartUpload(object):
             query_args += '&max-parts=%d' % max_parts
         if part_number_marker:
             query_args += '&part-number-marker=%s' % part_number_marker
+        if encoding_type:
+            query_args += '&encoding-type=%s' % encoding_type
         response = self.bucket.connection.make_request('GET', self.bucket.name,
                                                        self.key_name,
                                                        query_args=query_args)
@@ -227,6 +230,14 @@ class MultiPartUpload(object):
         """
         Upload another part of this MultiPart Upload.
 
+        .. note::
+
+            After you initiate multipart upload and upload one or more parts,
+            you must either complete or abort multipart upload in order to stop
+            getting charged for storage of the uploaded parts. Only after you
+            either complete or abort multipart upload, Amazon S3 frees up the
+            parts storage and stops charging you for the parts storage.
+
         :type fp: file
         :param fp: The file object you want to upload.
 
@@ -235,6 +246,9 @@ class MultiPartUpload(object):
 
         The other parameters are exactly as defined for the
         :class:`boto.s3.key.Key` set_contents_from_file method.
+
+        :rtype: :class:`boto.s3.key.Key` or subclass
+        :returns: The uploaded part containing the etag.
         """
         if part_num < 1:
             raise ValueError('Part numbers must be greater than zero')
@@ -244,6 +258,7 @@ class MultiPartUpload(object):
                                    cb=cb, num_cb=num_cb, md5=md5,
                                    reduced_redundancy=False,
                                    query_args=query_args, size=size)
+        return key
 
     def copy_part_from_key(self, src_bucket_name, src_key_name, part_num,
                            start=None, end=None, src_version_id=None,

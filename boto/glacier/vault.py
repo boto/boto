@@ -21,12 +21,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from __future__ import with_statement
-from .exceptions import UploadArchiveError
-from .job import Job
-from .writer import compute_hashes_from_fileobj, resume_file_upload, Writer
-from .concurrent import ConcurrentUploader
-from .utils import minimum_part_size, DEFAULT_PART_SIZE
+import codecs
+from boto.glacier.exceptions import UploadArchiveError
+from boto.glacier.job import Job
+from boto.glacier.writer import compute_hashes_from_fileobj, \
+                                resume_file_upload, Writer
+from boto.glacier.concurrent import ConcurrentUploader
+from boto.glacier.utils import minimum_part_size, DEFAULT_PART_SIZE
 import os.path
 
 
@@ -54,8 +55,6 @@ class Vault(object):
         if response_data:
             for response_name, attr_name, default in self.ResponseDataElements:
                 value = response_data[response_name]
-                if isinstance(value, unicode):
-                    value = value.encode('utf8')
                 setattr(self, attr_name, value)
         else:
             for response_name, attr_name, default in self.ResponseDataElements:
@@ -161,8 +160,7 @@ class Vault(object):
         if not file_obj:
             file_size = os.path.getsize(filename)
             try:
-                min_part_size = minimum_part_size(file_size,
-                                                  self.DefaultPartSize)
+                part_size = minimum_part_size(file_size, part_size)
             except ValueError:
                 raise UploadArchiveError("File size of %s bytes exceeds "
                                          "40,000 GB archive limit of Glacier.")
@@ -228,7 +226,7 @@ class Vault(object):
         for part_desc in part_list_response['Parts']:
             part_index = self._range_string_to_part_index(
                 part_desc['RangeInBytes'], part_size)
-            part_tree_hash = part_desc['SHA256TreeHash'].decode('hex')
+            part_tree_hash = codecs.decode(part_desc['SHA256TreeHash'], 'hex_codec')
             part_hash_map[part_index] = part_tree_hash
 
         if not file_obj:
@@ -301,7 +299,9 @@ class Vault(object):
         return self.get_job(response['JobId'])
 
     def retrieve_inventory(self, sns_topic=None,
-                           description=None):
+                           description=None, byte_range=None,
+                           start_date=None, end_date=None,
+                           limit=None):
         """
         Initiate a inventory retrieval job to list the items in the
         vault. You will need to wait for the notification from
@@ -316,17 +316,73 @@ class Vault(object):
             sends notification when the job is completed and the output
             is ready for you to download.
 
-        :rtype: :class:`boto.glacier.job.Job`
-        :return: A Job object representing the retrieval job.
+        :type byte_range: str
+        :param byte_range: Range of bytes to retrieve.
+
+        :type start_date: DateTime
+        :param start_date: Beginning of the date range to query.
+
+        :type end_date: DateTime
+        :param end_date: End of the date range to query.
+
+        :type limit: int
+        :param limit: Limits the number of results returned.
+
+        :rtype: str
+        :return: The ID of the job
         """
         job_data = {'Type': 'inventory-retrieval'}
         if sns_topic is not None:
             job_data['SNSTopic'] = sns_topic
         if description is not None:
             job_data['Description'] = description
+        if byte_range is not None:
+            job_data['RetrievalByteRange'] = byte_range
+        if start_date is not None or end_date is not None or limit is not None:
+            rparams = {}
+
+            if start_date is not None:
+                rparams['StartDate'] = start_date.strftime('%Y-%m-%dT%H:%M:%S%Z')
+            if end_date is not None:
+                rparams['EndDate'] = end_date.strftime('%Y-%m-%dT%H:%M:%S%Z')
+            if limit is not None:
+                rparams['Limit'] = limit
+
+            job_data['InventoryRetrievalParameters'] = rparams
 
         response = self.layer1.initiate_job(self.name, job_data)
         return response['JobId']
+
+    def retrieve_inventory_job(self, **kwargs):
+        """
+        Identical to ``retrieve_inventory``, but returns a ``Job`` instance
+        instead of just the job ID.
+
+        :type description: str
+        :param description: An optional description for the job.
+
+        :type sns_topic: str
+        :param sns_topic: The Amazon SNS topic ARN where Amazon Glacier
+            sends notification when the job is completed and the output
+            is ready for you to download.
+
+        :type byte_range: str
+        :param byte_range: Range of bytes to retrieve.
+
+        :type start_date: DateTime
+        :param start_date: Beginning of the date range to query.
+
+        :type end_date: DateTime
+        :param end_date: End of the date range to query.
+
+        :type limit: int
+        :param limit: Limits the number of results returned.
+
+        :rtype: :class:`boto.glacier.job.Job`
+        :return: A Job object representing the retrieval job.
+        """
+        job_id = self.retrieve_inventory(**kwargs)
+        return self.get_job(job_id)
 
     def delete_archive(self, archive_id):
         """

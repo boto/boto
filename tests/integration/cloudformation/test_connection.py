@@ -105,6 +105,18 @@ class TestCloudformationConnection(unittest.TestCase):
             template_body=json.dumps(BASIC_EC2_TEMPLATE))
         self.addCleanup(self.connection.delete_stack, self.stack_name)
 
+        # A newly created stack should have events
+        events = self.connection.describe_stack_events(self.stack_name)
+        self.assertTrue(events)
+
+        # No policy should be set on the stack by default
+        policy = self.connection.get_stack_policy(self.stack_name)
+        self.assertEqual(None, policy)
+
+        # Our new stack should show up in the stack list
+        stacks = self.connection.describe_stacks()
+        self.assertEqual(self.stack_name, stacks[0].stack_name)
+
 
 if __name__ == '__main__':
     unittest.main()

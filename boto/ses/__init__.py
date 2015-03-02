@@ -20,8 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from connection import SESConnection
-from boto.regioninfo import RegionInfo
+from boto.ses.connection import SESConnection
+from boto.regioninfo import RegionInfo, get_regions
 
 
 def regions():
@@ -31,9 +31,7 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo` instances
     """
-    return [RegionInfo(name='us-east-1',
-                       endpoint='email.us-east-1.amazonaws.com',
-                       connection_cls=SESConnection)]
+    return get_regions('ses', connection_cls=SESConnection)
 
 
 def connect_to_region(region_name, **kw_params):

@@ -20,29 +20,29 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
+import email.utils
 import errno
+import hashlib
 import mimetypes
 import os
 import re
-import rfc822
-import StringIO
 import base64
 import binascii
 import math
-import urllib
+from hashlib import md5
 import boto.utils
+from boto.compat import BytesIO, six, urllib, encodebytes
+
 from boto.exception import BotoClientError
 from boto.exception import StorageDataError
+from boto.exception import PleaseRetryException
 from boto.provider import Provider
 from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
 from boto import UserAgent
-from boto.utils import compute_md5
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
+from boto.utils import compute_md5, compute_hash
+from boto.utils import find_matching_headers
+from boto.utils import merge_headers_by_name
 
 
 class Key(object):
@@ -82,17 +82,23 @@ class Key(object):
       </RestoreRequest>"""
 
 
-    BufferSize = 8192
+    BufferSize = boto.config.getint('Boto', 'key_buffer_size', 8192)
 
     # The object metadata fields a user can set, other than custom metadata
     # fields (i.e., those beginning with a provider-specific prefix like
     # x-amz-meta).
     base_user_settable_fields = set(["cache-control", "content-disposition",
                                     "content-encoding", "content-language",
-                                    "content-md5", "content-type"])
+                                    "content-md5", "content-type",
+                                     "x-robots-tag", "expires"])
     _underscore_base_user_settable_fields = set()
     for f in base_user_settable_fields:
       _underscore_base_user_settable_fields.add(f.replace('-', '_'))
+    # Metadata fields, whether user-settable or not, other than custom
+    # metadata fields (i.e., those beginning with a provider specific prefix
+    # like x-amz-meta).
+    base_fields = (base_user_settable_fields |
+                   set(["last-modified", "content-length", "date", "etag"]))
 
 
 
@@ -110,7 +116,7 @@ class Key(object):
         self.is_latest = False
         self.last_modified = None
         self.owner = None
-        self.storage_class = 'STANDARD'
+        self._storage_class = None
         self.path = None
         self.resp = None
         self.mode = None
@@ -130,9 +136,15 @@ class Key(object):
 
     def __repr__(self):
         if self.bucket:
-            return '<Key: %s,%s>' % (self.bucket.name, self.name)
+            name = u'<Key: %s,%s>' % (self.bucket.name, self.name)
         else:
-            return '<Key: None,%s>' % self.name
+            name = u'<Key: None,%s>' % self.name
+
+        # Encode to bytes for Python 2 to prevent display decoding issues
+        if not isinstance(name, str):
+            name = name.encode('utf-8')
+
+        return name
 
     def __iter__(self):
         return self
@@ -144,37 +156,60 @@ class Key(object):
             provider = self.bucket.connection.provider
         return provider
 
-    @property
-    def key(self):
+    def _get_key(self):
         return self.name
 
-    @key.setter
-    def key(self, value):
+    def _set_key(self, value):
         self.name = value
 
-    @property
-    def md5(self):
+    key = property(_get_key, _set_key);
+
+    def _get_md5(self):
         if 'md5' in self.local_hashes and self.local_hashes['md5']:
             return binascii.b2a_hex(self.local_hashes['md5'])
 
-    @md5.setter
-    def md5(self, value):
+    def _set_md5(self, value):
         if value:
             self.local_hashes['md5'] = binascii.a2b_hex(value)
         elif 'md5' in self.local_hashes:
             self.local_hashes.pop('md5', None)
 
-    @property
-    def base64md5(self):
-        if 'md5' in self.local_hashes and self.local_hashes['md5']:
-            return binascii.b2a_base64(self.local_hashes['md5']).rstrip('\n')
+    md5 = property(_get_md5, _set_md5);
 
-    @base64md5.setter
-    def base64md5(self, value):
+    def _get_base64md5(self):
+        if 'md5' in self.local_hashes and self.local_hashes['md5']:
+            md5 = self.local_hashes['md5']
+            if not isinstance(md5, bytes):
+                md5 = md5.encode('utf-8')
+            return binascii.b2a_base64(md5).decode('utf-8').rstrip('\n')
+
+    def _set_base64md5(self, value):
         if value:
+            if not isinstance(value, six.string_types):
+                value = value.decode('utf-8')
             self.local_hashes['md5'] = binascii.a2b_base64(value)
         elif 'md5' in self.local_hashes:
             del self.local_hashes['md5']
+
+    base64md5 = property(_get_base64md5, _set_base64md5);
+
+    def _get_storage_class(self):
+        if self._storage_class is None and self.bucket:
+            # Attempt to fetch storage class
+            list_items = list(self.bucket.list(self.name.encode('utf-8')))
+            if len(list_items) and getattr(list_items[0], '_storage_class',
+                                           None):
+                self._storage_class = list_items[0]._storage_class
+            else:
+                # Key is not yet saved? Just use default...
+                self._storage_class = 'STANDARD'
+
+        return self._storage_class
+
+    def _set_storage_class(self, value):
+        self._storage_class = value
+
+    storage_class = property(_get_storage_class, _set_storage_class)
 
     def get_md5_from_hexdigest(self, md5_hexdigest):
         """
@@ -182,7 +217,7 @@ class Key(object):
         from just having a precalculated md5_hexdigest.
         """
         digest = binascii.unhexlify(md5_hexdigest)
-        base64md5 = base64.encodestring(digest)
+        base64md5 = encodebytes(digest)
         if base64md5[-1] == '\n':
             base64md5 = base64md5[0:-1]
         return (md5_hexdigest, base64md5)
@@ -212,7 +247,8 @@ class Key(object):
             self.delete_marker = False
 
     def handle_restore_headers(self, response):
-        header = response.getheader('x-amz-restore')
+        provider = self.bucket.connection.provider
+        header = response.getheader(provider.restore_header)
         if header is None:
             return
         parts = header.split(',', 1)
@@ -253,7 +289,7 @@ class Key(object):
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
         """
-        if self.resp == None:
+        if self.resp is None:
             self.mode = 'r'
 
             provider = self.bucket.connection.provider
@@ -278,22 +314,11 @@ class Key(object):
                 elif name.lower() == 'content-range':
                     end_range = re.sub('.*/(.*)', '\\1', value)
                     self.size = int(end_range)
-                elif name.lower() == 'etag':
-                    self.etag = value
-                elif name.lower() == 'content-type':
-                    self.content_type = value
-                elif name.lower() == 'content-encoding':
-                    self.content_encoding = value
-                elif name.lower() == 'content-language':
-                    self.content_language = value
-                elif name.lower() == 'last-modified':
-                    self.last_modified = value
-                elif name.lower() == 'cache-control':
-                    self.cache_control = value
-                elif name.lower() == 'content-disposition':
-                    self.content_disposition = value
+                elif name.lower() in Key.base_fields:
+                    self.__dict__[name.lower().replace('-', '_')] = value
             self.handle_version_headers(self.resp)
             self.handle_encryption_headers(self.resp)
+            self.handle_restore_headers(self.resp)
             self.handle_addl_headers(self.resp.getheaders())
 
     def open_write(self, headers=None, override_num_retries=None):
@@ -364,6 +389,9 @@ class Key(object):
             raise StopIteration
         return data
 
+    # Python 3 iterator support
+    __next__ = next
+
     def read(self, size=0):
         self.open_read()
         if size == 0:
@@ -398,12 +426,13 @@ class Key(object):
         :param validate_dst_bucket: If True, will validate the dst_bucket
             by using an extra list request.
         """
+        bucket_name = dst_bucket or self.bucket.name
         if new_storage_class == 'STANDARD':
-            return self.copy(self.bucket.name, self.name,
+            return self.copy(bucket_name, self.name,
                              reduced_redundancy=False, preserve_acl=True,
                              validate_dst_bucket=validate_dst_bucket)
         elif new_storage_class == 'REDUCED_REDUNDANCY':
-            return self.copy(self.bucket.name, self.name,
+            return self.copy(bucket_name, self.name,
                              reduced_redundancy=True, preserve_acl=True,
                              validate_dst_bucket=validate_dst_bucket)
         else:
@@ -467,7 +496,8 @@ class Key(object):
                                    self.name, metadata,
                                    storage_class=storage_class,
                                    preserve_acl=preserve_acl,
-                                   encrypt_key=encrypt_key)
+                                   encrypt_key=encrypt_key,
+                                   src_version_id=self.version_id)
 
     def startElement(self, name, attrs, connection):
         if name == 'Owner':
@@ -499,45 +529,55 @@ class Key(object):
         else:
             setattr(self, name, value)
 
-    def exists(self):
+    def exists(self, headers=None):
         """
         Returns True if the key exists
 
         :rtype: bool
         :return: Whether the key exists on S3
         """
-        return bool(self.bucket.lookup(self.name))
+        return bool(self.bucket.lookup(self.name, headers=headers))
 
-    def delete(self):
+    def delete(self, headers=None):
         """
         Delete this key from S3
         """
-        return self.bucket.delete_key(self.name, version_id=self.version_id)
+        return self.bucket.delete_key(self.name, version_id=self.version_id,
+                                      headers=headers)
 
     def get_metadata(self, name):
         return self.metadata.get(name)
 
     def set_metadata(self, name, value):
-        self.metadata[name] = value
+        # Ensure that metadata that is vital to signing is in the correct
+        # case. Applies to ``Content-Type`` & ``Content-MD5``.
+        if name.lower() == 'content-type':
+            self.metadata['Content-Type'] = value
+        elif name.lower() == 'content-md5':
+            self.metadata['Content-MD5'] = value
+        else:
+            self.metadata[name] = value
+        if name.lower() in Key.base_user_settable_fields:
+            self.__dict__[name.lower().replace('-', '_')] = value
 
     def update_metadata(self, d):
         self.metadata.update(d)
 
     # convenience methods for setting/getting ACL
     def set_acl(self, acl_str, headers=None):
-        if self.bucket != None:
+        if self.bucket is not None:
             self.bucket.set_acl(acl_str, self.name, headers=headers)
 
     def get_acl(self, headers=None):
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.get_acl(self.name, headers=headers)
 
     def get_xml_acl(self, headers=None):
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.get_xml_acl(self.name, headers=headers)
 
     def set_xml_acl(self, acl_str, headers=None):
-        if self.bucket != None:
+        if self.bucket is not None:
             return self.bucket.set_xml_acl(acl_str, self.name, headers=headers)
 
     def set_canned_acl(self, acl_str, headers=None):
@@ -738,7 +778,14 @@ class Key(object):
                 raise provider.storage_data_error(
                     'Cannot retry failed request. fp does not support seeking.')
 
-            http_conn.putrequest(method, path)
+            # If the caller explicitly specified host header, tell putrequest
+            # not to add a second host header. Similarly for accept-encoding.
+            skips = {}
+            if boto.utils.find_matching_headers('host', headers):
+              skips['skip_host'] = 1
+            if boto.utils.find_matching_headers('accept-encoding', headers):
+              skips['skip_accept_encoding'] = 1
+            http_conn.putrequest(method, path, **skips)
             for key in headers:
                 http_conn.putheader(key, headers[key])
             http_conn.endheaders()
@@ -779,6 +826,10 @@ class Key(object):
                 chunk = fp.read(bytes_togo)
             else:
                 chunk = fp.read(self.BufferSize)
+
+            if not isinstance(chunk, bytes):
+                chunk = chunk.encode('utf-8')
+
             if spos is None:
                 # read at least something from a non-seekable fp.
                 self.read_from_stream = True
@@ -807,6 +858,9 @@ class Key(object):
                 else:
                     chunk = fp.read(self.BufferSize)
 
+                if not isinstance(chunk, bytes):
+                    chunk = chunk.encode('utf-8')
+
             self.size = data_len
 
             for alg in digesters:
@@ -824,44 +878,47 @@ class Key(object):
             self.bucket.connection.debug = save_debug
             response = http_conn.getresponse()
             body = response.read()
-            if ((response.status == 500 or response.status == 503 or
-                    response.getheader('location')) and not chunked_transfer):
-                # we'll try again.
-                return response
-            elif response.status >= 200 and response.status <= 299:
-                self.etag = response.getheader('etag')
-                if self.etag != '"%s"' % self.md5:
-                    raise provider.storage_data_error(
-                        'ETag from S3 did not match computed MD5')
-                return response
-            else:
+
+            if not self.should_retry(response, chunked_transfer):
                 raise provider.storage_response_error(
                     response.status, response.reason, body)
+
+            return response
 
         if not headers:
             headers = {}
         else:
             headers = headers.copy()
+        # Overwrite user-supplied user-agent.
+        for header in find_matching_headers('User-Agent', headers):
+            del headers[header]
         headers['User-Agent'] = UserAgent
-        if self.storage_class != 'STANDARD':
+        # If storage_class is None, then a user has not explicitly requested
+        # a storage class, so we can assume STANDARD here
+        if self._storage_class not in [None, 'STANDARD']:
             headers[provider.storage_class_header] = self.storage_class
-        if 'Content-Encoding' in headers:
-            self.content_encoding = headers['Content-Encoding']
-        if 'Content-Language' in headers:
-            self.content_encoding = headers['Content-Language']
-        if 'Content-Type' in headers:
+        if find_matching_headers('Content-Encoding', headers):
+            self.content_encoding = merge_headers_by_name(
+                'Content-Encoding', headers)
+        if find_matching_headers('Content-Language', headers):
+            self.content_language = merge_headers_by_name(
+                'Content-Language', headers)
+        content_type_headers = find_matching_headers('Content-Type', headers)
+        if content_type_headers:
             # Some use cases need to suppress sending of the Content-Type
             # header and depend on the receiving server to set the content
             # type. This can be achieved by setting headers['Content-Type']
             # to None when calling this method.
-            if headers['Content-Type'] is None:
+            if (len(content_type_headers) == 1 and
+                headers[content_type_headers[0]] is None):
                 # Delete null Content-Type value to skip sending that header.
-                del headers['Content-Type']
+                del headers[content_type_headers[0]]
             else:
-                self.content_type = headers['Content-Type']
+                self.content_type = merge_headers_by_name(
+                    'Content-Type', headers)
         elif self.path:
             self.content_type = mimetypes.guess_type(self.path)[0]
-            if self.content_type == None:
+            if self.content_type is None:
                 self.content_type = self.DefaultContentType
             headers['Content-Type'] = self.content_type
         else:
@@ -874,14 +931,78 @@ class Key(object):
             #    headers['Trailer'] = "Content-MD5"
         else:
             headers['Content-Length'] = str(self.size)
+        # This is terrible. We need a SHA256 of the body for SigV4, but to do
+        # the chunked ``sender`` behavior above, the ``fp`` isn't available to
+        # the auth mechanism (because closures). Detect if it's SigV4 & embelish
+        # while we can before the auth calculations occur.
+        if 'hmac-v4-s3' in self.bucket.connection._required_auth_capability():
+            kwargs = {'fp': fp, 'hash_algorithm': hashlib.sha256}
+            if size is not None:
+                kwargs['size'] = size
+            headers['_sha256'] = compute_hash(**kwargs)[0]
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
-        resp = self.bucket.connection.make_request('PUT', self.bucket.name,
-                                                   self.name, headers,
-                                                   sender=sender,
-                                                   query_args=query_args)
+        resp = self.bucket.connection.make_request(
+            'PUT',
+            self.bucket.name,
+            self.name,
+            headers,
+            sender=sender,
+            query_args=query_args
+        )
         self.handle_version_headers(resp, force=True)
         self.handle_addl_headers(resp.getheaders())
+
+    def should_retry(self, response, chunked_transfer=False):
+        provider = self.bucket.connection.provider
+
+        if not chunked_transfer:
+            if response.status in [500, 503]:
+                # 500 & 503 can be plain retries.
+                return True
+
+            if response.getheader('location'):
+                # If there's a redirect, plain retry.
+                return True
+
+        if 200 <= response.status <= 299:
+            self.etag = response.getheader('etag')
+            md5 = self.md5
+            if isinstance(md5, bytes):
+                md5 = md5.decode('utf-8')
+
+            # If you use customer-provided encryption keys, the ETag value that
+            # Amazon S3 returns in the response will not be the MD5 of the
+            # object.
+            server_side_encryption_customer_algorithm = response.getheader(
+                'x-amz-server-side-encryption-customer-algorithm', None)
+            if server_side_encryption_customer_algorithm is None:
+                if self.etag != '"%s"' % md5:
+                    raise provider.storage_data_error(
+                        'ETag from S3 did not match computed MD5. '
+                        '%s vs. %s' % (self.etag, self.md5))
+
+            return True
+
+        if response.status == 400:
+            # The 400 must be trapped so the retry handler can check to
+            # see if it was a timeout.
+            # If ``RequestTimeout`` is present, we'll retry. Otherwise, bomb
+            # out.
+            body = response.read()
+            err = provider.storage_response_error(
+                response.status,
+                response.reason,
+                body
+            )
+
+            if err.error_code in ['RequestTimeout']:
+                raise PleaseRetryException(
+                    "Saw %s, retrying" % err.error_code,
+                    response=response
+                )
+
+        return False
 
     def compute_md5(self, fp, size=None):
         """
@@ -988,7 +1109,7 @@ class Key(object):
             if provider.storage_class_header:
                 headers[provider.storage_class_header] = self.storage_class
 
-        if self.bucket != None:
+        if self.bucket is not None:
             if not replace:
                 if self.bucket.lookup(self.name):
                     return
@@ -1026,7 +1147,7 @@ class Key(object):
             the second representing the size of the to be transmitted
             object.
 
-        :type cb: int
+        :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the
             cb parameter this parameter determines the granularity of
             the callback by defining the maximum number of times the
@@ -1122,7 +1243,7 @@ class Key(object):
                 # What if different providers provide different classes?
         if hasattr(fp, 'name'):
             self.path = fp.name
-        if self.bucket != None:
+        if self.bucket is not None:
             if not md5 and provider.supports_chunked_transfer():
                 # defer md5 calculation to on the fly and
                 # we don't know anything about size yet.
@@ -1161,7 +1282,7 @@ class Key(object):
                 self.md5 = md5[0]
                 self.base64md5 = md5[1]
 
-            if self.name == None:
+            if self.name is None:
                 self.name = self.md5
             if not replace:
                 if self.bucket.lookup(self.name):
@@ -1240,7 +1361,7 @@ class Key(object):
                                                reduced_redundancy,
                                                encrypt_key=encrypt_key)
 
-    def set_contents_from_string(self, s, headers=None, replace=True,
+    def set_contents_from_string(self, string_data, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None, md5=None,
                                  reduced_redundancy=False,
                                  encrypt_key=False):
@@ -1297,9 +1418,9 @@ class Key(object):
             be encrypted on the server-side by S3 and will be stored
             in an encrypted form while at rest in S3.
         """
-        if isinstance(s, unicode):
-            s = s.encode("utf-8")
-        fp = StringIO.StringIO(s)
+        if not isinstance(string_data, bytes):
+            string_data = string_data.encode("utf-8")
+        fp = BytesIO(string_data)
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5, reduced_redundancy,
                                         encrypt_key=encrypt_key)
@@ -1344,6 +1465,14 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
+
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
         """
         self._get_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
                                 torrent=torrent, version_id=version_id,
@@ -1379,7 +1508,7 @@ class Key(object):
         if response_headers:
             for key in response_headers:
                 query_args.append('%s=%s' % (
-                    key, urllib.quote(response_headers[key])))
+                    key, urllib.parse.quote(response_headers[key])))
         query_args = '&'.join(query_args)
         self.open('r', headers, query_args=query_args,
                   override_num_retries=override_num_retries)
@@ -1501,8 +1630,16 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
+
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
         """
-        if self.bucket != None:
+        if self.bucket is not None:
             if res_download_handler:
                 res_download_handler.get_file(self, fp, headers, cb, num_cb,
                                               torrent=torrent,
@@ -1538,7 +1675,7 @@ class Key(object):
             the second representing the size of the to be transmitted
             object.
 
-        :type cb: int
+        :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the
             cb parameter this parameter determines the granularity of
             the callback by defining the maximum number of times the
@@ -1557,23 +1694,30 @@ class Key(object):
             headers/values that will override any headers associated
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
+
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
         """
-        fp = open(filename, 'wb')
         try:
-            self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
-                                      version_id=version_id,
-                                      res_download_handler=res_download_handler,
-                                      response_headers=response_headers)
+            with open(filename, 'wb') as fp:
+                self.get_contents_to_file(fp, headers, cb, num_cb,
+                                          torrent=torrent,
+                                          version_id=version_id,
+                                          res_download_handler=res_download_handler,
+                                          response_headers=response_headers)
         except Exception:
             os.remove(filename)
             raise
-        finally:
-            fp.close()
         # if last_modified date was sent from s3, try to set file's timestamp
-        if self.last_modified != None:
+        if self.last_modified is not None:
             try:
-                modified_tuple = rfc822.parsedate_tz(self.last_modified)
-                modified_stamp = int(rfc822.mktime_tz(modified_tuple))
+                modified_tuple = email.utils.parsedate_tz(self.last_modified)
+                modified_stamp = int(email.utils.mktime_tz(modified_tuple))
                 os.utime(fp.name, (modified_stamp, modified_stamp))
             except Exception:
                 pass
@@ -1582,7 +1726,7 @@ class Key(object):
                                cb=None, num_cb=10,
                                torrent=False,
                                version_id=None,
-                               response_headers=None):
+                               response_headers=None, encoding=None):
         """
         Retrieve an object from S3 using the name of the Key object as the
         key in S3.  Return the contents of the object as a string.
@@ -1616,14 +1760,32 @@ class Key(object):
             with the stored object in the response.  See
             http://goo.gl/EWOPb for details.
 
-        :rtype: string
-        :returns: The contents of the file as a string
+        :type version_id: str
+        :param version_id: The ID of a particular version of the object.
+            If this parameter is not supplied but the Key object has
+            a ``version_id`` attribute, that value will be used when
+            retrieving the object.  You can set the Key object's
+            ``version_id`` attribute to None to always grab the latest
+            version from a version-enabled bucket.
+
+        :type encoding: str
+        :param encoding: The text encoding to use, such as ``utf-8``
+            or ``iso-8859-1``. If set, then a string will be returned.
+            Defaults to ``None`` and returns bytes.
+
+        :rtype: bytes or str
+        :returns: The contents of the file as bytes or a string
         """
-        fp = StringIO.StringIO()
+        fp = BytesIO()
         self.get_contents_to_file(fp, headers, cb, num_cb, torrent=torrent,
                                   version_id=version_id,
                                   response_headers=response_headers)
-        return fp.getvalue()
+        value = fp.getvalue()
+
+        if encoding is not None:
+            value = value.decode(encoding)
+
+        return value
 
     def add_email_grant(self, permission, email_address, headers=None):
         """

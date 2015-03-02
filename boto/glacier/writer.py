@@ -53,7 +53,7 @@ class _Partitioner(object):
         self._buffer_size = 0
 
     def write(self, data):
-        if data == '':
+        if data == b'':
             return
         self._buffer.append(data)
         self._buffer_size += len(data)
@@ -61,7 +61,7 @@ class _Partitioner(object):
             self._send_part()
 
     def _send_part(self):
-        data = ''.join(self._buffer)
+        data = b''.join(self._buffer)
         # Put back any data remaining over the part size into the
         # buffer
         if len(data) > self.part_size:
@@ -164,7 +164,7 @@ class _Uploader(object):
 def generate_parts_from_fobj(fobj, part_size):
     data = fobj.read(part_size)
     while data:
-        yield data
+        yield data.encode('utf-8')
         data = fobj.read(part_size)
 
 
@@ -232,6 +232,26 @@ class Writer(object):
     def get_archive_id(self):
         self.close()
         return self.uploader.archive_id
+
+    @property
+    def current_tree_hash(self):
+        """
+        Returns the current tree hash for the data that's been written
+        **so far**.
+
+        Only once the writing is complete is the final tree hash returned.
+        """
+        return tree_hash(self.uploader._tree_hashes)
+
+    @property
+    def current_uploaded_size(self):
+        """
+        Returns the current uploaded size for the data that's been written
+        **so far**.
+
+        Only once the writing is complete is the final uploaded size returned.
+        """
+        return self.uploader._uploaded_size
 
     @property
     def upload_id(self):

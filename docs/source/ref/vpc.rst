@@ -25,6 +25,20 @@ boto.vpc.dhcpoptions
    :members:   
    :undoc-members:
 
+boto.vpc.internetgateway
+------------------------
+
+.. automodule:: boto.vpc.internetgateway
+   :members:   
+   :undoc-members:
+
+boto.vpc.routetable
+-------------------
+
+.. automodule:: boto.vpc.routetable
+   :members:
+   :undoc-members:
+
 boto.vpc.subnet
 ---------------
 

@@ -114,7 +114,10 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
             self.provisioned_throughput,
             self.lsi
         )
-        self.assertEqual(result['TableDescription']['TableName'], self.table_name)
+        self.assertEqual(
+            result['TableDescription']['TableName'],
+            self.table_name
+        )
 
         description = self.dynamodb.describe_table(self.table_name)
         self.assertEqual(description['Table']['ItemCount'], 0)
@@ -137,7 +140,9 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
         }, consistent_read=True)
         self.assertEqual(record_1['Item']['username']['S'], 'johndoe')
         self.assertEqual(record_1['Item']['first_name']['S'], 'John')
-        self.assertEqual(record_1['Item']['friends']['SS'], ['alice', 'bob', 'jane'])
+        self.assertEqual(record_1['Item']['friends']['SS'], [
+            'alice', 'bob', 'jane'
+        ])
 
         # Now in a batch.
         self.dynamodb.batch_write_item({
@@ -192,7 +197,8 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
         # Now a scan.
         results = self.dynamodb.scan(self.table_name)
         self.assertEqual(results['Count'], 2)
-        self.assertEqual(sorted([res['username']['S'] for res in results['Items']]), ['jane', 'johndoe'])
+        s_items = sorted([res['username']['S'] for res in results['Items']])
+        self.assertEqual(s_items, ['jane', 'johndoe'])
 
         self.dynamodb.delete_item(self.table_name, key={
             'username': {'S': 'johndoe'},
@@ -201,6 +207,39 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
 
         results = self.dynamodb.scan(self.table_name)
         self.assertEqual(results['Count'], 1)
+
+        # Parallel scan (minus client-side threading).
+        self.dynamodb.batch_write_item({
+            self.table_name: [
+                {
+                    'PutRequest': {
+                        'Item': {
+                            'username': {'S': 'johndoe'},
+                            'first_name': {'S': 'Johann'},
+                            'last_name': {'S': 'Does'},
+                            'date_joined': {'N': '1366058000'},
+                            'friend_count': {'N': '1'},
+                            'friends': {'SS': ['jane']},
+                        },
+                    },
+                    'PutRequest': {
+                        'Item': {
+                            'username': {'S': 'alice'},
+                            'first_name': {'S': 'Alice'},
+                            'last_name': {'S': 'Expert'},
+                            'date_joined': {'N': '1366056800'},
+                            'friend_count': {'N': '2'},
+                            'friends': {'SS': ['johndoe', 'jane']},
+                        },
+                    },
+                },
+            ]
+        })
+        time.sleep(20)
+        results = self.dynamodb.scan(self.table_name, segment=0, total_segments=2)
+        self.assertTrue(results['Count'] in [1, 2])
+        results = self.dynamodb.scan(self.table_name, segment=1, total_segments=2)
+        self.assertTrue(results['Count'] in [1, 2])
 
     def test_without_range_key(self):
         result = self.create_table(
@@ -219,7 +258,10 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
             ],
             self.provisioned_throughput
         )
-        self.assertEqual(result['TableDescription']['TableName'], self.table_name)
+        self.assertEqual(
+            result['TableDescription']['TableName'],
+            self.table_name
+        )
 
         description = self.dynamodb.describe_table(self.table_name)
         self.assertEqual(description['Table']['ItemCount'], 0)
@@ -241,4 +283,81 @@ class DynamoDBv2Layer1Test(unittest.TestCase):
         }, consistent_read=True)
         self.assertEqual(johndoe['Item']['username']['S'], 'johndoe')
         self.assertEqual(johndoe['Item']['first_name']['S'], 'John')
-        self.assertEqual(johndoe['Item']['friends']['SS'], ['alice', 'bob', 'jane'])
+        self.assertEqual(johndoe['Item']['friends']['SS'], [
+            'alice', 'bob', 'jane'
+        ])
+
+    def test_throughput_exceeded_regression(self):
+        tiny_tablename = 'TinyThroughput'
+        tiny = self.create_table(
+            tiny_tablename,
+            self.attributes,
+            self.schema,
+            {
+                'ReadCapacityUnits': 1,
+                'WriteCapacityUnits': 1,
+            }
+        )
+
+        self.dynamodb.put_item(tiny_tablename, {
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'John'},
+            'last_name': {'S': 'Doe'},
+            'date_joined': {'N': '1366056668'},
+        })
+        self.dynamodb.put_item(tiny_tablename, {
+            'username': {'S': 'jane'},
+            'first_name': {'S': 'Jane'},
+            'last_name': {'S': 'Doe'},
+            'date_joined': {'N': '1366056669'},
+        })
+        self.dynamodb.put_item(tiny_tablename, {
+            'username': {'S': 'alice'},
+            'first_name': {'S': 'Alice'},
+            'last_name': {'S': 'Expert'},
+            'date_joined': {'N': '1366057000'},
+        })
+        time.sleep(20)
+
+        for i in range(100):
+            # This would cause an exception due to a non-existant instance variable.
+            self.dynamodb.scan(tiny_tablename)
+
+    def test_recursive(self):
+        result = self.create_table(
+            self.table_name,
+            self.attributes,
+            self.schema,
+            self.provisioned_throughput,
+            self.lsi
+        )
+        self.assertEqual(
+            result['TableDescription']['TableName'],
+            self.table_name
+        )
+
+        description = self.dynamodb.describe_table(self.table_name)
+        self.assertEqual(description['Table']['ItemCount'], 0)
+
+        # Create some records with one being a recursive shape.
+        record_1_data = {
+            'username': {'S': 'johndoe'},
+            'first_name': {'S': 'John'},
+            'last_name': {'S': 'Doe'},
+            'date_joined': {'N': '1366056668'},
+            'friend_count': {'N': '3'},
+            'friend_data': {'M': {'username': {'S': 'alice'},
+                                  'friend_count': {'N': '4'}}}
+        }
+        r1_result = self.dynamodb.put_item(self.table_name, record_1_data)
+
+        # Get the data.
+        record_1 = self.dynamodb.get_item(self.table_name, key={
+            'username': {'S': 'johndoe'},
+            'date_joined': {'N': '1366056668'},
+        }, consistent_read=True)
+        self.assertEqual(record_1['Item']['username']['S'], 'johndoe')
+        self.assertEqual(record_1['Item']['first_name']['S'], 'John')
+        recursive_data = record_1['Item']['friend_data']['M']
+        self.assertEqual(recursive_data['username']['S'], 'alice')
+        self.assertEqual(recursive_data['friend_count']['N'], '4')

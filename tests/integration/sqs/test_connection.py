@@ -24,7 +24,6 @@
 """
 Some unit tests for the SQSConnection
 """
-
 import time
 from threading import Timer
 from tests.unit import unittest
@@ -40,7 +39,7 @@ class SQSConnectionTest(unittest.TestCase):
     sqs = True
 
     def test_1_basic(self):
-        print '--- running SQSConnection tests ---'
+        print('--- running SQSConnection tests ---')
         c = SQSConnection()
         rs = c.get_all_queues()
         num_queues = 0
@@ -151,7 +150,7 @@ class SQSConnectionTest(unittest.TestCase):
         m = queue_2.read()
         assert m['foo'] == 'bar'
 
-        print '--- tests completed ---'
+        print('--- tests completed ---')
 
     def test_sqs_timeout(self):
         c = SQSConnection()
@@ -212,9 +211,9 @@ class SQSConnectionTest(unittest.TestCase):
         self.assertEqual(response.id, messages[0].id)
         self.assertEqual(response.get_body(), messages[0].get_body())
         # The timer thread should send the message in 5 seconds, so
-        # we're giving +- .5 seconds for the total time the queue
+        # we're giving +- 1 second for the total time the queue
         # was blocked on the read call.
-        self.assertTrue(4.5 <= (end - start) <= 5.5)
+        self.assertTrue(4.0 <= (end - start) <= 6.0)
 
     def test_queue_deletion_affects_full_queues(self):
         conn = SQSConnection()
@@ -239,3 +238,67 @@ class SQSConnectionTest(unittest.TestCase):
         # Wait long enough for SQS to finally remove the queues.
         time.sleep(90)
         self.assertEqual(len(conn.get_all_queues()), initial_count)
+
+    def test_get_messages_attributes(self):
+        conn = SQSConnection()
+        current_timestamp = int(time.time())
+        test = self.create_temp_queue(conn)
+        time.sleep(65)
+
+        # Put a message in the queue.
+        self.put_queue_message(test)
+        self.assertEqual(test.count(), 1)
+
+        # Check all attributes.
+        msgs = test.get_messages(
+            num_messages=1,
+            attributes='All'
+        )
+        for msg in msgs:
+            self.assertEqual(msg.attributes['ApproximateReceiveCount'], '1')
+            first_rec = msg.attributes['ApproximateFirstReceiveTimestamp']
+            first_rec = int(first_rec) / 1000
+            self.assertTrue(first_rec >= current_timestamp)
+
+        # Put another message in the queue.
+        self.put_queue_message(test)
+        self.assertEqual(test.count(), 1)
+
+        # Check a specific attribute.
+        msgs = test.get_messages(
+            num_messages=1,
+            attributes='ApproximateReceiveCount'
+        )
+        for msg in msgs:
+            self.assertEqual(msg.attributes['ApproximateReceiveCount'], '1')
+            with self.assertRaises(KeyError):
+                msg.attributes['ApproximateFirstReceiveTimestamp']
+
+    def test_queue_purge(self):
+        conn = SQSConnection()
+        test = self.create_temp_queue(conn)
+        time.sleep(65)
+
+        # Put some messages in the queue.
+        for x in range(0, 4):
+            self.put_queue_message(test)
+        self.assertEqual(test.count(), 4)
+
+        # Now purge the queue
+        conn.purge_queue(test)
+
+        # Now assert queue count is 0
+        self.assertEqual(test.count(), 0)
+
+    def create_temp_queue(self, conn):
+        current_timestamp = int(time.time())
+        queue_name = 'test%d' % int(time.time())
+        test = conn.create_queue(queue_name)
+        self.addCleanup(conn.delete_queue, test)
+
+        return test
+
+    def put_queue_message(self, queue):
+        m1 = Message()
+        m1.set_body('This is a test message.')
+        queue.write(m1)

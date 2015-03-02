@@ -1,5 +1,6 @@
 # Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2014, Steven Richards <sbrichards@mit.edu>
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,7 +23,7 @@
 # IN THE SOFTWARE.
 #
 
-from boto.regioninfo import RegionInfo
+from boto.regioninfo import RegionInfo, get_regions
 
 
 class S3RegionInfo(RegionInfo):
@@ -49,36 +50,25 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
-    from .connection import S3Connection
-    return [S3RegionInfo(name='us-east-1',
-                         endpoint='s3.amazonaws.com',
-                         connection_cls=S3Connection),
-            S3RegionInfo(name='us-west-1',
-                         endpoint='s3-us-west-1.amazonaws.com',
-                       connection_cls=S3Connection),
-            S3RegionInfo(name='us-west-2',
-                         endpoint='s3-us-west-2.amazonaws.com',
-                         connection_cls=S3Connection),
-            S3RegionInfo(name='ap-northeast-1',
-                         endpoint='s3-ap-northeast-1.amazonaws.com',
-                         connection_cls=S3Connection),
-            S3RegionInfo(name='ap-southeast-1',
-                         endpoint='s3-ap-southeast-1.amazonaws.com',
-                         connection_cls=S3Connection),
-            S3RegionInfo(name='ap-southeast-2',
-                         endpoint='s3-ap-southeast-2.amazonaws.com',
-                         connection_cls=S3Connection),
-            S3RegionInfo(name='eu-west-1',
-                         endpoint='s3-eu-west-1.amazonaws.com',
-                         connection_cls=S3Connection),
-            S3RegionInfo(name='sa-east-1',
-                         endpoint='s3-sa-east-1.amazonaws.com',
-                         connection_cls=S3Connection),
-            ]
+    from boto.s3.connection import S3Connection
+    return get_regions(
+        's3',
+        region_cls=S3RegionInfo,
+        connection_cls=S3Connection
+    )
 
 
 def connect_to_region(region_name, **kw_params):
     for region in regions():
+        if 'host' in kw_params.keys():
+            # Make sure the host specified is not nothing
+            if kw_params['host'] not in ['', None]:
+                region.endpoint = kw_params['host']
+                del kw_params['host']
+                return region.connect(**kw_params)
+            # If it is nothing then remove it from kw_params and proceed with default
+            else:
+                del kw_params['host']
         if region.name == region_name:
             return region.connect(**kw_params)
     return None

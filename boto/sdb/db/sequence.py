@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 
 from boto.exception import SDBResponseError
+from boto.compat import six
 
 class SequenceGenerator(object):
     """Generic Sequence Generator object, this takes a single
@@ -59,7 +60,7 @@ class SequenceGenerator(object):
         # If they pass us in a string that's not at least
         # the lenght of our sequence, then return the
         # first element in our sequence
-        if val == None or len(val) < self.sequence_length:
+        if val is None or len(val) < self.sequence_length:
             return self.sequence_string[0]
         last_value = val[-self.sequence_length:]
         if (not self.rollover) and (last_value == self.last_item):
@@ -71,34 +72,32 @@ class SequenceGenerator(object):
     def _inc(self, val):
         """Increment a single value"""
         assert(len(val) == self.sequence_length)
-        return self.sequence_string[(self.sequence_string.index(val)+1) % len(self.sequence_string)]
-
+        return self.sequence_string[(self.sequence_string.index(val) + 1) % len(self.sequence_string)]
 
 
 #
 # Simple Sequence Functions
 #
 def increment_by_one(cv=None, lv=None):
-    if cv == None:
+    if cv is None:
         return 0
     return cv + 1
 
 def double(cv=None, lv=None):
-    if cv == None:
+    if cv is None:
         return 1
     return cv * 2
 
 def fib(cv=1, lv=0):
     """The fibonacci sequence, this incrementer uses the
     last value"""
-    if cv == None:
+    if cv is None:
         cv = 1
-    if lv == None:
+    if lv is None:
         lv = 0
     return cv + lv
 
 increment_string = SequenceGenerator("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
 
 
 class Sequence(object):
@@ -106,13 +105,12 @@ class Sequence(object):
     Based largly off of the "Counter" example from mitch garnaat:
     http://bitbucket.org/mitch/stupidbototricks/src/tip/counter.py"""
 
-
     def __init__(self, id=None, domain_name=None, fnc=increment_by_one, init_val=None):
-        """Create a new Sequence, using an optional function to 
+        """Create a new Sequence, using an optional function to
         increment to the next number, by default we just increment by one.
         Every parameter here is optional, if you don't specify any options
         then you'll get a new SequenceGenerator with a random ID stored in the
-        default domain that increments by one and uses the default botoweb 
+        default domain that increments by one and uses the default botoweb
         environment
 
         :param id: Optional ID (name) for this counter
@@ -127,7 +125,7 @@ class Sequence(object):
             Your function must accept "None" to get the initial value
         :type fnc: function, str
 
-        :param init_val: Initial value, by default this is the first element in your sequence, 
+        :param init_val: Initial value, by default this is the first element in your sequence,
             but you can pass in any value, even a string if you pass in a function that uses
             strings instead of ints to increment
         """
@@ -136,17 +134,17 @@ class Sequence(object):
         self.last_value = None
         self.domain_name = domain_name
         self.id = id
-        if init_val == None:
+        if init_val is None:
             init_val = fnc(init_val)
 
-        if self.id == None:
+        if self.id is None:
             import uuid
             self.id = str(uuid.uuid4())
 
         self.item_type = type(fnc(None))
         self.timestamp = None
         # Allow us to pass in a full name to a function
-        if isinstance(fnc, str):
+        if isinstance(fnc, six.string_types):
             from boto.utils import find_class
             fnc = find_class(fnc)
         self.fnc = fnc
@@ -162,14 +160,14 @@ class Sequence(object):
         expected_value = []
         new_val = {}
         new_val['timestamp'] = now
-        if self._value != None:
+        if self._value is not None:
             new_val['last_value'] = self._value
             expected_value = ['current_value', str(self._value)]
         new_val['current_value'] = val
         try:
             self.db.put_attributes(self.id, new_val, expected_value=expected_value)
             self.timestamp = new_val['timestamp']
-        except SDBResponseError, e:
+        except SDBResponseError as e:
             if e.status == 409:
                 raise ValueError("Sequence out of sync")
             else:
@@ -184,7 +182,7 @@ class Sequence(object):
                 self.timestamp = val['timestamp']
             if 'current_value' in val:
                 self._value = self.item_type(val['current_value'])
-            if "last_value" in val and val['last_value'] != None:
+            if "last_value" in val and val['last_value'] is not None:
                 self.last_value = self.item_type(val['last_value'])
         return self._value
 
@@ -208,7 +206,7 @@ class Sequence(object):
                 self.domain_name = boto.config.get("DB", "sequence_db", boto.config.get("DB", "db_name", "default"))
             try:
                 self._db = sdb.get_domain(self.domain_name)
-            except SDBResponseError, e:
+            except SDBResponseError as e:
                 if e.status == 400:
                     self._db = sdb.create_domain(self.domain_name)
                 else:

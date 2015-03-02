@@ -23,10 +23,11 @@
 # IN THE SOFTWARE.
 
 import xml.sax
-import urllib
 import base64
+from boto.compat import six, urllib
 import time
 
+from boto.auth import detect_potential_s3sigv4
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
@@ -91,11 +92,11 @@ class _CallingFormat(object):
         path = ''
         if bucket != '':
             path = '/' + bucket
-        return path + '/%s' % urllib.quote(key)
+        return path + '/%s' % urllib.parse.quote(key)
 
     def build_path_base(self, bucket, key=''):
         key = boto.utils.get_utf8_value(key)
-        return '/%s' % urllib.quote(key)
+        return '/%s' % urllib.parse.quote(key)
 
 
 class SubdomainCallingFormat(_CallingFormat):
@@ -122,7 +123,7 @@ class OrdinaryCallingFormat(_CallingFormat):
         path_base = '/'
         if bucket:
             path_base += "%s/" % bucket
-        return path_base + urllib.quote(key)
+        return path_base + urllib.parse.quote(key)
 
 
 class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
@@ -134,7 +135,7 @@ class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
         return url_base
 
 
-class Location:
+class Location(object):
 
     DEFAULT = ''  # US Classic Region
     EU = 'EU'
@@ -144,6 +145,17 @@ class Location:
     APNortheast = 'ap-northeast-1'
     APSoutheast = 'ap-southeast-1'
     APSoutheast2 = 'ap-southeast-2'
+    CNNorth1 = 'cn-north-1'
+
+
+class NoHostProvided(object):
+    # An identifying object to help determine whether the user provided a
+    # ``host`` or not. Never instantiated.
+    pass
+
+
+class HostRequiredError(BotoClientError):
+    pass
 
 
 class S3Connection(AWSAuthConnection):
@@ -155,24 +167,36 @@ class S3Connection(AWSAuthConnection):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
-                 host=DefaultHost, debug=0, https_connection_factory=None,
+                 host=NoHostProvided, debug=0, https_connection_factory=None,
                  calling_format=DefaultCallingFormat, path='/',
                  provider='aws', bucket_class=Bucket, security_token=None,
                  suppress_consec_slashes=True, anon=False,
-                 validate_certs=None):
-        if isinstance(calling_format, str):
+                 validate_certs=None, profile_name=None):
+        no_host_provided = False
+        if host is NoHostProvided:
+            no_host_provided = True
+            host = self.DefaultHost
+        if isinstance(calling_format, six.string_types):
             calling_format=boto.utils.find_class(calling_format)()
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         self.anon = anon
-        AWSAuthConnection.__init__(self, host,
+        super(S3Connection, self).__init__(host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                 debug=debug, https_connection_factory=https_connection_factory,
                 path=path, provider=provider, security_token=security_token,
                 suppress_consec_slashes=suppress_consec_slashes,
-                validate_certs=validate_certs)
+                validate_certs=validate_certs, profile_name=profile_name)
+        # We need to delay until after the call to ``super`` before checking
+        # to see if SigV4 is in use.
+        if no_host_provided:
+            if 'hmac-v4-s3' in self._required_auth_capability():
+                raise HostRequiredError(
+                    "When using SigV4, you must specify a 'host' parameter."
+                )
 
+    @detect_potential_s3sigv4
     def _required_auth_capability(self):
         if self.anon:
             return ['anon']
@@ -267,9 +291,9 @@ class S3Connection(AWSAuthConnection):
 
 
         """
-        if fields == None:
+        if fields is None:
             fields = []
-        if conditions == None:
+        if conditions is None:
             conditions = []
         expiration = time.gmtime(int(time.time() + expires_in))
 
@@ -326,9 +350,38 @@ class S3Connection(AWSAuthConnection):
 
         return {"action": url, "fields": fields}
 
+    def generate_url_sigv4(self, expires_in, method, bucket='', key='',
+                            headers=None, force_http=False,
+                            response_headers=None, version_id=None,
+                            iso_date=None):
+        path = self.calling_format.build_path_base(bucket, key)
+        auth_path = self.calling_format.build_auth_path(bucket, key)
+        host = self.calling_format.build_host(self.server_name(), bucket)
+
+        # For presigned URLs we should ignore the port if it's HTTPS
+        if host.endswith(':443'):
+            host = host[:-4]
+
+        params = {}
+        if version_id is not None:
+            params['VersionId'] = version_id
+
+        http_request = self.build_base_http_request(method, path, auth_path,
+                                                    headers=headers, host=host,
+                                                    params=params)
+
+        return self._auth_handler.presign(http_request, expires_in,
+                                          iso_date=iso_date)
+
     def generate_url(self, expires_in, method, bucket='', key='', headers=None,
                      query_auth=True, force_http=False, response_headers=None,
                      expires_in_absolute=False, version_id=None):
+        if self._auth_handler.capability[0] == 'hmac-v4-s3':
+            # Handle the special sigv4 case
+            return self.generate_url_sigv4(expires_in, method, bucket=bucket,
+                key=key, headers=headers, force_http=force_http,
+                response_headers=response_headers, version_id=version_id)
+
         headers = headers or {}
         if expires_in_absolute:
             expires = int(expires_in)
@@ -343,7 +396,7 @@ class S3Connection(AWSAuthConnection):
             extra_qp.append("versionId=%s" % version_id)
         if response_headers:
             for k, v in response_headers.items():
-                extra_qp.append("%s=%s" % (k, urllib.quote(v)))
+                extra_qp.append("%s=%s" % (k, urllib.parse.quote(v)))
         if self.provider.security_token:
             headers['x-amz-security-token'] = self.provider.security_token
         if extra_qp:
@@ -352,7 +405,7 @@ class S3Connection(AWSAuthConnection):
         c_string = boto.utils.canonical_string(method, auth_path, headers,
                                                expires, self.provider)
         b64_hmac = self._auth_handler.sign_string(c_string)
-        encoded_canonical = urllib.quote(b64_hmac, safe='')
+        encoded_canonical = urllib.parse.quote(b64_hmac, safe='')
         self.calling_format.build_path_base(bucket, key)
         if query_auth:
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
@@ -365,7 +418,7 @@ class S3Connection(AWSAuthConnection):
                 if k.startswith(hdr_prefix):
                     # headers used for sig generation must be
                     # included in the url also.
-                    extra_qp.append("%s=%s" % (k, urllib.quote(v)))
+                    extra_qp.append("%s=%s" % (k, urllib.parse.quote(v)))
         if extra_qp:
             delimiter = '?' if not query_part else '&'
             query_part += delimiter + '&'.join(extra_qp)
@@ -387,6 +440,8 @@ class S3Connection(AWSAuthConnection):
                 response.status, response.reason, body)
         rs = ResultSet([('Bucket', self.bucket_class)])
         h = handler.XmlHandler(rs, self)
+        if not isinstance(body, bytes):
+            body = body.encode('utf-8')
         xml.sax.parseString(body, h)
         return rs
 
@@ -415,6 +470,23 @@ class S3Connection(AWSAuthConnection):
         ``S3Connection.lookup`` method, which will either return a valid bucket
         or ``None``.
 
+        If ``validate=False`` is passed, no request is made to the service (no
+        charge/communication delay). This is only safe to do if you are **sure**
+        the bucket exists.
+
+        If the default ``validate=True`` is passed, a request is made to the
+        service to ensure the bucket exists. Prior to Boto v2.25.0, this fetched
+        a list of keys (but with a max limit set to ``0``, always returning an empty
+        list) in the bucket (& included better error messages), at an
+        increased expense. As of Boto v2.25.0, this now performs a HEAD request
+        (less expensive but worse error messages).
+
+        If you were relying on parsing the error message before, you should call
+        something like::
+
+            bucket = conn.get_bucket('<bucket_name>', validate=False)
+            bucket.get_all_keys(maxkeys=0)
+
         :type bucket_name: string
         :param bucket_name: The name of the bucket
 
@@ -423,13 +495,58 @@ class S3Connection(AWSAuthConnection):
             AWS.
 
         :type validate: boolean
-        :param validate: If ``True``, it will try to fetch all keys within the
-            given bucket. (Default: ``True``)
+        :param validate: If ``True``, it will try to verify the bucket exists
+            on the service-side. (Default: ``True``)
         """
-        bucket = self.bucket_class(self, bucket_name)
         if validate:
-            bucket.get_all_keys(headers, maxkeys=0)
-        return bucket
+            return self.head_bucket(bucket_name, headers=headers)
+        else:
+            return self.bucket_class(self, bucket_name)
+
+    def head_bucket(self, bucket_name, headers=None):
+        """
+        Determines if a bucket exists by name.
+
+        If the bucket does not exist, an ``S3ResponseError`` will be raised.
+
+        :type bucket_name: string
+        :param bucket_name: The name of the bucket
+
+        :type headers: dict
+        :param headers: Additional headers to pass along with the request to
+            AWS.
+
+        :returns: A <Bucket> object
+        """
+        response = self.make_request('HEAD', bucket_name, headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return self.bucket_class(self, bucket_name)
+        elif response.status == 403:
+            # For backward-compatibility, we'll populate part of the exception
+            # with the most-common default.
+            err = self.provider.storage_response_error(
+                response.status,
+                response.reason,
+                body
+            )
+            err.error_code = 'AccessDenied'
+            err.error_message = 'Access Denied'
+            raise err
+        elif response.status == 404:
+            # For backward-compatibility, we'll populate part of the exception
+            # with the most-common default.
+            err = self.provider.storage_response_error(
+                response.status,
+                response.reason,
+                body
+            )
+            err.error_code = 'NoSuchBucket'
+            err.error_message = 'The specified bucket does not exist'
+            raise err
+        else:
+            raise self.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def lookup(self, bucket_name, validate=True, headers=None):
         """
@@ -460,7 +577,8 @@ class S3Connection(AWSAuthConnection):
                       location=Location.DEFAULT, policy=None):
         """
         Creates a new located bucket. By default it's in the USA. You can pass
-        Location.EU to create an European bucket.
+        Location.EU to create a European bucket (S3) or European Union bucket
+        (GCS).
 
         :type bucket_name: string
         :param bucket_name: The name of the new bucket
@@ -523,7 +641,8 @@ class S3Connection(AWSAuthConnection):
                 response.status, response.reason, body)
 
     def make_request(self, method, bucket='', key='', headers=None, data='',
-            query_args=None, sender=None, override_num_retries=None):
+                     query_args=None, sender=None, override_num_retries=None,
+                     retry_handler=None):
         if isinstance(bucket, self.bucket_class):
             bucket = bucket.name
         if isinstance(key, Key):
@@ -538,6 +657,9 @@ class S3Connection(AWSAuthConnection):
             boto.log.debug('path=%s' % path)
             auth_path += '?' + query_args
             boto.log.debug('auth_path=%s' % auth_path)
-        return AWSAuthConnection.make_request(self, method, path, headers,
-                data, host, auth_path, sender,
-                override_num_retries=override_num_retries)
+        return super(S3Connection, self).make_request(
+            method, path, headers,
+            data, host, auth_path, sender,
+            override_num_retries=override_num_retries,
+            retry_handler=retry_handler
+        )

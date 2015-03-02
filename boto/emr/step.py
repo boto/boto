@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from boto.compat import six
+
 
 class Step(object):
     """
@@ -73,7 +75,7 @@ class JarStep(Step):
         self._main_class = main_class
         self.action_on_failure = action_on_failure
 
-        if isinstance(step_args, basestring):
+        if isinstance(step_args, six.string_types):
             step_args = [step_args]
 
         self.step_args = step_args
@@ -143,7 +145,7 @@ class StreamingStep(Step):
         self.output = output
         self._jar = jar
 
-        if isinstance(step_args, basestring):
+        if isinstance(step_args, six.string_types):
             step_args = [step_args]
 
         self.step_args = step_args
@@ -204,7 +206,7 @@ class ScriptRunnerStep(JarStep):
     ScriptRunnerJar = 's3n://us-east-1.elasticmapreduce/libs/script-runner/script-runner.jar'
 
     def __init__(self, name, **kw):
-        JarStep.__init__(self, name, self.ScriptRunnerJar, **kw)
+        super(ScriptRunnerStep, self).__init__(name, self.ScriptRunnerJar, **kw)
 
 
 class PigBase(ScriptRunnerStep):
@@ -225,7 +227,7 @@ class InstallPigStep(PigBase):
         step_args.extend(self.BaseArgs)
         step_args.extend(['--install-pig'])
         step_args.extend(['--pig-versions', pig_versions])
-        ScriptRunnerStep.__init__(self, self.InstallPigName, step_args=step_args)
+        super(InstallPigStep, self).__init__(self.InstallPigName, step_args=step_args)
 
 
 class PigStep(PigBase):
@@ -239,7 +241,7 @@ class PigStep(PigBase):
         step_args.extend(['--pig-versions', pig_versions])
         step_args.extend(['--run-pig-script', '--args', '-f', pig_file])
         step_args.extend(pig_args)
-        ScriptRunnerStep.__init__(self, name, step_args=step_args)
+        super(PigStep, self).__init__(name, step_args=step_args)
 
 
 class HiveBase(ScriptRunnerStep):
@@ -261,7 +263,7 @@ class InstallHiveStep(HiveBase):
         step_args.extend(['--hive-versions', hive_versions])
         if hive_site is not None:
             step_args.extend(['--hive-site=%s' % hive_site])
-        ScriptRunnerStep.__init__(self, self.InstallHiveName,
+        super(InstallHiveStep, self).__init__(self.InstallHiveName,
                                   step_args=step_args)
 
 
@@ -278,4 +280,4 @@ class HiveStep(HiveBase):
         step_args.extend(['--run-hive-script', '--args', '-f', hive_file])
         if hive_args is not None:
             step_args.extend(hive_args)
-        ScriptRunnerStep.__init__(self, name, step_args=step_args)
+        super(HiveStep, self).__init__(name, step_args=step_args)

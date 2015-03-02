@@ -21,10 +21,9 @@
 # IN THE SOFTWARE.
 #
 import tempfile
-from Queue import Queue
+from boto.compat import Queue
 
-import mock
-from tests.unit import unittest
+from tests.compat import mock, unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.glacier.concurrent import ConcurrentUploader, ConcurrentDownloader
@@ -40,8 +39,8 @@ class FakeThreadedConcurrentUploader(ConcurrentUploader):
         self.upload_id = upload_id
 
     def _wait_for_upload_threads(self, hash_chunks, result_queue, total_parts):
-        for i in xrange(total_parts):
-            hash_chunks[i] = 'foo'
+        for i in range(total_parts):
+            hash_chunks[i] = b'foo'
 
 
 class FakeThreadedConcurrentDownloader(ConcurrentDownloader):
@@ -58,13 +57,11 @@ class TestConcurrentUploader(unittest.TestCase):
     def setUp(self):
         super(TestConcurrentUploader, self).setUp()
         self.stat_patch = mock.patch('os.stat')
+        self.addCleanup(self.stat_patch.stop)
         self.stat_mock = self.stat_patch.start()
         # Give a default value for tests that don't care
         # what the file size is.
         self.stat_mock.return_value.st_size = 1024 * 1024 * 8
-
-    def tearDown(self):
-        self.stat_mock = self.stat_patch.start()
 
     def test_calculate_required_part_size(self):
         self.stat_mock.return_value.st_size = 1024 * 1024 * 8
@@ -90,7 +87,7 @@ class TestConcurrentUploader(unittest.TestCase):
                                                   'vault_name')
         uploader.upload('foofile')
         q = uploader.worker_queue
-        items = [q.get() for i in xrange(q.qsize())]
+        items = [q.get() for i in range(q.qsize())]
         self.assertEqual(items[0], (0, 4 * 1024 * 1024))
         self.assertEqual(items[1], (1, 4 * 1024 * 1024))
         # 2 for the parts, 10 for the end sentinels (10 threads).
@@ -113,7 +110,7 @@ class TestConcurrentUploader(unittest.TestCase):
         downloader = FakeThreadedConcurrentDownloader(job)
         downloader.download('foofile')
         q = downloader.worker_queue
-        items = [q.get() for i in xrange(q.qsize())]
+        items = [q.get() for i in range(q.qsize())]
         self.assertEqual(items[0], (0, 4 * 1024 * 1024))
         self.assertEqual(items[1], (1, 4 * 1024 * 1024))
         # 2 for the parts, 10 for the end sentinels (10 threads).

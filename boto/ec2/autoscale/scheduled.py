@@ -28,7 +28,11 @@ class ScheduledUpdateGroupAction(object):
         self.connection = connection
         self.name = None
         self.action_arn = None
+        self.as_group = None
         self.time = None
+        self.start_time = None
+        self.end_time = None
+        self.recurrence = None
         self.desired_capacity = None
         self.max_size = None
         self.min_size = None
@@ -44,17 +48,30 @@ class ScheduledUpdateGroupAction(object):
             self.desired_capacity = value
         elif name == 'ScheduledActionName':
             self.name = value
+        elif name == 'AutoScalingGroupName':
+            self.as_group = value
         elif name == 'MaxSize':
             self.max_size = int(value)
         elif name == 'MinSize':
             self.min_size = int(value)
         elif name == 'ScheduledActionARN':
             self.action_arn = value
+        elif name == 'Recurrence':
+            self.recurrence = value
         elif name == 'Time':
             try:
                 self.time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
             except ValueError:
                 self.time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+        elif name == 'StartTime':
+            try:
+                self.start_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            except ValueError:
+                self.start_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+        elif name == 'EndTime':
+            try:
+                self.end_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            except ValueError:
+                self.end_time = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         else:
             setattr(self, name, value)
-

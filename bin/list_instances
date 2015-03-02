@@ -45,7 +45,7 @@ def main():
             region = r
             break
     else:
-        print "Region %s not found." % options.region
+        print("Region %s not found." % options.region)
         sys.exit(1)
     ec2 = boto.connect_ec2(region=region)
 
@@ -73,17 +73,17 @@ def main():
     # List and print
 
     if not options.tab:
-        print format_string % headers
-        print "-" * len(format_string % headers)
+        print(format_string % headers)
+        print("-" * len(format_string % headers))
 
-    for r in ec2.get_all_instances(filters=filters):
+    for r in ec2.get_all_reservations(filters=filters):
         groups = [g.name for g in r.groups]
         for i in r.instances:
             i.groups = ','.join(groups)
             if options.tab: 
-                print "\t".join(tuple(get_column(h, i) for h in headers))
+                print("\t".join(tuple(get_column(h, i) for h in headers)))
             else:
-                print format_string % tuple(get_column(h, i) for h in headers)
+                print(format_string % tuple(get_column(h, i) for h in headers))
  
 
 if __name__ == "__main__":

@@ -30,14 +30,13 @@ import copy
 import boto
 import base64
 import re
+from hashlib import md5
 
 from boto.utils import compute_md5
+from boto.utils import find_matching_headers
+from boto.utils import merge_headers_by_name
 from boto.s3.prefix import Prefix
-
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
+from boto.compat import six
 
 NOT_IMPL = None
 
@@ -99,12 +98,14 @@ class MockKey(object):
     def _handle_headers(self, headers):
         if not headers:
             return
-        if 'Content-Encoding' in headers:
-            self.content_encoding = headers['Content-Encoding']
-        if 'Content-Type' in headers:
-            self.content_type = headers['Content-Type']
-        if 'Content-Language' in headers:
-            self.content_language = headers['Content-Language']
+        if find_matching_headers('Content-Encoding', headers):
+            self.content_encoding = merge_headers_by_name('Content-Encoding',
+                                                          headers)
+        if find_matching_headers('Content-Type', headers):
+            self.content_type = merge_headers_by_name('Content-Type', headers)
+        if find_matching_headers('Content-Language', headers):
+            self.content_language = merge_headers_by_name('Content-Language',
+                                                          headers)
 
     # Simplistic partial implementation for headers: Just supports range GETs
     # of flavor 'Range: bytes=xyz-'.
@@ -191,7 +192,10 @@ class MockKey(object):
         contents of mock key.
         """
         m = md5()
-        m.update(self.data)
+        if not isinstance(self.data, bytes):
+            m.update(self.data.encode('utf-8'))
+        else:
+            m.update(self.data)
         hex_md5 = m.hexdigest()
         self.etag = hex_md5
 
@@ -253,6 +257,9 @@ class MockBucket(object):
     def get_logging_config(self):
         return {"Logging": {}}
 
+    def get_versioning_status(self, headers=NOT_IMPL):
+        return False
+
     def get_acl(self, key_name='', headers=NOT_IMPL, version_id=NOT_IMPL):
         if key_name:
             # Return ACL for the key.
@@ -286,7 +293,7 @@ class MockBucket(object):
         del self.keys[key_name]
 
     def get_all_keys(self, headers=NOT_IMPL):
-        return self.keys.itervalues()
+        return six.itervalues(self.keys)
 
     def get_key(self, key_name, headers=NOT_IMPL, version_id=NOT_IMPL):
         # Emulate behavior of boto when get_key called with non-existent key.
@@ -302,7 +309,7 @@ class MockBucket(object):
         # deletions while iterating (e.g., during test cleanup).
         result = []
         key_name_set = set()
-        for k in self.keys.itervalues():
+        for k in six.itervalues(self.keys):
             if k.name.startswith(prefix):
                 k_name_past_prefix = k.name[len(prefix):]
                 if delimiter:
@@ -389,7 +396,7 @@ class MockConnection(object):
         return self.buckets[bucket_name]
 
     def get_all_buckets(self, headers=NOT_IMPL):
-        return self.buckets.itervalues()
+        return six.itervalues(self.buckets)
 
 
 # We only mock a single provider/connection.
@@ -456,6 +463,9 @@ class MockBucketStorageUri(object):
 
     def delete_bucket(self, headers=NOT_IMPL):
         return self.connect().delete_bucket(self.bucket_name)
+
+    def get_versioning_config(self, headers=NOT_IMPL):
+        self.get_bucket().get_versioning_status(headers)
 
     def has_version(self):
         return (issubclass(type(self), MockBucketStorageUri)

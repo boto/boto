@@ -21,7 +21,8 @@
 # IN THE SOFTWARE.
 
 import xml.sax
-import utils
+from boto import utils
+
 
 class XmlHandler(xml.sax.ContentHandler):
 
@@ -33,7 +34,7 @@ class XmlHandler(xml.sax.ContentHandler):
     def startElement(self, name, attrs):
         self.current_text = ''
         t = self.nodes[-1][1].startElement(name, attrs, self.connection)
-        if t != None:
+        if t is not None:
             if isinstance(t, tuple):
                 self.nodes.append(t)
             else:
@@ -49,8 +50,11 @@ class XmlHandler(xml.sax.ContentHandler):
         self.current_text += content
 
     def parse(self, s):
+        if not isinstance(s, bytes):
+            s = s.encode('utf-8')
         xml.sax.parseString(s, self)
-        
+
+
 class Element(dict):
 
     def __init__(self, connection=None, element_name=None,
@@ -113,6 +117,7 @@ class Element(dict):
                 self.parent[self.get_name(name)] = value
             elif isinstance(self.parent, ListElement):
                 self.parent.append(value)
+
 
 class ListElement(list):
 

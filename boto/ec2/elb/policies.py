@@ -60,6 +60,20 @@ class LBCookieStickinessPolicy(object):
             self.policy_name = value
 
 
+class OtherPolicy(object):
+    def __init__(self, connection=None):
+        self.policy_name = None
+
+    def __repr__(self):
+        return 'OtherPolicy(%s)' % (self.policy_name)
+
+    def startElement(self, name, attrs, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        self.policy_name = value
+
+
 class Policies(object):
     """
     ELB Policies
@@ -68,11 +82,13 @@ class Policies(object):
         self.connection = connection
         self.app_cookie_stickiness_policies = None
         self.lb_cookie_stickiness_policies = None
+        self.other_policies = None
 
     def __repr__(self):
         app = 'AppCookieStickiness%s' % self.app_cookie_stickiness_policies
         lb = 'LBCookieStickiness%s' % self.lb_cookie_stickiness_policies
-        return 'Policies(%s,%s)' % (app, lb)
+        other = 'Other%s' % self.other_policies
+        return 'Policies(%s,%s,%s)' % (app, lb, other)
 
     def startElement(self, name, attrs, connection):
         if name == 'AppCookieStickinessPolicies':
@@ -83,7 +99,10 @@ class Policies(object):
             rs = ResultSet([('member', LBCookieStickinessPolicy)])
             self.lb_cookie_stickiness_policies = rs
             return rs
+        elif name == 'OtherPolicies':
+            rs = ResultSet([('member', OtherPolicy)])
+            self.other_policies = rs
+            return rs
 
     def endElement(self, name, value, connection):
         return
-

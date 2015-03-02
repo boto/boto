@@ -23,6 +23,7 @@
 from boto.resultset import ResultSet
 from boto.ec2.elb.listelement import ListElement
 
+
 class Alarm(object):
     def __init__(self, connection=None):
         self.connection = connection
@@ -47,34 +48,41 @@ class Alarm(object):
 class AdjustmentType(object):
     def __init__(self, connection=None):
         self.connection = connection
-        self.adjustment_types = ListElement([])
+        self.adjustment_type = None
 
     def __repr__(self):
-        return 'AdjustmentType:%s' % self.adjustment_types
+        return 'AdjustmentType:%s' % self.adjustment_type
 
     def startElement(self, name, attrs, connection):
-        if name == 'AdjustmentType':
-            return self.adjustment_types
+        return
 
     def endElement(self, name, value, connection):
+        if name == 'AdjustmentType':
+            self.adjustment_type = value
         return
 
 
 class MetricCollectionTypes(object):
     class BaseType(object):
         arg = ''
+
         def __init__(self, connection):
             self.connection = connection
             self.val = None
+
         def __repr__(self):
             return '%s:%s' % (self.arg, self.val)
+
         def startElement(self, name, attrs, connection):
             return
+
         def endElement(self, name, value, connection):
             if name == self.arg:
                 self.val = value
+
     class Metric(BaseType):
         arg = 'Metric'
+
     class Granularity(BaseType):
         arg = 'Granularity'
 
@@ -115,6 +123,10 @@ class ScalingPolicy(object):
         :type scaling_adjustment: int
         :param scaling_adjustment: Value of adjustment (type specified in `adjustment_type`).
 
+        :type min_adjustment_step: int
+        :param min_adjustment_step: Value of min adjustment step required to
+            apply the scaling policy (only make sense when use `PercentChangeInCapacity` as adjustment_type.).
+
         :type cooldown: int
         :param cooldown: Time (in seconds) before Alarm related Scaling Activities can start after the previous Scaling Activity ends.
 
@@ -125,6 +137,7 @@ class ScalingPolicy(object):
         self.scaling_adjustment = kwargs.get('scaling_adjustment', None)
         self.cooldown = kwargs.get('cooldown', None)
         self.connection = connection
+        self.min_adjustment_step = kwargs.get('min_adjustment_step', None)
 
     def __repr__(self):
         return 'ScalingPolicy(%s group:%s adjustment:%s)' % (self.name,
@@ -149,6 +162,8 @@ class ScalingPolicy(object):
             self.cooldown = int(value)
         elif name == 'AdjustmentType':
             self.adjustment_type = value
+        elif name == 'MinAdjustmentStep':
+            self.min_adjustment_step = int(value)
 
     def delete(self):
         return self.connection.delete_policy(self.name, self.as_name)
