@@ -60,7 +60,7 @@ def requires(*groups):
 
         def wrapper(*args, **kw):
             hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if 1 != len(filter(hasgroup, groups)):
+            if 1 != len(list(filter(hasgroup, groups))):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires {1} argument(s)" \
                           "".format(getattr(func, 'action', 'Method'), message)
