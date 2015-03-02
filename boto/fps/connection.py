@@ -42,7 +42,7 @@ def add_attrs_from(func, to):
 def complex_amounts(*fields):
     def decorator(func):
         def wrapper(self, *args, **kw):
-            for field in filter(kw.has_key, fields):
+            for field in (i for i in fields if i in kw):
                 amount = kw.pop(field)
                 kw[field + '.Value'] = getattr(amount, 'Value', str(amount))
                 kw[field + '.CurrencyCode'] = getattr(amount, 'CurrencyCode',
@@ -59,7 +59,7 @@ def requires(*groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
+            hasgroup = lambda x: len(x) == len([i for i in x if i in kw])
             if 1 != len(list(filter(hasgroup, groups))):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires {1} argument(s)" \
