@@ -43,7 +43,7 @@ class ElastiCacheConnection(AWSQueryConnection):
     associated with their cache and can receive alarms if a part of
     their cache runs hot.
     """
-    APIVersion = "2013-06-15"
+    APIVersion = "2015-02-02"
     DefaultRegionName = "us-east-1"
     DefaultRegionEndpoint = "elasticache.us-east-1.amazonaws.com"
 
@@ -391,52 +391,167 @@ class ElastiCacheConnection(AWSQueryConnection):
             path='/', params=params)
 
     def create_replication_group(self, replication_group_id,
-                                 primary_cluster_id,
-                                 replication_group_description):
+                                 replication_group_description,
+                                 auto_minor_version_upgrade=None,
+                                 automatic_failover_enabled=None,
+                                 cache_node_type=None,
+                                 cache_parameter_group_name=None,
+                                 cache_security_group_names=None,
+                                 cache_subnet_group_name=None,
+                                 engine=None,
+                                 engine_version=None,
+                                 notification_topic_arn=None,
+                                 num_cache_clusters=None,
+                                 port=None,
+                                 preferred_cache_cluster_azs=None,
+                                 preferred_maintenance_window=None,
+                                 primary_cluster_id=None,
+                                 security_group_ids=None,
+                                 snapshot_arns=None,
+                                 snapshot_name=None,
+                                 snapshot_retention_limit=None,
+                                 snapshot_window=None,
+                                 tags=None):
         """
-        The CreateReplicationGroup operation creates a replication
-        group. A replication group is a collection of cache clusters,
-        where one of the clusters is a read/write primary and the
-        other clusters are read-only replicas. Writes to the primary
-        are automatically propagated to the replicas.
+        The CreateReplicationGroup action creates a replication group.
+        A replication group is a collection of cache clusters, where
+        one of the cache clusters is a read/write primary and the others
+        are read-only replicas. Writes to the primary are automatically
+        propagated to the replicas.
 
-        When you create a replication group, you must specify an
-        existing cache cluster that is in the primary role. When the
-        replication group has been successfully created, you can add
-        one or more read replica replicas to it, up to a total of five
-        read replicas.
+        When you create a replication group, you must specify an existing
+        cache cluster that is in the primary role. When the replication
+        group has been successfully created, you can add one or more read
+        replica replicas to it, up to a total of five read replicas.
 
-        :type replication_group_id: string
-        :param replication_group_id:
-        The replication group identifier. This parameter is stored as a
-            lowercase string.
+        Note: This action is valid only for Redis.
 
-        Constraints:
+        Request Parameters
 
+        :param cache_subnet_group_name: The name of the cache subnet group
+        to be used for the replication group.
 
-        + Must contain from 1 to 20 alphanumeric characters or hyphens.
-        + First character must be a letter.
-        + Cannot end with a hyphen or contain two consecutive hyphens.
+        :type engine: String
+        :param engine: The name of the cache engine to be used for the
+        cache clusters in this replication group.
 
-        :type primary_cluster_id: string
+        :type engine_version: String
+        :param engine_version: The version number of the cache engine to
+        be used for the cache clusters in this replication group. To
+        view the supported cache engine versions, use the
+        DescribeCacheEngineVersions action.
+
+        :type notification_topic_arn: String
+        :param notification_topic_arn: The Amazon Resource Name (ARN)
+        of the Amazon Simple Notification Service (SNS) topic to which
+        notifications will be sent.
+
+        :type num_cache_clusters: Integer
+        :param num_cache_clusters: The number of cache clusters this
+        replication group will initially have. If Multi-AZ is enabled,
+        the value of this parameter must be at least 2. The maximum
+        permitted value for NumCacheClusters is 6 (primary plus 5 replicas).
+
+        :type port: Integer
+        :param port: The port number on which each member of the replication
+        group will accept connections.
+
+        :type preferred_cache_cluster_azs: String list
+        :param preferred_cache_cluster_azs: A list of EC2 availability zones
+        in which the replication group's cache
+        clusters will be created. The order of the availability zones in the
+        list is not important.
+
+        :type preferred_maintenance_window: String
+        :param preferred_maintenance_window: Specifies the weekly time range
+        during which maintenance on the cache cluster is performed. It is
+        specified as a range in the format ddd:hh24:mi-ddd:hh24:mi
+        (24H Clock UTC). The minimum maintenance window is a 60 minute period.
+        Valid values for ddd are:
+        sun mon tue wed thu fri sat
+
+        :type primary_cluster_id: String
         :param primary_cluster_id: The identifier of the cache cluster that
-            will serve as the primary for this replication group. This cache
-            cluster must already exist and have a status of available .
+        will serve as the primary for this replication group. This cache
+        cluster must already exist and have a status of available.
 
-        :type replication_group_description: string
-        :param replication_group_description: A user-specified description for
-            the replication group.
+        :type security_group_ids: String list
+        :param security_group_ids: One or more Amazon VPC security groups
+        associated with this replication group.
+
+        :type snapshot_arns: String list
+        :param snapshot_arns: The name of the cache engine to be used for
+        the cache clusters in this replication group.
+
+        :type snapshot_name: String
+        :param snapshot_name: The name of a snapshot from which to restore
+        data into the new node group. The snapshot status changes to restoring
+        while the new node group is being created.
+
+        :type snapshot_retention_limit: Integer
+        :param snapshot_retention_limit: The number of days for which
+        ElastiCache will retain automatic snapshots before deleting them.
+        For example, if you set SnapshotRetentionLimit to 5, then a snapshot
+        that was taken today will be retained for 5 days before being deleted.
+
+        :type snapshot_window: String
+        :param snapshot_window: The daily time range (in UTC) during which
+        ElastiCache will begin taking a daily snapshot of your node group.
+
+        :type tags: String list
+        :param tags: A list of cost allocation tags to be added to this
+        resource. A tag is a key-value pair. A tag key must be accompanied
+        by a tag value.
 
         """
         params = {
             'ReplicationGroupId': replication_group_id,
-            'PrimaryClusterId': primary_cluster_id,
             'ReplicationGroupDescription': replication_group_description,
         }
-        return self._make_request(
-            action='CreateReplicationGroup',
-            verb='POST',
-            path='/', params=params)
+        if auto_minor_version_upgrade is not None:
+            params['AutoMinorVersionUpgrade'] = auto_minor_version_upgrade
+        if automatic_failover_enabled is not None:
+            params['AutomaticFailoverEnabled'] = automatic_failover_enabled
+        if cache_node_type is not None:
+            params['CacheNodeType'] = cache_node_type
+        if cache_parameter_group_name is not None:
+            params['CacheParameterGroupName'] = cache_parameter_group_name
+        if cache_security_group_names is not None:
+            params['CacheSecurityGroupNames'] = cache_security_group_names
+        if cache_subnet_group_name is not None:
+            params['CacheSubnetGroupName'] = cache_subnet_group_name
+        if engine is not None:
+            params['Engine'] = engine
+        if engine_version is not None:
+            params['EngineVersion'] = engine_version
+        if notification_topic_arn is not None:
+            params['NotificationTopicArn'] = notification_topic_arn
+        if num_cache_clusters is not None:
+            params['NumCacheClusters'] = num_cache_clusters
+        if port is not None:
+            params['Port'] = port
+        if preferred_cache_cluster_azs is not None:
+            params['PreferredCacheClusterAZs'] = preferred_cache_cluster_azs
+        if preferred_maintenance_window is not None:
+            params['PreferredMaintenanceWindow'] = preferred_maintenance_window
+        if primary_cluster_id is not None:
+            params['PrimaryClusterId'] = primary_cluster_id
+        if security_group_ids is not None:
+            params['SecurityGroupIds'] = security_group_ids
+        if snapshot_arns is not None:
+            params['SnapshotArns'] = snapshot_arns
+        if snapshot_name is not None:
+            params['SnapshotName'] = snapshot_name
+        if snapshot_retention_limit is not None:
+            params['SnapshotRetentionLimit'] = snapshot_retention_limit
+        if snapshot_window is not None:
+            params['SnapshotWindow'] = snapshot_window
+        if tags is not None:
+            params['Tags'] = tags
+
+        return self._make_request(action='CreateReplicationGroup',
+                                  verb='POST',
+                                  path='/', params=params,)
 
     def delete_cache_cluster(self, cache_cluster_id):
         """
