@@ -30,6 +30,7 @@ import time
 import random
 
 import boto.s3
+from boto import config
 from boto.compat import six, StringIO, urllib
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
@@ -445,6 +446,22 @@ class S3KeyTest(unittest.TestCase):
             urllib.parse.unquote(check.content_disposition),
             expected
         )
+
+
+class S3KeySSECTest(unittest.TestCase):
+    def setUp(self):
+        # Force HTTPS which is required for SSEC.
+        if not config.has_section('Boto'):
+            boto.config.add_section('Boto')
+        boto.config.setbool('Boto', 'is_secure', True)
+        self.conn = S3Connection()
+        self.bucket_name = 'boto-ssec-key-%d' % int(time.time())
+        self.bucket = self.conn.create_bucket(self.bucket_name)
+
+    def tearDown(self):
+        for key in self.bucket:
+            key.delete()
+        self.bucket.delete()
 
     def test_set_contents_with_sse_c(self):
         content="01234567890123456789"
