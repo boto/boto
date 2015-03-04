@@ -1262,8 +1262,6 @@ class Bucket(object):
         """
         Configure versioning for this bucket.
 
-        ..note:: This feature is currently in beta.
-
         :type versioning: bool
         :param versioning: A boolean indicating whether version is
             enabled (True) or disabled (False).
