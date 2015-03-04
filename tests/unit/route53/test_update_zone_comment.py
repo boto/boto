@@ -24,6 +24,7 @@ from tests.unit import AWSMockServiceTestCase
 from boto.route53.connection import Route53Connection
 from boto.route53.zone import Zone
 from nose.plugins.attrib import attr
+from boto.compat import six
 
 @attr(route53=True)
 class TestUpdateZoneCommentRoute53(AWSMockServiceTestCase):
