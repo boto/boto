@@ -560,6 +560,43 @@ class Route53Connection(AWSAuthConnection):
         return [Zone(self, zone) for zone in
                 zones['ListHostedZonesResponse']['HostedZones']]
 
+    POSTUHZCXMLBody = """<UpdateHostedZoneCommentRequest xmlns="%(xmlns)s">
+    <Comment>%(comment)s</Comment>
+    </UpdateHostedZoneCommentRequest>"""
+
+    def update_hosted_zone_comment(self, hosted_zone_id, comment=""):
+        """
+        Update the comment of a hosted zone specified by the given id.
+
+        :type hosted_zone_id: str
+        :param hosted_zone_id: The hosted zone's id
+
+        :type comment: str
+        :param comment: The new comment for the hosted zone. If you don't 
+            specify a value for Comment, Amazon Route 53 deletes the existing 
+            value of the Comment element, if any.
+
+        """
+        params = {'xmlns': self.XMLNameSpace,
+                  'comment': comment
+                  }
+        xml_body = self.POSTUHZCXMLBody % params
+        uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
+        response = self.make_request('POST', uri,
+                                     {'Content-Type': 'text/xml'}, xml_body)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            e = boto.jsonresponse.Element()
+            h = boto.jsonresponse.XmlHandler(e, None)
+            h.parse(body)
+            e['UpdateHostedZoneCommentResponse']['HostedZone']['Id'] = e['UpdateHostedZoneCommentResponse']['HostedZone']['Id'].split('/')[-1]
+            return e['UpdateHostedZoneCommentResponse']['HostedZone']
+        else:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+
     def _make_qualified(self, value):
         """
         Ensure passed domain names end in a period (.) character.
