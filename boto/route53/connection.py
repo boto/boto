@@ -577,9 +577,7 @@ class Route53Connection(AWSAuthConnection):
             value of the Comment element, if any.
 
         """
-        params = {'xmlns': self.XMLNameSpace,
-                  'comment': comment
-                  }
+        params = {'xmlns': self.XMLNameSpace,'comment': comment}
         xml_body = self.POSTUHZCXMLBody % params
         uri = '/%s/hostedzone/%s' % (self.Version, hosted_zone_id)
         response = self.make_request('POST', uri,
@@ -593,9 +591,7 @@ class Route53Connection(AWSAuthConnection):
             e['UpdateHostedZoneCommentResponse']['HostedZone']['Id'] = e['UpdateHostedZoneCommentResponse']['HostedZone']['Id'].split('/')[-1]
             return e['UpdateHostedZoneCommentResponse']['HostedZone']
         else:
-            raise exception.DNSServerError(response.status,
-                                           response.reason,
-                                           body)
+            raise exception.DNSServerError(response.status,response.reason,body)
 
     def _make_qualified(self, value):
         """
