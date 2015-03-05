@@ -922,6 +922,19 @@ class IAMConnection(AWSQueryConnection):
                   'AuthenticationCode2': auth_code_2}
         return self.get_response('ResyncMFADevice', params)
 
+    def delete_virtual_mfa_device(self, serial_number):
+        """
+        Deletes the specified MFA device.
+        You must deactivate user's virtual MFA device before you delete it
+
+        :type serial_number: string
+        :param serial_number: The serial number which uniquely identifies
+            the MFA device.
+
+        """
+        params = {'SerialNumber': serial_number}
+        return self.get_response('DeleteVirtualMFADevice', params)
+
     #
     # Login Profiles
     #
