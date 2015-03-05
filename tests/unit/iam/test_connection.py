@@ -479,3 +479,32 @@ class TestDeleteAccountPasswordPolicy(AWSMockServiceTestCase):
                 'Action': 'DeleteAccountPasswordPolicy'
             },
             ignore_params_values=['Version'])
+
+class TestDeleteVirtualMFADevice(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+            <DeleteVirtualMFADeviceResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+              <DeleteVirtualMFADeviceResult>
+                <VirtualMFADevice>
+                  <SerialNumber>arn:aws:iam::123456789012:mfa/ExampleName</SerialNumber>
+                </VirtualMFADevice>
+              </DeleteVirtualMFADeviceResult>
+              <ResponseMetadata>
+                <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+              </ResponseMetadata>
+            </DeleteVirtualMFADeviceResponse>
+        """
+
+    def test_delete_virtual_mfa_device(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.delete_virtual_mfa_device('arn:aws:iam::123456789012:mfa/ExampleName')
+        self.assert_request_parameters(
+            {'SerialNumber': 'arn:aws:iam::123456789012:mfa/ExampleName',
+             'Action': 'DeleteVirtualMFADevice'},
+            ignore_params_values=['Version'])
+        self.assertEquals(response['delete_virtual_mfa_device_response']
+                                  ['delete_virtual_mfa_device_result']
+                                  ['virtual_mfa_device']
+                                  ['serial_number'], 'arn:aws:iam::123456789012:mfa/ExampleName')
