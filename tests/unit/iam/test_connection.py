@@ -479,3 +479,93 @@ class TestDeleteAccountPasswordPolicy(AWSMockServiceTestCase):
                 'Action': 'DeleteAccountPasswordPolicy'
             },
             ignore_params_values=['Version'])
+
+class TestCreateLoginProfile(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+            <CreateLoginProfileResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+              <CreateUserResult>
+                <LoginProfile>
+                  <UserName>Bob</UserName>
+                  <CreateDate>2011-09-19T23:00:56Z</CreateDate>
+                </LoginProfile>
+              </CreateUserResult>
+              <ResponseMetadata>
+                <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+              </ResponseMetadata>
+            </CreateLoginProfileResponse>
+        """
+
+    def test_create_login_profile(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.create_login_profile('Bob', 'password')
+        self.assert_request_parameters(
+            {'Action': 'CreateLoginProfile',
+             'UserName': 'Bob',
+             'Password': 'password'},
+            ignore_params_values=['Version'])
+        self.assertEquals(response['create_login_profile_response']
+                                  ['create_user_result']
+                                  ['login_profile']
+                                  ['user_name'], 'Bob')
+        self.assertEquals(response['create_login_profile_response']
+                                  ['create_user_result']
+                                  ['login_profile']
+                                  ['create_date'], '2011-09-19T23:00:56Z')
+
+    def test_create_login_profile_with_password_reset_required(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.create_login_profile('Bob', 'password', True)
+        self.assert_request_parameters(
+            {'Action': 'CreateLoginProfile',
+             'UserName': 'Bob',
+             'Password': 'password',
+             'PasswordResetRequired': 'true'},
+            ignore_params_values=['Version'])
+        self.assertEquals(response['create_login_profile_response']
+                                  ['create_user_result']
+                                  ['login_profile']
+                                  ['user_name'], 'Bob')
+        self.assertEquals(response['create_login_profile_response']
+                                  ['create_user_result']
+                                  ['login_profile']
+                                  ['create_date'], '2011-09-19T23:00:56Z')
+
+class TestUpdateLoginProfile(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+            <UpdateLoginProfileResponse>
+             <ResponseMetadata>
+                <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+             </ResponseMetadata>
+            </UpdateLoginProfileResponse>
+        """
+
+    def test_update_login_profile(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.update_login_profile('Bob', 'password')
+        self.assert_request_parameters(
+            {'Action': 'UpdateLoginProfile',
+             'UserName': 'Bob',
+             'Password': 'password'},
+            ignore_params_values=['Version'])
+        self.assertEquals(response['update_login_profile_response']
+                                  ['response_metadata']
+                                  ['request_id'], '7a62c49f-347e-4fc4-9331-6e8eEXAMPLE')
+
+    def test_update_login_profile_with_password_reset_required(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.update_login_profile('Bob', 'password', True)
+        self.assert_request_parameters(
+            {'Action': 'UpdateLoginProfile',
+             'UserName': 'Bob',
+             'Password': 'password',
+             'PasswordResetRequired': 'true'},
+            ignore_params_values=['Version'])
+        self.assertEquals(response['update_login_profile_response']
+                                  ['response_metadata']
+                                  ['request_id'], '7a62c49f-347e-4fc4-9331-6e8eEXAMPLE')
