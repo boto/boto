@@ -28,7 +28,7 @@ import time
 import os
 import socket
 
-from boto.s3.connection import S3Connection
+from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 from boto.s3.bucket import Bucket
 from boto.exception import S3PermissionsError, S3ResponseError
 from boto.compat import http_client, six, urlopen, urlsplit
@@ -237,7 +237,9 @@ class S3ConnectionTest (unittest.TestCase):
         auth_con.delete_bucket(auth_bucket)
 
     def test_error_code_populated(self):
-        c = S3Connection()
+        # Bucket we try to create is an invalid DNS name
+        # so use the ordinary calling format instead.
+        c = S3Connection(calling_format=OrdinaryCallingFormat())
         try:
             c.create_bucket('bad$bucket$name')
         except S3ResponseError as e:
