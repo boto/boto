@@ -937,7 +937,7 @@ class IAMConnection(AWSQueryConnection):
         params = {'UserName': user_name}
         return self.get_response('GetLoginProfile', params)
 
-    def create_login_profile(self, user_name, password):
+    def create_login_profile(self, user_name, password, password_reset_required=False):
         """
         Creates a login profile for the specified user, give the user the
         ability to access AWS services and the AWS Management Console.
@@ -948,9 +948,14 @@ class IAMConnection(AWSQueryConnection):
         :type password: string
         :param password: The new password for the user
 
+        :type password_reset_required: boolean
+        :param password_reset_required: Should the user be required to change the password next login.
+
         """
         params = {'UserName': user_name,
                   'Password': password}
+        if password_reset_required is True:
+            params['PasswordResetRequired'] = 'true'
         return self.get_response('CreateLoginProfile', params)
 
     def delete_login_profile(self, user_name):
@@ -964,7 +969,7 @@ class IAMConnection(AWSQueryConnection):
         params = {'UserName': user_name}
         return self.get_response('DeleteLoginProfile', params)
 
-    def update_login_profile(self, user_name, password):
+    def update_login_profile(self, user_name, password=None, password_reset_required=False):
         """
         Resets the password associated with the user's login profile.
 
@@ -974,9 +979,15 @@ class IAMConnection(AWSQueryConnection):
         :type password: string
         :param password: The new password for the user
 
+        :type password_reset_required: boolean
+        :param password_reset_required: Should the user be required to change the password next login.
+
         """
-        params = {'UserName': user_name,
-                  'Password': password}
+        params = {'UserName': user_name}
+        if password is not None:
+            params['Password'] = password
+        if password_reset_required is True:
+            params['PasswordResetRequired'] = 'true'
         return self.get_response('UpdateLoginProfile', params)
 
     def create_account_alias(self, alias):
