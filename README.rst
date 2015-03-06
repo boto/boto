@@ -26,6 +26,22 @@ and the `Porting Guide`_. If you would like, you can open an issue to let
 others know about your work in progress. Tests **must** pass on Python
 2.6, 2.7, 3.3, and 3.4 for pull requests to be accepted.
 
+******
+Boto 3
+******
+The next major version of Boto is currently in developer preview and can
+be found in the `Boto 3 <https://github.com/boto/boto3#readme>`__
+repository and installed via ``pip``. It supports the latest service APIs
+and provides a high-level object-oriented interface to many services.
+
+Please try Boto 3 and
+`leave feedback <https://github.com/boto/boto3/issues>`__ with any issues,
+suggestions, and feature requests you might have.
+
+********
+Services
+********
+
 At the moment, boto supports:
 
 * Compute
