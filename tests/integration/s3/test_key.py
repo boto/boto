@@ -603,6 +603,20 @@ class S3KeySigV4Test(unittest.TestCase):
         k = self.bucket.get_key('redirected')
         self.assertEqual(k.get_contents_as_string().decode('utf-8'), body)
 
+    def test_anon_using_sigv4(self):
+        # anon write to bucket should fail (ie not add auth headers)
+        # This should be true even if access/secret key is available
+        # as it is for sigv2 connections.
+        anon_con = S3Connection(host='s3-external-1.amazonaws.com',
+                                anon=True,
+                                aws_access_key_id='ak',
+                                aws_secret_access_key='sk')
+        anon_bucket = Bucket(anon_con, self.bucket_name)
+        sfp = StringIO('No authorization header')
+        k = anon_bucket.new_key("anon")
+        with self.assertRaises(k.provider.storage_response_error):
+            k.set_contents_from_file(sfp)
+
 
 class S3KeyVersionCopyTest(unittest.TestCase):
     def setUp(self):

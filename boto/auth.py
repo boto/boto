@@ -1057,6 +1057,12 @@ def detect_potential_sigv4(func):
         return func(self)
     return _wrapper
 
+def detect_anon(func):
+    def _wrapper(self):
+        if self.anon:
+            return ['anon']
+        return func(self)
+    return _wrapper
 
 def detect_potential_s3sigv4(func):
     def _wrapper(self):
