@@ -190,7 +190,7 @@ to be taken. The example below makes use of the FileChunkIO module, so
 
     # Use a chunk size of 50 MiB (feel free to change this)
     >>> chunk_size = 52428800
-    >>> chunk_count = int(math.ceil(source_size / chunk_size))
+    >>> chunk_count = int(math.ceil(source_size / float(chunk_size)))
 
     # Send the file parts, using FileChunkIO to create a file-like object
     # that points to a certain byte range within the original file. We
