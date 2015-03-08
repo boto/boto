@@ -227,3 +227,39 @@ class TestResume(unittest.TestCase):
             self.vault, sentinel.upload_id, self.part_size, StringIO('1'), {},
             self.chunk_size)
         self.assertEquals(sentinel.archive_id, archive_id)
+
+
+class TestWriteException(TestWriter):
+    def setUp(self):
+        super(TestWriteException, self).setUp()
+        self.real_send_fn = self.writer.partitioner.send_fn
+        self.writer.partitioner.send_fn = self.mock_send_fn
+        self.fail_send = False
+
+    def mock_send_fn(self, part_data):
+        if self.fail_send:
+            self.fail_send = False
+            raise Exception('Expected 204, got (408, code=RequestTimeoutException, message=Request timed out.)')
+        self.real_send_fn(part_data)
+
+    def check_write(self, write_list):
+        self.fail_send = True
+        exception_count = 0
+        for write_data in write_list:
+            try:
+                self.writer.write(write_data)
+            except:
+                exception_count = exception_count + 1
+                self.writer.write(b'')
+        try:
+            self.writer.close()
+        except:
+            exception_count = exception_count + 1
+            self.writer.close()
+
+        data = b''.join(write_list)
+        upload_part_calls, data_tree_hashes = calculate_mock_vault_calls(
+            data, self.part_size, self.chunk_size)
+        check_mock_vault_calls(
+            self.vault, upload_part_calls, data_tree_hashes, len(data))
+        assert_equal(1, exception_count)
