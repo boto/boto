@@ -267,6 +267,8 @@ class AutoScaleConnection(AWSQueryConnection):
                 launch_config.classic_link_vpc_security_groups,
                 'ClassicLinkVPCSecurityGroups'
             )
+        if launch_config.placement_tenancy is not None:
+            params['PlacementTenancy'] = launch_config.placement_tenancy
         return self.get_object('CreateLaunchConfiguration', params,
                                Request, verb='POST')
 

@@ -105,7 +105,7 @@ class LaunchConfiguration(object):
                  associate_public_ip_address=None, volume_type=None,
                  delete_on_termination=True, iops=None,
                  use_block_device_types=False, classic_link_vpc_id=None,
-                 classic_link_vpc_security_groups=None):
+                 classic_link_vpc_security_groups=None, placement_tenancy=None):
         """
         A launch configuration.
 
@@ -169,6 +169,10 @@ class LaunchConfiguration(object):
         :param classic_link_vpc_security_groups: Security group
             id's of the security groups with which to associate the
             ClassicLink VPC instances.
+
+        :type placement_tenancy: str
+        :param placement_tenancy: Tenancy of instances launched via this
+            configuration. Valid values are default and dedicated.
         """
         self.connection = connection
         self.name = name
@@ -197,6 +201,7 @@ class LaunchConfiguration(object):
         classic_link_vpc_sec_groups = classic_link_vpc_security_groups or []
         self.classic_link_vpc_security_groups = \
             ListElement(classic_link_vpc_sec_groups)
+        self.placement_tenancy = placement_tenancy
 
         if connection is not None:
             self.use_block_device_types = connection.use_block_device_types
@@ -262,6 +267,8 @@ class LaunchConfiguration(object):
             self.iops = int(value)
         elif name == 'ClassicLinkVPCId':
             self.classic_link_vpc_id = value
+        elif name == 'PlacementTenancy':
+            self.placement_tenancy = value
         else:
             setattr(self, name, value)
 
