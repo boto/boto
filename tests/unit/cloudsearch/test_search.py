@@ -349,7 +349,7 @@ class CloudSearchSearchFacetTest(CloudSearchSearchBaseTest):
         },
         'facets': {
             'tags': {},
-            'animals': {'constraints': [{'count': '2', 'value': 'fish'}, {'count': '1', 'value': 'lions'}]},
+            'animals': {'constraints': [{'count': '2', 'value': 'lions'}, {'count': '1', 'value': 'fish'}]},
         }
     }
 
@@ -361,7 +361,11 @@ class CloudSearchSearchFacetTest(CloudSearchSearchBaseTest):
         results = search.search(q='Test', facet=['tags'])
 
         self.assertTrue('tags' not in results.facets)
-        self.assertEqual(results.facets['animals'], {u'lions': u'1', u'fish': u'2'})
+        ordered_keys = results.facets['animals'].keys()
+        ordered_values = results.facets['animals'].values()
+        self.assertEqual(ordered_keys, [u'lions', u'fish'])
+        self.assertEqual(ordered_values, [u'2', u'1'])
+        self.assertEqual(results.facets['animals'], {u'lions': u'2', u'fish': u'1'})
 
 
 class CloudSearchNonJsonTest(CloudSearchSearchBaseTest):
