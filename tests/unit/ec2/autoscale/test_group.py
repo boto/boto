@@ -298,6 +298,7 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
                 <ClassicLinkVPCSecurityGroups>
                     <member>sg-1234</member>
                 </ClassicLinkVPCSecurityGroups>
+                <PlacementTenancy>dedicated</PlacementTenancy>
               </member>
             </LaunchConfigurations>
           </DescribeLaunchConfigurationsResult>
@@ -327,6 +328,7 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
         self.assertEqual(response[0].classic_link_vpc_id, 'vpc-12345')
         self.assertEqual(response[0].classic_link_vpc_security_groups,
                          ['sg-1234'])
+        self.assertEqual(response[0].placement_tenancy, 'dedicated')
 
         self.assert_request_parameters({
             'Action': 'DescribeLaunchConfigurations',
