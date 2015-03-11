@@ -376,7 +376,8 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             delete_on_termination=False,
             iops=3000,
             classic_link_vpc_id='vpc-1234',
-            classic_link_vpc_security_groups=['classic_link_group']
+            classic_link_vpc_security_groups=['classic_link_group'],
+            placement_tenancy="dedicated",
         )
 
         response = self.service_connection.create_launch_configuration(lc)
@@ -399,7 +400,8 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'DeleteOnTermination': 'false',
             'Iops': 3000,
             'ClassicLinkVPCId': 'vpc-1234',
-            'ClassicLinkVPCSecurityGroups.member.1': 'classic_link_group'
+            'ClassicLinkVPCSecurityGroups.member.1': 'classic_link_group',
+            'PlacementTenancy': 'dedicated'
         }, ignore_params_values=['Version'])
 
 
