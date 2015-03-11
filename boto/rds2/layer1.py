@@ -58,7 +58,7 @@ class RDSConnection(AWSQueryConnection):
     more information on Amazon RDS concepts and usage scenarios, go to
     the `Amazon RDS User Guide`_.
     """
-    APIVersion = "2013-09-09"
+    APIVersion = "2014-10-31"
     DefaultRegionName = "us-east-1"
     DefaultRegionEndpoint = "rds.us-east-1.amazonaws.com"
     ResponseError = JSONResponseError
