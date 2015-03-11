@@ -379,7 +379,7 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             iops=3000,
             classic_link_vpc_id='vpc-1234',
             classic_link_vpc_security_groups=['classic_link_group'],
-            placement_tenancy="dedicated",
+            placement_tenancy="dedicated"
         )
 
         response = self.service_connection.create_launch_configuration(lc)
