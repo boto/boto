@@ -232,3 +232,7 @@ class StorageQuotaExceeded(JSONResponseError):
 
 class SubnetAlreadyInUse(JSONResponseError):
     pass
+
+
+class KMSKeyNotAccessible(JSONResponseError):
+    pass

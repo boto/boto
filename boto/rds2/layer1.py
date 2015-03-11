@@ -117,6 +117,7 @@ class RDSConnection(AWSQueryConnection):
         "DBSnapshotAlreadyExists": exceptions.DBSnapshotAlreadyExists,
         "StorageQuotaExceeded": exceptions.StorageQuotaExceeded,
         "SubnetAlreadyInUse": exceptions.SubnetAlreadyInUse,
+        "KMSKeyNotAccessible": exceptions.KMSKeyNotAccessible
     }
 
 
@@ -332,7 +333,8 @@ class RDSConnection(AWSQueryConnection):
                            auto_minor_version_upgrade=None,
                            license_model=None, iops=None,
                            option_group_name=None, character_set_name=None,
-                           publicly_accessible=None, tags=None):
+                           publicly_accessible=None, tags=None,
+                           kms_key_id=None, storage_encrypted=None):
         """
         Creates a new DB instance.
 
@@ -647,6 +649,22 @@ class RDSConnection(AWSQueryConnection):
         :type tags: list
         :param tags: A list of tags.
 
+        :type kms_key_id: string
+        :param kms_key_id: The KMS key identifier for an encrypted DB instance.
+        The KMS key identifier is the Amazon Resource Name (ARN) for the KMS
+        encryption key. If you are creating a DB instance with the same AWS
+        account that owns the KMS encryption key used to encrypt the new DB
+        instance, then you can use the KMS key alias instead of the ARN for
+        the KM encryption key. If the `StorageEncrypted` parameter is true, and
+        you do not specify a value for the KmsKeyId parameter, then Amazon RDS
+        will use your default encryption key. AWS KMS creates the default
+        encryption key for your AWS account. Your AWS account has a different
+        default encryption key for each AWS region.
+
+        :type storage_encrypted: boolean
+        :param storage_encrypted: Specifies whether the DB instance is
+            encrypted.
+        Default: `False`
         """
         params = {
             'DBInstanceIdentifier': db_instance_identifier,
@@ -704,6 +722,11 @@ class RDSConnection(AWSQueryConnection):
                 params, tags,
                 'Tags.member',
                 ('Key', 'Value'))
+        if kms_key_id is not None:
+            params['KmsKeyId'] = kms_key_id
+        if storage_encrypted is not None:
+            params['StorageEncrypted'] = str(
+                storage_encrypted).lower()
         return self._make_request(
             action='CreateDBInstance',
             verb='POST',
