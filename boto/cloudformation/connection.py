@@ -135,7 +135,8 @@ class CloudFormationConnection(AWSQueryConnection):
 
         :type parameters: list
         :param parameters: A list of key/value tuples that specify input
-            parameters for the stack.
+            parameters for the stack. A 3-tuple (key, value, bool) may be used to
+            specify the `UsePreviousValue` option.
 
         :type disable_rollback: boolean
         :param disable_rollback: Set to `True` to disable rollback of the stack
@@ -235,9 +236,16 @@ class CloudFormationConnection(AWSQueryConnection):
             boto.log.warning("If both TemplateBody and TemplateURL are"
                 " specified, only TemplateBody will be honored by the API")
         if parameters and len(parameters) > 0:
-            for i, (key, value) in enumerate(parameters):
+            for i, parameter_tuple in enumerate(parameters):
+                key, value = parameter_tuple[:2]
+                use_previous = (parameter_tuple[2] 
+                                if len(parameter_tuple) > 2 else False)
                 params['Parameters.member.%d.ParameterKey' % (i + 1)] = key
                 params['Parameters.member.%d.ParameterValue' % (i + 1)] = value
+                if use_previous:
+                    params['Parameters.member.%d.UsePreviousValue' 
+                           % (i + 1)] = self.encode_bool(use_previous)
+                    
         if capabilities:
             for i, value in enumerate(capabilities):
                 params['Capabilities.member.%d' % (i + 1)] = value
@@ -459,7 +467,8 @@ class CloudFormationConnection(AWSQueryConnection):
 
         :type parameters: list
         :param parameters: A list of key/value tuples that specify input
-            parameters for the stack.
+            parameters for the stack. A 3-tuple (key, value, bool) may be used to
+            specify the `UsePreviousValue` option.
 
         :type notification_arns: list
         :param notification_arns: The Simple Notification Service (SNS) topic
