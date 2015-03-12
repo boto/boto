@@ -461,6 +461,28 @@ class S3KeyTest(unittest.TestCase):
         ks = kn.get_contents_as_string(headers=header)
         self.assertEqual(ks, content.encode('utf-8'))
 
+    def test_head_key_storage_class(self):
+        k = Key(self.bucket)
+        keyname = u"テスト"
+        k.key = keyname
+        body = u"Japanese テスト"
+        k.set_contents_from_string(body, reduced_redundancy=True)
+        # this ends up doing a simple HEAD
+        from_s3_key = self.bucket.get_key(key_name=keyname)
+        # check the storage class is rr
+        self.assertEqual(from_s3_key.storage_class, 'REDUCED_REDUNDANCY')
+
+    def test_get_missing_key(self):
+        # The 404 response includes the keyname in the XML of the
+        # get response. Test that parsing the Japanese works.
+        keyname = u"テスト"
+        from_s3_key = Key(self.bucket, keyname)
+        try:
+            body = from_s3_key.get_contents_as_string()
+        except S3ResponseError as e:
+            self.assertEqual(e.status, 404)
+        except Exception as e:
+            self.assertFalse('Expecting S3ResponseError not %s' % str(e))
 
 class S3KeySigV4Test(unittest.TestCase):
     def setUp(self):
