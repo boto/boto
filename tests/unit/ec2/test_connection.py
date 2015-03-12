@@ -976,6 +976,28 @@ class TestConnectToRegion(unittest.TestCase):
         self.assertEqual(None, self.ec2)
 
 
+class TestEC2ConnectionParamOverride(unittest.TestCase):
+    def test_host_override(self):
+        host_name = 'some.dummy.host'
+        ec2conn = EC2Connection(host=host_name)
+        self.assertEqual(host_name, ec2conn.host)
+
+    def test_port_override(self):
+        port_num = 12345
+        ec2conn = EC2Connection(port=port_num)
+        self.assertEqual(port_num, ec2conn.port)
+
+    def _test_ssl_override(self, is_secure):
+        ec2conn = EC2Connection(is_secure=is_secure)
+        self.assertEqual(is_secure, ec2conn.is_secure)
+
+    def test_ssl_override_true(self):
+        self._test_ssl_override(True)
+
+    def test_ssl_override_false(self):
+        self._test_ssl_override(False)
+
+
 class TestTrimSnapshots(TestEC2ConnectionBase):
     """
     Test snapshot trimming functionality by ensuring that expected calls
