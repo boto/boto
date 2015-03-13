@@ -32,6 +32,7 @@ import random
 import boto.s3
 from boto.compat import six, StringIO, urllib
 from boto.s3.connection import S3Connection
+from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
 
@@ -504,6 +505,26 @@ class S3KeySigV4Test(unittest.TestCase):
         keys = self.bucket.get_all_keys(prefix=k.key, max_keys=1)
         self.assertEqual(1, len(keys))
 
+    def test_set_contents_with_sse_c_using_sigv4(self):
+        # Force ssl for sse-c
+        secure_conn = boto.s3.connect_to_region('eu-central-1', is_secure=True)
+        secure_bucket = Bucket(secure_conn, self.bucket_name)
+        content="01234567890123456789"
+        # the plain text of customer key is "01testKeyToSSEC!"
+        header = {
+            "x-amz-server-side-encryption-customer-algorithm" :
+             "AES256",
+            "x-amz-server-side-encryption-customer-key" :
+             "MAAxAHQAZQBzAHQASwBlAHkAVABvAFMAUwBFAEMAIQA=",
+            "x-amz-server-side-encryption-customer-key-MD5" :
+             "fUgCZDDh6bfEMuP2bN38mg=="
+        }
+        # upload and download content with AWS specified headers
+        k = secure_bucket.new_key("testkey_for_sse_c")
+        k.set_contents_from_string(content, headers=header)
+        kn = secure_bucket.new_key("testkey_for_sse_c")
+        ks = kn.get_contents_as_string(headers=header)
+        self.assertEqual(ks, content.encode('utf-8'))
 
 class S3KeyVersionCopyTest(unittest.TestCase):
     def setUp(self):

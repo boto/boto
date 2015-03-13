@@ -371,8 +371,8 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         case, sorting them in alphabetical order and then joining
         them into a string, separated by newlines.
         """
-        canonical = []
-
+        # first clean the headers
+        clean = {}
         for header in headers_to_sign:
             c_name = header.lower().strip()
             raw_value = str(headers_to_sign[header])
@@ -380,8 +380,13 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
                 c_value = raw_value.strip()
             else:
                 c_value = ' '.join(raw_value.strip().split())
-            canonical.append('%s:%s' % (c_name, c_value))
-        return '\n'.join(sorted(canonical))
+            clean[c_name] = c_value
+
+        # then append them sorted by name only
+        canonical = []
+        for header in sorted(clean):
+            canonical.append('%s:%s' % (header, clean[header]))
+        return '\n'.join(canonical)
 
     def signed_headers(self, headers_to_sign):
         l = ['%s' % n.lower().strip() for n in headers_to_sign]
