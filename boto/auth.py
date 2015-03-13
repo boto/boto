@@ -39,7 +39,7 @@ import hmac
 import os
 import posixpath
 
-from boto.compat import urllib, encodebytes, parse_qs_safe
+from boto.compat import six, urllib, encodebytes, parse_qs_safe
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
 
@@ -575,7 +575,10 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         # Urlencode the path, **NOT** ``auth_path`` (because vhosting).
         path = urllib.parse.urlparse(http_request.path)
         # Because some quoting may have already been applied, let's back it out.
-        unquoted = urllib.parse.unquote(path.path)
+        if not six.PY2 or isinstance(path.path, bytes):
+            unquoted = urllib.parse.unquote(path.path)
+        else:
+            unquoted = urllib.parse.unquote(path.path.encode('utf-8'))
         # Requote, this time addressing all characters.
         encoded = urllib.parse.quote(unquoted, safe='/~')
         return encoded
