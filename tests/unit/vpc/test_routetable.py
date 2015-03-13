@@ -16,12 +16,24 @@ class TestDescribeRouteTables(AWSMockServiceTestCase):
                   <item>
                      <routeTableId>rtb-13ad487a</routeTableId>
                      <vpcId>vpc-11ad4878</vpcId>
+                      <tagSet>
+                          <item>
+                              <key>Foo</key>
+                              <value>Bar</value>
+                          </item>
+                      </tagSet>
                      <routeSet>
                         <item>
                            <destinationCidrBlock>10.0.0.0/22</destinationCidrBlock>
                            <gatewayId>local</gatewayId>
                            <state>active</state>
                            <origin>CreateRouteTable</origin>
+                        </item>
+                        <item>
+                           <destinationCidrBlock>10.0.0.1/22</destinationCidrBlock>
+                           <gatewayId>vgw-a035d6c1</gatewayId>
+                           <state>active</state>
+                           <origin>EnableVgwRoutePropagation</origin>
                         </item>
                      </routeSet>
                      <associationSet>
@@ -31,7 +43,11 @@ class TestDescribeRouteTables(AWSMockServiceTestCase):
                             <main>true</main>
                          </item>
                      </associationSet>
-                     <tagSet/>
+                     <propagatingVgwSet>
+                         <item>
+                            <gatewayId>vgw-a035d6c1</gatewayId>
+                         </item>
+                     </propagatingVgwSet>
                   </item>
                   <item>
                      <routeTableId>rtb-f9ad4890</routeTableId>
@@ -69,7 +85,17 @@ class TestDescribeRouteTables(AWSMockServiceTestCase):
                             <subnetId>subnet-15ad487c</subnetId>
                         </item>
                      </associationSet>
-                     <tagSet/>
+                      <propagatingVgwSet/>
+                      <tagSet>
+                          <item>
+                              <key>Foo</key>
+                              <value>Bar</value>
+                          </item>
+                          <item>
+                              <key>Baz</key>
+                              <value>Quz</value>
+                          </item>
+                      </tagSet>
                   </item>
                </routeTableSet>
             </DescribeRouteTablesResponse>
@@ -91,16 +117,24 @@ class TestDescribeRouteTables(AWSMockServiceTestCase):
         self.assertEquals(len(api_response), 2)
         self.assertIsInstance(api_response[0], RouteTable)
         self.assertEquals(api_response[0].id, 'rtb-13ad487a')
-        self.assertEquals(len(api_response[0].routes), 1)
+        self.assertEquals(len(api_response[0].routes), 2)
         self.assertEquals(api_response[0].routes[0].destination_cidr_block, '10.0.0.0/22')
         self.assertEquals(api_response[0].routes[0].gateway_id, 'local')
         self.assertEquals(api_response[0].routes[0].state, 'active')
         self.assertEquals(api_response[0].routes[0].origin, 'CreateRouteTable')
+        self.assertEquals(api_response[0].routes[1].destination_cidr_block, '10.0.0.1/22')
+        self.assertEquals(api_response[0].routes[1].gateway_id, 'vgw-a035d6c1')
+        self.assertEquals(api_response[0].routes[1].state, 'active')
+        self.assertEquals(api_response[0].routes[1].origin, 'EnableVgwRoutePropagation')
         self.assertEquals(len(api_response[0].associations), 1)
         self.assertEquals(api_response[0].associations[0].id, 'rtbassoc-12ad487b')
         self.assertEquals(api_response[0].associations[0].route_table_id, 'rtb-13ad487a')
         self.assertIsNone(api_response[0].associations[0].subnet_id)
         self.assertEquals(api_response[0].associations[0].main, True)
+        self.assertEquals(len(api_response[0].tags.keys()), 1)
+        self.assertEquals(len(api_response[1].tags.keys()), 2)
+        self.assertDictEqual(api_response[0].tags, {'Foo': 'Bar'})
+        self.assertDictEqual(api_response[1].tags, {'Foo': 'Bar', 'Baz': 'Quz'})
         self.assertEquals(api_response[1].id, 'rtb-f9ad4890')
         self.assertEquals(len(api_response[1].routes), 4)
         self.assertEquals(api_response[1].routes[0].destination_cidr_block, '10.0.0.0/22')
