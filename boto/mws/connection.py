@@ -644,7 +644,8 @@ class MWSConnection(AWSQueryConnection):
         return self._post_request(request, kw, response)
 
     @requires(['Address', 'Items'])
-    @structured_objects('Address', 'Items')
+    @structured_objects('Address')
+    @structured_objects('Items', members=True)
     @api_action('Outbound', 30, 0.5)
     def get_fulfillment_preview(self, request, response, **kw):
         """Returns a list of fulfillment order previews based on items
@@ -656,7 +657,8 @@ class MWSConnection(AWSQueryConnection):
                'ShippingSpeedCategory',    'DisplayableOrderDateTime',
                'DestinationAddress',       'DisplayableOrderComment',
                'Items'])
-    @structured_objects('DestinationAddress', 'Items')
+    @structured_objects('DestinationAddress')
+    @structured_objects('Items', members=True)
     @api_action('Outbound', 30, 0.5)
     def create_fulfillment_order(self, request, response, **kw):
         """Requests that Amazon ship items from the seller's inventory
