@@ -53,7 +53,7 @@ class TestReservedInstancesSet(AWSMockServiceTestCase):
         self.assertEquals(response[0].start, '2014-05-03T14:10:10.944Z')
         self.assertEquals(response[0].end, '2014-05-03T14:10:11.000Z')
         self.assertEquals(response[0].offering_type, 'Heavy Utilization')
-        self.assertEquals(response[0].recurring_charges, {'frequency': 'Hourly', 'amount': '0.005'})
+        self.assertEquals(response[0].recurring_charges[0], {'frequency': 'Hourly', 'amount': '0.005'})
 
         response[0].add_tags({"key1": "value1", "key2": "value2"})
 
