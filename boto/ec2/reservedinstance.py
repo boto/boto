@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 from boto.resultset import ResultSet
 from boto.ec2.ec2object import EC2Object
+from boto.ec2.tag import TagSet
 from boto.utils import parse_ts
 
 
@@ -97,6 +98,117 @@ class ReservedInstancesOffering(EC2Object):
         )
 
 
+class TaggedReservedInstancesOffering(ReservedInstancesOffering):
+    """
+    ReservedInstances can be tagged and should be represented
+    by a Python object that subclasses this class.  This class
+    has the mechanism in place to handle the tagSet element in
+    the Describe* responses.  If tags are found, it will create
+    a TagSet object and allow it to parse and collect the tags
+    into a dict that is stored in the "tags" attribute of the
+    object.
+    """
+
+    def __init__(self, connection=None, id=None, instance_type=None,
+                 availability_zone=None, duration=None, fixed_price=None,
+                 usage_price=None, description=None, instance_tenancy=None,
+                 currency_code=None, offering_type=None,
+                 recurring_charges=None, pricing_details=None):
+        super(TaggedReservedInstancesOffering, self).__init__(connection, id, instance_type,
+                                               availability_zone, duration,
+                                               fixed_price, usage_price,
+                                               description, instance_tenancy, currency_code,
+                                               offering_type, recurring_charges, pricing_details)
+
+        self.tags = TagSet()
+
+    def startElement(self, name, attrs, connection):
+        if name == 'tagSet':
+            return self.tags
+        else:
+            return None
+
+    def add_tag(self, key, value='', dry_run=False):
+        """
+        Add a tag to this object.  Tags are stored by AWS and can be used
+        to organize and filter resources.  Adding a tag involves a round-trip
+        to the EC2 service.
+
+        :type key: str
+        :param key: The key or name of the tag being stored.
+
+        :type value: str
+        :param value: An optional value that can be stored with the tag.
+                      If you want only the tag name and no value, the
+                      value should be the empty string.
+        """
+        self.add_tags({key: value}, dry_run)
+
+    def add_tags(self, tags, dry_run=False):
+        """
+        Add tags to this object.  Tags are stored by AWS and can be used
+        to organize and filter resources.  Adding tags involves a round-trip
+        to the EC2 service.
+
+        :type tags: dict
+        :param tags: A dictionary of key-value pairs for the tags being stored.
+                     If for some tags you want only the name and no value, the
+                     corresponding value for that tag name should be an empty
+                     string.
+        """
+        status = self.connection.create_tags(
+            [self.id],
+            tags,
+            dry_run=dry_run
+        )
+        if self.tags is None:
+            self.tags = TagSet()
+        self.tags.update(tags)
+
+    def remove_tag(self, key, value=None, dry_run=False):
+        """
+        Remove a tag from this object.  Removing a tag involves a round-trip
+        to the EC2 service.
+
+        :type key: str
+        :param key: The key or name of the tag being stored.
+
+        :type value: str
+        :param value: An optional value that can be stored with the tag.
+                      If a value is provided, it must match the value currently
+                      stored in EC2.  If not, the tag will not be removed.  If
+                      a value of None is provided, the tag will be
+                      unconditionally deleted.
+                      NOTE: There is an important distinction between a value
+                      of '' and a value of None.
+        """
+        self.remove_tags({key: value}, dry_run)
+
+    def remove_tags(self, tags, dry_run=False):
+        """
+        Removes tags from this object.  Removing tags involves a round-trip
+        to the EC2 service.
+
+        :type tags: dict
+        :param tags: A dictionary of key-value pairs for the tags being removed.
+                     For each key, the provided value must match the value
+                     currently stored in EC2.  If not, that particular tag will
+                     not be removed.  However, if a value of None is provided,
+                     the tag will be unconditionally deleted.
+                     NOTE: There is an important distinction between a value of
+                     '' and a value of None.
+        """
+        status = self.connection.delete_tags(
+            [self.id],
+            tags,
+            dry_run=dry_run
+        )
+        for key, value in tags.items():
+            if key in self.tags:
+                if value is None or value == self.tags[key]:
+                    del self.tags[key]
+
+
 class RecurringCharge(object):
     def __init__(self, connection=None, frequency=None, amount=None):
         self.frequency = frequency
@@ -121,7 +233,7 @@ class PricingDetail(object):
         setattr(self, name, value)
 
 
-class ReservedInstance(ReservedInstancesOffering):
+class ReservedInstance(TaggedReservedInstancesOffering):
 
     def __init__(self, connection=None, id=None, instance_type=None,
                  availability_zone=None, duration=None, fixed_price=None,
