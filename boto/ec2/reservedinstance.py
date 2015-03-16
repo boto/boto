@@ -126,7 +126,7 @@ class TaggedReservedInstancesOffering(ReservedInstancesOffering):
         if name == 'tagSet':
             return self.tags
         else:
-            return None
+            return super(TaggedReservedInstancesOffering, self).startElement(name, attrs, connection)
 
     def add_tag(self, key, value='', dry_run=False):
         """
