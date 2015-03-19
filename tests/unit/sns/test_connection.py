@@ -23,6 +23,7 @@
 import json
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSQueryConnectionParamOverrideTestBase
 from mock import Mock
 
 from boto.sns.connection import SNSConnection
@@ -275,6 +276,11 @@ class TestSNSConnection(AWSMockServiceTestCase):
             'MessageAttributes.entry.2.Value.DataType': 'String',
             'MessageAttributes.entry.2.Value.StringValue': 'Bob',
         }, ignore_params_values=['Version', 'ContentType'])
+
+
+class TestSNSConnectionParamOverride(AWSQueryConnectionParamOverrideTestBase):
+    def get_conn_class(self):
+        return SNSConnection
 
 
 if __name__ == '__main__':

@@ -24,6 +24,7 @@ import datetime
 
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSQueryConnectionParamOverrideTestBase
 
 from boto.ec2.cloudwatch import CloudWatchConnection
 
@@ -92,6 +93,11 @@ class TestCloudWatchConnection(AWSMockServiceTestCase):
             # the logging warning.
             'MetricData.member.2.Unit': 'ft',
         })
+
+
+class TestCloudWatchConnectionParamOverride(AWSQueryConnectionParamOverrideTestBase):
+    def get_conn_class(self):
+        return CloudWatchConnection
 
 
 if __name__ == '__main__':

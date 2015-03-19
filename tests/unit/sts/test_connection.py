@@ -24,6 +24,7 @@
 from tests.unit import unittest
 from boto.sts.connection import STSConnection
 from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSQueryConnectionParamOverrideTestBase
 
 
 class TestSecurityToken(AWSMockServiceTestCase):
@@ -238,6 +239,11 @@ class TestSTSSAMLConnection(AWSMockServiceTestCase):
         self.assertEqual(response.credentials.session_token, 'session_token')
         self.assertEqual(response.user.arn, 'arn:role')
         self.assertEqual(response.user.assume_role_id, 'roleid:myrolesession')
+
+
+class TestSTSConnectionParamOverride(AWSQueryConnectionParamOverrideTestBase):
+    def get_conn_class(self):
+        return STSConnection
 
 
 if __name__ == '__main__':
