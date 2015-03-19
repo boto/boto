@@ -577,6 +577,11 @@ class TestCloudFormationValidateTemplate(CloudFormationConnectionBase):
                     <ParameterKey>KeyName</ParameterKey>
                     <Description>EC2 KeyPair</Description>
                   </member>
+                  <member>
+                    <NoEcho>true</NoEcho>
+                    <ParameterKey>DBPassword</ParameterKey>
+                    <Description>Database Password</Description>
+                  </member>
                 </Parameters>
                 <CapabilitiesReason>Reason</CapabilitiesReason>
                 <Capabilities>
@@ -594,17 +599,22 @@ class TestCloudFormationValidateTemplate(CloudFormationConnectionBase):
         template = self.service_connection.validate_template(template_body=SAMPLE_TEMPLATE,
                                                           template_url='http://url')
         self.assertEqual(template.description, 'My Description.')
-        self.assertEqual(len(template.template_parameters), 2)
-        param1, param2 = template.template_parameters
+        self.assertEqual(len(template.template_parameters), 3)
+        param1, param2, param3 = template.template_parameters
         self.assertEqual(param1.default_value, 'm1.small')
         self.assertEqual(param1.description, 'Type of instance to launch')
-        self.assertEqual(param1.no_echo, True)
+        self.assertEqual(param1.no_echo, False)
         self.assertEqual(param1.parameter_key, 'InstanceType')
 
         self.assertEqual(param2.default_value, None)
         self.assertEqual(param2.description, 'EC2 KeyPair')
-        self.assertEqual(param2.no_echo, True)
+        self.assertEqual(param2.no_echo, False)
         self.assertEqual(param2.parameter_key, 'KeyName')
+
+        self.assertEqual(param3.default_value, None)
+        self.assertEqual(param3.description, 'Database Password')
+        self.assertEqual(param3.no_echo, True)
+        self.assertEqual(param3.parameter_key, 'DBPassword')
 
         self.assertEqual(template.capabilities_reason, 'Reason')
 
