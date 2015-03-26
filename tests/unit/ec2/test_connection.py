@@ -1638,6 +1638,23 @@ class TestCreateVolume(TestEC2ConnectionBase):
         self.assertEqual(result.id, 'vol-1a2b3c4d')
         self.assertTrue(result.encrypted)
 
+    def test_create_volume_with_specify_kms(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.create_volume(80, 'us-east-1e', snapshot='snap-1a2b3c4d',
+                                        encrypted=True,kms_key_id='arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef')
+        self.assert_request_parameters({
+            'Action': 'CreateVolume',
+            'AvailabilityZone': 'us-east-1e',
+            'Size': 80,
+            'SnapshotId': 'snap-1a2b3c4d',
+            'Encrypted': 'true',
+            'KmsKeyId': 'arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+        self.assertEqual(result.id, 'vol-1a2b3c4d')
+        self.assertTrue(result.encrypted)
+
 
 class TestGetClassicLinkInstances(TestEC2ConnectionBase):
     def default_body(self):
