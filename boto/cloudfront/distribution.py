@@ -683,11 +683,11 @@ class Distribution(object):
         Base64 encodes a string using the URL-safe characters specified by
         Amazon.
         """
-        msg_base64 = base64.b64encode(msg)
-        msg_base64 = msg_base64.replace('+', '-')
-        msg_base64 = msg_base64.replace('=', '_')
-        msg_base64 = msg_base64.replace('/', '~')
-        return msg_base64
+        msg_base64 = base64.b64encode(msg.encode('utf-8'))
+        msg_base64 = msg_base64.replace('+'.encode('utf-8'), '-'.encode('utf-8'))
+        msg_base64 = msg_base64.replace('='.encode('utf-8'), '_'.encode('utf-8'))
+        msg_base64 = msg_base64.replace('/'.encode('utf-8'), '~'.encode('utf-8'))
+        return msg_base64.decode('utf-8')
 
 class StreamingDistribution(Distribution):
 
