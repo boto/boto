@@ -666,7 +666,7 @@ class Distribution(object):
         # If private_key_file is a file name, open it and read it
         if private_key_string is None:
             if isinstance(private_key_file, six.string_types):
-                with open(private_key_file, 'r') as file_handle:
+                with open(private_key_file, 'rb') as file_handle:
                     private_key_string = file_handle.read()
             # Otherwise, treat it like a file
             else:
@@ -683,7 +683,7 @@ class Distribution(object):
         Base64 encodes a string using the URL-safe characters specified by
         Amazon.
         """
-        msg_base64 = base64.b64encode(msg.encode('utf-8'))
+        msg_base64 = base64.b64encode(msg.encode('utf-8') if isinstance(msg, six.text_type) else msg)
         msg_base64 = msg_base64.replace('+'.encode('utf-8'), '-'.encode('utf-8'))
         msg_base64 = msg_base64.replace('='.encode('utf-8'), '_'.encode('utf-8'))
         msg_base64 = msg_base64.replace('/'.encode('utf-8'), '~'.encode('utf-8'))
