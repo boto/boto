@@ -278,7 +278,7 @@ class Provider(object):
             self.access_key = access_key
             boto.log.debug("Using access key provided by client.")
         elif access_key_name.upper() in os.environ:
-            self.access_key = os.environ[access_key_name.upper()]
+            self.access_key = os.environ[access_key_name.upper()].strip()
             boto.log.debug("Using access key found in environment variable.")
         elif profile_name is not None:
             if shared.has_option(profile_name, access_key_name):
@@ -305,7 +305,7 @@ class Provider(object):
             self.secret_key = secret_key
             boto.log.debug("Using secret key provided by client.")
         elif secret_key_name.upper() in os.environ:
-            self.secret_key = os.environ[secret_key_name.upper()]
+            self.secret_key = os.environ[secret_key_name.upper()].strip()
             boto.log.debug("Using secret key found in environment variable.")
         elif profile_name is not None:
             if shared.has_option(profile_name, secret_key_name):
@@ -349,7 +349,7 @@ class Provider(object):
             # environment/config token could be paired with a
             # different set of credentials provided by the caller
             if security_token_name.upper() in os.environ:
-                self.security_token = os.environ[security_token_name.upper()]
+                self.security_token = os.environ[security_token_name.upper()].strip()
                 boto.log.debug("Using security token found in environment"
                                " variable.")
             elif shared.has_option(profile_name or 'default',
