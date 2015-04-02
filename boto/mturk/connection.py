@@ -589,6 +589,54 @@ class MTurkConnection(AWSQueryConnection):
 
         return self._process_request('GrantBonus', params)
 
+    def get_assignment_bonus_payments(self, assignment_id, page_size = 10, page_number = 1):
+        """
+        Retrieves bonus payments for an assignment.
+        Returns an array of bonus payments, each with the following attributes:
+
+        WorkerId
+                The ID of the Worker to whom the bonus was paid. (String)
+        BonusAmount
+                The amount of the bonus payment. (Price object)
+        AssignmentId
+                The ID of the assignment associated with this bonus payment. (String)
+        Reason
+                The Reason text given when the bonus was granted, if any. (String)
+        GrantTime
+            The date and time of when the bonus was granted. (ISO 8601 date/time as a string)
+        """
+
+        params = {'AssignmentId': assignment_id,
+                  'PageSize': page_size,
+                  'PageNumber': page_number}
+
+        return self._process_request('GetBonusPayments', params,
+                                     [('BonusPayment', BonusPayment)])
+
+    def get_hit_bonus_payments(self, hit_id, page_size = 100, page_number = 1):
+        """
+        Retrieves bonus payments for a HIT.
+        Returns an array of bonus payments, each with the following attributes:
+
+        WorkerId
+                The ID of the Worker to whom the bonus was paid. (String)
+        BonusAmount
+                The amount of the bonus payment. (Price object)
+        AssignmentId
+                The ID of the assignment associated with this bonus payment. (String)
+        Reason
+                The Reason text given when the bonus was granted, if any. (String)
+        GrantTime
+                The date and time of when the bonus was granted. (ISO 8601 date/time as a string)
+        """
+
+        params = {'HITId': hit_id,
+                  'PageSize': page_size,
+                  'PageNumber': page_number}
+
+        return self._process_request('GetBonusPayments', params,
+                                     [('BonusPayment', BonusPayment)])
+
     def block_worker(self, worker_id, reason):
         """
         Block a worker from working on my tasks.
@@ -1050,3 +1098,33 @@ class QuestionFormAnswer(BaseAutoResultElement):
             self.qid = value
         elif name in ['FreeText', 'SelectionIdentifier', 'OtherSelectionText'] and self.qid:
             self.fields.append(value)
+
+class BonusPayment(BaseAutoResultElement):
+    """
+    Class to extract a BonusPayment structure from a response (used in
+    ResultSet)
+
+    Will have attributes named as per the Developer Guide (AssignmentId, HITId, etc)
+    """
+
+    # Due to the way the BonusAmount is returned (i.e., not as embedded XML) it needs
+    # to be manually constructed as a Price from the various tags inside the element.
+    # This is because the BonusAmount is structured as a parent with child XML elements
+    # instead of as a separate embedded XML document.
+
+    def __init__(self, connection):
+        super(BonusPayment, self).__init__(connection)
+        # Temporary attribute to store the data we need to parse
+        self.bonus_parameters = {}
+
+    def endElement(self, name, value, connection):
+        if name in ['Amount', 'CurrencyCode', 'FormattedPrice']:
+            # Save the value for constructing a price and avoid setting it directly on the object
+            self.bonus_parameters[name] = value
+        elif name == 'BonusAmount':
+            # Manually construct the expected Price object from stored values
+            self.BonusAmount = Price(self.bonus_parameters['Amount'], self.bonus_parameters['CurrencyCode'])
+            # Clean up the temporary storage attribute
+            del self.bonus_parameters
+        else:
+            super(BonusPayment, self).endElement(name, value, connection)
