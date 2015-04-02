@@ -3,8 +3,9 @@ boto v2.37.0
 
 :date: 2015/04/02
 
-This release updates AWS CloudTrail to the latest API, adds new regional
-service endpoints and fixes bugs in several services.
+This release updates AWS CloudTrail to the latest API to suppor the
+``LookupEvents`` operation, adds new regional service endpoints and fixes
+bugs in several services.
 
 .. note::
 
