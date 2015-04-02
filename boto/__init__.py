@@ -38,7 +38,7 @@ import logging.config
 from boto.compat import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.36.0'
+__version__ = '2.37.0'
 Version = __version__  # for backware compatibility
 
 # http://bugs.python.org/issue7980
@@ -1018,7 +1018,7 @@ def connect_codedeploy(aws_access_key_id=None,
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
         **kwargs
-    ) 
+    )
 
 
 def connect_configservice(aws_access_key_id=None,
