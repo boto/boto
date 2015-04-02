@@ -30,7 +30,7 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
-    from boto.kms.layer1 import CloudHSMConnection
+    from boto.cloudhsm.layer1 import CloudHSMConnection
     return get_regions('cloudhsm', connection_cls=CloudHSMConnection)
 
 

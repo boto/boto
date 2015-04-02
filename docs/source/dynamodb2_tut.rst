@@ -37,7 +37,11 @@ Creating a New Table
 --------------------
 
 To create a new table, you need to call ``Table.create`` & specify (at a
-minimum) both the table's name as well as the key schema for the table.
+minimum) both the table's name as well as the key schema for the table::
+
+    >>> from boto.dynamodb2.fields import HashKey
+    >>> from boto.dynamodb2.table import Table
+    >>> users = Table.create('users', schema=[HashKey('username')]);
 
 Since both the key schema and local secondary indexes can not be
 modified after the table is created, you'll need to plan ahead of time how you
@@ -60,37 +64,34 @@ that can be queried on. The ``AllIndex`` duplicates all values onto the index
 duplicates only the keys from the schema onto the index. The ``IncludeIndex``
 lets you specify a list of fieldnames to duplicate over.
 
-Simple example::
+A full example::
 
-    >>> from boto.dynamodb2.fields import HashKey
+    >>> import boto.dynamodb2
+    >>> from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex, GlobalAllIndex
     >>> from boto.dynamodb2.table import Table
+    >>> from boto.dynamodb2.types import NUMBER
 
     # Uses your ``aws_access_key_id`` & ``aws_secret_access_key`` from either a
     # config file or environment variable & the default region.
     >>> users = Table.create('users', schema=[
-    ...     HashKey('username'),
-    ... ])
-
-A full example::
-
-    >>> import boto.dynamodb2
-    >>> from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex, AllIndex
-    >>> from boto.dynamodb2.table import Table
-    >>> from boto.dynamodb2.types import NUMBER
-
-    >>> users = Table.create('users', schema=[
-    ...     HashKey('account_type', data_type=NUMBER),
+    ...     HashKey('username'), # defaults to STRING data_type
     ...     RangeKey('last_name'),
     ... ], throughput={
     ...     'read': 5,
     ...     'write': 15,
-    ... }, indexes=[
-    ...     AllIndex('EverythingIndex', parts=[
-    ...         HashKey('account_type', data_type=NUMBER),
-    ...     ])
+    ... }, global_indexes=[
+    ...     GlobalAllIndex('EverythingIndex', parts=[
+    ...         HashKey('account_type'),
+    ...     ],
+    ...     throughput={
+    ...         'read': 1,
+    ...         'write': 1,
+    ...     })
     ... ],
-    ... # If you need to specify custom parameters, such as credentials or region, use the following:
-    ... Table.create('users', connection=boto.dynamodb2.connect_to_region('us-east-1'))
+    ... # If you need to specify custom parameters, such as credentials or region,
+    ... # use the following:
+    ... # connection=boto.dynamodb2.connect_to_region('us-east-1')
+    ... )
 
 
 Using an Existing Table
@@ -108,15 +109,15 @@ Lazy example::
 
 Efficient example::
 
-    >>> from boto.dynamodb2.fields import HashKey, RangeKey, AllIndex
+    >>> from boto.dynamodb2.fields import HashKey, RangeKey, GlobalAllIndex
     >>> from boto.dynamodb2.table import Table
     >>> from boto.dynamodb2.types import NUMBER
     >>> users = Table('users', schema=[
-    ...     HashKey('account_type', data_type=NUMBER),
+    ...     HashKey('username'),
     ...     RangeKey('last_name'),
-    ... ], indexes=[
-    ...     AllIndex('EverythingIndex', parts=[
-    ...         HashKey('account_type', data_type=NUMBER),
+    ... ], global_indexes=[
+    ...     GlobalAllIndex('EverythingIndex', parts=[
+    ...         HashKey('account_type'),
     ...     ])
     ... ])
 
@@ -142,6 +143,7 @@ Example::
     ...     'username': 'johndoe',
     ...     'first_name': 'John',
     ...     'last_name': 'Doe',
+    ...     'account_type': 'standard_user',
     ... })
     True
 
@@ -156,13 +158,15 @@ Example::
     >>> users = Table('users')
 
     # WARNING - This doens't save it yet!
-    >>> johndoe = Item(users, data={
-    ...     'username': 'johndoe',
-    ...     'first_name': 'John',
+    >>> janedoe = Item(users, data={
+    ...     'username': 'janedoe',
+    ...     'first_name': 'Jane',
     ...     'last_name': 'Doe',
+    ...     'account_type': 'standard_user',
     ... })
+
     # The data now gets persisted to the server.
-    >>> johndoe.save()
+    >>> janedoe.save()
     True
 
 
@@ -177,12 +181,10 @@ Example::
     >>> from boto.dynamodb2.table import Table
     >>> users = Table('users')
 
-    >>> johndoe = users.get_item(username='johndoe')
+    >>> johndoe = users.get_item(username='johndoe', last_name='Doe')
 
 Once you have an ``Item`` instance, it presents a dictionary-like interface to
 the data.::
-
-    >>> johndoe = users.get_item(username='johndoe')
 
     # Read a field out.
     >>> johndoe['first_name']
@@ -192,7 +194,7 @@ the data.::
     >>> johndoe['first_name'] = 'Johann'
 
     # Delete data from it (DOESN'T SAVE YET!).
-    >>> del johndoe['last_name']
+    >>> del johndoe['account_type']
 
 
 Updating an Item
@@ -207,10 +209,13 @@ since you read the data. DynamoDB will verify the data is in the original state
 and, if so, will send all of the item's data. If that expectation fails, the
 call will fail::
 
-    >>> johndoe = users.get_item(username='johndoe')
+    >>> from boto.dynamodb2.table import Table
+    >>> users = Table('users')
+
+    >>> johndoe = users.get_item(username='johndoe', last_name='Doe')
     >>> johndoe['first_name'] = 'Johann'
     >>> johndoe['whatever'] = "man, that's just like your opinion"
-    >>> del johndoe['last_name']
+    >>> del johndoe['account_type']
 
     # Affects all fields, even the ones not changed locally.
     >>> johndoe.save()
@@ -219,10 +224,9 @@ call will fail::
 The second is a full overwrite. If you can be confident your version of the
 data is the most correct, you can force an overwrite of the data.::
 
-    >>> johndoe = users.get_item(username='johndoe')
+    >>> johndoe = users.get_item(username='johndoe', last_name='Doe')
     >>> johndoe['first_name'] = 'Johann'
-    >>> johndoe['whatever'] = "man, that's just like your opinion"
-    >>> del johndoe['last_name']
+    >>> johndoe['whatever'] = "Man, that's just like your opinion"
 
     # Specify ``overwrite=True`` to fully replace the data.
     >>> johndoe.save(overwrite=True)
@@ -232,13 +236,13 @@ The last is a partial update. If you've only modified certain fields, you
 can send a partial update that only writes those fields, allowing other
 (potentially changed) fields to go untouched.::
 
-    >>> johndoe = users.get_item(username='johndoe')
+    >>> johndoe = users.get_item(username='johndoe', last_name='Doe')
     >>> johndoe['first_name'] = 'Johann'
     >>> johndoe['whatever'] = "man, that's just like your opinion"
-    >>> del johndoe['last_name']
+    >>> del johndoe['account_type']
 
     # Partial update, only sending/affecting the
-    # ``first_name/whatever/last_name`` fields.
+    # ``first_name/whatever/account_type`` fields.
     >>> johndoe.partial_save()
     True
 
@@ -261,7 +265,7 @@ If you don't have an ``Item`` instance & you don't want to incur the
     >>> from boto.dynamodb2.table import Table
     >>> users = Table('users')
 
-    >>> users.delete_item(username='johndoe')
+    >>> users.delete_item(username='johndoe', last_name='Doe')
     True
 
 
@@ -276,6 +280,7 @@ Batch writing involves wrapping the calls you want batched in a context manager.
 The context manager imitates the ``Table.put_item`` & ``Table.delete_item``
 APIs. Getting & using the context manager looks like::
 
+    >>> import time
     >>> from boto.dynamodb2.table import Table
     >>> users = Table('users')
 
@@ -287,11 +292,12 @@ APIs. Getting & using the context manager looks like::
     ...         'date_joined': int(time.time()),
     ...     })
     ...     batch.put_item(data={
-    ...         'username': 'alice',
-    ...         'first_name': 'Alice',
+    ...         'username': 'joebloggs',
+    ...         'first_name': 'Joe',
+    ...         'last_name': 'Bloggs',
     ...         'date_joined': int(time.time()),
     ...     })
-    ...     batch.delete_item(username=jane')
+    ...     batch.delete_item(username='janedoe', last_name='Doe')
 
 However, there are some limitations on what you can do within the context
 manager.
@@ -328,15 +334,58 @@ from the operator being used to filter the value.
 In terms of querying, our original schema is less than optimal. For the
 following examples, we'll be using the following table setup::
 
-    >>> users = Table.create('users', schema=[
+    >>> from boto.dynamodb2.fields import HashKey, RangeKey, GlobalAllIndex
+    >>> from boto.dynamodb2.table import Table
+    >>> from boto.dynamodb2.types import NUMBER
+    >>> import time
+    >>> users = Table.create('users2', schema=[
     ...     HashKey('account_type'),
     ...     RangeKey('last_name'),
-    ... ], indexes=[
-    ...     AllIndex('DateJoinedIndex', parts=[
+    ... ], throughput={
+    ...     'read': 5,
+    ...     'write': 15,
+    ... }, global_indexes=[
+    ...     GlobalAllIndex('DateJoinedIndex', parts=[
     ...         HashKey('account_type'),
     ...         RangeKey('date_joined', data_type=NUMBER),
-    ...     ]),
+    ...     ],
+    ...     throughput={
+    ...         'read': 1,
+    ...         'write': 1,
+    ...     }),
     ... ])
+
+And the following data::
+
+    >>> with users.batch_write() as batch:
+    ...     batch.put_item(data={
+    ...         'account_type': 'standard_user',
+    ...         'first_name': 'John',
+    ...         'last_name': 'Doe',
+    ...         'is_owner': True,
+    ...         'email': True,
+    ...         'date_joined': int(time.time()) - (60*60*2),
+    ...     })
+    ...     batch.put_item(data={
+    ...         'account_type': 'standard_user',
+    ...         'first_name': 'Jane',
+    ...         'last_name': 'Doering',
+    ...         'date_joined': int(time.time()) - 2,
+    ...     })
+    ...     batch.put_item(data={
+    ...         'account_type': 'standard_user',
+    ...         'first_name': 'Bob',
+    ...         'last_name': 'Doerr',
+    ...         'date_joined': int(time.time()) - (60*60*3),
+    ...     })
+    ...     batch.put_item(data={
+    ...         'account_type': 'super_user',
+    ...         'first_name': 'Alice',
+    ...         'last_name': 'Liddel',
+    ...         'is_owner': True,
+    ...         'email': True,
+    ...         'date_joined': int(time.time()) - 1,
+    ...     })
 
 When executing the query, you get an iterable back that contains your results.
 These results may be spread over multiple requests as DynamoDB paginates them.
@@ -352,9 +401,9 @@ To run a query for last names starting with the letter "D"::
 
     >>> for user in names_with_d:
     ...     print user['first_name']
-    'Bob'
-    'Jane'
     'John'
+    'Jane'
+    'Bob'
 
 You can also reverse results (``reverse=True``) as well as limiting them
 (``limit=2``)::
@@ -368,11 +417,11 @@ You can also reverse results (``reverse=True``) as well as limiting them
 
     >>> for user in rev_with_d:
     ...     print user['first_name']
-    'John'
+    'Bob'
     'Jane'
 
 You can also run queries against the local secondary indexes. Simply provide
-the index name (``index='FirstNameIndex'``) & filter parameters against its
+the index name (``index='DateJoinedIndex'``) & filter parameters against its
 fields::
 
     # Users within the last hour.
@@ -384,7 +433,6 @@ fields::
 
     >>> for user in recent:
     ...     print user['first_name']
-    'Alice'
     'Jane'
 
 By default, DynamoDB can return a large amount of data per-request (up to 1Mb
@@ -397,13 +445,15 @@ specify a smaller page size via the ``max_page_size`` argument to
     >>> all_users = users.query_2(
     ...     account_type__eq='standard_user',
     ...     date_joined__gte=0,
+    ...     index='DateJoinedIndex',
     ...     max_page_size=10
     ... )
 
     # Usage is the same, but now many smaller requests are done.
-    >>> for user in recent:
+    >>> for user in all_users:
     ...     print user['first_name']
-    'Alice'
+    'Bob'
+    'John'
     'Jane'
 
 Finally, if you need to query on data that's not in either a key or in an
@@ -413,8 +463,9 @@ concept, this is akin to what DynamoDB does.
 
 .. warning::
 
-    Scans are consistent & run over the entire table, so relatively speaking,
-    they're more expensive than plain queries or queries against an LSI.
+    Scans are eventually consistent & run over the entire table, so
+    relatively speaking, they're more expensive than plain queries or queries
+    against an LSI.
 
 An example scan of all records in the table looks like::
 
@@ -423,14 +474,14 @@ An example scan of all records in the table looks like::
 Filtering a scan looks like::
 
     >>> owners_with_emails = users.scan(
-    ...     is_owner__eq=1,
+    ...     is_owner__eq=True,
     ...     email__null=False,
     ... )
 
-    >>> for user in recent:
+    >>> for user in owners_with_emails:
     ...     print user['first_name']
-    'George'
     'John'
+    'Alice'
 
 
 The ``ResultSet``
@@ -445,12 +496,16 @@ Typical use is simply a standard ``for`` to iterate over the results::
     >>> result_set = users.scan()
     >>> for user in result_set:
     ...     print user['first_name']
+    'John'
+    'Jane'
+    'Bob'
+    'Alice'
 
 However, this throws away results as it fetches more data. As a result, you
-can't index it like a ``list``.
+can't index it like a ``list``::
 
     >>> len(result_set)
-    0
+    TypeError: object of type 'ResultSet' has no len()
 
 Because it does this, if you need to loop over your results more than once (or
 do things like negative indexing, length checks, etc.), you should wrap it in
@@ -461,6 +516,8 @@ a call to ``list()``. Ex.::
     # Slice it for every other user.
     >>> for user in all_users[::2]:
     ...     print user['first_name']
+    'John'
+    'Bob'
 
 .. warning::
 
@@ -585,25 +642,21 @@ response).
 Example::
 
     >>> from boto.dynamodb2.table import Table
-    >>> users = Table('users')
+    >>> users = Table('users2')
 
     # No request yet.
     >>> many_users = users.batch_get(keys=[
-        {'username': 'alice'},
-        {'username': 'bob'},
-        {'username': 'fred'},
-        {'username': 'jane'},
-        {'username': 'johndoe'},
-    ])
+    ...     {'account_type': 'standard_user', 'last_name': 'Doe'},
+    ...     {'account_type': 'standard_user', 'last_name': 'Doering'},
+    ...     {'account_type': 'super_user', 'last_name': 'Liddel'},
+    ... ])
 
     # Now the request is performed, requesting all five in one request.
     >>> for user in many_users:
     ...     print user['first_name']
     'Alice'
-    'Bobby'
-    'Fred'
-    'Jane'
     'John'
+    'Jane'
 
 
 Deleting a Table

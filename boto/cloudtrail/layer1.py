@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2015 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -30,7 +30,7 @@ from boto.compat import json
 
 class CloudTrailConnection(AWSQueryConnection):
     """
-    AWS Cloud Trail
+    AWS CloudTrail
     This is the CloudTrail API Reference. It provides descriptions of
     actions, data types, common parameters, and common errors for
     CloudTrail.
@@ -62,18 +62,25 @@ class CloudTrailConnection(AWSQueryConnection):
     ResponseError = JSONResponseError
 
     _faults = {
+        "InvalidMaxResultsException": exceptions.InvalidMaxResultsException,
         "InvalidSnsTopicNameException": exceptions.InvalidSnsTopicNameException,
         "InvalidS3BucketNameException": exceptions.InvalidS3BucketNameException,
         "TrailAlreadyExistsException": exceptions.TrailAlreadyExistsException,
+        "InvalidTimeRangeException": exceptions.InvalidTimeRangeException,
+        "InvalidLookupAttributesException": exceptions.InvalidLookupAttributesException,
         "InsufficientSnsTopicPolicyException": exceptions.InsufficientSnsTopicPolicyException,
+        "InvalidCloudWatchLogsLogGroupArnException": exceptions.InvalidCloudWatchLogsLogGroupArnException,
+        "InvalidCloudWatchLogsRoleArnException": exceptions.InvalidCloudWatchLogsRoleArnException,
         "InvalidTrailNameException": exceptions.InvalidTrailNameException,
-        "TrailNotProvidedException": exceptions.TrailNotProvidedException,
+        "CloudWatchLogsDeliveryUnavailableException": exceptions.CloudWatchLogsDeliveryUnavailableException,
         "TrailNotFoundException": exceptions.TrailNotFoundException,
         "S3BucketDoesNotExistException": exceptions.S3BucketDoesNotExistException,
+        "InvalidNextTokenException": exceptions.InvalidNextTokenException,
         "InvalidS3PrefixException": exceptions.InvalidS3PrefixException,
         "MaximumNumberOfTrailsExceededException": exceptions.MaximumNumberOfTrailsExceededException,
         "InsufficientS3BucketPolicyException": exceptions.InsufficientS3BucketPolicyException,
     }
+
 
     def __init__(self, **kwargs):
         region = kwargs.pop('region', None)
@@ -81,7 +88,7 @@ class CloudTrailConnection(AWSQueryConnection):
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
 
-        if 'host' not in kwargs:
+        if 'host' not in kwargs or kwargs['host'] is None:
             kwargs['host'] = region.endpoint
 
         super(CloudTrailConnection, self).__init__(**kwargs)
@@ -90,20 +97,15 @@ class CloudTrailConnection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['hmac-v4']
 
-    def create_trail(self, name=None, s3_bucket_name=None,
-                     s3_key_prefix=None, sns_topic_name=None,
-                     include_global_service_events=None, trail=None):
+    def create_trail(self, name, s3_bucket_name, s3_key_prefix=None,
+                     sns_topic_name=None, include_global_service_events=None,
+                     cloud_watch_logs_log_group_arn=None,
+                     cloud_watch_logs_role_arn=None):
         """
         From the command line, use `create-subscription`.
 
         Creates a trail that specifies the settings for delivery of
         log data to an Amazon S3 bucket.
-
-        Support for passing Trail as a parameter ends as early as
-        February 25, 2014. The request and response examples in this
-        topic show the use of parameters as well as a Trail object.
-        Until Trail is removed, you can use either Trail or the
-        parameter list.
 
         :type name: string
         :param name: Specifies the name of the trail.
@@ -125,26 +127,28 @@ class CloudTrailConnection(AWSQueryConnection):
             publishing events from global services such as IAM to the log
             files.
 
-        :type trail: dict
-        :param trail: Support for passing a Trail object in the CreateTrail or
-            UpdateTrail actions will end as early as February 15, 2014. Instead
-            of the Trail object and its members, use the parameters listed for
-            these actions.
+        :type cloud_watch_logs_log_group_arn: string
+        :param cloud_watch_logs_log_group_arn: Specifies a log group name using
+            an Amazon Resource Name (ARN), a unique identifier that represents
+            the log group to which CloudTrail logs will be delivered. Not
+            required unless you specify CloudWatchLogsRoleArn.
+
+        :type cloud_watch_logs_role_arn: string
+        :param cloud_watch_logs_role_arn: Specifies the role for the CloudWatch
+            Logs endpoint to assume to write to a users log group.
 
         """
-        params = {}
-        if name is not None:
-            params['Name'] = name
-        if s3_bucket_name is not None:
-            params['S3BucketName'] = s3_bucket_name
+        params = {'Name': name, 'S3BucketName': s3_bucket_name, }
         if s3_key_prefix is not None:
             params['S3KeyPrefix'] = s3_key_prefix
         if sns_topic_name is not None:
             params['SnsTopicName'] = sns_topic_name
         if include_global_service_events is not None:
             params['IncludeGlobalServiceEvents'] = include_global_service_events
-        if trail is not None:
-            params['trail'] = trail
+        if cloud_watch_logs_log_group_arn is not None:
+            params['CloudWatchLogsLogGroupArn'] = cloud_watch_logs_log_group_arn
+        if cloud_watch_logs_role_arn is not None:
+            params['CloudWatchLogsRoleArn'] = cloud_watch_logs_role_arn
         return self.make_request(action='CreateTrail',
                                  body=json.dumps(params))
 
@@ -162,11 +166,11 @@ class CloudTrailConnection(AWSQueryConnection):
 
     def describe_trails(self, trail_name_list=None):
         """
-        Retrieves the settings for some or all trails associated with
-        an account.
+        Retrieves settings for the trail associated with the current
+        region for your account.
 
         :type trail_name_list: list
-        :param trail_name_list: The list of trails.
+        :param trail_name_list: The trail returned.
 
         """
         params = {}
@@ -182,49 +186,6 @@ class CloudTrailConnection(AWSQueryConnection):
         errors, Amazon SNS and Amazon S3 errors, and start and stop
         logging times for each trail.
 
-        The CloudTrail API is currently undergoing revision. This
-        action currently returns both new fields and fields slated for
-        removal from the API. The following lists indicate the plans
-        for each field:
-
-        **List of Members Planned for Ongoing Support**
-
-
-        + IsLogging
-        + LatestDeliveryTime
-        + LatestNotificationTime
-        + StartLoggingTime
-        + StopLoggingTime
-        + LatestNotificationError
-        + LatestDeliveryError
-
-
-        **List of Members Scheduled for Removal**
-
-
-        + **LatestDeliveryAttemptTime**: Use LatestDeliveryTime
-          instead.
-        + **LatestNotificationAttemptTime**: Use
-          LatestNotificationTime instead.
-        + **LatestDeliveryAttemptSucceeded**: No replacement. See the
-          note following this list.
-        + **LatestNotificationAttemptSucceeded**: No replacement. See
-          the note following this list.
-        + **TimeLoggingStarted**: Use StartLoggingTime instead.
-        + **TimeLoggingStopped**: Use StopLoggingtime instead.
-
-
-        No replacements have been created for
-        LatestDeliveryAttemptSucceeded and
-        LatestNotificationAttemptSucceeded . Use LatestDeliveryError
-        and LatestNotificationError to evaluate success or failure of
-        log delivery or notification. Empty values returned for these
-        fields indicate success. An error in LatestDeliveryError
-        generally indicates either a missing bucket or insufficient
-        permissions to write to the bucket. Similarly, an error in
-        LatestNotificationError indicates either a missing topic or
-        insufficient permissions.
-
         :type name: string
         :param name: The name of the trail for which you are requesting the
             current status.
@@ -232,6 +193,68 @@ class CloudTrailConnection(AWSQueryConnection):
         """
         params = {'Name': name, }
         return self.make_request(action='GetTrailStatus',
+                                 body=json.dumps(params))
+
+    def lookup_events(self, lookup_attributes=None, start_time=None,
+                      end_time=None, max_results=None, next_token=None):
+        """
+        Looks up API activity events captured by CloudTrail that
+        create, update, or delete resources in your account. Events
+        for a region can be looked up for the times in which you had
+        CloudTrail turned on in that region during the last seven
+        days. Lookup supports five different attributes: time range
+        (defined by a start time and end time), user name, event name,
+        resource type, and resource name. All attributes are optional.
+        The maximum number of attributes that can be specified in any
+        one lookup request are time range and one other attribute. The
+        default number of results returned is 10, with a maximum of 50
+        possible. The response includes a token that you can use to
+        get the next page of results.
+        The rate of lookup requests is limited to one per second per
+        account. If this limit is exceeded, a throttling error occurs.
+        Events that occurred during the selected time range will not
+        be available for lookup if CloudTrail logging was not enabled
+        when the events occurred.
+
+        :type lookup_attributes: list
+        :param lookup_attributes: Contains a list of lookup attributes.
+            Currently the list can contain only one item.
+
+        :type start_time: timestamp
+        :param start_time: Specifies that only events that occur after or at
+            the specified time are returned. If the specified start time is
+            after the specified end time, an error is returned.
+
+        :type end_time: timestamp
+        :param end_time: Specifies that only events that occur before or at the
+            specified time are returned. If the specified end time is before
+            the specified start time, an error is returned.
+
+        :type max_results: integer
+        :param max_results: The number of events to return. Possible values are
+            1 through 50. The default is 10.
+
+        :type next_token: string
+        :param next_token: The token to use to get the next page of results
+            after a previous API call. This token must be passed in with the
+            same parameters that were specified in the the original call. For
+            example, if the original call specified an AttributeKey of
+            'Username' with a value of 'root', the call with NextToken should
+            include those same parameters.
+
+        """
+        params = {}
+        if lookup_attributes is not None:
+            params['LookupAttributes'] = lookup_attributes
+        if start_time is not None:
+            params['StartTime'] = start_time
+        if end_time is not None:
+            params['EndTime'] = end_time
+        if max_results is not None:
+            params['MaxResults'] = max_results
+        if next_token is not None:
+            params['NextToken'] = next_token
+        return self.make_request(action='LookupEvents',
                                  body=json.dumps(params))
 
     def start_logging(self, name):
@@ -265,9 +288,10 @@ class CloudTrailConnection(AWSQueryConnection):
         return self.make_request(action='StopLogging',
                                  body=json.dumps(params))
 
-    def update_trail(self, name=None, s3_bucket_name=None,
-                     s3_key_prefix=None, sns_topic_name=None,
-                     include_global_service_events=None, trail=None):
+    def update_trail(self, name, s3_bucket_name=None, s3_key_prefix=None,
+                     sns_topic_name=None, include_global_service_events=None,
+                     cloud_watch_logs_log_group_arn=None,
+                     cloud_watch_logs_role_arn=None):
         """
         From the command line, use `update-subscription`.
 
@@ -277,12 +301,6 @@ class CloudTrailConnection(AWSQueryConnection):
         log delivery. If the existing bucket has previously been a
         target for CloudTrail log files, an IAM policy exists for the
         bucket.
-
-        Support for passing Trail as a parameter ends as early as
-        February 25, 2014. The request and response examples in this
-        topic show the use of parameters as well as a Trail object.
-        Until Trail is removed, you can use either Trail or the
-        parameter list.
 
         :type name: string
         :param name: Specifies the name of the trail.
@@ -304,16 +322,18 @@ class CloudTrailConnection(AWSQueryConnection):
             publishing events from global services such as IAM to the log
             files.
 
-        :type trail: dict
-        :param trail: Support for passing a Trail object in the CreateTrail or
-            UpdateTrail actions will end as early as February 15, 2014. Instead
-            of the Trail object and its members, use the parameters listed for
-            these actions.
+        :type cloud_watch_logs_log_group_arn: string
+        :param cloud_watch_logs_log_group_arn: Specifies a log group name using
+            an Amazon Resource Name (ARN), a unique identifier that represents
+            the log group to which CloudTrail logs will be delivered. Not
+            required unless you specify CloudWatchLogsRoleArn.
+
+        :type cloud_watch_logs_role_arn: string
+        :param cloud_watch_logs_role_arn: Specifies the role for the CloudWatch
+            Logs endpoint to assume to write to a users log group.
 
         """
-        params = {}
-        if name is not None:
-            params['Name'] = name
+        params = {'Name': name, }
         if s3_bucket_name is not None:
             params['S3BucketName'] = s3_bucket_name
         if s3_key_prefix is not None:
@@ -322,8 +342,10 @@ class CloudTrailConnection(AWSQueryConnection):
             params['SnsTopicName'] = sns_topic_name
         if include_global_service_events is not None:
             params['IncludeGlobalServiceEvents'] = include_global_service_events
-        if trail is not None:
-            params['trail'] = trail
+        if cloud_watch_logs_log_group_arn is not None:
+            params['CloudWatchLogsLogGroupArn'] = cloud_watch_logs_log_group_arn
+        if cloud_watch_logs_role_arn is not None:
+            params['CloudWatchLogsRoleArn'] = cloud_watch_logs_role_arn
         return self.make_request(action='UpdateTrail',
                                  body=json.dumps(params))
 

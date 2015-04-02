@@ -105,15 +105,17 @@
         "us-east-1": "cognito-sync.us-east-1.amazonaws.com"
     },
     "configservice": {
-        "us-east-1": "config.us-east-1.amazonaws.com"
+        "us-east-1": "config.us-east-1.amazonaws.com",
+        "us-west-2": "config.us-west-2.amazonaws.com",
+        "eu-west-1": "config.eu-west-1.amazonaws.com",
+        "ap-southeast-2": "config.ap-southeast-2.amazonaws.com"
     },
     "datapipeline": {
         "us-east-1": "datapipeline.us-east-1.amazonaws.com",
         "us-west-2": "datapipeline.us-west-2.amazonaws.com",
         "eu-west-1": "datapipeline.eu-west-1.amazonaws.com",
         "ap-southeast-2": "datapipeline.ap-southeast-2.amazonaws.com",
-        "ap-northeast-1": "datapipeline.ap-northeast-1.amazonaws.com",
-        "eu-central-1": "datapipeline.eu-central-1.amazonaws.com"
+        "ap-northeast-1": "datapipeline.ap-northeast-1.amazonaws.com"
     },
     "directconnect": {
         "ap-northeast-1": "directconnect.ap-northeast-1.amazonaws.com",
@@ -221,13 +223,15 @@
         "us-east-1": "glacier.us-east-1.amazonaws.com",
         "us-west-1": "glacier.us-west-1.amazonaws.com",
         "us-west-2": "glacier.us-west-2.amazonaws.com",
-        "eu-central-1": "glacier.eu-central-1.amazonaws.com"
+        "eu-central-1": "glacier.eu-central-1.amazonaws.com",
+        "us-gov-west-1": "glacier.us-gov-west-1.amazonaws.com"
     },
     "iam": {
         "ap-northeast-1": "iam.amazonaws.com",
         "ap-southeast-1": "iam.amazonaws.com",
         "ap-southeast-2": "iam.amazonaws.com",
         "cn-north-1": "iam.cn-north-1.amazonaws.com.cn",
+        "eu-central-1": "iam.amazonaws.com",
         "eu-west-1": "iam.amazonaws.com",
         "sa-east-1": "iam.amazonaws.com",
         "us-east-1": "iam.amazonaws.com",
@@ -301,6 +305,7 @@
         "ap-northeast-1": "route53.amazonaws.com",
         "ap-southeast-1": "route53.amazonaws.com",
         "ap-southeast-2": "route53.amazonaws.com",
+        "eu-central-1": "route53.amazonaws.com",
         "eu-west-1": "route53.amazonaws.com",
         "sa-east-1": "route53.amazonaws.com",
         "us-east-1": "route53.amazonaws.com",
