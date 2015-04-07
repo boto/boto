@@ -413,10 +413,14 @@ class Route53Connection(AWSAuthConnection):
 
         if remove_tags:
             params["remove_tags"] = gen_remove_tags()
+        else:
+            params["remove_tags"] = ""
 
         if add_tags:
             params["add_tags"] = gen_add_tags()
-
+        else:
+            params["add_tags"] = ""
+            
         xml_body = self.POSTHCMODIFTAGSXMLBody % params
 
         print xml_body
