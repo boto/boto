@@ -378,6 +378,59 @@ class Route53Connection(AWSAuthConnection):
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
+    
+    POSTHCMODIFTAGSXMLBody = """<ChangeTagsForResourceRequest xmlns="%(xmlns)s">
+       %(remove_tags)s
+       %(add_tags)s
+    </ChangeTagsForResourceRequest>
+    """
+
+    def change_health_check_tags(self, health_check_id, remove_tags = None, add_tags=None):
+        """
+        Add / Remove tags to an health check
+
+        :type health_check_id: str
+        :param health_check_id: ID of the health check to delete
+        
+        :type remove_tags: iterable
+        :param remove_tags: liste/iter of tag names to remove 
+        
+        :type add_tags: dict
+        :param add_tags: a dict of name/value pairs
+
+        """
+        def gen_remove_tags():
+            return """<RemoveTagKeys>%s</RemoveTagKeys>""" % "".join(["<Key>%s</Key>" % tag_name for tag_name in remove_tags])
+
+        def gen_add_tags():
+            tags = ["""<Tag><Key>%s</Key><Value>%s</Value></Tag>""" % (tag_name, tag_value) for tag_name, tag_value in add_tags.iteritems()]
+
+            return """<AddTags>%s</AddTags>""" % "".join(tags)
+
+
+        uri = '/%s/tags/healthcheck/%s' % (self.Version, health_check_id)
+        params = {'xmlns': self.XMLNameSpace}
+
+        if remove_tags:
+            params["remove_tags"] = gen_remove_tags()
+
+        if add_tags:
+            params["add_tags"] = gen_add_tags()
+
+        xml_body = self.POSTHCMODIFTAGSXMLBody % params
+
+        print xml_body
+
+        response = self.make_request('POST', uri, {'Content-Type': 'text/xml'}, xml_body)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            e = boto.jsonresponse.Element()
+            h = boto.jsonresponse.XmlHandler(e, None)
+            h.parse(body)
+            return e
+        else:
+            raise exception.DNSServerError(response.status, response.reason, body)
 
     # Resource Record Sets
 
