@@ -46,15 +46,23 @@ except (AttributeError, ImportError):
     # This is probably running on App Engine.
     expanduser = (lambda x: x)
 
-from boto.vendored import six
-
-from boto.vendored.six import BytesIO, StringIO
-from boto.vendored.six.moves import filter, http_client, map, _thread, \
-                                    urllib, zip
-from boto.vendored.six.moves.queue import Queue
-from boto.vendored.six.moves.urllib.parse import parse_qs, quote, unquote, \
-                                                 urlparse, urlsplit
-from boto.vendored.six.moves.urllib.request import urlopen
+try:
+    import six
+    from six import BytesIO, StringIO
+    from six.moves import filter, http_client, map, _thread, urllib, zip
+    from six.moves.queue import Queue
+    from six.moves.urllib.parse import parse_qs, quote, unquote, urlparse, \
+                                       urlsplit
+    from six.moves.urllib.request import urlopen
+except ImportError:
+    from boto.vendored import six
+    from boto.vendored.six import BytesIO, StringIO
+    from boto.vendored.six.moves import filter, http_client, map, _thread, \
+                                        urllib, zip
+    from boto.vendored.six.moves.queue import Queue
+    from boto.vendored.six.moves.urllib.parse import parse_qs, quote, unquote, \
+                                                     urlparse, urlsplit
+    from boto.vendored.six.moves.urllib.request import urlopen
 
 if six.PY3:
     # StandardError was removed, so use the base exception type instead
