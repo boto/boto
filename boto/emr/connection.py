@@ -397,6 +397,7 @@ class EmrConnection(AWSQueryConnection):
                                ModifyInstanceGroupsResponse, verb='POST')
 
     def run_jobflow(self, name, log_uri=None, ec2_keyname=None,
+                    ec2_subnet_id=None,
                     availability_zone=None,
                     master_instance_type='m1.small',
                     slave_instance_type='m1.small', num_instances=1,
@@ -422,6 +423,9 @@ class EmrConnection(AWSQueryConnection):
 
         :type ec2_keyname: str
         :param ec2_keyname: EC2 key used for the instances
+
+        :type ec2_subnet_id: str
+        :param ec2_subnet_id: EC2 Subnet ID for the cluster instances
 
         :type availability_zone: str
         :param availability_zone: EC2 availability zone of the cluster
@@ -509,6 +513,7 @@ class EmrConnection(AWSQueryConnection):
 
         # Common instance args
         common_params = self._build_instance_common_args(ec2_keyname,
+                                                         ec2_subnet_id,
                                                          availability_zone,
                                                          keep_alive,
                                                          hadoop_version)
@@ -690,8 +695,9 @@ class EmrConnection(AWSQueryConnection):
                 params['%s.Value' % current_prefix] = value
         return params
 
-    def _build_instance_common_args(self, ec2_keyname, availability_zone,
-                                    keep_alive, hadoop_version):
+    def _build_instance_common_args(self, ec2_keyname, ec2_subnet_id,
+                                    availability_zone, keep_alive,
+                                    hadoop_version):
         """
         Takes a number of parameters used when starting a jobflow (as
         specified in run_jobflow() above). Returns a comparable dict for
@@ -705,6 +711,8 @@ class EmrConnection(AWSQueryConnection):
             params['Instances.HadoopVersion'] = hadoop_version
         if ec2_keyname:
             params['Instances.Ec2KeyName'] = ec2_keyname
+        if ec2_subnet_id:
+            params['Instances.Ec2SubnetId'] = ec2_subnet_id
         if availability_zone:
             params['Instances.Placement.AvailabilityZone'] = availability_zone
 
