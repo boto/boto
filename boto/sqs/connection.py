@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import math
+
 import boto
 from boto.connection import AWSQueryConnection
 from boto.sqs.regioninfo import SQSRegionInfo
@@ -92,7 +94,7 @@ class SQSConnection(AWSQueryConnection):
         params = {'QueueName': queue_name}
         if visibility_timeout:
             params['Attribute.1.Name'] = 'VisibilityTimeout'
-            params['Attribute.1.Value'] = int(visibility_timeout)
+            params['Attribute.1.Value'] = int(math.ceil(visibility_timeout))
         return self.get_object('CreateQueue', params, Queue)
 
     def delete_queue(self, queue, force_deletion=False):
@@ -304,7 +306,7 @@ class SQSConnection(AWSQueryConnection):
         """
         params = {'MessageBody' : message_content}
         if delay_seconds:
-            params['DelaySeconds'] = int(delay_seconds)
+            params['DelaySeconds'] = int(math.ceil(delay_seconds))
 
         if message_attributes is not None:
             keys = sorted(message_attributes.keys())
