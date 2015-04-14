@@ -20,25 +20,32 @@
 # IN THE SOFTWARE.
 #
 
-import boto
-from boto.configservice.exceptions import NoSuchConfigurationRecorderException
-from tests.compat import unittest
+from boto.exception import BotoServerError
 
 
-class TestConfigService(unittest.TestCase):
-    def setUp(self):
-        self.configservice = boto.connect_configservice()
+class InternalServerException(BotoServerError):
+    pass
 
-    def test_describe_configuration_recorders(self):
-        response = self.configservice.describe_configuration_recorders()
-        self.assertIn('ConfigurationRecorders', response)
 
-    def test_handle_no_such_configuration_recorder(self):
-        with self.assertRaises(NoSuchConfigurationRecorderException):
-            self.configservice.describe_configuration_recorders(
-                configuration_recorder_names=['non-existant-recorder'])
+class LimitExceededException(BotoServerError):
+    pass
 
-    def test_connect_to_non_us_east_1(self):
-        self.configservice = boto.configservice.connect_to_region('us-west-2')
-        response = self.configservice.describe_configuration_recorders()
-        self.assertIn('ConfigurationRecorders', response)
+
+class IdempotentParameterMismatchException(BotoServerError):
+    pass
+
+
+class ResourceInUseException(BotoServerError):
+    pass
+
+
+class ResourceNotFoundException(BotoServerError):
+    pass
+
+
+class PredictorNotMountedException(BotoServerError):
+    pass
+
+
+class InvalidInputException(BotoServerError):
+    pass

@@ -1,9 +1,9 @@
 ####
 boto
 ####
-boto 2.36.0
+boto 2.38.0
 
-Released: 27-Jan-2015
+Released: 9-Apr-2015
 
 .. image:: https://travis-ci.org/boto/boto.svg?branch=develop
         :target: https://travis-ci.org/boto/boto
@@ -25,6 +25,22 @@ To port a module to Python 3.3+, please view our `Contributing Guidelines`_
 and the `Porting Guide`_. If you would like, you can open an issue to let
 others know about your work in progress. Tests **must** pass on Python
 2.6, 2.7, 3.3, and 3.4 for pull requests to be accepted.
+
+******
+Boto 3
+******
+The next major version of Boto is currently in developer preview and can
+be found in the `Boto 3 <https://github.com/boto/boto3#readme>`__
+repository and installed via ``pip``. It supports the latest service APIs
+and provides a high-level object-oriented interface to many services.
+
+Please try Boto 3 and
+`leave feedback <https://github.com/boto/boto3/issues>`__ with any issues,
+suggestions, and feature requests you might have.
+
+********
+Services
+********
 
 At the moment, boto supports:
 
@@ -76,6 +92,7 @@ At the moment, boto supports:
   * Amazon Simple Email Service (SES) (Python 3)
   * Amazon Cognito Identity (Python 3)
   * Amazon Cognito Sync (Python 3)
+  * Amazon Machine Learning (Python 3)
 
 * Monitoring
 

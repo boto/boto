@@ -3785,6 +3785,8 @@ class EC2Connection(AWSQueryConnection):
                 params[prefix + 'Platform'] = tc.platform
             if tc.instance_count is not None:
                 params[prefix + 'InstanceCount'] = tc.instance_count
+            if tc.instance_type is not None:
+                params[prefix + 'InstanceType'] = tc.instance_type
 
     def modify_reserved_instances(self, client_token, reserved_instance_ids,
                                   target_configurations):
