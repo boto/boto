@@ -58,7 +58,7 @@ class RDSConnection(AWSQueryConnection):
     more information on Amazon RDS concepts and usage scenarios, go to
     the `Amazon RDS User Guide`_.
     """
-    APIVersion = "2013-09-09"
+    APIVersion = "2014-10-31"
     DefaultRegionName = "us-east-1"
     DefaultRegionEndpoint = "rds.us-east-1.amazonaws.com"
     ResponseError = JSONResponseError
@@ -332,7 +332,8 @@ class RDSConnection(AWSQueryConnection):
                            auto_minor_version_upgrade=None,
                            license_model=None, iops=None,
                            option_group_name=None, character_set_name=None,
-                           publicly_accessible=None, tags=None):
+                           publicly_accessible=None, tags=None,
+                           storage_encrypted=False):
         """
         Creates a new DB instance.
 
@@ -647,6 +648,8 @@ class RDSConnection(AWSQueryConnection):
         :type tags: list
         :param tags: A list of tags.
 
+        :type storage_encrypted: boolean
+        :param storage_encrypted: If true, use AWS's managed encryption for RDS.
         """
         params = {
             'DBInstanceIdentifier': db_instance_identifier,
@@ -655,6 +658,7 @@ class RDSConnection(AWSQueryConnection):
             'Engine': engine,
             'MasterUsername': master_username,
             'MasterUserPassword': master_user_password,
+            'StorageEncrypted': str(storage_encrypted).lower()
         }
         if db_name is not None:
             params['DBName'] = db_name
