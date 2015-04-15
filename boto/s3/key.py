@@ -978,10 +978,11 @@ class Key(object):
                 'x-amz-server-side-encryption-customer-algorithm', None)
             # check for kms headers, their ETag also doesn't match
             if server_side_encryption_customer_algorithm is None:
-                server_side_encryption_customer_algorithm = response.getheader(
+                server_side_encryption_kms_key = response.getheader(
                 'x-amz-server-side-encryption-aws-kms-key-id', None)
 
-            if server_side_encryption_customer_algorithm is None:
+            if server_side_encryption_customer_algorithm is None\
+            and server_side_encryption_kms_key is None:
                 if self.etag != '"%s"' % md5:
                     raise provider.storage_data_error(
                         'ETag from S3 did not match computed MD5. '
