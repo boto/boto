@@ -82,6 +82,7 @@ Currently Supported Services
   * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`) (Python 3)
   * Amazon Cognito Identity -- (:doc:`API Reference <ref/cognito-identity>`) (Python 3)
   * Amazon Cognito Sync -- (:doc:`API Reference <ref/cognito-sync>`) (Python 3)
+  * Amazon Machine Learning -- (:doc:`API Reference <ref/machinelearning>`) (Python 3)
 
 * **Monitoring**
 
@@ -142,6 +143,7 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.37.0
    releasenotes/v2.36.0
    releasenotes/v2.35.2
    releasenotes/v2.35.1

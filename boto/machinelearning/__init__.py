@@ -1,4 +1,5 @@
-# Copyright (c) 2015 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2015 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -19,26 +20,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-
-import boto
-from boto.configservice.exceptions import NoSuchConfigurationRecorderException
-from tests.compat import unittest
+from boto.regioninfo import RegionInfo, get_regions
 
 
-class TestConfigService(unittest.TestCase):
-    def setUp(self):
-        self.configservice = boto.connect_configservice()
+def regions():
+    """
+    Get all available regions for the Amazon Machine Learning.
 
-    def test_describe_configuration_recorders(self):
-        response = self.configservice.describe_configuration_recorders()
-        self.assertIn('ConfigurationRecorders', response)
+    :rtype: list
+    :return: A list of :class:`boto.regioninfo.RegionInfo`
+    """
+    from boto.machinelearning.layer1 import MachineLearningConnection
+    return get_regions('machinelearning',
+                       connection_cls=MachineLearningConnection)
 
-    def test_handle_no_such_configuration_recorder(self):
-        with self.assertRaises(NoSuchConfigurationRecorderException):
-            self.configservice.describe_configuration_recorders(
-                configuration_recorder_names=['non-existant-recorder'])
 
-    def test_connect_to_non_us_east_1(self):
-        self.configservice = boto.configservice.connect_to_region('us-west-2')
-        response = self.configservice.describe_configuration_recorders()
-        self.assertIn('ConfigurationRecorders', response)
+def connect_to_region(region_name, **kw_params):
+    for region in regions():
+        if region.name == region_name:
+            return region.connect(**kw_params)
+    return None

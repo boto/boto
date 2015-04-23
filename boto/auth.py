@@ -321,6 +321,8 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         in the StringToSign.
         """
         host_header_value = self.host_header(self.host, http_request)
+        if http_request.headers.get('Host'):
+            host_header_value = http_request.headers['Host']
         headers_to_sign = {'Host': host_header_value}
         for name, value in http_request.headers.items():
             lname = name.lower()

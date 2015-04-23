@@ -30,7 +30,7 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
-    from boto.kms.layer1 import ConfigServiceConnection
+    from boto.configservice.layer1 import ConfigServiceConnection
     return get_regions('configservice', connection_cls=ConfigServiceConnection)
 
 

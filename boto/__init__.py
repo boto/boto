@@ -38,7 +38,7 @@ import logging.config
 from boto.compat import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.36.0'
+__version__ = '2.38.0'
 Version = __version__  # for backware compatibility
 
 # http://bugs.python.org/issue7980
@@ -1018,7 +1018,7 @@ def connect_codedeploy(aws_access_key_id=None,
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
         **kwargs
-    ) 
+    )
 
 
 def connect_configservice(aws_access_key_id=None,
@@ -1077,6 +1077,22 @@ def connect_ec2containerservice(aws_access_key_id=None,
     """
     from boto.ec2containerservice.layer1 import EC2ContainerServiceConnection
     return EC2ContainerServiceConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_machinelearning(aws_access_key_id=None,
+                            aws_secret_access_key=None,
+                            **kwargs):
+    """
+    Connect to Amazon Machine Learning service
+    rtype: :class:`boto.machinelearning.layer1.MachineLearningConnection`
+    :return: A connection to the Amazon Machine Learning service
+    """
+    from boto.machinelearning.layer1 import MachineLearningConnection
+    return MachineLearningConnection(
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
         **kwargs
