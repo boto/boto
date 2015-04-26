@@ -129,5 +129,31 @@ class TestDeleteSubnet(AWSMockServiceTestCase):
         self.assertEquals(api_response, True)
 
 
+class TestModifySubnetAttribute(AWSMockServiceTestCase):
+
+    connection_class = VPCConnection
+
+    def default_body(self):
+        return b"""
+            <ModifySubnetAttributeResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
+               <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
+               <return>true</return>
+            </ModifySubnetAttributeResponse>
+        """
+
+    def test_modify_subnet_attribute(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.modify_subnet_attribute('subnet-a605r929',
+                                                                       True)
+        self.assert_request_parameters({
+            'Action': 'ModifySubnetAttribute',
+            'SubnetId': 'subnet-a605r929', 'MapPublicIpOnLaunch.Value': 'true'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+        self.assertEquals(api_response, True)
+
+
+
 if __name__ == '__main__':
     unittest.main()
