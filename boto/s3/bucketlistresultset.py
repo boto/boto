@@ -82,6 +82,10 @@ def versioned_bucket_lister(bucket, prefix='', delimiter='',
         for k in rs:
             yield k
         key_marker = rs.next_key_marker
+        if key_marker and encoding_type == "url":
+            if isinstance(key_marker, six.text_type):
+                key_marker = key_marker.encode('utf-8')
+            key_marker = urllib.parse.unquote_plus(key_marker)
         version_id_marker = rs.next_version_id_marker
         more_results= rs.is_truncated
 
@@ -128,6 +132,10 @@ def multipart_upload_lister(bucket, key_marker='',
         for k in rs:
             yield k
         key_marker = rs.next_key_marker
+        if key_marker and encoding_type == "url":
+            if isinstance(key_marker, six.text_type):
+                key_marker = key_marker.encode('utf-8')
+            key_marker = urllib.parse.unquote_plus(key_marker)
         upload_id_marker = rs.next_upload_id_marker
         more_results= rs.is_truncated
 
