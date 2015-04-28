@@ -832,7 +832,8 @@ class AWSAuthConnection(object):
             sslSock = ssl.wrap_socket(sock, keyfile=key_file,
                                       certfile=cert_file,
                                       cert_reqs=ssl.CERT_REQUIRED,
-                                      ca_certs=self.ca_certificates_file)
+                                      ca_certs=self.ca_certificates_file,
+                                      ssl_version=ssl.PROTOCOL_TLSv1)
             cert = sslSock.getpeercert()
             hostname = self.host.split(':', 0)[0]
             if not https_connection.ValidateCertificateHostname(cert, hostname):
