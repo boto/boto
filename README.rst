@@ -1,9 +1,9 @@
 ####
 boto
 ####
-boto 2.37.0
+boto 2.38.0
 
-Released: 2-Apr-2015
+Released: 9-Apr-2015
 
 .. image:: https://travis-ci.org/boto/boto.svg?branch=develop
         :target: https://travis-ci.org/boto/boto
@@ -92,6 +92,7 @@ At the moment, boto supports:
   * Amazon Simple Email Service (SES) (Python 3)
   * Amazon Cognito Identity (Python 3)
   * Amazon Cognito Sync (Python 3)
+  * Amazon Machine Learning (Python 3)
 
 * Monitoring
 

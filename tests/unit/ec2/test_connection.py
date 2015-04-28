@@ -1092,7 +1092,8 @@ class TestModifyReservedInstances(TestEC2ConnectionBase):
                 ReservedInstancesConfiguration(
                     availability_zone='us-west-2c',
                     platform='EC2-VPC',
-                    instance_count=3
+                    instance_count=3,
+                    instance_type='c3.large'
                 ),
             ]
         )
@@ -1102,6 +1103,7 @@ class TestModifyReservedInstances(TestEC2ConnectionBase):
             'ReservedInstancesConfigurationSetItemType.0.AvailabilityZone': 'us-west-2c',
             'ReservedInstancesConfigurationSetItemType.0.InstanceCount': 3,
             'ReservedInstancesConfigurationSetItemType.0.Platform': 'EC2-VPC',
+            'ReservedInstancesConfigurationSetItemType.0.InstanceType': 'c3.large',
             'ReservedInstancesId.1': '2567o137-8a55-48d6-82fb-7258506bb497'
         }, ignore_params_values=[
             'AWSAccessKeyId', 'SignatureMethod',
@@ -1420,7 +1422,7 @@ class TestSignatureAlteration(TestEC2ConnectionBase):
     def test_unchanged(self):
         self.assertEqual(
             self.service_connection._required_auth_capability(),
-            ['ec2']
+            ['hmac-v4']
         )
 
     def test_switched(self):
