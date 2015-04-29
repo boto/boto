@@ -86,7 +86,7 @@ When the status has changed to *INSYNC*, the change has been propagated to
 remote servers
 
 Working with Change Sets
------------------------
+------------------------
 
 You can also do bulk updates using ResourceRecordSets. For example updating the TTL
 
