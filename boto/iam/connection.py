@@ -31,23 +31,25 @@ DEFAULT_POLICY_DOCUMENTS = {
         'Statement': [
             {
                 'Principal': {
-                    'Service': ['ec2.amazonaws.com']
+                    'Service': 'ec2.amazonaws.com'
                 },
                 'Effect': 'Allow',
-                'Action': ['sts:AssumeRole']
+                'Action': 'sts:AssumeRole'
             }
-        ]
+        ],
+        'Version': '2008-10-17'
     },
     'amazonaws.com.cn': {
         'Statement': [
             {
                 'Principal': {
-                    'Service': ['ec2.amazonaws.com.cn']
+                    'Service': 'ec2.amazonaws.com.cn'
                 },
                 'Effect': 'Allow',
-                'Action': ['sts:AssumeRole']
+                'Action': 'sts:AssumeRole'
             }
-        ]
+        ],
+        'Version': '2008-10-17'
     },
 }
 # For backward-compatibility, we'll preserve this here.
