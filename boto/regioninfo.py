@@ -99,7 +99,7 @@ def load_regions():
     return endpoints
 
 
-def get_regions(service_name, region_cls=None, connection_cls=None):
+def get_regions(service_name, region_cls=None, connection_cls=None, provider=None):
     """
     Given a service name (like ``ec2``), returns a list of ``RegionInfo``
     objects for that service.
@@ -140,7 +140,8 @@ def get_regions(service_name, region_cls=None, connection_cls=None):
             region_cls(
                 name=region_name,
                 endpoint=endpoint,
-                connection_cls=connection_cls
+                connection_cls=connection_cls,
+                provider=provider
             )
         )
 
@@ -153,11 +154,12 @@ class RegionInfo(object):
     """
 
     def __init__(self, connection=None, name=None, endpoint=None,
-                 connection_cls=None):
+                 connection_cls=None, provider=None):
         self.connection = connection
         self.name = name
         self.endpoint = endpoint
         self.connection_cls = connection_cls
+        self.provider = provider
 
     def __repr__(self):
         return 'RegionInfo:%s' % self.name
@@ -185,4 +187,6 @@ class RegionInfo(object):
         :return: The connection to this regions endpoint
         """
         if self.connection_cls:
+            if self.provider:
+                kw_params['provider'] = self.provider
             return self.connection_cls(region=self, **kw_params)

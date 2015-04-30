@@ -24,14 +24,14 @@ from connection import STSConnection
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provier=None):
     """
     Get all available regions for the STS service.
 
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo` instances
     """
-    return get_regions('sts', connection_cls=STSConnection)
+    return get_regions('sts', connection_cls=STSConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

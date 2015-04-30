@@ -23,7 +23,7 @@
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the Amazon Kinesis service.
 
@@ -31,7 +31,7 @@ def regions():
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
     from boto.kinesis.layer1 import KinesisConnection
-    return get_regions('kinesis', connection_cls=KinesisConnection)
+    return get_regions('kinesis', connection_cls=KinesisConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

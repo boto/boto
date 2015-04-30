@@ -24,7 +24,7 @@ from .regioninfo import SDBRegionInfo
 from boto.regioninfo import get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the SDB service.
 
@@ -33,7 +33,8 @@ def regions():
     """
     return get_regions(
         'sdb',
-        region_cls=SDBRegionInfo
+        region_cls=SDBRegionInfo,
+        provider=provider
     )
 
 

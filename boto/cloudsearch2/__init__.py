@@ -21,7 +21,7 @@
 from boto.regioninfo import get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the Amazon CloudSearch service.
 
@@ -31,7 +31,8 @@ def regions():
     import boto.cloudsearch2.layer1
     return get_regions(
         'cloudsearch',
-        connection_cls=boto.cloudsearch2.layer1.CloudSearchConnection
+        connection_cls=boto.cloudsearch2.layer1.CloudSearchConnection,
+        provider=provider
     )
 
 

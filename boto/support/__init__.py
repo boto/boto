@@ -23,7 +23,7 @@
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the Amazon Support service.
 
@@ -31,7 +31,7 @@ def regions():
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
     from boto.support.layer1 import SupportConnection
-    return get_regions('support', connection_cls=SupportConnection)
+    return get_regions('support', connection_cls=SupportConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

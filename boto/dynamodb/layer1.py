@@ -96,7 +96,8 @@ class Layer1(AWSAuthConnection):
             'DynamoDB', 'validate_checksums', validate_checksums)
 
     def _get_session_token(self):
-        self.provider = Provider(self._provider_type)
+        if not self.provider:
+            self.provider = Provider(self._provider_type)
         self._auth_handler.update_provider(self.provider)
 
     def _required_auth_capability(self):

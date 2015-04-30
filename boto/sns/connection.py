@@ -59,11 +59,11 @@ class SNSConnection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  security_token=None, validate_certs=True,
-                 profile_name=None):
+                 profile_name=None, provider='aws'):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint,
-                                connection_cls=SNSConnection)
+                                connection_cls=SNSConnection, provider=provider)
         self.region = region
         super(SNSConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
@@ -73,7 +73,8 @@ class SNSConnection(AWSQueryConnection):
                                     https_connection_factory, path,
                                     security_token=security_token,
                                     validate_certs=validate_certs,
-                                    profile_name=profile_name)
+                                    profile_name=profile_name,
+                                    provider=provider)
 
     def _build_dict_as_list_params(self, params, dictionary, name):
       """

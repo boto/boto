@@ -23,7 +23,7 @@
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the AWS Elastic Beanstalk service.
 
@@ -33,7 +33,8 @@ def regions():
     import boto.beanstalk.layer1
     return get_regions(
         'elasticbeanstalk',
-        connection_cls=boto.beanstalk.layer1.Layer1
+        connection_cls=boto.beanstalk.layer1.Layer1,
+        provider=provider
     )
 
 

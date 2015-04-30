@@ -42,7 +42,7 @@ class S3RegionInfo(RegionInfo):
             return self.connection_cls(host=self.endpoint, **kw_params)
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the Amazon S3 service.
 
@@ -53,7 +53,8 @@ def regions():
     return get_regions(
         's3',
         region_cls=S3RegionInfo,
-        connection_cls=S3Connection
+        connection_cls=S3Connection,
+        provider=provider
     )
 
 

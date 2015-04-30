@@ -48,7 +48,9 @@ def regions(**kw_params):
     :rtype: list
     :return: A list of :class:`boto.ec2.regioninfo.RegionInfo`
     """
-    return get_regions('ec2', connection_cls=VPCConnection)
+    provider = None
+    if 'provider' in kw_parms: provider = kw_parms['provider']
+    return get_regions('ec2', connection_cls=VPCConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

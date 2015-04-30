@@ -47,7 +47,7 @@ class MTurkConnection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None,
                  host=None, debug=0,
                  https_connection_factory=None, security_token=None,
-                 profile_name=None):
+                 profile_name=None, provider='aws'):
         if not host:
             if config.has_option('MTurk', 'sandbox') and config.get('MTurk', 'sandbox') == 'True':
                 host = 'mechanicalturk.sandbox.amazonaws.com'
@@ -61,7 +61,7 @@ class MTurkConnection(AWSQueryConnection):
                                     proxy_user, proxy_pass, host, debug,
                                     https_connection_factory,
                                     security_token=security_token,
-                                    profile_name=profile_name)
+                                    profile_name=profile_name, provider=provider)
 
     def _required_auth_capability(self):
         return ['mturk']

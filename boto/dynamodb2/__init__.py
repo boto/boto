@@ -24,7 +24,7 @@
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the Amazon DynamoDB service.
 
@@ -32,7 +32,7 @@ def regions():
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
     from boto.dynamodb2.layer1 import DynamoDBConnection
-    return get_regions('dynamodb', connection_cls=DynamoDBConnection)
+    return get_regions('dynamodb', connection_cls=DynamoDBConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

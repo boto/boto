@@ -31,7 +31,7 @@ class Layer2(object):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  host=None, debug=0, session_token=None, region=None,
-                 validate_certs=True):
+                 validate_certs=True, provider='aws'):
         self.layer1 = Layer1(
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
@@ -43,7 +43,8 @@ class Layer2(object):
             debug=debug,
             security_token=session_token,
             region=region,
-            validate_certs=validate_certs)
+            validate_certs=validate_certs,
+            provider=provider)
 
     def list_domains(self, domain_names=None):
         """

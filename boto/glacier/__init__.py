@@ -24,7 +24,7 @@
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the Amazon Glacier service.
 
@@ -32,7 +32,7 @@ def regions():
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
     from boto.glacier.layer2 import Layer2
-    return get_regions('glacier', connection_cls=Layer2)
+    return get_regions('glacier', connection_cls=Layer2, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

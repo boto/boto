@@ -43,7 +43,7 @@ class IAMRegionInfo(RegionInfo):
             return self.connection_cls(host=self.endpoint, **kw_params)
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the IAM service.
 
@@ -53,7 +53,8 @@ def regions():
     regions = get_regions(
         'iam',
         region_cls=IAMRegionInfo,
-        connection_cls=IAMConnection
+        connection_cls=IAMConnection,
+        provider=provider
     )
 
     # For historical reasons, we had a "universal" endpoint as well.
@@ -61,7 +62,8 @@ def regions():
         IAMRegionInfo(
             name='universal',
             endpoint='iam.amazonaws.com',
-            connection_cls=IAMConnection
+            connection_cls=IAMConnection,
+            provider=provider
         )
     )
 

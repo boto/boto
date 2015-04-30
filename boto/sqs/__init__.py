@@ -24,7 +24,7 @@ from regioninfo import SQSRegionInfo
 from boto.regioninfo import get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the SQS service.
 
@@ -33,7 +33,8 @@ def regions():
     """
     return get_regions(
         'sqs',
-        region_cls=SQSRegionInfo
+        region_cls=SQSRegionInfo,
+        provider=provider
     )
 
 

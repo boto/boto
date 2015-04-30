@@ -26,14 +26,14 @@ from connection import SNSConnection
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the SNS service.
 
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo` instances
     """
-    return get_regions('sns', connection_cls=SNSConnection)
+    return get_regions('sns', connection_cls=SNSConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):
