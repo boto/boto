@@ -1103,6 +1103,14 @@ class IAMConnection(AWSQueryConnection):
         return self.get_response('CreateInstanceProfile', params)
 
     def build_policy(self, assume_role_policy_document=None):
+        """
+        Build default policy document when `assume_role_policy_document` is not
+        specified.
+
+        :type assume_role_policy_document: str
+        :return: Serialized to string JSON document of the policy
+        :rtype: str
+        """
         if assume_role_policy_document is not None:
             if isinstance(assume_role_policy_document, six.string_types):
                 # Historically, they had to pass a string. If it's a string,
