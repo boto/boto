@@ -224,8 +224,7 @@ class CloudFormationConnection(AWSQueryConnection):
         :rtype: dict
         :return: JSON parameters represented as a Python dict.
         """
-        params = {'ContentType': "JSON", 'StackName': stack_name,
-                'DisableRollback': self.encode_bool(disable_rollback)}
+        params = {'ContentType': "JSON", 'StackName': stack_name}
         if template_body:
             params['TemplateBody'] = template_body
         if template_url:
