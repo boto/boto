@@ -178,7 +178,8 @@ class Table(object):
             ...     'write': 10,
             ... }, indexes=[
             ...     KeysOnlyIndex('MostRecentlyJoined', parts=[
-            ...         RangeKey('date_joined')
+            ...         HashKey('username'),
+            ...         RangeKey('date_joined'),
             ... ]), global_indexes=[
             ...     GlobalAllIndex('UsersByZipcode', parts=[
             ...         HashKey('zipcode'),
