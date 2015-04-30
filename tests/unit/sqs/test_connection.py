@@ -24,15 +24,14 @@
 
 from tests.unit import AWSMockServiceTestCase, MockServiceWithConfigTestCase
 
-from tests.compat import mock
-
 from boto.sqs.connection import SQSConnection
 from boto.sqs.regioninfo import SQSRegionInfo
 from boto.sqs.message import RawMessage
+from boto.exception import SQSError
 from boto.sqs.queue import Queue
-from boto.connection import AWSQueryConnection
 
 from nose.plugins.attrib import attr
+
 
 class SQSAuthParams(AWSMockServiceTestCase):
     connection_class = SQSConnection
@@ -115,6 +114,33 @@ class SQSAuthParams(AWSMockServiceTestCase):
         assert 'QueueOwnerAWSAccountId' in self.actual_request.params.keys()
         self.assertEquals(self.actual_request.params['QueueOwnerAWSAccountId'], '599169622985')
 
+    @attr(sqs=True)
+    def test_get_queue_failed_due_to_invalid_action(self):
+        """Ensure SQSError raised when error code is not about missing queue with given name."""
+        self.set_http_response(status_code=400)
+
+        with self.assertRaises(SQSError):
+            self.service_connection.get_queue('my_queue')
+
+    @attr(sqs=True)
+    def test_get_nonexisting_queue(self):
+        """Ensure None is returned when non-existing Queue asked."""
+        self.set_http_response(
+            status_code=400,
+            body="""<?xml version="1.0"?>
+                <ErrorResponse xmlns="http://queue.amazonaws.com/doc/2012-11-05/">
+                    <Error>
+                        <Type>Sender</Type>
+                        <Code>AWS.SimpleQueueService.NonExistentQueue</Code>
+                        <Message>The specified queue does not exist for this wsdl version.</Message>
+                        <Detail/>
+                    </Error>
+                <RequestId>6867dffe-abe2-50ed-8b7e-9242090111c7</RequestId>
+                </ErrorResponse>"""
+        )
+        self.assertIsNone(self.service_connection.get_queue('my_queue'))
+
+
 class SQSProfileName(MockServiceWithConfigTestCase):
     connection_class = SQSConnection
     profile_name = 'prod'
@@ -141,6 +167,7 @@ class SQSProfileName(MockServiceWithConfigTestCase):
         self.set_http_response(status_code=200)
 
         self.assertEquals(self.service_connection.profile_name, self.profile_name)
+
 
 class SQSMessageAttributesParsing(AWSMockServiceTestCase):
     connection_class = SQSConnection
@@ -308,6 +335,3 @@ class SQSSendBatchMessageAttributes(AWSMockServiceTestCase):
             'SendMessageBatchRequestEntry.2.MessageBody': 'Message 2',
             'Version': '2012-11-05'
         })
-
-if __name__ == '__main__':
-    unittest.main()

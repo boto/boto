@@ -26,7 +26,7 @@ from boto.sqs.queue import Queue
 from boto.sqs.message import Message
 from boto.sqs.attributes import Attributes
 from boto.sqs.batchresults import BatchResults
-from boto.exception import SQSError, BotoServerError
+from boto.exception import SQSError
 
 
 class SQSConnection(AWSQueryConnection):
@@ -447,21 +447,26 @@ class SQSConnection(AWSQueryConnection):
 
     def get_queue(self, queue_name, owner_acct_id=None):
         """
-        Retrieves the queue with the given name, or ``None`` if no match
-        was found.
+        Retrieve the queue with the given name, or ``None`` if no match was found.
 
         :param str queue_name: The name of the queue to retrieve.
         :param str owner_acct_id: Optionally, the AWS account ID of the account that created the queue.
         :rtype: :py:class:`boto.sqs.queue.Queue` or ``None``
         :returns: The requested queue, or ``None`` if no match was found.
+        :raise :py:class:`boto.exception.SQSError`: Failed to get queue with the given name.
         """
         params = {'QueueName': queue_name}
         if owner_acct_id:
-            params['QueueOwnerAWSAccountId']=owner_acct_id
+            params['QueueOwnerAWSAccountId'] = owner_acct_id
+
+        result = None
         try:
-            return self.get_object('GetQueueUrl', params, Queue)
-        except SQSError:
-            return None
+            result = self.get_object('GetQueueUrl', params, Queue)
+        except SQSError as error:
+            if not (error.code == 'AWS.SimpleQueueService.NonExistentQueue'
+                    and error.status == 400):
+                raise
+        return result
 
     lookup = get_queue
 
