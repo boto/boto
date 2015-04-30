@@ -1102,7 +1102,7 @@ class IAMConnection(AWSQueryConnection):
             params['Path'] = path
         return self.get_response('CreateInstanceProfile', params)
 
-    def _build_policy(self, assume_role_policy_document=None):
+    def build_policy(self, assume_role_policy_document=None):
         if assume_role_policy_document is not None:
             if isinstance(assume_role_policy_document, six.string_types):
                 # Historically, they had to pass a string. If it's a string,
@@ -1146,7 +1146,7 @@ class IAMConnection(AWSQueryConnection):
         """
         params = {
             'RoleName': role_name,
-            'AssumeRolePolicyDocument': self._build_policy(
+            'AssumeRolePolicyDocument': self.build_policy(
                 assume_role_policy_document
             ),
         }
