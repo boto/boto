@@ -24,10 +24,10 @@
 
 from tests.unit import AWSMockServiceTestCase, MockServiceWithConfigTestCase
 
+from boto.exception import SQSError
 from boto.sqs.connection import SQSConnection
 from boto.sqs.regioninfo import SQSRegionInfo
 from boto.sqs.message import RawMessage
-from boto.exception import SQSError
 from boto.sqs.queue import Queue
 
 from nose.plugins.attrib import attr
