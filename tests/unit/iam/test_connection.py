@@ -203,7 +203,7 @@ class TestCreateRole(AWSMockServiceTestCase):
         self.assert_request_parameters(
             {'Action': 'CreateRole',
              'RoleName': 'a_name'},
-            ignore_params_values=['AssumeRolePolicyDocument'])
+            ignore_params_values=['Version', 'AssumeRolePolicyDocument'])
         self.assertDictEqual(json.loads(self.actual_request.params["AssumeRolePolicyDocument"]), {"Statement": [{"Action": "sts:AssumeRole", "Effect": "Allow", "Principal": {"Service": "ec2.amazonaws.com"}}], 'Version': '2008-10-17'})
 
     def test_create_role_default_cn_north(self):
@@ -214,7 +214,7 @@ class TestCreateRole(AWSMockServiceTestCase):
         self.assert_request_parameters(
             {'Action': 'CreateRole',
              'RoleName': 'a_name'},
-            ignore_params_values=['AssumeRolePolicyDocument'])
+            ignore_params_values=['Version', 'AssumeRolePolicyDocument'])
         self.assertDictEqual(json.loads(self.actual_request.params["AssumeRolePolicyDocument"]), {"Statement": [{"Action": "sts:AssumeRole", "Effect": "Allow", "Principal": {"Service": "ec2.amazonaws.com.cn"}}], 'Version': '2008-10-17'})
 
     def test_create_role_string_policy(self):
