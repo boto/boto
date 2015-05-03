@@ -171,19 +171,19 @@ class SQSConnection(AWSQueryConnection):
 
             * For `DelaySeconds` the value must be an integer number of
             seconds from 0 to 900 (15 minutes).
-                >>> queue.set_attribute('DelaySeconds', 900)
+                >>> connection.set_queue_attribute(queue, 'DelaySeconds', 900)
 
             * For `MaximumMessageSize` the value must be an integer number of
             bytes from 1024 (1 KiB) to 262144 (256 KiB).
-                >>> queue.set_attribute('MaximumMessageSize', 262144)
+                >>> connection.set_queue_attribute(queue, 'MaximumMessageSize', 262144)
 
             * For `MessageRetentionPeriod` the value must be an integer number of
             seconds from 60 (1 minute) to 1209600 (14 days).
-                >>> queue.set_attribute('MessageRetentionPeriod', 1209600)
+                >>> connection.set_queue_attribute(queue, 'MessageRetentionPeriod', 1209600)
 
             * For `Policy` the value must be an string that contains JSON formatted
             parameters and values.
-                >>> queue.set_attribute('Policy', json.dumps({
+                >>> connection.set_queue_attribute(queue, 'Policy', json.dumps({
                 ...     'Version': '2008-10-17',
                 ...     'Id': '/123456789012/testQueue/SQSDefaultPolicy',
                 ...     'Statement': [
@@ -201,17 +201,17 @@ class SQSConnection(AWSQueryConnection):
 
             * For `ReceiveMessageWaitTimeSeconds` the value must be an integer number of
             seconds from 0 to 20.
-                >>> queue.set_attribute('ReceiveMessageWaitTimeSeconds', 20)
+                >>> connection.set_queue_attribute(queue, 'ReceiveMessageWaitTimeSeconds', 20)
 
             * For `VisibilityTimeout` the value must be an integer number of
             seconds from 0 to 43200 (12 hours).
-                >>> queue.set_attribute('VisibilityTimeout', 43200)
+                >>> connection.set_queue_attribute(queue, 'VisibilityTimeout', 43200)
 
             * For `RedrivePolicy` the value must be an string that contains JSON formatted
             parameters and values. You can set maxReceiveCount to a value between 1 and 1000.
             The deadLetterTargetArn value is the Amazon Resource Name (ARN) of the queue that
             will receive the dead letter messages.
-                >>> queue.set_attribute('RedrivePolicy', json.dumps({
+                >>> connection.set_queue_attribute(queue, 'RedrivePolicy', json.dumps({
                 ...    'maxReceiveCount': 5,
                 ...    'deadLetterTargetArn': "arn:aws:aws:sqs:us-east-1:123456789012:testDeadLetterQueue"
                 ... }))
