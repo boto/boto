@@ -289,7 +289,11 @@ class ConfigServiceConnection(AWSQueryConnection):
 
         :type configuration_recorder: dict
         :param configuration_recorder: The configuration recorder object that
-            records each configuration change made to the resources.
+            records each configuration change made to the resources. The
+            format should follow:
+
+            {'name': 'myrecorder',
+             'roleARN': 'arn:aws:iam::123456789012:role/trusted-aws-config'}
 
         """
         params = {'ConfigurationRecorder': configuration_recorder, }
