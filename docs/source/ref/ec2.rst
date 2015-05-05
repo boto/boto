@@ -166,13 +166,6 @@ boto.ec2.tag
    :members:
    :undoc-members:
 
-boto.ec2.vmtype
----------------
-
-.. automodule:: boto.ec2.vmtype
-   :members:
-   :undoc-members:
-
 boto.ec2.volume
 ---------------
 

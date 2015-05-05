@@ -33,7 +33,7 @@ class CodeDeployConnection(AWSQueryConnection):
     AWS CodeDeploy **Overview**
     This is the AWS CodeDeploy API Reference. This guide provides
     descriptions of the AWS CodeDeploy APIs. For additional
-    information, see the `AWS CodeDeploy User Guide`_.
+    information, see the `AWS CodeDeploy User Guide`.
     **Using the APIs**
     You can use the AWS CodeDeploy APIs to work with the following
     items:
@@ -225,7 +225,8 @@ class CodeDeployConnection(AWSQueryConnection):
         :type deployment_config_name: string
         :param deployment_config_name: The name of an existing deployment
             configuration within the AWS user account.
-        If not specified, the value configured in the deployment group will be
+
+            If not specified, the value configured in the deployment group will be
             used as the default. If the deployment group does not have a
             deployment configuration associated with it, then
             CodeDeployDefault.OneAtATime will be used by default.
@@ -239,7 +240,8 @@ class CodeDeployConnection(AWSQueryConnection):
             fail to a specific instance, the deployment will not be considered
             to have failed to that instance at that point and will continue on
             to the BeforeInstall deployment lifecycle event.
-        If set to false or not specified, then if the deployment causes the
+
+            If set to false or not specified, then if the deployment causes the
             ApplicationStop deployment lifecycle event to fail to a specific
             instance, the deployment will stop to that instance, and the
             deployment to that instance will be considered to have failed.
@@ -270,24 +272,23 @@ class CodeDeployConnection(AWSQueryConnection):
 
         :type minimum_healthy_hosts: dict
         :param minimum_healthy_hosts: The minimum number of healthy instances
-            that should be available at any time during the deployment. There
-            are two parameters expected in the input: type and value.
-        The type parameter takes either of the following values:
+            that should be available at any time during the deployment.
+            There are two parameters expected in the input: type and value.
 
+            The type parameter takes either of the following values:
 
-        + HOST_COUNT: The value parameter represents the minimum number of
-              healthy instances, as an absolute value.
-        + FLEET_PERCENT: The value parameter represents the minimum number of
-              healthy instances, as a percentage of the total number of instances
-              in the deployment. If you specify FLEET_PERCENT, then at the start
-              of the deployment AWS CodeDeploy converts the percentage to the
-              equivalent number of instances and rounds fractional instances up.
+            + `HOST_COUNT`: The value parameter represents the minimum number of
+                healthy instances, as an absolute value.
+            + `FLEET_PERCENT`: The value parameter represents the minimum number of
+                healthy instances, as a percentage of the total number of instances
+                in the deployment. If you specify `FLEET_PERCENT`, then at the start
+                of the deployment AWS CodeDeploy converts the percentage to the
+                equivalent number of instances and rounds fractional instances up.
 
+            The value parameter takes an integer.
 
-        The value parameter takes an integer.
-
-        For example, to set a minimum of 95% healthy instances, specify a type
-            of FLEET_PERCENT and a value of 95.
+            For example, to set a minimum of 95% healthy instances, specify a type
+                of `FLEET_PERCENT` and a value of 95.
 
         """
         params = {'deploymentConfigName': deployment_config_name, }
@@ -319,40 +320,40 @@ class CodeDeployConnection(AWSQueryConnection):
             configuration name must be one of the predefined values, or it can
             be a custom deployment configuration:
 
-        + CodeDeployDefault.AllAtOnce deploys an application revision to up to
-              all of the Amazon EC2 instances at once. The overall deployment
-              succeeds if the application revision deploys to at least one of the
-              instances. The overall deployment fails after the application
-              revision fails to deploy to all of the instances. For example, for
-              9 instances, deploy to up to all 9 instances at once. The overall
-              deployment succeeds if any of the 9 instances is successfully
-              deployed to, and it fails if all 9 instances fail to be deployed
-              to.
-        + CodeDeployDefault.HalfAtATime deploys to up to half of the instances
-              at a time (with fractions rounded down). The overall deployment
-              succeeds if the application revision deploys to at least half of
-              the instances (with fractions rounded up); otherwise, the
-              deployment fails. For example, for 9 instances, deploy to up to 4
-              instances at a time. The overall deployment succeeds if 5 or more
-              instances are successfully deployed to; otherwise, the deployment
-              fails. Note that the deployment may successfully deploy to some
-              instances, even if the overall deployment fails.
-        + CodeDeployDefault.OneAtATime deploys the application revision to only
-              one of the instances at a time. The overall deployment succeeds if
-              the application revision deploys to all of the instances. The
-              overall deployment fails after the application revision first fails
-              to deploy to any one instance. For example, for 9 instances, deploy
-              to one instance at a time. The overall deployment succeeds if all 9
-              instances are successfully deployed to, and it fails if any of one
-              of the 9 instances fail to be deployed to. Note that the deployment
-              may successfully deploy to some instances, even if the overall
-              deployment fails. This is the default deployment configuration if a
-              configuration isn't specified for either the deployment or the
-              deployment group.
+            + CodeDeployDefault.AllAtOnce deploys an application revision to up to
+                all of the Amazon EC2 instances at once. The overall deployment
+                succeeds if the application revision deploys to at least one of the
+                instances. The overall deployment fails after the application
+                revision fails to deploy to all of the instances. For example, for
+                9 instances, deploy to up to all 9 instances at once. The overall
+                deployment succeeds if any of the 9 instances is successfully
+                deployed to, and it fails if all 9 instances fail to be deployed to.
 
+            + CodeDeployDefault.HalfAtATime deploys to up to half of the instances
+                at a time (with fractions rounded down). The overall deployment
+                succeeds if the application revision deploys to at least half of
+                the instances (with fractions rounded up); otherwise, the
+                deployment fails. For example, for 9 instances, deploy to up to 4
+                instances at a time. The overall deployment succeeds if 5 or more
+                instances are successfully deployed to; otherwise, the deployment
+                fails. Note that the deployment may successfully deploy to some
+                instances, even if the overall deployment fails.
 
-        To create a custom deployment configuration, call the create deployment
-            configuration operation.
+            + CodeDeployDefault.OneAtATime deploys the application revision to only
+                one of the instances at a time. The overall deployment succeeds if
+                the application revision deploys to all of the instances. The
+                overall deployment fails after the application revision first fails
+                to deploy to any one instance. For example, for 9 instances, deploy
+                to one instance at a time. The overall deployment succeeds if all 9
+                instances are successfully deployed to, and it fails if any of one
+                of the 9 instances fail to be deployed to. Note that the deployment
+                may successfully deploy to some instances, even if the overall
+                deployment fails. This is the default deployment configuration if a
+                configuration isn't specified for either the deployment or the
+                deployment group.
+
+            To create a custom deployment configuration, call the create deployment
+                configuration operation.
 
         :type ec_2_tag_filters: list
         :param ec_2_tag_filters: The Amazon EC2 tags to filter on.
@@ -544,32 +545,31 @@ class CodeDeployConnection(AWSQueryConnection):
         :type sort_by: string
         :param sort_by: The column name to sort the list results by:
 
-        + registerTime: Sort the list results by when the revisions were
-              registered with AWS CodeDeploy.
-        + firstUsedTime: Sort the list results by when the revisions were first
-              used by in a deployment.
-        + lastUsedTime: Sort the list results by when the revisions were last
-              used in a deployment.
+            + registerTime: Sort the list results by when the revisions were
+                registered with AWS CodeDeploy.
+            + firstUsedTime: Sort the list results by when the revisions were first
+                used by in a deployment.
+            + lastUsedTime: Sort the list results by when the revisions were last
+                used in a deployment.
 
-
-        If not specified or set to null, the results will be returned in an
-            arbitrary order.
+            If not specified or set to null, the results will be returned in an
+                arbitrary order.
 
         :type sort_order: string
         :param sort_order: The order to sort the list results by:
 
-        + ascending: Sort the list results in ascending order.
-        + descending: Sort the list results in descending order.
+            + ascending: Sort the list results in ascending order.
+            + descending: Sort the list results in descending order.
 
 
-        If not specified, the results will be sorted in ascending order.
+            If not specified, the results will be sorted in ascending order.
 
-        If set to null, the results will be sorted in an arbitrary order.
+            If set to null, the results will be sorted in an arbitrary order.
 
         :type s_3_bucket: string
         :param s_3_bucket: A specific Amazon S3 bucket name to limit the search
             for revisions.
-        If set to null, then all of the user's buckets will be searched.
+            If set to null, then all of the user's buckets will be searched.
 
         :type s_3_key_prefix: string
         :param s_3_key_prefix: A specific key prefix for the set of Amazon S3
@@ -577,16 +577,15 @@ class CodeDeployConnection(AWSQueryConnection):
 
         :type deployed: string
         :param deployed:
-        Whether to list revisions based on whether the revision is the target
-            revision of an deployment group:
+            Whether to list revisions based on whether the revision is the target
+                revision of an deployment group:
 
-
-        + include: List revisions that are target revisions of a deployment
-              group.
-        + exclude: Do not list revisions that are target revisions of a
-              deployment group.
-        + ignore: List all revisions, regardless of whether they are target
-              revisions of a deployment group.
+            + include: List revisions that are target revisions of a deployment
+                group.
+            + exclude: Do not list revisions that are target revisions of a
+                deployment group.
+            + ignore: List all revisions, regardless of whether they are target
+                revisions of a deployment group.
 
         :type next_token: string
         :param next_token: An identifier that was returned from the previous
@@ -667,8 +666,7 @@ class CodeDeployConnection(AWSQueryConnection):
     def list_deployment_instances(self, deployment_id, next_token=None,
                                   instance_status_filter=None):
         """
-        Lists the Amazon EC2 instances for a deployment within the AWS
-        user account.
+        Lists the Amazon EC2 instances for a deployment within the AWS user account.
 
         :type deployment_id: string
         :param deployment_id: The unique ID of a deployment.
@@ -679,22 +677,20 @@ class CodeDeployConnection(AWSQueryConnection):
             next set of deployment instances in the list.
 
         :type instance_status_filter: list
-        :param instance_status_filter:
-        A subset of instances to list, by status:
+        :param instance_status_filter: A subset of instances to list, by status:
 
-
-        + Pending: Include in the resulting list those instances with pending
-              deployments.
-        + InProgress: Include in the resulting list those instances with in-
-              progress deployments.
-        + Succeeded: Include in the resulting list those instances with
-              succeeded deployments.
-        + Failed: Include in the resulting list those instances with failed
-              deployments.
-        + Skipped: Include in the resulting list those instances with skipped
-              deployments.
-        + Unknown: Include in the resulting list those instances with
-              deployments in an unknown state.
+            + Pending: Include in the resulting list those instances with pending
+                deployments.
+            + InProgress: Include in the resulting list those instances with in-
+                progress deployments.
+            + Succeeded: Include in the resulting list those instances with
+                succeeded deployments.
+            + Failed: Include in the resulting list those instances with failed
+                deployments.
+            + Skipped: Include in the resulting list those instances with skipped
+                deployments.
+            + Unknown: Include in the resulting list those instances with
+                deployments in an unknown state.
 
         """
         params = {'deploymentId': deployment_id, }
