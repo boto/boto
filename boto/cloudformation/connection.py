@@ -263,6 +263,8 @@ class CloudFormationConnection(AWSQueryConnection):
                 disable_rollback).lower()
         if on_failure is not None:
             params['OnFailure'] = on_failure
+        if disable_rollback is not None:
+            params['DisableRollback'] = self.encode_bool(disable_rollback)
         if stack_policy_body is not None:
             params['StackPolicyBody'] = stack_policy_body
         if stack_policy_url is not None:
