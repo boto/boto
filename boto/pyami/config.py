@@ -80,14 +80,14 @@ class Config(ConfigParser):
         self.readfp(c_data)
 
     def load_from_path(self, path):
-        file = open(path)
-        for line in file.readlines():
-            match = re.match("^#import[\s\t]*([^\s^\t]*)[\s\t]*$", line)
-            if match:
-                extended_file = match.group(1)
-                (dir, file) = os.path.split(path)
-                self.load_from_path(os.path.join(dir, extended_file))
-        self.read(path)
+        with open(path) as file:
+            for line in file.readlines():
+                match = re.match("^#import[\s\t]*([^\s^\t]*)[\s\t]*$", line)
+                if match:
+                    extended_file = match.group(1)
+                    (dir, file) = os.path.split(path)
+                    self.load_from_path(os.path.join(dir, extended_file))
+            self.read(path)
 
     def save_option(self, path, section, option, value):
         """
