@@ -96,7 +96,6 @@ class TestCloudFormationCreateStack(CloudFormationConnectionBase):
         self.assert_request_parameters({
             'Action': 'CreateStack',
             'ContentType': 'JSON',
-            'DisableRollback': 'false',
             'StackName': 'stack_name',
             'Version': '2010-05-15',
         })
