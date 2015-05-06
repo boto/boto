@@ -192,6 +192,27 @@ class AutoScaleConnection(AWSQueryConnection):
         self.build_list_params(params, instance_ids, 'InstanceIds')
         return self.get_status('AttachInstances', params)
 
+    def detach_instances(self, name, instance_ids, decrement_capacity=True):
+        """
+        Detach instances from an Auto Scaling group.
+
+        :type name: str
+        :param name: The name of the Auto Scaling group from which to detach instances.
+
+        :type instance_ids: list
+        :param instance_ids: Instance ids to be detached from the Auto Scaling group.
+
+        :type decrement_capacity: bool
+        :param decrement_capacity: Whether to decrement the size of the
+            Auto Scaling group or not.
+        """
+
+        params = {'AutoScalingGroupName': name}
+        params['ShouldDecrementDesiredCapacity'] = 'true' if decrement_capacity else 'false'
+
+        self.build_list_params(params, instance_ids, 'InstanceIds')
+        return self.get_status('DetachInstances', params)
+
     def create_auto_scaling_group(self, as_group):
         """
         Create auto scaling group.
@@ -259,6 +280,14 @@ class AutoScaleConnection(AWSQueryConnection):
             params['DeleteOnTermination'] = 'false'
         if launch_config.iops:
             params['Iops'] = launch_config.iops
+        if launch_config.classic_link_vpc_id:
+            params['ClassicLinkVPCId'] = launch_config.classic_link_vpc_id
+        if launch_config.classic_link_vpc_security_groups:
+            self.build_list_params(
+                params,
+                launch_config.classic_link_vpc_security_groups,
+                'ClassicLinkVPCSecurityGroups'
+            )
         return self.get_object('CreateLaunchConfiguration', params,
                                Request, verb='POST')
 

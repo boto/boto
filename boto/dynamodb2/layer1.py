@@ -31,7 +31,9 @@ from boto.dynamodb2 import exceptions
 
 class DynamoDBConnection(AWSQueryConnection):
     """
-    Amazon DynamoDB **Overview**
+    Amazon DynamoDB
+    **Overview**
+
     This is the Amazon DynamoDB API Reference. This guide provides
     descriptions and samples of the low-level DynamoDB API. For
     information about DynamoDB application development, go to the
@@ -57,7 +59,6 @@ class DynamoDBConnection(AWSQueryConnection):
     **Managing Tables**
 
 
-
     + CreateTable - Creates a table with user-specified provisioned
       throughput settings. You must designate one attribute as the hash
       primary key for the table; you can optionally designate a second
@@ -75,12 +76,10 @@ class DynamoDBConnection(AWSQueryConnection):
     + DeleteTable - Deletes a table and all of its indexes.
 
 
-
     For conceptual information about managing tables, go to `Working
     with Tables`_ in the Amazon DynamoDB Developer Guide .
 
     **Reading Data**
-
 
 
     + GetItem - Returns a set of attributes for the item that has a
@@ -106,13 +105,11 @@ class DynamoDBConnection(AWSQueryConnection):
       case that requires predictable performance.
 
 
-
     For conceptual information about reading data, go to `Working with
     Items`_ and `Query and Scan Operations`_ in the Amazon DynamoDB
     Developer Guide .
 
     **Modifying Data**
-
 
 
     + PutItem - Creates a new item, or replaces an existing item with
@@ -134,7 +131,6 @@ class DynamoDBConnection(AWSQueryConnection):
       BatchWriteItem operation to fail. Supports batches of up to 25
       items to put or delete, with a maximum total request size of 16
       MB.
-
 
 
     For conceptual information about modifying data, go to `Working
@@ -294,6 +290,11 @@ class DynamoDBConnection(AWSQueryConnection):
         delete requests. Individual items to be written can be as
         large as 400 KB.
 
+
+        BatchWriteItem cannot update items. To update items, use the
+        UpdateItem API.
+
+
         The individual PutItem and DeleteItem operations specified in
         BatchWriteItem are atomic; however BatchWriteItem as a whole
         is not. If any requested operations fail because the table's
@@ -433,10 +434,11 @@ class DynamoDBConnection(AWSQueryConnection):
         DynamoDB sets the TableStatus to `ACTIVE`. You can perform
         read and write operations only on an `ACTIVE` table.
 
-        If you want to create multiple tables with secondary indexes
-        on them, you must create them sequentially. Only one table
-        with secondary indexes can be in the `CREATING` state at any
-        given time.
+        You can optionally define secondary indexes on the new table,
+        as part of the CreateTable operation. If you want to create
+        multiple tables with secondary indexes on them, you must
+        create the tables sequentially. Only one table with secondary
+        indexes can be in the `CREATING` state at any given time.
 
         You can use the DescribeTable API to check the table status.
 
@@ -633,8 +635,8 @@ class DynamoDBConnection(AWSQueryConnection):
               ComparisonOperator being used. For type Number, value comparisons
               are numeric. String value comparisons for greater than, equals, or
               less than are based on ASCII character code values. For example,
-              `a` is greater than `A`, and `aa` is greater than `B`. For a list
-              of code values, see
+              `a` is greater than `A`, and `a` is greater than `B`. For a list of
+              code values, see
               `http://en.wikipedia.org/wiki/ASCII#ASCII_printable_characters`_.
               For type Binary, DynamoDB treats each byte of the binary data as
               unsigned when it compares binary values, for example when
@@ -687,9 +689,19 @@ class DynamoDBConnection(AWSQueryConnection):
                 match. For example, `{"S":"6"}` does not equal `{"N":"6"}`. Also,
                 `{"N":"6"}` does not compare to `{"NS":["6", "2", "1"]}`. > <li>
             + `NOT_NULL` : The attribute exists. `NOT_NULL` is supported for all
-                  datatypes, including lists and maps.
+                  datatypes, including lists and maps. This operator tests for the
+                  existence of an attribute, not its data type. If the data type of
+                  attribute " `a`" is null, and you evaluate it using `NOT_NULL`, the
+                  result is a Boolean true . This result is because the attribute "
+                  `a`" exists; its data type is not relevant to the `NOT_NULL`
+                  comparison operator.
             + `NULL` : The attribute does not exist. `NULL` is supported for all
-                  datatypes, including lists and maps.
+                  datatypes, including lists and maps. This operator tests for the
+                  nonexistence of an attribute, not its data type. If the data type
+                  of attribute " `a`" is null, and you evaluate it using `NULL`, the
+                  result is a Boolean false . This is because the attribute " `a`"
+                  exists; its data type is not relevant to the `NULL` comparison
+                  operator.
             + `CONTAINS` : Checks for a subsequence, or value in a set.
                   AttributeValueList can contain only one AttributeValue element of
                   type String, Number, or Binary (not a set type). If the target
@@ -760,7 +772,7 @@ class DynamoDBConnection(AWSQueryConnection):
                   the assumption is valid and the condition evaluates to true. If the
                   value is found, despite the assumption that it does not exist, the
                   condition evaluates to false.
-
+          Note that the default value for Exists is `True`.
 
 
         The Value and Exists parameters are incompatible with
@@ -817,24 +829,25 @@ class DynamoDBConnection(AWSQueryConnection):
             returned.
 
         :type condition_expression: string
-        :param condition_expression:
-        A condition that must be satisfied in order for a conditional
-            DeleteItem to succeed.
-
+        :param condition_expression: A condition that must be satisfied in
+            order for a conditional DeleteItem to succeed.
         An expression can contain any of the following:
 
 
-        + Boolean functions: `ATTRIBUTE_EXIST | CONTAINS | BEGINS_WITH`
+        + Boolean functions: `attribute_exists | attribute_not_exists |
+              contains | begins_with` These function names are case-sensitive.
         + Comparison operators: ` = | <> | < | > | <=
               | >= | BETWEEN | IN`
-        + Logical operators: `NOT | AND | OR`
+        + Logical operators: `AND | OR | NOT`
+
+
+        For more information on condition expressions, go to `Specifying
+            Conditions`_ in the Amazon DynamoDB Developer Guide .
 
         :type expression_attribute_names: map
-        :param expression_attribute_names:
-        One or more substitution tokens for simplifying complex expressions.
-            The following are some use cases for an ExpressionAttributeNames
-            value:
-
+        :param expression_attribute_names: One or more substitution tokens for
+            simplifying complex expressions. The following are some use cases
+            for using ExpressionAttributeNames :
 
         + To shorten an attribute name that is very long or unwieldy in an
               expression.
@@ -856,37 +869,39 @@ class DynamoDBConnection(AWSQueryConnection):
             ExpressionAttributeNames :
 
 
-        + `{"n":"order.customerInfo.LastName"}`
+        + `{"#name":"order.customerInfo.LastName"}`
 
 
         The expression can now be simplified as follows:
 
 
-        + `#n = "Smith" OR #n = "Jones"`
+        + `#name = "Smith" OR #name = "Jones"`
+
+
+        For more information on expression attribute names, go to `Accessing
+            Item Attributes`_ in the Amazon DynamoDB Developer Guide .
 
         :type expression_attribute_values: map
-        :param expression_attribute_values:
-        One or more values that can be substituted in an expression.
+        :param expression_attribute_values: One or more values that can be
+            substituted in an expression.
+        Use the **:** (colon) character in an expression to dereference an
+            attribute value. For example, suppose that you wanted to check
+            whether the value of the ProductStatus attribute was one of the
+            following:
 
-        Use the **:** character in an expression to dereference an attribute
-            value. For example, consider the following expression:
+        `Available | Backordered | Discontinued`
 
+        You would first need to specify ExpressionAttributeValues as follows:
 
-        + `ProductStatus IN ("Available","Backordered","Discontinued")`
+        `{ ":avail":{"S":"Available"}, ":back":{"S":"Backordered"},
+            ":disc":{"S":"Discontinued"} }`
 
+        You could then use these values in an expression, such as this:
 
-        Now suppose that you specified the following for
-            ExpressionAttributeValues :
+        `ProductStatus IN (:avail, :back, :disc)`
 
-
-        + `{ "a":{"S":"Available"}, "b":{"S":"Backordered"},
-              "d":{"S":"Discontinued"} }`
-
-
-        The expression can now be simplified as follows:
-
-
-        + `ProductStatus IN (:a,:b,:c)`
+        For more information on expression attribute values, go to `Specifying
+            Conditions`_ in the Amazon DynamoDB Developer Guide .
 
         """
         params = {'TableName': table_name, 'Key': key, }
@@ -921,6 +936,12 @@ class DynamoDBConnection(AWSQueryConnection):
         table is already in the `DELETING` state, no error is
         returned.
 
+
+        DynamoDB might continue to accept data read and write
+        operations, such as GetItem and PutItem , on a table in the
+        `DELETING` state until the table deletion is complete.
+
+
         When you delete a table, any indexes on that table are also
         deleted.
 
@@ -939,6 +960,14 @@ class DynamoDBConnection(AWSQueryConnection):
         Returns information about the table, including the current
         status of the table, when it was created, the primary key
         schema, and any indexes on the table.
+
+
+        If you issue a DescribeTable request immediately after a
+        CreateTable request, DynamoDB might return a
+        ResourceNotFoundException. This is because DescribeTable uses
+        an eventually consistent query, and the metadata for your
+        table might not be available at that moment. Wait for a few
+        seconds, and then try the DescribeTable request again.
 
         :type table_name: string
         :param table_name: The name of the table to describe.
@@ -1006,20 +1035,21 @@ class DynamoDBConnection(AWSQueryConnection):
             included in the response.
 
         :type projection_expression: string
-        :param projection_expression: One or more attributes to retrieve from
-            the table. These attributes can include scalars, sets, or elements
-            of a JSON document. The attributes in the expression must be
-            separated by commas.
+        :param projection_expression: A string that identifies one or more
+            attributes to retrieve from the table. These attributes can include
+            scalars, sets, or elements of a JSON document. The attributes in
+            the expression must be separated by commas.
         If no attribute names are specified, then all attributes will be
             returned. If any of the requested attributes are not found, they
             will not appear in the result.
 
-        :type expression_attribute_names: map
-        :param expression_attribute_names:
-        One or more substitution tokens for simplifying complex expressions.
-            The following are some use cases for an ExpressionAttributeNames
-            value:
+        For more information on projection expressions, go to `Accessing Item
+            Attributes`_ in the Amazon DynamoDB Developer Guide .
 
+        :type expression_attribute_names: map
+        :param expression_attribute_names: One or more substitution tokens for
+            simplifying complex expressions. The following are some use cases
+            for using ExpressionAttributeNames :
 
         + To shorten an attribute name that is very long or unwieldy in an
               expression.
@@ -1041,13 +1071,17 @@ class DynamoDBConnection(AWSQueryConnection):
             ExpressionAttributeNames :
 
 
-        + `{"n":"order.customerInfo.LastName"}`
+        + `{"#name":"order.customerInfo.LastName"}`
 
 
         The expression can now be simplified as follows:
 
 
-        + `#n = "Smith" OR #n = "Jones"`
+        + `#name = "Smith" OR #name = "Jones"`
+
+
+        For more information on expression attribute names, go to `Accessing
+            Item Attributes`_ in the Amazon DynamoDB Developer Guide .
 
         """
         params = {'TableName': table_name, 'Key': key, }
@@ -1120,6 +1154,12 @@ class DynamoDBConnection(AWSQueryConnection):
         item (after the update). For more information, see the
         ReturnValues description below.
 
+
+        To prevent a new item from replacing an existing item, use a
+        conditional put operation with ComparisonOperator set to
+        `NULL` for the primary key attribute, or attributes.
+
+
         For more information about using this API, see `Working with
         Items`_ in the Amazon DynamoDB Developer Guide .
 
@@ -1179,8 +1219,8 @@ class DynamoDBConnection(AWSQueryConnection):
               ComparisonOperator being used. For type Number, value comparisons
               are numeric. String value comparisons for greater than, equals, or
               less than are based on ASCII character code values. For example,
-              `a` is greater than `A`, and `aa` is greater than `B`. For a list
-              of code values, see
+              `a` is greater than `A`, and `a` is greater than `B`. For a list of
+              code values, see
               `http://en.wikipedia.org/wiki/ASCII#ASCII_printable_characters`_.
               For type Binary, DynamoDB treats each byte of the binary data as
               unsigned when it compares binary values, for example when
@@ -1233,9 +1273,19 @@ class DynamoDBConnection(AWSQueryConnection):
                 match. For example, `{"S":"6"}` does not equal `{"N":"6"}`. Also,
                 `{"N":"6"}` does not compare to `{"NS":["6", "2", "1"]}`. > <li>
             + `NOT_NULL` : The attribute exists. `NOT_NULL` is supported for all
-                  datatypes, including lists and maps.
+                  datatypes, including lists and maps. This operator tests for the
+                  existence of an attribute, not its data type. If the data type of
+                  attribute " `a`" is null, and you evaluate it using `NOT_NULL`, the
+                  result is a Boolean true . This result is because the attribute "
+                  `a`" exists; its data type is not relevant to the `NOT_NULL`
+                  comparison operator.
             + `NULL` : The attribute does not exist. `NULL` is supported for all
-                  datatypes, including lists and maps.
+                  datatypes, including lists and maps. This operator tests for the
+                  nonexistence of an attribute, not its data type. If the data type
+                  of attribute " `a`" is null, and you evaluate it using `NULL`, the
+                  result is a Boolean false . This is because the attribute " `a`"
+                  exists; its data type is not relevant to the `NULL` comparison
+                  operator.
             + `CONTAINS` : Checks for a subsequence, or value in a set.
                   AttributeValueList can contain only one AttributeValue element of
                   type String, Number, or Binary (not a set type). If the target
@@ -1306,7 +1356,7 @@ class DynamoDBConnection(AWSQueryConnection):
                   the assumption is valid and the condition evaluates to true. If the
                   value is found, despite the assumption that it does not exist, the
                   condition evaluates to false.
-
+          Note that the default value for Exists is `True`.
 
 
         The Value and Exists parameters are incompatible with
@@ -1364,24 +1414,25 @@ class DynamoDBConnection(AWSQueryConnection):
         The operation will succeed only if the entire map evaluates to true.
 
         :type condition_expression: string
-        :param condition_expression:
-        A condition that must be satisfied in order for a conditional PutItem
-            operation to succeed.
-
+        :param condition_expression: A condition that must be satisfied in
+            order for a conditional PutItem operation to succeed.
         An expression can contain any of the following:
 
 
-        + Boolean functions: `ATTRIBUTE_EXIST | CONTAINS | BEGINS_WITH`
+        + Boolean functions: `attribute_exists | attribute_not_exists |
+              contains | begins_with` These function names are case-sensitive.
         + Comparison operators: ` = | <> | < | > | <=
               | >= | BETWEEN | IN`
-        + Logical operators: `NOT | AND | OR`
+        + Logical operators: `AND | OR | NOT`
+
+
+        For more information on condition expressions, go to `Specifying
+            Conditions`_ in the Amazon DynamoDB Developer Guide .
 
         :type expression_attribute_names: map
-        :param expression_attribute_names:
-        One or more substitution tokens for simplifying complex expressions.
-            The following are some use cases for an ExpressionAttributeNames
-            value:
-
+        :param expression_attribute_names: One or more substitution tokens for
+            simplifying complex expressions. The following are some use cases
+            for using ExpressionAttributeNames :
 
         + To shorten an attribute name that is very long or unwieldy in an
               expression.
@@ -1403,37 +1454,39 @@ class DynamoDBConnection(AWSQueryConnection):
             ExpressionAttributeNames :
 
 
-        + `{"n":"order.customerInfo.LastName"}`
+        + `{"#name":"order.customerInfo.LastName"}`
 
 
         The expression can now be simplified as follows:
 
 
-        + `#n = "Smith" OR #n = "Jones"`
+        + `#name = "Smith" OR #name = "Jones"`
+
+
+        For more information on expression attribute names, go to `Accessing
+            Item Attributes`_ in the Amazon DynamoDB Developer Guide .
 
         :type expression_attribute_values: map
-        :param expression_attribute_values:
-        One or more values that can be substituted in an expression.
+        :param expression_attribute_values: One or more values that can be
+            substituted in an expression.
+        Use the **:** (colon) character in an expression to dereference an
+            attribute value. For example, suppose that you wanted to check
+            whether the value of the ProductStatus attribute was one of the
+            following:
 
-        Use the **:** character in an expression to dereference an attribute
-            value. For example, consider the following expression:
+        `Available | Backordered | Discontinued`
 
+        You would first need to specify ExpressionAttributeValues as follows:
 
-        + `ProductStatus IN ("Available","Backordered","Discontinued")`
+        `{ ":avail":{"S":"Available"}, ":back":{"S":"Backordered"},
+            ":disc":{"S":"Discontinued"} }`
 
+        You could then use these values in an expression, such as this:
 
-        Now suppose that you specified the following for
-            ExpressionAttributeValues :
+        `ProductStatus IN (:avail, :back, :disc)`
 
-
-        + `{ "a":{"S":"Available"}, "b":{"S":"Backordered"},
-              "d":{"S":"Discontinued"} }`
-
-
-        The expression can now be simplified as follows:
-
-
-        + `ProductStatus IN (:a,:b,:c)`
+        For more information on expression attribute values, go to `Specifying
+            Conditions`_ in the Amazon DynamoDB Developer Guide .
 
         """
         params = {'TableName': table_name, 'Item': item, }
@@ -1601,7 +1654,9 @@ class DynamoDBConnection(AWSQueryConnection):
             query on a table, you can have conditions only on the table primary
             key attributes. You must specify the hash key attribute name and
             value as an `EQ` condition. You can optionally specify a second
-            condition, referring to the range key attribute.
+            condition, referring to the range key attribute. If you do not
+            specify a range key condition, all items under the hash key will be
+            fetched and processed. Any filters will applied after this.
         For a query on an index, you can have conditions only on the index key
             attributes. You must specify the index hash attribute name and
             value as an EQ condition. You can optionally specify a second
@@ -1616,8 +1671,8 @@ class DynamoDBConnection(AWSQueryConnection):
               ComparisonOperator being used. For type Number, value comparisons
               are numeric. String value comparisons for greater than, equals, or
               less than are based on ASCII character code values. For example,
-              `a` is greater than `A`, and `aa` is greater than `B`. For a list
-              of code values, see
+              `a` is greater than `A`, and `a` is greater than `B`. For a list of
+              code values, see
               `http://en.wikipedia.org/wiki/ASCII#ASCII_printable_characters`_.
               For Binary, DynamoDB treats each byte of the binary data as
               unsigned when it compares binary values, for example when
@@ -1687,15 +1742,21 @@ class DynamoDBConnection(AWSQueryConnection):
 
         This parameter does not support lists or maps.
 
-        A condition that evaluates the query results and returns only the
-            desired values.
-
+        A condition that evaluates the query results after the items are read
+            and returns only the desired values.
+        Query filters are applied after the items are read, so they do not
+            limit the capacity used.
         If you specify more than one condition in the QueryFilter map, then by
             default all of the conditions must evaluate to true. In other
             words, the conditions are ANDed together. (You can use the
             ConditionalOperator parameter to OR the conditions instead. If you
             do this, then at least one of the conditions must evaluate to true,
             rather than all of them.)
+
+
+        QueryFilter does not allow key attributes. You cannot define a filter
+            condition on a hash key or range key.
+
 
         Each QueryFilter element consists of an attribute name to compare,
             along with the following:
@@ -1706,7 +1767,7 @@ class DynamoDBConnection(AWSQueryConnection):
               operator specified in ComparisonOperator . For type Number, value
               comparisons are numeric. String value comparisons for greater than,
               equals, or less than are based on ASCII character code values. For
-              example, `a` is greater than `A`, and `aa` is greater than `B`. For
+              example, `a` is greater than `A`, and `a` is greater than `B`. For
               a list of code values, see
               `http://en.wikipedia.org/wiki/ASCII#ASCII_printable_characters`_.
               For type Binary, DynamoDB treats each byte of the binary data as
@@ -1723,11 +1784,6 @@ class DynamoDBConnection(AWSQueryConnection):
 
         :type conditional_operator: string
         :param conditional_operator:
-        There is a newer parameter available. Use ConditionExpression instead.
-            Note that if you use ConditionalOperator and ConditionExpression at
-            the same time, DynamoDB will return a ValidationException
-            exception.
-
         This parameter does not support lists or maps.
 
         A logical operator to apply to the conditions in the QueryFilter map:
@@ -1769,26 +1825,32 @@ class DynamoDBConnection(AWSQueryConnection):
             included in the response.
 
         :type projection_expression: string
-        :param projection_expression: One or more attributes to retrieve from
-            the table. These attributes can include scalars, sets, or elements
-            of a JSON document. The attributes in the expression must be
-            separated by commas.
+        :param projection_expression: A string that identifies one or more
+            attributes to retrieve from the table. These attributes can include
+            scalars, sets, or elements of a JSON document. The attributes in
+            the expression must be separated by commas.
         If no attribute names are specified, then all attributes will be
             returned. If any of the requested attributes are not found, they
             will not appear in the result.
 
+        For more information on projection expressions, go to `Accessing Item
+            Attributes`_ in the Amazon DynamoDB Developer Guide .
+
         :type filter_expression: string
         :param filter_expression: A condition that evaluates the query results
-            and returns only the desired values.
+            after the items are read and returns only the desired values.
         The condition you specify is applied to the items queried; any items
             that do not match the expression are not returned.
+        Filter expressions are applied after the items are read, so they do not
+            limit the capacity used.
+        A FilterExpression has the same syntax as a ConditionExpression . For
+            more information on expression syntax, go to `Specifying
+            Conditions`_ in the Amazon DynamoDB Developer Guide .
 
         :type expression_attribute_names: map
-        :param expression_attribute_names:
-        One or more substitution tokens for simplifying complex expressions.
-            The following are some use cases for an ExpressionAttributeNames
-            value:
-
+        :param expression_attribute_names: One or more substitution tokens for
+            simplifying complex expressions. The following are some use cases
+            for using ExpressionAttributeNames :
 
         + To shorten an attribute name that is very long or unwieldy in an
               expression.
@@ -1810,37 +1872,39 @@ class DynamoDBConnection(AWSQueryConnection):
             ExpressionAttributeNames :
 
 
-        + `{"n":"order.customerInfo.LastName"}`
+        + `{"#name":"order.customerInfo.LastName"}`
 
 
         The expression can now be simplified as follows:
 
 
-        + `#n = "Smith" OR #n = "Jones"`
+        + `#name = "Smith" OR #name = "Jones"`
+
+
+        For more information on expression attribute names, go to `Accessing
+            Item Attributes`_ in the Amazon DynamoDB Developer Guide .
 
         :type expression_attribute_values: map
-        :param expression_attribute_values:
-        One or more values that can be substituted in an expression.
+        :param expression_attribute_values: One or more values that can be
+            substituted in an expression.
+        Use the **:** (colon) character in an expression to dereference an
+            attribute value. For example, suppose that you wanted to check
+            whether the value of the ProductStatus attribute was one of the
+            following:
 
-        Use the **:** character in an expression to dereference an attribute
-            value. For example, consider the following expression:
+        `Available | Backordered | Discontinued`
 
+        You would first need to specify ExpressionAttributeValues as follows:
 
-        + `ProductStatus IN ("Available","Backordered","Discontinued")`
+        `{ ":avail":{"S":"Available"}, ":back":{"S":"Backordered"},
+            ":disc":{"S":"Discontinued"} }`
 
+        You could then use these values in an expression, such as this:
 
-        Now suppose that you specified the following for
-            ExpressionAttributeValues :
+        `ProductStatus IN (:avail, :back, :disc)`
 
-
-        + `{ "a":{"S":"Available"}, "b":{"S":"Backordered"},
-              "d":{"S":"Discontinued"} }`
-
-
-        The expression can now be simplified as follows:
-
-
-        + `ProductStatus IN (:a,:b,:c)`
+        For more information on expression attribute values, go to `Specifying
+            Conditions`_ in the Amazon DynamoDB Developer Guide .
 
         """
         params = {
@@ -1988,7 +2052,7 @@ class DynamoDBConnection(AWSQueryConnection):
               operator specified in ComparisonOperator . For type Number, value
               comparisons are numeric. String value comparisons for greater than,
               equals, or less than are based on ASCII character code values. For
-              example, `a` is greater than `A`, and `aa` is greater than `B`. For
+              example, `a` is greater than `A`, and `a` is greater than `B`. For
               a list of code values, see
               `http://en.wikipedia.org/wiki/ASCII#ASCII_printable_characters`_.
               For Binary, DynamoDB treats each byte of the binary data as
@@ -2074,13 +2138,16 @@ class DynamoDBConnection(AWSQueryConnection):
         If you specify Segment , you must also specify TotalSegments .
 
         :type projection_expression: string
-        :param projection_expression: One or more attributes to retrieve from
-            the table. These attributes can include scalars, sets, or elements
-            of a JSON document. The attributes in the expression must be
-            separated by commas.
+        :param projection_expression: A string that identifies one or more
+            attributes to retrieve from the table. These attributes can include
+            scalars, sets, or elements of a JSON document. The attributes in
+            the expression must be separated by commas.
         If no attribute names are specified, then all attributes will be
             returned. If any of the requested attributes are not found, they
             will not appear in the result.
+
+        For more information on projection expressions, go to `Accessing Item
+            Attributes`_ in the Amazon DynamoDB Developer Guide .
 
         :type filter_expression: string
         :param filter_expression: A condition that evaluates the scan results
@@ -2089,11 +2156,9 @@ class DynamoDBConnection(AWSQueryConnection):
             that do not match the expression are not returned.
 
         :type expression_attribute_names: map
-        :param expression_attribute_names:
-        One or more substitution tokens for simplifying complex expressions.
-            The following are some use cases for an ExpressionAttributeNames
-            value:
-
+        :param expression_attribute_names: One or more substitution tokens for
+            simplifying complex expressions. The following are some use cases
+            for using ExpressionAttributeNames :
 
         + To shorten an attribute name that is very long or unwieldy in an
               expression.
@@ -2115,37 +2180,39 @@ class DynamoDBConnection(AWSQueryConnection):
             ExpressionAttributeNames :
 
 
-        + `{"n":"order.customerInfo.LastName"}`
+        + `{"#name":"order.customerInfo.LastName"}`
 
 
         The expression can now be simplified as follows:
 
 
-        + `#n = "Smith" OR #n = "Jones"`
+        + `#name = "Smith" OR #name = "Jones"`
+
+
+        For more information on expression attribute names, go to `Accessing
+            Item Attributes`_ in the Amazon DynamoDB Developer Guide .
 
         :type expression_attribute_values: map
-        :param expression_attribute_values:
-        One or more values that can be substituted in an expression.
+        :param expression_attribute_values: One or more values that can be
+            substituted in an expression.
+        Use the **:** (colon) character in an expression to dereference an
+            attribute value. For example, suppose that you wanted to check
+            whether the value of the ProductStatus attribute was one of the
+            following:
 
-        Use the **:** character in an expression to dereference an attribute
-            value. For example, consider the following expression:
+        `Available | Backordered | Discontinued`
 
+        You would first need to specify ExpressionAttributeValues as follows:
 
-        + `ProductStatus IN ("Available","Backordered","Discontinued")`
+        `{ ":avail":{"S":"Available"}, ":back":{"S":"Backordered"},
+            ":disc":{"S":"Discontinued"} }`
 
+        You could then use these values in an expression, such as this:
 
-        Now suppose that you specified the following for
-            ExpressionAttributeValues :
+        `ProductStatus IN (:avail, :back, :disc)`
 
-
-        + `{ "a":{"S":"Available"}, "b":{"S":"Backordered"},
-              "d":{"S":"Discontinued"} }`
-
-
-        The expression can now be simplified as follows:
-
-
-        + `ProductStatus IN (:a,:b,:c)`
+        For more information on expression attribute values, go to `Specifying
+            Conditions`_ in the Amazon DynamoDB Developer Guide .
 
         """
         params = {'TableName': table_name, }
@@ -2255,7 +2322,17 @@ class DynamoDBConnection(AWSQueryConnection):
                 + If the existing attribute is a number, and if Value is also a number,
                       then Value is mathematically added to the existing attribute. If
                       Value is a negative number, then it is subtracted from the existing
-                      attribute.
+                      attribute. If you use `ADD` to increment or decrement a number
+                      value for an item that doesn't exist before the update, DynamoDB
+                      uses 0 as the initial value. Similarly, if you use `ADD` for an
+                      existing item to increment or decrement an attribute value that
+                      doesn't exist before the update, DynamoDB uses `0` as the initial
+                      value. For example, suppose that the item you want to update
+                      doesn't have an attribute named itemcount , but you decide to `ADD`
+                      the number `3` to this attribute anyway. DynamoDB will create the
+                      itemcount attribute, set its initial value to `0`, and finally add
+                      `3` to it. The result will be a new itemcount attribute, with a
+                      value of `3`.
                 + If the existing data type is a set, and if Value is also a set, then
                       Value is appended to the existing set. For example, if the
                       attribute value is the set `[1,2]`, and the `ADD` action specified
@@ -2271,8 +2348,10 @@ class DynamoDBConnection(AWSQueryConnection):
 
             + `PUT` - Causes DynamoDB to create a new item with the specified
                   primary key, and then adds the attribute.
-            + `DELETE` - Causes nothing to happen; there is no attribute to delete.
-            + `ADD` - Causes DynamoDB to creat an item with the supplied primary
+            + `DELETE` - Nothing happens, because attributes cannot be deleted from
+                  a nonexistent item. The operation succeeds, but DynamoDB does not
+                  create a new item.
+            + `ADD` - Causes DynamoDB to create an item with the supplied primary
                   key and number (or set of numbers) for the attribute value. The
                   only data types allowed are Number and Number Set.
 
@@ -2317,8 +2396,8 @@ class DynamoDBConnection(AWSQueryConnection):
               ComparisonOperator being used. For type Number, value comparisons
               are numeric. String value comparisons for greater than, equals, or
               less than are based on ASCII character code values. For example,
-              `a` is greater than `A`, and `aa` is greater than `B`. For a list
-              of code values, see
+              `a` is greater than `A`, and `a` is greater than `B`. For a list of
+              code values, see
               `http://en.wikipedia.org/wiki/ASCII#ASCII_printable_characters`_.
               For type Binary, DynamoDB treats each byte of the binary data as
               unsigned when it compares binary values, for example when
@@ -2371,9 +2450,19 @@ class DynamoDBConnection(AWSQueryConnection):
                 match. For example, `{"S":"6"}` does not equal `{"N":"6"}`. Also,
                 `{"N":"6"}` does not compare to `{"NS":["6", "2", "1"]}`. > <li>
             + `NOT_NULL` : The attribute exists. `NOT_NULL` is supported for all
-                  datatypes, including lists and maps.
+                  datatypes, including lists and maps. This operator tests for the
+                  existence of an attribute, not its data type. If the data type of
+                  attribute " `a`" is null, and you evaluate it using `NOT_NULL`, the
+                  result is a Boolean true . This result is because the attribute "
+                  `a`" exists; its data type is not relevant to the `NOT_NULL`
+                  comparison operator.
             + `NULL` : The attribute does not exist. `NULL` is supported for all
-                  datatypes, including lists and maps.
+                  datatypes, including lists and maps. This operator tests for the
+                  nonexistence of an attribute, not its data type. If the data type
+                  of attribute " `a`" is null, and you evaluate it using `NULL`, the
+                  result is a Boolean false . This is because the attribute " `a`"
+                  exists; its data type is not relevant to the `NULL` comparison
+                  operator.
             + `CONTAINS` : Checks for a subsequence, or value in a set.
                   AttributeValueList can contain only one AttributeValue element of
                   type String, Number, or Binary (not a set type). If the target
@@ -2444,7 +2533,7 @@ class DynamoDBConnection(AWSQueryConnection):
                   the assumption is valid and the condition evaluates to true. If the
                   value is found, despite the assumption that it does not exist, the
                   condition evaluates to false.
-
+          Note that the default value for Exists is `True`.
 
 
         The Value and Exists parameters are incompatible with
@@ -2508,10 +2597,9 @@ class DynamoDBConnection(AWSQueryConnection):
             returned.
 
         :type update_expression: string
-        :param update_expression:
-        An expression that defines one or more attributes to be updated, the
-            action to be performed on them, and new value(s) for them.
-
+        :param update_expression: An expression that defines one or more
+            attributes to be updated, the action to be performed on them, and
+            new value(s) for them.
         The following action values are available for UpdateExpression .
 
 
@@ -2537,7 +2625,17 @@ class DynamoDBConnection(AWSQueryConnection):
             + If the existing attribute is a number, and if Value is also a number,
                   then Value is mathematically added to the existing attribute. If
                   Value is a negative number, then it is subtracted from the existing
-                  attribute.
+                  attribute. If you use `ADD` to increment or decrement a number
+                  value for an item that doesn't exist before the update, DynamoDB
+                  uses `0` as the initial value. Similarly, if you use `ADD` for an
+                  existing item to increment or decrement an attribute value that
+                  doesn't exist before the update, DynamoDB uses `0` as the initial
+                  value. For example, suppose that the item you want to update
+                  doesn't have an attribute named itemcount , but you decide to `ADD`
+                  the number `3` to this attribute anyway. DynamoDB will create the
+                  itemcount attribute, set its initial value to `0`, and finally add
+                  `3` to it. The result will be a new itemcount attribute in the
+                  item, with a value of `3`.
             + If the existing data type is a set and if Value is also a set, then
                   Value is added to the existing set. For example, if the attribute
                   value is the set `[1,2]`, and the `ADD` action specified `[3]`,
@@ -2563,33 +2661,29 @@ class DynamoDBConnection(AWSQueryConnection):
             following: `SET a=:value1, b=:value2 DELETE :value3, :value4,
             :value5`
 
-        An expression can contain any of the following:
-
-
-        + Boolean functions: `ATTRIBUTE_EXIST | CONTAINS | BEGINS_WITH`
-        + Comparison operators: ` = | <> | < | > | <=
-              | >= | BETWEEN | IN`
-        + Logical operators: `NOT | AND | OR`
+        For more information on update expressions, go to `Modifying Items and
+            Attributes`_ in the Amazon DynamoDB Developer Guide .
 
         :type condition_expression: string
-        :param condition_expression:
-        A condition that must be satisfied in order for a conditional update to
-            succeed.
-
+        :param condition_expression: A condition that must be satisfied in
+            order for a conditional update to succeed.
         An expression can contain any of the following:
 
 
-        + Boolean functions: `ATTRIBUTE_EXIST | CONTAINS | BEGINS_WITH`
+        + Boolean functions: `attribute_exists | attribute_not_exists |
+              contains | begins_with` These function names are case-sensitive.
         + Comparison operators: ` = | <> | < | > | <=
               | >= | BETWEEN | IN`
-        + Logical operators: `NOT | AND | OR`
+        + Logical operators: `AND | OR | NOT`
+
+
+        For more information on condition expressions, go to `Specifying
+            Conditions`_ in the Amazon DynamoDB Developer Guide .
 
         :type expression_attribute_names: map
-        :param expression_attribute_names:
-        One or more substitution tokens for simplifying complex expressions.
-            The following are some use cases for an ExpressionAttributeNames
-            value:
-
+        :param expression_attribute_names: One or more substitution tokens for
+            simplifying complex expressions. The following are some use cases
+            for using ExpressionAttributeNames :
 
         + To shorten an attribute name that is very long or unwieldy in an
               expression.
@@ -2611,37 +2705,39 @@ class DynamoDBConnection(AWSQueryConnection):
             ExpressionAttributeNames :
 
 
-        + `{"n":"order.customerInfo.LastName"}`
+        + `{"#name":"order.customerInfo.LastName"}`
 
 
         The expression can now be simplified as follows:
 
 
-        + `#n = "Smith" OR #n = "Jones"`
+        + `#name = "Smith" OR #name = "Jones"`
+
+
+        For more information on expression attribute names, go to `Accessing
+            Item Attributes`_ in the Amazon DynamoDB Developer Guide .
 
         :type expression_attribute_values: map
-        :param expression_attribute_values:
-        One or more values that can be substituted in an expression.
+        :param expression_attribute_values: One or more values that can be
+            substituted in an expression.
+        Use the **:** (colon) character in an expression to dereference an
+            attribute value. For example, suppose that you wanted to check
+            whether the value of the ProductStatus attribute was one of the
+            following:
 
-        Use the **:** character in an expression to dereference an attribute
-            value. For example, consider the following expression:
+        `Available | Backordered | Discontinued`
 
+        You would first need to specify ExpressionAttributeValues as follows:
 
-        + `ProductStatus IN ("Available","Backordered","Discontinued")`
+        `{ ":avail":{"S":"Available"}, ":back":{"S":"Backordered"},
+            ":disc":{"S":"Discontinued"} }`
 
+        You could then use these values in an expression, such as this:
 
-        Now suppose that you specified the following for
-            ExpressionAttributeValues :
+        `ProductStatus IN (:avail, :back, :disc)`
 
-
-        + `{ "a":{"S":"Available"}, "b":{"S":"Backordered"},
-              "d":{"S":"Discontinued"} }`
-
-
-        The expression can now be simplified as follows:
-
-
-        + `ProductStatus IN (:a,:b,:c)`
+        For more information on expression attribute values, go to `Specifying
+            Conditions`_ in the Amazon DynamoDB Developer Guide .
 
         """
         params = {'TableName': table_name, 'Key': key, }
@@ -2669,28 +2765,35 @@ class DynamoDBConnection(AWSQueryConnection):
                                  body=json.dumps(params))
 
     def update_table(self, table_name, provisioned_throughput=None,
-                     global_secondary_index_updates=None):
+                     global_secondary_index_updates=None,
+                     attribute_definitions=None):
         """
-        Updates the provisioned throughput for the given table.
-        Setting the throughput for a table helps you manage
-        performance and is part of the provisioned throughput feature
-        of DynamoDB.
+        Updates the provisioned throughput for the given table, or
+        manages the global secondary indexes on the table.
 
-        The provisioned throughput values can be upgraded or
-        downgraded based on the maximums and minimums listed in the
-        `Limits`_ section in the Amazon DynamoDB Developer Guide .
+        You can increase or decrease the table's provisioned
+        throughput values within the maximums and minimums listed in
+        the `Limits`_ section in the Amazon DynamoDB Developer Guide .
 
-        The table must be in the `ACTIVE` state for this operation to
+        In addition, you can use UpdateTable to add, modify or delete
+        global secondary indexes on the table. For more information,
+        see `Managing Global Secondary Indexes`_ in the Amazon
+        DynamoDB Developer Guide .
+
+        The table must be in the `ACTIVE` state for UpdateTable to
         succeed. UpdateTable is an asynchronous operation; while
         executing the operation, the table is in the `UPDATING` state.
         While the table is in the `UPDATING` state, the table still
-        has the provisioned throughput from before the call. The new
-        provisioned throughput setting is in effect only when the
-        table returns to the `ACTIVE` state after the UpdateTable
-        operation.
+        has the provisioned throughput from before the call. The
+        table's new provisioned throughput settings go into effect
+        when the table returns to the `ACTIVE` state; at that point,
+        the UpdateTable operation is complete.
 
-        You cannot add, modify or delete indexes using UpdateTable .
-        Indexes can only be defined at table creation time.
+        :type attribute_definitions: list
+        :param attribute_definitions: An array of attributes that describe the
+            key schema for the table and indexes. If you are adding a new
+            global secondary index to the table, AttributeDefinitions must
+            include the key element(s) of the new index.
 
         :type table_name: string
         :param table_name: The name of the table to be updated.
@@ -2703,12 +2806,20 @@ class DynamoDBConnection(AWSQueryConnection):
             `Limits`_ in the Amazon DynamoDB Developer Guide .
 
         :type global_secondary_index_updates: list
-        :param global_secondary_index_updates: An array of one or more global
-            secondary indexes on the table, together with provisioned
-            throughput settings for each index.
+        :param global_secondary_index_updates:
+        An array of one or more global secondary indexes for the table. For
+            each index in the array, you can specify one action:
+
+
+        + Create - add a new global secondary index to the table.
+        + Update - modify the provisioned throughput settings of an existing
+              global secondary index.
+        + Delete - remove a global secondary index from the table.
 
         """
         params = {'TableName': table_name, }
+        if attribute_definitions is not None:
+            params['AttributeDefinitions'] = attribute_definitions
         if provisioned_throughput is not None:
             params['ProvisionedThroughput'] = provisioned_throughput
         if global_secondary_index_updates is not None:

@@ -294,6 +294,10 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
                   <Enabled>true</Enabled>
                 </InstanceMonitoring>
                 <EbsOptimized>false</EbsOptimized>
+                <ClassicLinkVPCId>vpc-12345</ClassicLinkVPCId>
+                <ClassicLinkVPCSecurityGroups>
+                    <member>sg-1234</member>
+                </ClassicLinkVPCSecurityGroups>
               </member>
             </LaunchConfigurations>
           </DescribeLaunchConfigurationsResult>
@@ -320,6 +324,9 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
         self.assertEqual(response[0].instance_monitoring.enabled, 'true')
         self.assertEqual(response[0].ebs_optimized, False)
         self.assertEqual(response[0].block_device_mappings, [])
+        self.assertEqual(response[0].classic_link_vpc_id, 'vpc-12345')
+        self.assertEqual(response[0].classic_link_vpc_security_groups,
+                         ['sg-1234'])
 
         self.assert_request_parameters({
             'Action': 'DescribeLaunchConfigurations',
@@ -367,7 +374,9 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             associate_public_ip_address=True,
             volume_type='atype',
             delete_on_termination=False,
-            iops=3000
+            iops=3000,
+            classic_link_vpc_id='vpc-1234',
+            classic_link_vpc_security_groups=['classic_link_group']
         )
 
         response = self.service_connection.create_launch_configuration(lc)
@@ -389,6 +398,8 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'VolumeType': 'atype',
             'DeleteOnTermination': 'false',
             'Iops': 3000,
+            'ClassicLinkVPCId': 'vpc-1234',
+            'ClassicLinkVPCSecurityGroups.member.1': 'classic_link_group'
         }, ignore_params_values=['Version'])
 
 
@@ -620,6 +631,69 @@ class TestAttachInstances(AWSMockServiceTestCase):
             'InstanceIds.member.1': 'inst2',
             'InstanceIds.member.2': 'inst1',
             'InstanceIds.member.3': 'inst4',
+        }, ignore_params_values=['Version'])
+
+
+class TestDetachInstances(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def setUp(self):
+        super(TestDetachInstances, self).setUp()
+
+    def default_body(self):
+        return b"""
+            <DetachInstancesResponse>
+              <ResponseMetadata>
+                <RequestId>requestid</RequestId>
+              </ResponseMetadata>
+            </DetachInstancesResponse>
+        """
+
+    def test_detach_instances(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.detach_instances(
+            'autoscale',
+            ['inst2', 'inst1', 'inst4']
+        )
+        self.assert_request_parameters({
+            'Action': 'DetachInstances',
+            'AutoScalingGroupName': 'autoscale',
+            'InstanceIds.member.1': 'inst2',
+            'InstanceIds.member.2': 'inst1',
+            'InstanceIds.member.3': 'inst4',
+            'ShouldDecrementDesiredCapacity': 'true',
+        }, ignore_params_values=['Version'])
+
+    def test_detach_instances_with_decrement_desired_capacity(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.detach_instances(
+            'autoscale',
+            ['inst2', 'inst1', 'inst4'],
+            True
+        )
+        self.assert_request_parameters({
+            'Action': 'DetachInstances',
+            'AutoScalingGroupName': 'autoscale',
+            'InstanceIds.member.1': 'inst2',
+            'InstanceIds.member.2': 'inst1',
+            'InstanceIds.member.3': 'inst4',
+            'ShouldDecrementDesiredCapacity': 'true',
+        }, ignore_params_values=['Version'])
+
+    def test_detach_instances_without_decrement_desired_capacity(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.detach_instances(
+            'autoscale',
+            ['inst2', 'inst1', 'inst4'],
+            False
+        )
+        self.assert_request_parameters({
+            'Action': 'DetachInstances',
+            'AutoScalingGroupName': 'autoscale',
+            'InstanceIds.member.1': 'inst2',
+            'InstanceIds.member.2': 'inst1',
+            'InstanceIds.member.3': 'inst4',
+            'ShouldDecrementDesiredCapacity': 'false',
         }, ignore_params_values=['Version'])
 
 

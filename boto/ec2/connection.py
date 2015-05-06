@@ -72,7 +72,7 @@ from boto.compat import six
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2014-05-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2014-10-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -3785,6 +3785,8 @@ class EC2Connection(AWSQueryConnection):
                 params[prefix + 'Platform'] = tc.platform
             if tc.instance_count is not None:
                 params[prefix + 'InstanceCount'] = tc.instance_count
+            if tc.instance_type is not None:
+                params[prefix + 'InstanceType'] = tc.instance_type
 
     def modify_reserved_instances(self, client_token, reserved_instance_ids,
                                   target_configurations):
@@ -4458,3 +4460,47 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('ModifyVpcAttribute', params, verb='POST')
+
+    def get_all_classic_link_instances(self, instance_ids=None, filters=None,
+                                       dry_run=False, max_results=None,
+                                       next_token=None):
+        """
+        Get all of your linked EC2-Classic instances. This request only
+        returns information about EC2-Classic instances linked  to
+        a VPC through ClassicLink
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of instance IDs. Must be
+            instances linked to a VPC through ClassicLink.
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :type max_results: int
+        :param max_results: The maximum number of paginated instance
+            items per response.
+
+        :rtype: list
+        :return: A list of  :class:`boto.ec2.instance.Instance`
+        """
+        params = {}
+        if instance_ids:
+            self.build_list_params(params, instance_ids, 'InstanceId')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        if max_results is not None:
+            params['MaxResults'] = max_results
+        if next_token:
+            params['NextToken'] = next_token
+        return self.get_list('DescribeClassicLinkInstances', params,
+                             [('item', Instance)], verb='POST')

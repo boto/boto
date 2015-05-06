@@ -1130,6 +1130,13 @@ class BatchGetResultSetTestCase(unittest.TestCase):
         # Make sure we won't check for results in the future.
         self.assertFalse(self.results._results_left)
 
+    def test_fetch_more_empty(self):
+        self.results.to_call(lambda keys: {'results': [], 'last_key': None}) 
+
+        self.results.fetch_more()
+        self.assertEqual(self.results._results, [])
+        self.assertRaises(StopIteration, self.results.next)
+
     def test_iteration(self):
         # First page.
         self.assertEqual(next(self.results), 'hello alice')
@@ -1582,6 +1589,143 @@ class TableTestCase(unittest.TestCase):
                     'ProvisionedThroughput': {
                         'WriteCapacityUnits': 1,
                         'ReadCapacityUnits': 6
+                    }
+                }
+            })
+
+    def test_create_global_secondary_index(self):
+        with mock.patch.object(
+                self.users.connection,
+                'update_table',
+                return_value={}) as mock_update:
+            self.users.create_global_secondary_index(
+                global_index=GlobalAllIndex(
+                    'JustCreatedIndex',
+                    parts=[
+                        HashKey('requiredHashKey')
+                    ],
+                    throughput={
+                        'read': 2,
+                        'write': 2
+                    }
+                )
+            )
+
+        mock_update.assert_called_once_with(
+            'users',
+            global_secondary_index_updates=[
+                {
+                    'Create': {
+                        'IndexName': 'JustCreatedIndex',
+                        'KeySchema': [
+                            {
+                                'KeyType': 'HASH',
+                                'AttributeName': 'requiredHashKey'
+                            }
+                        ],
+                        'Projection': {
+                            'ProjectionType': 'ALL'
+                        },
+                        'ProvisionedThroughput': {
+                            'WriteCapacityUnits': 2,
+                            'ReadCapacityUnits': 2
+                        }
+                    }
+                }
+            ],
+            attribute_definitions=[
+                {
+                    'AttributeName': 'requiredHashKey',
+                    'AttributeType': 'S'
+                }
+            ]
+        )
+
+    def test_delete_global_secondary_index(self):
+        with mock.patch.object(
+                self.users.connection,
+                'update_table',
+                return_value={}) as mock_update:
+            self.users.delete_global_secondary_index('RandomGSIIndex')
+
+        mock_update.assert_called_once_with(
+            'users',
+            global_secondary_index_updates=[
+                {
+                    'Delete': {
+                        'IndexName': 'RandomGSIIndex',
+                    }
+                }
+            ]
+        )
+
+    def test_update_global_secondary_index(self):
+        # Updating a single global secondary index
+        with mock.patch.object(
+                self.users.connection,
+                'update_table',
+                return_value={}) as mock_update:
+            self.users.update_global_secondary_index(global_indexes={
+                'A_IndexToBeUpdated': {
+                    'read': 5,
+                    'write': 5
+                }
+            })
+
+        mock_update.assert_called_once_with(
+            'users',
+            global_secondary_index_updates=[
+                {
+                    'Update': {
+                        'IndexName': 'A_IndexToBeUpdated',
+                        "ProvisionedThroughput": {
+                            "ReadCapacityUnits": 5,
+                            "WriteCapacityUnits": 5
+                        },
+                    }
+                }
+            ]
+        )
+
+        # Updating multiple global secondary indexes
+        with mock.patch.object(
+                self.users.connection,
+                'update_table',
+                return_value={}) as mock_update:
+            self.users.update_global_secondary_index(global_indexes={
+                'A_IndexToBeUpdated': {
+                    'read': 5,
+                    'write': 5
+                },
+                'B_IndexToBeUpdated': {
+                    'read': 9,
+                    'write': 9
+                }
+            })
+
+        args, kwargs = mock_update.call_args
+        self.assertEqual(args, ('users',))
+        update = kwargs['global_secondary_index_updates'][:]
+        update.sort(key=lambda x: x['Update']['IndexName'])
+        self.assertDictEqual(
+            update[0],
+            {
+                'Update': {
+                    'IndexName': 'A_IndexToBeUpdated',
+                    'ProvisionedThroughput': {
+                        'WriteCapacityUnits': 5,
+                        'ReadCapacityUnits': 5
+                    }
+                }
+            })
+        self.assertDictEqual(
+            update[1],
+            {
+                'Update': {
+                    'IndexName': 'B_IndexToBeUpdated',
+                    'ProvisionedThroughput': {
+                        'WriteCapacityUnits': 9,
+                        'ReadCapacityUnits': 9
                     }
                 }
             })

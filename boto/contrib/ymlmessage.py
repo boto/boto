@@ -47,7 +47,7 @@ class YAMLMessage(Message):
         super(YAMLMessage, self).__init__(queue, body)
 
     def set_body(self, body):
-        self.data = yaml.load(body)
+        self.data = yaml.safe_load(body)
 
     def get_body(self):
         return yaml.dump(self.data)

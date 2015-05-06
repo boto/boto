@@ -1,9 +1,9 @@
 ####
 boto
 ####
-boto 2.34.0
+boto 2.38.0
 
-Released: 23-Oct-2014
+Released: 9-Apr-2015
 
 .. image:: https://travis-ci.org/boto/boto.svg?branch=develop
         :target: https://travis-ci.org/boto/boto
@@ -26,6 +26,22 @@ and the `Porting Guide`_. If you would like, you can open an issue to let
 others know about your work in progress. Tests **must** pass on Python
 2.6, 2.7, 3.3, and 3.4 for pull requests to be accepted.
 
+******
+Boto 3
+******
+The next major version of Boto is currently in developer preview and can
+be found in the `Boto 3 <https://github.com/boto/boto3#readme>`__
+repository and installed via ``pip``. It supports the latest service APIs
+and provides a high-level object-oriented interface to many services.
+
+Please try Boto 3 and
+`leave feedback <https://github.com/boto/boto3/issues>`__ with any issues,
+suggestions, and feature requests you might have.
+
+********
+Services
+********
+
 At the moment, boto supports:
 
 * Compute
@@ -34,6 +50,8 @@ At the moment, boto supports:
   * Amazon Elastic Map Reduce (EMR) (Python 3)
   * AutoScaling (Python 3)
   * Amazon Kinesis (Python 3)
+  * AWS Lambda (Python 3)
+  * Amazon EC2 Container Service (Python 3)
 
 * Content Delivery
 
@@ -54,10 +72,14 @@ At the moment, boto supports:
   * AWS Data Pipeline (Python 3)
   * AWS Opsworks (Python 3)
   * AWS CloudTrail (Python 3)
+  * AWS CodeDeploy (Python 3)
 
-* Identity & Access
+* Administration & Security
 
   * AWS Identity and Access Management (IAM) (Python 3)
+  * AWS Key Management Service (KMS) (Python 3)
+  * AWS Config (Python 3)
+  * AWS CloudHSM (Python 3)
 
 * Application Services
 
@@ -70,6 +92,7 @@ At the moment, boto supports:
   * Amazon Simple Email Service (SES) (Python 3)
   * Amazon Cognito Identity (Python 3)
   * Amazon Cognito Sync (Python 3)
+  * Amazon Machine Learning (Python 3)
 
 * Monitoring
 

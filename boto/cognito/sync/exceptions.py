@@ -30,6 +30,10 @@ class ResourceConflictException(BotoServerError):
     pass
 
 
+class InvalidConfigurationException(BotoServerError):
+    pass
+
+
 class TooManyRequestsException(BotoServerError):
     pass
 

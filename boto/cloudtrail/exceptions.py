@@ -88,3 +88,31 @@ class InsufficientS3BucketPolicyException(BotoServerError):
     write files into the prefix.
     """
     pass
+
+
+class InvalidMaxResultsException(BotoServerError):
+    pass
+
+
+class InvalidTimeRangeException(BotoServerError):
+    pass
+
+
+class InvalidLookupAttributesException(BotoServerError):
+    pass
+
+
+class InvalidCloudWatchLogsLogGroupArnException(BotoServerError):
+    pass
+
+
+class InvalidCloudWatchLogsRoleArnException(BotoServerError):
+    pass
+
+
+class CloudWatchLogsDeliveryUnavailableException(BotoServerError):
+    pass
+
+
+class InvalidNextTokenException(BotoServerError):
+    pass
