@@ -189,6 +189,7 @@ class S3Connection(AWSAuthConnection):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         self.anon = anon
+        self.current_bucket_location = None
         super(S3Connection, self).__init__(host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
@@ -491,7 +492,7 @@ class S3Connection(AWSAuthConnection):
         rs = self.get_all_buckets(headers=headers)
         return rs.owner.id
 
-    def get_bucket(self, bucket_name, validate=True, headers=None):
+    def get_bucket(self, bucket_name, validate=True, headers=None, location=None):
         """
         Retrieves a bucket by name.
 
@@ -528,6 +529,7 @@ class S3Connection(AWSAuthConnection):
         :param validate: If ``True``, it will try to verify the bucket exists
             on the service-side. (Default: ``True``)
         """
+        self.current_bucket_location = location
         if validate:
             return self.head_bucket(bucket_name, headers=headers)
         else:
@@ -682,7 +684,10 @@ class S3Connection(AWSAuthConnection):
         auth_path = self.calling_format.build_auth_path(bucket, key)
         boto.log.debug('auth_path=%s' % auth_path)
         if needs_location:
-            location = self.get_bucket_location(bucket)
+            if self.current_bucket_location is not None:
+                location = self.current_bucket_location
+            else:
+                location = self.get_bucket_location(bucket)
         else:
             location = Location.DEFAULT
         host = self.calling_format.build_host(self.server_name(), bucket, location)
