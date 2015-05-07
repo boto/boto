@@ -81,7 +81,7 @@ class _CallingFormat(object):
         url_base += connection.get_path(self.build_path_base(bucket, key))
         return url_base
 
-    def build_host(self, server, bucket):
+    def build_host(self, server, bucket, location=None):
         if bucket == '':
             return server
         else:
@@ -681,7 +681,7 @@ class S3Connection(AWSAuthConnection):
             location = self.get_bucket_location(bucket)
         else:
             location = Location.DEFAULT
-        host = self.calling_format.build_host(self.server_name(), bucket)
+        host = self.calling_format.build_host(self.server_name(), bucket, location)
         if query_args:
             path += '?' + query_args
             boto.log.debug('path=%s' % path)
