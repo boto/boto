@@ -216,7 +216,7 @@ class SNSConnection(AWSQueryConnection):
     def publish(self, topic=None, message=None, subject=None, target_arn=None,
                 message_structure=None, message_attributes=None):
         """
-        Get properties of a Topic
+        Sends a message to all of a topic's subscribed endpoints
 
         :type topic: string
         :param topic: The ARN of the new topic.
