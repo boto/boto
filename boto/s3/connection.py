@@ -136,9 +136,13 @@ class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
 
 
 class Location(object):
+    # For up to date information, see:
+    # http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
 
     DEFAULT = ''  # US Classic Region
-    EU = 'EU'
+    EU = 'eu-west-1'
+    EUWest = 'eu-west-1'
+    EUCentral = 'eu-central-1'
     USWest = 'us-west-1'
     USWest2 = 'us-west-2'
     SAEast = 'sa-east-1'
