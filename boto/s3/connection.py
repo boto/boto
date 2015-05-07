@@ -139,21 +139,36 @@ class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
         return url_base
 
 
-class Location(object):
-    # For up to date information, see:
-    # http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+class MetaLocation(type):
+    # Metaclass for Location
+    # Allows to access unexisting members of Location without having an
+    # instance of Location.
+    def __init__(self, name, bases, attrs):
+        super(MetaLocation, self).__init__(name, bases, attrs)
+        self.__regions = {
+            # For up to date information, see:
+            # http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+            'DEFAULT':      '',  # US Classic Region
+            'EU':           'eu-west-1',
+            'EUWest':       'eu-west-1',
+            'EUCentral':    'eu-central-1',
+            'USWest':       'us-west-1',
+            'USWest2':      'us-west-2',
+            'SAEast':       'sa-east-1',
+            'APNortheast':  'ap-northeast-1',
+            'APSoutheast':  'ap-southeast-1',
+            'APSoutheast2': 'ap-southeast-2',
+            'CNNorth1':     'cn-north-1'
+        }
 
-    DEFAULT = ''  # US Classic Region
-    EU = 'eu-west-1'
-    EUWest = 'eu-west-1'
-    EUCentral = 'eu-central-1'
-    USWest = 'us-west-1'
-    USWest2 = 'us-west-2'
-    SAEast = 'sa-east-1'
-    APNortheast = 'ap-northeast-1'
-    APSoutheast = 'ap-southeast-1'
-    APSoutheast2 = 'ap-southeast-2'
-    CNNorth1 = 'cn-north-1'
+    def __contains__(self, key):
+        return key in self.__regions.values()
+
+    def __getattr__(self, key):
+        return self.__regions[key]
+
+class Location(object):
+    __metaclass__ = MetaLocation
 
 
 class NoHostProvided(object):
@@ -529,7 +544,7 @@ class S3Connection(AWSAuthConnection):
         :param validate: If ``True``, it will try to verify the bucket exists
             on the service-side. (Default: ``True``)
         """
-        self.current_bucket_location = location
+        self.current_bucket_location = (location if location in Location else None)
         if validate:
             return self.head_bucket(bucket_name, headers=headers)
         else:
