@@ -196,7 +196,8 @@ class Bucket(object):
         query_args = '&'.join(query_args_l) or None
         response = self.connection.make_request('HEAD', self.name, key_name,
                                                 headers=headers,
-                                                query_args=query_args)
+                                                query_args=query_args,
+                                                needs_location=True)
         response.read()
         # Allow any success status (2xx) - for example this lets us
         # support Range gets, which return status 206:
@@ -395,7 +396,8 @@ class Bucket(object):
         )
         response = self.connection.make_request('GET', self.name,
                                                 headers=headers,
-                                                query_args=query_args)
+                                                query_args=query_args,
+                                                needs_location=True)
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:

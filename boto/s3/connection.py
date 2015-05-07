@@ -116,7 +116,7 @@ class VHostCallingFormat(_CallingFormat):
 class OrdinaryCallingFormat(_CallingFormat):
 
     def get_bucket_server(self, server, bucket, location):
-        if location is not Location.DEFAULT:
+        if location in Location and location is not Location.DEFAULT:
             server_name_parts = server.split('.')
             server_name_parts[0] += "-%s" % location
             server = '.'.join(server_name_parts)
@@ -565,7 +565,7 @@ class S3Connection(AWSAuthConnection):
 
         :returns: A <Bucket> object
         """
-        response = self.make_request('HEAD', bucket_name, headers=headers)
+        response = self.make_request('HEAD', bucket_name, headers=headers, needs_location=True)
         body = response.read()
         if response.status == 200:
             return self.bucket_class(self, bucket_name)
@@ -689,7 +689,7 @@ class S3Connection(AWSAuthConnection):
 
     def make_request(self, method, bucket='', key='', headers=None, data='',
                      query_args=None, sender=None, override_num_retries=None,
-                     retry_handler=None, needs_location=True):
+                     retry_handler=None, needs_location=False):
         if isinstance(bucket, self.bucket_class):
             bucket = bucket.name
         if isinstance(key, Key):
