@@ -219,7 +219,7 @@ class SNSConnection(AWSQueryConnection):
         Sends a message to all of a topic's subscribed endpoints
 
         :type topic: string
-        :param topic: The ARN of the new topic.
+        :param topic: The topic you want to publish to.
 
         :type message: string
         :param message: The message you want to send to the topic.
