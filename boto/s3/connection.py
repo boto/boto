@@ -116,6 +116,10 @@ class VHostCallingFormat(_CallingFormat):
 class OrdinaryCallingFormat(_CallingFormat):
 
     def get_bucket_server(self, server, bucket, location):
+        if location is not Location.DEFAULT:
+            server_name_parts = server.split('.')
+            server_name_parts[0] += "-%s" % location
+            server = '.'.join(server_name_parts)
         return server
 
     def build_path_base(self, bucket, key=''):
