@@ -27,6 +27,7 @@ from tests.unit import MockServiceWithConfigTestCase
 
 from boto.s3.connection import S3Connection, HostRequiredError
 from boto.s3.connection import S3ResponseError, Bucket
+from boto.s3.connection import OrdinaryCallingFormat, SubdomainCallingFormat, VHostCallingFormat
 
 
 class TestSignatureAlteration(AWSMockServiceTestCase):
@@ -113,7 +114,16 @@ class TestSigV4Presigned(MockServiceWithConfigTestCase):
         url = conn.generate_url_sigv4(86400, 'GET', bucket='examplebucket',
             key='test.txt', iso_date='20140625T000000Z')
 
-        self.assertIn('a937f5fbc125d98ac8f04c49e0204ea1526a7b8ca058000a54c192457be05b7d', url)
+        valid_hash = {
+            OrdinaryCallingFormat:  '142e45b38182aace495abb91894f84894d031e76c62706a2dc9694ab8c9d49b0',
+            SubdomainCallingFormat: 'a937f5fbc125d98ac8f04c49e0204ea1526a7b8ca058000a54c192457be05b7d',
+        }
+
+        if type(conn.calling_format) not in valid_hash.keys():
+            raise KeyError("The current test doesn't support testing sigv4_presign with the %s CallingFormat. Please append the following line to the 'valid_hash' dictionnary in the current file (see exception trace): %s: '%s'," % (type(conn.calling_format).__name__, type(conn.calling_format).__name__, dict(item.split("=") for item in url.split('?')[1].split("&"))['X-Amz-Signature']))
+        else:
+            self.assertIn(valid_hash[type(conn.calling_format)], url)
+
 
     def test_sigv4_presign_optional_params(self):
         self.config = {
