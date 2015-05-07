@@ -72,7 +72,7 @@ def assert_case_insensitive(f):
 
 class _CallingFormat(object):
 
-    def get_bucket_server(self, server, bucket):
+    def get_bucket_server(self, server, bucket, location):
         return ''
 
     def build_url_base(self, connection, protocol, server, bucket, key=''):
@@ -85,7 +85,7 @@ class _CallingFormat(object):
         if bucket == '':
             return server
         else:
-            return self.get_bucket_server(server, bucket)
+            return self.get_bucket_server(server, bucket, location)
 
     def build_auth_path(self, bucket, key=''):
         key = boto.utils.get_utf8_value(key)
@@ -102,20 +102,20 @@ class _CallingFormat(object):
 class SubdomainCallingFormat(_CallingFormat):
 
     @assert_case_insensitive
-    def get_bucket_server(self, server, bucket):
+    def get_bucket_server(self, server, bucket, location):
         return '%s.%s' % (bucket, server)
 
 
 class VHostCallingFormat(_CallingFormat):
 
     @assert_case_insensitive
-    def get_bucket_server(self, server, bucket):
+    def get_bucket_server(self, server, bucket, location):
         return bucket
 
 
 class OrdinaryCallingFormat(_CallingFormat):
 
-    def get_bucket_server(self, server, bucket):
+    def get_bucket_server(self, server, bucket, location):
         return server
 
     def build_path_base(self, bucket, key=''):
