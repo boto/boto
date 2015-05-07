@@ -233,7 +233,8 @@ class S3Connection(AWSAuthConnection):
         :return: The LocationConstraint for the bucket or the empty
             string if no constraint was specified when bucket was created.
         """
-        response = self.make_request('GET', bucket_name, query_args='location')
+        response = self.make_request('GET', bucket_name, query_args='location',
+                                     needs_location=False)
         body = response.read()
         if response.status == 200:
             rs = ResultSet(self)
@@ -667,7 +668,7 @@ class S3Connection(AWSAuthConnection):
 
     def make_request(self, method, bucket='', key='', headers=None, data='',
                      query_args=None, sender=None, override_num_retries=None,
-                     retry_handler=None):
+                     retry_handler=None, needs_location=True):
         if isinstance(bucket, self.bucket_class):
             bucket = bucket.name
         if isinstance(key, Key):
@@ -676,6 +677,10 @@ class S3Connection(AWSAuthConnection):
         boto.log.debug('path=%s' % path)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         boto.log.debug('auth_path=%s' % auth_path)
+        if needs_location:
+            location = self.get_bucket_location(bucket)
+        else:
+            location = Location.DEFAULT
         host = self.calling_format.build_host(self.server_name(), bucket)
         if query_args:
             path += '?' + query_args
