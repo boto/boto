@@ -65,3 +65,9 @@ boto.ec2.elb.attributes
 .. automodule:: boto.ec2.elb.attributes
    :members:
    :undoc-members:
+
+boto.ec2.elb.tag
+-----------------------
+.. automodule:: boto.ec2.elb.tag
+   :members:
+   :undoc-members:

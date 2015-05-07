@@ -25,6 +25,7 @@ from boto.ec2.elb.listener import Listener
 from boto.ec2.elb.listelement import ListElement
 from boto.ec2.elb.policies import Policies, OtherPolicy
 from boto.ec2.elb.securitygroup import SecurityGroup
+from boto.ec2.elb.tag import TagSet
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.resultset import ResultSet
 from boto.compat import six
@@ -125,6 +126,7 @@ class LoadBalancer(object):
         self.vpc_id = None
         self.scheme = None
         self.backends = None
+        self._tags = None
         self._attributes = None
 
     def __repr__(self):
@@ -417,3 +419,85 @@ class LoadBalancer(object):
         new_sgs = self.connection.apply_security_groups_to_lb(
             self.name, security_groups)
         self.security_groups = new_sgs
+
+    def get_tags(self, force=False):
+        """
+        Get the tags for this load balancer.  Adding a tag involves a round-trip
+        to the ELB service.  Tags will be cached.
+
+        :type force: bool
+        :param force: Ignore cache value and reload.
+
+        :rtype: boto.ec2.elb.tag.TagSet
+        :return: The set of tags associated with this ELB.
+
+        """
+        if not self._tags or force:
+            self._tags = self.connection.get_all_tags([self.name])[self.name]
+        return self._tags
+
+    def add_tag(self, key, value=''):
+        """
+        Add a tag to this object.  Tags are stored by AWS and can be used
+        to organize and filter resources.  Adding a tag involves a round-trip
+        to the ELB service.
+
+        :type key: str
+        :param key: The key or name of the tag being stored.
+
+        :type value: str
+        :param value: An optional value that can be stored with the tag.
+                      If you want only the tag name and no value, the
+                      value should be the empty string.
+
+        """
+        self.add_tags({key: value})
+
+    def add_tags(self, tags):
+        """
+        Add tags to this object.  Tags are stored by AWS and can be used
+        to organize and filter resources.  Adding tags involves a round-trip
+        to the ELB service.
+
+        :type tags: dict
+        :param tags: A dictionary of key-value pairs for the tags being stored.
+                     If for some tags you want only the name and no value, the
+                     corresponding value for that tag name should be an empty
+                     string.
+
+        """
+        status = self.connection.add_tags(
+            [self.name],
+            tags
+        )
+        if self._tags is None:
+            self._tags = TagSet()
+        self._tags.update(tags)
+
+    def remove_tag(self, key):
+        """
+        Remove a tag from this object.  Removing a tag involves a round-trip
+        to the ELB service.
+
+        :type key: str
+        :param key: The key or name of the tag being stored.
+
+        """
+        self.remove_tags([key])
+
+    def remove_tags(self, tags):
+        """
+        Removes tags from this object.  Removing tags involves a round-trip
+        to the ELB service.
+
+        :type tags: list
+        :param tags: A list of key names for the tags being removed.
+
+        """
+        status = self.connection.remove_tags(
+            [self.name],
+            tags
+        )
+        for key in tags:
+            if key in self._tags:
+                del self._tags[key]
