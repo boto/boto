@@ -169,7 +169,7 @@ class HostRequiredError(BotoClientError):
 class S3Connection(AWSAuthConnection):
 
     DefaultHost = boto.config.get('s3', 'host', 's3.amazonaws.com')
-    DefaultCallingFormat = boto.config.get('s3', 'calling_format', 'boto.s3.connection.SubdomainCallingFormat')
+    DefaultCallingFormat = boto.config.get('s3', 'calling_format', 'boto.s3.connection.OrdinaryCallingFormat')
     QueryString = 'Signature=%s&Expires=%d&AWSAccessKeyId=%s'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
