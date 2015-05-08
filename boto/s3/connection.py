@@ -366,6 +366,10 @@ class S3Connection(AWSAuthConnection):
         if version_id is not None:
             params['VersionId'] = version_id
 
+        if response_headers is not None:
+            for header, value in response_headers.items():
+                params[header] = value
+
         http_request = self.build_base_http_request(method, path, auth_path,
                                                     headers=headers, host=host,
                                                     params=params)
