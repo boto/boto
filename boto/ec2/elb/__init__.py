@@ -760,7 +760,7 @@ class ELBConnection(AWSQueryConnection):
 
     # Tag methods
 
-    def build_tag_param_list(self, params, tags):
+    def _build_tag_param_list(self, params, tags):
         keys = sorted(tags.keys())
         i = 1
         for key in keys:
@@ -777,8 +777,9 @@ class ELBConnection(AWSQueryConnection):
         :type load_balancer_names: list
         :param load_balancer_names: An optional list of load balancer names.
 
-        :rtype: list
-        :return: A list of :class:`boto.ec2.elb.tag.Tag` objects
+        :rtype: :class:`boto.ec2.elb.tag.TagDescriptions`
+        :return: A dictionary mapping load balancer names to
+            :class:`boto.ec2.elb.tag.TagSet`.
         """
         params = {}
         if load_balancer_names:
@@ -804,7 +805,7 @@ class ELBConnection(AWSQueryConnection):
         params = {}
         self.build_list_params(params, load_balancer_names,
                                'LoadBalancerNames.member.%d')
-        self.build_tag_param_list(params, tags)
+        self._build_tag_param_list(params, tags)
         return self.get_status('AddTags', params, verb='POST')
 
     def remove_tags(self, load_balancer_names, tags):
