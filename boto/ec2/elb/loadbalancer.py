@@ -480,7 +480,7 @@ class LoadBalancer(object):
         to the ELB service.
 
         :type key: str
-        :param key: The key or name of the tag being stored.
+        :param key: The key or name of the tag being removed.
 
         """
         self.remove_tags([key])
