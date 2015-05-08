@@ -196,7 +196,8 @@ class Bucket(object):
         query_args = '&'.join(query_args_l) or None
         response = self.connection.make_request('HEAD', self.name, key_name,
                                                 headers=headers,
-                                                query_args=query_args)
+                                                query_args=query_args,
+                                                needs_location=True)
         response.read()
         # Allow any success status (2xx) - for example this lets us
         # support Range gets, which return status 206:
@@ -395,7 +396,8 @@ class Bucket(object):
         )
         response = self.connection.make_request('GET', self.name,
                                                 headers=headers,
-                                                query_args=query_args)
+                                                query_args=query_args,
+                                                needs_location=True)
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
@@ -1122,26 +1124,7 @@ class Bucket(object):
         return policy.acl.grants
 
     def get_location(self):
-        """
-        Returns the LocationConstraint for the bucket.
-
-        :rtype: str
-        :return: The LocationConstraint for the bucket or the empty
-            string if no constraint was specified when bucket was created.
-        """
-        response = self.connection.make_request('GET', self.name,
-                                                query_args='location')
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet(self)
-            h = handler.XmlHandler(rs, self)
-            if not isinstance(body, bytes):
-                body = body.encode('utf-8')
-            xml.sax.parseString(body, h)
-            return rs.LocationConstraint
-        else:
-            raise self.connection.provider.storage_response_error(
-                response.status, response.reason, body)
+        return self.connection.get_bucket_location(self.name)
 
     def set_xml_logging(self, logging_str, headers=None):
         """

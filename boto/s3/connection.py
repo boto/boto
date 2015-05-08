@@ -72,7 +72,7 @@ def assert_case_insensitive(f):
 
 class _CallingFormat(object):
 
-    def get_bucket_server(self, server, bucket):
+    def get_bucket_server(self, server, bucket, location):
         return ''
 
     def build_url_base(self, connection, protocol, server, bucket, key=''):
@@ -81,11 +81,11 @@ class _CallingFormat(object):
         url_base += connection.get_path(self.build_path_base(bucket, key))
         return url_base
 
-    def build_host(self, server, bucket):
+    def build_host(self, server, bucket, location=None):
         if bucket == '':
             return server
         else:
-            return self.get_bucket_server(server, bucket)
+            return self.get_bucket_server(server, bucket, location)
 
     def build_auth_path(self, bucket, key=''):
         key = boto.utils.get_utf8_value(key)
@@ -102,20 +102,24 @@ class _CallingFormat(object):
 class SubdomainCallingFormat(_CallingFormat):
 
     @assert_case_insensitive
-    def get_bucket_server(self, server, bucket):
+    def get_bucket_server(self, server, bucket, location):
         return '%s.%s' % (bucket, server)
 
 
 class VHostCallingFormat(_CallingFormat):
 
     @assert_case_insensitive
-    def get_bucket_server(self, server, bucket):
+    def get_bucket_server(self, server, bucket, location):
         return bucket
 
 
 class OrdinaryCallingFormat(_CallingFormat):
 
-    def get_bucket_server(self, server, bucket):
+    def get_bucket_server(self, server, bucket, location):
+        if location in Location and location is not Location.DEFAULT:
+            server_name_parts = server.split('.')
+            server_name_parts[0] += "-%s" % location
+            server = '.'.join(server_name_parts)
         return server
 
     def build_path_base(self, bucket, key=''):
@@ -135,17 +139,36 @@ class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
         return url_base
 
 
-class Location(object):
+class MetaLocation(type):
+    # Metaclass for Location
+    # Allows to access unexisting members of Location without having an
+    # instance of Location.
+    def __init__(self, name, bases, attrs):
+        super(MetaLocation, self).__init__(name, bases, attrs)
+        self.__regions = {
+            # For up to date information, see:
+            # http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+            'DEFAULT':      '',  # US Classic Region
+            'EU':           'eu-west-1',
+            'EUWest':       'eu-west-1',
+            'EUCentral':    'eu-central-1',
+            'USWest':       'us-west-1',
+            'USWest2':      'us-west-2',
+            'SAEast':       'sa-east-1',
+            'APNortheast':  'ap-northeast-1',
+            'APSoutheast':  'ap-southeast-1',
+            'APSoutheast2': 'ap-southeast-2',
+            'CNNorth1':     'cn-north-1'
+        }
 
-    DEFAULT = ''  # US Classic Region
-    EU = 'EU'
-    USWest = 'us-west-1'
-    USWest2 = 'us-west-2'
-    SAEast = 'sa-east-1'
-    APNortheast = 'ap-northeast-1'
-    APSoutheast = 'ap-southeast-1'
-    APSoutheast2 = 'ap-southeast-2'
-    CNNorth1 = 'cn-north-1'
+    def __contains__(self, key):
+        return key in self.__regions.values()
+
+    def __getattr__(self, key):
+        return self.__regions[key]
+
+class Location(object):
+    __metaclass__ = MetaLocation
 
 
 class NoHostProvided(object):
@@ -161,7 +184,7 @@ class HostRequiredError(BotoClientError):
 class S3Connection(AWSAuthConnection):
 
     DefaultHost = boto.config.get('s3', 'host', 's3.amazonaws.com')
-    DefaultCallingFormat = boto.config.get('s3', 'calling_format', 'boto.s3.connection.SubdomainCallingFormat')
+    DefaultCallingFormat = boto.config.get('s3', 'calling_format', 'boto.s3.connection.OrdinaryCallingFormat')
     QueryString = 'Signature=%s&Expires=%d&AWSAccessKeyId=%s'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
@@ -181,6 +204,7 @@ class S3Connection(AWSAuthConnection):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         self.anon = anon
+        self.current_bucket_location = None
         super(S3Connection, self).__init__(host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
@@ -220,6 +244,28 @@ class S3Connection(AWSAuthConnection):
         :param bucket_class: A subclass of Bucket that can be more specific
         """
         self.bucket_class = bucket_class
+
+    def get_bucket_location(self, bucket_name):
+        """
+        Returns the LocationConstraint for the bucket.
+
+        :rtype: str
+        :return: The LocationConstraint for the bucket or the empty
+            string if no constraint was specified when bucket was created.
+        """
+        response = self.make_request('GET', bucket_name, query_args='location',
+                                     needs_location=False)
+        body = response.read()
+        if response.status == 200:
+            rs = ResultSet(self)
+            h = handler.XmlHandler(rs, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
+            xml.sax.parseString(body, h)
+            return rs.LocationConstraint
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
 
     def build_post_policy(self, expiration_time, conditions):
         """
@@ -461,7 +507,7 @@ class S3Connection(AWSAuthConnection):
         rs = self.get_all_buckets(headers=headers)
         return rs.owner.id
 
-    def get_bucket(self, bucket_name, validate=True, headers=None):
+    def get_bucket(self, bucket_name, validate=True, headers=None, location=None):
         """
         Retrieves a bucket by name.
 
@@ -498,6 +544,7 @@ class S3Connection(AWSAuthConnection):
         :param validate: If ``True``, it will try to verify the bucket exists
             on the service-side. (Default: ``True``)
         """
+        self.current_bucket_location = (location if location in Location else None)
         if validate:
             return self.head_bucket(bucket_name, headers=headers)
         else:
@@ -518,7 +565,7 @@ class S3Connection(AWSAuthConnection):
 
         :returns: A <Bucket> object
         """
-        response = self.make_request('HEAD', bucket_name, headers=headers)
+        response = self.make_request('HEAD', bucket_name, headers=headers, needs_location=True)
         body = response.read()
         if response.status == 200:
             return self.bucket_class(self, bucket_name)
@@ -642,7 +689,7 @@ class S3Connection(AWSAuthConnection):
 
     def make_request(self, method, bucket='', key='', headers=None, data='',
                      query_args=None, sender=None, override_num_retries=None,
-                     retry_handler=None):
+                     retry_handler=None, needs_location=False):
         if isinstance(bucket, self.bucket_class):
             bucket = bucket.name
         if isinstance(key, Key):
@@ -651,7 +698,14 @@ class S3Connection(AWSAuthConnection):
         boto.log.debug('path=%s' % path)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         boto.log.debug('auth_path=%s' % auth_path)
-        host = self.calling_format.build_host(self.server_name(), bucket)
+        if needs_location:
+            if self.current_bucket_location is not None:
+                location = self.current_bucket_location
+            else:
+                location = self.get_bucket_location(bucket)
+        else:
+            location = Location.DEFAULT
+        host = self.calling_format.build_host(self.server_name(), bucket, location)
         if query_args:
             path += '?' + query_args
             boto.log.debug('path=%s' % path)
