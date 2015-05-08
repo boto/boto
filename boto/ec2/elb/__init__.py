@@ -810,7 +810,7 @@ class ELBConnection(AWSQueryConnection):
 
     def remove_tags(self, load_balancer_names, tags):
         """
-        Delete metadata tags for the specified resource ids.
+        Delete metadata tags for the specified ELBs.
 
         :type load_balancer_names: list
         :param load_balancer_names: A list of load balancer names.
