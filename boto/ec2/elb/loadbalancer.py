@@ -25,7 +25,7 @@ from boto.ec2.elb.listener import Listener
 from boto.ec2.elb.listelement import ListElement
 from boto.ec2.elb.policies import Policies, OtherPolicy
 from boto.ec2.elb.securitygroup import SecurityGroup
-from boto.ec2.elb.tag import TagSet
+from boto.ec2.elb.tag import Tags
 from boto.ec2.instanceinfo import InstanceInfo
 from boto.resultset import ResultSet
 from boto.compat import six
@@ -428,7 +428,7 @@ class LoadBalancer(object):
         :type force: bool
         :param force: Ignore cache value and reload.
 
-        :rtype: boto.ec2.elb.tag.TagSet
+        :rtype: :class:`boto.ec2.elb.tag.Tags`
         :return: The set of tags associated with this ELB.
 
         """
@@ -471,7 +471,7 @@ class LoadBalancer(object):
             tags
         )
         if self._tags is None:
-            self._tags = TagSet()
+            self._tags = Tags()
         self._tags.update(tags)
 
     def remove_tag(self, key):

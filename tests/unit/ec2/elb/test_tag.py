@@ -5,7 +5,7 @@ from tests.unit import AWSMockServiceTestCase
 
 from boto.ec2.elb import ELBConnection
 from boto.ec2.elb.loadbalancer import LoadBalancer
-from boto.ec2.elb.tag import TagSet
+from boto.ec2.elb.tag import Tags
 
 
 ADD_TAGS_RESPONSE = br"""<?xml version="1.0" encoding="UTF-8"?>
@@ -38,7 +38,7 @@ class TestAddTags(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         lb = LoadBalancer(self.service_connection)
         lb.name = "lb-abcd1234"
-        lb._tags = TagSet()
+        lb._tags = Tags()
         lb._tags["already_present_key"] = "already_present_value"
 
         lb.add_tag("new_key", "new_value")
@@ -60,7 +60,7 @@ class TestAddTags(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         lb = LoadBalancer(self.service_connection)
         lb.name = "lb-abcd1234"
-        lb._tags = TagSet()
+        lb._tags = Tags()
         lb._tags["already_present_key"] = "already_present_value"
 
         lb.add_tags({"key1": "value1", "key2": "value2"})
@@ -92,7 +92,7 @@ class TestRemoveTags(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         lb = LoadBalancer(self.service_connection)
         lb.name = "lb-abcd1234"
-        lb._tags = TagSet()
+        lb._tags = Tags()
         lb._tags["key1"] = "value1"
         lb._tags["key2"] = "value2"
 
@@ -112,7 +112,7 @@ class TestRemoveTags(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         lb = LoadBalancer(self.service_connection)
         lb.name = "lb-abcd1234"
-        lb._tags = TagSet()
+        lb._tags = Tags()
         lb._tags["key1"] = "value1"
         lb._tags["key2"] = "value2"
 

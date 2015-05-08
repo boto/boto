@@ -36,7 +36,7 @@ class TagDescriptions(dict):
             self.load_balancer_name = None
             self.tags = None
         if name == 'Tags':
-            self._tags = TagSet()
+            self._tags = Tags()
             return self._tags
         return None
 
@@ -47,9 +47,9 @@ class TagDescriptions(dict):
             self[self._load_balancer_name] = self._tags
 
 
-class TagSet(dict):
+class Tags(dict):
     """
-    A TagSet is used to collect the tags associated with a particular
+    A Tags dictionary is used to collect the tags associated with a particular
     ELB resource.  See :class:`boto.ec2.elb.LoadBalancer` for more
     details.
     """
