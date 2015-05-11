@@ -23,8 +23,6 @@
 """
 Represents a connection to the EMR service
 """
-import types
-
 import boto
 import boto.utils
 from boto.ec2.regioninfo import RegionInfo
