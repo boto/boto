@@ -32,6 +32,7 @@ import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
 from boto.s3.bucket import Bucket
+from boto.s3.location import Location
 from boto.s3.key import Key
 from boto.resultset import ResultSet
 from boto.exception import BotoClientError, S3ResponseError
@@ -72,7 +73,7 @@ def assert_case_insensitive(f):
 
 class _CallingFormat(object):
 
-    def get_bucket_server(self, server, bucket):
+    def get_bucket_server(self, server, bucket, location=Location.DEFAULT):
         return ''
 
     def build_url_base(self, connection, protocol, server, bucket, key=''):
@@ -81,11 +82,11 @@ class _CallingFormat(object):
         url_base += connection.get_path(self.build_path_base(bucket, key))
         return url_base
 
-    def build_host(self, server, bucket):
+    def build_host(self, server, bucket, location=Location.DEFAULT):
         if bucket == '':
             return server
         else:
-            return self.get_bucket_server(server, bucket)
+            return self.get_bucket_server(server, bucket, location)
 
     def build_auth_path(self, bucket, key=''):
         key = boto.utils.get_utf8_value(key)
@@ -102,20 +103,24 @@ class _CallingFormat(object):
 class SubdomainCallingFormat(_CallingFormat):
 
     @assert_case_insensitive
-    def get_bucket_server(self, server, bucket):
+    def get_bucket_server(self, server, bucket, location=Location.DEFAULT):
         return '%s.%s' % (bucket, server)
 
 
 class VHostCallingFormat(_CallingFormat):
 
     @assert_case_insensitive
-    def get_bucket_server(self, server, bucket):
+    def get_bucket_server(self, server, bucket, location=Location.DEFAULT):
         return bucket
 
 
 class OrdinaryCallingFormat(_CallingFormat):
 
-    def get_bucket_server(self, server, bucket):
+    def get_bucket_server(self, server, bucket, location=Location.DEFAULT):
+        if location is not Location.DEFAULT:
+            server_name_domains = server.split('.')
+            server_name_domains[0] += "-" + location
+            server = '.'.join(server_name_domains)
         return server
 
     def build_path_base(self, bucket, key=''):
@@ -133,19 +138,6 @@ class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
         url_base += self.build_host(server, bucket)
         url_base += connection.get_path(self.build_path_base(bucket, key))
         return url_base
-
-
-class Location(object):
-
-    DEFAULT = ''  # US Classic Region
-    EU = 'EU'
-    USWest = 'us-west-1'
-    USWest2 = 'us-west-2'
-    SAEast = 'sa-east-1'
-    APNortheast = 'ap-northeast-1'
-    APSoutheast = 'ap-southeast-1'
-    APSoutheast2 = 'ap-southeast-2'
-    CNNorth1 = 'cn-north-1'
 
 
 class NoHostProvided(object):
@@ -523,12 +515,13 @@ class S3Connection(AWSAuthConnection):
         :param validate: If ``True``, it will try to verify the bucket exists
             on the service-side. (Default: ``True``)
         """
+        location = self.get_bucket_location(bucket_name)
         if validate:
-            return self.head_bucket(bucket_name, headers=headers)
+            return self.head_bucket(bucket_name, headers=headers, location=location)
         else:
-            return self.bucket_class(self, bucket_name)
+            return self.bucket_class(self, bucket_name, location=location)
 
-    def head_bucket(self, bucket_name, headers=None):
+    def head_bucket(self, bucket_name, headers=None, location=Location.DEFAULT):
         """
         Determines if a bucket exists by name.
 
@@ -543,10 +536,10 @@ class S3Connection(AWSAuthConnection):
 
         :returns: A <Bucket> object
         """
-        response = self.make_request('HEAD', bucket_name, headers=headers)
+        response = self.make_request('HEAD', bucket_name, headers=headers, location=location)
         body = response.read()
         if response.status == 200:
-            return self.bucket_class(self, bucket_name)
+            return self.bucket_class(self, bucket_name, location=location)
         elif response.status == 403:
             # For backward-compatibility, we'll populate part of the exception
             # with the most-common default.
@@ -667,7 +660,7 @@ class S3Connection(AWSAuthConnection):
 
     def make_request(self, method, bucket='', key='', headers=None, data='',
                      query_args=None, sender=None, override_num_retries=None,
-                     retry_handler=None):
+                     retry_handler=None, location=Location.DEFAULT):
         if isinstance(bucket, self.bucket_class):
             bucket = bucket.name
         if isinstance(key, Key):
@@ -676,7 +669,7 @@ class S3Connection(AWSAuthConnection):
         boto.log.debug('path=%s' % path)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         boto.log.debug('auth_path=%s' % auth_path)
-        host = self.calling_format.build_host(self.server_name(), bucket)
+        host = self.calling_format.build_host(self.server_name(), bucket, location)
         if query_args:
             path += '?' + query_args
             boto.log.debug('path=%s' % path)
