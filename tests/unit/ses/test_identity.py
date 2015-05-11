@@ -21,10 +21,17 @@
 # IN THE SOFTWARE.
 #
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 
 from boto.jsonresponse import ListElement
 from boto.ses.connection import SESConnection
+
+
+class TestSESProviderOverride(MockServiceProviderTestCase):
+    connection_class = SESConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestSESIdentity(AWSMockServiceTestCase):

@@ -37,8 +37,8 @@ def regions(**kw_params):
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
     provider = None
-    if 'provider' in kw_parms:
-        provider = kw_parms['provider']
+    if 'provider' in kw_params:
+        provider = kw_params['provider']
     return get_regions('swf', connection_cls=boto.swf.layer1.Layer1, provider=provider)
 
 

@@ -1,5 +1,12 @@
 from boto.elasticache.layer1 import ElastiCacheConnection
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
+
+
+class TestElasticCacheProviderOverride(MockServiceProviderTestCase):
+    connection_class = ElastiCacheConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestAPIInterface(AWSMockServiceTestCase):

@@ -24,6 +24,7 @@
 from tests.unit import unittest
 from mock import Mock
 
+import boto
 from boto.dynamodb.layer2 import Layer2
 from boto.dynamodb.table import Table, Schema
 
@@ -41,6 +42,19 @@ DESCRIBE_TABLE = {
         "TableSizeBytes": 21,
         "TableStatus": "ACTIVE"}
 }
+
+
+class TestDDBConnectionProviderL2Override(unittest.TestCase):
+    def setUp(self):
+        self.alt_provider = Mock(spec=boto.provider.Provider)
+        self.alt_provider.host = None
+        self.alt_provider.host_header = None
+        self.alt_provider.port = None
+        self.alt_provider.secret_key = 'alt_secret_key'
+        self.layer2 = Layer2(None, None, provider=alt_provider)
+
+    def test_provider_override(self):
+        assertDictEqual(self.level1.provider == self.alt_provider)
 
 
 class TestTableConstruction(unittest.TestCase):
