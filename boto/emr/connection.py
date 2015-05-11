@@ -25,17 +25,16 @@ Represents a connection to the EMR service
 """
 import boto
 import boto.utils
-from boto.ec2.regioninfo import RegionInfo
-from boto.emr.emrobject import AddInstanceGroupsResponse, BootstrapActionList, \
-                               Cluster, ClusterSummaryList, HadoopStep, \
-                               InstanceGroupList, InstanceList, JobFlow, \
-                               JobFlowStepList, \
-                               ModifyInstanceGroupsResponse, \
-                               RunJobFlowResponse, StepSummaryList
-from boto.emr.step import JarStep
-from boto.connection import AWSQueryConnection
-from boto.exception import EmrResponseError
 from boto.compat import six
+from boto.connection import AWSQueryConnection
+from boto.ec2.regioninfo import RegionInfo
+from boto.emr.emrobject import (AddInstanceGroupsResponse, BootstrapActionList,
+                                Cluster, ClusterSummaryList, HadoopStep,
+                                InstanceGroupList, InstanceList, JobFlow,
+                                JobFlowStepList, ModifyInstanceGroupsResponse,
+                                RunJobFlowResponse, StepSummaryList)
+from boto.emr.step import JarStep
+from boto.exception import EmrResponseError
 
 
 class EmrConnection(AWSQueryConnection):
@@ -59,15 +58,16 @@ class EmrConnection(AWSQueryConnection):
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
         self.region = region
-        super(EmrConnection, self).__init__(aws_access_key_id,
-                                    aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port,
-                                    proxy_user, proxy_pass,
-                                    self.region.endpoint, debug,
-                                    https_connection_factory, path,
-                                    security_token,
-                                    validate_certs=validate_certs,
-                                    profile_name=profile_name)
+        super(EmrConnection, self).__init__(
+            aws_access_key_id,
+            aws_secret_access_key,
+            is_secure, port, proxy, proxy_port,
+            proxy_user, proxy_pass,
+            self.region.endpoint, debug,
+            https_connection_factory, path,
+            security_token,
+            validate_certs=validate_certs,
+            profile_name=profile_name)
         # Many of the EMR hostnames are of the form:
         #     <region>.<service_name>.amazonaws.com
         # rather than the more common:
@@ -104,7 +104,7 @@ class EmrConnection(AWSQueryConnection):
             return jobflows[0]
 
     def describe_jobflows(self, states=None, jobflow_ids=None,
-                           created_after=None, created_before=None):
+                          created_after=None, created_before=None):
         """
         Retrieve all the Elastic MapReduce job flows on your account
 
@@ -388,8 +388,8 @@ class EmrConnection(AWSQueryConnection):
             # could be wrong - the example amazon gives uses
             # InstanceRequestCount, while the api documentation
             # says InstanceCount
-            params['InstanceGroups.member.%d.InstanceGroupId' % (k+1) ] = ig[0]
-            params['InstanceGroups.member.%d.InstanceCount' % (k+1) ] = ig[1]
+            params['InstanceGroups.member.%d.InstanceGroupId' % (k+1)] = ig[0]
+            params['InstanceGroups.member.%d.InstanceCount' % (k+1)] = ig[1]
 
         return self.get_object('ModifyInstanceGroups', params,
                                ModifyInstanceGroupsResponse, verb='POST')
@@ -520,9 +520,9 @@ class EmrConnection(AWSQueryConnection):
         if not instance_groups:
             # Instance args (the common case)
             instance_params = self._build_instance_count_and_type_args(
-                                                        master_instance_type,
-                                                        slave_instance_type,
-                                                        num_instances)
+                master_instance_type,
+                slave_instance_type,
+                num_instances)
             params.update(instance_params)
         else:
             # Instance group args (for spot instances or a heterogenous cluster)
@@ -547,7 +547,8 @@ class EmrConnection(AWSQueryConnection):
             params.update(self._build_step_list(step_args))
 
         if bootstrap_actions:
-            bootstrap_action_args = [self._build_bootstrap_action_args(bootstrap_action) for bootstrap_action in bootstrap_actions]
+            bootstrap_action_args = [self._build_bootstrap_action_args(bootstrap_action)
+                                     for bootstrap_action in bootstrap_actions]
             params.update(self._build_bootstrap_action_list(bootstrap_action_args))
 
         if ami_version:
