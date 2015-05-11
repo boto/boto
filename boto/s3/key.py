@@ -296,7 +296,8 @@ class Key(object):
             self.resp = self.bucket.connection.make_request(
                 'GET', self.bucket.name, self.name, headers,
                 query_args=query_args,
-                override_num_retries=override_num_retries)
+                override_num_retries=override_num_retries,
+                location=self.bucket.location)
             if self.resp.status < 199 or self.resp.status > 299:
                 body = self.resp.read()
                 raise provider.storage_response_error(self.resp.status,
