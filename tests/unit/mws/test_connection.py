@@ -24,7 +24,14 @@ from boto.mws.connection import MWSConnection, api_call_map, destructure_object
 from boto.mws.response import (ResponseElement, GetFeedSubmissionListResult,
                                ResponseFactory)
 
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
+
+
+class TestMWSConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = MWSConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestMWSConnection(AWSMockServiceTestCase):

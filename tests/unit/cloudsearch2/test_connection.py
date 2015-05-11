@@ -1,9 +1,16 @@
 #!/usr/bin env python
 
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 
 from boto.cloudsearch2.domain import Domain
 from boto.cloudsearch2.layer1 import CloudSearchConnection
+
+
+class TestCloudSearchConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = CloudSearchConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestCloudSearchCreateDomain(AWSMockServiceTestCase):

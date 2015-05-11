@@ -2,7 +2,7 @@
 
 import json
 
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 
 from boto.beanstalk.layer1 import Layer1
 
@@ -11,6 +11,13 @@ from boto.beanstalk.layer1 import Layer1
 # and verifying we get the expected results with mocked
 # responses.  The integration tests actually verify the
 # API calls interact with the service correctly.
+class TestEBSConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = Layer1
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
+
+
 class TestListAvailableSolutionStacks(AWSMockServiceTestCase):
     connection_class = Layer1
 

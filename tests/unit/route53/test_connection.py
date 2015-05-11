@@ -32,7 +32,14 @@ from boto.route53.zone import Zone
 
 from nose.plugins.attrib import attr
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
+
+@attr(route53=True)
+class TestRoute53ConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = Route53Connection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 @attr(route53=True)
 class TestRoute53Connection(AWSMockServiceTestCase):

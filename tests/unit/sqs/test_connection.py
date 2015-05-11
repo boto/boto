@@ -23,12 +23,19 @@
 #
 
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 
 from boto.sqs.connection import SQSConnection
 from boto.sqs.regioninfo import SQSRegionInfo
 from boto.sqs.message import RawMessage
 from boto.sqs.queue import Queue
+
+
+class TestSQSConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = SQSConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class SQSAuthParams(AWSMockServiceTestCase):

@@ -23,7 +23,14 @@
 
 from tests.unit import unittest
 from boto.sts.connection import STSConnection
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
+
+
+class TestSTSConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = STSConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestSecurityToken(AWSMockServiceTestCase):

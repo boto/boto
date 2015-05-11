@@ -22,7 +22,7 @@
 #
 import json
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 from mock import Mock
 
 from boto.sns.connection import SNSConnection
@@ -34,6 +34,13 @@ QUEUE_POLICY = {
          '[{"Sid":"sidnum","Effect":"Allow","Principal":{"AWS":"*"},'
          '"Action":"SQS:GetQueueUrl","Resource":'
          '"arn:aws:sqs:us-east-1:idnum:testqueuepolicy"}]}')}
+
+
+class TestSNSConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = SNSConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestSNSConnection(AWSMockServiceTestCase):

@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 
 from boto.vpc import VPCConnection, VpnConnection
 
@@ -88,6 +88,13 @@ DESCRIBE_VPNCONNECTIONS = r'''<?xml version="1.0" encoding="UTF-8"?>
         </item>
     </vpnConnectionSet>
 </DescribeVpnConnectionsResponse>'''
+
+
+class TestVPCConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = VPCConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestDescribeVPNConnections(AWSMockServiceTestCase):

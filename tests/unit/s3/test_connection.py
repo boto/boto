@@ -23,11 +23,18 @@ import mock
 import time
 
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 from tests.unit import MockServiceWithConfigTestCase
 
 from boto.s3.connection import S3Connection, HostRequiredError
 from boto.s3.connection import S3ResponseError, Bucket
+
+
+class TestS3ConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = S3Connection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestSignatureAlteration(AWSMockServiceTestCase):
