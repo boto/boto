@@ -113,14 +113,14 @@ class MockServiceWithConfigTestCase(AWSMockServiceTestCase):
 
 class MockServiceProviderTestCase(AWSMockServiceTestCase):
     def setUp(self):
-        self.alt_provider = Mock(spec=boto.provider.Provider)
+        self.alt_provider = mock.Mock(spec=boto.provider.Provider)
         self.alt_provider.host = None
         self.alt_provider.host_header = None
         self.alt_provider.port = None
         self.alt_provider.secret_key = 'alt_secret_key'
-        self.https_connection = Mock(spec=httplib.HTTPSConnection)
+        self.https_connection = mock.Mock(spec=httplib.HTTPSConnection)
         self.https_connection_factory = (
-            Mock(return_value=self.https_connection), ())
+            mock.Mock(return_value=self.https_connection), ())
         self.service_connection = self.create_service_connection(
             https_connection_factory=self.https_connection_factory,
             aws_access_key_id='aws_access_key_id',
