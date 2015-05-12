@@ -22,9 +22,10 @@
 # IN THE SOFTWARE.
 
 from boto.connection import AWSQueryConnection
+from boto.provider import Provider, NO_CREDENTIALS_PROVIDED
 from boto.regioninfo import RegionInfo
-from credentials import Credentials, FederationToken, AssumedRole
-from credentials import DecodeAuthorizationMessage
+from boto.sts.credentials import Credentials, FederationToken, AssumedRole
+from boto.sts.credentials import DecodeAuthorizationMessage
 import boto
 import boto.utils
 import datetime
@@ -71,6 +72,13 @@ class STSConnection(AWSQueryConnection):
                  https_connection_factory=None, region=None, path='/',
                  converter=None, validate_certs=True, anon=False,
                  security_token=None, profile_name=None, provider='aws'):
+        """
+        :type anon: boolean
+        :param anon: If this parameter is True, the ``STSConnection`` object
+            will make anonymous requests, and it will not use AWS
+            Credentials or even search for AWS Credentials to make these
+            requests.
+        """
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint,
@@ -79,6 +87,15 @@ class STSConnection(AWSQueryConnection):
         self.region = region
         self.anon = anon
         self._mutex = threading.Semaphore()
+        provider = 'aws'
+        # If an anonymous request is sent, do not try to look for credentials.
+        # So we pass in dummy values for the access key id, secret access
+        # key, and session token. It does not matter that they are
+        # not actual values because the request is anonymous.
+        if self.anon:
+            provider = Provider('aws', NO_CREDENTIALS_PROVIDED,
+                                NO_CREDENTIALS_PROVIDED,
+                                NO_CREDENTIALS_PROVIDED)
         super(STSConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
@@ -92,9 +109,9 @@ class STSConnection(AWSQueryConnection):
 
     def _required_auth_capability(self):
         if self.anon:
-            return ['pure-query']
+            return ['sts-anon']
         else:
-            return ['sign-v2']
+            return ['hmac-v4']
 
     def _check_token_cache(self, token_key, duration=None, window_seconds=60):
         token = _session_token_cache.get(token_key, None)

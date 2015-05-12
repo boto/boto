@@ -21,7 +21,7 @@
 # IN THE SOFTWARE.
 import boto
 import boto.jsonresponse
-from boto.compat import json
+from boto.compat import json, six
 from boto.resultset import ResultSet
 from boto.iam.summarymap import SummaryMap
 from boto.connection import AWSQueryConnection
@@ -65,13 +65,14 @@ class IAMConnection(AWSQueryConnection):
                  security_token=None, validate_certs=True, profile_name=None,
                  provider='aws'):
         super(IAMConnection, self).__init__(aws_access_key_id,
-                                    aws_secret_access_key,
-                                    is_secure, port, proxy,
-                                    proxy_port, proxy_user, proxy_pass,
-                                    host, debug, https_connection_factory,
-                                    path, security_token,
-                                    validate_certs=validate_certs,
-                                    profile_name=profile_name, provider=provider)
+                                            aws_secret_access_key,
+                                            is_secure, port, proxy,
+                                            proxy_port, proxy_user, proxy_pass,
+                                            host, debug, https_connection_factory,
+                                            path, security_token,
+                                            validate_certs=validate_certs,
+                                            profile_name=profile_name,
+                                            provider=provider)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
@@ -701,7 +702,7 @@ class IAMConnection(AWSQueryConnection):
     #
 
     def list_server_certs(self, path_prefix='/',
-                             marker=None, max_items=None):
+                          marker=None, max_items=None):
         """
         Lists the server certificates that have the specified path prefix.
         If none exist, the action returns an empty list.
@@ -1105,7 +1106,7 @@ class IAMConnection(AWSQueryConnection):
 
     def _build_policy(self, assume_role_policy_document=None):
         if assume_role_policy_document is not None:
-            if isinstance(assume_role_policy_document, basestring):
+            if isinstance(assume_role_policy_document, six.string_types):
                 # Historically, they had to pass a string. If it's a string,
                 # assume the user has already handled it.
                 return assume_role_policy_document
@@ -1143,7 +1144,7 @@ class IAMConnection(AWSQueryConnection):
             permission to assume the role.
 
         :type path: string
-        :param path: The path to the instance profile.
+        :param path: The path to the role.
         """
         params = {
             'RoleName': role_name,
@@ -1200,8 +1201,8 @@ class IAMConnection(AWSQueryConnection):
         :param instance_profile_name: Name of the instance profile to get
             information about.
         """
-        return self.get_response('GetInstanceProfile', {'InstanceProfileName':
-                                                       instance_profile_name})
+        return self.get_response('GetInstanceProfile',
+                                 {'InstanceProfileName': instance_profile_name})
 
     def get_role(self, role_name):
         """
@@ -1441,7 +1442,7 @@ class IAMConnection(AWSQueryConnection):
         Lists the SAML providers in the account.
         This operation requires `Signature Version 4`_.
         """
-        return self.get_response('ListSAMLProviders', {})
+        return self.get_response('ListSAMLProviders', {}, list_marker='SAMLProviderList')
 
     def get_saml_provider(self, saml_provider_arn):
         """
@@ -1454,7 +1455,7 @@ class IAMConnection(AWSQueryConnection):
             provider to get information about.
 
         """
-        params = {'SAMLProviderArn': saml_provider_arn }
+        params = {'SAMLProviderArn': saml_provider_arn}
         return self.get_response('GetSAMLProvider', params)
 
     def update_saml_provider(self, saml_provider_arn, saml_metadata_document):
@@ -1497,5 +1498,147 @@ class IAMConnection(AWSQueryConnection):
             provider to delete.
 
         """
-        params = {'SAMLProviderArn': saml_provider_arn }
+        params = {'SAMLProviderArn': saml_provider_arn}
         return self.get_response('DeleteSAMLProvider', params)
+
+    #
+    # IAM Reports
+    #
+
+    def generate_credential_report(self):
+        """
+        Generates a credential report for an account
+
+        A new credential report can only be generated every 4 hours. If one
+        hasn't been generated in the last 4 hours then get_credential_report
+        will error when called
+        """
+        params = {}
+        return self.get_response('GenerateCredentialReport', params)
+
+    def get_credential_report(self):
+        """
+        Retrieves a credential report for an account
+
+        A report must have been generated in the last 4 hours to succeed.
+        The report is returned as a base64 encoded blob within the response.
+        """
+        params = {}
+        return self.get_response('GetCredentialReport', params)
+
+    def create_virtual_mfa_device(self, path, device_name):
+        """
+        Creates a new virtual MFA device for the AWS account.
+
+        After creating the virtual MFA, use enable-mfa-device to
+        attach the MFA device to an IAM user.
+
+        :type path: string
+        :param path: The path for the virtual MFA device.
+
+        :type device_name: string
+        :param device_name: The name of the virtual MFA device.
+            Used with path to uniquely identify a virtual MFA device.
+
+        """
+        params = {
+            'Path': path,
+            'VirtualMFADeviceName': device_name
+        }
+        return self.get_response('CreateVirtualMFADevice', params)
+
+    #
+    # IAM password policy
+    #
+
+    def get_account_password_policy(self):
+        """
+        Returns the password policy for the AWS account.
+        """
+        params = {}
+        return self.get_response('GetAccountPasswordPolicy', params)
+
+    def delete_account_password_policy(self):
+        """
+        Delete the password policy currently set for the AWS account.
+        """
+        params = {}
+        return self.get_response('DeleteAccountPasswordPolicy', params)
+
+    def update_account_password_policy(self, allow_users_to_change_password=None,
+                                        hard_expiry=None, max_password_age=None ,
+                                        minimum_password_length=None ,
+                                        password_reuse_prevention=None,
+                                        require_lowercase_characters=None,
+                                        require_numbers=None, require_symbols=None ,
+                                        require_uppercase_characters=None):
+        """
+        Update the password policy for the AWS account.
+
+        Notes: unset parameters will be reset to Amazon default settings!
+            Most of the password policy settings are enforced the next time your users
+            change their passwords. When you set minimum length and character type
+            requirements, they are enforced the next time your users change their
+            passwords - users are not forced to change their existing passwords, even
+            if the pre-existing passwords do not adhere to the updated password
+            policy. When you set a password expiration period, the expiration period
+            is enforced immediately.
+
+        :type allow_users_to_change_password: bool
+        :param allow_users_to_change_password: Allows all IAM users in your account
+            to use the AWS Management Console to change their own passwords.
+
+        :type hard_expiry: bool
+        :param hard_expiry: Prevents IAM users from setting a new password after
+            their password has expired.
+
+        :type max_password_age: int
+        :param max_password_age: The number of days that an IAM user password is valid.
+
+        :type minimum_password_length: int
+        :param minimum_password_length: The minimum number of characters allowed in
+            an IAM user password.
+
+        :type password_reuse_prevention: int
+        :param password_reuse_prevention: Specifies the number of previous passwords
+            that IAM users are prevented from reusing.
+
+        :type require_lowercase_characters: bool
+        :param require_lowercase_characters: Specifies whether IAM user passwords
+            must contain at least one lowercase character from the ISO basic Latin
+            alphabet (``a`` to ``z``).
+
+        :type require_numbers: bool
+        :param require_numbers: Specifies whether IAM user passwords must contain at
+            least one numeric character (``0`` to ``9``).
+
+        :type require_symbols: bool
+        :param require_symbols: Specifies whether IAM user passwords must contain at
+            least one of the following non-alphanumeric characters:
+            ``! @ # $ % ^ & * ( ) _ + - = [ ] { } | '``
+
+        :type require_uppercase_characters: bool
+        :param require_uppercase_characters: Specifies whether IAM user passwords
+            must contain at least one uppercase character from the ISO basic Latin
+            alphabet (``A`` to ``Z``).
+        """
+        params = {}
+        if allow_users_to_change_password is not None and type(allow_users_to_change_password) is bool:
+            params['AllowUsersToChangePassword'] = str(allow_users_to_change_password).lower()
+        if hard_expiry is not None and type(allow_users_to_change_password) is bool:
+            params['HardExpiry'] = str(hard_expiry).lower()
+        if max_password_age is not None:
+            params['MaxPasswordAge'] = max_password_age
+        if minimum_password_length is not None:
+            params['MinimumPasswordLength'] = minimum_password_length
+        if password_reuse_prevention is not None:
+            params['PasswordReusePrevention'] = password_reuse_prevention
+        if require_lowercase_characters is not None and type(allow_users_to_change_password) is bool:
+            params['RequireLowercaseCharacters'] = str(require_lowercase_characters).lower()
+        if require_numbers is not None and type(allow_users_to_change_password) is bool:
+            params['RequireNumbers'] = str(require_numbers).lower()
+        if require_symbols is not None and type(allow_users_to_change_password) is bool:
+            params['RequireSymbols'] = str(require_symbols).lower()
+        if require_uppercase_characters is not None and type(allow_users_to_change_password) is bool:
+            params['RequireUppercaseCharacters'] = str(require_uppercase_characters).lower()
+        return self.get_response('UpdateAccountPasswordPolicy', params)

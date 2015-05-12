@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 from datetime import datetime, timedelta
 
-from tests.unit import unittest
-import mock
+from tests.compat import mock, unittest
 import os
 
 from boto import provider
@@ -105,6 +104,17 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.secret_key, 'env_secret_key')
         self.assertEqual(p.security_token, 'env_security_token')
 
+    def test_no_credentials_provided(self):
+        p = provider.Provider(
+            'aws',
+            provider.NO_CREDENTIALS_PROVIDED,
+            provider.NO_CREDENTIALS_PROVIDED,
+            provider.NO_CREDENTIALS_PROVIDED
+        )
+        self.assertEqual(p.access_key, provider.NO_CREDENTIALS_PROVIDED)
+        self.assertEqual(p.secret_key, provider.NO_CREDENTIALS_PROVIDED)
+        self.assertEqual(p.security_token, provider.NO_CREDENTIALS_PROVIDED)
+
     def test_config_profile_values_are_used(self):
         self.config = {
             'profile dev': {
@@ -113,6 +123,10 @@ class TestProvider(unittest.TestCase):
             }, 'profile prod': {
                 'aws_access_key_id': 'prod_access_key',
                 'aws_secret_access_key': 'prod_secret_key',
+            }, 'profile prod_withtoken': {
+                'aws_access_key_id': 'prod_access_key',
+                'aws_secret_access_key': 'prod_secret_key',
+                'aws_security_token': 'prod_token',
             }, 'Credentials': {
                 'aws_access_key_id': 'default_access_key',
                 'aws_secret_access_key': 'default_secret_key'
@@ -121,6 +135,10 @@ class TestProvider(unittest.TestCase):
         p = provider.Provider('aws', profile_name='prod')
         self.assertEqual(p.access_key, 'prod_access_key')
         self.assertEqual(p.secret_key, 'prod_secret_key')
+        p = provider.Provider('aws', profile_name='prod_withtoken')
+        self.assertEqual(p.access_key, 'prod_access_key')
+        self.assertEqual(p.secret_key, 'prod_secret_key')
+        self.assertEqual(p.security_token, 'prod_token')
         q = provider.Provider('aws', profile_name='dev')
         self.assertEqual(q.access_key, 'dev_access_key')
         self.assertEqual(q.secret_key, 'dev_secret_key')

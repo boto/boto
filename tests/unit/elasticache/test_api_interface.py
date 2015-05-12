@@ -15,7 +15,7 @@ class TestAPIInterface(AWSMockServiceTestCase):
     def test_required_launch_params(self):
         """ Make sure only the AWS required params are required by boto """
         name = 'test_cache_cluster'
-        self.set_http_response(status_code=200, body='{}')
+        self.set_http_response(status_code=200, body=b'{}')
         self.service_connection.create_cache_cluster(name)
 
         self.assert_request_parameters({

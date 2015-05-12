@@ -5,8 +5,6 @@ from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 from boto.cloudsearch.domain import Domain
 from boto.cloudsearch.layer1 import Layer1
 
-import json
-
 
 class TestCloudSearchConnectionProviderOverride(MockServiceProviderTestCase):
     connection_class = Layer1
@@ -19,7 +17,7 @@ class TestCloudSearchCreateDomain(AWSMockServiceTestCase):
     connection_class = Layer1
 
     def default_body(self):
-        return """
+        return b"""
 <CreateDomainResponse xmlns="http://cloudsearch.amazonaws.com/doc/2011-02-01">
   <CreateDomainResult>
     <DomainStatus>
@@ -123,7 +121,7 @@ class CloudSearchConnectionDeletionTest(AWSMockServiceTestCase):
     connection_class = Layer1
 
     def default_body(self):
-        return """
+        return b"""
 <DeleteDomainResponse xmlns="http://cloudsearch.amazonaws.com/doc/2011-02-01">
   <DeleteDomainResult>
     <DomainStatus>
@@ -171,7 +169,7 @@ class CloudSearchConnectionIndexDocumentTest(AWSMockServiceTestCase):
     connection_class = Layer1
 
     def default_body(self):
-        return """
+        return b"""
 <IndexDocumentsResponse xmlns="http://cloudsearch.amazonaws.com/doc/2011-02-01">
   <IndexDocumentsResult>
     <FieldNames>

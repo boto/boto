@@ -34,10 +34,11 @@ import re
 import sys
 import logging
 import logging.config
-import urlparse
+
+from boto.compat import urlparse
 from boto.exception import InvalidUriError
 
-__version__ = '2.29.1'
+__version__ = '2.38.0'
 Version = __version__  # for backware compatibility
 
 # http://bugs.python.org/issue7980
@@ -492,7 +493,7 @@ def connect_ec2_endpoint(url, aws_access_key_id=None,
     """
     from boto.ec2.regioninfo import RegionInfo
 
-    purl = urlparse.urlparse(url)
+    purl = urlparse(url)
     kwargs['port'] = purl.port
     kwargs['host'] = purl.hostname
     kwargs['path'] = purl.path
@@ -663,6 +664,7 @@ def connect_cloudsearch(aws_access_key_id=None,
 
 def connect_cloudsearch2(aws_access_key_id=None,
                          aws_secret_access_key=None,
+                         sign_request=False,
                          **kwargs):
     """
     :type aws_access_key_id: string
@@ -671,12 +673,35 @@ def connect_cloudsearch2(aws_access_key_id=None,
     :type aws_secret_access_key: string
     :param aws_secret_access_key: Your AWS Secret Access Key
 
+    :type sign_request: bool
+    :param sign_request: whether or not to sign search and
+        upload requests
+
     :rtype: :class:`boto.cloudsearch2.layer2.Layer2`
     :return: A connection to Amazon's CloudSearch2 service
     """
     from boto.cloudsearch2.layer2 import Layer2
     return Layer2(aws_access_key_id, aws_secret_access_key,
+                  sign_request=sign_request,
                   **kwargs)
+
+
+def connect_cloudsearchdomain(aws_access_key_id=None,
+                              aws_secret_access_key=None,
+                              **kwargs):
+    """
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    :rtype: :class:`boto.cloudsearchdomain.layer1.CloudSearchDomainConnection`
+    :return: A connection to Amazon's CloudSearch Domain service
+    """
+    from boto.cloudsearchdomain.layer1 import CloudSearchDomainConnection
+    return CloudSearchDomainConnection(aws_access_key_id,
+                                       aws_secret_access_key, **kwargs)
 
 
 def connect_beanstalk(aws_access_key_id=None,
@@ -835,6 +860,245 @@ def connect_kinesis(aws_access_key_id=None,
         **kwargs
     )
 
+def connect_logs(aws_access_key_id=None,
+                    aws_secret_access_key=None,
+                    **kwargs):
+    """
+    Connect to Amazon CloudWatch Logs
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.kinesis.layer1.CloudWatchLogsConnection`
+    :return: A connection to the Amazon CloudWatch Logs service
+    """
+    from boto.logs.layer1 import CloudWatchLogsConnection
+    return CloudWatchLogsConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_route53domains(aws_access_key_id=None,
+                           aws_secret_access_key=None,
+                           **kwargs):
+    """
+    Connect to Amazon Route 53 Domains
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.route53.domains.layer1.Route53DomainsConnection`
+    :return: A connection to the Amazon Route 53 Domains service
+    """
+    from boto.route53.domains.layer1 import Route53DomainsConnection
+    return Route53DomainsConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_cognito_identity(aws_access_key_id=None,
+                             aws_secret_access_key=None,
+                             **kwargs):
+    """
+    Connect to Amazon Cognito Identity
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.cognito.identity.layer1.CognitoIdentityConnection`
+    :return: A connection to the Amazon Cognito Identity service
+    """
+    from boto.cognito.identity.layer1 import CognitoIdentityConnection
+    return CognitoIdentityConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_cognito_sync(aws_access_key_id=None,
+                         aws_secret_access_key=None,
+                         **kwargs):
+    """
+    Connect to Amazon Cognito Sync
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.cognito.sync.layer1.CognitoSyncConnection`
+    :return: A connection to the Amazon Cognito Sync service
+    """
+    from boto.cognito.sync.layer1 import CognitoSyncConnection
+    return CognitoSyncConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_kms(aws_access_key_id=None,
+                aws_secret_access_key=None,
+                **kwargs):
+    """
+    Connect to AWS Key Management Service
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.kms.layer1.KMSConnection`
+    :return: A connection to the AWS Key Management Service
+    """
+    from boto.kms.layer1 import KMSConnection
+    return KMSConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_awslambda(aws_access_key_id=None,
+                      aws_secret_access_key=None,
+                      **kwargs):
+    """
+    Connect to AWS Lambda
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.awslambda.layer1.AWSLambdaConnection`
+    :return: A connection to the AWS Lambda service
+    """
+    from boto.awslambda.layer1 import AWSLambdaConnection
+    return AWSLambdaConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_codedeploy(aws_access_key_id=None,
+                       aws_secret_access_key=None,
+                       **kwargs):
+    """
+    Connect to AWS CodeDeploy
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.cognito.sync.layer1.CodeDeployConnection`
+    :return: A connection to the AWS CodeDeploy service
+    """
+    from boto.codedeploy.layer1 import CodeDeployConnection
+    return CodeDeployConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_configservice(aws_access_key_id=None,
+                          aws_secret_access_key=None,
+                          **kwargs):
+    """
+    Connect to AWS Config
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.kms.layer1.ConfigServiceConnection`
+    :return: A connection to the AWS Config service
+    """
+    from boto.configservice.layer1 import ConfigServiceConnection
+    return ConfigServiceConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_cloudhsm(aws_access_key_id=None,
+                     aws_secret_access_key=None,
+                     **kwargs):
+    """
+    Connect to AWS CloudHSM
+
+    :type aws_access_key_id: string
+    :param aws_access_key_id: Your AWS Access Key ID
+
+    :type aws_secret_access_key: string
+    :param aws_secret_access_key: Your AWS Secret Access Key
+
+    rtype: :class:`boto.cloudhsm.layer1.CloudHSMConnection`
+    :return: A connection to the AWS CloudHSM service
+    """
+    from boto.cloudhsm.layer1 import CloudHSMConnection
+    return CloudHSMConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_ec2containerservice(aws_access_key_id=None,
+                                aws_secret_access_key=None,
+                                **kwargs):
+    """
+    Connect to Amazon EC2 Container Service
+    rtype: :class:`boto.ec2containerservice.layer1.EC2ContainerServiceConnection`
+    :return: A connection to the Amazon EC2 Container Service
+    """
+    from boto.ec2containerservice.layer1 import EC2ContainerServiceConnection
+    return EC2ContainerServiceConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
+def connect_machinelearning(aws_access_key_id=None,
+                            aws_secret_access_key=None,
+                            **kwargs):
+    """
+    Connect to Amazon Machine Learning service
+    rtype: :class:`boto.machinelearning.layer1.MachineLearningConnection`
+    :return: A connection to the Amazon Machine Learning service
+    """
+    from boto.machinelearning.layer1 import MachineLearningConnection
+    return MachineLearningConnection(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        **kwargs
+    )
+
+
 def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
                 bucket_storage_uri_class=BucketStorageUri,
                 suppress_consec_slashes=True, is_latest=False):
@@ -879,7 +1143,7 @@ def storage_uri(uri_str, default_scheme='file', debug=0, validate=True,
     version_id = None
     generation = None
 
-    # Manually parse URI components instead of using urlparse.urlparse because
+    # Manually parse URI components instead of using urlparse because
     # what we're calling URIs don't really fit the standard syntax for URIs
     # (the latter includes an optional host/net location part).
     end_scheme_idx = uri_str.find('://')

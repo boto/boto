@@ -20,7 +20,7 @@ class TestCloudFrontConnection(AWSMockServiceTestCase):
         super(TestCloudFrontConnection, self).setUp()
 
     def test_get_all_distributions(self):
-        body = """
+        body = b"""
         <DistributionList xmlns="http://cloudfront.amazonaws.com/doc/2010-11-01/">
             <Marker></Marker>
             <MaxItems>100</MaxItems>
@@ -59,7 +59,7 @@ class TestCloudFrontConnection(AWSMockServiceTestCase):
         self.assertEqual(response[0].origin.origin_protocol_policy, 'http-only')
 
     def test_get_distribution_config(self):
-        body = """
+        body = b"""
         <DistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-11-01/">
         <CustomOrigin>
             <DNSName>example.com</DNSName>
@@ -87,7 +87,7 @@ class TestCloudFrontConnection(AWSMockServiceTestCase):
         self.assertEqual(response.etag, "AABBCC")
 
     def test_set_distribution_config(self):
-        get_body = """
+        get_body = b"""
         <DistributionConfig xmlns="http://cloudfront.amazonaws.com/doc/2010-11-01/">
         <CustomOrigin>
             <DNSName>example.com</DNSName>
@@ -101,7 +101,7 @@ class TestCloudFrontConnection(AWSMockServiceTestCase):
         </DistributionConfig>
         """
 
-        put_body = """
+        put_body = b"""
         <Distribution xmlns="http://cloudfront.amazonaws.com/doc/2010-11-01/">
             <Id>EEEEEE</Id>
             <Status>InProgress</Status>
@@ -132,7 +132,7 @@ class TestCloudFrontConnection(AWSMockServiceTestCase):
         self.assertEqual(response, "AABBCCD")
 
     def test_get_distribution_info(self):
-        body = """
+        body = b"""
         <Distribution xmlns="http://cloudfront.amazonaws.com/doc/2010-11-01/">
             <Id>EEEEEEEEEEEEE</Id>
             <Status>InProgress</Status>
@@ -171,7 +171,7 @@ class TestCloudFrontConnection(AWSMockServiceTestCase):
         self.assertEqual(response.in_progress_invalidation_batches, 0)
 
     def test_create_distribution(self):
-        body = """
+        body = b"""
         <Distribution xmlns="http://cloudfront.amazonaws.com/doc/2010-11-01/">
             <Id>EEEEEEEEEEEEEE</Id>
             <Status>InProgress</Status>

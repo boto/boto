@@ -1,10 +1,11 @@
 #!/usr/bin env python
+from boto.cloudsearch2.domain import Domain
+from boto.cloudsearch2.layer1 import CloudSearchConnection
 
-from tests.unit import unittest
+from tests.unit import unittest, AWSMockServiceTestCase
 from httpretty import HTTPretty
 from mock import MagicMock
 
-import urlparse
 import json
 
 from boto.cloudsearch2.document import DocumentServiceConnection
@@ -12,6 +13,24 @@ from boto.cloudsearch2.document import CommitMismatchError, EncodingError, \
         ContentTooLongError, DocumentServiceConnection
 
 import boto
+from tests.unit.cloudsearch2 import DEMO_DOMAIN_DATA
+
+
+class CloudSearchDocumentConnectionTest(AWSMockServiceTestCase):
+    connection_class = CloudSearchConnection
+
+    def test_proxy(self):
+        conn = self.service_connection
+        conn.proxy = "127.0.0.1"
+        conn.proxy_user = "john.doe"
+        conn.proxy_pass="p4ssw0rd"
+        conn.proxy_port="8180"
+        conn.use_proxy = True
+
+        domain = Domain(conn, DEMO_DOMAIN_DATA)
+        service = DocumentServiceConnection(domain=domain)
+        self.assertEqual(service.proxy, {'http': 'http://john.doe:p4ssw0rd@127.0.0.1:8180'})
+
 
 class CloudSearchDocumentTest(unittest.TestCase):
     def setUp(self):
@@ -20,11 +39,12 @@ class CloudSearchDocumentTest(unittest.TestCase):
             HTTPretty.POST,
             ("http://doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com/"
              "2013-01-01/documents/batch"),
-            body=json.dumps(self.response),
+            body=json.dumps(self.response).encode('utf-8'),
             content_type="application/json")
 
     def tearDown(self):
         HTTPretty.disable()
+
 
 class CloudSearchDocumentSingleTest(CloudSearchDocumentTest):
 
@@ -45,7 +65,7 @@ class CloudSearchDocumentSingleTest(CloudSearchDocumentTest):
                               "category": ["cat_a", "cat_b", "cat_c"]})
         document.commit()
 
-        args = json.loads(HTTPretty.last_request.body)[0]
+        args = json.loads(HTTPretty.last_request.body.decode('utf-8'))[0]
 
         self.assertEqual(args['type'], 'add')
 
@@ -60,7 +80,7 @@ class CloudSearchDocumentSingleTest(CloudSearchDocumentTest):
                               "category": ["cat_a", "cat_b", "cat_c"]})
         document.commit()
 
-        args = json.loads(HTTPretty.last_request.body)[0]
+        args = json.loads(HTTPretty.last_request.body.decode('utf-8'))[0]
 
         self.assertEqual(args['id'], '1234')
         self.assertEqual(args['type'], 'add')
@@ -75,7 +95,7 @@ class CloudSearchDocumentSingleTest(CloudSearchDocumentTest):
                               "category": ["cat_a", "cat_b", "cat_c"]})
         document.commit()
 
-        args = json.loads(HTTPretty.last_request.body)[0]
+        args = json.loads(HTTPretty.last_request.body.decode('utf-8'))[0]
 
         self.assertEqual(args['fields']['category'], ['cat_a', 'cat_b',
                                                       'cat_c'])
@@ -129,7 +149,7 @@ class CloudSearchDocumentMultipleAddTest(CloudSearchDocumentTest):
             document.add(key, obj['fields'])
         document.commit()
 
-        args = json.loads(HTTPretty.last_request.body)
+        args = json.loads(HTTPretty.last_request.body.decode('utf-8'))
 
         for arg in args:
             self.assertTrue(arg['id'] in self.objs)
@@ -172,7 +192,7 @@ class CloudSearchDocumentDelete(CloudSearchDocumentTest):
             endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com")
         document.delete("5")
         document.commit()
-        args = json.loads(HTTPretty.last_request.body)[0]
+        args = json.loads(HTTPretty.last_request.body.decode('utf-8'))[0]
 
         self.assertEqual(args['type'], 'delete')
         self.assertEqual(args['id'], '5')
@@ -204,7 +224,7 @@ class CloudSearchDocumentDeleteMultiple(CloudSearchDocumentTest):
         document.delete("5")
         document.delete("6")
         document.commit()
-        args = json.loads(HTTPretty.last_request.body)
+        args = json.loads(HTTPretty.last_request.body.decode('utf-8'))
 
         self.assertEqual(len(args), 2)
         for arg in args:
@@ -217,7 +237,6 @@ class CloudSearchSDFManipulation(CloudSearchDocumentTest):
         'adds': 1,
         'deletes': 0,
     }
-
 
     def test_cloudsearch_initial_sdf_is_blank(self):
         document = DocumentServiceConnection(
@@ -237,6 +256,7 @@ class CloudSearchSDFManipulation(CloudSearchDocumentTest):
         document.clear_sdf()
 
         self.assertEqual(document.get_sdf(), '[]')
+
 
 class CloudSearchBadSDFTesting(CloudSearchDocumentTest):
     response = {
@@ -295,11 +315,11 @@ class CloudSearchDocumentErrorDocsTooBig(CloudSearchDocumentTest):
 
 class CloudSearchDocumentErrorMismatch(CloudSearchDocumentTest):
     response = {
-            'status': 'error',
-            'adds': 0,
-            'deletes': 0,
-            'errors': [{'message': 'Something went wrong'}]
-            }
+        'status': 'error',
+        'adds': 0,
+        'deletes': 0,
+        'errors': [{'message': 'Something went wrong'}]
+    }
 
     def test_fake_failure(self):
         document = DocumentServiceConnection(
@@ -307,5 +327,20 @@ class CloudSearchDocumentErrorMismatch(CloudSearchDocumentTest):
 
         document.add("1234", {"id": "1234", "title": "Title 1",
                               "category": ["cat_a", "cat_b", "cat_c"]})
-
         self.assertRaises(CommitMismatchError, document.commit)
+
+    def test_attached_errors_list(self):
+        document = DocumentServiceConnection(
+            endpoint="doc-demo-userdomain.us-east-1.cloudsearch.amazonaws.com"
+        )
+        document.add("1234", {"id": "1234", "title": "Title 1",
+                              "category": ["cat_a", "cat_b", "cat_c"]})
+        try:
+            document.commit()
+            #If we get here that is a problem
+            #Working around the assertRaises not giving me exception instance.
+            self.assertTrue(False)
+        except CommitMismatchError as e:
+            self.assertTrue(hasattr(e, 'errors'))
+            self.assertIsInstance(e.errors, list)
+            self.assertEquals(e.errors[0], self.response['errors'][0].get('message'))

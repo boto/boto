@@ -20,12 +20,8 @@
 # IN THE SOFTWARE.
 #
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
 import boto
+from boto.compat import json
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 from boto.exception import JSONResponseError
@@ -60,7 +56,6 @@ class CloudSearchConnection(AWSQueryConnection):
         "BaseException": exceptions.BaseException,
     }
 
-
     def __init__(self, **kwargs):
         region = kwargs.pop('region', None)
         if not region:
@@ -69,6 +64,9 @@ class CloudSearchConnection(AWSQueryConnection):
 
         if 'host' not in kwargs or kwargs['host'] is None:
             kwargs['host'] = region.endpoint
+
+        sign_request = kwargs.pop('sign_request', False)
+        self.sign_request = sign_request
 
         super(CloudSearchConnection, self).__init__(**kwargs)
         self.region = region
@@ -115,10 +113,10 @@ class CloudSearchConnection(AWSQueryConnection):
 
     def define_analysis_scheme(self, domain_name, analysis_scheme):
         """
-        Configures an analysis scheme for a domain. An analysis scheme
-        defines language-specific text processing options for a `text`
-        field. For more information, see `Configuring Analysis
-        Schemes`_ in the Amazon CloudSearch Developer Guide .
+        Configures an analysis scheme that can be applied to a `text`
+        or `text-array` field to define language-specific text
+        processing options. For more information, see `Configuring
+        Analysis Schemes`_ in the Amazon CloudSearch Developer Guide .
 
         :type domain_name: string
         :param domain_name: A string that represents the name of a domain.
@@ -160,8 +158,8 @@ class CloudSearchConnection(AWSQueryConnection):
 
         :type expression: dict
         :param expression: A named expression that can be evaluated at search
-            time. Can be used for sorting and filtering search results and
-            constructing other expressions.
+            time. Can be used to sort the search results, define other
+            expressions, or return computed information in the search results.
 
         """
         params = {'DomainName': domain_name, }
@@ -430,9 +428,12 @@ class CloudSearchConnection(AWSQueryConnection):
         """
         Gets information about the search domains owned by this
         account. Can be limited to specific domains. Shows all domains
-        by default. For more information, see `Getting Information
-        about a Search Domain`_ in the Amazon CloudSearch Developer
-        Guide .
+        by default. To get the number of searchable documents in a
+        domain, use the console or submit a `matchall` request to your
+        domain's search endpoint:
+        `q=matchall&q.parser=structured&size=0`. For more information,
+        see `Getting Information about a Search Domain`_ in the Amazon
+        CloudSearch Developer Guide .
 
         :type domain_names: list
         :param domain_names: The names of the domains you want to include in
@@ -636,8 +637,6 @@ class CloudSearchConnection(AWSQueryConnection):
     def list_domain_names(self):
         """
         Lists all search domains owned by an account.
-
-
         """
         params = {}
         return self._make_request(
@@ -772,7 +771,7 @@ class CloudSearchConnection(AWSQueryConnection):
         params['ContentType'] = 'JSON'
         response = self.make_request(action=action, verb='POST',
                                      path='/', params=params)
-        body = response.read()
+        body = response.read().decode('utf-8')
         boto.log.debug(body)
         if response.status == 200:
             return json.loads(body)

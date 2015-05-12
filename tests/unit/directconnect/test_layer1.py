@@ -35,7 +35,7 @@ class TestDescribeTrails(AWSMockServiceTestCase):
     connection_class = DirectConnectConnection
 
     def default_body(self):
-        return '''
+        return b'''
 {
     "connections": [
         {

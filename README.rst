@@ -1,14 +1,14 @@
 ####
 boto
 ####
-boto 2.29.1
+boto 2.38.0
 
-Released: 30-May-2014
+Released: 9-Apr-2015
 
-.. image:: https://travis-ci.org/boto/boto.png?branch=develop
+.. image:: https://travis-ci.org/boto/boto.svg?branch=develop
         :target: https://travis-ci.org/boto/boto
 
-.. image:: https://pypip.in/d/boto/badge.png
+.. image:: https://pypip.in/d/boto/badge.svg
         :target: https://pypi.python.org/pypi/boto/
 
 ************
@@ -16,58 +16,96 @@ Introduction
 ************
 
 Boto is a Python package that provides interfaces to Amazon Web Services.
+Currently, all features work with Python 2.6 and 2.7. Work is under way to
+support Python 3.3+ in the same codebase. Modules are being ported one at
+a time with the help of the open source community, so please check below
+for compatibility with Python 3.3+.
+
+To port a module to Python 3.3+, please view our `Contributing Guidelines`_
+and the `Porting Guide`_. If you would like, you can open an issue to let
+others know about your work in progress. Tests **must** pass on Python
+2.6, 2.7, 3.3, and 3.4 for pull requests to be accepted.
+
+******
+Boto 3
+******
+The next major version of Boto is currently in developer preview and can
+be found in the `Boto 3 <https://github.com/boto/boto3#readme>`__
+repository and installed via ``pip``. It supports the latest service APIs
+and provides a high-level object-oriented interface to many services.
+
+Please try Boto 3 and
+`leave feedback <https://github.com/boto/boto3/issues>`__ with any issues,
+suggestions, and feature requests you might have.
+
+********
+Services
+********
+
 At the moment, boto supports:
 
 * Compute
 
-  * Amazon Elastic Compute Cloud (EC2)
-  * Amazon Elastic Map Reduce (EMR)
-  * AutoScaling
-  * Amazon Kinesis
+  * Amazon Elastic Compute Cloud (EC2) (Python 3)
+  * Amazon Elastic Map Reduce (EMR) (Python 3)
+  * AutoScaling (Python 3)
+  * Amazon Kinesis (Python 3)
+  * AWS Lambda (Python 3)
+  * Amazon EC2 Container Service (Python 3)
 
 * Content Delivery
 
-  * Amazon CloudFront
+  * Amazon CloudFront (Python 3)
 
 * Database
 
   * Amazon Relational Data Service (RDS)
-  * Amazon DynamoDB
-  * Amazon SimpleDB
-  * Amazon ElastiCache
-  * Amazon Redshift
+  * Amazon DynamoDB (Python 3)
+  * Amazon SimpleDB (Python 3)
+  * Amazon ElastiCache (Python 3)
+  * Amazon Redshift (Python 3)
 
 * Deployment and Management
 
-  * AWS Elastic Beanstalk
-  * AWS CloudFormation
-  * AWS Data Pipeline
-  * AWS Opsworks
-  * AWS CloudTrail
+  * AWS Elastic Beanstalk (Python 3)
+  * AWS CloudFormation (Python 3)
+  * AWS Data Pipeline (Python 3)
+  * AWS Opsworks (Python 3)
+  * AWS CloudTrail (Python 3)
+  * AWS CodeDeploy (Python 3)
 
-* Identity & Access
+* Administration & Security
 
-  * AWS Identity and Access Management (IAM)
+  * AWS Identity and Access Management (IAM) (Python 3)
+  * AWS Key Management Service (KMS) (Python 3)
+  * AWS Config (Python 3)
+  * AWS CloudHSM (Python 3)
 
 * Application Services
 
-  * Amazon CloudSearch
-  * Amazon Elastic Transcoder
-  * Amazon Simple Workflow Service (SWF)
-  * Amazon Simple Queue Service (SQS)
-  * Amazon Simple Notification Server (SNS)
-  * Amazon Simple Email Service (SES)
+  * Amazon CloudSearch (Python 3)
+  * Amazon CloudSearch Domain (Python 3)
+  * Amazon Elastic Transcoder (Python 3)
+  * Amazon Simple Workflow Service (SWF) (Python 3)
+  * Amazon Simple Queue Service (SQS) (Python 3)
+  * Amazon Simple Notification Server (SNS) (Python 3)
+  * Amazon Simple Email Service (SES) (Python 3)
+  * Amazon Cognito Identity (Python 3)
+  * Amazon Cognito Sync (Python 3)
+  * Amazon Machine Learning (Python 3)
 
 * Monitoring
 
-  * Amazon CloudWatch
+  * Amazon CloudWatch (EC2 Only) (Python 3)
+  * Amazon CloudWatch Logs (Python 3)
 
 * Networking
 
-  * Amazon Route53
-  * Amazon Virtual Private Cloud (VPC)
-  * Elastic Load Balancing (ELB)
-  * AWS Direct Connect
+  * Amazon Route53 (Python 3)
+  * Amazon Route 53 Domains (Python 3)
+  * Amazon Virtual Private Cloud (VPC) (Python 3)
+  * Elastic Load Balancing (ELB) (Python 3)
+  * AWS Direct Connect (Python 3)
 
 * Payments and Billing
 
@@ -75,8 +113,8 @@ At the moment, boto supports:
 
 * Storage
 
-  * Amazon Simple Storage Service (S3)
-  * Amazon Glacier
+  * Amazon Simple Storage Service (S3) (Python 3)
+  * Amazon Glacier (Python 3)
   * Amazon Elastic Block Store (EBS)
   * Google Cloud Storage
 
@@ -86,8 +124,8 @@ At the moment, boto supports:
 
 * Other
 
-  * Marketplace Web Services
-  * AWS Support
+  * Marketplace Web Services (Python 3)
+  * AWS Support (Python 3)
 
 The goal of boto is to support the full breadth and depth of Amazon
 Web Services.  In addition, boto provides support for other public
@@ -158,12 +196,14 @@ following environment variables to ascertain your credentials:
 Credentials and other boto-related settings can also be stored in a
 boto config file.  See `this`_ for details.
 
+.. _Contributing Guidelines: https://github.com/boto/boto/blob/develop/CONTRIBUTING
+.. _Porting Guide: http://boto.readthedocs.org/en/latest/porting_guide.html
 .. _pip: http://www.pip-installer.org/
 .. _release notes: https://github.com/boto/boto/wiki
 .. _github.com: http://github.com/boto/boto
 .. _Online documentation: http://docs.pythonboto.org
 .. _Python Cheese Shop: http://pypi.python.org/pypi/boto
-.. _this: http://code.google.com/p/boto/wiki/BotoConfig
+.. _this: http://docs.pythonboto.org/en/latest/boto_config_tut.html
 .. _gitflow: http://nvie.com/posts/a-successful-git-branching-model/
 .. _neo: https://github.com/boto/boto/tree/neo
 .. _boto-users Google Group: https://groups.google.com/forum/?fromgroups#!forum/boto-users

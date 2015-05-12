@@ -19,11 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import unittest
 import time
 
 from boto.elastictranscoder.layer1 import ElasticTranscoderConnection
 from boto.elastictranscoder.exceptions import ValidationException
+from tests.compat import unittest
 import boto.s3
 import boto.sns
 import boto.iam

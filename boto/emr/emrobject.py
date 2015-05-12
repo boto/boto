@@ -64,6 +64,10 @@ class StepId(Arg):
     pass
 
 
+class SupportedProduct(Arg):
+    pass
+
+
 class JobFlowStepList(EmrObject):
     def __ini__(self, connection=None):
         self.connection = connection
@@ -190,6 +194,9 @@ class JobFlow(EmrObject):
         elif name == 'BootstrapActions':
             self.bootstrapactions = ResultSet([('member', BootstrapAction)])
             return self.bootstrapactions
+        elif name == 'SupportedProducts':
+            self.supported_products = ResultSet([('member', SupportedProduct)])
+            return self.supported_products
         else:
             return None
 
@@ -201,6 +208,11 @@ class ClusterTimeline(EmrObject):
         'EndDateTime'
     ])
 
+class ClusterStateChangeReason(EmrObject):
+    Fields = set([
+        'Code',
+        'Message'
+    ])
 
 class ClusterStatus(EmrObject):
     Fields = set([
@@ -217,6 +229,9 @@ class ClusterStatus(EmrObject):
         if name == 'Timeline':
             self.timeline = ClusterTimeline()
             return self.timeline
+        elif name == 'StateChangeReason':
+            self.statechangereason = ClusterStateChangeReason()
+            return self.statechangereason
         else:
             return None
 
@@ -248,7 +263,10 @@ class Cluster(EmrObject):
         'RunningAmiVersion',
         'AutoTerminate',
         'TerminationProtected',
-        'VisibleToAllUsers'
+        'VisibleToAllUsers',
+        'MasterPublicDnsName',
+        'NormalizedInstanceHours',
+        'ServiceRole'
     ])
 
     def __init__(self, connection=None):
@@ -275,11 +293,23 @@ class Cluster(EmrObject):
             return None
 
 
-class ClusterSummary(Cluster):
+class ClusterSummary(EmrObject):
     Fields = set([
         'Id',
-        'Name'
+        'Name',
+        'NormalizedInstanceHours'
     ])
+
+    def __init__(self, connection):
+        self.connection = connection
+        self.status = None
+
+    def startElement(self, name, attrs, connection):
+        if name == 'Status':
+            self.status = ClusterStatus()
+            return self.status
+        else:
+            return None
 
 
 class ClusterSummaryList(EmrObject):
@@ -301,7 +331,7 @@ class ClusterSummaryList(EmrObject):
 
 class StepConfig(EmrObject):
     Fields = set([
-        'Jar'
+        'Jar',
         'MainClass'
     ])
 
@@ -434,11 +464,15 @@ class StepSummary(EmrObject):
     def __init__(self, connection=None):
         self.connection = connection
         self.status = None
+        self.config = None
 
     def startElement(self, name, attrs, connection):
         if name == 'Status':
             self.status = ClusterStatus()
             return self.status
+        elif name == 'Config':
+            self.config = StepConfig()
+            return self.config
         else:
             return None
 

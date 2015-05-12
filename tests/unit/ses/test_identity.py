@@ -41,12 +41,12 @@ class TestSESIdentity(AWSMockServiceTestCase):
         super(TestSESIdentity, self).setUp()
 
     def default_body(self):
-        return """<GetIdentityDkimAttributesResponse \
+        return b"""<GetIdentityDkimAttributesResponse \
 xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
   <GetIdentityDkimAttributesResult>
     <DkimAttributes>
       <entry>
-        <key>amazon.com</key>
+        <key>test@amazon.com</key>
       <value>
         <DkimEnabled>true</DkimEnabled>
         <DkimVerificationStatus>Success</DkimVerificationStatus>
@@ -57,6 +57,13 @@ xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
         </DkimTokens>
       </value>
     </entry>
+    <entry>
+      <key>secondtest@amazon.com</key>
+        <value>
+          <DkimEnabled>false</DkimEnabled>
+          <DkimVerificationStatus>NotStarted</DkimVerificationStatus>
+        </value>
+      </entry>
     </DkimAttributes>
   </GetIdentityDkimAttributesResult>
   <ResponseMetadata>
@@ -68,13 +75,17 @@ xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
         self.set_http_response(status_code=200)
 
         response = self.service_connection\
-                       .get_identity_dkim_attributes(['test@amazon.com'])
+                       .get_identity_dkim_attributes(['test@amazon.com', 'secondtest@amazon.com'])
 
         response = response['GetIdentityDkimAttributesResponse']
         result = response['GetIdentityDkimAttributesResult']
-        attributes = result['DkimAttributes']['entry']['value']
+
+        first_entry = result['DkimAttributes'][0]
+        entry_key = first_entry['key']
+        attributes = first_entry['value']
         tokens = attributes['DkimTokens']
 
+        self.assertEqual(entry_key, 'test@amazon.com')
         self.assertEqual(ListElement, type(tokens))
         self.assertEqual(3, len(tokens))
         self.assertEqual('vvjuipp74whm76gqoni7qmwwn4w4qusjiainivf6f',
@@ -84,6 +95,16 @@ xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
         self.assertEqual('wrqplteh7oodxnad7hsl4mixg2uavzneazxv5sxi2',
                          tokens[2])
 
+        second_entry = result['DkimAttributes'][1]
+        entry_key = second_entry['key']
+        attributes = second_entry['value']
+        dkim_enabled = attributes['DkimEnabled']
+        dkim_verification_status = attributes['DkimVerificationStatus']
+
+        self.assertEqual(entry_key, 'secondtest@amazon.com')
+        self.assertEqual(dkim_enabled, 'false')
+        self.assertEqual(dkim_verification_status, 'NotStarted')
+
 
 class TestSESSetIdentityNotificationTopic(AWSMockServiceTestCase):
     connection_class = SESConnection
@@ -92,7 +113,7 @@ class TestSESSetIdentityNotificationTopic(AWSMockServiceTestCase):
         super(TestSESSetIdentityNotificationTopic, self).setUp()
 
     def default_body(self):
-        return """<SetIdentityNotificationTopicResponse \
+        return b"""<SetIdentityNotificationTopicResponse \
         xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
            <SetIdentityNotificationTopicResult/>
            <ResponseMetadata>
@@ -130,6 +151,7 @@ class TestSESSetIdentityNotificationTopic(AWSMockServiceTestCase):
         self.assertEqual(2, len(response))
         self.assertEqual(0, len(result))
 
+
 class TestSESSetIdentityFeedbackForwardingEnabled(AWSMockServiceTestCase):
     connection_class = SESConnection
 
@@ -137,7 +159,7 @@ class TestSESSetIdentityFeedbackForwardingEnabled(AWSMockServiceTestCase):
         super(TestSESSetIdentityFeedbackForwardingEnabled, self).setUp()
 
     def default_body(self):
-        return """<SetIdentityFeedbackForwardingEnabledResponse \
+        return b"""<SetIdentityFeedbackForwardingEnabledResponse \
         xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
           <SetIdentityFeedbackForwardingEnabledResult/>
           <ResponseMetadata>

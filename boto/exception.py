@@ -26,8 +26,11 @@ Exception classes - Subclassing allows you to check for specific errors
 """
 import base64
 import xml.sax
+
+import boto
+
 from boto import handler
-from boto.compat import json
+from boto.compat import json, StandardError
 from boto.resultset import ResultSet
 
 
@@ -80,7 +83,14 @@ class BotoServerError(StandardError):
         self.request_id = None
         self.error_code = None
         self._error_message = None
+        self.message = ''
         self.box_usage = None
+
+        if isinstance(self.body, bytes):
+            try:
+                self.body = self.body.decode('utf-8')
+            except UnicodeDecodeError:
+                boto.log.debug('Unable to decode body from bytes!')
 
         # Attempt to parse the error response. If body isn't present,
         # then just ignore the error response.
@@ -103,7 +113,7 @@ class BotoServerError(StandardError):
                 try:
                     h = handler.XmlHandlerWrapper(self, self)
                     h.parseString(self.body)
-                except (TypeError, xml.sax.SAXParseException), pe:
+                except (TypeError, xml.sax.SAXParseException):
                     # What if it's JSON? Let's try that.
                     try:
                         parsed = json.loads(self.body)
@@ -200,6 +210,7 @@ class StorageCreateError(BotoServerError):
         else:
             return super(StorageCreateError, self).endElement(name, value, connection)
 
+
 class S3CreateError(StorageCreateError):
     """
     Error creating a bucket or key on S3.
@@ -285,15 +296,15 @@ class StorageResponseError(BotoServerError):
         super(StorageResponseError, self).__init__(status, reason, body)
 
     def startElement(self, name, attrs, connection):
-        return super(StorageResponseError, self).startElement(name, attrs,
-            connection)
+        return super(StorageResponseError, self).startElement(
+            name, attrs, connection)
 
     def endElement(self, name, value, connection):
         if name == 'Resource':
             self.resource = value
         else:
-            return super(StorageResponseError, self).endElement(name, value,
-                connection)
+            return super(StorageResponseError, self).endElement(
+                name, value, connection)
 
     def _cleanupParsedProperties(self):
         super(StorageResponseError, self)._cleanupParsedProperties()
@@ -323,8 +334,8 @@ class EC2ResponseError(BotoServerError):
         self.errors = None
         self._errorResultSet = []
         super(EC2ResponseError, self).__init__(status, reason, body)
-        self.errors = [ (e.error_code, e.error_message) \
-                for e in self._errorResultSet ]
+        self.errors = [
+            (e.error_code, e.error_message) for e in self._errorResultSet]
         if len(self.errors):
             self.error_code, self.error_message = self.errors[0]
 
@@ -339,7 +350,7 @@ class EC2ResponseError(BotoServerError):
         if name == 'RequestID':
             self.request_id = value
         else:
-            return None # don't call subclass here
+            return None  # don't call subclass here
 
     def _cleanupParsedProperties(self):
         super(EC2ResponseError, self)._cleanupParsedProperties()
@@ -411,11 +422,13 @@ class SDBResponseError(BotoServerError):
     """
     pass
 
+
 class AWSConnectionError(BotoClientError):
     """
     General error connecting to Amazon Web Services.
     """
     pass
+
 
 class StorageDataError(BotoClientError):
     """
@@ -423,17 +436,20 @@ class StorageDataError(BotoClientError):
     """
     pass
 
+
 class S3DataError(StorageDataError):
     """
     Error receiving data from S3.
     """
     pass
 
+
 class GSDataError(StorageDataError):
     """
     Error receiving data from GS.
     """
     pass
+
 
 class InvalidUriError(Exception):
     """Exception raised when URI is invalid."""
@@ -442,12 +458,14 @@ class InvalidUriError(Exception):
         super(InvalidUriError, self).__init__(message)
         self.message = message
 
+
 class InvalidAclError(Exception):
     """Exception raised when ACL XML is invalid."""
 
     def __init__(self, message):
         super(InvalidAclError, self).__init__(message)
         self.message = message
+
 
 class InvalidCorsError(Exception):
     """Exception raised when CORS XML is invalid."""
@@ -456,9 +474,11 @@ class InvalidCorsError(Exception):
         super(InvalidCorsError, self).__init__(message)
         self.message = message
 
+
 class NoAuthHandlerFound(Exception):
     """Is raised when no auth handlers were found ready to authenticate."""
     pass
+
 
 class InvalidLifecycleConfigError(Exception):
     """Exception raised when GCS lifecycle configuration XML is invalid."""
@@ -466,6 +486,7 @@ class InvalidLifecycleConfigError(Exception):
     def __init__(self, message):
         super(InvalidLifecycleConfigError, self).__init__(message)
         self.message = message
+
 
 # Enum class for resumable upload failure disposition.
 class ResumableTransferDisposition(object):
@@ -491,6 +512,7 @@ class ResumableTransferDisposition(object):
     # upload ID.
     ABORT = 'ABORT'
 
+
 class ResumableUploadException(Exception):
     """
     Exception raised for various resumable upload problems.
@@ -507,6 +529,7 @@ class ResumableUploadException(Exception):
         return 'ResumableUploadException("%s", %s)' % (
             self.message, self.disposition)
 
+
 class ResumableDownloadException(Exception):
     """
     Exception raised for various resumable download problems.
@@ -522,6 +545,7 @@ class ResumableDownloadException(Exception):
     def __repr__(self):
         return 'ResumableDownloadException("%s", %s)' % (
             self.message, self.disposition)
+
 
 class TooManyRecordsException(Exception):
     """

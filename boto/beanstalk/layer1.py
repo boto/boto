@@ -65,7 +65,7 @@ class Layer1(AWSQueryConnection):
     def _get_response(self, action, params, path='/', verb='GET'):
         params['ContentType'] = 'JSON'
         response = self.make_request(action, params, path, verb)
-        body = response.read()
+        body = response.read().decode('utf-8')
         boto.log.debug(body)
         if response.status == 200:
             return json.loads(body)

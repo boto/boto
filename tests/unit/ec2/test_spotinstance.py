@@ -8,7 +8,7 @@ class TestCancelSpotInstanceRequests(AWSMockServiceTestCase):
     connection_class = EC2Connection
 
     def default_body(self):
-        return """
+        return b"""
             <CancelSpotInstanceRequestsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
               <spotInstanceRequestSet>
@@ -47,7 +47,7 @@ class TestGetSpotPriceHistory(AWSMockServiceTestCase):
     connection_class = EC2Connection
 
     def default_body(self):
-        return """
+        return b"""
               <DescribeSpotPriceHistoryResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
               <requestId>b6c6978c-bd13-4ad7-9bc8-6f0ac9d32bcc</requestId>
               <spotPriceHistorySet>
@@ -89,7 +89,7 @@ class TestGetSpotPriceHistory(AWSMockServiceTestCase):
         self.assertEqual(response[0].availability_zone, 'us-west-2c')
         self.assertEqual(response[1].instance_type, 'c3.large')
         self.assertEqual(response[1].availability_zone, 'us-west-2b')
-        
+
         response = self.service_connection.get_spot_price_history(
             filters={'instance-type': 'c3.large'})
         self.assert_request_parameters({
@@ -99,7 +99,7 @@ class TestGetSpotPriceHistory(AWSMockServiceTestCase):
             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                   'SignatureVersion', 'Timestamp',
                                   'Version'])
-        
+
         response = self.service_connection.get_spot_price_history(
             next_token='foobar')
         self.assert_request_parameters({

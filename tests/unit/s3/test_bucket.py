@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from mock import patch
+import xml.dom.minidom
 
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
@@ -91,6 +92,8 @@ class TestS3Bucket(AWSMockServiceTestCase):
             'foo': 'true',
             # Ensure Unicode chars get encoded.
             'bar': '☃',
+            # Ensure unicode strings with non-ascii characters get encoded
+            'baz': u'χ',
             # Underscores are bad, m'kay?
             'some_other': 'thing',
             # Change the variant of ``max-keys``.
@@ -103,14 +106,14 @@ class TestS3Bucket(AWSMockServiceTestCase):
         qa = bukket._get_all_query_args(multiple_params)
         self.assertEqual(
             qa,
-            'bar=%E2%98%83&max-keys=0&foo=true&some-other=thing'
+            'bar=%E2%98%83&baz=%CF%87&foo=true&max-keys=0&some-other=thing'
         )
 
         # Multiple params with initial.
         qa = bukket._get_all_query_args(multiple_params, 'initial=1')
         self.assertEqual(
             qa,
-            'initial=1&bar=%E2%98%83&max-keys=0&foo=true&some-other=thing'
+            'initial=1&bar=%E2%98%83&baz=%CF%87&foo=true&max-keys=0&some-other=thing'
         )
 
     @patch.object(S3Connection, 'head_bucket')
@@ -195,3 +198,34 @@ class TestS3Bucket(AWSMockServiceTestCase):
                 version_id='something',
                 validate=False
             )
+
+    def acl_policy(self):
+        return """<?xml version="1.0" encoding="UTF-8"?>
+        <AccessControlPolicy xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+          <Owner>
+            <ID>owner_id</ID>
+            <DisplayName>owner_display_name</DisplayName>
+          </Owner>
+          <AccessControlList>
+            <Grant>
+              <Grantee xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       xsi:type="CanonicalUser">
+                <ID>grantee_id</ID>
+                <DisplayName>grantee_display_name</DisplayName>
+              </Grantee>
+              <Permission>FULL_CONTROL</Permission>
+            </Grant>
+          </AccessControlList>
+        </AccessControlPolicy>"""
+
+    def test_bucket_acl_policy_namespace(self):
+        self.set_http_response(status_code=200)
+        bucket = self.service_connection.get_bucket('mybucket')
+
+        self.set_http_response(status_code=200, body=self.acl_policy())
+        policy = bucket.get_acl()
+
+        xml_policy = policy.to_xml()
+        document = xml.dom.minidom.parseString(xml_policy)
+        namespace = document.documentElement.namespaceURI
+        self.assertEqual(namespace, 'http://s3.amazonaws.com/doc/2006-03-01/')

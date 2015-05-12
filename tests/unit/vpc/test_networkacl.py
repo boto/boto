@@ -9,7 +9,7 @@ class TestDescribeNetworkAcls(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeNetworkAclsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <networkAclSet>
@@ -141,7 +141,7 @@ class TestReplaceNetworkAclAssociation(AWSMockServiceTestCase):
 
     connection_class = VPCConnection
 
-    get_all_network_acls_vpc_body = """
+    get_all_network_acls_vpc_body = b"""
         <DescribeNetworkAclsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
            <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
            <networkAclSet>
@@ -187,7 +187,7 @@ class TestReplaceNetworkAclAssociation(AWSMockServiceTestCase):
         </DescribeNetworkAclsResponse>
     """
 
-    get_all_network_acls_subnet_body = """
+    get_all_network_acls_subnet_body = b"""
         <DescribeNetworkAclsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
             <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
             <networkAclSet>
@@ -227,7 +227,7 @@ class TestReplaceNetworkAclAssociation(AWSMockServiceTestCase):
     """
 
     def default_body(self):
-        return """
+        return b"""
             <ReplaceNetworkAclAssociationResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <newAssociationId>aclassoc-17b85d7e</newAssociationId>
@@ -274,7 +274,7 @@ class TestCreateNetworkAcl(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateNetworkAclResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <networkAcl>
@@ -320,7 +320,7 @@ class DeleteCreateNetworkAcl(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteNetworkAclResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>
@@ -344,7 +344,7 @@ class TestCreateNetworkAclEntry(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateNetworkAclEntryResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>
@@ -397,7 +397,7 @@ class TestReplaceNetworkAclEntry(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <ReplaceNetworkAclEntryResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>
@@ -449,7 +449,7 @@ class TestDeleteNetworkAclEntry(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteNetworkAclEntryResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>
@@ -469,6 +469,53 @@ class TestDeleteNetworkAclEntry(AWSMockServiceTestCase):
                                   'SignatureVersion', 'Timestamp',
                                   'Version'])
         self.assertEqual(response, True)
+
+
+class TestGetNetworkAclAssociations(AWSMockServiceTestCase):
+
+    connection_class = VPCConnection
+
+    def default_body(self):
+        return b"""
+        <DescribeNetworkAclsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
+            <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+            <networkAclSet>
+            <item>
+              <networkAclId>acl-5d659634</networkAclId>
+              <vpcId>vpc-5266953b</vpcId>
+              <default>false</default>
+              <entrySet>
+                <item>
+                  <ruleNumber>110</ruleNumber>
+                  <protocol>6</protocol>
+                  <ruleAction>allow</ruleAction>
+                  <egress>true</egress>
+                  <cidrBlock>0.0.0.0/0</cidrBlock>
+                  <portRange>
+                    <from>49152</from>
+                    <to>65535</to>
+                  </portRange>
+                </item>
+              </entrySet>
+              <associationSet>
+                <item>
+                  <networkAclAssociationId>aclassoc-c26596ab</networkAclAssociationId>
+                  <networkAclId>acl-5d659634</networkAclId>
+                  <subnetId>subnet-f0669599</subnetId>
+                </item>
+              </associationSet>
+              <tagSet/>
+            </item>
+          </networkAclSet>
+        </DescribeNetworkAclsResponse>
+    """
+
+    def test_get_network_acl_associations(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.get_all_network_acls()
+        association = api_response[0].associations[0]
+        self.assertEqual(association.network_acl_id, 'acl-5d659634')
+
 
 if __name__ == '__main__':
     unittest.main()

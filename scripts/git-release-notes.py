@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-
 import datetime
 import re
 import subprocess
@@ -32,7 +30,7 @@ for hunk in revisions.split('~~~')[:-1]:
     parents = lines[1].split(' ', 1)[1].split(' ')
     message = ' '.join(lines[2:])
 
-    #print(commit, parents)
+    # print(commit, parents)
 
     if RELEASE.search(message):
         print('Found release commit, stopping:')

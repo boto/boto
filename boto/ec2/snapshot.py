@@ -141,7 +141,7 @@ class Snapshot(TaggedEC2Object):
 
         :type volume_type: string
         :param volume_type: The type of the volume. (optional).  Valid
-            values are: standard | io1.
+            values are: standard | io1 | gp2.
 
         :type iops: int
         :param iops: The provisioned IOPs you want to associate with
@@ -185,6 +185,3 @@ class SnapshotAttribute(object):
             self.snapshot_id = value
         else:
             setattr(self, name, value)
-
-
-

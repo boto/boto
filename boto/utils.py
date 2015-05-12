@@ -39,12 +39,7 @@
 Some handy utility functions used by several classes.
 """
 
-import socket
-import urllib
-import urllib2
-import imp
 import subprocess
-import StringIO
 import time
 import logging.handlers
 import boto
@@ -60,24 +55,14 @@ import email.mime.text
 import email.utils
 import email.encoders
 import gzip
-import base64
 import threading
 import locale
+from boto.compat import six, StringIO, urllib, encodebytes
 
 from contextlib import contextmanager
 
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
-
-
-try:
-    import hashlib
-    _hashfn = hashlib.sha512
-except ImportError:
-    import md5
-    _hashfn = md5.md5
+from hashlib import md5, sha512
+_hashfn = sha512
 
 from boto.compat import json
 
@@ -116,7 +101,7 @@ def unquote_v(nv):
     if len(nv) == 1:
         return nv
     else:
-        return (nv[0], urllib.unquote(nv[1]))
+        return (nv[0], urllib.parse.unquote(nv[1]))
 
 
 def canonical_string(method, path, headers, expires=None,
@@ -169,7 +154,7 @@ def canonical_string(method, path, headers, expires=None,
         qsa = [a.split('=', 1) for a in qsa]
         qsa = [unquote_v(a) for a in qsa if a[0] in qsa_of_interest]
         if len(qsa) > 0:
-            qsa.sort(cmp=lambda x, y: cmp(x[0], y[0]))
+            qsa.sort(key=lambda x: x[0])
             qsa = ['='.join(a) for a in qsa]
             buf += '?'
             buf += '&'.join(qsa)
@@ -183,9 +168,7 @@ def merge_meta(headers, metadata, provider=None):
     metadata_prefix = provider.metadata_prefix
     final_headers = headers.copy()
     for k in metadata.keys():
-        if k.lower() in ['cache-control', 'content-md5', 'content-type',
-                         'content-encoding', 'content-disposition',
-                         'expires']:
+        if k.lower() in boto.s3.key.Key.base_user_settable_fields:
             final_headers[k] = metadata[k]
         else:
             final_headers[metadata_prefix + k] = metadata[k]
@@ -200,16 +183,19 @@ def get_aws_metadata(headers, provider=None):
     metadata = {}
     for hkey in headers.keys():
         if hkey.lower().startswith(metadata_prefix):
-            val = urllib.unquote(headers[hkey])
-            try:
-                metadata[hkey[len(metadata_prefix):]] = unicode(val, 'utf-8')
-            except UnicodeDecodeError:
-                metadata[hkey[len(metadata_prefix):]] = val
+            val = urllib.parse.unquote(headers[hkey])
+            if isinstance(val, bytes):
+                try:
+                    val = val.decode('utf-8')
+                except UnicodeDecodeError:
+                    # Just leave the value as-is
+                    pass
+            metadata[hkey[len(metadata_prefix):]] = val
             del headers[hkey]
     return metadata
 
 
-def retry_url(url, retry_on_404=True, num_retries=10):
+def retry_url(url, retry_on_404=True, num_retries=10, timeout=None):
     """
     Retry a url.  This is specifically used for accessing the metadata
     service on an instance.  Since this address should never be proxied
@@ -218,41 +204,44 @@ def retry_url(url, retry_on_404=True, num_retries=10):
     """
     for i in range(0, num_retries):
         try:
-            proxy_handler = urllib2.ProxyHandler({})
-            opener = urllib2.build_opener(proxy_handler)
-            req = urllib2.Request(url)
-            r = opener.open(req)
+            proxy_handler = urllib.request.ProxyHandler({})
+            opener = urllib.request.build_opener(proxy_handler)
+            req = urllib.request.Request(url)
+            r = opener.open(req, timeout=timeout)
             result = r.read()
+
+            if(not isinstance(result, six.string_types) and
+                    hasattr(result, 'decode')):
+                result = result.decode('utf-8')
+
             return result
-        except urllib2.HTTPError, e:
-            # in 2.6 you use getcode(), in 2.5 and earlier you use code
-            if hasattr(e, 'getcode'):
-                code = e.getcode()
-            else:
-                code = e.code
+        except urllib.error.HTTPError as e:
+            code = e.getcode()
             if code == 404 and not retry_on_404:
                 return ''
-        except Exception, e:
+        except Exception as e:
             pass
         boto.log.exception('Caught exception reading instance data')
         # If not on the last iteration of the loop then sleep.
         if i + 1 != num_retries:
-            time.sleep(2 ** i)
+            time.sleep(min(2 ** i,
+                           boto.config.get('Boto', 'max_retry_delay', 60)))
     boto.log.error('Unable to read instance data, giving up')
     return ''
 
 
-def _get_instance_metadata(url, num_retries):
-    return LazyLoadMetadata(url, num_retries)
+def _get_instance_metadata(url, num_retries, timeout=None):
+    return LazyLoadMetadata(url, num_retries, timeout)
 
 
 class LazyLoadMetadata(dict):
-    def __init__(self, url, num_retries):
+    def __init__(self, url, num_retries, timeout=None):
         self._url = url
         self._num_retries = num_retries
         self._leaves = {}
         self._dicts = []
-        data = boto.utils.retry_url(self._url, num_retries=self._num_retries)
+        self._timeout = timeout
+        data = boto.utils.retry_url(self._url, num_retries=self._num_retries, timeout=self._timeout)
         if data:
             fields = data.split('\n')
             for field in fields:
@@ -285,13 +274,15 @@ class LazyLoadMetadata(dict):
 
         if key in self._leaves:
             resource = self._leaves[key]
+            last_exception = None
 
             for i in range(0, self._num_retries):
                 try:
                     val = boto.utils.retry_url(
-                        self._url + urllib.quote(resource,
-                                                 safe="/:"),
-                        num_retries=self._num_retries)
+                        self._url + urllib.parse.quote(resource,
+                                                       safe="/:"),
+                        num_retries=self._num_retries,
+                        timeout=self._timeout)
                     if val and val[0] == '{':
                         val = json.loads(val)
                         break
@@ -301,31 +292,35 @@ class LazyLoadMetadata(dict):
                             val = val.split('\n')
                         break
 
-                except JSONDecodeError, e:
+                except JSONDecodeError as e:
                     boto.log.debug(
                         "encountered '%s' exception: %s" % (
                             e.__class__.__name__, e))
                     boto.log.debug(
                         'corrupted JSON data found: %s' % val)
+                    last_exception = e
 
-                except Exception, e:
+                except Exception as e:
                     boto.log.debug("encountered unretryable" +
                                    " '%s' exception, re-raising" % (
                                        e.__class__.__name__))
+                    last_exception = e
                     raise
 
                 boto.log.error("Caught exception reading meta data" +
                                " for the '%s' try" % (i + 1))
 
                 if i + 1 != self._num_retries:
-                    next_sleep = random.random() * (2 ** i)
+                    next_sleep = min(
+                        random.random() * 2 ** i,
+                        boto.config.get('Boto', 'max_retry_delay', 60))
                     time.sleep(next_sleep)
             else:
                 boto.log.error('Unable to read meta data, giving up')
                 boto.log.error(
                     "encountered '%s' exception: %s" % (
-                        e.__class__.__name__, e))
-                raise
+                        last_exception.__class__.__name__, last_exception))
+                raise last_exception
 
             self[key] = val
         elif key in self._dicts:
@@ -394,17 +389,11 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254',
     will time out after the specified number of seconds.
 
     """
-    if timeout is not None:
-        original = socket.getdefaulttimeout()
-        socket.setdefaulttimeout(timeout)
     try:
         metadata_url = _build_instance_metadata_url(url, version, data)
-        return _get_instance_metadata(metadata_url, num_retries=num_retries)
-    except urllib2.URLError, e:
+        return _get_instance_metadata(metadata_url, num_retries=num_retries, timeout=timeout)
+    except urllib.error.URLError:
         return None
-    finally:
-        if timeout is not None:
-            socket.setdefaulttimeout(original)
 
 
 def get_instance_identity(version='latest', url='http://169.254.169.254',
@@ -415,30 +404,24 @@ def get_instance_identity(version='latest', url='http://169.254.169.254',
     iid = {}
     base_url = _build_instance_metadata_url(url, version,
                                             'dynamic/instance-identity/')
-    if timeout is not None:
-        original = socket.getdefaulttimeout()
-        socket.setdefaulttimeout(timeout)
     try:
-        data = retry_url(base_url, num_retries=num_retries)
+        data = retry_url(base_url, num_retries=num_retries, timeout=timeout)
         fields = data.split('\n')
         for field in fields:
-            val = retry_url(base_url + '/' + field + '/')
+            val = retry_url(base_url + '/' + field + '/', num_retries=num_retries, timeout=timeout)
             if val[0] == '{':
                 val = json.loads(val)
             if field:
                 iid[field] = val
         return iid
-    except urllib2.URLError, e:
+    except urllib.error.URLError:
         return None
-    finally:
-        if timeout is not None:
-            socket.setdefaulttimeout(original)
 
 
 def get_instance_userdata(version='latest', sep=None,
-                          url='http://169.254.169.254'):
+                          url='http://169.254.169.254', timeout=None, num_retries=5):
     ud_url = _build_instance_metadata_url(url, version, 'user-data')
-    user_data = retry_url(ud_url, retry_on_404=False)
+    user_data = retry_url(ud_url, retry_on_404=False, num_retries=num_retries, timeout=timeout)
     if user_data:
         if sep:
             l = user_data.split(sep)
@@ -453,6 +436,7 @@ ISO8601_MS = '%Y-%m-%dT%H:%M:%S.%fZ'
 RFC1123 = '%a, %d %b %Y %H:%M:%S %Z'
 LOCALE_LOCK = threading.Lock()
 
+
 @contextmanager
 def setlocale(name):
     """
@@ -465,6 +449,7 @@ def setlocale(name):
             yield locale.setlocale(locale.LC_ALL, name)
         finally:
             locale.setlocale(locale.LC_ALL, saved)
+
 
 def get_ts(ts=None):
     if not ts:
@@ -510,7 +495,7 @@ def update_dme(username, password, dme_id, ip_address):
     """
     dme_url = 'https://www.dnsmadeeasy.com/servlet/updateip'
     dme_url += '?username=%s&password=%s&id=%s&ip=%s'
-    s = urllib2.urlopen(dme_url % (username, password, dme_id, ip_address))
+    s = urllib.request.urlopen(dme_url % (username, password, dme_id, ip_address))
     return s.read()
 
 
@@ -534,12 +519,12 @@ def fetch_file(uri, file=None, username=None, password=None):
             key.get_contents_to_file(file)
         else:
             if username and password:
-                passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+                passman = urllib.request.HTTPPasswordMgrWithDefaultRealm()
                 passman.add_password(None, uri, username, password)
-                authhandler = urllib2.HTTPBasicAuthHandler(passman)
-                opener = urllib2.build_opener(authhandler)
-                urllib2.install_opener(opener)
-            s = urllib2.urlopen(uri)
+                authhandler = urllib.request.HTTPBasicAuthHandler(passman)
+                opener = urllib.request.build_opener(authhandler)
+                urllib.request.install_opener(opener)
+            s = urllib.request.urlopen(uri)
             file.write(s.read())
         file.seek(0)
     except:
@@ -554,7 +539,7 @@ class ShellCommand(object):
     def __init__(self, command, wait=True, fail_fast=False, cwd=None):
         self.exit_code = 0
         self.command = command
-        self.log_fp = StringIO.StringIO()
+        self.log_fp = StringIO()
         self.wait = wait
         self.fail_fast = fail_fast
         self.run(cwd=cwd)
@@ -788,6 +773,8 @@ class Password(object):
             self.hashfunc = hashfunc
 
     def set(self, value):
+        if not isinstance(value, bytes):
+            value = value.encode('utf-8')
         self.str = self.hashfunc(value).hexdigest()
 
     def __str__(self):
@@ -796,6 +783,8 @@ class Password(object):
     def __eq__(self, other):
         if other is None:
             return False
+        if not isinstance(other, bytes):
+            other = other.encode('utf-8')
         return str(self.hashfunc(other).hexdigest()) == str(self.str)
 
     def __len__(self):
@@ -862,12 +851,16 @@ def notify(subject, body=None, html_body=None, to_string=None,
 
 
 def get_utf8_value(value):
-    if not isinstance(value, basestring):
-        value = str(value)
-    if isinstance(value, unicode):
-        return value.encode('utf-8')
-    else:
+    if not six.PY2 and isinstance(value, bytes):
         return value
+
+    if not isinstance(value, six.string_types):
+        value = six.text_type(value)
+
+    if isinstance(value, six.text_type):
+        value = value.encode('utf-8')
+
+    return value
 
 
 def mklist(value):
@@ -931,7 +924,7 @@ def write_mime_multipart(content, compress=False, deftype='text/plain', delimite
     rcontent = wrapper.as_string()
 
     if compress:
-        buf = StringIO.StringIO()
+        buf = StringIO()
         gz = gzip.GzipFile(mode='wb', fileobj=buf)
         try:
             gz.write(rcontent)
@@ -1006,6 +999,8 @@ def compute_hash(fp, buf_size=8192, size=None, hash_algorithm=md5):
     else:
         s = fp.read(buf_size)
     while s:
+        if not isinstance(s, bytes):
+            s = s.encode('utf-8')
         hash_obj.update(s)
         if size:
             size -= len(s)
@@ -1016,7 +1011,7 @@ def compute_hash(fp, buf_size=8192, size=None, hash_algorithm=md5):
         else:
             s = fp.read(buf_size)
     hex_digest = hash_obj.hexdigest()
-    base64_digest = base64.encodestring(hash_obj.digest())
+    base64_digest = encodebytes(hash_obj.digest()).decode('utf-8')
     if base64_digest[-1] == '\n':
         base64_digest = base64_digest[0:-1]
     # data_size based on bytes read.
@@ -1044,6 +1039,7 @@ def merge_headers_by_name(name, headers):
     matching_headers = find_matching_headers(name, headers)
     return ','.join(str(headers[h]) for h in matching_headers
                     if headers[h] is not None)
+
 
 class RequestHook(object):
     """

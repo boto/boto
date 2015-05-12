@@ -34,6 +34,7 @@ from boto.vpc.vpngateway import VpnGateway, Attachment
 from boto.vpc.dhcpoptions import DhcpOptions
 from boto.vpc.subnet import Subnet
 from boto.vpc.vpnconnection import VpnConnection
+from boto.vpc.vpc_peering_connection import VpcPeeringConnection
 from boto.ec2 import RegionData
 from boto.regioninfo import RegionInfo, get_regions
 
@@ -87,9 +88,9 @@ class VPCConnection(EC2Connection):
         :type vpc_ids: list
         :param vpc_ids: A list of strings with the desired VPC ID's
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-            consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+            or dict item consists of a filter key and a filter value.
             Possible filter keys are:
 
             * *state* - a list of states of the VPC (pending or available)
@@ -106,7 +107,7 @@ class VPCConnection(EC2Connection):
         if vpc_ids:
             self.build_list_params(params, vpc_ids, 'VpcId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeVpcs', params, [('item', VPC)])
@@ -206,9 +207,9 @@ class VPCConnection(EC2Connection):
         :param route_table_ids: A list of strings with the desired route table
                                 IDs.
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters. Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters. Each tuple
+                        or dict item consists of a filter key and a filter value.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -220,7 +221,7 @@ class VPCConnection(EC2Connection):
         if route_table_ids:
             self.build_list_params(params, route_table_ids, "RouteTableId")
         if filters:
-            self.build_filter_params(params, dict(filters))
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeRouteTables', params,
@@ -391,6 +392,7 @@ class VPCConnection(EC2Connection):
 
     def create_route(self, route_table_id, destination_cidr_block,
                      gateway_id=None, instance_id=None, interface_id=None,
+                     vpc_peering_connection_id=None,
                      dry_run=False):
         """
         Creates a new route in the route table within a VPC. The route's target
@@ -413,6 +415,10 @@ class VPCConnection(EC2Connection):
         :type interface_id: str
         :param interface_id: Allows routing to network interface attachments.
 
+        :type vpc_peering_connection_id: str
+        :param vpc_peering_connection_id: Allows routing to VPC peering
+                                          connection.
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -430,6 +436,8 @@ class VPCConnection(EC2Connection):
             params['InstanceId'] = instance_id
         elif interface_id is not None:
             params['NetworkInterfaceId'] = interface_id
+        elif vpc_peering_connection_id is not None:
+            params['VpcPeeringConnectionId'] = vpc_peering_connection_id
         if dry_run:
             params['DryRun'] = 'true'
 
@@ -437,6 +445,7 @@ class VPCConnection(EC2Connection):
 
     def replace_route(self, route_table_id, destination_cidr_block,
                       gateway_id=None, instance_id=None, interface_id=None,
+                      vpc_peering_connection_id=None,
                       dry_run=False):
         """
         Replaces an existing route within a route table in a VPC.
@@ -457,6 +466,10 @@ class VPCConnection(EC2Connection):
         :type interface_id: str
         :param interface_id: Allows routing to network interface attachments.
 
+        :type vpc_peering_connection_id: str
+        :param vpc_peering_connection_id: Allows routing to VPC peering
+                                          connection.
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -474,6 +487,8 @@ class VPCConnection(EC2Connection):
             params['InstanceId'] = instance_id
         elif interface_id is not None:
             params['NetworkInterfaceId'] = interface_id
+        elif vpc_peering_connection_id is not None:
+            params['VpcPeeringConnectionId'] = vpc_peering_connection_id
         if dry_run:
             params['DryRun'] = 'true'
 
@@ -518,9 +533,9 @@ class VPCConnection(EC2Connection):
         :param network_acl_ids: A list of strings with the desired network ACL
                                 IDs.
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters. Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters. Each tuple
+                        or dict item consists of a filter key and a filter value.
 
         :rtype: list
         :return: A list of :class:`boto.vpc.networkacl.NetworkAcl`
@@ -529,7 +544,7 @@ class VPCConnection(EC2Connection):
         if network_acl_ids:
             self.build_list_params(params, network_acl_ids, "NetworkAclId")
         if filters:
-            self.build_filter_params(params, dict(filters))
+            self.build_filter_params(params, filters)
         return self.get_list('DescribeNetworkAcls', params,
                              [('item', NetworkAcl)])
 
@@ -781,9 +796,9 @@ class VPCConnection(EC2Connection):
         :type internet_gateway_ids: list
         :param internet_gateway_ids: A list of strings with the desired gateway IDs.
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+                        or dict item consists of a filter key and a filter value.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -795,7 +810,7 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, internet_gateway_ids,
                                    'InternetGatewayId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeInternetGateways', params,
@@ -898,9 +913,9 @@ class VPCConnection(EC2Connection):
         :param customer_gateway_ids: A list of strings with the desired
             CustomerGateway ID's.
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+                        or dict item consists of a filter key and a filter value.
                         Possible filter keys are:
 
                          - *state*, the state of the CustomerGateway
@@ -920,7 +935,7 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, customer_gateway_ids,
                                    'CustomerGatewayId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            self.build_filter_params(params, filters)
 
         if dry_run:
             params['DryRun'] = 'true'
@@ -987,9 +1002,9 @@ class VPCConnection(EC2Connection):
         :type vpn_gateway_ids: list
         :param vpn_gateway_ids: A list of strings with the desired VpnGateway ID's
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+                        or dict item consists of a filter key and a filter value.
                         Possible filter keys are:
 
                         - *state*, a list of states of the VpnGateway
@@ -1008,7 +1023,7 @@ class VPCConnection(EC2Connection):
         if vpn_gateway_ids:
             self.build_list_params(params, vpn_gateway_ids, 'VpnGatewayId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeVpnGateways', params,
@@ -1111,9 +1126,9 @@ class VPCConnection(EC2Connection):
         :type subnet_ids: list
         :param subnet_ids: A list of strings with the desired Subnet ID's
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+                        or dict item consists of a filter key and a filter value.
                         Possible filter keys are:
 
                         - *state*, a list of states of the Subnet
@@ -1134,7 +1149,7 @@ class VPCConnection(EC2Connection):
         if subnet_ids:
             self.build_list_params(params, subnet_ids, 'SubnetId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeSubnets', params, [('item', Subnet)])
@@ -1194,9 +1209,9 @@ class VPCConnection(EC2Connection):
         :type dhcp_options_ids: list
         :param dhcp_options_ids: A list of strings with the desired DhcpOption ID's
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-            consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+            or dict item consists of a filter key and a filter value.
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -1208,7 +1223,7 @@ class VPCConnection(EC2Connection):
         if dhcp_options_ids:
             self.build_list_params(params, dhcp_options_ids, 'DhcpOptionsId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeDhcpOptions', params,
@@ -1341,9 +1356,9 @@ class VPCConnection(EC2Connection):
         :type vpn_connection_ids: list
         :param vpn_connection_ids: A list of strings with the desired VPN_CONNECTION ID's
 
-        :type filters: list of tuples
-        :param filters: A list of tuples containing filters.  Each tuple
-                        consists of a filter key and a filter value.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+                        or dict item consists of a filter key and a filter value.
                         Possible filter keys are:
 
                         - *state*, a list of states of the VPN_CONNECTION
@@ -1365,7 +1380,7 @@ class VPCConnection(EC2Connection):
             self.build_list_params(params, vpn_connection_ids,
                                    'VpnConnectionId')
         if filters:
-            self.build_filter_params(params, dict(filters))
+            self.build_filter_params(params, filters)
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeVpnConnections', params,
@@ -1535,3 +1550,281 @@ class VPCConnection(EC2Connection):
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('DeleteVpnConnectionRoute', params)
+
+    def get_all_vpc_peering_connections(self, vpc_peering_connection_ids=None, 
+                                        filters=None, dry_run=False):
+        """
+        Retrieve information about your VPC peering connections. You
+        can filter results to return information only about those VPC
+        peering connections that match your search parameters.
+        Otherwise, all VPC peering connections associated with your
+        account are returned.
+
+        :type vpc_peering_connection_ids: list
+        :param vpc_peering_connection_ids: A list of strings with the desired VPC
+            peering connection ID's
+
+        :type filters: list of tuples
+        :param filters: A list of tuples containing filters. Each tuple
+            consists of a filter key and a filter value.
+            Possible filter keys are:
+
+            * *accepter-vpc-info.cidr-block* - The CIDR block of the peer VPC.
+            * *accepter-vpc-info.owner-id* - The AWS account ID of the owner 
+                of the peer VPC.
+            * *accepter-vpc-info.vpc-id* - The ID of the peer VPC.
+            * *expiration-time* - The expiration date and time for the VPC 
+                peering connection.
+            * *requester-vpc-info.cidr-block* - The CIDR block of the 
+                requester's VPC.
+            * *requester-vpc-info.owner-id* - The AWS account ID of the 
+                owner of the requester VPC.
+            * *requester-vpc-info.vpc-id* - The ID of the requester VPC.
+            * *status-code* - The status of the VPC peering connection.
+            * *status-message* - A message that provides more information 
+                about the status of the VPC peering connection, if applicable.
+            
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: list
+        :return: A list of :class:`boto.vpc.vpc.VPC`
+        """
+        params = {}
+        if vpc_peering_connection_ids:
+            self.build_list_params(params, vpc_peering_connection_ids, 'VpcPeeringConnectionId')
+        if filters:
+            self.build_filter_params(params, dict(filters))
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribeVpcPeeringConnections', params, [('item', VpcPeeringConnection)])
+    
+    def create_vpc_peering_connection(self, vpc_id, peer_vpc_id, 
+                                      peer_owner_id=None, dry_run=False):
+        """
+        Create a new VPN Peering connection.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the requester VPC.
+
+        :type peer_vpc_id: str
+        :param vpc_peer_id: The ID of the VPC with which you are creating the peering connection.
+
+        :type peer_owner_id: str
+        :param peer_owner_id: The AWS account ID of the owner of the peer VPC.
+
+        :rtype: The newly created VpcPeeringConnection
+        :return: A :class:`boto.vpc.vpc_peering_connection.VpcPeeringConnection` object
+        """
+        params = {'VpcId': vpc_id,
+                  'PeerVpcId': peer_vpc_id }
+        if peer_owner_id is not None:
+            params['PeerOwnerId'] = peer_owner_id
+        if dry_run:
+            params['DryRun'] = 'true'
+
+        return self.get_object('CreateVpcPeeringConnection', params, 
+                               VpcPeeringConnection)
+
+    def delete_vpc_peering_connection(self, vpc_peering_connection_id, dry_run=False):
+        """
+        Deletes a VPC peering connection. Either the owner of the requester 
+        VPC or the owner of the peer VPC can delete the VPC peering connection 
+        if it's in the active state. The owner of the requester VPC can delete 
+        a VPC peering connection in the pending-acceptance state.
+
+        :type vpc_peering_connection_id: str
+        :param vpc_peering_connection_id: The ID of the VPC peering connection.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'VpcPeeringConnectionId': vpc_peering_connection_id
+        }
+
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('DeleteVpcPeeringConnection', params)
+
+    def reject_vpc_peering_connection(self, vpc_peering_connection_id, dry_run=False):
+        """
+        Rejects a VPC peering connection request. The VPC peering connection 
+        must be in the pending-acceptance state. 
+
+        :type vpc_peering_connection_id: str
+        :param vpc_peering_connection_id: The ID of the VPC peering connection.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {
+            'VpcPeeringConnectionId': vpc_peering_connection_id
+        }
+
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('RejectVpcPeeringConnection', params)
+
+    def accept_vpc_peering_connection(self, vpc_peering_connection_id, dry_run=False):
+        """
+        Acceptss a VPC peering connection request. The VPC peering connection 
+        must be in the pending-acceptance state. 
+
+        :type vpc_peering_connection_id: str
+        :param vpc_peering_connection_id: The ID of the VPC peering connection.
+
+        :rtype: Accepted VpcPeeringConnection
+        :return: A :class:`boto.vpc.vpc_peering_connection.VpcPeeringConnection` object
+        """
+        params = {
+            'VpcPeeringConnectionId': vpc_peering_connection_id
+        }
+
+        if dry_run:
+            params['DryRun'] = 'true'
+
+        return self.get_object('AcceptVpcPeeringConnection', params, 
+                               VpcPeeringConnection)
+
+    def get_all_classic_link_vpcs(self, vpc_ids=None, filters=None,
+                                   dry_run=False):
+        """
+        Describes the ClassicLink status of one or more VPCs.
+
+        :type vpc_ids: list
+        :param vpc_ids: A list of strings with the desired VPC ID's
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters. Each tuple
+            or dict item consists of a filter key and a filter value.
+
+        :rtype: list
+        :return: A list of :class:`boto.vpc.vpc.VPC`
+        """
+        params = {}
+        if vpc_ids:
+            self.build_list_params(params, vpc_ids, 'VpcId')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribeVpcClassicLink', params, [('item', VPC)],
+                             verb='POST')
+
+    def attach_classic_link_vpc(self, vpc_id, instance_id, groups,
+                                dry_run=False):
+        """
+        Links  an EC2-Classic instance to a ClassicLink-enabled VPC through one
+        or more of the VPC's security groups. You cannot link an EC2-Classic
+        instance to more than one VPC at a time. You can only link an instance
+        that's in the running state. An instance is automatically unlinked from
+        a VPC when it's stopped. You can link it to the VPC again when you
+        restart it.
+
+        After you've linked an instance, you cannot  change  the VPC security
+        groups  that are associated with it. To change the security groups, you
+        must first unlink the instance, and then link it again.
+
+        Linking your instance to a VPC is sometimes referred  to  as  attaching
+        your instance.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of a ClassicLink-enabled VPC.
+
+        :type intance_id: str
+        :param instance_is: The ID of a ClassicLink-enabled VPC.
+
+        :tye groups: list
+        :param groups: The ID of one or more of the VPC's security groups.
+            You cannot specify security groups from a different VPC. The
+            members of the list can be
+            :class:`boto.ec2.securitygroup.SecurityGroup` objects or
+            strings of the id's of the security groups.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {'VpcId': vpc_id, 'InstanceId': instance_id}
+        if dry_run:
+            params['DryRun'] = 'true'
+        l = []
+        for group in groups:
+            if hasattr(group, 'id'):
+                l.append(group.id)
+            else:
+                l.append(group)
+        self.build_list_params(params, l, 'SecurityGroupId')
+        return self.get_status('AttachClassicLinkVpc', params)
+
+    def detach_classic_link_vpc(self, vpc_id, instance_id, dry_run=False):
+        """
+        Unlinks a linked EC2-Classic instance from a VPC. After the instance
+        has been unlinked, the VPC security groups are no longer associated
+        with it. An instance is automatically unlinked from a VPC when
+        it's stopped.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the instance to unlink from the VPC.
+
+        :type intance_id: str
+        :param instance_is: The ID of the VPC to which the instance is linked.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {'VpcId': vpc_id, 'InstanceId': instance_id}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('DetachClassicLinkVpc', params)
+
+    def disable_vpc_classic_link(self, vpc_id, dry_run=False):
+        """
+        Disables  ClassicLink  for  a VPC. You cannot disable ClassicLink for a
+        VPC that has EC2-Classic instances linked to it.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {'VpcId': vpc_id}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('DisableVpcClassicLink', params)
+
+    def enable_vpc_classic_link(self, vpc_id, dry_run=False):
+        """
+        Enables a VPC for ClassicLink. You can then link EC2-Classic instances
+        to your ClassicLink-enabled VPC to allow communication over private IP
+        addresses. You cannot enable your VPC for ClassicLink if any of your
+        VPC's route tables have existing routes for address ranges within the
+        10.0.0.0/8 IP address range, excluding local routes for VPCs in the
+        10.0.0.0/16 and 10.1.0.0/16 IP address ranges.
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {'VpcId': vpc_id}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('EnableVpcClassicLink', params)

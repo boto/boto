@@ -11,6 +11,7 @@ class TestDomain(unittest.TestCase):
         self.domain = Domain(name='test-domain', description='My test domain')
         self.domain.aws_access_key_id = 'inheritable access key'
         self.domain.aws_secret_access_key = 'inheritable secret key'
+        self.domain.region = 'test-region'
 
     def test_domain_instantiation(self):
         self.assertEquals('test-domain', self.domain.name)
@@ -47,6 +48,7 @@ class TestDomain(unittest.TestCase):
         for activity_type in activity_types:
             self.assertIsInstance(activity_type, ActivityType)
             self.assertTrue(activity_type.name in expected_names)
+            self.assertEquals(self.domain.region, activity_type.region)
 
     def test_domain_list_workflows(self):
         self.domain._swf.list_workflow_types.return_value = {
@@ -68,6 +70,7 @@ class TestDomain(unittest.TestCase):
             self.assertEquals(self.domain.aws_access_key_id, workflow_type.aws_access_key_id)
             self.assertEquals(self.domain.aws_secret_access_key, workflow_type.aws_secret_access_key)
             self.assertEquals(self.domain.name, workflow_type.domain)
+            self.assertEquals(self.domain.region, workflow_type.region)
 
     def test_domain_list_executions(self):
         self.domain._swf.list_open_workflow_executions.return_value = {
@@ -107,6 +110,7 @@ class TestDomain(unittest.TestCase):
             self.assertEquals(self.domain.aws_access_key_id, wf_execution.aws_access_key_id)
             self.assertEquals(self.domain.aws_secret_access_key, wf_execution.aws_secret_access_key)
             self.assertEquals(self.domain.name, wf_execution.domain)
+            self.assertEquals(self.domain.region, wf_execution.region)
 
 if __name__ == '__main__':
     unittest.main()

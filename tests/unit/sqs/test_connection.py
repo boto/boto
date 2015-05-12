@@ -24,12 +24,17 @@
 
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
+from tests.unit import MockServiceWithConfigTestCase
+
+from tests.compat import mock
 
 from boto.sqs.connection import SQSConnection
 from boto.sqs.regioninfo import SQSRegionInfo
 from boto.sqs.message import RawMessage
 from boto.sqs.queue import Queue
+from boto.connection import AWSQueryConnection
 
+from nose.plugins.attrib import attr
 
 class TestSQSConnectionProviderOverride(MockServiceProviderTestCase):
     connection_class = SQSConnection
@@ -57,6 +62,7 @@ class SQSAuthParams(AWSMockServiceTestCase):
               </ResponseMetadata>
             </CreateQueueResponse>"""
 
+    @attr(sqs=True)
     def test_auth_service_name_override(self):
         self.set_http_response(status_code=200)
         # We can use the auth_service_name to change what service
@@ -68,6 +74,7 @@ class SQSAuthParams(AWSMockServiceTestCase):
         self.assertIn('us-east-1/service_override/aws4_request',
                       self.actual_request.headers['Authorization'])
 
+    @attr(sqs=True)
     def test_class_attribute_can_set_service_name(self):
         self.set_http_response(status_code=200)
         # The SQS class has an 'AuthServiceName' param of 'sqs':
@@ -79,6 +86,7 @@ class SQSAuthParams(AWSMockServiceTestCase):
         self.assertIn('us-east-1/sqs/aws4_request',
                       self.actual_request.headers['Authorization'])
 
+    @attr(sqs=True)
     def test_auth_region_name_is_automatically_updated(self):
         region = SQSRegionInfo(name='us-west-2',
                                endpoint='us-west-2.queue.amazonaws.com')
@@ -91,12 +99,12 @@ class SQSAuthParams(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
 
         self.service_connection.create_queue('my_queue')
-        
+
         # Note the region name below is 'us-west-2'.
         self.assertIn('us-west-2/sqs/aws4_request',
                       self.actual_request.headers['Authorization'])
-        
-    
+
+    @attr(sqs=True)
     def test_set_get_auth_service_and_region_names(self):
         self.service_connection.auth_service_name = 'service_name'
         self.service_connection.auth_region_name = 'region_name'
@@ -105,16 +113,43 @@ class SQSAuthParams(AWSMockServiceTestCase):
                          'service_name')
         self.assertEqual(self.service_connection.auth_region_name, 'region_name')
 
+    @attr(sqs=True)
     def test_get_queue_with_owner_account_id_returns_queue(self):
-        
+
         self.set_http_response(status_code=200)
         self.service_connection.create_queue('my_queue')
-        
+
         self.service_connection.get_queue('my_queue', '599169622985')
 
         assert 'QueueOwnerAWSAccountId' in self.actual_request.params.keys()
         self.assertEquals(self.actual_request.params['QueueOwnerAWSAccountId'], '599169622985')
 
+class SQSProfileName(MockServiceWithConfigTestCase):
+    connection_class = SQSConnection
+    profile_name = 'prod'
+
+    def setUp(self):
+        super(SQSProfileName, self).setUp()
+        self.config = {
+            "profile prod": {
+                'aws_access_key_id': 'access_key',
+                'aws_secret_access_key': 'secret_access',
+            }
+        }
+
+    @attr(sqs=True)
+    def test_profile_name_gets_passed(self):
+
+        region = SQSRegionInfo(name='us-west-2',
+                               endpoint='us-west-2.queue.amazonaws.com')
+        self.service_connection = SQSConnection(
+            https_connection_factory=self.https_connection_factory,
+            region=region,
+            profile_name=self.profile_name)
+        self.initialize_service_connection()
+        self.set_http_response(status_code=200)
+
+        self.assertEquals(self.service_connection.profile_name, self.profile_name)
 
 class SQSMessageAttributesParsing(AWSMockServiceTestCase):
     connection_class = SQSConnection
@@ -150,6 +185,7 @@ class SQSMessageAttributesParsing(AWSMockServiceTestCase):
     </ResponseMetadata>
 </ReceiveMessageResponse>"""
 
+    @attr(sqs=True)
     def test_message_attribute_response(self):
         self.set_http_response(status_code=200)
 
@@ -194,6 +230,7 @@ class SQSSendMessageAttributes(AWSMockServiceTestCase):
 </SendMessageResponse>
 """
 
+    @attr(sqs=True)
     def test_send_message_attributes(self):
         self.set_http_response(status_code=200)
 
@@ -214,12 +251,12 @@ class SQSSendMessageAttributes(AWSMockServiceTestCase):
 
         self.assert_request_parameters({
             'Action': 'SendMessage',
-            'MessageAttribute.1.Name': 'name2',
-            'MessageAttribute.1.Value.DataType': 'Number',
-            'MessageAttribute.1.Value.StringValue': '1',
-            'MessageAttribute.2.Name': 'name1',
-            'MessageAttribute.2.Value.DataType': 'String',
-            'MessageAttribute.2.Value.StringValue': 'Bob',
+            'MessageAttribute.1.Name': 'name1',
+            'MessageAttribute.1.Value.DataType': 'String',
+            'MessageAttribute.1.Value.StringValue': 'Bob',
+            'MessageAttribute.2.Name': 'name2',
+            'MessageAttribute.2.Value.DataType': 'Number',
+            'MessageAttribute.2.Value.StringValue': '1',
             'MessageBody': 'Test message',
             'Version': '2012-11-05'
         })
@@ -249,6 +286,7 @@ class SQSSendBatchMessageAttributes(AWSMockServiceTestCase):
 </SendMessageBatchResponse>
 """
 
+    @attr(sqs=True)
     def test_send_message_attributes(self):
         self.set_http_response(status_code=200)
 
@@ -279,7 +317,6 @@ class SQSSendBatchMessageAttributes(AWSMockServiceTestCase):
             'SendMessageBatchRequestEntry.2.MessageBody': 'Message 2',
             'Version': '2012-11-05'
         })
-
 
 if __name__ == '__main__':
     unittest.main()

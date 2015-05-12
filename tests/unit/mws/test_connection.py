@@ -23,6 +23,9 @@
 from boto.mws.connection import MWSConnection, api_call_map, destructure_object
 from boto.mws.response import (ResponseElement, GetFeedSubmissionListResult,
                                ResponseFactory)
+from boto.exception import BotoServerError
+
+from tests.compat import unittest
 
 from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 
@@ -33,13 +36,15 @@ class TestMWSConnectionProviderOverride(MockServiceProviderTestCase):
     def test_provider_override(self):
         self.assert_alt_provider_used()
 
+from mock import MagicMock
+
 
 class TestMWSConnection(AWSMockServiceTestCase):
     connection_class = MWSConnection
     mws = True
 
     def default_body(self):
-        return """<?xml version="1.0"?>
+        return b"""<?xml version="1.0"?>
 <GetFeedSubmissionListResponse xmlns="http://mws.amazonservices.com/
 doc/2009-01-01/">
   <GetFeedSubmissionListResult>
@@ -56,6 +61,22 @@ doc/2009-01-01/">
     <RequestId>1105b931-6f1c-4480-8e97-f3b467840a9e</RequestId>
   </ResponseMetadata>
 </GetFeedSubmissionListResponse>"""
+
+    def default_body_error(self):
+        return b"""<?xml version="1.0" encoding="UTF-8"?>
+<ErrorResponse xmlns="http://mws.amazonaws.com/doc/2009-01-01/">
+  <!--1 or more repetitions:-->
+  <Error>
+    <Type>Sender</Type>
+    <Code>string</Code>
+    <Message>string</Message>
+    <Detail>
+      <!--You may enter ANY elements at this point-->
+      <AnyElement xmlns=""/>
+    </Detail>
+  </Error>
+  <RequestId>string</RequestId>
+</ErrorResponse>"""
 
     def test_destructure_object(self):
         # Test that parsing of user input to Amazon input works.
@@ -88,6 +109,24 @@ doc/2009-01-01/">
             members = user is inputs[-1]
             destructure_object(user, result, prefix='Prefix', members=members)
             self.assertEqual(result, amazon)
+
+    def test_decorator_order(self):
+        for action, func in api_call_map.items():
+            func = getattr(self.service_connection, func)
+            decs = [func.__name__]
+            while func:
+                i = 0
+                if not hasattr(func, '__closure__'):
+                    func = getattr(func, '__wrapped__', None)
+                    continue
+                while i < len(func.__closure__):
+                    value = func.__closure__[i].cell_contents
+                    if hasattr(value, '__call__'):
+                        if 'requires' == value.__name__:
+                            self.assertTrue(not decs or decs[-1] == 'requires')
+                        decs.append(value.__name__)
+                    i += 1
+                func = getattr(func, '__wrapped__', None)
 
     def test_built_api_call_map(self):
         # Ensure that the map is populated.
@@ -140,10 +179,34 @@ doc/2009-01-01/">
         with self.assertRaises(AttributeError) as err:
             self.service_connection.get_service_status()
 
-        self.assertTrue('products,' in str(err.exception))
-        self.assertTrue('inventory,' in str(err.exception))
-        self.assertTrue('feeds,' in str(err.exception))
+        self.assertTrue('products' in str(err.exception))
+        self.assertTrue('inventory' in str(err.exception))
+        self.assertTrue('feeds' in str(err.exception))
 
+    def test_post_request(self):
+
+        self.service_connection._mexe = MagicMock(
+            side_effect=
+                BotoServerError(500, 'You request has bee throttled', body=self.default_body_error()))
+
+        with self.assertRaises(BotoServerError) as err:
+            self.service_connection.get_lowest_offer_listings_for_asin(
+                MarketplaceId='12345',
+                ASINList='ASIN12345',
+                condition='Any',
+                SellerId='1234',
+                excludeme='True')
+
+            self.assertTrue('throttled' in str(err.reason))
+            self.assertEqual(int(err.status), 200)
+            
+    def test_sandboxify(self):
+        # Create one-off connection class that has self._sandboxed = True
+        conn = MWSConnection(https_connection_factory=self.https_connection_factory,
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key',
+            sandbox=True)
+        self.assertEqual(conn._sandboxify('a/bogus/path'), 'a/bogus_Sandbox/path')
 
 if __name__ == '__main__':
     unittest.main()

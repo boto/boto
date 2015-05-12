@@ -9,7 +9,7 @@ class TestDescribeRouteTables(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeRouteTablesResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>6f570b0b-9c18-4b07-bdec-73740dcf861a</requestId>
                <routeTableSet>
@@ -47,6 +47,18 @@ class TestDescribeRouteTables(AWSMockServiceTestCase):
                            <destinationCidrBlock>0.0.0.0/0</destinationCidrBlock>
                            <gatewayId>igw-eaad4883</gatewayId>
                            <state>active</state>
+                        </item>
+                        <item>
+                            <destinationCidrBlock>10.0.0.0/21</destinationCidrBlock>
+                            <networkInterfaceId>eni-884ec1d1</networkInterfaceId>
+                            <state>blackhole</state>
+                            <origin>CreateRoute</origin>
+                        </item>
+                        <item>
+                            <destinationCidrBlock>11.0.0.0/22</destinationCidrBlock>
+                            <vpcPeeringConnectionId>pcx-efc52b86</vpcPeeringConnectionId>
+                            <state>blackhole</state>
+                            <origin>CreateRoute</origin>
                         </item>
                      </routeSet>
                      <associationSet>
@@ -88,13 +100,19 @@ class TestDescribeRouteTables(AWSMockServiceTestCase):
         self.assertIsNone(api_response[0].associations[0].subnet_id)
         self.assertEquals(api_response[0].associations[0].main, True)
         self.assertEquals(api_response[1].id, 'rtb-f9ad4890')
-        self.assertEquals(len(api_response[1].routes), 2)
+        self.assertEquals(len(api_response[1].routes), 4)
         self.assertEquals(api_response[1].routes[0].destination_cidr_block, '10.0.0.0/22')
         self.assertEquals(api_response[1].routes[0].gateway_id, 'local')
         self.assertEquals(api_response[1].routes[0].state, 'active')
         self.assertEquals(api_response[1].routes[1].destination_cidr_block, '0.0.0.0/0')
         self.assertEquals(api_response[1].routes[1].gateway_id, 'igw-eaad4883')
         self.assertEquals(api_response[1].routes[1].state, 'active')
+        self.assertEquals(api_response[1].routes[2].destination_cidr_block, '10.0.0.0/21')
+        self.assertEquals(api_response[1].routes[2].interface_id, 'eni-884ec1d1')
+        self.assertEquals(api_response[1].routes[2].state, 'blackhole')
+        self.assertEquals(api_response[1].routes[3].destination_cidr_block, '11.0.0.0/22')
+        self.assertEquals(api_response[1].routes[3].vpc_peering_connection_id, 'pcx-efc52b86')
+        self.assertEquals(api_response[1].routes[3].state, 'blackhole')
         self.assertEquals(len(api_response[1].associations), 1)
         self.assertEquals(api_response[1].associations[0].id, 'rtbassoc-faad4893')
         self.assertEquals(api_response[1].associations[0].route_table_id, 'rtb-f9ad4890')
@@ -107,7 +125,7 @@ class TestAssociateRouteTable(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <AssociateRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <associationId>rtbassoc-f8ad4891</associationId>
@@ -133,7 +151,7 @@ class TestDisassociateRouteTable(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DisassociateRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>
@@ -157,7 +175,7 @@ class TestCreateRouteTable(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <routeTable>
@@ -198,7 +216,7 @@ class TestDeleteRouteTable(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>
@@ -222,7 +240,7 @@ class TestReplaceRouteTableAssociation(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <ReplaceRouteTableAssociationResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <newAssociationId>rtbassoc-faad4893</newAssociationId>
@@ -261,7 +279,7 @@ class TestCreateRoute(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateRouteResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>
@@ -310,13 +328,27 @@ class TestCreateRoute(AWSMockServiceTestCase):
                                   'Version'])
         self.assertEquals(api_response, True)
 
+    def test_create_route_vpc_peering_connection(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.create_route(
+            'rtb-g8ff4ea2', '0.0.0.0/0', vpc_peering_connection_id='pcx-1a2b3c4d')
+        self.assert_request_parameters({
+            'Action': 'CreateRoute',
+            'RouteTableId': 'rtb-g8ff4ea2',
+            'DestinationCidrBlock': '0.0.0.0/0',
+            'VpcPeeringConnectionId': 'pcx-1a2b3c4d'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+        self.assertEquals(api_response, True)
+
 
 class TestReplaceRoute(AWSMockServiceTestCase):
 
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateRouteResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>
@@ -365,13 +397,27 @@ class TestReplaceRoute(AWSMockServiceTestCase):
                                   'Version'])
         self.assertEquals(api_response, True)
 
+    def test_replace_route_vpc_peering_connection(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.replace_route(
+            'rtb-g8ff4ea2', '0.0.0.0/0', vpc_peering_connection_id='pcx-1a2b3c4d')
+        self.assert_request_parameters({
+            'Action': 'ReplaceRoute',
+            'RouteTableId': 'rtb-g8ff4ea2',
+            'DestinationCidrBlock': '0.0.0.0/0',
+            'VpcPeeringConnectionId': 'pcx-1a2b3c4d'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+        self.assertEquals(api_response, True)
+
 
 class TestDeleteRoute(AWSMockServiceTestCase):
 
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteRouteTableResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <return>true</return>

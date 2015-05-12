@@ -24,6 +24,7 @@ class TrailAlreadyExistsException(BotoServerError):
     """
     pass
 
+
 class InsufficientSnsTopicPolicyException(BotoServerError):
     """
     Raised when the SNS topic does not allow Cloudtrail to post
@@ -31,17 +32,20 @@ class InsufficientSnsTopicPolicyException(BotoServerError):
     """
     pass
 
+
 class InvalidTrailNameException(BotoServerError):
     """
     Raised when the trail name is invalid.
     """
     pass
 
+
 class InternalErrorException(BotoServerError):
     """
     Raised when there was an internal Cloudtrail error.
     """
     pass
+
 
 class TrailNotFoundException(BotoServerError):
     """
@@ -83,4 +87,32 @@ class InsufficientS3BucketPolicyException(BotoServerError):
     Raised when the S3 bucket does not allow Cloudtrail to
     write files into the prefix.
     """
+    pass
+
+
+class InvalidMaxResultsException(BotoServerError):
+    pass
+
+
+class InvalidTimeRangeException(BotoServerError):
+    pass
+
+
+class InvalidLookupAttributesException(BotoServerError):
+    pass
+
+
+class InvalidCloudWatchLogsLogGroupArnException(BotoServerError):
+    pass
+
+
+class InvalidCloudWatchLogsRoleArnException(BotoServerError):
+    pass
+
+
+class CloudWatchLogsDeliveryUnavailableException(BotoServerError):
+    pass
+
+
+class InvalidNextTokenException(BotoServerError):
     pass

@@ -22,8 +22,9 @@
 # IN THE SOFTWARE.
 #
 
-from .layer1 import CloudSearchConnection
-from .domain import Domain
+from boto.cloudsearch2.layer1 import CloudSearchConnection
+from boto.cloudsearch2.domain import Domain
+from boto.compat import six
 
 
 class Layer2(object):
@@ -31,9 +32,9 @@ class Layer2(object):
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  host=None, debug=0, session_token=None, region=None,
-                 validate_certs=True, provider='aws'):
+                 validate_certs=True, sign_request=False, provider='aws'):
 
-        if type(region) in [str, unicode]:
+        if isinstance(region, six.string_types):
             import boto.cloudsearch2
             for region_info in boto.cloudsearch2.regions():
                 if region_info.name == region:
@@ -52,7 +53,8 @@ class Layer2(object):
             security_token=session_token,
             region=region,
             validate_certs=validate_certs,
-            provider=provider)
+            provider=provider,
+            sign_request=sign_request)
 
     def list_domains(self, domain_names=None):
         """
