@@ -36,6 +36,7 @@ from boto.s3.multidelete import Error
 from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
+from boto.s3.location import Location
 from boto.s3.lifecycle import Lifecycle
 from boto.s3.tagging import Tags
 from boto.s3.cors import CORSConfiguration
@@ -90,10 +91,11 @@ class Bucket(object):
     VersionRE = '<Status>([A-Za-z]+)</Status>'
     MFADeleteRE = '<MfaDelete>([A-Za-z]+)</MfaDelete>'
 
-    def __init__(self, connection=None, name=None, key_class=Key):
+    def __init__(self, connection=None, name=None, key_class=Key, location=Location.DEFAULT):
         self.name = name
         self.connection = connection
         self.key_class = key_class
+        self.location = location
 
     def __repr__(self):
         return '<Bucket: %s>' % self.name
@@ -196,7 +198,8 @@ class Bucket(object):
         query_args = '&'.join(query_args_l) or None
         response = self.connection.make_request('HEAD', self.name, key_name,
                                                 headers=headers,
-                                                query_args=query_args)
+                                                query_args=query_args,
+                                                location=self.location)
         response.read()
         # Allow any success status (2xx) - for example this lets us
         # support Range gets, which return status 206:
@@ -395,7 +398,8 @@ class Bucket(object):
         )
         response = self.connection.make_request('GET', self.name,
                                                 headers=headers,
-                                                query_args=query_args)
+                                                query_args=query_args,
+                                                location=self.location)
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
@@ -711,7 +715,8 @@ class Bucket(object):
             response = self.connection.make_request('POST', self.name,
                                                     headers=hdrs,
                                                     query_args=query_args,
-                                                    data=data)
+                                                    data=data,
+                                                    location=self.location)
             body = response.read()
             if response.status == 200:
                 h = handler.XmlHandler(result, self)
@@ -772,7 +777,8 @@ class Bucket(object):
             headers[provider.mfa_header] = ' '.join(mfa_token)
         response = self.connection.make_request('DELETE', self.name, key_name,
                                                 headers=headers,
-                                                query_args=query_args)
+                                                query_args=query_args,
+                                                location=self.location)
         body = response.read()
         if response.status != 204:
             raise provider.storage_response_error(response.status,
@@ -868,7 +874,8 @@ class Bucket(object):
             headers[provider.metadata_directive_header] = 'COPY'
         response = self.connection.make_request('PUT', self.name, new_key_name,
                                                 headers=headers,
-                                                query_args=query_args)
+                                                query_args=query_args,
+                                                location=self.location)
         body = response.read()
         if response.status == 200:
             key = self.new_key(new_key_name)
@@ -900,7 +907,7 @@ class Bucket(object):
         if version_id:
             query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('PUT', self.name, key_name,
-                headers=headers, query_args=query_args)
+                headers=headers, query_args=query_args, location=self.location)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
@@ -912,7 +919,8 @@ class Bucket(object):
             query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('GET', self.name, key_name,
                                                 query_args=query_args,
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
@@ -928,7 +936,8 @@ class Bucket(object):
         response = self.connection.make_request('PUT', self.name, key_name,
                                                 data=acl_str,
                                                 query_args=query_args,
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
@@ -948,7 +957,8 @@ class Bucket(object):
             query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('GET', self.name, key_name,
                                                 query_args=query_args,
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         if response.status == 200:
             policy = Policy(self)
@@ -994,7 +1004,8 @@ class Bucket(object):
         response = self.connection.make_request('PUT', self.name, key_name,
                                                 data=value,
                                                 query_args=query_args,
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
@@ -1030,7 +1041,8 @@ class Bucket(object):
             query_args += '&versionId=%s' % version_id
         response = self.connection.make_request('GET', self.name, key_name,
                                                 query_args=query_args,
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
@@ -1122,26 +1134,7 @@ class Bucket(object):
         return policy.acl.grants
 
     def get_location(self):
-        """
-        Returns the LocationConstraint for the bucket.
-
-        :rtype: str
-        :return: The LocationConstraint for the bucket or the empty
-            string if no constraint was specified when bucket was created.
-        """
-        response = self.connection.make_request('GET', self.name,
-                                                query_args='location')
-        body = response.read()
-        if response.status == 200:
-            rs = ResultSet(self)
-            h = handler.XmlHandler(rs, self)
-            if not isinstance(body, bytes):
-                body = body.encode('utf-8')
-            xml.sax.parseString(body, h)
-            return rs.LocationConstraint
-        else:
-            raise self.connection.provider.storage_response_error(
-                response.status, response.reason, body)
+        return self.connection.get_bucket_location(self.name)
 
     def set_xml_logging(self, logging_str, headers=None):
         """
@@ -1160,7 +1153,7 @@ class Bucket(object):
         if not isinstance(body, bytes):
             body = body.encode('utf-8')
         response = self.connection.make_request('PUT', self.name, data=body,
-                query_args='logging', headers=headers)
+                query_args='logging', headers=headers, location=self.location)
         body = response.read()
         if response.status == 200:
             return True
@@ -1211,7 +1204,7 @@ class Bucket(object):
         :return: A BucketLogging object for this bucket.
         """
         response = self.connection.make_request('GET', self.name,
-                query_args='logging', headers=headers)
+                query_args='logging', headers=headers, location=self.location)
         body = response.read()
         if response.status == 200:
             blogging = BucketLogging()
@@ -1238,7 +1231,7 @@ class Bucket(object):
 
     def get_request_payment(self, headers=None):
         response = self.connection.make_request('GET', self.name,
-                query_args='requestPayment', headers=headers)
+                query_args='requestPayment', headers=headers, location=self.location)
         body = response.read()
         if response.status == 200:
             return body
@@ -1249,7 +1242,7 @@ class Bucket(object):
     def set_request_payment(self, payer='BucketOwner', headers=None):
         body = self.BucketPaymentBody % payer
         response = self.connection.make_request('PUT', self.name, data=body,
-                query_args='requestPayment', headers=headers)
+                query_args='requestPayment', headers=headers, location=self.location)
         body = response.read()
         if response.status == 200:
             return True
@@ -1297,7 +1290,7 @@ class Bucket(object):
             provider = self.connection.provider
             headers[provider.mfa_header] = ' '.join(mfa_token)
         response = self.connection.make_request('PUT', self.name, data=body,
-                query_args='versioning', headers=headers)
+                query_args='versioning', headers=headers, location=self.location)
         body = response.read()
         if response.status == 200:
             return True
@@ -1318,7 +1311,7 @@ class Bucket(object):
             Suspended.
         """
         response = self.connection.make_request('GET', self.name,
-                query_args='versioning', headers=headers)
+                query_args='versioning', headers=headers, location=self.location)
         body = response.read()
         if not isinstance(body, six.string_types):
             body = body.decode('utf-8')
@@ -1355,7 +1348,8 @@ class Bucket(object):
         response = self.connection.make_request('PUT', self.name,
                                                 data=fp.getvalue(),
                                                 query_args='lifecycle',
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         if response.status == 200:
             return True
@@ -1372,7 +1366,7 @@ class Bucket(object):
             lifecycle rules in effect for the bucket.
         """
         response = self.connection.make_request('GET', self.name,
-                query_args='lifecycle', headers=headers)
+                query_args='lifecycle', headers=headers, location=self.location)
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
@@ -1392,7 +1386,8 @@ class Bucket(object):
         """
         response = self.connection.make_request('DELETE', self.name,
                                                 query_args='lifecycle',
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         boto.log.debug(body)
         if response.status == 204:
@@ -1450,7 +1445,8 @@ class Bucket(object):
         """Upload xml website configuration"""
         response = self.connection.make_request('PUT', self.name, data=xml,
                                                 query_args='website',
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         if response.status == 200:
             return True
@@ -1525,7 +1521,7 @@ class Bucket(object):
     def get_website_configuration_xml(self, headers=None):
         """Get raw website configuration xml"""
         response = self.connection.make_request('GET', self.name,
-                query_args='website', headers=headers)
+                query_args='website', headers=headers, location=self.location)
         body = response.read().decode('utf-8')
         boto.log.debug(body)
 
@@ -1539,7 +1535,7 @@ class Bucket(object):
         Removes all website configuration from the bucket.
         """
         response = self.connection.make_request('DELETE', self.name,
-                query_args='website', headers=headers)
+                query_args='website', headers=headers, location=self.location)
         body = response.read()
         boto.log.debug(body)
         if response.status == 204:
@@ -1565,7 +1561,7 @@ class Bucket(object):
         is returned as an uninterpreted JSON string.
         """
         response = self.connection.make_request('GET', self.name,
-                query_args='policy', headers=headers)
+                query_args='policy', headers=headers, location=self.location)
         body = response.read()
         if response.status == 200:
             return body
@@ -1583,7 +1579,8 @@ class Bucket(object):
         response = self.connection.make_request('PUT', self.name,
                                                 data=policy,
                                                 query_args='policy',
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         if response.status >= 200 and response.status <= 204:
             return True
@@ -1595,7 +1592,8 @@ class Bucket(object):
         response = self.connection.make_request('DELETE', self.name,
                                                 data='/?policy',
                                                 query_args='policy',
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         if response.status >= 200 and response.status <= 204:
             return True
@@ -1621,7 +1619,8 @@ class Bucket(object):
         response = self.connection.make_request('PUT', self.name,
                                                 data=fp.getvalue(),
                                                 query_args='cors',
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         if response.status == 200:
             return True
@@ -1646,7 +1645,7 @@ class Bucket(object):
         XML document.
         """
         response = self.connection.make_request('GET', self.name,
-                query_args='cors', headers=headers)
+                query_args='cors', headers=headers, location=self.location)
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
@@ -1675,7 +1674,8 @@ class Bucket(object):
         """
         response = self.connection.make_request('DELETE', self.name,
                                                 query_args='cors',
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         boto.log.debug(body)
         if response.status == 204:
@@ -1750,7 +1750,8 @@ class Bucket(object):
                 self.connection.provider)
         response = self.connection.make_request('POST', self.name, key_name,
                                                 query_args=query_args,
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         boto.log.debug(body)
         if response.status == 200:
@@ -1775,7 +1776,8 @@ class Bucket(object):
         headers['Content-Type'] = 'text/xml'
         response = self.connection.make_request('POST', self.name, key_name,
                                                 query_args=query_args,
-                                                headers=headers, data=xml_body)
+                                                headers=headers, data=xml_body,
+                                                location=self.location)
         contains_error = False
         body = response.read().decode('utf-8')
         # Some errors will be reported in the body of the response
@@ -1812,7 +1814,8 @@ class Bucket(object):
         query_args = 'uploadId=%s' % upload_id
         response = self.connection.make_request('DELETE', self.name, key_name,
                                                 query_args=query_args,
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         boto.log.debug(body)
         if response.status != 204:
@@ -1834,7 +1837,8 @@ class Bucket(object):
     def get_xml_tags(self):
         response = self.connection.make_request('GET', self.name,
                                                 query_args='tagging',
-                                                headers=None)
+                                                headers=None,
+                                                location=self.location)
         body = response.read()
         if response.status == 200:
             return body
@@ -1853,7 +1857,8 @@ class Bucket(object):
         response = self.connection.make_request('PUT', self.name,
                                                 data=tag_str,
                                                 query_args=query_args,
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         if response.status != 204:
             raise self.connection.provider.storage_response_error(
@@ -1866,7 +1871,8 @@ class Bucket(object):
     def delete_tags(self, headers=None):
         response = self.connection.make_request('DELETE', self.name,
                                                 query_args='tagging',
-                                                headers=headers)
+                                                headers=headers,
+                                                location=self.location)
         body = response.read()
         boto.log.debug(body)
         if response.status == 204:
