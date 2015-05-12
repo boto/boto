@@ -118,7 +118,7 @@ class MockServiceProviderTestCase(AWSMockServiceTestCase):
         self.alt_provider.host_header = None
         self.alt_provider.port = None
         self.alt_provider.secret_key = 'alt_secret_key'
-        self.https_connection = mock.Mock(spec=httplib.HTTPSConnection)
+        self.https_connection = mock.Mock(spec=http_client.HTTPSConnection)
         self.https_connection_factory = (
             mock.Mock(return_value=self.https_connection), ())
         self.service_connection = self.create_service_connection(
