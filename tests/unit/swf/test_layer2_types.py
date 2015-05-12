@@ -7,7 +7,11 @@ from mock import Mock, ANY
 class TestTypes(unittest.TestCase):
 
     def setUp(self):
+        self.saved_level1 = boto.swf.layer2.Layer1
         boto.swf.layer2.Layer1 = Mock()
+
+    def tearDown(self):
+        boto.swf.layer2.Layer1 = self.saved_level1
     
     def test_workflow_type_register_defaults(self):
         wf_type = WorkflowType(name='name', domain='test', version='1')

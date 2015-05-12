@@ -19,7 +19,7 @@ class TestSWFLayer2ProviderOverride(unittest.TestCase):
         alt_provider.port = None
         alt_provider.secret_key = 'alt_secret_key'
         regions=boto.swf.regions()
-        layer2 = SWFBase(
+        layer2 = boto.swf.layer2.SWFBase(
             domain=MOCK_DOMAIN, aws_access_key_id=MOCK_ACCESS_KEY,
             aws_secret_access_key=MOCK_SECRET_KEY, region=regions[0],
             provider = alt_provider
