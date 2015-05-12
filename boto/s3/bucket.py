@@ -1132,6 +1132,8 @@ class Bucket(object):
         response = self.connection.make_request('GET', self.name,
                                                 query_args='location')
         body = response.read()
+        if body == "" and response.status == 200:
+            body = '<?xml version="1.0" encoding="UTF-8"?>\n<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>'
         if response.status == 200:
             rs = ResultSet(self)
             h = handler.XmlHandler(rs, self)
