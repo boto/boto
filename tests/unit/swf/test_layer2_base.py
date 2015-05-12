@@ -28,4 +28,4 @@ class TestBase(unittest.TestCase):
                           self.swf_base.aws_secret_access_key)
         self.assertEquals(MOCK_REGION, self.swf_base.region)
         boto.swf.layer2.Layer1.assert_called_with(
-            MOCK_ACCESS_KEY, MOCK_SECRET_KEY, region=MOCK_REGION)
+            MOCK_ACCESS_KEY, MOCK_SECRET_KEY, region=MOCK_REGION, provider='aws')
