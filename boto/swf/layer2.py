@@ -33,10 +33,12 @@ class SWFBase(object):
         # Override attributes with keyword args.
         for kwarg in kwargs:
             setattr(self, kwarg, kwargs[kwarg])
-
+        layer1_args = { 'region': self.region }
+        if 'provider' in kwargs:
+            layer1_args['provider'] = kwargs['provider']
         self._swf = Layer1(self.aws_access_key_id,
                            self.aws_secret_access_key,
-                           region=self.region)
+                           **layer1_args)
 
     def __repr__(self):
         rep_str = str(self.name)

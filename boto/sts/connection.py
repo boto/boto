@@ -70,7 +70,7 @@ class STSConnection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  converter=None, validate_certs=True, anon=False,
-                 security_token=None, profile_name=None, provider=None):
+                 security_token=None, profile_name=None, provider='aws'):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint,

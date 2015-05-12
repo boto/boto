@@ -51,10 +51,10 @@ class TestDDBConnectionProviderL2Override(unittest.TestCase):
         self.alt_provider.host_header = None
         self.alt_provider.port = None
         self.alt_provider.secret_key = 'alt_secret_key'
-        self.layer2 = Layer2(None, None, provider=alt_provider)
+        self.layer2 = Layer2(None, None, provider=self.alt_provider)
 
     def test_provider_override(self):
-        self.assertDictEqual(self.level1.provider == self.alt_provider)
+        self.assertEqual(self.layer2.layer1.provider, self.alt_provider)
 
 
 class TestTableConstruction(unittest.TestCase):

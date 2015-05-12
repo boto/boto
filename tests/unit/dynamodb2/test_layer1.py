@@ -25,6 +25,8 @@ Tests for Layer1 of DynamoDB v2
 """
 from tests.unit import unittest
 import boto
+import mock
+from mock import Mock
 from boto.dynamodb2.layer1 import DynamoDBConnection
 from boto.regioninfo import RegionInfo
 
@@ -60,5 +62,5 @@ class DynamoDBv2Layer1UnitTest(unittest.TestCase):
         alt_provider.port = None
         alt_provider.secret_key = 'alt_secret_key'
         dynamodb = DynamoDBConnection(provider=alt_provider)
-        self.assertDictEqual(dynamodb.provider, alt_provider)
+        self.assertEqual(dynamodb.provider, alt_provider)
 

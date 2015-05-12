@@ -132,6 +132,6 @@ class MockServiceProviderTestCase(AWSMockServiceTestCase):
         self.initialize_service_connection()
 
     def assert_alt_provider_used(self):
-        self.assertDictEqual(self.service_connection.provider, self.alt_provider)
+        self.assertEqual(self.alt_provider, self.service_connection.provider)
 
 

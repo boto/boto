@@ -1,5 +1,4 @@
 import boto.swf.layer2
-import boto
 from boto.swf.layer2 import SWFBase
 from tests.unit import unittest
 from mock import Mock
@@ -9,21 +8,6 @@ MOCK_DOMAIN = 'Mock'
 MOCK_ACCESS_KEY = 'inheritable access key'
 MOCK_SECRET_KEY = 'inheritable secret key'
 MOCK_REGION = 'Mock Region'
-
-
-class TestSWFLayer2ProviderOverride(unittest.TestCase):
-    def test_provider_override(self):
-        alt_provider = Mock(spec=boto.provider.Provider)
-        alt_provider.host = None
-        alt_provider.host_header = None
-        alt_provider.port = None
-        alt_provider.secret_key = 'alt_secret_key'
-        layer2 = SWFBase(
-            domain=MOCK_DOMAIN, aws_access_key_id=MOCK_ACCESS_KEY,
-            aws_secret_access_key=MOCK_SECRET_KEY, region=MOCK_REGION,
-            provider = alt_provider
-        )
-        self.assertDictEquals(alt_provider, layer2.layer1.provider)
 
 
 class TestBase(unittest.TestCase):

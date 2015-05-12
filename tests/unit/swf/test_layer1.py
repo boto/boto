@@ -18,5 +18,5 @@ class TestSWFConnectionProviderOverride(unittest.TestCase):
         alt_provider.port = None
         alt_provider.secret_key = 'alt_secret_key'
         layer1 = Layer1(aws_access_key_id='aws_access_key', aws_secret_access_key='aws_secret_key', provider=alt_provider)
-        self.assertDictEqual(alt_provider, layer1.provider)
+        self.assertEqual(alt_provider, layer1.provider)
 

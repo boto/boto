@@ -42,7 +42,7 @@ class SESConnection(AWSAuthConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True, profile_name=None
+                 security_token=None, validate_certs=True, profile_name=None,
                  provider='aws'):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
