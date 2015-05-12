@@ -231,6 +231,10 @@ class S3Connection(AWSAuthConnection):
         """
         response = self.make_request('GET', bucket_name, query_args='location')
         body = response.read()
+        # Sometimes AWS returns a status of 200 with an empty body, for a ?location GET request.
+        # Since this is not valid XML, and will raise exceptions, the body is replaced in such a case.
+        if body == "" and response.status == 200:
+            body = '<?xml version="1.0" encoding="UTF-8"?>\n<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>'
         if response.status == 200:
             rs = ResultSet(self)
             h = handler.XmlHandler(rs, self)
