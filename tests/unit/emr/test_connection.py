@@ -370,8 +370,8 @@ class TestListInstances(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'ListInstances',
             'ClusterId': 'j-123',
-            'InstanceGroupTypeList.member.1': 'MASTER',
-            'InstanceGroupTypeList.member.2': 'TASK',
+            'InstanceGroupTypes.member.1': 'MASTER',
+            'InstanceGroupTypes.member.2': 'TASK',
             'Version': '2009-03-31'
         })
 
