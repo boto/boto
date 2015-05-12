@@ -119,6 +119,12 @@ def get_regions(service_name, region_cls=None, connection_cls=None, provider=Non
         the ``RegionInfo`` to work. Default is ``None`` (no connection).
     :type connection_cls: class
 
+    :param provider: (Optional) The provider object for the 
+        ``RegionInfo`` object. Providing this allows the ``connect`` method on
+        the ``RegionInfo`` to use this provider instead of the default.
+        Default is ``None`` (use default provider 'aws').
+    :type provider: string or Provider
+
     :returns: A list of configured ``RegionInfo`` objects
     :rtype: list
     """
@@ -186,6 +192,6 @@ class RegionInfo(object):
         :return: The connection to this regions endpoint
         """
         if self.connection_cls:
-            if self.provider:
+            if (self.provider is not None) and ('provider' not in kw_params):
                 kw_params['provider'] = self.provider
             return self.connection_cls(region=self, **kw_params)
