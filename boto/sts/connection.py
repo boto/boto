@@ -87,7 +87,6 @@ class STSConnection(AWSQueryConnection):
         self.region = region
         self.anon = anon
         self._mutex = threading.Semaphore()
-        provider = 'aws'
         # If an anonymous request is sent, do not try to look for credentials.
         # So we pass in dummy values for the access key id, secret access
         # key, and session token. It does not matter that they are
