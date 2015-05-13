@@ -27,7 +27,7 @@ import time
 import boto
 from boto.connection import AWSAuthConnection
 from boto.provider import Provider
-from boto.exception import SWFResponseError
+from boto.exception import get_error_name, SWFResponseError
 from boto.swf import exceptions as swf_exceptions
 from boto.compat import json
 
@@ -139,7 +139,7 @@ class Layer1(AWSAuthConnection):
                 return None
         else:
             json_body = json.loads(response_body)
-            fault_name = json_body.get('__type', None)
+            fault_name = get_error_name(json_body.get('__type', None))
             # Certain faults get mapped to more specific exception classes.
             excp_cls = self._fault_excp.get(fault_name, self.ResponseError)
             raise excp_cls(response.status, response.reason, body=json_body)
