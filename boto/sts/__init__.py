@@ -24,7 +24,7 @@ from boto.sts.connection import STSConnection
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions(provier=None):
+def regions(provider=None):
     """
     Get all available regions for the STS service.
 
