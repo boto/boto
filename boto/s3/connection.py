@@ -164,9 +164,9 @@ class S3Connection(AWSAuthConnection):
                  provider='aws', bucket_class=Bucket, security_token=None,
                  suppress_consec_slashes=True, anon=False,
                  validate_certs=None, profile_name=None):
-        no_host_provided = False
+        self.no_host_provided = False
         if host is NoHostProvided:
-            no_host_provided = True
+            self.no_host_provided = True
             host = self.DefaultHost
         if isinstance(calling_format, six.string_types):
             calling_format=boto.utils.find_class(calling_format)()
@@ -182,7 +182,7 @@ class S3Connection(AWSAuthConnection):
                 validate_certs=validate_certs, profile_name=profile_name)
         # We need to delay until after the call to ``super`` before checking
         # to see if SigV4 is in use.
-        if no_host_provided:
+        if self.no_host_provided:
             if 'hmac-v4-s3' in self._required_auth_capability():
                 raise HostRequiredError(
                     "When using SigV4, you must specify a 'host' parameter."
@@ -669,7 +669,10 @@ class S3Connection(AWSAuthConnection):
         boto.log.debug('path=%s' % path)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         boto.log.debug('auth_path=%s' % auth_path)
-        host = self.calling_format.build_host(self.server_name(), bucket, location)
+        if self.no_host_provided:
+            host = self.calling_format.build_host(self.server_name(), bucket, location)
+        else:
+            host = self.calling_format.build_host(self.server_name(), bucket)
         if query_args:
             path += '?' + query_args
             boto.log.debug('path=%s' % path)
