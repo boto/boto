@@ -112,6 +112,11 @@ class Route53Connection(AWSAuthConnection):
         :param int start_marker: start marker to pass when fetching additional
             results after a truncated list
         :param list zone_list: a HostedZones list to prepend to results
+
+        :rtype: :class:`boto.jsonresponse.Element`
+
+        :raise :class:`boto.route53.exception.DNSServerError`: Failed to get
+            successful result.
         """
         params = {}
         if start_marker:
@@ -149,6 +154,11 @@ class Route53Connection(AWSAuthConnection):
             to get_all_hosted_zones_by_name, but should be used, along with
             dns_name when dealing with truncated lists.
         :param list zone_list: a HostedZones list to prepend to results
+
+        :rtype: :class:`boto.jsonresponse.Element`
+
+        :raise :class:`boto.route53.exception.DNSServerError`: Failed to get
+            successful result.
         """
         params = {}
         if dns_name:
