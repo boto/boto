@@ -377,7 +377,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
             else:
                 c_value = ' '.join(raw_value.strip().split())
             canonical.append('%s:%s' % (c_name, c_value))
-        return '\n'.join(sorted(canonical))
+        return '\n'.join(sorted(canonical, key=lambda h: h.split(':')[0]))
 
     def signed_headers(self, headers_to_sign):
         l = ['%s' % n.lower().strip() for n in headers_to_sign]
