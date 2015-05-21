@@ -22,7 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-default_ttl = 60
+default_ttl = 600
 
 import copy
 from boto.exception import TooManyRecordsException
@@ -108,7 +108,7 @@ class Zone(object):
         else:
             change.add_value(value)
 
-    def add_record(self, resource_type, name, value, ttl=60, identifier=None,
+    def add_record(self, resource_type, name, value, ttl=default_ttl, identifier=None,
                    comment=""):
         """
         Add a new record to this Zone.  See _new_record for parameter
