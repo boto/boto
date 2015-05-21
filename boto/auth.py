@@ -590,7 +590,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
     def host_header(self, host, http_request):
         port = http_request.port
         secure = http_request.protocol == 'https'
-        if ((port == 80 and not secure) or (port == 443 and secure)):
+        if ((port == 80 and not secure) or (port == 443 and secure) or (":" in http_request.host)):
             return http_request.host
         return '%s:%s' % (http_request.host, port)
 
