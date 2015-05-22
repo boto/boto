@@ -50,14 +50,14 @@ from boto.compat import six
 RegionData = load_regions().get('autoscaling', {})
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the Auto Scaling service.
 
     :rtype: list
     :return: A list of :class:`boto.RegionInfo` instances
     """
-    return get_regions('autoscaling', connection_cls=AutoScaleConnection)
+    return get_regions('autoscaling', connection_cls=AutoScaleConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):
@@ -89,7 +89,7 @@ class AutoScaleConnection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  security_token=None, validate_certs=True, profile_name=None,
-                 use_block_device_types=False):
+                 use_block_device_types=False, provider='aws'):
         """
         Init method to create a new connection to the AutoScaling service.
 
@@ -112,7 +112,8 @@ class AutoScaleConnection(AWSQueryConnection):
                                                   https_connection_factory, path=path,
                                                   security_token=security_token,
                                                   validate_certs=validate_certs,
-                                                  profile_name=profile_name)
+                                                  profile_name=profile_name,
+                                                  provider=provider)
 
     def _required_auth_capability(self):
         return ['hmac-v4']

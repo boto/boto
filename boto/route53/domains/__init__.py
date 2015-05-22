@@ -22,7 +22,7 @@
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the Amazon Route 53 Domains service.
     :rtype: list
@@ -30,7 +30,8 @@ def regions():
     """
     from boto.route53.domains.layer1 import Route53DomainsConnection
     return get_regions('route53domains',
-                       connection_cls=Route53DomainsConnection)
+                       connection_cls=Route53DomainsConnection,
+                       provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):
