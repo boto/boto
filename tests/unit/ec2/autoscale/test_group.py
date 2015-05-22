@@ -25,7 +25,7 @@ import base64
 from datetime import datetime
 
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 
 from boto.ec2.autoscale import AutoScaleConnection
 from boto.ec2.autoscale.group import AutoScalingGroup
@@ -35,6 +35,12 @@ from boto.ec2.autoscale.tag import Tag
 from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 
 from boto.ec2.autoscale import launchconfig, LaunchConfiguration
+
+class TestAutoScaleGroupConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = AutoScaleConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestAutoScaleGroup(AWSMockServiceTestCase):
