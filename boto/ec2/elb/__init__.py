@@ -77,7 +77,7 @@ class ELBConnection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  security_token=None, validate_certs=True, profile_name=None,
-                 provider=provider):
+                 provider='aws'):
         """
         Init method to create a new connection to EC2 Load Balancing Service.
 
