@@ -1,5 +1,5 @@
 
-from tests.unit import MockServiceProviderTestCas
+from tests.unit import MockServiceProviderTestCase
 from boto.ec2.elb import ELBConnection
 
 
