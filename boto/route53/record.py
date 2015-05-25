@@ -26,7 +26,6 @@ RECORD_TYPES = ['A', 'AAAA', 'TXT', 'CNAME', 'MX', 'PTR', 'SRV', 'SPF']
 
 from boto.resultset import ResultSet
 
-
 class ResourceRecordSets(ResultSet):
     """
     A list of resource records.
@@ -67,7 +66,7 @@ class ResourceRecordSets(ResultSet):
         return '<ResourceRecordSets:%s [%s]' % (self.hosted_zone_id,
                                                 record_list)
 
-    def add_change(self, action, name, type, ttl=600,
+    def add_change(self, action, name, type, ttl=600, resource_records=[],
                    alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
                    weight=None, region=None, alias_evaluate_target_health=None,
                    health_check=None, failover=None):
@@ -96,6 +95,9 @@ class ResourceRecordSets(ResultSet):
 
         :type ttl: int
         :param ttl: The resource record cache time to live (TTL), in seconds.
+
+        :type resource_records: list
+        :param resource_records: The values of the record.
 
         :type alias_hosted_zone_id: str
         :param alias_dns_name: *Alias resource record sets only* The value
@@ -136,7 +138,7 @@ class ResourceRecordSets(ResultSet):
         :param failover: *Failover resource record sets only* Whether this is the
             primary or secondary resource record set.
         """
-        change = Record(name, type, ttl,
+        change = Record(name, type, ttl, resource_records,
                         alias_hosted_zone_id=alias_hosted_zone_id,
                         alias_dns_name=alias_dns_name, identifier=identifier,
                         weight=weight, region=region,
