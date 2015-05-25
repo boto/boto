@@ -1,4 +1,4 @@
-# Copyright (c) 2014 Amazon.com, Inc. or its affiliates.
+# Copyright (c) 2015 Shaun Brady.
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
