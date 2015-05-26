@@ -340,6 +340,27 @@ class Route53Connection(AWSAuthConnection):
         h = boto.jsonresponse.XmlHandler(e, None)
         h.parse(body)
         return e
+    
+    def get_health_check_status(self, health_check_id):
+        """
+        Return a hash with information about the health check
+        
+        :type health_check_id: str
+        :param health_check_id: Health check id (UUID string)
+
+        """
+        uri = '/%s/healthcheck/%s/status' % (self.Version, health_check_id)
+        response = self.make_request('GET', uri)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element()
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        return e['GetHealthCheckStatusResponse']['HealthCheckObservations']['HealthCheckObservation']
 
     def get_checker_ip_ranges(self):
         """
