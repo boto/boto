@@ -770,21 +770,20 @@ class ELBConnection(AWSQueryConnection):
                 params['Tags.member.%d.Value' % idx] = value
         return params
 
-    def get_all_tags(self, load_balancer_names=None):
+    def get_all_tags(self, load_balancer_names):
         """
         Retrieve all the metadata tags associated with your ELB(s).
 
         :type load_balancer_names: list
-        :param load_balancer_names: An optional list of load balancer names.
+        :param load_balancer_names: A list of load balancer names.
 
         :rtype: :class:`boto.ec2.elb.tag.TagDescriptions`
         :return: A dictionary mapping load balancer names to
             :class:`boto.ec2.elb.tag.Tags`.
         """
         params = {}
-        if load_balancer_names:
-            self.build_list_params(params, load_balancer_names,
-                                   'LoadBalancerNames.member.%d')
+        self.build_list_params(params, load_balancer_names,
+                               'LoadBalancerNames.member.%d')
 
         return self.get_object('DescribeTags', params, TagDescriptions,
                                verb='POST')
