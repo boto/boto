@@ -325,7 +325,7 @@ class Record(object):
         return self.XMLBody % params
 
     def to_print(self):
-        rr = ""
+
         if self.alias_hosted_zone_id is not None and self.alias_dns_name is not None:
             # Show alias
             rr = 'ALIAS ' + self.alias_hosted_zone_id + ' ' + self.alias_dns_name

@@ -160,11 +160,6 @@ class IN(ConditionSeveralArgs):
     pass
 
 
-class BEGINS_WITH(ConditionOneArg):
-
-    pass
-
-
 class BETWEEN(ConditionTwoArgs):
 
     pass

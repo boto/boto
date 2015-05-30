@@ -26,7 +26,7 @@ def versioned_bucket_lister(bucket, prefix='', delimiter='',
     A generator function for listing versioned objects.
     """
     more_results = True
-    k = None
+
     while more_results:
         rs = bucket.get_all_versions(prefix=prefix, marker=marker,
                                      generation_marker=generation_marker,

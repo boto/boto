@@ -78,13 +78,13 @@ class Cors(handler.ContentHandler):
         """SAX XML logic for parsing new element found."""
         if name == CORS_CONFIG:
             self.validateParseLevel(name, 0)
-            self.parse_level += 1;
+            self.parse_level += 1
         elif name == CORS:
             self.validateParseLevel(name, 1)
-            self.parse_level += 1;
+            self.parse_level += 1
         elif name in self.legal_collections:
             self.validateParseLevel(name, 2)
-            self.parse_level += 1;
+            self.parse_level += 1
             self.collection = name
         elif name in self.legal_elements:
             self.validateParseLevel(name, 3)
@@ -103,10 +103,10 @@ class Cors(handler.ContentHandler):
         """SAX XML logic for parsing new element found."""
         if name == CORS_CONFIG:
             self.validateParseLevel(name, 1)
-            self.parse_level -= 1;
+            self.parse_level -= 1
         elif name == CORS:
             self.validateParseLevel(name, 2)
-            self.parse_level -= 1;
+            self.parse_level -= 1
             # Terminating a CORS element, save any collections we found
             # and re-initialize collections list.
             self.cors.append(self.collections)
@@ -116,7 +116,7 @@ class Cors(handler.ContentHandler):
             if name != self.collection:
               raise InvalidCorsError('Mismatched start and end tags (%s/%s)' %
                                      (self.collection, name))
-            self.parse_level -= 1;
+            self.parse_level -= 1
             if not self.legal_collections[name]:
               # If this collection doesn't contain any sub-elements, store
               # a tuple of name and this tag's element value.

@@ -240,7 +240,7 @@ class Domain(object):
 
     def create_index_field(self, field_name, field_type,
         default='', facet=False, result=False, searchable=False,
-        source_attributes=[]):
+        source_attributes=None):
         """
         Defines an ``IndexField``, either replacing an existing
         definition or creating a new one.
@@ -307,6 +307,8 @@ class Domain(object):
         :raises: BaseException, InternalException, LimitExceededException,
             InvalidTypeException, ResourceNotFoundException
         """
+        if not source_attributes:
+            source_attributes = []
         data = self.layer1.define_index_field(self.name, field_name,
                                               field_type, default=default,
                                               facet=facet, result=result,

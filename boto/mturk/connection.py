@@ -33,7 +33,7 @@ from boto.mturk.question import QuestionForm, ExternalQuestion, HTMLQuestion
 
 
 class MTurkRequestError(EC2ResponseError):
-    "Error for MTurk Requests"
+    """Error for MTurk Requests"""
     # todo: subclass from an abstract parent of EC2ResponseError
 
 
@@ -917,7 +917,7 @@ class HIT(BaseAutoResultElement):
     # property helper to determine if HIT has expired
     def _has_expired(self):
         """ Has this HIT expired yet? """
-        expired = False
+
         if hasattr(self, 'Expiration'):
             now = datetime.datetime.utcnow()
             expiration = datetime.datetime.strptime(self.Expiration, '%Y-%m-%dT%H:%M:%SZ')

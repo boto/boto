@@ -2025,7 +2025,7 @@ class EC2Connection(AWSQueryConnection):
         params = {}
 
         # If there is an association id it trumps public ip
-        # in order to successfully dissassociate with a VPC elastic ip
+        # in order to successfully disassociate with a VPC elastic ip
         if association_id is not None:
             params['AssociationId'] = association_id
         elif public_ip is not None:
@@ -2352,7 +2352,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type device: str
         :param device: The device on the instance through which the
-                       volume will be exposted (e.g. /dev/sdh)
+                       volume will be exposed (e.g. /dev/sdh)
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -2381,7 +2381,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type device: str
         :param device: The device on the instance through which the
-            volume is exposted (e.g. /dev/sdh)
+            volume is exposed (e.g. /dev/sdh)
 
         :type force: bool
         :param force: Forces detachment if the previous detachment
@@ -2673,9 +2673,9 @@ class EC2Connection(AWSQueryConnection):
                         # the snap date is before the cutoff date.
                         # Figure out if it's the first snap in this
                         # date range and act accordingly (since both
-                        #date the date ranges and the snapshots
+                        # date the date ranges and the snapshots
                         # are sorted chronologically, we know this
-                        #snapshot isn't in an earlier date range):
+                        # snapshot isn't in an earlier date range):
                         if snap_found_for_this_time_period == True:
                             if not snap.tags.get('preserve_snapshot'):
                                 # as long as the snapshot wasn't marked
@@ -2686,10 +2686,10 @@ class EC2Connection(AWSQueryConnection):
                                 except EC2ResponseError:
                                     boto.log.error('Attempt to trim snapshot %s (%s) failed. Possible result of a race condition with trimming on another server?' % (snap.tags['Name'], snap.start_time))
                             # go on and look at the next snapshot,
-                            #leaving the time period alone
+                            # leaving the time period alone
                         else:
                             # this was the first snapshot found for this
-                            #time period. Leave it alone and look at the
+                            # time period. Leave it alone and look at the
                             # next snapshot:
                             snap_found_for_this_time_period = True
                         check_this_snap = False
@@ -2744,7 +2744,7 @@ class EC2Connection(AWSQueryConnection):
 
         :type operation: string
         :param operation: Either add or remove (this is required for changing
-            snapshot ermissions)
+            snapshot permissions)
 
         :type user_ids: list
         :param user_ids: The Amazon IDs of users to add/remove attributes

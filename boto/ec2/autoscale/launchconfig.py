@@ -66,7 +66,7 @@ class InstanceMonitoring(object):
 
 
 # this should use the BlockDeviceMapping from boto.ec2.blockdevicemapping
-# Currently in use by deprecated code for backwards compatability
+# Currently in use by deprecated code for backwards compatibility
 # Removing this class can also remove the Ebs class in this same file
 class BlockDeviceMapping(object):
     def __init__(self, connection=None, device_name=None, virtual_name=None,

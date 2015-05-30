@@ -105,7 +105,7 @@ class Error(object):
             self.message = value
         else:
             setattr(self, name, value)
-            
+
 class MultiDeleteResult(object):
     """
     The status returned from a MultiObject Delete request.
@@ -135,4 +135,4 @@ class MultiDeleteResult(object):
 
     def endElement(self, name, value, connection):
         setattr(self, name, value)
- 
+

@@ -109,7 +109,7 @@ class ResultProcessor(object):
                 file_name = os.path.join(path, key)
                 print('retrieving file: %s to %s' % (key, file_name))
                 key.get_contents_to_filename(file_name)
-                self.num_files + 1
+                self.num_files += 1
 
     def get_results(self, path, get_file=True, delete_msg=True):
         if not os.path.isdir(path):

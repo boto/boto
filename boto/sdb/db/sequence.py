@@ -58,7 +58,7 @@ class SequenceGenerator(object):
     def __call__(self, val, last=None):
         """Get the next value in the sequence"""
         # If they pass us in a string that's not at least
-        # the lenght of our sequence, then return the
+        # the length of our sequence, then return the
         # first element in our sequence
         if val is None or len(val) < self.sequence_length:
             return self.sequence_string[0]
@@ -102,7 +102,7 @@ increment_string = SequenceGenerator("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 class Sequence(object):
     """A simple Sequence using the new SDB "Consistent" features
-    Based largly off of the "Counter" example from mitch garnaat:
+    Based largely off of the "Counter" example from mitch garnaat:
     http://bitbucket.org/mitch/stupidbototricks/src/tip/counter.py"""
 
     def __init__(self, id=None, domain_name=None, fnc=increment_by_one, init_val=None):

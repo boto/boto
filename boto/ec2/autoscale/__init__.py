@@ -633,7 +633,7 @@ class AutoScaleConnection(AWSQueryConnection):
         :param name: Scheduled action name.
 
         :type time: datetime.datetime
-        :param time: The time for this action to start. (Depracated)
+        :param time: The time for this action to start. (Deprecated)
 
         :type desired_capacity: int
         :param desired_capacity: The number of EC2 instances that should

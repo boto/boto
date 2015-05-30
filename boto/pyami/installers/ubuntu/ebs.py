@@ -122,7 +122,7 @@ class EBSInstaller(Installer):
         while volume.update() != 'available':
             boto.log.info('Volume %s not yet available. Current status = %s.' % (volume.id, volume.status))
             time.sleep(5)
-        instance = ec2.get_only_instances([self.instance_id])[0]
+
         attempt_attach = True
         while attempt_attach:
             try:
@@ -130,7 +130,7 @@ class EBSInstaller(Installer):
                 attempt_attach = False
             except EC2ResponseError as e:
                 if e.error_code != 'IncorrectState':
-                    # if there's an EC2ResonseError with the code set to IncorrectState, delay a bit for ec2
+                    # if there's an EC2ResponseError with the code set to IncorrectState, delay a bit for ec2
                     # to realize the instance is running, then try again. Otherwise, raise the error:
                     boto.log.info('Attempt to attach the EBS volume %s to this instance (%s) returned %s. Trying again in a bit.' % (self.volume_id, self.instance_id, e.errors))
                     time.sleep(2)

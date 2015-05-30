@@ -235,7 +235,9 @@ class PigStep(PigBase):
     Pig script step
     """
 
-    def __init__(self, name, pig_file, pig_versions='latest', pig_args=[]):
+    def __init__(self, name, pig_file, pig_versions='latest', pig_args=None):
+        if not pig_args:
+            pig_args = []
         step_args = []
         step_args.extend(self.BaseArgs)
         step_args.extend(['--pig-versions', pig_versions])

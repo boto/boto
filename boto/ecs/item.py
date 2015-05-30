@@ -70,7 +70,7 @@ class ResponseGroup(xml.sax.ContentHandler):
         self._xml.write("%s</%s>" % (cgi.escape(value).replace("&amp;amp;", "&amp;"), name))
         if len(self._nodepath) == 0:
             return
-        obj = None
+
         curval = self.get(name)
         if len(self._nodepath) == 1:
             if value or not curval:
@@ -159,6 +159,6 @@ class ItemSet(ResponseGroup):
 
     def to_xml(self):
         """Override to first fetch everything"""
-        for item in self:
+        for _ in self:
             pass
         return ResponseGroup.to_xml(self)

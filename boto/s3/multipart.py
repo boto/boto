@@ -116,7 +116,7 @@ def part_lister(mpupload, part_number_marker=None):
     A generator function for listing parts of a multipart upload.
     """
     more_results = True
-    part = None
+
     while more_results:
         parts = mpupload.get_all_parts(None, part_number_marker)
         for part in parts:

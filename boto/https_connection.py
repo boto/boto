@@ -97,7 +97,7 @@ class CertValidatingHTTPSConnection(http_client.HTTPConnection):
           port: The port. Defaults to 443.
           key_file: A file containing the client's private key
           cert_file: A file containing the client's certificates
-          ca_certs: A file contianing a set of concatenated certificate authority
+          ca_certs: A file containing a set of concatenated certificate authority
               certs for validating the server against.
           strict: When true, causes BadStatusLine to be raised if the status line
               can't be parsed as a valid HTTP/1.0 or 1.1 status line.
@@ -114,7 +114,7 @@ class CertValidatingHTTPSConnection(http_client.HTTPConnection):
         self.ca_certs = ca_certs
 
     def connect(self):
-        "Connect to a host on a given (SSL) port."
+        """Connect to a host on a given (SSL) port."""
         if hasattr(self, "timeout"):
             sock = socket.create_connection((self.host, self.port), self.timeout)
         else:

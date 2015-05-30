@@ -73,7 +73,7 @@ def versioned_bucket_lister(bucket, prefix='', delimiter='',
     A generator function for listing versions in a bucket.
     """
     more_results = True
-    k = None
+
     while more_results:
         rs = bucket.get_all_versions(prefix=prefix, key_marker=key_marker,
                                      version_id_marker=version_id_marker,
@@ -119,7 +119,7 @@ def multipart_upload_lister(bucket, key_marker='',
     A generator function for listing multipart uploads in a bucket.
     """
     more_results = True
-    k = None
+
     while more_results:
         rs = bucket.get_all_multipart_uploads(key_marker=key_marker,
                                               upload_id_marker=upload_id_marker,

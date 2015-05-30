@@ -225,7 +225,7 @@ class ELBConnection(AWSQueryConnection):
                 params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
                 params['Listeners.member.%d.InstancePort' % i] = listener[1]
                 params['Listeners.member.%d.Protocol' % i] = listener[2]
-                params['Listeners.member.%d.InstanceProtocol' % i] = listener[3]
+                params['Listeners.member.%d.InstanceProtocol' % i] = InstanceProtocol
                 if protocol == 'HTTPS' or protocol == 'SSL':
                     params['Listeners.member.%d.SSLCertificateId' % i] = listener[4]
 
@@ -308,7 +308,7 @@ class ELBConnection(AWSQueryConnection):
                 params['Listeners.member.%d.LoadBalancerPort' % i] = listener[0]
                 params['Listeners.member.%d.InstancePort' % i] = listener[1]
                 params['Listeners.member.%d.Protocol' % i] = listener[2]
-                params['Listeners.member.%d.InstanceProtocol' % i] = listener[3]
+                params['Listeners.member.%d.InstanceProtocol' % i] = InstanceProtocol
                 if protocol == 'HTTPS' or protocol == 'SSL':
                     params['Listeners.member.%d.SSLCertificateId' % i] = listener[4]
 
