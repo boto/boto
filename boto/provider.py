@@ -67,9 +67,11 @@ STORAGE_CREATE_ERROR = 'StorageCreateError'
 STORAGE_DATA_ERROR = 'StorageDataError'
 STORAGE_PERMISSIONS_ERROR = 'StoragePermissionsError'
 STORAGE_RESPONSE_ERROR = 'StorageResponseError'
+NO_CREDENTIALS_PROVIDED = object()
 
 
-class ProfileNotFoundError(ValueError): pass
+class ProfileNotFoundError(ValueError):
+    pass
 
 
 class Provider(object):
@@ -252,7 +254,7 @@ class Provider(object):
             # datetime docs.
             seconds_left = (
                 (delta.microseconds + (delta.seconds + delta.days * 24 * 3600)
-                 * 10**6) / 10**6)
+                 * 10 ** 6) / 10 ** 6)
             if seconds_left < (5 * 60):
                 boto.log.debug("Credentials need to be refreshed.")
                 return True
@@ -443,6 +445,7 @@ class Provider(object):
 
     def supports_chunked_transfer(self):
         return self.ChunkedTransferSupport[self.name]
+
 
 # Static utility method for getting default Provider.
 def get_default():

@@ -105,7 +105,7 @@ class TestReservedInstanceOfferings(TestEC2ConnectionBase):
     def test_get_reserved_instance_offerings_params(self):
         self.set_http_response(status_code=200)
         self.ec2.get_all_reserved_instances_offerings(
-            reserved_instances_offering_ids=['id1','id2'],
+            reserved_instances_offering_ids=['id1', 'id2'],
             instance_type='t1.micro',
             availability_zone='us-east-1',
             product_description='description',
@@ -132,9 +132,9 @@ class TestReservedInstanceOfferings(TestEC2ConnectionBase):
             'MaxDuration': '1000',
             'MaxInstanceCount': '1',
             'NextToken': 'next_token',
-            'MaxResults': '10',},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp', 'Version'])
+            'MaxResults': '10', },
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp', 'Version'])
 
 
 class TestPurchaseReservedInstanceOffering(TestEC2ConnectionBase):
@@ -144,16 +144,16 @@ class TestPurchaseReservedInstanceOffering(TestEC2ConnectionBase):
     def test_serialized_api_args(self):
         self.set_http_response(status_code=200)
         response = self.ec2.purchase_reserved_instance_offering(
-                'offering_id', 1, (100.0, 'USD'))
+            'offering_id', 1, (100.0, 'USD'))
         self.assert_request_parameters({
             'Action': 'PurchaseReservedInstancesOffering',
             'InstanceCount': 1,
             'ReservedInstancesOfferingId': 'offering_id',
             'LimitPrice.Amount': '100.0',
-            'LimitPrice.CurrencyCode': 'USD',},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            'LimitPrice.CurrencyCode': 'USD', },
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
 
 class TestCreateImage(TestEC2ConnectionBase):
@@ -166,30 +166,30 @@ class TestCreateImage(TestEC2ConnectionBase):
     def test_minimal(self):
         self.set_http_response(status_code=200)
         response = self.ec2.create_image(
-                'instance_id', 'name')
+            'instance_id', 'name')
         self.assert_request_parameters({
             'Action': 'CreateImage',
             'InstanceId': 'instance_id',
             'Name': 'name'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
     def test_block_device_mapping(self):
         self.set_http_response(status_code=200)
         bdm = BlockDeviceMapping()
         bdm['test'] = BlockDeviceType()
         response = self.ec2.create_image(
-                'instance_id', 'name', block_device_mapping=bdm)
+            'instance_id', 'name', block_device_mapping=bdm)
         self.assert_request_parameters({
             'Action': 'CreateImage',
             'InstanceId': 'instance_id',
             'Name': 'name',
             'BlockDeviceMapping.1.DeviceName': 'test',
             'BlockDeviceMapping.1.Ebs.DeleteOnTermination': 'false'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
 
 class TestCancelReservedInstancesListing(TestEC2ConnectionBase):
@@ -414,10 +414,10 @@ class TestCreateReservedInstancesListing(TestEC2ConnectionBase):
             'PriceSchedules.0.Price': '2.5',
             'PriceSchedules.0.Term': '11',
             'PriceSchedules.1.Price': '2.0',
-            'PriceSchedules.1.Term': '8',},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            'PriceSchedules.1.Term': '8', },
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
 
 class TestDescribeSpotInstanceRequests(TestEC2ConnectionBase):
@@ -517,9 +517,10 @@ class TestCopySnapshot(TestEC2ConnectionBase):
             'Description': 'description',
             'SourceRegion': 'us-west-2',
             'SourceSnapshotId': 'snap-id'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
 
 class TestCopyImage(TestEC2ConnectionBase):
     def default_body(self):
@@ -533,7 +534,7 @@ class TestCopyImage(TestEC2ConnectionBase):
     def test_copy_image(self):
         self.set_http_response(status_code=200)
         copied_ami = self.ec2.copy_image('us-west-2', 'ami-id',
-                                     'name', 'description', 'client-token')
+                                         'name', 'description', 'client-token')
         self.assertEqual(copied_ami.image_id, 'ami-copied-id')
 
         self.assert_request_parameters({
@@ -543,9 +544,10 @@ class TestCopyImage(TestEC2ConnectionBase):
             'SourceRegion': 'us-west-2',
             'SourceImageId': 'ami-id',
             'ClientToken': 'client-token'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
     def test_copy_image_without_name(self):
         self.set_http_response(status_code=200)
         copied_ami = self.ec2.copy_image('us-west-2', 'ami-id',
@@ -559,9 +561,10 @@ class TestCopyImage(TestEC2ConnectionBase):
             'SourceRegion': 'us-west-2',
             'SourceImageId': 'ami-id',
             'ClientToken': 'client-token'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
 
 class TestAccountAttributes(TestEC2ConnectionBase):
     def default_body(self):
@@ -643,10 +646,10 @@ class TestDescribeVPCAttribute(TestEC2ConnectionBase):
         self.assert_request_parameters({
             'Action': 'DescribeVpcAttribute',
             'VpcId': 'vpc-id',
-            'Attribute': 'enableDnsHostnames',},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            'Attribute': 'enableDnsHostnames', },
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
 
 class TestGetAllNetworkInterfaces(TestEC2ConnectionBase):
@@ -709,8 +712,8 @@ class TestGetAllNetworkInterfaces(TestEC2ConnectionBase):
             'Action': 'DescribeNetworkInterfaces',
             'NetworkInterfaceId.1': 'eni-0f62d866'},
             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].id, 'eni-0f62d866')
 
@@ -719,6 +722,7 @@ class TestGetAllNetworkInterfaces(TestEC2ConnectionBase):
         parsed = self.ec2.get_all_network_interfaces()
 
         self.assertEqual(5, parsed[0].attachment.device_index)
+
 
 class TestGetAllImages(TestEC2ConnectionBase):
     def default_body(self):
@@ -830,9 +834,9 @@ class TestModifyInterfaceAttribute(TestEC2ConnectionBase):
             'Action': 'ModifyNetworkInterfaceAttribute',
             'NetworkInterfaceId': 'id',
             'Description.Value': 'foo'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
     def test_modify_source_dest_check_bool(self):
         self.set_http_response(status_code=200)
@@ -843,9 +847,9 @@ class TestModifyInterfaceAttribute(TestEC2ConnectionBase):
             'Action': 'ModifyNetworkInterfaceAttribute',
             'NetworkInterfaceId': 'id',
             'SourceDestCheck.Value': 'true'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
     def test_modify_source_dest_check_str(self):
         self.set_http_response(status_code=200)
@@ -856,9 +860,9 @@ class TestModifyInterfaceAttribute(TestEC2ConnectionBase):
             'Action': 'ModifyNetworkInterfaceAttribute',
             'NetworkInterfaceId': 'id',
             'SourceDestCheck.Value': 'true'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
     def test_modify_source_dest_check_invalid(self):
         self.set_http_response(status_code=200)
@@ -879,9 +883,9 @@ class TestModifyInterfaceAttribute(TestEC2ConnectionBase):
             'NetworkInterfaceId': 'id',
             'Attachment.AttachmentId': 'bar',
             'Attachment.DeleteOnTermination': 'true'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
     def test_modify_delete_on_termination_bool(self):
         self.set_http_response(status_code=200)
@@ -895,9 +899,9 @@ class TestModifyInterfaceAttribute(TestEC2ConnectionBase):
             'NetworkInterfaceId': 'id',
             'Attachment.AttachmentId': 'bar',
             'Attachment.DeleteOnTermination': 'false'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
     def test_modify_delete_on_termination_invalid(self):
         self.set_http_response(status_code=200)
@@ -918,9 +922,9 @@ class TestModifyInterfaceAttribute(TestEC2ConnectionBase):
             'NetworkInterfaceId': 'id',
             'SecurityGroupId.1': 'sg-1',
             'SecurityGroupId.2': 'sg-2'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
 
     def test_modify_group_set_invalid(self):
         self.set_http_response(status_code=200)
@@ -944,7 +948,8 @@ class TestConnectToRegion(unittest.TestCase):
 
     def test_aws_region(self):
         region = boto.ec2.RegionData.keys()[0]
-        self.ec2 = boto.ec2.connect_to_region(region,
+        self.ec2 = boto.ec2.connect_to_region(
+            region,
             https_connection_factory=self.https_connection_factory,
             aws_access_key_id='aws_access_key_id',
             aws_secret_access_key='aws_secret_access_key'
@@ -952,16 +957,18 @@ class TestConnectToRegion(unittest.TestCase):
         self.assertEqual(boto.ec2.RegionData[region], self.ec2.host)
 
     def test_non_aws_region(self):
-        self.ec2 = boto.ec2.connect_to_region('foo',
+        self.ec2 = boto.ec2.connect_to_region(
+            'foo',
             https_connection_factory=self.https_connection_factory,
             aws_access_key_id='aws_access_key_id',
             aws_secret_access_key='aws_secret_access_key',
-            region = RegionInfo(name='foo', endpoint='https://foo.com/bar')
+            region=RegionInfo(name='foo', endpoint='https://foo.com/bar')
         )
         self.assertEqual('https://foo.com/bar', self.ec2.host)
 
     def test_missing_region(self):
-        self.ec2 = boto.ec2.connect_to_region('foo',
+        self.ec2 = boto.ec2.connect_to_region(
+            'foo',
             https_connection_factory=self.https_connection_factory,
             aws_access_key_id='aws_access_key_id',
             aws_secret_access_key='aws_secret_access_key'
@@ -1085,7 +1092,8 @@ class TestModifyReservedInstances(TestEC2ConnectionBase):
                 ReservedInstancesConfiguration(
                     availability_zone='us-west-2c',
                     platform='EC2-VPC',
-                    instance_count=3
+                    instance_count=3,
+                    instance_type='c3.large'
                 ),
             ]
         )
@@ -1095,6 +1103,7 @@ class TestModifyReservedInstances(TestEC2ConnectionBase):
             'ReservedInstancesConfigurationSetItemType.0.AvailabilityZone': 'us-west-2c',
             'ReservedInstancesConfigurationSetItemType.0.InstanceCount': 3,
             'ReservedInstancesConfigurationSetItemType.0.Platform': 'EC2-VPC',
+            'ReservedInstancesConfigurationSetItemType.0.InstanceType': 'c3.large',
             'ReservedInstancesId.1': '2567o137-8a55-48d6-82fb-7258506bb497'
         }, ignore_params_values=[
             'AWSAccessKeyId', 'SignatureMethod',
@@ -1265,38 +1274,37 @@ class TestRegisterImage(TestEC2ConnectionBase):
             'SignatureVersion', 'Timestamp',
             'Version'
         ])
-    
+
     def test_volume_delete_on_termination_on(self):
         self.set_http_response(status_code=200)
         self.ec2.register_image('name', 'description',
                                 snapshot_id='snap-12345678',
                                 delete_root_volume_on_termination=True)
-        
+
         self.assert_request_parameters({
             'Action': 'RegisterImage',
             'Name': 'name',
             'Description': 'description',
             'BlockDeviceMapping.1.DeviceName': None,
-            'BlockDeviceMapping.1.Ebs.DeleteOnTermination' : 'true',
+            'BlockDeviceMapping.1.Ebs.DeleteOnTermination': 'true',
             'BlockDeviceMapping.1.Ebs.SnapshotId': 'snap-12345678',
         }, ignore_params_values=[
             'AWSAccessKeyId', 'SignatureMethod',
             'SignatureVersion', 'Timestamp',
             'Version'
         ])
-        
 
     def test_volume_delete_on_termination_default(self):
         self.set_http_response(status_code=200)
         self.ec2.register_image('name', 'description',
                                 snapshot_id='snap-12345678')
-        
+
         self.assert_request_parameters({
             'Action': 'RegisterImage',
             'Name': 'name',
             'Description': 'description',
             'BlockDeviceMapping.1.DeviceName': None,
-            'BlockDeviceMapping.1.Ebs.DeleteOnTermination' : 'false',
+            'BlockDeviceMapping.1.Ebs.DeleteOnTermination': 'false',
             'BlockDeviceMapping.1.Ebs.SnapshotId': 'snap-12345678',
         }, ignore_params_values=[
             'AWSAccessKeyId', 'SignatureMethod',
@@ -1344,20 +1352,20 @@ class TestDescribeInstances(TestEC2ConnectionBase):
         self.ec2.get_all_instances()
         self.assert_request_parameters({
             'Action': 'DescribeInstances'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp', 'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp', 'Version'])
 
         self.ec2.get_all_reservations()
         self.assert_request_parameters({
             'Action': 'DescribeInstances'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp', 'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp', 'Version'])
 
         self.ec2.get_only_instances()
         self.assert_request_parameters({
             'Action': 'DescribeInstances'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp', 'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp', 'Version'])
 
     def test_max_results(self):
         self.set_http_response(status_code=200)
@@ -1367,8 +1375,8 @@ class TestDescribeInstances(TestEC2ConnectionBase):
         self.assert_request_parameters({
             'Action': 'DescribeInstances',
             'MaxResults': 10},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp', 'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp', 'Version'])
 
     def test_next_token(self):
         self.set_http_response(status_code=200)
@@ -1378,8 +1386,9 @@ class TestDescribeInstances(TestEC2ConnectionBase):
         self.assert_request_parameters({
             'Action': 'DescribeInstances',
             'NextToken': 'abcdefgh'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp', 'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp', 'Version'])
+
 
 class TestDescribeTags(TestEC2ConnectionBase):
 
@@ -1394,8 +1403,8 @@ class TestDescribeTags(TestEC2ConnectionBase):
         self.ec2.get_all_tags()
         self.assert_request_parameters({
             'Action': 'DescribeTags'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp', 'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp', 'Version'])
 
     def test_max_results(self):
         self.set_http_response(status_code=200)
@@ -1405,15 +1414,15 @@ class TestDescribeTags(TestEC2ConnectionBase):
         self.assert_request_parameters({
             'Action': 'DescribeTags',
             'MaxResults': 10},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp', 'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp', 'Version'])
 
 
 class TestSignatureAlteration(TestEC2ConnectionBase):
     def test_unchanged(self):
         self.assertEqual(
             self.service_connection._required_auth_capability(),
-            ['ec2']
+            ['hmac-v4']
         )
 
     def test_switched(self):
@@ -1483,7 +1492,7 @@ class TestDescribeVolumes(TestEC2ConnectionBase):
     def default_body(self):
         return b"""
             <DescribeVolumesResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
-               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId> 
+               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <volumeSet>
                   <item>
                      <volumeId>vol-1a2b3c4d</volumeId>
@@ -1536,9 +1545,9 @@ class TestDescribeVolumes(TestEC2ConnectionBase):
             'Action': 'DescribeVolumes',
             'VolumeId.1': 'vol-1a2b3c4d',
             'VolumeId.2': 'vol-5e6f7a8b'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].id, 'vol-1a2b3c4d')
         self.assertTrue(result[0].encrypted)
@@ -1550,7 +1559,7 @@ class TestDescribeSnapshots(TestEC2ConnectionBase):
     def default_body(self):
         return b"""
             <DescribeSnapshotsResponse xmlns="http://ec2.amazonaws.com/doc/2014-02-01/">
-               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId> 
+               <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
                <snapshotSet>
                   <item>
                      <snapshotId>snap-1a2b3c4d</snapshotId>
@@ -1589,9 +1598,9 @@ class TestDescribeSnapshots(TestEC2ConnectionBase):
             'Action': 'DescribeSnapshots',
             'SnapshotId.1': 'snap-1a2b3c4d',
             'SnapshotId.2': 'snap-5e6f7a8b'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0].id, 'snap-1a2b3c4d')
         self.assertTrue(result[0].encrypted)
@@ -1603,7 +1612,7 @@ class TestCreateVolume(TestEC2ConnectionBase):
     def default_body(self):
         return b"""
             <CreateVolumeResponse xmlns="http://ec2.amazonaws.com/doc/2014-05-01/">
-              <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId> 
+              <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
               <volumeId>vol-1a2b3c4d</volumeId>
               <size>80</size>
               <snapshotId/>
@@ -1625,11 +1634,87 @@ class TestCreateVolume(TestEC2ConnectionBase):
             'Size': 80,
             'SnapshotId': 'snap-1a2b3c4d',
             'Encrypted': 'true'},
-             ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                   'SignatureVersion', 'Timestamp',
-                                   'Version'])
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
         self.assertEqual(result.id, 'vol-1a2b3c4d')
         self.assertTrue(result.encrypted)
+
+    def test_create_volume_with_specify_kms(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.create_volume(80, 'us-east-1e', snapshot='snap-1a2b3c4d',
+                                        encrypted=True,kms_key_id='arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef')
+        self.assert_request_parameters({
+            'Action': 'CreateVolume',
+            'AvailabilityZone': 'us-east-1e',
+            'Size': 80,
+            'SnapshotId': 'snap-1a2b3c4d',
+            'Encrypted': 'true',
+            'KmsKeyId': 'arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+        self.assertEqual(result.id, 'vol-1a2b3c4d')
+        self.assertTrue(result.encrypted)
+
+
+class TestGetClassicLinkInstances(TestEC2ConnectionBase):
+    def default_body(self):
+        return b"""
+            <DescribeClassicLinkInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2014-09-01/">
+               <requestId>f4bf0cc6-5967-4687-9355-90ce48394bd3</requestId>
+               <instancesSet>
+                  <item>
+                     <instanceId>i-31489bd8</instanceId>
+                     <vpcId>vpc-9d24f8f8</vpcId>
+                     <groupSet>
+                        <item>
+                           <groupId>sg-9b4343fe</groupId>
+                        </item>
+                    </groupSet>
+                    <tagSet>
+                        <item>
+                           <key>Name</key>
+                           <value>hello</value>
+                        </item>
+                    </tagSet>
+                 </item>
+              </instancesSet>
+           </DescribeClassicLinkInstancesResponse>
+        """
+    def test_get_classic_link_instances(self):
+        self.set_http_response(status_code=200)
+        response = self.ec2.get_all_classic_link_instances()
+        self.assertEqual(len(response), 1)
+        instance = response[0]
+        self.assertEqual(instance.id, 'i-31489bd8')
+        self.assertEqual(instance.vpc_id, 'vpc-9d24f8f8')
+        self.assertEqual(len(instance.groups), 1)
+        self.assertEqual(instance.groups[0].id, 'sg-9b4343fe')
+        self.assertEqual(instance.tags, {'Name': 'hello'})
+
+
+    def test_get_classic_link_instances_params(self):
+        self.set_http_response(status_code=200)
+        self.ec2.get_all_classic_link_instances(
+            instance_ids=['id1', 'id2'],
+            filters={'GroupId': 'sg-9b4343fe'},
+            dry_run=True,
+            next_token='next_token',
+            max_results=10
+        )
+        self.assert_request_parameters({
+            'Action': 'DescribeClassicLinkInstances',
+            'InstanceId.1': 'id1',
+            'InstanceId.2': 'id2',
+            'Filter.1.Name': 'GroupId',
+            'Filter.1.Value.1': 'sg-9b4343fe',
+            'DryRun': 'true',
+            'NextToken': 'next_token',
+            'MaxResults': 10},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp', 'Version'])
+
 
 if __name__ == '__main__':
     unittest.main()

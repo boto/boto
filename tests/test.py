@@ -52,6 +52,7 @@ PY3_WHITELIST = (
     'tests/unit/glacier',
     'tests/unit/iam',
     'tests/unit/ec2',
+    'tests/unit/kms',
     'tests/unit/logs',
     'tests/unit/manage',
     'tests/unit/mws',
@@ -71,6 +72,7 @@ PY3_WHITELIST = (
     'tests/unit/test_regioninfo.py',
 )
 
+
 def main(whitelist=[]):
     description = ("Runs boto unit and/or integration tests. "
                    "Arguments will be passed on to nosetests. "
@@ -83,7 +85,7 @@ def main(whitelist=[]):
     known_args, remaining_args = parser.parse_known_args()
     attribute_args = []
     for service_attribute in known_args.service_tests:
-        attribute_args.extend(['-a', '!notdefault,' +service_attribute])
+        attribute_args.extend(['-a', '!notdefault,' + service_attribute])
     if not attribute_args:
         # If the user did not specify any filtering criteria, we at least
         # will filter out any test tagged 'notdefault'.

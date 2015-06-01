@@ -23,8 +23,6 @@ import os
 from tests.unit import unittest
 
 import boto
-from boto.compat import json
-from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo, load_endpoint_json, merge_endpoints
 from boto.regioninfo import load_regions, get_regions
 
@@ -106,7 +104,7 @@ class TestEndpointLoading(unittest.TestCase):
     def test_get_regions(self):
         # With defaults.
         ec2_regions = get_regions('ec2')
-        self.assertEqual(len(ec2_regions), 10)
+        self.assertTrue(len(ec2_regions) >= 10)
         west_2 = None
 
         for region_info in ec2_regions:
@@ -126,7 +124,7 @@ class TestEndpointLoading(unittest.TestCase):
             region_cls=TestRegionInfo,
             connection_cls=FakeConn
         )
-        self.assertEqual(len(ec2_regions), 10)
+        self.assertTrue(len(ec2_regions) >= 10)
         west_2 = None
 
         for region_info in ec2_regions:

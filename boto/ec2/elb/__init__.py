@@ -98,7 +98,7 @@ class ELBConnection(AWSQueryConnection):
                                             profile_name=profile_name)
 
     def _required_auth_capability(self):
-        return ['ec2']
+        return ['hmac-v4']
 
     def build_list_params(self, params, items, label):
         if isinstance(items, six.string_types):
@@ -400,6 +400,7 @@ class ELBConnection(AWSQueryConnection):
         :param attribute: The attribute you wish to change.
 
         * crossZoneLoadBalancing - Boolean (true)
+        * connectingSettings - :py:class:`ConnectionSettingAttribute` instance
         * accessLog - :py:class:`AccessLogAttribute` instance
         * connectionDraining - :py:class:`ConnectionDrainingAttribute` instance
 
@@ -436,6 +437,9 @@ class ELBConnection(AWSQueryConnection):
                 value.enabled and 'true' or 'false'
             params['LoadBalancerAttributes.ConnectionDraining.Timeout'] = \
                 value.timeout
+        elif attribute.lower() == 'connectingsettings':
+            params['LoadBalancerAttributes.ConnectionSettings.IdleTimeout'] = \
+                value.idle_timeout
         else:
             raise ValueError('InvalidAttribute', attribute)
         return self.get_status('ModifyLoadBalancerAttributes', params,
@@ -468,6 +472,7 @@ class ELBConnection(AWSQueryConnection):
 
           * accessLog - :py:class:`AccessLogAttribute` instance
           * crossZoneLoadBalancing - Boolean
+          * connectingSettings - :py:class:`ConnectionSettingAttribute` instance
           * connectionDraining - :py:class:`ConnectionDrainingAttribute`
             instance
 
@@ -481,6 +486,8 @@ class ELBConnection(AWSQueryConnection):
             return attributes.cross_zone_load_balancing.enabled
         if attribute.lower() == 'connectiondraining':
             return attributes.connection_draining
+        if attribute.lower() == 'connectingsettings':
+            return attributes.connecting_settings
         return None
 
     def register_instances(self, load_balancer_name, instances):
@@ -688,9 +695,9 @@ class ELBConnection(AWSQueryConnection):
 
     def apply_security_groups_to_lb(self, name, security_groups):
         """
-        Applies security groups to the load balancer.
-        Applying security groups that are already registered with the
-        Load Balancer has no effect.
+        Associates one or more security groups with the load balancer.
+        The provided security groups will override any currently applied
+        security groups.
 
         :type name: string
         :param name: The name of the Load Balancer

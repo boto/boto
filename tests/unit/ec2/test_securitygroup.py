@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from tests.compat import mock, unittest
+from tests.compat import unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.ec2.connection import EC2Connection
@@ -169,6 +169,7 @@ DESCRIBE_INSTANCES = br"""<?xml version="1.0" encoding="UTF-8"?>
     </reservationSet>
 </DescribeInstancesResponse>
 """
+
 
 class TestDescribeSecurityGroups(AWSMockServiceTestCase):
     connection_class = EC2Connection

@@ -128,12 +128,13 @@ class ReservedInstance(ReservedInstancesOffering):
                  usage_price=None, description=None,
                  instance_count=None, state=None):
         super(ReservedInstance, self).__init__(connection, id, instance_type,
-                                           availability_zone, duration,
-                                           fixed_price, usage_price,
-                                           description)
+                                               availability_zone, duration,
+                                               fixed_price, usage_price,
+                                               description)
         self.instance_count = instance_count
         self.state = state
         self.start = None
+        self.end = None
 
     def __repr__(self):
         return 'ReservedInstance:%s' % self.id
@@ -147,6 +148,8 @@ class ReservedInstance(ReservedInstancesOffering):
             self.state = value
         elif name == 'start':
             self.start = value
+        elif name == 'end':
+            self.end = value
         else:
             super(ReservedInstance, self).endElement(name, value, connection)
 

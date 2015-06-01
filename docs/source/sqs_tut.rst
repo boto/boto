@@ -262,12 +262,9 @@ to count the number of messages in a queue:
 >>> q.count()
 10
 
-This can be handy but this command as well as the other two utility methods
-I'll describe in a minute are inefficient and should be used with caution
-on queues with lots of messages (e.g. many hundreds or more).  Similarly,
-you can clear (delete) all messages in a queue with:
+Removing all messages in a queue is as simple as calling purge:
 
->>> q.clear()
+>>> q.purge()
 
 Be REAL careful with that one!  Finally, if you want to dump all of the
 messages in a queue to a local file:

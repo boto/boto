@@ -105,14 +105,14 @@ class AutoScaleConnection(AWSQueryConnection):
         self.region = region
         self.use_block_device_types = use_block_device_types
         super(AutoScaleConnection, self).__init__(aws_access_key_id,
-                                    aws_secret_access_key,
-                                    is_secure, port, proxy, proxy_port,
-                                    proxy_user, proxy_pass,
-                                    self.region.endpoint, debug,
-                                    https_connection_factory, path=path,
-                                    security_token=security_token,
-                                    validate_certs=validate_certs,
-                                    profile_name=profile_name)
+                                                  aws_secret_access_key,
+                                                  is_secure, port, proxy, proxy_port,
+                                                  proxy_user, proxy_pass,
+                                                  self.region.endpoint, debug,
+                                                  https_connection_factory, path=path,
+                                                  security_token=security_token,
+                                                  validate_certs=validate_certs,
+                                                  profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
@@ -192,6 +192,27 @@ class AutoScaleConnection(AWSQueryConnection):
         self.build_list_params(params, instance_ids, 'InstanceIds')
         return self.get_status('AttachInstances', params)
 
+    def detach_instances(self, name, instance_ids, decrement_capacity=True):
+        """
+        Detach instances from an Auto Scaling group.
+
+        :type name: str
+        :param name: The name of the Auto Scaling group from which to detach instances.
+
+        :type instance_ids: list
+        :param instance_ids: Instance ids to be detached from the Auto Scaling group.
+
+        :type decrement_capacity: bool
+        :param decrement_capacity: Whether to decrement the size of the
+            Auto Scaling group or not.
+        """
+
+        params = {'AutoScalingGroupName': name}
+        params['ShouldDecrementDesiredCapacity'] = 'true' if decrement_capacity else 'false'
+
+        self.build_list_params(params, instance_ids, 'InstanceIds')
+        return self.get_status('DetachInstances', params)
+
     def create_auto_scaling_group(self, as_group):
         """
         Create auto scaling group.
@@ -222,7 +243,10 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.key_name:
             params['KeyName'] = launch_config.key_name
         if launch_config.user_data:
-            params['UserData'] = base64.b64encode(launch_config.user_data).decode('utf-8')
+            user_data = launch_config.user_data
+            if isinstance(user_data, six.text_type):
+                user_data = user_data.encode('utf-8')
+            params['UserData'] = base64.b64encode(user_data).decode('utf-8')
         if launch_config.kernel_id:
             params['KernelId'] = launch_config.kernel_id
         if launch_config.ramdisk_id:
@@ -256,6 +280,14 @@ class AutoScaleConnection(AWSQueryConnection):
             params['DeleteOnTermination'] = 'false'
         if launch_config.iops:
             params['Iops'] = launch_config.iops
+        if launch_config.classic_link_vpc_id:
+            params['ClassicLinkVPCId'] = launch_config.classic_link_vpc_id
+        if launch_config.classic_link_vpc_security_groups:
+            self.build_list_params(
+                params,
+                launch_config.classic_link_vpc_security_groups,
+                'ClassicLinkVPCSecurityGroups'
+            )
         return self.get_object('CreateLaunchConfiguration', params,
                                Request, verb='POST')
 
