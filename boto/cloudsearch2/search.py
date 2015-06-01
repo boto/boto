@@ -345,7 +345,7 @@ class SearchConnection(object):
 
         query = self.build_query(q=q, parser=parser, fq=fq, rank=rank,
                                  return_fields=return_fields,
-                                 size=size, start=start, curosr=cursor, facet=facet,
+                                 size=size, start=start, cursor=cursor, facet=facet,
                                  highlight=highlight, sort=sort,
                                  partial=partial, options=options)
         return self(query)
