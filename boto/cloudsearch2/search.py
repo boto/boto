@@ -42,6 +42,7 @@ class SearchResults(object):
         self.hits = attrs['hits']['found']
         self.docs = attrs['hits']['hit']
         self.start = attrs['hits']['start']
+        self.cursor = attrs['hits'].get('cursor', None)
         self.query = attrs['query']
         self.search_service = attrs['search_service']
 
@@ -66,8 +67,11 @@ class SearchResults(object):
         :return: the following page of search results
         """
         if self.query.page <= self.num_pages_needed:
-            self.query.start += self.query.real_size
-            self.query.page += 1
+            if self.cursor:
+                self.query.cursor = self.cursor
+            else:
+                self.query.start += self.query.real_size
+                self.query.page += 1
             return self.search_service(self.query)
         else:
             raise StopIteration
@@ -78,7 +82,7 @@ class Query(object):
     RESULTS_PER_PAGE = 500
 
     def __init__(self, q=None, parser=None, fq=None, expr=None,
-                 return_fields=None, size=10, start=0, sort=None,
+                 return_fields=None, size=10, start=0, cursor=None, sort=None,
                  facet=None, highlight=None, partial=None, options=None):
 
         self.q = q
@@ -88,6 +92,7 @@ class Query(object):
         self.sort = sort or []
         self.return_fields = return_fields or []
         self.start = start
+        self.cursor = cursor
         self.facet = facet or {}
         self.highlight = highlight or {}
         self.partial = partial
@@ -142,6 +147,9 @@ class Query(object):
 
         if self.sort:
             params['sort'] = ','.join(self.sort)
+
+        if self.cursor:
+            params['cursor'] = self.cursor
 
         return params
 
@@ -199,6 +207,9 @@ class Query(object):
         if self.sort:
             params['sort'] = ','.join(self.sort)
 
+        if self.cursor:
+            params['cursor'] = self.cursor
+
         return params
 
 
@@ -232,14 +243,18 @@ class SearchConnection(object):
                 )
 
     def build_query(self, q=None, parser=None, fq=None, rank=None, return_fields=None,
-                    size=10, start=0, facet=None, highlight=None, sort=None,
+                    size=10, start=0, cursor=None, facet=None, highlight=None, sort=None,
                     partial=None, options=None):
+        if cursor:
+            if start is not None:
+                raise SearchServiceException('When cursor is used, start must be set to None')
+
         return Query(q=q, parser=parser, fq=fq, expr=rank, return_fields=return_fields,
-                     size=size, start=start, facet=facet, highlight=highlight,
+                     size=size, start=start, cursor=cursor, facet=facet, highlight=highlight,
                      sort=sort, partial=partial, options=options)
 
     def search(self, q=None, parser=None, fq=None, rank=None, return_fields=None,
-               size=10, start=0, facet=None, highlight=None, sort=None, partial=None,
+               size=10, start=0, cursor=None, facet=None, highlight=None, sort=None, partial=None,
                options=None):
         """
         Send a query to CloudSearch
@@ -330,7 +345,7 @@ class SearchConnection(object):
 
         query = self.build_query(q=q, parser=parser, fq=fq, rank=rank,
                                  return_fields=return_fields,
-                                 size=size, start=start, facet=facet,
+                                 size=size, start=start, curosr=cursor, facet=facet,
                                  highlight=highlight, sort=sort,
                                  partial=partial, options=options)
         return self(query)
@@ -383,7 +398,7 @@ class SearchConnection(object):
             for m in data['messages']:
                 if m['severity'] == 'fatal':
                     raise SearchServiceException("Error processing search %s "
-                        "=> %s" % (params, m['message']), query)
+                        "=> %s" % m['message'], query)
         elif 'error' in data:
             raise SearchServiceException("Unknown error processing search %s"
                 % json.dumps(data), query)
