@@ -1241,7 +1241,7 @@ class Key(object):
                 headers[provider.storage_class_header] = self.storage_class
                 # TODO - What if provider doesn't support reduced reduncancy?
                 # What if different providers provide different classes?
-        if hasattr(fp, 'name'):
+        if hasattr(fp, 'name') and not isinstance(fp.name, int):
             self.path = fp.name
         if self.bucket is not None:
             if not md5 and provider.supports_chunked_transfer():
