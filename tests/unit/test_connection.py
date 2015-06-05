@@ -203,6 +203,15 @@ class TestAWSAuthConnection(unittest.TestCase):
         conn.set_host_header(request)
         self.assertEqual(request.headers['Host'], 'testhost:8773')
 
+    def test_connection_enter_exit(self):
+        with AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False
+        ) as conn:
+            pass
+
 
 class V4AuthConnection(AWSAuthConnection):
     def __init__(self, host, aws_access_key_id, aws_secret_access_key, port=443):
