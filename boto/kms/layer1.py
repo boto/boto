@@ -279,7 +279,7 @@ class KMSConnection(AWSQueryConnection):
                 "Value of argument ``ciphertext_blob`` "
                 "must be of type %s." % six.binary_type)
         ciphertext_blob = base64.b64encode(ciphertext_blob)
-        params = {'CiphertextBlob': ciphertext_blob, }
+        params = {'CiphertextBlob': ciphertext_blob.decode('utf-8'), }
         if encryption_context is not None:
             params['EncryptionContext'] = encryption_context
         if grant_tokens is not None:
@@ -403,7 +403,7 @@ class KMSConnection(AWSQueryConnection):
                 "Value of argument ``plaintext`` "
                 "must be of type %s." % six.binary_type)
         plaintext = base64.b64encode(plaintext)
-        params = {'KeyId': key_id, 'Plaintext': plaintext, }
+        params = {'KeyId': key_id, 'Plaintext': plaintext.decode('utf-8'), }
         if encryption_context is not None:
             params['EncryptionContext'] = encryption_context
         if grant_tokens is not None:
