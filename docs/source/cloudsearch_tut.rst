@@ -381,7 +381,7 @@ The stopwords object has similar attributes defined above for stemming
 that provide additional information about the stopwords in your domain.
 
 
-Viewing and Adjusting Stopwords for a Domain
+Viewing and Adjusting Synonyms for a Domain
 --------------------------------------------
 
 You can configure synonyms for terms that appear in the data you are
