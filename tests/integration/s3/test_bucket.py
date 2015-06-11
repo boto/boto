@@ -40,6 +40,10 @@ from boto.s3.lifecycle import Rule
 from boto.s3.acl import Grant
 from boto.s3.tagging import Tags, TagSet
 from boto.s3.website import RedirectLocation
+from boto.s3.website import Condition
+from boto.s3.website import RoutingRules
+from boto.s3.website import RoutingRule
+from boto.s3.website import Redirect
 from boto.compat import urllib
 
 
@@ -202,6 +206,49 @@ class S3BucketTest (unittest.TestCase):
                 'Protocol': 'https',
             }}}
         )
+
+    def test_website_routingrules(self):
+        rules = RoutingRules()
+        condition = Condition(key_prefix='docs/')
+        redirect = Redirect(replace_key_prefix='documents/')
+        rules.add_rule(RoutingRule(condition, redirect))
+
+        response = self.bucket.configure_website('index.html', routing_rules=rules)
+        self.assertTrue(response)
+        config = self.bucket.get_website_configuration()
+        self.assertEqual(config, {'WebsiteConfiguration':
+                                  { 'IndexDocument': {'Suffix': 'index.html'},
+                                      'RoutingRules': [
+                                          {  'Condition': {'KeyPrefixEquals': 'docs/'},
+                                             'Redirect': {'ReplaceKeyPrefixWith': 'documents/'},},
+                                          ]}})
+        config2, xml = self.bucket.get_website_configuration_with_xml()
+        self.assertEqual(config, config2)
+        self.assertTrue('<RoutingRule><Condition><KeyPrefixEquals>docs/</KeyPrefixEquals></Condition><Redirect><ReplaceKeyPrefixWith>documents/</ReplaceKeyPrefixWith></Redirect></RoutingRule>' in xml, xml)
+
+    def test_website_routingrules_multiple(self):
+        rules = RoutingRules()
+        condition = Condition(key_prefix='docs/')
+        redirect = Redirect(replace_key_prefix='documents/')
+        rules.add_rule(RoutingRule(condition, redirect))
+        condition = Condition(key_prefix='docs1/')
+        redirect = Redirect(replace_key_prefix='documents1/')
+        rules.add_rule(RoutingRule(condition, redirect))
+
+        response = self.bucket.configure_website('index.html', routing_rules=rules)
+        self.assertTrue(response)
+        config = self.bucket.get_website_configuration()
+        self.assertEqual(config, {'WebsiteConfiguration':
+                                  { 'IndexDocument': {'Suffix': 'index.html'},
+                                      'RoutingRules': [
+                                          {  'Condition': {'KeyPrefixEquals': 'docs/'},
+                                             'Redirect': {'ReplaceKeyPrefixWith': 'documents/'},},
+                                          {  'Condition': {'KeyPrefixEquals': 'docs1/'},
+                                             'Redirect': {'ReplaceKeyPrefixWith': 'documents1/'},},
+                                          ]}})
+        config2, xml = self.bucket.get_website_configuration_with_xml()
+        self.assertEqual(config, config2)
+        self.assertTrue('<RoutingRule><Condition><KeyPrefixEquals>docs1/</KeyPrefixEquals></Condition><Redirect><ReplaceKeyPrefixWith>documents1/</ReplaceKeyPrefixWith></Redirect></RoutingRule>' in xml, xml)
 
     def test_lifecycle(self):
         lifecycle = Lifecycle()

@@ -26,7 +26,6 @@ import xml.sax
 
 from boto.s3.website import WebsiteConfiguration
 from boto.s3.website import RedirectLocation
-from boto.s3.website import RoutingRules
 from boto.s3.website import Condition
 from boto.s3.website import RoutingRules
 from boto.s3.website import RoutingRule
@@ -54,6 +53,10 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
         xml = config.to_xml()
         self.assertIn(
             '<IndexDocument><Suffix>index.html</Suffix></IndexDocument>', xml)
+        config_dict = config.to_dict()
+        self.assertDictEqual(config_dict, {'WebsiteConfiguration': {
+            'IndexDocument': {'Suffix': 'index.html'},
+            }})
 
     def test_suffix_and_error(self):
         config = WebsiteConfiguration(suffix='index.html',
@@ -61,6 +64,11 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
         xml = config.to_xml()
         self.assertIn(
             '<ErrorDocument><Key>error.html</Key></ErrorDocument>', xml)
+        config_dict = config.to_dict()
+        self.assertDictEqual(config_dict, {'WebsiteConfiguration': {
+            'IndexDocument': {'Suffix': 'index.html'},
+            'ErrorDocument': {'Key': 'error.html'},
+            }})
 
     def test_redirect_all_request_to_with_just_host(self):
         location = RedirectLocation(hostname='example.com')
@@ -69,6 +77,10 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
         self.assertIn(
             ('<RedirectAllRequestsTo><HostName>'
              'example.com</HostName></RedirectAllRequestsTo>'), xml)
+        config_dict = config.to_dict()
+        self.assertDictEqual(config_dict, {'WebsiteConfiguration': {
+            'RedirectAllRequestsTo': {'HostName': 'example.com'},
+            }})
 
     def test_redirect_all_requests_with_protocol(self):
         location = RedirectLocation(hostname='example.com', protocol='https')
@@ -78,6 +90,10 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
             ('<RedirectAllRequestsTo><HostName>'
              'example.com</HostName><Protocol>https</Protocol>'
              '</RedirectAllRequestsTo>'), xml)
+        config_dict = config.to_dict()
+        self.assertDictEqual(config_dict, {'WebsiteConfiguration': {
+            'RedirectAllRequestsTo': {'HostName': 'example.com', 'Protocol': 'https'},
+            }})
 
     def test_routing_rules_key_prefix(self):
         x = pretty_print_xml
@@ -107,6 +123,17 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
             </WebsiteConfiguration>
         """
         self.assertEqual(x(expected_xml), x(xml))
+
+        config_dict = config.to_dict()
+        self.assertDictEqual(config_dict, {'WebsiteConfiguration': {
+            'IndexDocument': {'Suffix': 'index.html'},
+            'RoutingRules': [
+                {
+                    'Condition': { 'KeyPrefixEquals': 'docs/', },
+                    'Redirect': { 'ReplaceKeyPrefixWith': 'documents/', },
+                },
+                ]
+            }})
 
     def test_routing_rules_to_host_on_404(self):
         x = pretty_print_xml
@@ -142,6 +169,16 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
             </WebsiteConfiguration>
         """
         self.assertEqual(x(expected_xml), x(xml))
+        config_dict = config.to_dict()
+        self.assertDictEqual(config_dict, {'WebsiteConfiguration': {
+            'IndexDocument': {'Suffix': 'index.html'},
+            'RoutingRules': [
+                {
+                    'Condition': { 'HttpErrorCodeReturnedEquals': '404', },
+                    'Redirect': { 'HostName': 'example.com', 'ReplaceKeyPrefixWith': 'report-404/', },
+                },
+                ]
+            }})
 
     def test_key_prefix(self):
         x = pretty_print_xml
@@ -159,17 +196,80 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
               </IndexDocument>
               <RoutingRules>
                 <RoutingRule>
-                <Condition>
-                  <KeyPrefixEquals>images/</KeyPrefixEquals>
-                </Condition>
-                <Redirect>
-                  <ReplaceKeyWith>folderdeleted.html</ReplaceKeyWith>
-                </Redirect>
+                  <Condition>
+                    <KeyPrefixEquals>images/</KeyPrefixEquals>
+                  </Condition>
+                  <Redirect>
+                    <ReplaceKeyWith>folderdeleted.html</ReplaceKeyWith>
+                  </Redirect>
                 </RoutingRule>
               </RoutingRules>
             </WebsiteConfiguration>
         """
         self.assertEqual(x(expected_xml), x(xml))
+        config_dict = config.to_dict()
+        self.assertDictEqual(config_dict, {'WebsiteConfiguration': {
+            'IndexDocument': {'Suffix': 'index.html'},
+            'RoutingRules': [
+                {
+                    'Condition': { 'KeyPrefixEquals': 'images/', },
+                    'Redirect': { 'ReplaceKeyWith': 'folderdeleted.html', },
+                },
+                ]
+            }})
+
+
+    def test_key_prefix_multi(self):
+        x = pretty_print_xml
+        rules = RoutingRules()
+        condition = Condition(key_prefix="images/")
+        redirect = Redirect(replace_key='folderdeleted.html')
+        rules.add_rule(RoutingRule(condition, redirect))
+        condition = Condition(key_prefix="Images/")
+        rules.add_rule(RoutingRule(condition, redirect))
+        config = WebsiteConfiguration(suffix='index.html', routing_rules=rules)
+        xml = config.to_xml()
+
+        expected_xml = """<?xml version="1.0" encoding="UTF-8"?>
+            <WebsiteConfiguration xmlns='http://s3.amazonaws.com/doc/2006-03-01/'>
+              <IndexDocument>
+                <Suffix>index.html</Suffix>
+              </IndexDocument>
+              <RoutingRules>
+                <RoutingRule>
+                  <Condition>
+                    <KeyPrefixEquals>images/</KeyPrefixEquals>
+                  </Condition>
+                  <Redirect>
+                    <ReplaceKeyWith>folderdeleted.html</ReplaceKeyWith>
+                  </Redirect>
+                </RoutingRule>
+                <RoutingRule>
+                  <Condition>
+                    <KeyPrefixEquals>Images/</KeyPrefixEquals>
+                  </Condition>
+                  <Redirect>
+                    <ReplaceKeyWith>folderdeleted.html</ReplaceKeyWith>
+                  </Redirect>
+                </RoutingRule>
+              </RoutingRules>
+            </WebsiteConfiguration>
+        """
+        self.assertEqual(x(expected_xml), x(xml))
+        config_dict = config.to_dict()
+        self.assertDictEqual(config_dict, {'WebsiteConfiguration': {
+            'IndexDocument': {'Suffix': 'index.html'},
+            'RoutingRules': [
+                {
+                    'Condition': { 'KeyPrefixEquals': 'images/', },
+                    'Redirect': { 'ReplaceKeyWith': 'folderdeleted.html', },
+                },
+                {
+                    'Condition': { 'KeyPrefixEquals': 'Images/', },
+                    'Redirect': { 'ReplaceKeyWith': 'folderdeleted.html', },
+                },
+                ]
+            }})
 
     def test_builders(self):
         x = pretty_print_xml
@@ -189,8 +289,7 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
         xml2 = rules2.to_xml()
         self.assertEqual(x(xml), x(xml2))
 
-    def test_parse_xml(self):
-        x = pretty_print_xml
+    def test_parse_xml1(self):
         xml_in = """<?xml version="1.0" encoding="UTF-8"?>
             <WebsiteConfiguration xmlns='http://s3.amazonaws.com/doc/2006-03-01/'>
               <IndexDocument>
@@ -223,8 +322,93 @@ class TestS3WebsiteConfiguration(unittest.TestCase):
               </RoutingRules>
             </WebsiteConfiguration>
         """
+        xml_out, config = self._convert_xml_to_wsconf(xml_in)
+        x = pretty_print_xml
+        self.assertEqual(x(xml_in), x(xml_out))
+        config_dict = config.to_dict()
+        self.assertDictEqual(config_dict, {'WebsiteConfiguration': {
+            'IndexDocument': {'Suffix': 'index.html'},
+            'ErrorDocument': {'Key': 'error.html'},
+            'RoutingRules': [
+                {
+                    'Condition': { 'KeyPrefixEquals': 'docs/', },
+                    'Redirect': { 'HostName': 'www.example.com', 'Protocol': 'https', 'ReplaceKeyWith': 'documents/', 'HttpRedirectCode': '302', },
+                },
+                {
+                    'Condition': { 'HttpErrorCodeReturnedEquals': '404', },
+                    'Redirect': { 'HostName': 'example.com', 'ReplaceKeyPrefixWith': 'report-404/', },
+                },
+                ]
+            }})
+
+    def test_parse_xml2(self):
+        xml_in = """<?xml version="1.0" encoding="UTF-8"?>
+          <WebsiteConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            <IndexDocument>
+              <Suffix>index.html</Suffix>
+            </IndexDocument>
+            <RoutingRules>
+              <RoutingRule>
+                <Condition>
+                  <KeyPrefixEquals>prefix1</KeyPrefixEquals>
+                </Condition>
+                <Redirect>
+                  <ReplaceKeyPrefixWith>prefix2</ReplaceKeyPrefixWith>
+                </Redirect>
+              </RoutingRule>
+              <RoutingRule>
+                <Condition>
+                  <KeyPrefixEquals>prefix1</KeyPrefixEquals>
+                </Condition>
+                <Redirect>
+                  <ReplaceKeyPrefixWith>prefix2</ReplaceKeyPrefixWith>
+                </Redirect>
+              </RoutingRule>
+              <RoutingRule>
+                <Condition>
+                  <KeyPrefixEquals>absolute1</KeyPrefixEquals>
+                </Condition>
+                <Redirect>
+                  <ReplaceKeyWith>absolute2</ReplaceKeyWith>
+                </Redirect>
+              </RoutingRule>
+              <RoutingRule>
+                <Condition>
+                  <KeyPrefixEquals>absolute1</KeyPrefixEquals>
+                </Condition>
+                <Redirect>
+                  <ReplaceKeyWith>absolute2</ReplaceKeyWith>
+                </Redirect>
+              </RoutingRule>
+            </RoutingRules>
+          </WebsiteConfiguration>
+        """
+        xml_out, config = self._convert_xml_to_wsconf(xml_in)
+        x = pretty_print_xml
+        self.assertEqual(x(xml_in), x(xml_out))
+        config_dict = config.to_dict()
+        self.assertDictEqual(config_dict, {'WebsiteConfiguration': {
+            'IndexDocument': {'Suffix': 'index.html'},
+            'RoutingRules': [
+                { 'Condition': { 'KeyPrefixEquals': 'prefix1', },
+                  'Redirect': { 'ReplaceKeyPrefixWith': 'prefix2', },
+                },
+                { 'Condition': { 'KeyPrefixEquals': 'prefix1', },
+                  'Redirect': { 'ReplaceKeyPrefixWith': 'prefix2', },
+                },
+                { 'Condition': { 'KeyPrefixEquals': 'absolute1', },
+                  'Redirect': { 'ReplaceKeyWith': 'absolute2', },
+                },
+                { 'Condition': { 'KeyPrefixEquals': 'absolute1', },
+                  'Redirect': { 'ReplaceKeyWith': 'absolute2', },
+                },
+                ]
+            }})
+
+    @staticmethod
+    def _convert_xml_to_wsconf(xml_in):
         webconfig = WebsiteConfiguration()
         h = handler.XmlHandler(webconfig, None)
         xml.sax.parseString(xml_in.encode('utf-8'), h)
         xml_out = webconfig.to_xml()
-        self.assertEqual(x(xml_in), x(xml_out))
+        return xml_out, webconfig

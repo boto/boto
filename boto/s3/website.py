@@ -20,6 +20,9 @@
 # IN THE SOFTWARE.
 #
 
+from boto.jsonresponse import Element
+from boto.jsonresponse import XmlHandler
+
 def tag(key, value):
     start = '<%s>' % key
     end = '</%s>' % key
@@ -88,6 +91,15 @@ class WebsiteConfiguration(object):
         parts.append('</WebsiteConfiguration>')
         return ''.join(parts)
 
+    def to_dict(self):
+        return WebsiteConfiguration.xml_to_dict(self.to_xml())
+
+    @staticmethod
+    def xml_to_dict(xml):
+        e = Element(list_marker=('RoutingRules',), item_marker=('RoutingRule', ))
+        h = XmlHandler(e, None)
+        h.parse(xml)
+        return e
 
 class _XMLKeyValue(object):
     def __init__(self, translator, container=None):

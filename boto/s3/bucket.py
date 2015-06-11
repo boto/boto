@@ -41,7 +41,6 @@ from boto.s3.tagging import Tags
 from boto.s3.cors import CORSConfiguration
 from boto.s3.bucketlogging import BucketLogging
 from boto.s3 import website
-import boto.jsonresponse
 import boto.utils
 import xml.sax
 import xml.sax.saxutils
@@ -1517,9 +1516,7 @@ class Bucket(object):
         """
 
         body = self.get_website_configuration_xml(headers=headers)
-        e = boto.jsonresponse.Element()
-        h = boto.jsonresponse.XmlHandler(e, None)
-        h.parse(body)
+        e = website.WebsiteConfiguration.xml_to_dict(body)
         return e, body
 
     def get_website_configuration_xml(self, headers=None):
