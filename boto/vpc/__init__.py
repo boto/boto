@@ -1826,3 +1826,9 @@ class VPCConnection(EC2Connection):
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('EnableVpcClassicLink', params)
+
+    def create_endpoint(self, vpc_id, service_name):
+        params = {'VpcId': vpc_id, 'ServiceName': service_name}
+        return self.get_object('CreateVpcEndpoint', params, VpcEndpoint)
+
+        
