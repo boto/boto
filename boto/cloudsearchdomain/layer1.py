@@ -68,7 +68,7 @@ class CloudSearchDomainConnection(AWSAuthConnection):
             )
         super(CloudSearchDomainConnection, self).__init__(**kwargs)
         self.region = region
-    
+
     def _required_auth_capability(self):
         return ['hmac-v4']
 
@@ -402,7 +402,8 @@ class CloudSearchDomainConnection(AWSAuthConnection):
         if expr is not None:
             query_params['expr'] = expr
         if facet is not None:
-            query_params['facet'] = facet
+            for (facet_field, facet_options) in facet.iteritems():
+                query_params[facet_field] = facet_options
         if filter_query is not None:
             query_params['fq'] = filter_query
         if highlight is not None:
