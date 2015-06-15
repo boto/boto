@@ -35,6 +35,7 @@ from boto.vpc.dhcpoptions import DhcpOptions
 from boto.vpc.subnet import Subnet
 from boto.vpc.vpnconnection import VpnConnection
 from boto.vpc.vpc_peering_connection import VpcPeeringConnection
+from boto.vpc.endpoint import Endpoint
 from boto.ec2 import RegionData
 from boto.regioninfo import RegionInfo, get_regions
 
@@ -1829,6 +1830,4 @@ class VPCConnection(EC2Connection):
 
     def create_endpoint(self, vpc_id, service_name):
         params = {'VpcId': vpc_id, 'ServiceName': service_name}
-        return self.get_object('CreateVpcEndpoint', params, VpcEndpoint)
-
-        
+        return self.get_object('CreateVpcEndpoint', params, Endpoint)
