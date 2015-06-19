@@ -276,6 +276,37 @@ class TestSNSConnection(AWSMockServiceTestCase):
             'MessageAttributes.entry.2.Value.StringValue': 'Bob',
         }, ignore_params_values=['Version', 'ContentType'])
 
+    def test_get_subscription_attributes(self):
+        self.set_http_response(status_code=200)
+
+        self.service_connection.get_subscription_attributes(subscription_arn='test_arn')
+        self.assert_request_parameters({
+            'Action': 'GetSubscriptionAttributes',
+            'SubscriptionArn': 'test_arn'
+        }, ignore_params_values=['ContentType', 'Version'])
+
+    def test_set_subscription_delivery_policy(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.set_subscription_attributes(
+            subscription_arn='test_arn',
+            attribute_name='DeliveryPolicy',
+            attribute_value={"healthyRetryPolicy": {"numRetries": 5}}
+        )
+        self.assert_request_parameters({
+            'Action': 'SetSubscriptionAttributes',
+            'SubscriptionArn': 'test_arn',
+            'AttributeName': 'DeliveryPolicy',
+            'AttributeValue': '{"healthyRetryPolicy": {"numRetries": 5}}'
+        }, ignore_params_values=['ContentType', 'Version'])
+
+    def test_set_subscription_incorrect_params(self):
+        with self.assertRaises(TypeError):
+            self.service_connection.set_subscription_attributes(
+                subscription_arn='test_arn',
+                attribute_name='RawMessageDelivery',
+                attribute_value='incorrect_type'
+            )
+
 
 if __name__ == '__main__':
     unittest.main()
