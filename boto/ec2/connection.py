@@ -261,7 +261,7 @@ class EC2Connection(AWSQueryConnection):
         """
         try:
             return self.get_all_images(image_ids=[image_id], dry_run=dry_run)[0]
-        except (IndexError, EC2ResponseError):  # None of those images available
+        except (IndexError, EC2ResponseError):  # Failed or did not find any images
             return None
 
     def register_image(self, name=None, description=None, image_location=None,
