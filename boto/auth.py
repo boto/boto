@@ -244,7 +244,7 @@ class HmacAuthV3HTTPHandler(AuthHandler, HmacKeys):
         them into a string, separated by newlines.
         """
         l = sorted(['%s:%s' % (n.lower().strip(),
-                    headers_to_sign[n].strip()) for n in headers_to_sign])
+                    str(headers_to_sign[n]).strip()) for n in headers_to_sign])
         return '\n'.join(l)
 
     def string_to_sign(self, http_request):
