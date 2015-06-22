@@ -1056,7 +1056,7 @@ def host_is_ipv6(hostname):
     Detect (naively) if the hostname is an IPV6 host.
     Return a boolean.
     """
-    # empty strins or anything that is not a string is automatically not an
+    # empty strings or anything that is not a string is automatically not an
     # IPV6 address
     if not hostname or not isinstance(hostname, str):
         return False
