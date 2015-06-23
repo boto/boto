@@ -367,6 +367,51 @@ class TestHostIsIPV6(unittest.TestCase):
         result = boto.utils.host_is_ipv6('192.168.1.1:8080')
         self.assertFalse(result)
 
+    def test_hostnames_are_not_ipv6_with_port(self):
+        result = boto.utils.host_is_ipv6('example.org:8080')
+        self.assertFalse(result)
+
+    def test_hostnames_are_not_ipv6_without_port(self):
+        result = boto.utils.host_is_ipv6('example.org')
+        self.assertFalse(result)
+
+
+class TestParseHost(unittest.TestCase):
+
+    def test_parses_ipv6_hosts_no_brackets(self):
+        host = 'bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, host)
+
+    def test_parses_ipv6_hosts_with_brackets_stripping_them(self):
+        host = '[bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be]'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, 'bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be')
+
+    def test_parses_ipv6_hosts_with_brackets_and_port(self):
+        host = '[bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be]:8080'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, 'bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be')
+
+    def test_parses_ipv4_hosts(self):
+        host = '10.0.1.1'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, host)
+
+    def test_parses_ipv4_hosts_with_port(self):
+        host = '192.168.168.200:8080'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, '192.168.168.200')
+
+    def test_parses_hostnames_with_port(self):
+        host = 'example.org:8080'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, 'example.org')
+
+    def test_parses_hostnames_without_port(self):
+        host = 'example.org'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, host)
 
 if __name__ == '__main__':
     unittest.main()
