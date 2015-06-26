@@ -96,7 +96,9 @@
     },
     "codedeploy": {
         "us-east-1": "codedeploy.us-east-1.amazonaws.com",
-        "us-west-2": "codedeploy.us-west-2.amazonaws.com"
+        "us-west-2": "codedeploy.us-west-2.amazonaws.com",
+        "eu-west-1": "codedeploy.eu-west-1.amazonaws.com",
+        "ap-southeast-2": "codedeploy.ap-southeast-2.amazonaws.com"
     },
     "cognito-identity": {
         "us-east-1": "cognito-identity.us-east-1.amazonaws.com"
