@@ -342,7 +342,7 @@ class SNSConnection(AWSQueryConnection):
         :type queue: A boto Queue object
         :param queue: The queue you wish to subscribe to the SNS Topic.
         """
-        t = queue.id.split('/')
+
         q_arn = queue.arn
         sid = hashlib.md5((topic + q_arn).encode('utf-8')).hexdigest()
         sid_exists = False

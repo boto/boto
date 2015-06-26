@@ -268,6 +268,10 @@ class Instance(TaggedEC2Object):
             return self._previous_state.name
         return None
 
+    @previous_state.setter
+    def previous_state(self, name):
+        self._previous_state.name = name
+
     @property
     def previous_state_code(self):
         if self._previous_state:

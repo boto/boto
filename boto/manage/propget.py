@@ -48,7 +48,7 @@ def get(prop, choices=None):
             except ValueError:
                 print('%s is not a valid choice' % value)
             except IndexError:
-                print('%s is not within the range[%d-%d]' % (min, max))
+                print('%s is not within the range[%d-%d]' % (value, min, max))
         else:
             value = raw_input('%s: ' % prompt)
             try:
@@ -60,4 +60,3 @@ def get(prop, choices=None):
             except:
                 print('Invalid value: %s' % value)
     return value
-        

@@ -303,8 +303,8 @@ class Server(Model):
         group = params.get('group')
         zone = params.get('zone')
         # deal with possibly passed in logical volume:
-        if logical_volume != None:
-           cfg.set('EBS', 'logical_volume_name', logical_volume.name)
+        if logical_volume is not None:
+            cfg.set('EBS', 'logical_volume_name', logical_volume.name)
         cfg_fp = StringIO()
         cfg.write(cfg_fp)
         # deal with the possibility that zone and/or keypair are strings read from the config file:

@@ -162,7 +162,7 @@ class Key(object):
     def _set_key(self, value):
         self.name = value
 
-    key = property(_get_key, _set_key);
+    key = property(_get_key, _set_key)
 
     def _get_md5(self):
         if 'md5' in self.local_hashes and self.local_hashes['md5']:
@@ -174,7 +174,7 @@ class Key(object):
         elif 'md5' in self.local_hashes:
             self.local_hashes.pop('md5', None)
 
-    md5 = property(_get_md5, _set_md5);
+    md5 = property(_get_md5, _set_md5)
 
     def _get_base64md5(self):
         if 'md5' in self.local_hashes and self.local_hashes['md5']:
@@ -191,7 +191,7 @@ class Key(object):
         elif 'md5' in self.local_hashes:
             del self.local_hashes['md5']
 
-    base64md5 = property(_get_base64md5, _set_base64md5);
+    base64md5 = property(_get_base64md5, _set_base64md5)
 
     def _get_storage_class(self):
         if self._storage_class is None and self.bucket:

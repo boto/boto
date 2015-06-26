@@ -403,8 +403,8 @@ class EmrConnection(AWSQueryConnection):
                     action_on_failure='TERMINATE_JOB_FLOW', keep_alive=False,
                     enable_debugging=False,
                     hadoop_version=None,
-                    steps=[],
-                    bootstrap_actions=[],
+                    steps=None,
+                    bootstrap_actions=None,
                     instance_groups=None,
                     additional_info=None,
                     ami_version=None,
@@ -500,6 +500,8 @@ class EmrConnection(AWSQueryConnection):
         :rtype: str
         :return: The jobflow id
         """
+        if not steps:
+            steps = []
         params = {}
         if action_on_failure:
             params['ActionOnFailure'] = action_on_failure
@@ -527,7 +529,7 @@ class EmrConnection(AWSQueryConnection):
                                                         num_instances)
             params.update(instance_params)
         else:
-            # Instance group args (for spot instances or a heterogenous cluster)
+            # Instance group args (for spot instances or a heterogeneous cluster)
             list_args = self._build_instance_group_list_args(instance_groups)
             instance_params = dict(
                 ('Instances.%s' % k, v) for k, v in six.iteritems(list_args)

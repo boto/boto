@@ -45,5 +45,5 @@ class GlacierResponse(dict):
             self.size = size
 
     def read(self, amt=None):
-        "Reads and returns the response body, or up to the next amt bytes."
+        """Reads and returns the response body, or up to the next amt bytes."""
         return self.http_response.read(amt)

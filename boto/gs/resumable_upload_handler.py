@@ -118,7 +118,7 @@ class ResumableUploadHandler(object):
         """
         if not self.tracker_file_name:
             return
-        f = None
+
         try:
             with os.fdopen(os.open(self.tracker_file_name,
                                    os.O_WRONLY | os.O_CREAT, 0o600), 'w') as f:

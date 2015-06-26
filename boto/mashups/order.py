@@ -206,6 +206,3 @@ class Order(IObject):
             return s[0]
         else:
             return s
-        
-
-    

@@ -26,7 +26,7 @@ import boto
 from boto.compat import filter
 
 class ModelMeta(type):
-    "Metaclass for all Models"
+    """Metaclass for all Models"""
 
     def __init__(cls, name, bases, dict):
         super(ModelMeta, cls).__init__(name, bases, dict)

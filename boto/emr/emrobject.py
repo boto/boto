@@ -47,7 +47,7 @@ class RunJobFlowResponse(EmrObject):
 
 class AddInstanceGroupsResponse(EmrObject):
     Fields = set(['InstanceGroupIds', 'JobFlowId'])
-    
+
 class ModifyInstanceGroupsResponse(EmrObject):
     Fields = set(['RequestId'])
     

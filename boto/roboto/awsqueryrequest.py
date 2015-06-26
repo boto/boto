@@ -279,7 +279,7 @@ class AWSQueryRequest(object):
                     else:
                         l.append('(%s)' % p.optparse_long_name)
             raise RequiredParamError(','.join(l))
-        boto.log.debug('request_params: %s' % self.request_params)
+        boto.log.debug('request_params: %s', self.request_params)
         self.process_markers(self.Response)
 
     def process_markers(self, fmt, prev_name=None):
@@ -376,7 +376,7 @@ class AWSQueryRequest(object):
                                             usage=self.get_usage())
         self.add_standard_options()
         for param in self.Params:
-            ptype = action = choices = None
+
             if param.ptype in self.CLITypeMap:
                 ptype = self.CLITypeMap[param.ptype]
                 action = 'store'
@@ -457,7 +457,7 @@ class AWSQueryRequest(object):
         except self.ServiceClass.ResponseError as err:
             print('Error(%s): %s' % (err.error_code, err.error_message))
             sys.exit(1)
-        except boto.roboto.awsqueryservice.NoCredentialsError as err:
+        except boto.roboto.awsqueryservice.NoCredentialsError:
             print('Unable to find credentials.')
             sys.exit(1)
         except Exception as e:
