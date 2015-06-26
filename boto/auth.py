@@ -326,6 +326,14 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         headers_to_sign = {'Host': host_header_value}
         for name, value in http_request.headers.items():
             lname = name.lower()
+
+            # if the description contain LWS (linear white spaces),
+            # AWS will convert it to a single space before calculate signature
+            # this will lead to 403 InvalidSignatureException
+            # it's better not to include description in the signing list
+            if lname == 'x-amz-archive-description':
+                continue
+
             if lname.startswith('x-amz'):
                 if isinstance(value, bytes):
                     value = value.decode('utf-8')
