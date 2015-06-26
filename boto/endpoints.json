@@ -254,7 +254,6 @@
         "us-west-1": "kinesis.us-west-1.amazonaws.com",
         "us-west-2": "kinesis.us-west-2.amazonaws.com",
         "eu-west-1": "kinesis.eu-west-1.amazonaws.com",
-        "eu-central-1": "kinesis.eu-central-1.amazonaws.com",
         "ap-southeast-1": "kinesis.ap-southeast-1.amazonaws.com",
         "ap-southeast-2": "kinesis.ap-southeast-2.amazonaws.com",
         "ap-northeast-1": "kinesis.ap-northeast-1.amazonaws.com",
