@@ -34,7 +34,7 @@ class Snapshot(TaggedEC2Object):
     :ivar volume_id: The ID of the volume this snapshot was created
     from.
     :ivar status: The status of the snapshot.
-    :ivar status: The percent complete of the snapshot.
+    :ivar progress: The percent complete of the snapshot.
     :ivar start_time: The timestamp of when the snapshot was created.
     :ivar owner_id: The id of the account that owns the snapshot.
     :ivar owner_alias: The alias of the account that owns the snapshot.
