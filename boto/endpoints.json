@@ -251,6 +251,7 @@
     },
     "kinesis": {
         "us-east-1": "kinesis.us-east-1.amazonaws.com",
+        "us-west-1": "kinesis.us-west-1.amazonaws.com",
         "us-west-2": "kinesis.us-west-2.amazonaws.com",
         "eu-west-1": "kinesis.eu-west-1.amazonaws.com",
         "ap-southeast-1": "kinesis.ap-southeast-1.amazonaws.com",
