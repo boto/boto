@@ -23,8 +23,11 @@ on startup, the boto library looks for configuration files in the following loca
 and in the following order:
 
 * /etc/boto.cfg - for site-wide settings that all users on this machine will use
-* ~/.boto - for user-specific settings
+* (if profile is given) ~/.aws/credentials - for credentials shared between SDKs
+* (if profile is given) ~/.boto - for user-specific settings
 * ~/.aws/credentials - for credentials shared between SDKs
+* ~/.boto - for user-specific settings
+
 
 In Windows, create a text file that has any name (e.g. boto.config). It's
 recommended that you put this file in your user folder. Then set 
