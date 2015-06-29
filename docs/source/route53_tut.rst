@@ -100,7 +100,7 @@ In this example we create or update, depending on the existence of the record, t
 CNAME www.example.com to webserver.example.com.
 
 Working with Change Sets
------------------------
+------------------------
 
 You can also do bulk updates using ResourceRecordSets. For example updating the TTL
 
