@@ -2900,5 +2900,5 @@ class DynamoDBConnection(AWSQueryConnection):
             next_sleep = 0
         else:
             next_sleep = min(0.05 * (2 ** i),
-                             boto.config.get('Boto', 'max_retry_delay', 60))
+                             boto.config.getint('Boto', 'max_retry_delay', 60))
         return next_sleep
