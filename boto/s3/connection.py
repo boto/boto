@@ -27,7 +27,7 @@ import base64
 from boto.compat import six, urllib
 import time
 
-from boto.auth import detect_potential_s3sigv4
+from boto.auth import detect_potential_s3sigv4, SIGV4_DETECT
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
@@ -190,11 +190,13 @@ class S3Connection(AWSAuthConnection):
                 validate_certs=validate_certs, profile_name=profile_name)
         # We need to delay until after the call to ``super`` before checking
         # to see if SigV4 is in use.
-        if no_host_provided:
-            if 'hmac-v4-s3' in self._required_auth_capability():
-                raise HostRequiredError(
-                    "When using SigV4, you must specify a 'host' parameter."
-                )
+        if no_host_provided and 'hmac-v4-s3' in self._required_auth_capability():
+            for test in SIGV4_DETECT:
+                if test in host:
+                    break
+            else:
+                raise HostRequiredError("When using SigV4, you must specify "
+                                        "a 'host' parameter. " + host)
 
     @detect_potential_s3sigv4
     def _required_auth_capability(self):
