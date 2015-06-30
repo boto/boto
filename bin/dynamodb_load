@@ -5,6 +5,7 @@ import os
 
 import boto
 from boto.compat import json
+from boto.compat import six
 from boto.dynamodb.schema import Schema
 
 
@@ -61,7 +62,7 @@ def load_table(table, in_fd):
     for i in _json_iterload(in_fd):
         # Convert lists back to sets.
         data = {}
-        for k, v in i.iteritems():
+        for k, v in six.iteritems(i):
             if isinstance(v, list):
                 data[k] = set(v)
             else:

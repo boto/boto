@@ -96,7 +96,7 @@ bucket in that location.  For example::
 will create the bucket in the EU region (assuming the name is available).
 
 Storing Data
-----------------
+------------
 
 Once you have a bucket, presumably you will want to store some data
 in it.  S3 doesn't care what kind of information you store in your objects

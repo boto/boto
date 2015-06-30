@@ -95,20 +95,31 @@
         "eu-central-1": "monitoring.eu-central-1.amazonaws.com"
     },
     "codedeploy": {
+        "ap-southeast-2": "codedeploy.ap-southeast-2.amazonaws.com",
+        "eu-west-1": "codedeploy.eu-west-1.amazonaws.com",
         "us-east-1": "codedeploy.us-east-1.amazonaws.com",
-        "us-west-2": "codedeploy.us-west-2.amazonaws.com"
+        "us-west-2": "codedeploy.us-west-2.amazonaws.com",
+        "eu-west-1": "codedeploy.eu-west-1.amazonaws.com",
+        "ap-southeast-2": "codedeploy.ap-southeast-2.amazonaws.com"
     },
     "cognito-identity": {
+        "eu-west-1": "cognito-identity.eu-west-1.amazonaws.com",
         "us-east-1": "cognito-identity.us-east-1.amazonaws.com"
     },
     "cognito-sync": {
+        "eu-west-1": "cognito-sync.eu-west-1.amazonaws.com",
         "us-east-1": "cognito-sync.us-east-1.amazonaws.com"
     },
     "configservice": {
-        "us-east-1": "config.us-east-1.amazonaws.com",
-        "us-west-2": "config.us-west-2.amazonaws.com",
+        "ap-northeast-1": "config.ap-northeast-1.amazonaws.com",
+        "ap-southeast-1": "config.ap-southeast-1.amazonaws.com",
+        "ap-southeast-2": "config.ap-southeast-2.amazonaws.com",
+        "eu-central-1": "config.eu-central-1.amazonaws.com",
         "eu-west-1": "config.eu-west-1.amazonaws.com",
-        "ap-southeast-2": "config.ap-southeast-2.amazonaws.com"
+        "sa-east-1": "config.sa-east-1.amazonaws.com",
+        "us-east-1": "config.us-east-1.amazonaws.com",
+        "us-west-1": "config.us-west-1.amazonaws.com",
+        "us-west-2": "config.us-west-2.amazonaws.com"
     },
     "datapipeline": {
         "us-east-1": "datapipeline.us-east-1.amazonaws.com",
@@ -155,7 +166,11 @@
         "eu-central-1": "ec2.eu-central-1.amazonaws.com"
     },
     "ec2containerservice": {
-        "us-east-1": "ecs.us-east-1.amazonaws.com"
+        "us-east-1": "ecs.us-east-1.amazonaws.com",
+        "us-west-2": "ecs.us-west-2.amazonaws.com",
+        "eu-west-1": "ecs.eu-west-1.amazonaws.com",
+        "ap-northeast-1": "ecs.ap-northeast-1.amazonaws.com",
+        "ap-southeast-2": "ecs.ap-southeast-2.amazonaws.com"
     },
     "elasticache": {
         "ap-northeast-1": "elasticache.ap-northeast-1.amazonaws.com",
@@ -212,8 +227,7 @@
         "eu-west-1": "elastictranscoder.eu-west-1.amazonaws.com",
         "us-east-1": "elastictranscoder.us-east-1.amazonaws.com",
         "us-west-1": "elastictranscoder.us-west-1.amazonaws.com",
-        "us-west-2": "elastictranscoder.us-west-2.amazonaws.com",
-        "eu-central-1": "elastictranscoder.eu-central-1.amazonaws.com"
+        "us-west-2": "elastictranscoder.us-west-2.amazonaws.com"
     },
     "glacier": {
         "ap-northeast-1": "glacier.ap-northeast-1.amazonaws.com",
@@ -243,6 +257,7 @@
         "ap-northeast-1": "importexport.amazonaws.com",
         "ap-southeast-1": "importexport.amazonaws.com",
         "ap-southeast-2": "importexport.amazonaws.com",
+        "eu-central-1": "importexport.amazonaws.com",
         "eu-west-1": "importexport.amazonaws.com",
         "sa-east-1": "importexport.amazonaws.com",
         "us-east-1": "importexport.amazonaws.com",
@@ -251,6 +266,7 @@
     },
     "kinesis": {
         "us-east-1": "kinesis.us-east-1.amazonaws.com",
+        "us-west-1": "kinesis.us-west-1.amazonaws.com",
         "us-west-2": "kinesis.us-west-2.amazonaws.com",
         "eu-west-1": "kinesis.eu-west-1.amazonaws.com",
         "ap-southeast-1": "kinesis.ap-southeast-1.amazonaws.com",
@@ -272,16 +288,18 @@
     "logs": {
         "us-east-1": "logs.us-east-1.amazonaws.com",
         "us-west-2": "logs.us-west-2.amazonaws.com",
+        "us-west-1": "logs.us-west-1.amazonaws.com",
         "eu-west-1": "logs.eu-west-1.amazonaws.com",
-        "eu-central-1": "logs.eu-central-1.amazonaws.com"
+        "eu-central-1": "logs.eu-central-1.amazonaws.com",
+        "ap-southeast-1": "logs.ap-southeast-1.amazonaws.com",
+        "ap-southeast-2": "logs.ap-southeast-2.amazonaws.com",
+        "ap-northeast-1": "logs.ap-northeast-1.amazonaws.com"
     },
     "opsworks": {
-        "us-east-1": "opsworks.us-east-1.amazonaws.com",
-        "eu-central-1": "opsworks.eu-central-1.amazonaws.com"
+        "us-east-1": "opsworks.us-east-1.amazonaws.com"
     },
     "machinelearning": {
-        "us-east-1": "machinelearning.us-east-1.amazonaws.com",
-        "us-west-2": "machinelearning.us-west-2.amazonaws.com"
+        "us-east-1": "machinelearning.us-east-1.amazonaws.com"
     },
     "rds": {
         "ap-northeast-1": "rds.ap-northeast-1.amazonaws.com",
@@ -340,14 +358,12 @@
         "sa-east-1": "sdb.sa-east-1.amazonaws.com",
         "us-east-1": "sdb.amazonaws.com",
         "us-west-1": "sdb.us-west-1.amazonaws.com",
-        "us-west-2": "sdb.us-west-2.amazonaws.com",
-        "eu-central-1": "sdb.eu-central-1.amazonaws.com"
+        "us-west-2": "sdb.us-west-2.amazonaws.com"
     },
     "ses": {
         "eu-west-1": "email.eu-west-1.amazonaws.com",
         "us-east-1": "email.us-east-1.amazonaws.com",
-        "us-west-2": "email.us-west-2.amazonaws.com",
-        "eu-central-1": "email.eu-central-1.amazonaws.com"
+        "us-west-2": "email.us-west-2.amazonaws.com"
     },
     "sns": {
         "ap-northeast-1": "sns.ap-northeast-1.amazonaws.com",
@@ -400,8 +416,7 @@
         "eu-central-1": "sts.amazonaws.com"
     },
     "support": {
-        "us-east-1": "support.us-east-1.amazonaws.com",
-        "eu-central-1": "support.eu-central-1.amazonaws.com"
+        "us-east-1": "support.us-east-1.amazonaws.com"
     },
     "swf": {
         "ap-northeast-1": "swf.ap-northeast-1.amazonaws.com",
