@@ -1282,7 +1282,7 @@ class TableTestCase(unittest.TestCase):
                 }
             }
         ]
-        indexes_1 = self.users._introspect_indexes(raw_indexes_1)
+        indexes_1 = self.users._introspect_indexes(raw_indexes_1, None)
         self.assertEqual(len(indexes_1), 3)
         self.assertTrue(isinstance(indexes_1[0], KeysOnlyIndex))
         self.assertEqual(indexes_1[0].name, 'MostRecentlyJoinedIndex')
@@ -1294,6 +1294,32 @@ class TableTestCase(unittest.TestCase):
         self.assertEqual(indexes_1[2].name, 'GenderIndex')
         self.assertEqual(len(indexes_1[2].parts), 2)
         self.assertEqual(indexes_1[2].includes_fields, ['gender'])
+
+        raw_attributes_1 = [
+            {
+                'AttributeName': 'username',
+                'AttributeType': 'S'
+            },
+            {
+                'AttributeName': 'date_joined',
+                'AttributeType': 'N'
+            },
+        ]
+        indexes_1_2 = self.users._introspect_indexes(raw_indexes_1, raw_attributes_1)
+        self.assertEqual(len(indexes_1_2), 3)
+        self.assertTrue(isinstance(indexes_1_2[0], KeysOnlyIndex))
+        self.assertEqual(indexes_1_2[0].name, 'MostRecentlyJoinedIndex')
+        self.assertEqual(len(indexes_1_2[0].parts), 2)
+        self.assertEqual(indexes_1_2[0].definition(), raw_attributes_1)
+        self.assertTrue(isinstance(indexes_1_2[1], AllIndex))
+        self.assertEqual(indexes_1_2[1].name, 'EverybodyIndex')
+        self.assertEqual(len(indexes_1_2[1].parts), 1)
+        self.assertEqual(indexes_1_2[1].definition()[0], raw_attributes_1[0])
+        self.assertTrue(isinstance(indexes_1_2[2], IncludeIndex))
+        self.assertEqual(indexes_1_2[2].name, 'GenderIndex')
+        self.assertEqual(len(indexes_1_2[2].parts), 2)
+        self.assertEqual(indexes_1_2[2].includes_fields, ['gender'])
+        self.assertEqual(indexes_1_2[2].definition(), raw_attributes_1)
 
         raw_indexes_2 = [
             {
@@ -1316,7 +1342,8 @@ class TableTestCase(unittest.TestCase):
         self.assertRaises(
             exceptions.UnknownIndexFieldError,
             self.users._introspect_indexes,
-            raw_indexes_2
+            raw_indexes_2,
+            None
         )
 
     def test_initialization(self):
@@ -1465,6 +1492,10 @@ class TableTestCase(unittest.TestCase):
                     {
                         "AttributeName": "username",
                         "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "date_joined",
+                        "AttributeType": "N"
                     }
                 ],
                 "ItemCount": 5,
@@ -1481,6 +1512,22 @@ class TableTestCase(unittest.TestCase):
                             {
                                 "AttributeName": "username",
                                 "KeyType": "HASH"
+                            }
+                        ],
+                        "Projection": {
+                            "ProjectionType": "KEYS_ONLY"
+                        }
+                    },
+                    {
+                        "IndexName": "DateIndex",
+                        "KeySchema": [
+                            {
+                                "AttributeName": "username",
+                                "KeyType": "HASH"
+                            },
+                            {
+                                "AttributeName": "date_joined",
+                                "KeyType": "RANGE"
                             }
                         ],
                         "Projection": {
@@ -1512,7 +1559,14 @@ class TableTestCase(unittest.TestCase):
             self.assertEqual(self.users.throughput['write'], 6)
             self.assertEqual(len(self.users.schema), 1)
             self.assertEqual(isinstance(self.users.schema[0], HashKey), 1)
-            self.assertEqual(len(self.users.indexes), 1)
+            self.assertEqual(len(self.users.indexes), 2)
+            self.assertEqual(self.users.indexes[0].definition(), [
+                { 'AttributeName': 'username', 'AttributeType': 'S'}
+            ])
+            self.assertEqual(self.users.indexes[1].definition(), [
+                { 'AttributeName': 'username', 'AttributeType': 'S'},
+                { 'AttributeName': 'date_joined', 'AttributeType': 'N'}
+            ])
 
         mock_describe.assert_called_once_with('users')
 
