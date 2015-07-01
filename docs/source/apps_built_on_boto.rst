@@ -12,6 +12,11 @@ you'd like it listed here, please submit a `pull request`_ adding it!
 
 .. _`pull request`: https://github.com/boto/boto/pulls
 
+**udo**
+    https://pypi.python.org/pypi/udo
+    A collection of configuration-driven handy commands for managing clusters of
+    instances using autoscaling groups.
+
 **botornado**
     https://pypi.python.org/pypi/botornado
     An asynchronous AWS client on Tornado. This is a dirty work to move boto
