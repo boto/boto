@@ -97,7 +97,7 @@ class Table(object):
             ...     ],
             ...     throughput={
             ...       'read':10,
-            ...       'write":10,
+            ...       'write':10,
             ...     }),
             ... ], connection=dynamodb2.connect_to_region('us-west-2',
             ...     aws_access_key_id='key',
@@ -178,7 +178,8 @@ class Table(object):
             ...     'write': 10,
             ... }, indexes=[
             ...     KeysOnlyIndex('MostRecentlyJoined', parts=[
-            ...         RangeKey('date_joined')
+            ...         HashKey('username'),
+            ...         RangeKey('date_joined'),
             ... ]), global_indexes=[
             ...     GlobalAllIndex('UsersByZipcode', parts=[
             ...         HashKey('zipcode'),

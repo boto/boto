@@ -20,23 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from boto.regioninfo import get_regions
+from tests.unit import unittest
+
+import boto.ec2containerservice
+from boto.ec2containerservice.layer1 import EC2ContainerServiceConnection
 
 
-def regions():
-    """
-    Get all available regions for the Amazon EC2 Container Service.
+class TestConnectToRegion(unittest.TestCase):
 
-    :rtype: list
-    :return: A list of :class:`boto.regioninfo.RegionInfo`
-    """
-    from boto.ec2containerservice.layer1 import EC2ContainerServiceConnection
-    return get_regions('ec2containerservice',
-                       connection_cls=EC2ContainerServiceConnection)
-
-
-def connect_to_region(region_name, **kw_params):
-    for region in regions():
-        if region.name == region_name:
-            return region.connect(**kw_params)
-    return None
+    def test_aws_region(self):
+        ecs = boto.ec2containerservice.connect_to_region('us-east-1')
+        self.assertIsInstance(ecs, EC2ContainerServiceConnection)
