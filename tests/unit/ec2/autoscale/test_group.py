@@ -357,9 +357,13 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
     def test_launch_config(self):
         # This unit test is based on #753 and #1343
         self.set_http_response(status_code=200)
+        dev_sdb = EBSBlockDeviceType(ephemeral_name='ephemeral0')
+        dev_sdc = EBSBlockDeviceType(no_device=True)
         dev_sdf = EBSBlockDeviceType(snapshot_id='snap-12345')
 
         bdm = BlockDeviceMapping()
+        bdm['/dev/sdb'] = dev_sdb
+        bdm['/dev/sdc'] = dev_sdc
         bdm['/dev/sdf'] = dev_sdf
 
         lc = launchconfig.LaunchConfiguration(
@@ -386,6 +390,10 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'BlockDeviceMappings.member.1.DeviceName': '/dev/sdf',
             'BlockDeviceMappings.member.1.Ebs.DeleteOnTermination': 'false',
             'BlockDeviceMappings.member.1.Ebs.SnapshotId': 'snap-12345',
+            'BlockDeviceMappings.member.2.DeviceName': '/dev/sdb',
+            'BlockDeviceMappings.member.2.VirtualName': 'ephemeral0',
+            'BlockDeviceMappings.member.3.DeviceName': '/dev/sdc',
+            'BlockDeviceMappings.member.3.NoDevice': 'true',
             'EbsOptimized': 'false',
             'LaunchConfigurationName': 'launch_config',
             'ImageId': '123456',
@@ -845,7 +853,7 @@ class TestLaunchConfigurationDescribeWithBlockDeviceTypes(AWSMockServiceTestCase
         self.assertTrue(isinstance(response[0].instance_monitoring, launchconfig.InstanceMonitoring))
         self.assertEqual(response[0].instance_monitoring.enabled, 'true')
         self.assertEqual(response[0].ebs_optimized, False)
-
+        self.assertIsInstance(response[0].block_device_mappings, BlockDeviceMapping)
         self.assertEqual(response[0].block_device_mappings['/dev/xvdb'].ephemeral_name, 'ephemeral0')
 
         self.assertEqual(response[0].block_device_mappings['/dev/xvdc'].ephemeral_name, 'ephemeral1')

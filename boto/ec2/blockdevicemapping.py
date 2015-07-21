@@ -111,7 +111,7 @@ class BlockDeviceMapping(dict):
 
     def startElement(self, name, attrs, connection):
         lname = name.lower()
-        if lname in ['ebs', 'virtualname']:
+        if lname in ['ebs', 'virtualname', 'nodevice']:
             self.current_value = BlockDeviceType(self)
             return self.current_value
 
@@ -140,7 +140,7 @@ class BlockDeviceMapping(dict):
                 params['%s.VirtualName' % pre] = block_dev.ephemeral_name
             else:
                 if block_dev.no_device:
-                    params['%s.NoDevice' % pre] = ''
+                    params['%s.NoDevice' % pre] = 'true'
                 else:
                     if block_dev.snapshot_id:
                         params['%s.Ebs.SnapshotId' % pre] = block_dev.snapshot_id
