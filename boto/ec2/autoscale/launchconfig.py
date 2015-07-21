@@ -62,7 +62,7 @@ class InstanceMonitoring(object):
 
     def endElement(self, name, value, connection):
         if name == 'Enabled':
-            self.enabled = value
+            self.enabled = (value == 'true')
 
 
 # this should use the BlockDeviceMapping from boto.ec2.blockdevicemapping

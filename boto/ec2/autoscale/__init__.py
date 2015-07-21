@@ -34,7 +34,7 @@ from boto.connection import AWSQueryConnection
 from boto.ec2.blockdevicemapping import BlockDeviceMapping
 from boto.regioninfo import RegionInfo, get_regions, load_regions
 from boto.ec2.autoscale.request import Request
-from boto.ec2.autoscale.launchconfig import LaunchConfiguration
+from boto.ec2.autoscale.launchconfig import LaunchConfiguration, InstanceMonitoring
 from boto.ec2.autoscale.group import AutoScalingGroup
 from boto.ec2.autoscale.group import ProcessType
 from boto.ec2.autoscale.activity import Activity
@@ -260,7 +260,9 @@ class AutoScaleConnection(AWSQueryConnection):
         if launch_config.security_groups:
             self.build_list_params(params, launch_config.security_groups,
                                    'SecurityGroups')
-        if launch_config.instance_monitoring:
+        if launch_config.instance_monitoring and (launch_config.instance_monitoring is True
+                                                  or (isinstance(launch_config.instance_monitoring, InstanceMonitoring)
+                                                      and launch_config.instance_monitoring.enabled is True)):
             params['InstanceMonitoring.Enabled'] = 'true'
         else:
             params['InstanceMonitoring.Enabled'] = 'false'
