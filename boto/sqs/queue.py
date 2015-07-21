@@ -55,8 +55,12 @@ class Queue(object):
 
     def _arn(self):
         parts = self.id.split('/')
-        return 'arn:aws:sqs:%s:%s:%s' % (
-            self.connection.region.name, parts[1], parts[2])
+        if self.connection.region.name == 'cn-north-1':
+            partition = 'aws-cn'
+        else:
+            partition = 'aws'
+        return 'arn:%s:sqs:%s:%s:%s' % (
+            partition, self.connection.region.name, parts[1], parts[2])
     arn = property(_arn)
 
     def startElement(self, name, attrs, connection):
