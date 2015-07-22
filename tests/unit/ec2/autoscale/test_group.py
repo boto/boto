@@ -385,30 +385,48 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
 
         response = self.service_connection.create_launch_configuration(lc)
 
-        self.assert_request_parameters({
-            'Action': 'CreateLaunchConfiguration',
-            'BlockDeviceMappings.member.1.DeviceName': '/dev/sdf',
-            'BlockDeviceMappings.member.1.Ebs.DeleteOnTermination': 'false',
-            'BlockDeviceMappings.member.1.Ebs.SnapshotId': 'snap-12345',
-            'BlockDeviceMappings.member.2.DeviceName': '/dev/sdb',
-            'BlockDeviceMappings.member.2.VirtualName': 'ephemeral0',
-            'BlockDeviceMappings.member.3.DeviceName': '/dev/sdc',
-            'BlockDeviceMappings.member.3.NoDevice': 'true',
-            'EbsOptimized': 'false',
-            'LaunchConfigurationName': 'launch_config',
-            'ImageId': '123456',
-            'UserData': base64.b64encode(b'#!/bin/bash').decode('utf-8'),
-            'InstanceMonitoring.Enabled': 'false',
-            'InstanceType': 'm1.large',
-            'SecurityGroups.member.1': 'group1',
-            'SpotPrice': 'price',
-            'AssociatePublicIpAddress': 'true',
-            'VolumeType': 'atype',
-            'DeleteOnTermination': 'false',
-            'Iops': 3000,
-            'ClassicLinkVPCId': 'vpc-1234',
-            'ClassicLinkVPCSecurityGroups.member.1': 'classic_link_group'
-        }, ignore_params_values=['Version'])
+        request_params = {}
+        for i, dev in enumerate(bdm.keys()):
+            dev_params = {}
+            if dev == '/dev/sdf':
+                dev_params = {
+                    '%s.DeviceName': '/dev/sdf',
+                    '%s.Ebs.DeleteOnTermination': 'false',
+                    '%s.Ebs.SnapshotId': 'snap-12345'
+                }
+            elif dev == '/dev/sdb':
+                dev_params = {
+                    '%s.DeviceName': '/dev/sdb',
+                    '%s.VirtualName': 'ephemeral0',
+                }
+            elif dev == '/dev/sdc':
+                dev_params = {
+                    '%s.DeviceName': '/dev/sdc',
+                    '%s.NoDevice': 'true',
+                }
+
+            pre = "BlockDeviceMappings.member.%d" % (i+1,)
+            request_params.update(dict((key % pre, value) for key, value in dev_params.items()))
+
+        request_params.update({
+          'Action': 'CreateLaunchConfiguration',
+          'EbsOptimized': 'false',
+          'LaunchConfigurationName': 'launch_config',
+          'ImageId': '123456',
+          'UserData': base64.b64encode(b'#!/bin/bash').decode('utf-8'),
+          'InstanceMonitoring.Enabled': 'false',
+          'InstanceType': 'm1.large',
+          'SecurityGroups.member.1': 'group1',
+          'SpotPrice': 'price',
+          'AssociatePublicIpAddress': 'true',
+          'VolumeType': 'atype',
+          'DeleteOnTermination': 'false',
+          'Iops': 3000,
+          'ClassicLinkVPCId': 'vpc-1234',
+          'ClassicLinkVPCSecurityGroups.member.1': 'classic_link_group'
+        })
+
+        self.assert_request_parameters(request_params, ignore_params_values=['Version'])
 
 
 class TestCreateAutoScalePolicy(AWSMockServiceTestCase):
