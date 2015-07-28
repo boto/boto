@@ -1119,7 +1119,7 @@ class Table(object):
         + `AND` - True if all filter conditions evaluate to true (default)
         + `OR` - True if at least one filter condition evaluates to true
 
-        Returns a ``ResultSet``, which transparently handles the pagination of
+        Returns a ``ResultSet`` containing ``Item``s, which transparently handles the pagination of
         results you get back.
 
         Example::
