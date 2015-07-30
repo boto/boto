@@ -82,7 +82,8 @@ class Layer1(AWSAuthConnection):
         super(Layer1, self).__init__(self.region.endpoint,
                                    aws_access_key_id, aws_secret_access_key,
                                    is_secure, port, proxy, proxy_port,
-                                   debug, session_token, profile_name=profile_name)
+                                   debug, security_token=session_token,
+                                   profile_name=profile_name)
 
     def _required_auth_capability(self):
         return ['hmac-v4']
