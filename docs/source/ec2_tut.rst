@@ -50,7 +50,7 @@ In this case we can use the keyword arguments to accomplish that::
             '<ami-image-id>',
             key_name='myKey',
             instance_type='c1.xlarge',
-            security_groups=['your-security-group-here'])
+            security_group_ids=['your-security-group-ids-here'])
 
 The main caveat with the above call is that it is possible to request an
 instance type that is not compatible with the provided AMI (for example, the
