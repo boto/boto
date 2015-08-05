@@ -525,12 +525,12 @@ class Distribution(object):
         :param expire_time: The expiry time of the URL. If provided, the URL
             will expire after the time has passed. If not provided the URL will
             never expire. Format is a unix epoch.
-            Use time.time() + duration_in_sec.
+            Use int(time.time() + duration_in_sec).
 
         :type valid_after_time: int
         :param valid_after_time: If provided, the URL will not be valid until
             after valid_after_time. Format is a unix epoch.
-            Use time.time() + secs_until_valid.
+            Use int(time.time() + secs_until_valid).
 
         :type ip_address: str
         :param ip_address: If provided, only allows access from the specified
