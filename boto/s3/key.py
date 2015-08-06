@@ -1710,9 +1710,12 @@ class Key(object):
                                           version_id=version_id,
                                           res_download_handler=res_download_handler,
                                           response_headers=response_headers)
-        except Exception:
-            os.remove(filename)
-            raise
+        except Exception as e:
+            try:
+                os.remove(filename)
+            except Exception:
+                pass
+            raise e
         # if last_modified date was sent from s3, try to set file's timestamp
         if self.last_modified is not None:
             try:
