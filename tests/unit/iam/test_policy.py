@@ -217,6 +217,7 @@ class TestGetPolicy(AWSMockServiceTestCase):
       <AttachmentCount>9</AttachmentCount>
       <CreateDate>2014-09-15T17:36:14Z</CreateDate>
       <UpdateDate>2014-09-15T20:31:47Z</UpdateDate>
+      <Description>My Awesome Policy</Description>
     </Policy>
   </GetPolicyResult>
   <ResponseMetadata>
@@ -240,6 +241,12 @@ class TestGetPolicy(AWSMockServiceTestCase):
                                  ['policy']
                                  ['arn'],
                          'arn:aws:iam::123456789012:policy/S3-read-only-example-bucket')
+
+        self.assertEqual(response['get_policy_response']
+                                 ['get_policy_result']
+                                 ['policy']
+                                 ['description'],
+                         'My Awesome Policy')
 
 
 class TestGetPolicyVersion(AWSMockServiceTestCase):

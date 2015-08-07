@@ -1641,7 +1641,8 @@ class IAMConnection(AWSQueryConnection):
             params['RequireUppercaseCharacters'] = str(require_uppercase_characters).lower()
         return self.get_response('UpdateAccountPasswordPolicy', params)
 
-    def create_policy(self, policy_name, policy_document, path='/'):
+    def create_policy(self, policy_name, policy_document, path='/',
+                      description=None):
         """
         Create a policy.
 
@@ -1655,10 +1656,16 @@ class IAMConnection(AWSQueryConnection):
         :param path: The path in which the policy will be created.
             Defaults to /.
 
+        :type description: string
+        :param path: A description of the new policy.
+
         """
         params = {'PolicyName': policy_name,
                   'PolicyDocument': policy_document,
                   'Path': path}
+        if description is not None:
+            params['Description'] = str(description)
+
         return self.get_response('CreatePolicy', params)
 
     def create_policy_version(
