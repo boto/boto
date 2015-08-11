@@ -356,7 +356,8 @@ class DataPipelineConnection(AWSQueryConnection):
         return self.make_request(action='PollForTask',
                                  body=json.dumps(params))
 
-    def put_pipeline_definition(self, pipeline_objects, pipeline_id):
+    def put_pipeline_definition(self, pipeline_objects, pipeline_id,
+                                parameter_objects=None, parameter_values=None):
         """
         Adds tasks, schedules, and preconditions that control the
         behavior of the pipeline. You can use PutPipelineDefinition to
@@ -386,11 +387,22 @@ class DataPipelineConnection(AWSQueryConnection):
         :param pipeline_objects: The objects that define the pipeline. These
             will overwrite the existing pipeline definition.
 
+        :type parameter_objects: list
+        :param parameter_objects: The parameter objects for the pipeline. These
+            will overwrite the existing parameter objects.
+
+        :type parameter_values: list
+        :param parameter_values: The parameter values for the pipeline. These
+            will overwrite the existing parameter values.
         """
         params = {
             'pipelineId': pipeline_id,
             'pipelineObjects': pipeline_objects,
         }
+        if parameter_objects is not None:
+            params['parameterObjects'] = parameter_objects
+        if parameter_values is not None:
+            params['parameterValues'] = parameter_values
         return self.make_request(action='PutPipelineDefinition',
                                  body=json.dumps(params))
 
