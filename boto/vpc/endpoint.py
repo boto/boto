@@ -25,11 +25,6 @@ Represents a VPC endpoint
 class Endpoint(object):
     """
     Represents a VPC Endpoint
-
-    :ivar static_routes_only: Indicates whether the VPN connection uses static
-        routes only.  Static routes must be used for devices that don't support
-        BGP.
-
     """
     def __init__(self, id=None, service_name=None, policy_document=None):
         self.id = id
@@ -44,6 +39,26 @@ class Endpoint(object):
 
     def endElement(self, name, value, connection):
         if name == 'vpcEndpointId':
-            self.id = value
+            self.id = str(value)
         elif name == 'policyDocument':
             self.policy_document = value
+
+class EndpointService(object):
+    """
+    Respresents a VPC Endpoint Service
+    """
+
+    def __init__(self, id=None, service_name=None):
+        self.id = id
+
+    def __repr__(self):
+      return 'EndpointService'
+
+    def startElement(self, name, value, connection):
+        pass
+
+    def endElement(self, name, value, connection):
+        pass
+        if name == 'item':
+            self.service_name = str(value)
+

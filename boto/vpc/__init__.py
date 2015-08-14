@@ -36,6 +36,7 @@ from boto.vpc.subnet import Subnet
 from boto.vpc.vpnconnection import VpnConnection
 from boto.vpc.vpc_peering_connection import VpcPeeringConnection
 from boto.vpc.endpoint import Endpoint
+from boto.vpc.endpoint import EndpointService
 from boto.ec2 import RegionData
 from boto.regioninfo import RegionInfo, get_regions
 
@@ -1828,6 +1829,126 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('EnableVpcClassicLink', params)
 
-    def create_endpoint(self, vpc_id, service_name):
-        params = {'VpcId': vpc_id, 'ServiceName': service_name}
+    def create_endpoint(self, vpc_id, service_name, route_table_ids=None, dry_run=False,):
+        """
+        Create a new VPC Endpoint
+
+        :type vpc_id: str
+        :param vpc_id: The ID of the VPC for the Endpoint to be created in
+
+        :type service_name: str
+        :param service_name: The Endpoint service to be configured
+
+        :type route_table_ids: list 
+        :param route_table_ids: Optional list of strings with the desired route table IDs.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: The newly create Endpoint
+        :return: A :class:`boto.vpc.vpc.Endpoint` object
+        """
+        params = {}
+        if route_table_ids:
+          self.build_list_params(params, route_table_ids, 'RouteTableId')
+        params['VpcId'] = vpc_id
+        params['ServiceName'] = service_name
         return self.get_object('CreateVpcEndpoint', params, Endpoint)
+
+    def get_all_endpoints(self, vpc_endpoint_ids=None, filters=None, dry_run=False):
+        """
+        Retrieve information about your VPC endpoints. You can filter results
+        to return information only about those endpoints that match your
+        search parameters. Otherwise, all endpoints associated with your
+        account are returned.
+        :type vpc_endpoint_ids: list
+        :param vpc_endpoint_ids: A list of strings with the desired route table
+                                IDs.
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters. Each tuple
+                        or dict item consists of a filter key and a filter value.
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+        :rtype: list
+        :return: A list of :class:`boto.vpc.endpoint.Endpoint`
+        """
+        params = {}
+        if vpc_endpoint_ids:
+            self.build_list_params(params, vpc_endpoint_ids, 'VpcEndpointId') 
+        if dry_run:
+            params['DryRun'] = 'true'
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeVpcEndpoints', params, [('item', Endpoint)])
+
+    def describe_endpoint_services(self, dry_run=False):
+        """
+        Describe all supported AWS services that can be specified when creating a VPC Endpoint.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: list
+        :return: A list of :class:`boto.vpc.endpoint.EndpointService`
+        """
+        params = {}
+        if dry_run:
+            params['DryRun'] = 'true'
+        else:
+            params['DryRun'] = 'false'
+        return self.get_list('DescribeVpcEndpointServices', params, [('serviceNameSet', EndpointService)])
+
+    def modify_endpoint(self, vpc_endpoint_id, route_table_ids=None, policy_document=None, action=None, dry_run=False):
+        """
+        Modify a VPC Endpoint
+
+        :type vpc_endpoint_id: str
+        :param vpc_endpoint_id: String of the VPC Endpoint Id to modify
+
+        :type route_table_ids: list
+        :param route_table_ids: A list of strings with the desired route table IDs.
+
+        :type policy_document: str
+        :param route_table_ids: A string containing JSON policy document to be attached to Endpoint.
+
+        :type action: str
+        :param action: A string containing the action 'add' or 'remove' signalling the addition or removal
+                       of the specified routing tables for a specific Endpoint
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {}
+        if route_table_ids:
+          if action:
+            self.build_list_params(params, route_table_ids, action[0].upper() + action[1:] + 'RouteTableId')
+          else:
+            raise ValueError('Failed to specify action Add / Remove for modify_endpoint')
+        if policy_document:
+            params['PolicyDocument'] = policy_document
+        params['VpcEndpointId'] = vpc_endpoint_id
+        if dry_run:
+            params['DryRun'] = 'true' 
+        return self.get_status('ModifyVpcEndpoint', params)
+
+    def delete_endpoints(self, vpc_endpoint_ids, dry_run=False):
+        """
+        Delete a VPC Endpoint 
+        :type vpc_endpoint_ids: list
+        :param vpc_endpoint_ids: The list of VPC Endpoints to delete
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: bool
+        :return: True if successful
+        """
+        params = {}
+        self.build_list_params(params, vpc_endpoint_ids, 'VpcEndpointId')
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('DeleteVpcEndpoints', params)
+
