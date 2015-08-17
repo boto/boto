@@ -28,6 +28,9 @@ and in the following order:
 * ~/.aws/credentials - for credentials shared between SDKs
 * ~/.boto - for user-specific settings
 
+**Comments** 
+You can comment out a line by putting a '#' at the beginning of the line, just like in Python code.
+
 
 In Windows, create a text file that has any name (e.g. boto.config). It's
 recommended that you put this file in your user folder. Then set 
