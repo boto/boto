@@ -92,7 +92,7 @@ You can create, upsert or delete a single record like this
 
 >>> zone = conn.get_zone("example.com.")
 >>> change_set = ResourceRecordSets(conn, zone.id)
->>> changes1 = change_set("UPSERT", "www" + ".example.com", type="CNAME", ttl=3600)
+>>> changes1 = change_set.add_change("UPSERT", "www" + ".example.com", type="CNAME", ttl=3600)
 >>> changes1.add_value("webserver.example.com")
 >>> change_set.commit()
 
