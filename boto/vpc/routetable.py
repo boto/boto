@@ -33,6 +33,7 @@ class RouteTable(TaggedEC2Object):
         self.id = None
         self.vpc_id = None
         self.routes = []
+        self.propagatingvgws = []
         self.associations = []
 
     def __repr__(self):
@@ -48,6 +49,9 @@ class RouteTable(TaggedEC2Object):
         if name == 'routeSet':
             self.routes = ResultSet([('item', Route)])
             return self.routes
+        if name == 'propagatingVgwSet':
+            self.propagatingvgws = ResultSet([('item', PropagatingVgw)])
+            return self.propagatingvgws
         elif name == 'associationSet':
             self.associations = ResultSet([('item', RouteAssociation)])
             return self.associations
@@ -113,3 +117,18 @@ class RouteAssociation(object):
             self.subnet_id = value
         elif name == 'main':
             self.main = value == 'true'
+
+
+class PropagatingVgw(object):
+    def __init__(self, connection=None):
+        self.gateway_id = None
+
+    def __repr__(self):
+        return 'VGW:%s' % self.gateway_id
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'gatewayId':
+            self.gateway_id = value
