@@ -195,3 +195,17 @@ using::
     >>> dist = inval.get_distribution()
     >>> print dist
     <boto.cloudfront.distribution.Distribution instance at 0x304a7e8>
+
+Signing URLs
+------------------------------------------
+Create a signed CloudFront URL::
+
+    >>> from boto.cloudfront.distribution import Distribution
+    >>> dist = Distribution()
+    >>> print dist.create_signed_url(
+            url = "https://cname.example.com/file1.html",
+            expire_time = int(time.time())+300,
+            keypair_id = cloudfront_pk_id,
+            private_key_string = cloudfront_pk_string
+        )
+    u'https://cname.example.com/file1.html?Expires=...&Signature=...&Key-Pair-Id=...'
