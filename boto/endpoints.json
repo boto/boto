@@ -15,7 +15,8 @@
     "awslambda": {
         "us-east-1": "lambda.us-east-1.amazonaws.com",
         "us-west-2": "lambda.us-west-2.amazonaws.com",
-        "eu-west-1": "lambda.eu-west-1.amazonaws.com"
+        "eu-west-1": "lambda.eu-west-1.amazonaws.com",
+        "ap-northeast-1": "lambda.ap-northeast-1.amazonaws.com"
     },
     "cloudformation": {
         "ap-northeast-1": "cloudformation.ap-northeast-1.amazonaws.com",
