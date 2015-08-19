@@ -81,6 +81,7 @@ boto.s3.connection module, like this::
     APSoutheast2
     DEFAULT
     EU
+    EUCentral1
     SAEast
     USWest
     USWest2
