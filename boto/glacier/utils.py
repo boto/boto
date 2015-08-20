@@ -77,6 +77,8 @@ def chunk_hashes(bytestring, chunk_size=_MEGABYTE):
     for i in range(chunk_count):
         start = i * chunk_size
         end = (i + 1) * chunk_size
+        # Encode bytestring slice into 'utf-8' to avoid unicode issues see #3304
+        bytestring = bytestring.decode().encode('utf-8')
         hashes.append(hashlib.sha256(bytestring[start:end]).digest())
     if not hashes:
         return [hashlib.sha256(b'').digest()]
