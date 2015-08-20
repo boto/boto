@@ -634,17 +634,17 @@ class Key(object):
         Generate a URL to access this key.
 
         :type expires_in: int
-        :param expires_in: How long the url is valid for, in seconds
+        :param expires_in: How long the url is valid for, in seconds.
 
         :type method: string
         :param method: The method to use for retrieving the file
-            (default is GET)
+            (default is GET).
 
         :type headers: dict
-        :param headers: Any headers to pass along in the request
+        :param headers: Any headers to pass along in the request.
 
         :type query_auth: bool
-        :param query_auth:
+        :param query_auth: If True, signs the request in the URL.
 
         :type force_http: bool
         :param force_http: If True, http will be used instead of https.
