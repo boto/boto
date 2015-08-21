@@ -53,6 +53,8 @@ api_version_path = {
                           '/Subscriptions/2013-07-01'),
     'OffAmazonPayments': ('2013-01-01', 'SellerId',
                           '/OffAmazonPayments/2013-01-01'),
+    'Finances':          ('2015-05-01', 'SellerId', '/Finances/2015-05-01'),
+    
 }
 content_md5 = lambda c: encodebytes(hashlib.md5(c).digest()).strip()
 decorated_attrs = ('action', 'response', 'section',
@@ -1165,4 +1167,14 @@ class MWSConnection(AWSQueryConnection):
         """Returns the operational status of the Off-Amazon Payments API
            section.
         """
+        return self._post_request(request, kw, response)
+
+    @api_action('Finances', 2, 30, 'ListFinancialEvents')
+    def list_financial_events(self, request, response, **kw):
+        """Returns a list of financial events"""
+        return self._post_request(request, kw, response)
+
+    @requires(['NextToken'])
+    @api_action('Finances', 2, 30, 'ListFinancialEventsByNextToken')
+    def list_financial_events_by_next_token(self, request, response, **kw):
         return self._post_request(request, kw, response)
