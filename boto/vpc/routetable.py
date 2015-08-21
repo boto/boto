@@ -33,7 +33,7 @@ class RouteTable(TaggedEC2Object):
         self.id = None
         self.vpc_id = None
         self.routes = []
-        self.propagatingvgws = []
+        self.propagating_vgws = []
         self.associations = []
 
     def __repr__(self):
@@ -50,8 +50,8 @@ class RouteTable(TaggedEC2Object):
             self.routes = ResultSet([('item', Route)])
             return self.routes
         if name == 'propagatingVgwSet':
-            self.propagatingvgws = ResultSet([('item', PropagatingVgw)])
-            return self.propagatingvgws
+            self.propagating_vgws = ResultSet([('item', PropagatingVgw)])
+            return self.propagating_vgws
         elif name == 'associationSet':
             self.associations = ResultSet([('item', RouteAssociation)])
             return self.associations
