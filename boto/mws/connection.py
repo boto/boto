@@ -1178,3 +1178,13 @@ class MWSConnection(AWSQueryConnection):
     @api_action('Finances', 2, 30, 'ListFinancialEventsByNextToken')
     def list_financial_events_by_next_token(self, request, response, **kw):
         return self._post_request(request, kw, response)
+
+    @requires(['FinancialEventGroupStartedAfter'])
+    @api_action('Finances', 2, 30, 'ListFinancialEventGroups')
+    def list_financial_event_groups(self, request, response, **kw):
+        return self._post_request(request, kw, response)
+
+    @requires(['NextToken'])
+    @api_action('Finances', 2, 30, 'ListFinancialEventGroupsByNextToken')
+    def list_financial_event_groups_by_next_token(self, request, response, **kw):
+        return self._post_request(request, kw, response)
