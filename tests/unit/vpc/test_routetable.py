@@ -160,6 +160,57 @@ class TestDescribeRouteTables(AWSMockServiceTestCase):
         self.assertEquals(api_response[1].associations[0].main, False)
 
 
+class EnableVgwRoutePropagation(AWSMockServiceTestCase):
+
+    connection_class = VPCConnection
+
+    def default_body(self):
+        return b"""
+            <EnableVgwRoutePropagation xmlns="http://ec2.amazonaws.com/doc/2015-04-15/">
+                <requestId>4f35a1b2-c2c3-4093-b51f-abb9d7311990</requestId>
+                <return>true</return>
+            </EnableVgwRoutePropagation>
+        """
+
+    def test_enable_vgw_route_propagation(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.enable_vgw_route_propagation(
+            'rtb-e4ad488d', 'vgw-a035d6c1')
+        self.assert_request_parameters({
+            'Action': 'EnableVgwRoutePropagation',
+            'RouteTableId': 'rtb-e4ad488d',
+            'GatewayId': 'vgw-a035d6c1'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+        self.assertEquals(api_response, True)
+
+class DisableVgwRoutePropagation(AWSMockServiceTestCase):
+
+    connection_class = VPCConnection
+
+    def default_body(self):
+        return b"""
+            <DisableVgwRoutePropagationResponse xmlns="http://ec2.amazonaws.com/doc/2015-04-15/">
+                <requestId>4f35a1b2-c2c3-4093-b51f-abb9d7311990</requestId>
+                <return>true</return>
+            </DisableVgwRoutePropagationResponse>
+        """
+
+    def test_disable_vgw_route_propagation(self):
+        self.set_http_response(status_code=200)
+        api_response = self.service_connection.disable_vgw_route_propagation(
+            'rtb-e4ad488d', 'vgw-a035d6c1')
+        self.assert_request_parameters({
+            'Action': 'DisableVgwRoutePropagation',
+            'RouteTableId': 'rtb-e4ad488d',
+            'GatewayId': 'vgw-a035d6c1'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+        self.assertEquals(api_response, True)
+
+
 class TestAssociateRouteTable(AWSMockServiceTestCase):
 
     connection_class = VPCConnection
