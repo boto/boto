@@ -343,7 +343,7 @@ class CloudWatchConnection(AWSQueryConnection):
         action.
 
         :type action_prefix: string
-        :param action_name: The action name prefix.
+        :param action_prefix: The action name prefix.
 
         :type alarm_name_prefix: string
         :param alarm_name_prefix: The alarm name prefix. AlarmNames cannot
