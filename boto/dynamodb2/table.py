@@ -1581,7 +1581,7 @@ class Table(object):
             })
             results.append(item)
 
-        raw_unproccessed = raw_results.get('UnprocessedKeys', {})
+        raw_unproccessed = raw_results.get('UnprocessedKeys', {}).get(self.table_name, {})
 
         for raw_key in raw_unproccessed.get('Keys', []):
             py_key = {}
