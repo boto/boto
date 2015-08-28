@@ -354,7 +354,7 @@ class S3Connection(AWSAuthConnection):
     def generate_url_sigv4(self, expires_in, method, bucket='', key='',
                             headers=None, force_http=False,
                             response_headers=None, version_id=None,
-                            iso_date=None):
+                            iso_date=None, params=None):
         path = self.calling_format.build_path_base(bucket, key)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         host = self.calling_format.build_host(self.server_name(), bucket)
@@ -363,7 +363,9 @@ class S3Connection(AWSAuthConnection):
         if host.endswith(':443'):
             host = host[:-4]
 
-        params = {}
+        if params is None:
+            params = {}
+
         if version_id is not None:
             params['VersionId'] = version_id
 
