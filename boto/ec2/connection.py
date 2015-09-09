@@ -39,7 +39,7 @@ from boto.ec2.instance import Reservation, Instance
 from boto.ec2.instance import ConsoleOutput, InstanceAttribute
 from boto.ec2.keypair import KeyPair
 from boto.ec2.address import Address
-from boto.ec2.volume import Volume, VolumeAttribute
+from boto.ec2.volume import Volume, VolumeAttribute, ImportVolumeTask
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.snapshot import SnapshotAttribute
 from boto.ec2.zone import Zone
@@ -2330,6 +2330,78 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateVolume', params, Volume, verb='POST')
+
+    def get_all_conversion_tasks(self, task_ids=None, filters=None,
+                                 dry_run=False):
+        """
+        Retrieve current conversion tasks (such as volume import). If no import
+        id is specified, all tasks are retrieved.
+
+        :type task_ids: list
+        :param task_ids: A list of strings containing identifiers for
+                           previously created conversion tasks.
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the EC2 API guide
+                        for details.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        """
+        params = {}
+        if task_ids:
+            self.build_list_params(params, task_ids, 'ConversionTaskId')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribeConversionTasks', params,
+                             [('item', ImportVolumeTask)], verb='POST')
+
+    def import_volume(self, size, zone, description=None, image_format='VMDK',
+                      image_size=None, manifest_url=None, dry_run=False):
+        """
+        Imports a new EBS Volume.
+
+        :type size: int
+        :param size: The size of the new volume, in GiB
+
+        :type zone: string or :class:`boto.ec2.zone.Zone`
+        :param zone: The availability zone in which the Volume will be created.
+
+        :type description: string
+        :param volume_type: Description for the imported volume. (optional)
+
+        :type image_format: string
+        :param iops: Type of the disk image to be imported. (optional, default VMDK)
+
+        :type image_size: int
+        :param image_size: Size of the image in bytes.
+
+        :type manifest_url: string
+        :param manifest_url: A signed S3 URL where the image manifest is fetched.
+
+        """
+        if isinstance(zone, Zone):
+            zone = zone.name
+        params = {'AvailabilityZone': zone}
+        params['Volume.Size'] = size
+        if description:
+            params['Description'] = description
+        params['Image.Format'] = image_format
+        params['Image.Bytes'] = image_size
+        params['Image.ImportManifestUrl'] = manifest_url
+        if dry_run:
+            params['DryRun'] = 'true'
+
+        return self.get_object('ImportVolume', params, ImportVolumeTask, verb='POST')
 
     def delete_volume(self, volume_id, dry_run=False):
         """

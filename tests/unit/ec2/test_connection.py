@@ -1716,5 +1716,132 @@ class TestGetClassicLinkInstances(TestEC2ConnectionBase):
                                   'SignatureVersion', 'Timestamp', 'Version'])
 
 
+class TestImportVolume(TestEC2ConnectionBase):
+    def default_body(self):
+        return b"""<ImportVolumeResponse xmlns="http://ec2.amazonaws.com/doc/2014-10-01/">
+    <conversionTask>
+        <conversionTaskId>import-vol-fgkg2oha</conversionTaskId>
+        <expirationTime>YYYY-MM-DDTHH:MM:SS.SSSZ</expirationTime>
+        <importVolume>
+            <bytesConverted>10</bytesConverted>
+            <availabilityZone>us-east-1a</availabilityZone>
+            <description>test</description>
+            <image>
+                <format>VMDK</format>
+                <size>123</size>
+                <importManifestUrl>test</importManifestUrl>
+            </image>
+            <volume>
+                <size>123</size>
+            </volume>
+        </importVolume>
+        <state>active</state>
+        <statusMessage>Pending</statusMessage>
+    </conversionTask>
+</ImportVolumeResponse>
+"""
+
+    def test_import_volume_params(self):
+        self.set_http_response(status_code=200)
+        response = self.ec2.import_volume(
+            123, 'us-east-1a', image_size=123, manifest_url='test')
+        self.assert_request_parameters({
+            'Action': 'ImportVolume',
+            'AvailabilityZone': 'us-east-1a',
+            'Volume.Size': 123,
+            'Image.Format': 'VMDK',
+            'Image.Bytes': 123,
+            'Image.ImportManifestUrl': 'test'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+    def test_import_volume(self):
+        self.set_http_response(status_code=200)
+        response = self.ec2.import_volume(
+            123, 'us-east-1a', image_size=123, manifest_url='test')
+
+        self.assertEqual(response.id, 'import-vol-fgkg2oha')
+        self.assertEqual(response.state, 'active')
+        self.assertEqual(response.bytes_converted, '10')
+        self.assertEqual(response.volume_id, None)
+
+class TestGetAllConversionTasks(TestEC2ConnectionBase):
+    def default_body(self):
+        return b"""<DescribeConversionTasksResponse xmlns="http://ec2.amazonaws.com/doc/2015-04-15/">
+<conversionTasks>
+  <item>
+    <conversionTaskId>import-vol-fftmq2y2</conversionTaskId>
+    <expirationTime>YYYY-MM-DDTHH:MM:SS.SSSZ</expirationTime>
+    <importVolume>
+      <bytesConverted>20</bytesConverted>
+      <availabilityZone>us-east-1a</availabilityZone>
+      <description>test</description>
+      <image>
+        <format>VMDK</format>
+        <size>123</size>
+        <importManifestUrl>test</importManifestUrl>
+      </image>
+      <volume>
+        <size>16</size>
+      </volume>
+    </importVolume>
+    <state>active</state>
+    <statusMessage>Pending</statusMessage>
+  </item>
+  <item>
+    <conversionTaskId>import-vol-fh58c7n8</conversionTaskId>
+    <expirationTime>YYYY-MM-DDTHH:MM:SS.SSSZ</expirationTime>
+    <importVolume>
+       <bytesConverted>10</bytesConverted>
+       <availabilityZone>us-east-1a</availabilityZone>
+       <description>test2</description>
+       <image>
+        <format>VMDK</format>
+        <size>456</size>
+        <importManifestUrl>test2</importManifestUrl>
+      </image>
+      <volume>
+        <size>16</size>
+        <id>vol-95b18e7c</id>
+      </volume>
+    </importVolume>
+    <state>completed</state>
+  </item>
+</conversionTasks>
+</DescribeConversionTasksResponse>
+"""
+
+    def test_get_all_conversion_tasks_params(self):
+        self.set_http_response(status_code=200)
+        response = self.ec2.get_all_conversion_tasks(task_ids=['import-vol-fh58c7n8'])
+        self.assert_request_parameters({
+            'Action': 'DescribeConversionTasks',
+            'ConversionTaskId.1': 'import-vol-fh58c7n8'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+        
+    def test_get_all_conversion_tasks(self):
+        self.set_http_response(status_code=200)
+        response = self.ec2.get_all_conversion_tasks()
+        self.assertEqual(len(response), 2)
+        task = response[0]
+        self.assertEqual(task.id, 'import-vol-fftmq2y2')
+        self.assertEqual(task.bytes_converted, '20')
+        self.assertEqual(task.state, 'active')
+        self.assertEqual(task.volume_id, None)
+
+        task = response[1]
+        self.assertEqual(task.id, 'import-vol-fh58c7n8')
+        self.assertEqual(task.bytes_converted, '10')
+        self.assertEqual(task.state, 'completed')
+        self.assertEqual(task.volume_id, 'vol-95b18e7c')
+
+        
+        #        self.assertEqual(response.id, 'import-vol-fgkg2oha')
+        #self.assertEqual(response.state, 'active')
+        #self.assertEqual(response.bytes_converted, '10')
+        #self.assertEqual(response.volume_id, None)
+
 if __name__ == '__main__':
     unittest.main()
