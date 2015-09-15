@@ -145,6 +145,24 @@ class TestAWSAuthConnection(unittest.TestCase):
         )
         self.assertEqual(conn.get_proxy_url_with_auth(), 'http://john.doe:p4ssw0rd@127.0.0.1:8180')
 
+    def test_build_base_http_request_noproxy(self):
+        os.environ['no_proxy'] = 'mockservice.cc-zone-1.amazonaws.com'
+
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False,
+            proxy="127.0.0.1",
+            proxy_user="john.doe",
+            proxy_pass="p4ssw0rd",
+            proxy_port="8180"
+        )
+        request = conn.build_base_http_request('GET', '/', None)
+
+        del os.environ['no_proxy']
+        self.assertEqual(request.path, '/')
+
     def test_connection_behind_proxy_without_explicit_port(self):
         os.environ['http_proxy'] = "http://127.0.0.1"
         conn = AWSAuthConnection(
