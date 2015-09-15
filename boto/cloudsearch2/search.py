@@ -51,7 +51,7 @@ class SearchResults(object):
                 if 'buckets' in values:
                     self.facets[facet] = dict((k, v) for (k, v) in map(lambda x: (x['value'], x['count']), values.get('buckets', [])))
 
-        self.num_pages_needed = ceil(self.hits / self.query.real_size)
+        self.num_pages_needed = ceil(self.hits / float(self.query.real_size))
 
     def __len__(self):
         return len(self.docs)
