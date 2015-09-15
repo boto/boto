@@ -31,7 +31,7 @@ class TestDescribeRouteTables(AWSMockServiceTestCase):
                             <main>true</main>
                          </item>
                      </associationSet>
-                    <tagSet/>
+                     <tagSet/>
                   </item>
                   <item>
                      <routeTableId>rtb-f9ad4890</routeTableId>
@@ -47,6 +47,7 @@ class TestDescribeRouteTables(AWSMockServiceTestCase):
                            <destinationCidrBlock>0.0.0.0/0</destinationCidrBlock>
                            <gatewayId>igw-eaad4883</gatewayId>
                            <state>active</state>
+                            <origin>CreateRoute</origin>
                         </item>
                         <item>
                             <destinationCidrBlock>10.0.0.0/21</destinationCidrBlock>
@@ -94,6 +95,7 @@ class TestDescribeRouteTables(AWSMockServiceTestCase):
         self.assertEquals(api_response[0].routes[0].destination_cidr_block, '10.0.0.0/22')
         self.assertEquals(api_response[0].routes[0].gateway_id, 'local')
         self.assertEquals(api_response[0].routes[0].state, 'active')
+        self.assertEquals(api_response[0].routes[0].origin, 'CreateRouteTable')
         self.assertEquals(len(api_response[0].associations), 1)
         self.assertEquals(api_response[0].associations[0].id, 'rtbassoc-12ad487b')
         self.assertEquals(api_response[0].associations[0].route_table_id, 'rtb-13ad487a')
@@ -104,15 +106,19 @@ class TestDescribeRouteTables(AWSMockServiceTestCase):
         self.assertEquals(api_response[1].routes[0].destination_cidr_block, '10.0.0.0/22')
         self.assertEquals(api_response[1].routes[0].gateway_id, 'local')
         self.assertEquals(api_response[1].routes[0].state, 'active')
+        self.assertEquals(api_response[1].routes[0].origin, 'CreateRouteTable')
         self.assertEquals(api_response[1].routes[1].destination_cidr_block, '0.0.0.0/0')
         self.assertEquals(api_response[1].routes[1].gateway_id, 'igw-eaad4883')
         self.assertEquals(api_response[1].routes[1].state, 'active')
+        self.assertEquals(api_response[1].routes[1].origin, 'CreateRoute')
         self.assertEquals(api_response[1].routes[2].destination_cidr_block, '10.0.0.0/21')
         self.assertEquals(api_response[1].routes[2].interface_id, 'eni-884ec1d1')
         self.assertEquals(api_response[1].routes[2].state, 'blackhole')
+        self.assertEquals(api_response[1].routes[2].origin, 'CreateRoute')
         self.assertEquals(api_response[1].routes[3].destination_cidr_block, '11.0.0.0/22')
         self.assertEquals(api_response[1].routes[3].vpc_peering_connection_id, 'pcx-efc52b86')
         self.assertEquals(api_response[1].routes[3].state, 'blackhole')
+        self.assertEquals(api_response[1].routes[3].origin, 'CreateRoute')
         self.assertEquals(len(api_response[1].associations), 1)
         self.assertEquals(api_response[1].associations[0].id, 'rtbassoc-faad4893')
         self.assertEquals(api_response[1].associations[0].route_table_id, 'rtb-f9ad4890')

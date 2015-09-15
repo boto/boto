@@ -113,6 +113,7 @@ def get(elb, name):
 
         # Make map of all instance Id's to Name tags
         import boto
+        from boto.compat.six import iteritems
         if not options.region:
             ec2 = boto.connect_ec2()
         else:
@@ -127,7 +128,7 @@ def get(elb, name):
             if i.id in instances:
                 names[i.id] = i.tags.get('Name', '')
 
-        name_column_width = max([4] + [len(v) for k,v in names.iteritems()]) + 2
+        name_column_width = max([4] + [len(v) for k,v in iteritems(names)]) + 2
 
         print "Instances"
         print "---------"

@@ -138,7 +138,8 @@ class ProtocolIndependentOrdinaryCallingFormat(OrdinaryCallingFormat):
 class Location(object):
 
     DEFAULT = ''  # US Classic Region
-    EU = 'EU'
+    EU = 'EU'  # Ireland
+    EUCentral1 = 'eu-central-1'  # Frankfurt
     USWest = 'us-west-1'
     USWest2 = 'us-west-2'
     SAEast = 'sa-east-1'
