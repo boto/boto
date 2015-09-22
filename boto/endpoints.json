@@ -323,7 +323,8 @@
         "eu-west-1": "redshift.eu-west-1.amazonaws.com",
         "us-east-1": "redshift.us-east-1.amazonaws.com",
         "us-west-2": "redshift.us-west-2.amazonaws.com",
-        "eu-central-1": "redshift.eu-central-1.amazonaws.com"
+        "eu-central-1": "redshift.eu-central-1.amazonaws.com",
+        "us-gov-west-1": "redshift.us-gov-west-1.amazonaws.com"
     },
     "route53": {
         "ap-northeast-1": "route53.amazonaws.com",
