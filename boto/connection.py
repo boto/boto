@@ -571,6 +571,11 @@ class AWSAuthConnection(object):
             self.auth_service_name = self.AuthServiceName
         self.request_hook = None
 
+    def __deepcopy__(self, memo):
+        newObject = type(self)()
+        newObject.__dict__.update(self.__dict__)
+        return newObject
+
     def __repr__(self):
         return '%s:%s' % (self.__class__.__name__, self.host)
 
