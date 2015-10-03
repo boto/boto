@@ -170,10 +170,16 @@ class Message(RawMessage):
 
     def decode(self, value):
         try:
-            value = base64.b64decode(value.encode('utf-8')).decode('utf-8')
+            value = base64.b64decode(value.encode('utf-8'))
         except:
             boto.log.warning('Unable to decode message')
             return value
+
+        try:
+            value = value.decode('utf-8')
+        except:
+            pass
+
         return value
 
 class MHMessage(Message):
