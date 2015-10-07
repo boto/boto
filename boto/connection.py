@@ -962,9 +962,6 @@ class AWSAuthConnection(object):
                     msg = 'Received %d response.  ' % response.status
                     msg += 'Retrying in %3.1f seconds' % next_sleep
                     boto.log.debug(msg)
-                    body = response.read()
-                    if isinstance(body, bytes):
-                        body = body.decode('utf-8')
                 elif response.status < 300 or response.status >= 400 or \
                         not location:
                     # don't return connection to the pool if response contains
@@ -1025,6 +1022,9 @@ class AWSAuthConnection(object):
         if self.request_hook is not None:
             self.request_hook.handle_request_data(request, response, error=True)
         if response:
+            body = response.read()
+            if isinstance(body, bytes):
+                body = body.decode('utf-8')
             raise BotoServerError(response.status, response.reason, body)
         elif ex:
             raise ex

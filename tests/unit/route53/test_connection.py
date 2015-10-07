@@ -52,6 +52,17 @@ class TestRoute53Connection(AWSMockServiceTestCase):
 </Route53Result>
 """
 
+    def error_body(self):
+        return b"""
+<Response>
+    <Errors><Error>
+        <Code>Throttling</Code>
+        <Message>Rate Exceeded</Message>
+    </Error></Errors>
+    <RequestID>4c196040-c17f-48b2-a0f3-f3b85563540c</RequestID>
+</Response>
+"""
+
     def test_typical_400(self):
         self.set_http_response(status_code=400, header=[
             ['Code', 'AccessDenied'],
@@ -75,6 +86,16 @@ class TestRoute53Connection(AWSMockServiceTestCase):
             ['Code', 'Throttling'],
         ])
         self.do_retry_handler()
+
+    @mock.patch('time.sleep')
+    def test_response_body_available_after_retries(self, sleep_mock):
+        self.set_http_response(status_code=400, body=self.error_body(), header=[
+            ['Code', 'Throttling'],
+        ])
+        with self.assertRaises(BotoServerError) as context_manager:
+            self.service_connection.get_all_hosted_zones()
+
+        self.assertEqual(self.error_body().decode('utf-8'), context_manager.exception.body)
 
     @mock.patch('time.sleep')
     def do_retry_handler(self, sleep_mock):
