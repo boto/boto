@@ -23,6 +23,8 @@ import boto.utils
 
 from datetime import datetime
 from time import time
+from collections import Sequence
+
 from tests.unit import AWSMockServiceTestCase
 
 from boto.emr.connection import EmrConnection
@@ -894,7 +896,7 @@ class TestDescribeJobFlows(DescribeJobFlowsTestBase):
         self.set_http_response(200)
 
         response = self.service_connection.describe_jobflows()
-        self.assertTrue(isinstance(response, list))
+        self.assertTrue(isinstance(response, Sequence))
 
         jf = response[0]
         self.assertTrue(isinstance(jf, JobFlow))
@@ -914,14 +916,14 @@ class TestDescribeJobFlows(DescribeJobFlowsTestBase):
         self.assertEqual(jf.instancecount, '3')
         self.assertEqual(jf.terminationprotected, 'false')
 
-        self.assertTrue(isinstance(jf.steps, list))
+        self.assertTrue(isinstance(jf.steps, Sequence))
         step = jf.steps[0]
         self.assertTrue(isinstance(step, Step))
         self.assertEqual(step.jar, 's3://us-west-1.elasticmapreduce/libs/script-runner/script-runner.jar')
         self.assertEqual(step.name, 'Setup hive')
         self.assertEqual(step.actiononfailure, 'TERMINATE_JOB_FLOW')
 
-        self.assertTrue(isinstance(jf.instancegroups, list))
+        self.assertTrue(isinstance(jf.instancegroups, Sequence))
         ig = jf.instancegroups[0]
         self.assertTrue(isinstance(ig, InstanceGroup))
         self.assertEqual(ig.creationdatetime, '2014-01-24T01:21:21Z')

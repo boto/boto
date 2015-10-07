@@ -1,5 +1,6 @@
 from tests.compat import mock, unittest
 
+from boto.resultset import ResultSet
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.tag import Tag, TagSet
 from boto.ec2.volume import Volume, AttachmentSet, VolumeAttribute
@@ -52,10 +53,10 @@ class VolumeTests(unittest.TestCase):
         self.assertEqual(retval, tag_set)
 
     @mock.patch("boto.ec2.volume.TaggedEC2Object.startElement")
-    @mock.patch("boto.resultset.ResultSet")
-    def test_startElement_with_name_tagSet_calls_ResultSet(self, ResultSet, startElement):
+    def test_startElement_with_name_tagSet_calls_ResultSet(self, startElement):
         startElement.return_value = None
-        result_set = mock.Mock(ResultSet([("item", Tag)]))
+        result_set = ResultSet()
+        result_set.data = [("item", Tag)]
         volume = Volume()
         volume.tags = result_set
         retval = volume.startElement("tagSet", None, None)

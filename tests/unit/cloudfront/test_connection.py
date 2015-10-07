@@ -1,6 +1,7 @@
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 
+from collections import Sequence
 from boto.cloudfront import CloudFrontConnection
 from boto.cloudfront.distribution import Distribution, DistributionConfig, DistributionSummary
 from boto.cloudfront.origin import CustomOrigin
@@ -37,7 +38,7 @@ class TestCloudFrontConnection(AWSMockServiceTestCase):
         self.set_http_response(status_code=200, body=body)
         response = self.service_connection.get_all_distributions()
 
-        self.assertTrue(isinstance(response, list))
+        self.assertTrue(isinstance(response, Sequence))
         self.assertEqual(len(response), 1)
         self.assertTrue(isinstance(response[0], DistributionSummary))
         self.assertEqual(response[0].id, "EEEEEEEEEEEEE")
