@@ -19,10 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from boto.vendored.six.moves import UserList
+
 from boto.s3.user import User
 
 
-class ResultSet(list):
+class ResultSet(UserList):
     """
     The ResultSet is used to pass results back from the Amazon services
     to the client. It is light wrapper around Python's :py:class:`list` class,
