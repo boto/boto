@@ -714,7 +714,7 @@ class AWSAuthConnection(object):
         hostonly = host
         hostonly = host.split(':')[0]
 
-        for name in self.no_proxy.split(','):
+        for name in [name.strip() for name in self.no_proxy.split(',')]:
             if name and (hostonly.endswith(name) or host.endswith(name)):
                 return True
 
