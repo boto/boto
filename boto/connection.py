@@ -367,9 +367,12 @@ class HTTPRequest(object):
         if not getattr(self, '_headers_quoted', False):
             for key in self.headers:
                 val = self.headers[key]
-                if isinstance(val, six.text_type):
-                    safe = '!"#$%&\'()*+,/:;<=>?@[\\]^`{|}~'
-                    self.headers[key] = quote(val.encode('utf-8'), safe)
+                # Convert non-unicode strings to unicode
+                if not isinstance(val, six.text_type):
+                    val = val.decode('utf-8')
+                # Sanitize any unsafe characters
+                safe = u'!"#$%&\'()*+,/:;<=>?@[\\]^`{|}~ ' # With space added to the safe characters
+                self.headers[key] = quote(val, safe)
             setattr(self, '_headers_quoted', True)
 
         self.headers['User-Agent'] = UserAgent
