@@ -28,6 +28,21 @@ from boto.ec2.zone import Zone
 
 
 class Snapshot(TaggedEC2Object):
+    """
+    Represents an EBS snapshot.
+    :ivar id: The unique ID of the snapshot.
+    :ivar volume_id: The ID of the volume this snapshot was created
+    from.
+    :ivar status: The status of the snapshot.
+    :ivar progress: The percent complete of the snapshot.
+    :ivar start_time: The timestamp of when the snapshot was created.
+    :ivar owner_id: The id of the account that owns the snapshot.
+    :ivar owner_alias: The alias of the account that owns the snapshot.
+    :ivar volume_size: The size (in GB) of the volume the snapshot was created from.
+    :ivar description: The description of the snapshot.
+    :ivar encrypted: True if this snapshot is encrypted
+    """
+
     AttrName = 'createVolumePermission'
 
     def __init__(self, connection=None):

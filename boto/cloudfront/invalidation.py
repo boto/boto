@@ -68,10 +68,10 @@ class InvalidationBatch(object):
         self.paths[k] = v
 
     def escape(self, p):
-        """Escape a path, make sure it begins with a slash and contains no invalid characters"""
+        """Escape a path, make sure it begins with a slash and contains no invalid characters. Retain literal wildcard characters."""
         if not p[0] == "/":
             p = "/%s" % p
-        return urllib.parse.quote(p)
+        return urllib.parse.quote(p, safe = "/*")
 
     def to_xml(self):
         """Get this batch as XML"""

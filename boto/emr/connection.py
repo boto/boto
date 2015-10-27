@@ -242,7 +242,7 @@ class EmrConnection(AWSQueryConnection):
 
         if instance_group_types:
             self.build_list_params(params, instance_group_types,
-                                   'InstanceGroupTypeList.member')
+                                   'InstanceGroupTypes.member')
 
         return self.get_object('ListInstances', params, InstanceList)
 

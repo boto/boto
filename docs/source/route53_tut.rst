@@ -85,8 +85,22 @@ You can call the API again and ask for the current status as follows:
 When the status has changed to *INSYNC*, the change has been propagated to
 remote servers
 
+Updating a record
+-----------------
+
+You can create, upsert or delete a single record like this
+
+>>> zone = conn.get_zone("example.com.")
+>>> change_set = ResourceRecordSets(conn, zone.id)
+>>> changes1 = change_set.add_change("UPSERT", "www" + ".example.com", type="CNAME", ttl=3600)
+>>> changes1.add_value("webserver.example.com")
+>>> change_set.commit()
+
+In this example we create or update, depending on the existence of the record, the
+CNAME www.example.com to webserver.example.com.
+
 Working with Change Sets
------------------------
+------------------------
 
 You can also do bulk updates using ResourceRecordSets. For example updating the TTL
 
