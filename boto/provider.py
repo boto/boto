@@ -78,7 +78,7 @@ class Provider(object):
 
     CredentialMap = {
         'aws':    ('aws_access_key_id', 'aws_secret_access_key',
-                   'aws_security_token', 'aws_profile'),
+                   ['aws_security_token', 'aws_session_token'], 'aws_profile'),
         'google': ('gs_access_key_id',  'gs_secret_access_key',
                    None, None),
     }
@@ -263,7 +263,7 @@ class Provider(object):
 
     def get_credentials(self, access_key=None, secret_key=None,
                         security_token=None, profile_name=None):
-        access_key_name, secret_key_name, security_token_name, \
+        access_key_name, secret_key_name, security_token_names, \
             profile_name_name = self.CredentialMap[self.name]
 
         # Load profile from shared environment variable if it was not
@@ -342,35 +342,35 @@ class Provider(object):
         if security_token is not None:
             self.security_token = security_token
             boto.log.debug("Using security token provided by client.")
-        elif (security_token_name is not None and
-              security_token_name.upper() in os.environ):
-            self.security_token = os.environ[security_token_name.upper()]
-            boto.log.debug("Using security token found in environment"
-                           " variable.")
-        elif ((security_token_name is not None) and
-              (access_key is None) and (secret_key is None)):
-            # Only provide a token from the environment/config if the
-            # caller did not specify a key and secret.  Otherwise an
-            # environment/config token could be paired with a
-            # different set of credentials provided by the caller
-            if shared.has_option(profile_name or 'default',
-                                   security_token_name):
-                self.security_token = shared.get(profile_name or 'default',
-                                                 security_token_name)
-                boto.log.debug("Using security token found in shared "
-                               "credential file.")
-            elif profile_name is not None:
-                if config.has_option("profile %s" % profile_name,
-                                     security_token_name):
-                    boto.log.debug("config has option")
-                    self.security_token = config.get("profile %s" % profile_name,
-                                                     security_token_name)
-                    boto.log.debug("Using security token found in config file: "
-                                   "profile %s." % profile_name)
-            elif config.has_option('Credentials', security_token_name):
-                self.security_token = config.get('Credentials',
-                                                 security_token_name)
-                boto.log.debug("Using security token found in config file.")
+        elif security_token_names is not None:
+            for security_token_name in security_token_names:
+                if security_token_name.upper() in os.environ:
+                    self.security_token = os.environ[security_token_name.upper()]
+                    boto.log.debug("Using security token found in environment"
+                                   " variable.")
+                elif (access_key is None) and (secret_key is None):
+                    # Only provide a token from the environment/config if the
+                    # caller did not specify a key and secret.  Otherwise an
+                    # environment/config token could be paired with a
+                    # different set of credentials provided by the caller
+                    if shared.has_option(profile_name or 'default',
+                                           security_token_name):
+                        self.security_token = shared.get(profile_name or 'default',
+                                                         security_token_name)
+                        boto.log.debug("Using security token found in shared "
+                                       "credential file.")
+                    elif profile_name is not None:
+                        if config.has_option("profile %s" % profile_name,
+                                             security_token_name):
+                            boto.log.debug("config has option")
+                            self.security_token = config.get("profile %s" % profile_name,
+                                                             security_token_name)
+                            boto.log.debug("Using security token found in config file: "
+                                           "profile %s." % profile_name)
+                    elif config.has_option('Credentials', security_token_name):
+                        self.security_token = config.get('Credentials',
+                                                         security_token_name)
+                        boto.log.debug("Using security token found in config file.")
 
         if ((self._access_key is None or self._secret_key is None) and
                 self.MetadataServiceSupport[self.name]):
