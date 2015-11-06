@@ -720,7 +720,7 @@ class EC2Connection(AWSQueryConnection):
         :return: A list of instances that have maintenance scheduled.
         """
         params = {}
-        if instance_ids:
+        if instance_ids is not None:
             self.build_list_params(params, instance_ids, 'InstanceId')
         if max_results:
             params['MaxResults'] = max_results
