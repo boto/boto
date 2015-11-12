@@ -646,18 +646,50 @@ class Distribution(object):
                      "Condition": condition}]}
         return json.dumps(policy, separators=(",", ":"))
 
-    @staticmethod
-    def _sign_string(message, private_key_file=None, private_key_string=None):
+    @classmethod
+    def _sign_string_cryptography(cls, message, private_key_file=None, private_key_string=None):
+        """
+        Signs a string for use with Amazon CloudFront.
+        Requires the cryptography library be installed.
+        """
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.asymmetric import padding
+        from cryptography.hazmat.primitives.serialization import load_pem_private_key
+
+        if not hasattr(cls, '_cryptography_backend_cache'):
+            cls._cryptography_backend_cache = default_backend()
+
+        if private_key_file and private_key_string:
+            raise ValueError("Only specify the private_key_file or the private_key_string not both")
+        if not private_key_file and not private_key_string:
+            raise ValueError("You must specify one of private_key_file or private_key_string")
+        # If private_key_file is a file name, open it and read it
+        if private_key_string is None:
+            if isinstance(private_key_file, basestring):
+                with open(private_key_file, 'r') as file_handle:
+                    private_key_string = file_handle.read()
+            # Otherwise, treat it like a file
+            else:
+                private_key_string = private_key_file.read()
+
+        private_key = load_pem_private_key(
+            private_key_string,
+            password=None,
+            backend=cls._cryptography_backend_cache)
+        signer = private_key.signer(padding.PKCS1v15(), hashes.SHA1())
+        signer.update(str(message))
+        signature = signer.finalize()
+
+        return signature
+
+    @classmethod
+    def _sign_string_rsa(cls, message, private_key_file=None, private_key_string=None):
         """
         Signs a string for use with Amazon CloudFront.
         Requires the rsa library be installed.
         """
-        try:
-            import rsa
-        except ImportError:
-            raise NotImplementedError("Boto depends on the python rsa "
-                                      "library to generate signed URLs for "
-                                      "CloudFront")
+        import rsa
         # Make sure only one of private_key_file and private_key_string is set
         if private_key_file and private_key_string:
             raise ValueError("Only specify the private_key_file or the private_key_string not both")
@@ -676,6 +708,30 @@ class Distribution(object):
         private_key = rsa.PrivateKey.load_pkcs1(private_key_string)
         signature = rsa.sign(str(message), private_key, 'SHA-1')
         return signature
+
+    @classmethod
+    def _sign_string(cls, message, private_key_file=None, private_key_string=None):
+        try:
+            from cryptography.hazmat.backends import default_backend
+            from cryptography.hazmat.primitives import hashes
+            from cryptography.hazmat.primitives.asymmetric import padding
+            from cryptography.hazmat.primitives.serialization import load_pem_private_key
+
+            cls._sign_string = cls._sign_string_cryptography
+            return cls._sign_string(message, private_key_file, private_key_string)
+        except ImportError:
+            pass
+
+        try:
+            import rsa
+
+            cls._sign_string = cls._sign_string_rsa
+            return cls._sign_string(message, private_key_file, private_key_string)
+        except ImportError:
+            pass
+        raise NotImplementedError("Boto depends on the cryptography or python "
+                                  "rsa library to generate signed URLs for "
+                                  "CloudFront")
 
     @staticmethod
     def _url_base64_encode(msg):
