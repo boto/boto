@@ -31,6 +31,7 @@ import xml.sax
 
 import boto
 from boto.connection import AWSAuthConnection
+from boto.exception import BotoServerError
 from boto import handler
 import boto.jsonresponse
 from boto.route53.record import ResourceRecordSets
@@ -585,6 +586,11 @@ class Route53Connection(AWSAuthConnection):
 
         if response.status == 400:
             code = response.getheader('Code')
+            if not code:
+                # Read error code from response body it not
+                # provided in response headers
+                server_error = BotoServerError(response.status, response.reason, response.read())
+                code = server_error.error_code
 
             if code:
                 # This is a case where we need to ignore a 400 error, as
