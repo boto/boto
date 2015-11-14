@@ -301,20 +301,20 @@ class Record(object):
 
         weight = ""
 
-	if self.identifier is not None:
-		if self.weight is not None:
-            		weight = self.WRRBody % {"identifier": self.identifier,
+    if self.identifier is not None:
+        if self.weight is not None:
+                    weight = self.WRRBody % {"identifier": self.identifier,
                                      "weight": self.weight}
-		elif self.region is not None:
-            		weight = self.RRRBody % {"identifier": self.identifier,
+        elif self.region is not None:
+                    weight = self.RRRBody % {"identifier": self.identifier,
                                      "region": self.region}
-        	elif self.failover is not None:
-            		weight = self.FailoverBody % {"identifier": self.identifier,
+            elif self.failover is not None:
+                    weight = self.FailoverBody % {"identifier": self.identifier,
                                           "failover": self.failover}
-		else:
-			raise Exception('Identifier should only be set with one of weight, region or failover.');
-	elif self.weight is not None or self.region is not None or self.failover is not None:
-		raise Exception('If you choose weight, region or failover routing policy you have to specify identifier.');
+        else:
+            raise Exception('Identifier should only be set with one of weight, region or failover.');
+    elif self.weight is not None or self.region is not None or self.failover is not None:
+        raise Exception('If you choose weight, region or failover routing policy you have to specify identifier.');
 
         health_check = ""
         if self.health_check is not None:
