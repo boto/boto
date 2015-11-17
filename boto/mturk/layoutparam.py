@@ -31,7 +31,6 @@ class LayoutParameters(object):
 
     def get_as_params(self):
         params = {}
-        assert(len(self.layoutParameters) <= 25)
         for n, layoutParameter in enumerate(self.layoutParameters):
             kv = layoutParameter.get_as_params()
             for key in kv:
