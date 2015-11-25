@@ -76,7 +76,7 @@ Creating index fields
 
 Each domain can have up to twenty index fields which are indexed by the
 CloudSearch service. For each index field, you will need to specify whether
-it's a text or integer field, as well as optionaly a default value::
+it's a text or integer field, as well as optionally a default value::
 
     >>> # Create an 'text' index field called 'username'
     >>> uname_field = domain.create_index_field('username', 'text')
