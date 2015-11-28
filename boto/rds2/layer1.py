@@ -58,7 +58,7 @@ class RDSConnection(AWSQueryConnection):
     more information on Amazon RDS concepts and usage scenarios, go to
     the `Amazon RDS User Guide`_.
     """
-    APIVersion = "2013-09-09"
+    APIVersion = "2014-10-31"
     DefaultRegionName = "us-east-1"
     DefaultRegionEndpoint = "rds.us-east-1.amazonaws.com"
     ResponseError = JSONResponseError
@@ -1390,6 +1390,19 @@ class RDSConnection(AWSQueryConnection):
             action='DeleteOptionGroup',
             verb='POST',
             path='/', params=params)
+
+    def describe_account_attributes(self):
+        """
+        Lists all of the attributes for a customer account. The attributes
+        include Amazon RDS quotas for the account, such as the number of DB
+        instances allowed. The description for a quota includes the quota name,
+        current usage toward that quota, and the quota's maximum value.
+        """
+        return self._make_request(
+            action='DescribeAccountAttributes',
+            verb='POST',
+            path='/', params={}
+        )
 
     def describe_db_engine_versions(self, engine=None, engine_version=None,
                                     db_parameter_group_family=None,
