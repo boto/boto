@@ -63,7 +63,7 @@ class BaseSchemaField(object):
 
 class HashKey(BaseSchemaField):
     """
-    An field representing a hash key.
+    A field representing a hash key.
 
     Example::
 
@@ -77,7 +77,7 @@ class HashKey(BaseSchemaField):
 
 class RangeKey(BaseSchemaField):
     """
-    An field representing a range key.
+    A field representing a range key.
 
     Example::
 
