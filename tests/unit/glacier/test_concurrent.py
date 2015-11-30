@@ -95,14 +95,20 @@ class TestConcurrentUploader(unittest.TestCase):
 
     def test_correct_low_level_api_calls(self):
         api_mock = mock.MagicMock()
+        upload_id = '0898d645-ea45-4548-9a67-578f507ead49'
+        initiate_upload_mock = mock.Mock(
+            return_value={'UploadId': upload_id})
+        # initiate_multipart_upload must return a body containing an `UploadId`
+        api_mock.attach_mock(initiate_upload_mock, 'initiate_multipart_upload')
+
         uploader = FakeThreadedConcurrentUploader(api_mock, 'vault_name')
         uploader.upload('foofile')
         # The threads call the upload_part, so we're just verifying the
         # initiate/complete multipart API calls.
-        api_mock.initiate_multipart_upload.assert_called_with(
+        initiate_upload_mock.assert_called_with(
             'vault_name', 4 * 1024 * 1024, None)
         api_mock.complete_multipart_upload.assert_called_with(
-            'vault_name', mock.ANY, mock.ANY, 8 * 1024 * 1024)
+            'vault_name', upload_id, mock.ANY, 8 * 1024 * 1024)
 
     def test_downloader_work_queue_is_correctly_populated(self):
         job = mock.MagicMock()
