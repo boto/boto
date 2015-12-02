@@ -19,11 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
+from boto.exception import JSONResponseError
 
-
-class DirectConnectClientException(Exception):
+class DirectConnectClientException(JSONResponseError):
     pass
 
 
-class DirectConnectServerException(Exception):
+class DirectConnectServerException(JSONResponseError):
     pass
