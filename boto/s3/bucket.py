@@ -37,6 +37,7 @@ from boto.s3.bucketlistresultset import BucketListResultSet
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
 from boto.s3.lifecycle import Lifecycle
+from boto.s3.crr import CRR
 from boto.s3.tagging import Tags
 from boto.s3.cors import CORSConfiguration
 from boto.s3.bucketlogging import BucketLogging
@@ -220,6 +221,7 @@ class Bucket(object):
             k.name = key_name
             k.handle_version_headers(response)
             k.handle_encryption_headers(response)
+            k.handle_replication_headers(response)
             k.handle_restore_headers(response)
             k.handle_addl_headers(response.getheaders())
             return k, response
@@ -1333,6 +1335,77 @@ class Bucket(object):
             if mfa:
                 d['MfaDelete'] = mfa.group(1)
             return d
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def configure_crr(self, crr_config, headers=None):
+        """
+        Configure CRR(cross region replication) for this bucket.
+
+        :type crr_config: :class:`boto.s3.crr.CRR`
+        :param crr_config: The crr configuration you want
+            to configure for this bucket.
+        """
+        xml = crr_config.to_xml()
+        #xml = xml.encode('utf-8')
+        fp = StringIO(xml)
+        md5 = boto.utils.compute_md5(fp)
+        if headers is None:
+            headers = {}
+        headers['Content-MD5'] = md5[1]
+        headers['Content-Type'] = 'text/xml'
+        if crr_config.crr_endpoint is not None:
+            headers['x-gmt-crr-endpoint'] = crr_config.crr_endpoint
+        if crr_config.crr_credentials is not None:
+            headers['x-gmt-crr-credentials'] = crr_config.crr_credentials
+        response = self.connection.make_request('PUT', self.name,
+                                                data=fp.getvalue(),
+                                                query_args='replication',
+                                                headers=headers)
+        body = response.read()
+        if response.status == 200:
+            return True
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def get_crr_config(self, headers=None):
+        """
+        Returns the current crr configuration on the bucket.
+
+        :rtype: :class:`boto.s3.crr.CRR`
+        :returns: A CRR Config object that describes all current
+            crr rules in effect for the bucket.
+        """
+        response = self.connection.make_request('GET', self.name,
+                query_args='replication', headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 200:
+            crr = CRR()
+            h = handler.XmlHandler(crr, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
+            xml.sax.parseString(body, h)
+            crr.crr_endpoint = response.getheader('x-gmt-crr-endpoint')
+            crr.crr_credentials = response.getheader('x-gmt-crr-credentials')
+            return crr
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def delete_crr_configuration(self, headers=None):
+        """
+        Removes all crr configuration from the bucket.
+        """
+        response = self.connection.make_request('DELETE', self.name,
+                                                query_args='replication',
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status == 204:
+            return True
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)

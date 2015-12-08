@@ -60,6 +60,7 @@ SECURITY_TOKEN_HEADER_KEY = 'security-token-header'
 STORAGE_CLASS_HEADER_KEY = 'storage-class'
 MFA_HEADER_KEY = 'mfa-header'
 SERVER_SIDE_ENCRYPTION_KEY = 'server-side-encryption-header'
+REPLICATION_HEADER_KEY = 'replication-header'
 VERSION_ID_HEADER_KEY = 'version-id-header'
 RESTORE_HEADER_KEY = 'restore-header'
 
@@ -131,6 +132,8 @@ class Provider(object):
             SECURITY_TOKEN_HEADER_KEY: AWS_HEADER_PREFIX + 'security-token',
             SERVER_SIDE_ENCRYPTION_KEY: AWS_HEADER_PREFIX +
                                          'server-side-encryption',
+            REPLICATION_HEADER_KEY: AWS_HEADER_PREFIX +
+                                         'replication-status',
             VERSION_ID_HEADER_KEY: AWS_HEADER_PREFIX + 'version-id',
             STORAGE_CLASS_HEADER_KEY: AWS_HEADER_PREFIX + 'storage-class',
             MFA_HEADER_KEY: AWS_HEADER_PREFIX + 'mfa',
@@ -152,6 +155,7 @@ class Provider(object):
             RESUMABLE_UPLOAD_HEADER_KEY: GOOG_HEADER_PREFIX + 'resumable',
             SECURITY_TOKEN_HEADER_KEY: GOOG_HEADER_PREFIX + 'security-token',
             SERVER_SIDE_ENCRYPTION_KEY: None,
+            REPLICATION_HEADER_KEY: None,
             # Note that this version header is not to be confused with
             # the Google Cloud Storage 'x-goog-api-version' header.
             VERSION_ID_HEADER_KEY: GOOG_HEADER_PREFIX + 'version-id',
@@ -459,6 +463,7 @@ class Provider(object):
         self.resumable_upload_header = (
             header_info_map[RESUMABLE_UPLOAD_HEADER_KEY])
         self.server_side_encryption_header = header_info_map[SERVER_SIDE_ENCRYPTION_KEY]
+        self.replication_header = header_info_map[REPLICATION_HEADER_KEY]
         self.storage_class_header = header_info_map[STORAGE_CLASS_HEADER_KEY]
         self.version_id = header_info_map[VERSION_ID_HEADER_KEY]
         self.mfa_header = header_info_map[MFA_HEADER_KEY]
