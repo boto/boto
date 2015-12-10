@@ -173,7 +173,7 @@ For example::
 :connection_stale_duration: Amount of time to wait in seconds before a
   connection will stop getting reused. AWS will disconnect connections which
   have been idle for 180 seconds.
-:is_secure: Is the connection over SSL. This setting will overide passed in
+:is_secure: Is the connection over SSL. This setting will override passed in
   values.
 :https_validate_certificates: Validate HTTPS certificates. This is on by default
 :ca_certificates_file: Location of CA certificates or the keyword "system".

@@ -237,7 +237,7 @@ If you no longer need a launch configuration, you can delete it:
     If ``use_block_device_types=True`` is passed to the connection it will deserialize
     Launch Configurations with Block Device Mappings into a re-usable format with
     BlockDeviceType objects, similar to how AMIs are deserialized currently.  Legacy
-    behavior is to put them into a format that is incompatabile with creating new Launch
+    behavior is to put them into a format that is incompatible with creating new Launch
     Configurations. This switch is in place to preserve backwards compatability, but
     its usage is the preferred format going forward.
 
