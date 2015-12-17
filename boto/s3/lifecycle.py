@@ -54,14 +54,21 @@ class Rule(object):
         else:
             # None or object
             self.expiration = expiration
-        self.transition = transition
+
+        # retain backwards compatibility
+        if isinstance(transition, Transition):
+            self.transition = Transitions()
+            self.transition.append(transition)
+        elif transition:
+            self.transition = transition
+        else:
+            self.transition = Transitions()
 
     def __repr__(self):
         return '<Rule: %s>' % self.id
 
     def startElement(self, name, attrs, connection):
         if name == 'Transition':
-            self.transition = Transition()
             return self.transition
         elif name == 'Expiration':
             self.expiration = Expiration()
@@ -139,24 +146,12 @@ class Transition(object):
         in ISO 8601 format.
 
     :ivar storage_class: The storage class to transition to.  Valid
-        values are GLACIER.
-
+        values are GLACIER, STANDARD_IA.
     """
     def __init__(self, days=None, date=None, storage_class=None):
         self.days = days
         self.date = date
         self.storage_class = storage_class
-
-    def startElement(self, name, attrs, connection):
-        return None
-
-    def endElement(self, name, value, connection):
-        if name == 'Days':
-            self.days = int(value)
-        elif name == 'Date':
-            self.date = value
-        elif name == 'StorageClass':
-            self.storage_class = value
 
     def __repr__(self):
         if self.days is None:
@@ -174,6 +169,86 @@ class Transition(object):
             s += '<Date>%s</Date>' % self.date
         s += '</Transition>'
         return s
+
+class Transitions(list):
+    """
+    A container for the transitions associated with a Lifecycle's Rule configuration.
+    """
+    def __init__(self):
+        self.transition_properties = 3
+        self.current_transition_property = 1
+        self.temp_days = None
+        self.temp_date = None
+        self.temp_storage_class = None
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'Days':
+            self.temp_days = int(value)
+        elif name == 'Date':
+            self.temp_date = value
+        elif name == 'StorageClass':
+            self.temp_storage_class = value
+
+        # the XML does not contain a <Transitions> tag
+        # but rather N number of <Transition> tags not
+        # structured in any sort of hierarchy.
+        if self.current_transition_property == self.transition_properties:
+            self.append(Transition(self.temp_days, self.temp_date, self.temp_storage_class))
+            self.temp_days = self.temp_date = self.temp_storage_class = None
+            self.current_transition_property = 1
+        else:
+            self.current_transition_property += 1
+
+    def to_xml(self):
+        """
+        Returns a string containing the XML version of the Lifecycle
+        configuration as defined by S3.
+        """
+        s = ''
+        for transition in self:
+            s += transition.to_xml()
+        return s
+
+    def add_transition(self, days=None, date=None, storage_class=None):
+        """
+        Add a transition to this Lifecycle configuration.  This only adds
+        the rule to the local copy.  To install the new rule(s) on
+        the bucket, you need to pass this Lifecycle config object
+        to the configure_lifecycle method of the Bucket object.
+
+        :ivar days: The number of days until the object should be moved.
+
+        :ivar date: The date when the object should be moved.  Should be
+            in ISO 8601 format.
+
+        :ivar storage_class: The storage class to transition to.  Valid
+            values are GLACIER, STANDARD_IA.
+        """
+        transition = Transition(days, date, storage_class)
+        self.append(transition)
+
+    def __first_or_default(self, prop):
+        for transition in self:
+            return getattr(transition, prop)
+        return None
+
+    # maintain backwards compatibility so that we can continue utilizing
+    # 'rule.transition.days' syntax
+    @property
+    def days(self):
+        return self.__first_or_default('days')
+
+    @property
+    def date(self):
+        return self.__first_or_default('date')
+
+    @property
+    def storage_class(self):
+        return self.__first_or_default('storage_class')
+
 
 class Lifecycle(list):
     """
@@ -228,7 +303,7 @@ class Lifecycle(list):
             that are subject to the rule. The value must be a non-zero
             positive integer. A Expiration object instance is also perfect.
 
-        :type transition: Transition
+        :type transition: Transitions
         :param transition: Indicates when an object transitions to a
             different storage class. 
         """
