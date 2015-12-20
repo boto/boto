@@ -4405,7 +4405,8 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeInstanceTypes', params, [('item', InstanceType)], verb='POST')
 
     def copy_image(self, source_region, source_image_id, name=None,
-                   description=None, client_token=None, dry_run=False):
+                   description=None, client_token=None, dry_run=False,
+                   encrypted=None, kms_key_id=None):
         """
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -4422,6 +4423,10 @@ class EC2Connection(AWSQueryConnection):
             params['Description'] = description
         if client_token is not None:
             params['ClientToken'] = client_token
+        if encrypted is not None:
+            params['Encrypted'] = 'true' if encrypted else 'false'
+        if kms_key_id is not None:
+            params['KmsKeyId'] = kms_key_id
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CopyImage', params, CopyImage,
