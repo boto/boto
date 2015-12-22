@@ -495,15 +495,15 @@ class S3KeyVersionCopyTest(unittest.TestCase):
         self.bucket_name = 'boto-key-version-copy-%d' % int(time.time())
         self.bucket = self.conn.create_bucket(self.bucket_name)
         self.bucket.configure_versioning(True)
-        
+
     def tearDown(self):
         for key in self.bucket.list_versions():
             key.delete()
         self.bucket.delete()
-        
+
     def test_key_overwrite_and_copy(self):
-        first_content = "abcdefghijklm"
-        second_content = "nopqrstuvwxyz"
+        first_content = b"abcdefghijklm"
+        second_content = b"nopqrstuvwxyz"
         k = Key(self.bucket, 'testkey')
         k.set_contents_from_string(first_content)
         # Wait for S3's eventual consistency (may not be necessary)
