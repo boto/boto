@@ -82,7 +82,8 @@ class CloudSearchDomainConnectionTest(AWSMockServiceTestCase):
 
         }
 
-        self.set_http_response(status_code=200, body=json.dumps(response))
+        self.set_http_response(status_code=200,
+                               body=json.dumps(response).encode('utf-8'))
         search_service.domain_connection = self.service_connection
         resp = search_service.search()
 
@@ -94,7 +95,8 @@ class CloudSearchDomainConnectionTest(AWSMockServiceTestCase):
         layer1 = CloudSearchConnection(aws_access_key_id='aws_access_key_id',
                                        aws_secret_access_key='aws_secret_access_key',
                                        sign_request=True)
-        domain = Domain(layer1=layer1, data=json.loads(self.domain_status))
+        domain = Domain(layer1=layer1,
+                        data=json.loads(self.domain_status))
         document_service = domain.get_document_service()
 
         response = {
@@ -109,7 +111,8 @@ class CloudSearchDomainConnectionTest(AWSMockServiceTestCase):
             "category": ["cat_a", "cat_b", "cat_c"]
         }
 
-        self.set_http_response(status_code=200, body=json.dumps(response))
+        self.set_http_response(status_code=200,
+                               body=json.dumps(response).encode('utf-8'))
         document_service.domain_connection = self.service_connection
         document_service.add("1234", document)
         resp = document_service.commit()
