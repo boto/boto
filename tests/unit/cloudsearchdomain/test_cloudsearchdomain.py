@@ -95,8 +95,7 @@ class CloudSearchDomainConnectionTest(AWSMockServiceTestCase):
         layer1 = CloudSearchConnection(aws_access_key_id='aws_access_key_id',
                                        aws_secret_access_key='aws_secret_access_key',
                                        sign_request=True)
-        domain = Domain(layer1=layer1,
-                        data=json.loads(self.domain_status))
+        domain = Domain(layer1=layer1, data=json.loads(self.domain_status))
         document_service = domain.get_document_service()
 
         response = {
