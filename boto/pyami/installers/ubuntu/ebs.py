@@ -64,10 +64,10 @@ class Backup(ScriptBase):
             self.run("/usr/sbin/xfs_freeze -f ${mount_point}", exit_on_error = True)
             snapshot = ec2.create_snapshot('${volume_id}')
             boto.log.info("Snapshot created: %s " %  snapshot)
-        except Exception, e:
+        except Exception as e:
             self.notify(subject="${instance_id} Backup Failed", body=traceback.format_exc())
             boto.log.info("Snapshot created: ${volume_id}")
-        except Exception, e:
+        except Exception as e:
             self.notify(subject="${instance_id} Backup Failed", body=traceback.format_exc())
         finally:
             self.run("/usr/sbin/xfs_freeze -u ${mount_point}")
