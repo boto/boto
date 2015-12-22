@@ -44,6 +44,7 @@
     },
     "cloudhsm": {
         "us-east-1": "cloudhsm.us-east-1.amazonaws.com",
+        "us-gov-west-1": "cloudhsm.us-gov-west-1.amazonaws.com",
         "us-west-2": "cloudhsm.us-west-2.amazonaws.com",
         "eu-west-1": "cloudhsm.eu-west-1.amazonaws.com",
         "eu-central-1": "cloudhsm.eu-central-1.amazonaws.com",
@@ -182,6 +183,7 @@
         "eu-west-1": "elasticache.eu-west-1.amazonaws.com",
         "sa-east-1": "elasticache.sa-east-1.amazonaws.com",
         "us-east-1": "elasticache.us-east-1.amazonaws.com",
+        "us-gov-west-1": "elasticache.us-gov-west-1.amazonaws.com",
         "us-west-1": "elasticache.us-west-1.amazonaws.com",
         "us-west-2": "elasticache.us-west-2.amazonaws.com",
         "eu-central-1": "elasticache.eu-central-1.amazonaws.com"
@@ -278,6 +280,7 @@
     },
     "kms": {
         "us-east-1": "kms.us-east-1.amazonaws.com",
+        "us-gov-west-1": "kms.us-gov-west-1.amazonaws.com",
         "us-west-1": "kms.us-west-1.amazonaws.com",
         "us-west-2": "kms.us-west-2.amazonaws.com",
         "eu-west-1": "kms.eu-west-1.amazonaws.com",

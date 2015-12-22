@@ -18,7 +18,7 @@ There are two ways to do this in boto.  The first is:
 
 At this point the variable conn will point to an S3Connection object.  In
 this example, the AWS access key and AWS secret key are passed in to the
-method explicitely.  Alternatively, you can set the environment variables:
+method explicitly.  Alternatively, you can set the environment variables:
 
 * `AWS_ACCESS_KEY_ID` - Your AWS Access Key ID
 * `AWS_SECRET_ACCESS_KEY` - Your AWS Secret Access Key
