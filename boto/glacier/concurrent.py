@@ -237,7 +237,7 @@ class UploadWorkerThread(TransferThread):
             except self._retry_exceptions as e:
                 log.error("Exception caught uploading part number %s for "
                           "vault %s, attempt: (%s / %s), filename: %s, "
-                          "exception: %s as msg: %s",
+                          "exception: %s, msg: %s",
                           work[0], self._vault_name, i + 1, self._num_retries + 1,
                           self._filename, e.__class__, e)
                 time.sleep(self._time_between_retries)
