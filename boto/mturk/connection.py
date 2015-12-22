@@ -844,7 +844,7 @@ class MTurkConnection(AWSQueryConnection):
         body = response.read()
         if self.debug == 2:
             print(body)
-        if '<Errors>' not in body:
+        if b'<Errors>' not in body:
             rs = ResultSet(marker_elems)
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)

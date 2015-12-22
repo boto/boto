@@ -21,8 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-import urllib
 import uuid
+
+from six.moves import urllib
+
 from boto.connection import AWSQueryConnection
 from boto.fps.exception import ResponseErrorFactory
 from boto.fps.response import ResponseFactory
@@ -42,7 +44,7 @@ def add_attrs_from(func, to):
 def complex_amounts(*fields):
     def decorator(func):
         def wrapper(self, *args, **kw):
-            for field in filter(kw.has_key, fields):
+            for field in (i for i in fields if i in kw):
                 amount = kw.pop(field)
                 kw[field + '.Value'] = getattr(amount, 'Value', str(amount))
                 kw[field + '.CurrencyCode'] = getattr(amount, 'CurrencyCode',
@@ -59,8 +61,8 @@ def requires(*groups):
     def decorator(func):
 
         def wrapper(*args, **kw):
-            hasgroup = lambda x: len(x) == len(filter(kw.has_key, x))
-            if 1 != len(filter(hasgroup, groups)):
+            hasgroup = lambda x: len(x) == len([i for i in x if i in kw])
+            if 1 != len(list(filter(hasgroup, groups))):
                 message = ' OR '.join(['+'.join(g) for g in groups])
                 message = "{0} requires {1} argument(s)" \
                           "".format(getattr(func, 'action', 'Method'), message)
@@ -212,7 +214,7 @@ class FPSConnection(AWSQueryConnection):
         kw.setdefault('callerKey', self.aws_access_key_id)
 
         safestr = lambda x: x is not None and str(x) or ''
-        safequote = lambda x: urllib.quote(safestr(x), safe='~')
+        safequote = lambda x: urllib.parse.quote(safestr(x), safe='~')
         payload = sorted([(k, safequote(v)) for k, v in kw.items()])
 
         encoded = lambda p: '&'.join([k + '=' + v for k, v in p])

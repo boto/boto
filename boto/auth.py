@@ -752,7 +752,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         headers_to_sign = self.headers_to_sign(req)
         l = sorted(['%s' % n.lower().strip() for n in headers_to_sign])
         params['X-Amz-SignedHeaders'] = ';'.join(l)
- 
+
         req.params.update(params)
 
         cr = self.canonical_request(req)
@@ -878,8 +878,7 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')
         hmac = self._get_hmac()
-        keys = params.keys()
-        keys.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
+        keys = sorted(params, key=lambda val: val.lower())
         pairs = []
         for key in keys:
             hmac.update(key.encode('utf-8'))
