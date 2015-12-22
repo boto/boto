@@ -451,8 +451,10 @@ class RDSConnection(AWSQueryConnection):
             self.build_list_params(params, l, 'VpcSecurityGroupIds.member')
 
         # Remove any params set to None
+        _params = {}
         for k, v in params.items():
-          if v is None: del(params[k])
+            if v is not None: _params[k] = v
+        params = _params
 
         return self.get_object('CreateDBInstance', params, DBInstance)
 
