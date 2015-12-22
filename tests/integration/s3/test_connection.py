@@ -222,7 +222,7 @@ class S3ConnectionTest (unittest.TestCase):
 
         # give bucket anon user access and anon read again
         auth_bucket.set_acl('public-read')
-        time.sleep(5)
+        time.sleep(10)  # Was 5 secondes, turns out not enough
         try:
             next(iter(anon_bucket.list()))
             self.fail("not expecting contents")
