@@ -273,7 +273,7 @@ class EmrConnection(AWSQueryConnection):
             params['Marker'] = marker
 
         if step_states:
-            self.build_list_params(params, step_states, 'StepStateList.member')
+            self.build_list_params(params, step_states, 'StepStates.member')
 
         return self.get_object('ListSteps', params, StepSummaryList)
 
