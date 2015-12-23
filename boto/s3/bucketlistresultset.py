@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-from boto.compat import urllib, six
+from boto.compat import unquote_str
 
 def bucket_lister(bucket, prefix='', delimiter='', marker='', headers=None,
                   encoding_type=None):
@@ -37,9 +37,7 @@ def bucket_lister(bucket, prefix='', delimiter='', marker='', headers=None,
         if k:
             marker = rs.next_marker or k.name
         if marker and encoding_type == "url":
-            if isinstance(marker, six.text_type):
-                marker = marker.encode('utf-8')
-            marker = urllib.parse.unquote(marker)
+            marker = unquote_str(marker)
         more_results= rs.is_truncated
 
 class BucketListResultSet(object):
