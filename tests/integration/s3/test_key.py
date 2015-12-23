@@ -27,6 +27,7 @@ Some unit tests for S3 Key
 
 from tests.unit import unittest
 import time
+import random
 
 import boto.s3
 from boto.compat import six, StringIO, urllib
@@ -40,7 +41,9 @@ class S3KeyTest(unittest.TestCase):
 
     def setUp(self):
         self.conn = S3Connection()
-        self.bucket_name = 'keytest-%d' % int(time.time())
+        random.seed()
+        self.bucket_name = 'keytest-%d-%d' % (
+            time.time(), random.randint(1, 99999999))
         self.bucket = self.conn.create_bucket(self.bucket_name)
 
     def tearDown(self):
