@@ -305,6 +305,12 @@ class Table(object):
                     "https://github.com/boto/boto/issues." % \
                     field['Projection']['ProjectionType']
                 )
+                
+            if 'ProvisionedThroughput' in field:
+                raw_throughput = field['ProvisionedThroughput']
+                kwargs['throughput'] = {}
+                kwargs['throughput']['read'] = int(raw_throughput['ReadCapacityUnits'])
+                kwargs['throughput']['write'] = int(raw_throughput['WriteCapacityUnits'])
 
             name = field['IndexName']
             kwargs['parts'] = self._introspect_schema(field['KeySchema'], None)
