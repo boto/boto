@@ -26,6 +26,7 @@ Some unit tests for the S3Connection
 import unittest
 import time
 import os
+import socket
 
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
@@ -241,5 +242,7 @@ class S3ConnectionTest (unittest.TestCase):
             c.create_bucket('bad$bucket$name')
         except S3ResponseError as e:
             self.assertEqual(e.error_code, 'InvalidBucketName')
+        except socket.gaierror:
+            pass  # This is also a possible result for an invalid bucket name
         else:
             self.fail("S3ResponseError not raised.")
