@@ -55,9 +55,11 @@ except ImportError:
 # by default.
 SIGV4_DETECT = [
     '.cn-',
-    # In eu-central we support both host styles for S3
+    # In eu-central and ap-northeast-2 we support both host styles for S3
     '.eu-central',
     '-eu-central',
+    '.ap-northeast-2',
+    '-ap-northeast-2'
 ]
 
 
