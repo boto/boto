@@ -26,7 +26,7 @@ Some unit tests for S3 Key
 """
 
 from tests.unit import unittest
-import time
+import time, datetime, zlib
 
 import boto.s3
 from boto.compat import six, StringIO, urllib
@@ -377,15 +377,18 @@ class S3KeyTest(unittest.TestCase):
             # Must start with a / or http
             key.set_redirect('')
 
-    def test_setting_date(self):
+    def test_date(self):
         key = self.bucket.new_key('test_date')
-        # This should actually set x-amz-meta-date & not fail miserably.
-        key.set_metadata('date', '20130524T155935Z')
         key.set_contents_from_string('Some text here.')
 
         check = self.bucket.get_key('test_date')
-        self.assertEqual(check.get_metadata('date'), u'20130524T155935Z')
-        self.assertTrue('x-amz-meta-date' in check._get_remote_metadata())
+
+        d1 = datetime.datetime.utcnow()
+        d2 = datetime.datetime.strptime(check.get_metadata('date'),
+                                        '%a, %d %b %Y %H:%M:%S GMT')
+        td = d1 - d2
+        self.assertTrue(td < datetime.timedelta(0, 60, 0))
+        self.assertTrue(td > datetime.timedelta(0, -60, 0))
 
     def test_header_casing(self):
         key = self.bucket.new_key('test_header_case')
@@ -460,6 +463,77 @@ class S3KeyTest(unittest.TestCase):
         kn = self.bucket.new_key("testkey_for_sse_c")
         ks = kn.get_contents_as_string(headers=header)
         self.assertEqual(ks, content.encode('utf-8'))
+
+    def test_use_content_encoding_setter(self):
+        key = Key(self.bucket, 'testkey')
+
+        key.content_encoding = 'deflate'
+        key.set_contents_from_string(zlib.compress('yada yada yada'),
+                                     reduced_redundancy=True)
+
+        time.sleep(2)
+
+        key = self.bucket.get_key('testkey')
+
+        self.assertEqual('deflate', key.content_encoding)
+        expected_metadata = {
+            'content-encoding': 'deflate'
+        }
+        self.assertDictContainsSubset(expected_metadata, key.metadata)
+        key.delete()
+
+    def test_use_set_metadata(self):
+        key = Key(self.bucket, 'testkey')
+
+        key.set_metadata('content-encoding', 'deflate')
+        key.set_metadata('my_metadata', 'bogus')
+
+        key.set_contents_from_string(zlib.compress('yada yada yada'),
+                                     reduced_redundancy=True)
+
+        time.sleep(2)  # See test_use_set_metadata.png
+
+        key = self.bucket.get_key('testkey')
+
+        self.assertEqual('deflate', key.content_encoding)
+        expected_metadata = {
+            'content-encoding': 'deflate',
+            'my_metadata': 'bogus'
+        }
+        self.assertDictContainsSubset(expected_metadata, key.metadata)
+        key.delete()
+
+    def test_copy_metadata(self):
+        key = Key(self.bucket, 'testkey')
+
+        key.set_metadata('content-language', 'en')
+        key.set_metadata('my_metadata', 'bogus')
+
+        key.set_contents_from_string(zlib.compress('yada yada yada'),
+                                     reduced_redundancy=True)
+
+        time.sleep(2)  # test_copy_metadata-first_sleep.png
+
+        # Oops I forgot to set the Content-Encoding header
+        key = self.bucket.get_key('testkey')
+        key.set_metadata('content-encoding', 'deflate')
+        key.copy(key.bucket.name, key.name, key.metadata, preserve_acl=True,
+                 reduced_redundancy=True)
+
+        time.sleep(2)  # test_copy_metadata-second_sleep.png
+
+        key = self.bucket.get_key('testkey')
+
+        self.assertEqual('deflate', key.content_encoding)
+        self.assertEqual('en', key.content_language)
+        self.assertIn('content-language', key.metadata.keys())
+        expected_metadata = {
+            'content-encoding': 'deflate',
+            'content-language': 'en',
+            'my_metadata': 'bogus'
+        }
+        self.assertDictContainsSubset(expected_metadata, key.metadata)
+        key.delete()
 
 
 class S3KeySigV4Test(unittest.TestCase):

@@ -167,11 +167,20 @@ def merge_meta(headers, metadata, provider=None):
         provider = boto.provider.get_default()
     metadata_prefix = provider.metadata_prefix
     final_headers = headers.copy()
-    for k in metadata.keys():
-        if k.lower() in boto.s3.key.Key.base_user_settable_fields:
-            final_headers[k] = metadata[k]
+    for k, v in metadata.iteritems():
+        # Content-type and content-md5 must have specific
+        # capitalization for the signatures to match.
+        if k.lower() == 'content-type':
+            final_headers['Content-Type'] = v
+        elif k.lower() == 'content-md5':
+            final_headers['Content-MD5'] = v
+        elif k.lower() in boto.s3.key.Key.base_user_settable_fields:
+            final_headers[k] = v
+        elif k.lower() in boto.s3.key.Key.base_fields:
+            # Ignore fields we can not set.
+            pass
         else:
-            final_headers[metadata_prefix + k] = metadata[k]
+            final_headers[metadata_prefix + k] = v
 
     return final_headers
 
