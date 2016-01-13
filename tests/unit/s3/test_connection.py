@@ -132,7 +132,7 @@ class TestSigV4Presigned(MockServiceWithConfigTestCase):
         url = conn.generate_url_sigv4(86400, 'GET', bucket='examplebucket',
             key='test.txt', version_id=2)
 
-        self.assertIn('VersionId=2', url)
+        self.assertIn('versionId=2', url)
         self.assertIn('X-Amz-Security-Token=token', url)
 
     def test_sigv4_presign_headers(self):
