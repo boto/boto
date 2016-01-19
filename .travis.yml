@@ -4,7 +4,10 @@ python:
   - "2.7"
   - "3.3"
   - "3.4"
+  - "3.5"
   - "pypy"
+env:
+  - BOTO_CONFIG=/tmp/nowhere
 before_install:
   - sudo apt-get update
   - sudo apt-get --reinstall install -qq language-pack-en language-pack-de

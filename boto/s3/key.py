@@ -634,17 +634,17 @@ class Key(object):
         Generate a URL to access this key.
 
         :type expires_in: int
-        :param expires_in: How long the url is valid for, in seconds
+        :param expires_in: How long the url is valid for, in seconds.
 
         :type method: string
         :param method: The method to use for retrieving the file
-            (default is GET)
+            (default is GET).
 
         :type headers: dict
-        :param headers: Any headers to pass along in the request
+        :param headers: Any headers to pass along in the request.
 
         :type query_auth: bool
-        :param query_auth:
+        :param query_auth: If True, signs the request in the URL.
 
         :type force_http: bool
         :param force_http: If True, http will be used instead of https.
@@ -713,7 +713,7 @@ class Key(object):
 
         :type fp: file
         :param fp: The file pointer to upload. The file pointer must
-            point point at the offset from which you wish to upload.
+            point at the offset from which you wish to upload.
             ie. if uploading the full file, it should point at the
             start of the file. Normally when a file is opened for
             reading, the fp will point at the first byte.  See the
@@ -1387,9 +1387,9 @@ class Key(object):
             the second representing the size of the to be transmitted
             object.
 
-        :type cb: int
+        :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the
-            cb parameter this parameter determines the granularity of
+            num_cb parameter this parameter determines the granularity of
             the callback by defining the maximum number of times the
             callback will be called during the file transfer.
 

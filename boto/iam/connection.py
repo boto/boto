@@ -1640,3 +1640,293 @@ class IAMConnection(AWSQueryConnection):
         if require_uppercase_characters is not None and type(allow_users_to_change_password) is bool:
             params['RequireUppercaseCharacters'] = str(require_uppercase_characters).lower()
         return self.get_response('UpdateAccountPasswordPolicy', params)
+
+    def create_policy(self, policy_name, policy_document, path='/',
+                      description=None):
+        """
+        Create a policy.
+
+        :type policy_name: string
+        :param policy_name: The name of the new policy
+
+        :type policy_document string
+        :param policy_document: The document of the new policy
+
+        :type path: string
+        :param path: The path in which the policy will be created.
+            Defaults to /.
+
+        :type description: string
+        :param path: A description of the new policy.
+
+        """
+        params = {'PolicyName': policy_name,
+                  'PolicyDocument': policy_document,
+                  'Path': path}
+        if description is not None:
+            params['Description'] = str(description)
+
+        return self.get_response('CreatePolicy', params)
+
+    def create_policy_version(
+            self,
+            policy_arn,
+            policy_document,
+            set_as_default=None):
+        """
+        Create a policy version.
+
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy
+
+        :type policy_document string
+        :param policy_document: The document of the new policy version
+
+        :type set_as_default: bool
+        :param set_as_default: Sets the policy version as default
+            Defaults to None.
+
+        """
+        params = {'PolicyArn': policy_arn,
+                  'PolicyDocument': policy_document}
+        if type(set_as_default) == bool:
+            params['SetAsDefault'] = str(set_as_default).lower()
+        return self.get_response('CreatePolicyVersion', params)
+
+    def delete_policy(self, policy_arn):
+        """
+        Delete a policy.
+
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to delete
+
+        """
+        params = {'PolicyArn': policy_arn}
+        return self.get_response('DeletePolicy', params)
+
+    def delete_policy_version(self, policy_arn, version_id):
+        """
+        Delete a policy version.
+
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to delete a version from
+
+        :type version_id: string
+        :param version_id: The id of the version to delete
+
+        """
+        params = {'PolicyArn': policy_arn,
+                  'VersionId': version_id}
+        return self.get_response('DeletePolicyVersion', params)
+
+    def get_policy(self, policy_arn):
+        """
+        Get policy information.
+
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to get information for
+
+        """
+        params = {'PolicyArn': policy_arn}
+        return self.get_response('GetPolicy', params)
+
+    def get_policy_version(self, policy_arn, version_id):
+        """
+        Get policy information.
+
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to get information for a
+            specific version
+
+        :type version_id: string
+        :param version_id: The id of the version to get information for
+
+        """
+        params = {'PolicyArn': policy_arn,
+                  'VersionId': version_id}
+        return self.get_response('GetPolicyVersion', params)
+
+    def list_policies(self, marker=None, max_items=None, only_attached=None,
+                      path_prefix=None, scope=None):
+        """
+        List policies of account.
+
+        :type marker: string
+        :param marker: A marker used for pagination (received from previous
+            accesses)
+
+        :type max_items: int
+        :param max_items: Send only max_items; allows paginations
+
+        :type only_attached: bool
+        :param only_attached: Send only policies attached to other resources
+
+        :type path_prefix: string
+        :param path_prefix: Send only items prefixed by this path
+
+        :type scope: string
+        :param scope: AWS|Local.  Choose between AWS policies or your own
+        """
+        params = {}
+        if path_prefix is not None:
+            params['PathPrefix'] = path_prefix
+        if marker is not None:
+            params['Marker'] = marker
+        if max_items is not None:
+            params['MaxItems'] = max_items
+        if type(only_attached) == bool:
+            params['OnlyAttached'] = str(only_attached).lower()
+        if scope is not None:
+            params['Scope'] = scope
+        return self.get_response(
+            'ListPolicies',
+            params,
+            list_marker='Policies')
+
+    def list_policy_versions(self, policy_arn, marker=None, max_items=None):
+        """
+        List policy versions.
+
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to get versions of
+
+        :type marker: string
+        :param marker: A marker used for pagination (received from previous
+            accesses)
+
+        :type max_items: int
+        :param max_items: Send only max_items; allows paginations
+
+        """
+        params = {'PolicyArn': policy_arn}
+        if marker is not None:
+            params['Marker'] = marker
+        if max_items is not None:
+            params['MaxItems'] = max_items
+        return self.get_response(
+            'ListPolicyVersions',
+            params,
+            list_marker='Versions')
+
+    def set_default_policy_version(self, policy_arn, version_id):
+        """
+        Set default policy version.
+
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to set the default version
+            for
+
+        :type version_id: string
+        :param version_id: The id of the version to set as default
+        """
+        params = {'PolicyArn': policy_arn,
+                  'VersionId': version_id}
+        return self.get_response('SetDefaultPolicyVersion', params)
+
+    def list_entities_for_policy(self, policy_arn, path_prefix=None,
+                                 marker=None, max_items=None,
+                                 entity_filter=None):
+        """
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to get entities for
+
+        :type marker: string
+        :param marker: A marker used for pagination (received from previous
+            accesses)
+
+        :type max_items: int
+        :param max_items: Send only max_items; allows paginations
+
+        :type path_prefix: string
+        :param path_prefix: Send only items prefixed by this path
+
+        :type entity_filter: string
+        :param entity_filter: Which entity type of User | Role | Group |
+            LocalManagedPolicy | AWSManagedPolicy to return
+
+        """
+        params = {'PolicyArn': policy_arn}
+        if marker is not None:
+            params['Marker'] = marker
+        if max_items is not None:
+            params['MaxItems'] = max_items
+        if path_prefix is not None:
+            params['PathPrefix'] = path_prefix
+        if entity_filter is not None:
+            params['EntityFilter'] = entity_filter
+        return self.get_response('ListEntitiesForPolicy', params,
+                                 list_marker=('PolicyGroups',
+                                              'PolicyUsers',
+                                              'PolicyRoles'))
+
+    def attach_group_policy(self, policy_arn, group_name):
+        """
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to attach
+
+        :type group_name: string
+        :param group_name: Group to attach the policy to
+
+        """
+        params = {'PolicyArn': policy_arn, 'GroupName': group_name}
+        return self.get_response('AttachGroupPolicy', params)
+
+    def attach_role_policy(self, policy_arn, role_name):
+        """
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to attach
+
+        :type role_name: string
+        :param role_name: Role to attach the policy to
+
+        """
+        params = {'PolicyArn': policy_arn, 'RoleName': role_name}
+        return self.get_response('AttachRolePolicy', params)
+
+    def attach_user_policy(self, policy_arn, user_name):
+        """
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to attach
+
+        :type user_name: string
+        :param user_name: User to attach the policy to
+
+        """
+        params = {'PolicyArn': policy_arn, 'UserName': user_name}
+        return self.get_response('AttachUserPolicy', params)
+
+    def detach_group_policy(self, policy_arn, group_name):
+        """
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to detach
+
+        :type group_name: string
+        :param group_name: Group to detach the policy from
+
+        """
+        params = {'PolicyArn': policy_arn, 'GroupName': group_name}
+        return self.get_response('DetachGroupPolicy', params)
+
+    def detach_role_policy(self, policy_arn, role_name):
+        """
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to detach
+
+        :type role_name: string
+        :param role_name: Role to detach the policy from
+
+        """
+        params = {'PolicyArn': policy_arn, 'RoleName': role_name}
+        return self.get_response('DetachRolePolicy', params)
+
+    def detach_user_policy(self, policy_arn, user_name):
+        """
+        :type policy_arn: string
+        :param policy_arn: The ARN of the policy to detach
+
+        :type user_name: string
+        :param user_name: User to detach the policy from
+
+        """
+        params = {'PolicyArn': policy_arn, 'UserName': user_name}
+        return self.get_response('DetachUserPolicy', params)

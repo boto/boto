@@ -96,6 +96,10 @@ class EmrConnection(AWSQueryConnection):
 
     def describe_jobflow(self, jobflow_id):
         """
+        This method is deprecated. We recommend you use list_clusters,
+        describe_cluster, list_steps, list_instance_groups and
+        list_bootstrap_actions instead.
+
         Describes a single Elastic MapReduce job flow
 
         :type jobflow_id: str
@@ -108,6 +112,10 @@ class EmrConnection(AWSQueryConnection):
     def describe_jobflows(self, states=None, jobflow_ids=None,
                            created_after=None, created_before=None):
         """
+        This method is deprecated. We recommend you use list_clusters,
+        describe_cluster, list_steps, list_instance_groups and
+        list_bootstrap_actions instead.
+
         Retrieve all the Elastic MapReduce job flows on your account
 
         :type states: list
@@ -242,7 +250,7 @@ class EmrConnection(AWSQueryConnection):
 
         if instance_group_types:
             self.build_list_params(params, instance_group_types,
-                                   'InstanceGroupTypeList.member')
+                                   'InstanceGroupTypes.member')
 
         return self.get_object('ListInstances', params, InstanceList)
 
@@ -265,7 +273,7 @@ class EmrConnection(AWSQueryConnection):
             params['Marker'] = marker
 
         if step_states:
-            self.build_list_params(params, step_states, 'StepStateList.member')
+            self.build_list_params(params, step_states, 'StepStates.member')
 
         return self.get_object('ListSteps', params, StepSummaryList)
 

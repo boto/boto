@@ -57,6 +57,7 @@ class S3WebsiteEndpointTranslate(object):
 
     trans_region = defaultdict(lambda: 's3-website-us-east-1')
     trans_region['eu-west-1'] = 's3-website-eu-west-1'
+    trans_region['eu-central-1'] = 's3-website.eu-central-1'
     trans_region['us-west-1'] = 's3-website-us-west-1'
     trans_region['us-west-2'] = 's3-website-us-west-2'
     trans_region['sa-east-1'] = 's3-website-sa-east-1'
@@ -355,7 +356,7 @@ class Bucket(object):
             Valid options: ``url``
         :type encoding_type: string
 
-        :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
+        :rtype: :class:`boto.s3.bucketlistresultset.MultiPartUploadListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
         return MultiPartUploadListResultSet(self, key_marker,

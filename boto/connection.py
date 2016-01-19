@@ -726,7 +726,7 @@ class AWSAuthConnection(object):
 
         # Make sure the host is really just the host, not including
         # the port number
-        host = host.split(':', 1)[0]
+        host = boto.utils.parse_host(host)
 
         http_connection_kwargs = self.http_connection_kwargs.copy()
 

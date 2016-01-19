@@ -804,6 +804,11 @@ class EC2Connection(AWSQueryConnection):
             * c3.2xlarge
             * c3.4xlarge
             * c3.8xlarge
+            * c4.large
+            * c4.xlarge
+            * c4.2xlarge
+            * c4.4xlarge
+            * c4.8xlarge
             * i2.xlarge
             * i2.2xlarge
             * i2.4xlarge
@@ -1504,6 +1509,11 @@ class EC2Connection(AWSQueryConnection):
             * c3.2xlarge
             * c3.4xlarge
             * c3.8xlarge
+            * c4.large
+            * c4.xlarge
+            * c4.2xlarge
+            * c4.4xlarge
+            * c4.8xlarge
             * i2.xlarge
             * i2.2xlarge
             * i2.4xlarge
@@ -2265,7 +2275,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
     def create_volume(self, size, zone, snapshot=None, volume_type=None,
-                      iops=None, encrypted=False, dry_run=False):
+                      iops=None, encrypted=False, kms_key_id=None, dry_run=False):
         """
         Create a new EBS Volume.
 
@@ -2291,6 +2301,11 @@ class EC2Connection(AWSQueryConnection):
         :param encrypted: Specifies whether the volume should be encrypted.
             (optional)
 
+        :type kms_key_id: string
+        :params kms_key_id: If encrypted is True, this KMS Key ID may be specified to
+            encrypt volume with this key (optional)
+            e.g.: arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -2310,6 +2325,8 @@ class EC2Connection(AWSQueryConnection):
             params['Iops'] = str(iops)
         if encrypted:
             params['Encrypted'] = 'true'
+            if kms_key_id:
+                params['KmsKeyId'] = kms_key_id
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateVolume', params, Volume, verb='POST')

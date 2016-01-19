@@ -55,8 +55,12 @@ class Queue(object):
 
     def _arn(self):
         parts = self.id.split('/')
-        return 'arn:aws:sqs:%s:%s:%s' % (
-            self.connection.region.name, parts[1], parts[2])
+        if self.connection.region.name == 'cn-north-1':
+            partition = 'aws-cn'
+        else:
+            partition = 'aws'
+        return 'arn:%s:sqs:%s:%s:%s' % (
+            partition, self.connection.region.name, parts[1], parts[2])
     arn = property(_arn)
 
     def startElement(self, name, attrs, connection):
@@ -107,12 +111,57 @@ class Queue(object):
         Set a new value for an attribute of the Queue.
 
         :type attribute: String
-        :param attribute: The name of the attribute you want to set.  The
-                           only valid value at this time is: VisibilityTimeout
-        :type value: int
-        :param value: The new value for the attribute.
-            For VisibilityTimeout the value must be an
-            integer number of seconds from 0 to 86400.
+        :param attribute: The name of the attribute you want to set.
+
+        :param value: The new value for the attribute must be:
+
+
+            * For `DelaySeconds` the value must be an integer number of
+            seconds from 0 to 900 (15 minutes).
+                >>> queue.set_attribute('DelaySeconds', 900)
+
+            * For `MaximumMessageSize` the value must be an integer number of
+            bytes from 1024 (1 KiB) to 262144 (256 KiB).
+                >>> queue.set_attribute('MaximumMessageSize', 262144)
+
+            * For `MessageRetentionPeriod` the value must be an integer number of
+            seconds from 60 (1 minute) to 1209600 (14 days).
+                >>> queue.set_attribute('MessageRetentionPeriod', 1209600)
+
+            * For `Policy` the value must be an string that contains JSON formatted
+            parameters and values.
+                >>> queue.set_attribute('Policy', json.dumps({
+                ...     'Version': '2008-10-17',
+                ...     'Id': '/123456789012/testQueue/SQSDefaultPolicy',
+                ...     'Statement': [
+                ...        {
+                ...            'Sid': 'Queue1ReceiveMessage',
+                ...            'Effect': 'Allow',
+                ...            'Principal': {
+                ...                'AWS': '*'
+                ...            },
+                ...            'Action': 'SQS:ReceiveMessage',
+                ...            'Resource': 'arn:aws:aws:sqs:us-east-1:123456789012:testQueue'
+                ...        }
+                ...    ]
+                ... }))
+
+            * For `ReceiveMessageWaitTimeSeconds` the value must be an integer number of
+            seconds from 0 to 20.
+                >>> queue.set_attribute('ReceiveMessageWaitTimeSeconds', 20)
+
+            * For `VisibilityTimeout` the value must be an integer number of
+            seconds from 0 to 43200 (12 hours).
+                >>> queue.set_attribute('VisibilityTimeout', 43200)
+
+            * For `RedrivePolicy` the value must be an string that contains JSON formatted
+            parameters and values. You can set maxReceiveCount to a value between 1 and 1000.
+            The deadLetterTargetArn value is the Amazon Resource Name (ARN) of the queue that
+            will receive the dead letter messages.
+                >>> queue.set_attribute('RedrivePolicy', json.dumps({
+                ...    'maxReceiveCount': 5,
+                ...    'deadLetterTargetArn': "arn:aws:aws:sqs:us-east-1:123456789012:testDeadLetterQueue"
+                ... }))
 
         :rtype: bool
         :return: True if successful, otherwise False.

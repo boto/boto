@@ -370,8 +370,8 @@ class TestListInstances(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'ListInstances',
             'ClusterId': 'j-123',
-            'InstanceGroupTypeList.member.1': 'MASTER',
-            'InstanceGroupTypeList.member.2': 'TASK',
+            'InstanceGroupTypes.member.1': 'MASTER',
+            'InstanceGroupTypes.member.2': 'TASK',
             'Version': '2009-03-31'
         })
 
@@ -500,8 +500,8 @@ class TestListSteps(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'ListSteps',
             'ClusterId': 'j-123',
-            'StepStateList.member.1': 'COMPLETED',
-            'StepStateList.member.2': 'FAILED',
+            'StepStates.member.1': 'COMPLETED',
+            'StepStates.member.2': 'FAILED',
             'Version': '2009-03-31'
         })
         self.assertTrue(isinstance(response, StepSummaryList))

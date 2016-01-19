@@ -1,7 +1,7 @@
 ####
 boto
 ####
-boto 2.38.0
+boto 2.39.0
 
 Released: 9-Apr-2015
 
@@ -10,6 +10,24 @@ Released: 9-Apr-2015
 
 .. image:: https://pypip.in/d/boto/badge.svg
         :target: https://pypi.python.org/pypi/boto/
+
+******
+Boto 3
+******
+
+`Boto3 <https://github.com/boto/boto3>`__, the next version of Boto, is now
+stable and recommended for general use.  It can be used side-by-side with Boto
+in the same project, so it is easy to start using Boto3 in your existing
+projects as well as new projects. Going forward, API updates and all new
+feature work will be focused on Boto3.
+
+To assist users who still depend on Boto and cannot immediately switch over, we
+will be triaging and addressing critical issues and PRs in Boto in the short
+term. As more users make the switch to Boto3, we expect to reduce our
+maintenance involvement over time. If we decide on a cutoff date or any
+significant changes to our maintenance plan, we will make pre-announcements
+well ahead of schedule to allow ample time for our users to adapt/migrate.
+
 
 ************
 Introduction
@@ -26,17 +44,6 @@ and the `Porting Guide`_. If you would like, you can open an issue to let
 others know about your work in progress. Tests **must** pass on Python
 2.6, 2.7, 3.3, and 3.4 for pull requests to be accepted.
 
-******
-Boto 3
-******
-The next major version of Boto is currently in developer preview and can
-be found in the `Boto 3 <https://github.com/boto/boto3#readme>`__
-repository and installed via ``pip``. It supports the latest service APIs
-and provides a high-level object-oriented interface to many services.
-
-Please try Boto 3 and
-`leave feedback <https://github.com/boto/boto3/issues>`__ with any issues,
-suggestions, and feature requests you might have.
 
 ********
 Services

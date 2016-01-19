@@ -338,7 +338,7 @@ The workers only need to know which task lists to poll.
                 try:
                     print 'working on activity from tasklist %s at %i' % (self.task_list, time.time())
                     self.activity(activity_task.get('input'))
-                except Exception, error:
+                except Exception as error:
                     self.fail(reason=str(error))
                     raise error
     
