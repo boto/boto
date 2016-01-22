@@ -29,6 +29,7 @@ from boto.vpc.vpc import VPC
 from boto.vpc.customergateway import CustomerGateway
 from boto.vpc.networkacl import NetworkAcl
 from boto.vpc.routetable import RouteTable
+from boto.vpc.natgateway import NatGateway
 from boto.vpc.internetgateway import InternetGateway
 from boto.vpc.vpngateway import VpnGateway, Attachment
 from boto.vpc.dhcpoptions import DhcpOptions
@@ -73,7 +74,6 @@ def connect_to_region(region_name, **kw_params):
 
 
 class VPCConnection(EC2Connection):
-
     # VPC methods
 
     def get_all_vpcs(self, vpc_ids=None, filters=None, dry_run=False):
@@ -307,7 +307,7 @@ class VPCConnection(EC2Connection):
         return self.get_status('DeleteRouteTable', params)
 
     def _replace_route_table_association(self, association_id,
-                                        route_table_id, dry_run=False):
+                                         route_table_id, dry_run=False):
         """
         Helper function for replace_route_table_association and
         replace_route_table_association_with_assoc. Should not be used directly.
@@ -361,7 +361,7 @@ class VPCConnection(EC2Connection):
         :return: True if successful
         """
         return self._replace_route_table_association(
-            association_id, route_table_id, dry_run=dry_run).status
+                association_id, route_table_id, dry_run=dry_run).status
 
     def replace_route_table_association_with_assoc(self, association_id,
                                                    route_table_id,
@@ -386,7 +386,7 @@ class VPCConnection(EC2Connection):
         :return: New association ID
         """
         return self._replace_route_table_association(
-            association_id, route_table_id, dry_run=dry_run).newAssociationId
+                association_id, route_table_id, dry_run=dry_run).newAssociationId
 
     def create_route(self, route_table_id, destination_cidr_block,
                      gateway_id=None, instance_id=None, interface_id=None,
@@ -518,7 +518,7 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteRoute', params)
 
-    #Network ACLs
+    # Network ACLs
 
     def get_all_network_acls(self, network_acl_ids=None, filters=None):
         """
@@ -561,7 +561,7 @@ class VPCConnection(EC2Connection):
         """
 
         acl = self.get_all_network_acls(filters=[('association.subnet-id', subnet_id)])[0]
-        association = [ association for association in acl.associations if association.subnet_id == subnet_id ][0]
+        association = [association for association in acl.associations if association.subnet_id == subnet_id][0]
 
         params = {
             'AssociationId': association.id,
@@ -783,10 +783,79 @@ class VPCConnection(EC2Connection):
 
         return self.get_status('DeleteNetworkAclEntry', params)
 
+    # NAT Gateways
+
+    def get_all_nat_gateways(self, nat_gateway_ids=None, filters=None, dry_run=False):
+        """
+        Get a list of NAT gateways. You can filter results to return information
+        about only those gateways that you're interested in.
+
+        :type nat_gateway_ids: list
+        :param nat_gateway_ids: A list of strings with the desired gateway IDs.
+
+        :type filters: list of tuples or dict
+        :param filters: A list of tuples or dict containing filters.  Each tuple
+                        or dict item consists of a filter key and a filter value.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        """
+        params = {}
+
+        if nat_gateway_ids:
+            self.build_list_params(params, nat_gateway_ids,
+                                   'NatGatewayId')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_list('DescribeNatGateways', params,
+                             [('item', NatGateway)])
+
+    def create_nat_gateway(self, subnet_id, allocation_id, dry_run=False):
+        """
+        Creates a NAT gateway for VPC.
+
+        :type subnet_id: str
+        :param subnet_id: The subnet in which the NAT gateway should be launched.
+
+        :type allocation_id: str
+        :param allocation_id: The allocation ID of an elastic IP address for the public side of the gateway.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: Newly created nat gateway.
+        :return: `boto.vpc.natgateway.NATGateway`
+        """
+        params = {'SubnetId': subnet_id,
+                  'AllocationId': allocation_id}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('CreateNatGateway', params, NatGateway)
+
+    def delete_nat_gateway(self, nat_gateway_id, dry_run=False):
+        """
+        Deletes a NAT gateway from the VPC.
+
+        :type nat_gateway_id: str
+        :param nat_gateway_id: The ID of the NAT gateway to delete.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: Bool
+        :return: True if successful
+        """
+        params = {'NatGatewayId': nat_gateway_id}
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_status('DeleteNatGateway', params)
+
     # Internet Gateways
 
-    def get_all_internet_gateways(self, internet_gateway_ids=None,
-                                  filters=None, dry_run=False):
+    def get_all_internet_gateways(self, internet_gateway_ids=None, filters=None, dry_run=False):
         """
         Get a list of internet gateways. You can filter results to return information
         about only those gateways that you're interested in.
@@ -847,8 +916,7 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteInternetGateway', params)
 
-    def attach_internet_gateway(self, internet_gateway_id, vpc_id,
-                                dry_run=False):
+    def attach_internet_gateway(self, internet_gateway_id, vpc_id, dry_run=False):
         """
         Attach an internet gateway to a specific VPC.
 
@@ -872,8 +940,7 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('AttachInternetGateway', params)
 
-    def detach_internet_gateway(self, internet_gateway_id, vpc_id,
-                                dry_run=False):
+    def detach_internet_gateway(self, internet_gateway_id, vpc_id, dry_run=False):
         """
         Detach an internet gateway from a specific VPC.
 
@@ -899,8 +966,7 @@ class VPCConnection(EC2Connection):
 
     # Customer Gateways
 
-    def get_all_customer_gateways(self, customer_gateway_ids=None,
-                                  filters=None, dry_run=False):
+    def get_all_customer_gateways(self, customer_gateway_ids=None, filters=None, dry_run=False):
         """
         Retrieve information about your CustomerGateways.  You can filter
         results to return information only about those CustomerGateways that
@@ -989,8 +1055,7 @@ class VPCConnection(EC2Connection):
 
     # VPN Gateways
 
-    def get_all_vpn_gateways(self, vpn_gateway_ids=None, filters=None,
-                             dry_run=False):
+    def get_all_vpn_gateways(self, vpn_gateway_ids=None, filters=None, dry_run=False):
         """
         Retrieve information about your VpnGateways.  You can filter results to
         return information only about those VpnGateways that match your search
@@ -1152,8 +1217,7 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_list('DescribeSubnets', params, [('item', Subnet)])
 
-    def create_subnet(self, vpc_id, cidr_block, availability_zone=None,
-                      dry_run=False):
+    def create_subnet(self, vpc_id, cidr_block, availability_zone=None, dry_run=False):
         """
         Create a new Subnet
 
@@ -1549,7 +1613,7 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteVpnConnectionRoute', params)
 
-    def get_all_vpc_peering_connections(self, vpc_peering_connection_ids=None, 
+    def get_all_vpc_peering_connections(self, vpc_peering_connection_ids=None,
                                         filters=None, dry_run=False):
         """
         Retrieve information about your VPC peering connections. You
@@ -1596,8 +1660,8 @@ class VPCConnection(EC2Connection):
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeVpcPeeringConnections', params, [('item', VpcPeeringConnection)])
-    
-    def create_vpc_peering_connection(self, vpc_id, peer_vpc_id, 
+
+    def create_vpc_peering_connection(self, vpc_id, peer_vpc_id,
                                       peer_owner_id=None, dry_run=False):
         """
         Create a new VPN Peering connection.
@@ -1615,13 +1679,13 @@ class VPCConnection(EC2Connection):
         :return: A :class:`boto.vpc.vpc_peering_connection.VpcPeeringConnection` object
         """
         params = {'VpcId': vpc_id,
-                  'PeerVpcId': peer_vpc_id }
+                  'PeerVpcId': peer_vpc_id}
         if peer_owner_id is not None:
             params['PeerOwnerId'] = peer_owner_id
         if dry_run:
             params['DryRun'] = 'true'
 
-        return self.get_object('CreateVpcPeeringConnection', params, 
+        return self.get_object('CreateVpcPeeringConnection', params,
                                VpcPeeringConnection)
 
     def delete_vpc_peering_connection(self, vpc_peering_connection_id, dry_run=False):
@@ -1682,11 +1746,11 @@ class VPCConnection(EC2Connection):
         if dry_run:
             params['DryRun'] = 'true'
 
-        return self.get_object('AcceptVpcPeeringConnection', params, 
+        return self.get_object('AcceptVpcPeeringConnection', params,
                                VpcPeeringConnection)
 
     def get_all_classic_link_vpcs(self, vpc_ids=None, filters=None,
-                                   dry_run=False):
+                                  dry_run=False):
         """
         Describes the ClassicLink status of one or more VPCs.
 
