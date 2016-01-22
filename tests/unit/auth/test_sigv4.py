@@ -66,7 +66,7 @@ class TestSigV4Handler(unittest.TestCase):
                          'host:glacier.us-east-1.amazonaws.com\n'
                          'x-amz-archive-description:two spaces\n'
                          'x-amz-glacier-version:2012-06-01\n'
-                         'x-amz-quoted-string:"a   b   c"')
+                         'x-amz-quoted-string:"a b c"')
 
     def test_canonical_query_string(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
