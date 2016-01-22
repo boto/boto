@@ -211,8 +211,8 @@ class Route53Connection(AWSAuthConnection):
             associate to is required.
 
         :type vpc_region: str
-        :param vpc_id: When creating a private hosted zone, the region of
-            the associated VPC is required.
+        :param vpc_region: When creating a private hosted zone, the region
+            of the associated VPC is required.
 
         """
         if caller_ref is None:
@@ -527,8 +527,8 @@ class Route53Connection(AWSAuthConnection):
             associate to is required.
 
         :type vpc_region: str
-        :param vpc_id: When creating a private hosted zone, the region of
-            the associated VPC is required.
+        :param vpc_region: When creating a private hosted zone, the region
+            of the associated VPC is required.
         """
         zone = self.create_hosted_zone(name, private_zone=private_zone,
                                        vpc_id=vpc_id, vpc_region=vpc_region)
