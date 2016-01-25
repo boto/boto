@@ -772,8 +772,7 @@ class EC2Connection(AWSQueryConnection):
             with which to associate instances
 
         :type user_data: string
-        :param user_data: The Base64-encoded MIME user data to be made
-            available to the instance(s) in this reservation.
+        :param user_data: The user data passed to the launched instances
 
         :type instance_type: string
         :param instance_type: The type of instance to run:
