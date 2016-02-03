@@ -371,11 +371,7 @@ class S3Connection(AWSAuthConnection):
             params.update(response_headers)
 
         if query_parameters:
-            for k, v in query_parameters.items():
-                if v:
-                    params[k] = urllib.parse.quote(v)
-                else:
-                    params[k] = ''
+            params.update(query_parameters)
 
         http_request = self.build_base_http_request(method, path, auth_path,
                                                     headers=headers, host=host,
