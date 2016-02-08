@@ -98,7 +98,7 @@ class StrictEndpointResolver(object):
         self._resolver = resolver
         self._endpoint_data = endpoint_data
         if service_name_map is None:
-            service_name_map = service_name_map
+            service_name_map = self.SERVICE_RENAMES
         self._service_map = service_name_map
 
     def regions_for_service(self, service_name):
@@ -174,7 +174,7 @@ class StrictEndpointResolver(object):
                          % partition_name)
 
     def _endpoint_prefix(self, service_name):
-        endpoint_prefix = self.SERVICE_RENAMES.get(
+        endpoint_prefix = self._service_map.get(
             service_name, service_name)
         return endpoint_prefix
 
