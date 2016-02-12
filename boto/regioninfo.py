@@ -98,7 +98,7 @@ def load_regions():
     return endpoints
 
 
-def get_regions(service_name, region_cls=None, connection_cls=None):
+def get_regions(service_name, region_cls=None, connection_cls=None, provider=None):
     """
     Given a service name (like ``ec2``), returns a list of ``RegionInfo``
     objects for that service.
@@ -118,6 +118,12 @@ def get_regions(service_name, region_cls=None, connection_cls=None):
         ``RegionInfo`` object. Providing this allows the ``connect`` method on
         the ``RegionInfo`` to work. Default is ``None`` (no connection).
     :type connection_cls: class
+
+    :param provider: (Optional) The provider object for the 
+        ``RegionInfo`` object. Providing this allows the ``connect`` method on
+        the ``RegionInfo`` to use this provider instead of the default.
+        Default is ``None`` (use default provider 'aws').
+    :type provider: string or Provider
 
     :returns: A list of configured ``RegionInfo`` objects
     :rtype: list
@@ -139,7 +145,8 @@ def get_regions(service_name, region_cls=None, connection_cls=None):
             region_cls(
                 name=region_name,
                 endpoint=endpoint,
-                connection_cls=connection_cls
+                connection_cls=connection_cls,
+                provider=provider
             )
         )
 
@@ -152,11 +159,12 @@ class RegionInfo(object):
     """
 
     def __init__(self, connection=None, name=None, endpoint=None,
-                 connection_cls=None):
+                 connection_cls=None, provider=None):
         self.connection = connection
         self.name = name
         self.endpoint = endpoint
         self.connection_cls = connection_cls
+        self.provider = provider
 
     def __repr__(self):
         return 'RegionInfo:%s' % self.name
@@ -184,4 +192,6 @@ class RegionInfo(object):
         :return: The connection to this regions endpoint
         """
         if self.connection_cls:
+            if (self.provider is not None) and ('provider' not in kw_params):
+                kw_params['provider'] = self.provider
             return self.connection_cls(region=self, **kw_params)

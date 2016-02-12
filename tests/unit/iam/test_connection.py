@@ -24,7 +24,14 @@
 from base64 import b64decode
 from boto.compat import json
 from boto.iam.connection import IAMConnection
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
+
+
+class TestIAMConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = IAMConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestCreateSamlProvider(AWSMockServiceTestCase):

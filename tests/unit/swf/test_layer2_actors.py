@@ -7,12 +7,16 @@ from mock import Mock
 class TestActors(unittest.TestCase):
 
     def setUp(self):
+        self.saved_level1 = boto.swf.layer2.Layer1
         boto.swf.layer2.Layer1 = Mock()
         self.worker = ActivityWorker(name='test-worker', domain='test', task_list='test_list')
         self.decider = Decider(name='test-worker', domain='test', task_list='test_list')
         self.worker._swf = Mock()
         self.decider._swf = Mock()
-    
+
+    def tearDown(self):
+        boto.swf.layer2.Layer1 = self.saved_level1
+
     def test_decider_pass_tasktoken(self):
         self.decider._swf.poll_for_decision_task.return_value = {
             'events': [{'eventId': 1,

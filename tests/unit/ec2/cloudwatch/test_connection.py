@@ -23,9 +23,16 @@
 import datetime
 
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 
 from boto.ec2.cloudwatch import CloudWatchConnection
+
+
+class TestCloudWatchConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = CloudWatchConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestCloudWatchConnection(AWSMockServiceTestCase):

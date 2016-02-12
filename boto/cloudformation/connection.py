@@ -73,10 +73,11 @@ class CloudFormationConnection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  converter=None, security_token=None, validate_certs=True,
-                 profile_name=None):
+                 profile_name=None, provider='aws'):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
-                self.DefaultRegionEndpoint, CloudFormationConnection)
+                self.DefaultRegionEndpoint, CloudFormationConnection,
+                provider=provider)
         self.region = region
         super(CloudFormationConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
@@ -86,7 +87,8 @@ class CloudFormationConnection(AWSQueryConnection):
                                     https_connection_factory, path,
                                     security_token,
                                     validate_certs=validate_certs,
-                                    profile_name=profile_name)
+                                    profile_name=profile_name,
+                                    provider=provider)
 
     def _required_auth_capability(self):
         return ['hmac-v4']

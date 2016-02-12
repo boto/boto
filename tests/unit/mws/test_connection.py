@@ -27,7 +27,14 @@ from boto.exception import BotoServerError
 
 from tests.compat import unittest
 
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
+
+
+class TestMWSConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = MWSConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 from mock import MagicMock
 

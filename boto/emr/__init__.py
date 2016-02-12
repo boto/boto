@@ -32,14 +32,14 @@ from boto.emr.bootstrap_action import BootstrapAction
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the Amazon Elastic MapReduce service.
 
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
-    return get_regions('elasticmapreduce', connection_cls=EmrConnection)
+    return get_regions('elasticmapreduce', connection_cls=EmrConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

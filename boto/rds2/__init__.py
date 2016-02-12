@@ -22,7 +22,7 @@
 from boto.regioninfo import get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the RDS service.
 
@@ -30,7 +30,7 @@ def regions():
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
     from boto.rds2.layer1 import RDSConnection
-    return get_regions('rds', connection_cls=RDSConnection)
+    return get_regions('rds', connection_cls=RDSConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

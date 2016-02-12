@@ -22,7 +22,14 @@
 
 from tests.unit import unittest
 from boto.ecs import ECSConnection
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
+
+
+class TestECSConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = ECSConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestECSConnection(AWSMockServiceTestCase):

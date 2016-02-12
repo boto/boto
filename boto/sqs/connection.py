@@ -45,10 +45,11 @@ class SQSConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True, profile_name=None):
+                 security_token=None, validate_certs=True, profile_name=None,
+                 provider='aws'):
         if not region:
             region = SQSRegionInfo(self, self.DefaultRegionName,
-                                   self.DefaultRegionEndpoint)
+                                   self.DefaultRegionEndpoint, provider=provider)
         self.region = region
         super(SQSConnection, self).__init__(aws_access_key_id,
                                     aws_secret_access_key,
@@ -59,6 +60,7 @@ class SQSConnection(AWSQueryConnection):
                                     https_connection_factory, path,
                                     security_token=security_token,
                                     validate_certs=validate_certs,
+                                    provider=provider,
                                     profile_name=profile_name)
         self.auth_region_name = self.region.name
 

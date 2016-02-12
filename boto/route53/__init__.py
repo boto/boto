@@ -44,7 +44,7 @@ class Route53RegionInfo(RegionInfo):
             return self.connection_cls(host=self.endpoint, **kw_params)
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the Route53 service.
 
@@ -54,7 +54,8 @@ def regions():
     regions = get_regions(
         'route53',
         region_cls=Route53RegionInfo,
-        connection_cls=Route53Connection
+        connection_cls=Route53Connection,
+        provider=provider
     )
 
     # For historical reasons, we had a "universal" endpoint as well.
@@ -62,7 +63,8 @@ def regions():
         Route53RegionInfo(
             name='universal',
             endpoint='route53.amazonaws.com',
-            connection_cls=Route53Connection
+            connection_cls=Route53Connection,
+            provider=provider
         )
     )
 

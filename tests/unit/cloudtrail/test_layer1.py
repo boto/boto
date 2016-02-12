@@ -3,7 +3,13 @@
 import json
 
 from boto.cloudtrail.layer1 import CloudTrailConnection
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
+
+class TestCloudTrailConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = CloudTrailConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestDescribeTrails(AWSMockServiceTestCase):

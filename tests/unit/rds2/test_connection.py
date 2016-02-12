@@ -22,10 +22,17 @@
 #
 
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 
 from boto.ec2.securitygroup import SecurityGroup
 from boto.rds2.layer1 import RDSConnection
+
+
+class TestRDS2ConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = RDSConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestRDS2Connection(AWSMockServiceTestCase):

@@ -35,7 +35,7 @@ from boto.regioninfo import get_regions
 from boto.rds.logfile import LogFile, LogFileObject
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the RDS service.
 
@@ -45,7 +45,8 @@ def regions():
     return get_regions(
         'rds',
         region_cls=RDSRegionInfo,
-        connection_cls=RDSConnection
+        connection_cls=RDSConnection,
+	provider=provider
     )
 
 
@@ -82,7 +83,7 @@ class RDSConnection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  security_token=None, validate_certs=True,
-                 profile_name=None):
+                 profile_name=None, provider='aws'):
         if not region:
             region = RDSRegionInfo(self, self.DefaultRegionName,
                                    self.DefaultRegionEndpoint)
@@ -95,7 +96,7 @@ class RDSConnection(AWSQueryConnection):
                                     https_connection_factory, path,
                                     security_token,
                                     validate_certs=validate_certs,
-                                    profile_name=profile_name)
+                                    profile_name=profile_name, provider=provider)
 
     def _required_auth_capability(self):
         return ['hmac-v4']

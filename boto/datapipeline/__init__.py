@@ -23,7 +23,7 @@
 from boto.regioninfo import get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the AWS Datapipeline service.
 
@@ -31,7 +31,7 @@ def regions():
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
     from boto.datapipeline.layer1 import DataPipelineConnection
-    return get_regions('datapipeline', connection_cls=DataPipelineConnection)
+    return get_regions('datapipeline', connection_cls=DataPipelineConnection,provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

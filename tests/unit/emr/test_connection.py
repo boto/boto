@@ -23,7 +23,7 @@ import boto.utils
 
 from datetime import datetime
 from time import time
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 
 from boto.emr.connection import EmrConnection
 from boto.emr.emrobject import BootstrapAction, BootstrapActionList, \
@@ -39,6 +39,13 @@ from boto.emr.emrobject import BootstrapAction, BootstrapActionList, \
 # and verifying we get the expected results with mocked
 # responses.  The integration tests actually verify the
 # API calls interact with the service correctly.
+class TestEmrConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = EmrConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
+
+
 class TestListClusters(AWSMockServiceTestCase):
     connection_class = EmrConnection
 

@@ -23,7 +23,7 @@
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the AWS Redshift service.
 
@@ -31,7 +31,7 @@ def regions():
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
     from boto.redshift.layer1 import RedshiftConnection
-    return get_regions('redshift', connection_cls=RedshiftConnection)
+    return get_regions('redshift', connection_cls=RedshiftConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

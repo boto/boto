@@ -23,7 +23,7 @@
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the AWS Elastic Transcoder service.
 
@@ -33,7 +33,8 @@ def regions():
     from boto.elastictranscoder.layer1 import ElasticTranscoderConnection
     return get_regions(
         'elastictranscoder',
-        connection_cls=ElasticTranscoderConnection
+        connection_cls=ElasticTranscoderConnection,
+        provider=provider
     )
 
 

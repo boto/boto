@@ -23,7 +23,7 @@
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the Amazon OpsWorks service.
 
@@ -31,7 +31,7 @@ def regions():
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
     from boto.opsworks.layer1 import OpsWorksConnection
-    return get_regions('opsworks', connection_cls=OpsWorksConnection)
+    return get_regions('opsworks', connection_cls=OpsWorksConnection,provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

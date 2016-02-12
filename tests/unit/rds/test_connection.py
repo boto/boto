@@ -22,7 +22,7 @@
 #
 
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 
 from boto.ec2.securitygroup import SecurityGroup
 from boto.rds import RDSConnection
@@ -31,6 +31,14 @@ from boto.rds.parametergroup import ParameterGroup
 from boto.rds.logfile import LogFile, LogFileObject
 
 import xml.sax.saxutils as saxutils
+
+
+class TestRDSConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = RDSConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
+
 
 class TestRDSConnection(AWSMockServiceTestCase):
     connection_class = RDSConnection

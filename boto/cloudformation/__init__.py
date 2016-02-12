@@ -26,7 +26,7 @@ from boto.regioninfo import RegionInfo, get_regions, load_regions
 RegionData = load_regions().get('cloudformation')
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the CloudFormation service.
 
@@ -35,7 +35,8 @@ def regions():
     """
     return get_regions(
         'cloudformation',
-        connection_cls=CloudFormationConnection
+        connection_cls=CloudFormationConnection,
+        provider=provider
     )
 
 

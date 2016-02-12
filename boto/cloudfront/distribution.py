@@ -399,6 +399,7 @@ class Distribution(object):
                 from boto.s3.connection import S3Connection
                 s3 = S3Connection(self.connection.aws_access_key_id,
                                   self.connection.aws_secret_access_key,
+                                  provider = self.connection.provider,
                                   proxy=self.connection.proxy,
                                   proxy_port=self.connection.proxy_port,
                                   proxy_user=self.connection.proxy_user,

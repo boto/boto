@@ -22,7 +22,9 @@
 # IN THE SOFTWARE.
 #
 
-from tests.unit import AWSMockServiceTestCase, MockServiceWithConfigTestCase
+from tests.unit import unittest
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
+from tests.unit import MockServiceWithConfigTestCase
 
 from tests.compat import mock
 
@@ -33,6 +35,13 @@ from boto.sqs.queue import Queue
 from boto.connection import AWSQueryConnection
 
 from nose.plugins.attrib import attr
+
+class TestSQSConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = SQSConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
+
 
 class SQSAuthParams(AWSMockServiceTestCase):
     connection_class = SQSConnection

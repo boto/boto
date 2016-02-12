@@ -37,14 +37,14 @@ from boto.compat import six
 RegionData = load_regions().get('elasticloadbalancing', {})
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the ELB service.
 
     :rtype: list
     :return: A list of :class:`boto.RegionInfo` instances
     """
-    return get_regions('elasticloadbalancing', connection_cls=ELBConnection)
+    return get_regions('elasticloadbalancing', connection_cls=ELBConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):
@@ -76,7 +76,8 @@ class ELBConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True, profile_name=None):
+                 security_token=None, validate_certs=True, profile_name=None,
+                 provider='aws'):
         """
         Init method to create a new connection to EC2 Load Balancing Service.
 
@@ -95,7 +96,8 @@ class ELBConnection(AWSQueryConnection):
                                             https_connection_factory, path,
                                             security_token,
                                             validate_certs=validate_certs,
-                                            profile_name=profile_name)
+                                            profile_name=profile_name,
+                                            provider=provider)
 
     def _required_auth_capability(self):
         return ['hmac-v4']

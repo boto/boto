@@ -1,9 +1,16 @@
 from tests.unit import unittest
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 
 from boto.cloudfront import CloudFrontConnection
 from boto.cloudfront.distribution import Distribution, DistributionConfig, DistributionSummary
 from boto.cloudfront.origin import CustomOrigin
+
+
+class TestCloudFrontConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = CloudFrontConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestCloudFrontConnection(AWSMockServiceTestCase):

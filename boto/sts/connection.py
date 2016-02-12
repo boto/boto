@@ -71,7 +71,7 @@ class STSConnection(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  converter=None, validate_certs=True, anon=False,
-                 security_token=None, profile_name=None):
+                 security_token=None, profile_name=None, provider='aws'):
         """
         :type anon: boolean
         :param anon: If this parameter is True, the ``STSConnection`` object
@@ -82,11 +82,11 @@ class STSConnection(AWSQueryConnection):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint,
-                                connection_cls=STSConnection)
+                                connection_cls=STSConnection,
+                                provider=provider)
         self.region = region
         self.anon = anon
         self._mutex = threading.Semaphore()
-        provider = 'aws'
         # If an anonymous request is sent, do not try to look for credentials.
         # So we pass in dummy values for the access key id, secret access
         # key, and session token. It does not matter that they are

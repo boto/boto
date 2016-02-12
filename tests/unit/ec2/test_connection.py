@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from mock import MagicMock, Mock
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
+from tests.unit import MockServiceProviderTestCase
 
 import boto.ec2
 
@@ -21,6 +22,13 @@ class TestEC2ConnectionBase(AWSMockServiceTestCase):
     def setUp(self):
         super(TestEC2ConnectionBase, self).setUp()
         self.ec2 = self.service_connection
+
+
+class TestEC2ConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = EC2Connection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestReservedInstanceOfferings(TestEC2ConnectionBase):

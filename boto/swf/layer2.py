@@ -31,12 +31,14 @@ class SWFBase(object):
             if DEFAULT_CREDENTIALS.get(credkey):
                 setattr(self, credkey, DEFAULT_CREDENTIALS[credkey])
         # Override attributes with keyword args.
+        if 'provider' not in kwargs:
+            self.provider = 'aws'
         for kwarg in kwargs:
             setattr(self, kwarg, kwargs[kwarg])
-
         self._swf = Layer1(self.aws_access_key_id,
                            self.aws_secret_access_key,
-                           region=self.region)
+                           region=self.region,
+                           provider=self.provider)
 
     def __repr__(self):
         rep_str = str(self.name)

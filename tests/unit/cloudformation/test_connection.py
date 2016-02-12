@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime
 from mock import Mock
 
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 from boto.cloudformation.connection import CloudFormationConnection
 from boto.exception import BotoServerError
 from boto.compat import json
@@ -42,6 +42,13 @@ class CloudFormationConnectionBase(AWSMockServiceTestCase):
     def setUp(self):
         super(CloudFormationConnectionBase, self).setUp()
         self.stack_id = u'arn:aws:cloudformation:us-east-1:18:stack/Name/id'
+
+
+class TestCloudFormationConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = CloudFormationConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestCloudFormationCreateStack(CloudFormationConnectionBase):

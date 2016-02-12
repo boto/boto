@@ -146,12 +146,12 @@ class Layer2(object):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  debug=0, security_token=None, region=None,
                  validate_certs=True, dynamizer=LossyFloatDynamizer,
-                 profile_name=None):
+                 profile_name=None, provider='aws'):
         self.layer1 = Layer1(aws_access_key_id, aws_secret_access_key,
                              is_secure, port, proxy, proxy_port,
                              debug, security_token, region,
                              validate_certs=validate_certs,
-                             profile_name=profile_name)
+                             profile_name=profile_name, provider=provider)
         self.dynamizer = dynamizer()
 
     def use_decimals(self, use_boolean=False):

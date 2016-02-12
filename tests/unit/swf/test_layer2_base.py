@@ -15,11 +15,16 @@ class TestBase(unittest.TestCase):
     Test for SWFBase.
     """
     def setUp(self):
+        self.saved_layer1 = boto.swf.layer2.Layer1
         boto.swf.layer2.Layer1 = Mock()
         self.swf_base = SWFBase(
             domain=MOCK_DOMAIN, aws_access_key_id=MOCK_ACCESS_KEY,
             aws_secret_access_key=MOCK_SECRET_KEY, region=MOCK_REGION
         )
+
+    def tearDown(self):
+        boto.swf.layer2.Layer1 = self.saved_layer1
+
 
     def test_instantiation(self):
         self.assertEquals(MOCK_DOMAIN, self.swf_base.domain)
@@ -28,4 +33,4 @@ class TestBase(unittest.TestCase):
                           self.swf_base.aws_secret_access_key)
         self.assertEquals(MOCK_REGION, self.swf_base.region)
         boto.swf.layer2.Layer1.assert_called_with(
-            MOCK_ACCESS_KEY, MOCK_SECRET_KEY, region=MOCK_REGION)
+            MOCK_ACCESS_KEY, MOCK_SECRET_KEY, region=MOCK_REGION, provider='aws')

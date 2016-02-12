@@ -35,6 +35,8 @@ try:
     import mimetypes
     from multiprocessing import Pool
     from boto.s3.connection import S3Connection
+    from boto import provider, sts
+    from boto.contrib.roleprovider import RoleProvider
     from filechunkio import FileChunkIO
     multipart_capable = True
     usage_flag_multipart_capable = """ [--multipart]"""
@@ -55,10 +57,12 @@ except ImportError as err:
 
 
 DEFAULT_REGION = 'us-east-1'
+DEFAULT_PROVIDER = 'aws'
 
 usage_string = """
 SYNOPSIS
     s3put [-a/--access_key <access_key>] [-s/--secret_key <secret_key>]
+          [-u/--use-assumed-role <iam_role>]
           -b/--bucket <bucket_name> [-c/--callback <num_cb>]
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
           [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
@@ -73,6 +77,7 @@ SYNOPSIS
         secret_key - Your AWS Secret Access Key.  If not supplied, boto
                      will use the value of the environment variable
                      AWS_SECRET_ACCESS_KEY
+        iam_role - Role to assume to perform the copy operation.
         bucket_name - The name of the S3 bucket the file(s) should be
                       copied to.
         path - A path to a directory or file that represents the items
@@ -145,7 +150,7 @@ def get_key_name(fullpath, prefix, key_prefix):
 
 
 def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
-                 source_path, offset, bytes, debug, cb, num_cb,
+                 source_path, offset, bytes, debug, cb, num_cb, iam_role,
                  amount_of_retries=10):
     """
     Uploads a part with retries.
@@ -157,7 +162,10 @@ def _upload_part(bucketname, aws_key, aws_secret, multipart_id, part_num,
         try:
             if debug == 1:
                 print('Start uploading part #%d ...' % part_num)
-            conn = S3Connection(aws_key, aws_secret)
+            prov = None
+            if iam_role:
+                prov = RoleProvider(iam_role, access_key=aws_key, secret_key=aws_secret)
+            conn = S3Connection(aws_key, aws_secret, provider=prov or DEFAULT_PROVIDER)
             conn.debug = debug
             bucket = conn.get_bucket(bucketname)
             for mp in bucket.get_all_multipart_uploads():
@@ -184,15 +192,15 @@ def check_valid_region(conn, region):
         print('Invalid region (%s)' % region)
         sys.exit(1)
 
-def multipart_upload(bucketname, aws_key, aws_secret, source_path, keyname,
+def multipart_upload(bucketname, aws_key, aws_secret, iam_role, source_path, keyname,
                      reduced, debug, cb, num_cb, acl='private', headers={},
                      guess_mimetype=True, parallel_processes=4,
-                     region=DEFAULT_REGION):
+                     region=DEFAULT_REGION, prov=DEFAULT_PROVIDER):
     """
     Parallel multipart upload.
     """
     conn = boto.s3.connect_to_region(region, aws_access_key_id=aws_key,
-                                     aws_secret_access_key=aws_secret)
+                                     aws_secret_access_key=aws_secret, provider=prov or DEFAULT_PROVIDER)
     check_valid_region(conn, region)
     conn.debug = debug
     bucket = conn.get_bucket(bucketname)
@@ -217,7 +225,7 @@ def multipart_upload(bucketname, aws_key, aws_secret, source_path, keyname,
         part_num = i + 1
         pool.apply_async(_upload_part, [bucketname, aws_key, aws_secret, mp.id,
                                         part_num, source_path, offset, bytes,
-                                        debug, cb, num_cb])
+                                        debug, cb, num_cb, iam_role])
     pool.close()
     pool.join()
 
@@ -248,6 +256,7 @@ def main():
     # default values
     aws_access_key_id = None
     aws_secret_access_key = None
+    aws_iam_role = None
     bucket_name = ''
     ignore_dirs = []
     debug = 0
@@ -267,11 +276,11 @@ def main():
 
     try:
         opts, args = getopt.getopt(
-            sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
+            sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:u:wr',
             ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
              'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet',
              'secret_key=', 'no_overwrite', 'reduced', 'header=', 'multipart',
-             'host=', 'region='])
+             'host=', 'region=', 'use_assumed_role='])
     except:
         usage(1)
 
@@ -307,6 +316,9 @@ def main():
             quiet = True
         if o in ('-s', '--secret_key'):
             aws_secret_access_key = a
+        if o in ('-u', '--use_assumed_role'):
+            aws_iam_role = a
+            print "IAM role supplied"
         if o in ('-r', '--reduced'):
             reduced = True
         if o == '--header':
@@ -338,12 +350,21 @@ def main():
 
     connect_args = {
         'aws_access_key_id': aws_access_key_id,
-        'aws_secret_access_key': aws_secret_access_key
+        'aws_secret_access_key': aws_secret_access_key,
     }
 
     if host:
         connect_args['host'] = host
 
+    prov = None
+    if aws_iam_role:
+        try:
+            prov = RoleProvider(aws_iam_role, access_key=aws_access_key_id, secret_key=aws_secret_access_key)
+            connect_args['provider'] = prov
+        except Exception, exc:
+             print 'Unable to assume role %s' % aws_iam_role
+             raise exc
+        
     c = boto.s3.connect_to_region(region or DEFAULT_REGION, **connect_args)
     check_valid_region(c, region or DEFAULT_REGION)
     c.debug = debug
@@ -425,10 +446,11 @@ def main():
             if os.stat(fullpath).st_size != 0 and multipart_capable and \
                     multipart_requested:
                 multipart_upload(bucket_name, aws_access_key_id,
-                                 aws_secret_access_key, fullpath, key_name,
+                                 aws_secret_access_key, aws_iam_role, fullpath, key_name,
                                  reduced, debug, cb, num_cb,
                                  grant or 'private', headers,
-                                 region=region or DEFAULT_REGION)
+                                 region=region or DEFAULT_REGION,
+                                 provider=prov or DEFAULT_PROVIDER)
             else:
                 singlepart_upload(b, key_name, fullpath, cb=cb, num_cb=num_cb,
                                   policy=grant, reduced_redundancy=reduced,

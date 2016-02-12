@@ -23,7 +23,7 @@
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the AWS Cloudtrail service.
 
@@ -31,7 +31,7 @@ def regions():
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
     from boto.cloudtrail.layer1 import CloudTrailConnection
-    return get_regions('cloudtrail', connection_cls=CloudTrailConnection)
+    return get_regions('cloudtrail', connection_cls=CloudTrailConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

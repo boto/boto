@@ -24,14 +24,14 @@ from boto.ses.connection import SESConnection
 from boto.regioninfo import RegionInfo, get_regions
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the SES service.
 
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo` instances
     """
-    return get_regions('ses', connection_cls=SESConnection)
+    return get_regions('ses', connection_cls=SESConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):

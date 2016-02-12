@@ -2,8 +2,15 @@ import json
 import copy
 import tempfile
 
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
 from boto.glacier.layer1 import Layer1
+
+
+class TestGlacierProviderOverride(MockServiceProviderTestCase):
+    connection_class = Layer1
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class GlacierLayer1ConnectionBase(AWSMockServiceTestCase):

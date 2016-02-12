@@ -1,6 +1,7 @@
 from boto.compat import http_client
 from tests.compat import mock, unittest
 
+import boto
 
 class AWSMockServiceTestCase(unittest.TestCase):
     """Base class for mocking aws services."""
@@ -108,3 +109,26 @@ class MockServiceWithConfigTestCase(AWSMockServiceTestCase):
             return self.config[section_name][key]
         except KeyError:
             return None
+
+
+class MockServiceProviderTestCase(AWSMockServiceTestCase):
+    def setUp(self):
+        self.alt_provider = mock.Mock(spec=boto.provider.Provider)
+        self.alt_provider.host = None
+        self.alt_provider.host_header = None
+        self.alt_provider.port = None
+        self.alt_provider.secret_key = 'alt_secret_key'
+        self.https_connection = mock.Mock(spec=http_client.HTTPSConnection)
+        self.https_connection_factory = (
+            mock.Mock(return_value=self.https_connection), ())
+        self.service_connection = self.create_service_connection(
+            https_connection_factory=self.https_connection_factory,
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key',
+            provider = self.alt_provider)
+        self.initialize_service_connection()
+
+    def assert_alt_provider_used(self):
+        self.assertEqual(self.alt_provider, self.service_connection.provider)
+
+

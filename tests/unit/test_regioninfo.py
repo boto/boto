@@ -29,11 +29,12 @@ from boto.regioninfo import load_regions, get_regions
 
 class TestRegionInfo(object):
     def __init__(self, connection=None, name=None, endpoint=None,
-                 connection_cls=None):
+                 connection_cls=None, provider=None):
         self.connection = connection
         self.name = name
         self.endpoint = endpoint
         self.connection_cls = connection_cls
+        self.provider = provider
 
 
 class FakeConn(object):

@@ -34,14 +34,14 @@ import boto
 RegionData = load_regions().get('cloudwatch', {})
 
 
-def regions():
+def regions(provider=None):
     """
     Get all available regions for the CloudWatch service.
 
     :rtype: list
     :return: A list of :class:`boto.RegionInfo` instances
     """
-    return get_regions('cloudwatch', connection_cls=CloudWatchConnection)
+    return get_regions('cloudwatch', connection_cls=CloudWatchConnection, provider=provider)
 
 
 def connect_to_region(region_name, **kw_params):
@@ -74,7 +74,8 @@ class CloudWatchConnection(AWSQueryConnection):
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
-                 security_token=None, validate_certs=True, profile_name=None):
+                 security_token=None, validate_certs=True, profile_name=None,
+                 provider='aws'):
         """
         Init method to create a new connection to EC2 Monitoring Service.
 
@@ -99,7 +100,8 @@ class CloudWatchConnection(AWSQueryConnection):
                                                    https_connection_factory, path,
                                                    security_token,
                                                    validate_certs=validate_certs,
-                                                   profile_name=profile_name)
+                                                   profile_name=profile_name,
+                                                   provider=provider)
 
     def _required_auth_capability(self):
         return ['hmac-v4']

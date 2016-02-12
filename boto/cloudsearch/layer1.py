@@ -46,7 +46,7 @@ class Layer1(AWSQueryConnection):
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  api_version=None, security_token=None,
-                 validate_certs=True, profile_name=None):
+                 validate_certs=True, profile_name=None, provider='aws'):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
@@ -67,7 +67,7 @@ class Layer1(AWSQueryConnection):
             path=path,
             security_token=security_token,
             validate_certs=validate_certs,
-            profile_name=profile_name)
+            profile_name=profile_name, provider=provider)
 
     def _required_auth_capability(self):
         return ['hmac-v4']

@@ -21,7 +21,14 @@
 # IN THE SOFTWARE.
 #
 from boto.directconnect.layer1 import DirectConnectConnection
-from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSMockServiceTestCase, MockServiceProviderTestCase
+
+
+class TestDirectConnectConnectionProviderOverride(MockServiceProviderTestCase):
+    connection_class = DirectConnectConnection
+
+    def test_provider_override(self):
+        self.assert_alt_provider_used()
 
 
 class TestDescribeTrails(AWSMockServiceTestCase):
