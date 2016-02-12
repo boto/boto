@@ -215,13 +215,12 @@ def retry_url(url, retry_on_404=True, num_retries=10, timeout=None):
                 result = result.decode('utf-8')
 
             return result
-        except urllib.error.HTTPError as e:
-            code = e.getcode()
-            if code == 404 and not retry_on_404:
-                return ''
         except Exception as e:
-            pass
-        boto.log.exception('Caught exception reading instance data')
+            if isinstance(e, urllib.error.HTTPError):
+                code = e.getcode()
+                if code == 404 and not retry_on_404:
+                    return ''
+            boto.log.exception('Caught exception reading instance data')
         # If not on the last iteration of the loop then sleep.
         if i + 1 != num_retries:
             time.sleep(min(2 ** i,
