@@ -19,9 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import time
-
-from tests.compat import mock, unittest
+from tests.compat import unittest
 from tests.unit import AWSMockServiceTestCase
 from tests.unit import MockServiceWithConfigTestCase
 
@@ -67,12 +65,13 @@ class TestPresigned(MockServiceWithConfigTestCase):
         )
 
         url_enabled = conn.generate_url(86400, 'GET', bucket='examplebucket',
-                                      key='test.txt', query_auth=True)
+                                        key='test.txt', query_auth=True)
 
         url_disabled = conn.generate_url(86400, 'GET', bucket='examplebucket',
-                                      key='test.txt', query_auth=False)
+                                         key='test.txt', query_auth=False)
         self.assertIn('Signature=', url_enabled)
         self.assertNotIn('Signature=', url_disabled)
+
 
 class TestSigV4HostError(MockServiceWithConfigTestCase):
     connection_class = S3Connection
@@ -135,9 +134,12 @@ class TestSigV4Presigned(MockServiceWithConfigTestCase):
         # Here we force an input iso_date to ensure we always get the
         # same signature.
         url = conn.generate_url_sigv4(86400, 'GET', bucket='examplebucket',
-            key='test.txt', iso_date='20140625T000000Z')
+                                      key='test.txt',
+                                      iso_date='20140625T000000Z')
 
-        self.assertIn('a937f5fbc125d98ac8f04c49e0204ea1526a7b8ca058000a54c192457be05b7d', url)
+        self.assertIn(
+            'a937f5fbc125d98ac8f04c49e0204ea1526a7b8ca058000a54c192457be05b7d',
+            url)
 
     def test_sigv4_presign_optional_params(self):
         self.config = {
@@ -154,7 +156,7 @@ class TestSigV4Presigned(MockServiceWithConfigTestCase):
         )
 
         url = conn.generate_url_sigv4(86400, 'GET', bucket='examplebucket',
-            key='test.txt', version_id=2)
+                                      key='test.txt', version_id=2)
 
         self.assertIn('VersionId=2', url)
         self.assertIn('X-Amz-Security-Token=token', url)
@@ -173,10 +175,10 @@ class TestSigV4Presigned(MockServiceWithConfigTestCase):
         )
 
         url_enabled = conn.generate_url(86400, 'GET', bucket='examplebucket',
-                                      key='test.txt', query_auth=True)
+                                        key='test.txt', query_auth=True)
 
         url_disabled = conn.generate_url(86400, 'GET', bucket='examplebucket',
-                                      key='test.txt', query_auth=False)
+                                         key='test.txt', query_auth=False)
         self.assertIn('Signature=', url_enabled)
         self.assertNotIn('Signature=', url_disabled)
 
