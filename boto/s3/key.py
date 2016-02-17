@@ -1552,7 +1552,7 @@ class Key(object):
         if cb and (cb_count <= 1 or i > 0) and data_len > 0:
             cb(data_len, cb_size)
         for alg in digesters:
-          self.local_hashes[alg] = digesters[alg].digest()
+            self.local_hashes[alg] = digesters[alg].digest()
         if self.size is None and not torrent and "Range" not in headers:
             self.size = data_len
         self.close()
