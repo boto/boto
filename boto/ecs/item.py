@@ -128,7 +128,7 @@ class ItemSet(ResponseGroup):
             self.errors.append({'Code': value, 'Message': None})
         elif name == 'Message':
             self.errors[-1]['Message'] = value
-        elif name == 'Item':
+        elif name == 'Item' and self.curItem is not None:
             self.objs.append(self.curItem)
             self._xml.write(self.curItem.to_xml())
             self.curItem = None
