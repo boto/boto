@@ -49,12 +49,10 @@ elif 'BOTO_PATH' in os.environ:
         BotoConfigLocations.append(expanduser(path))
 
 
-class Config(ConfigParser):
+class Config(object):
 
     def __init__(self, path=None, fp=None, do_load=True):
-        # We don't use ``super`` here, because ``ConfigParser`` still uses
-        # old-style classes.
-        ConfigParser.__init__(self, {'working_dir': '/mnt/pyami',
+        self._impl = ConfigParser({'working_dir': '/mnt/pyami',
                                          'debug': '0'})
         if do_load:
             if path:
@@ -69,6 +67,20 @@ class Config(ConfigParser):
                     self.load_credential_file(full_path)
                 except IOError:
                     warnings.warn('Unable to load AWS_CREDENTIAL_FILE (%s)' % full_path)
+
+    def __getattr__(self, name):
+        try:
+            impl = self.__dict__['_impl']
+        except KeyError:
+            raise AttributeError(name)
+        return getattr(impl, name)
+
+    def has_option(self, *args, **kwargs):
+        try:
+            impl = self.__dict__['_impl']
+        except KeyError:
+            return False
+        return impl.has_option(*args, **kwargs)
 
     def load_credential_file(self, path):
         """Load a credential file as is setup like the Java utilities"""
@@ -139,24 +151,33 @@ class Config(ConfigParser):
 
     def get(self, section, name, default=None):
         try:
-            val = ConfigParser.get(self, section, name)
+            impl = self.__dict__['_impl']
+        except KeyError:
+            return default
+        try:
+            return impl.get(section, name)
         except:
-            val = default
-        return val
+            return default
 
     def getint(self, section, name, default=0):
         try:
-            val = ConfigParser.getint(self, section, name)
+            impl = self.__dict__['_impl']
+        except KeyError:
+            return int(default)
+        try:
+            return impl.getint(section, name)
         except:
-            val = int(default)
-        return val
+            return int(default)
 
     def getfloat(self, section, name, default=0.0):
         try:
-            val = ConfigParser.getfloat(self, section, name)
+            impl = self.__dict__['_impl']
+        except KeyError:
+            return float(default)
+        try:
+            return impl.getfloat(section, name)
         except:
-            val = float(default)
-        return val
+            return float(default)
 
     def getbool(self, section, name, default=False):
         if self.has_option(section, name):
