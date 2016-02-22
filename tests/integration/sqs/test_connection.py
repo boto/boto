@@ -129,6 +129,17 @@ class SQSConnectionTest(unittest.TestCase):
                 br = queue_1.delete_message_batch(msgs)
                 deleted += len(br.results)
 
+        # try a batch write with message attributes
+        num_msgs = 10
+        attrs = {
+            'foo': {
+                'data_type': 'String',
+                'string_value': 'Hello, World!'
+            },
+        }
+        msgs = [(i, 'This is message %d' % i, 0, attrs) for i in range(num_msgs)]
+        queue_1.write_batch(msgs)
+
         # create another queue so we can test force deletion
         # we will also test MHMessage with this queue
         queue_name = 'test%d' % int(time.time())

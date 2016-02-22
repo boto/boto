@@ -1,4 +1,5 @@
-# Copyright (c) 2006,2007 Chris Moyer
+# Copyright (c) 2015 Amazon.com, Inc. or its affiliates.
+# All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -18,36 +19,15 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+#
+from tests.unit import unittest
 
-"""
-This module was contributed by Chris Moyer.  It provides a subclass of the
-SQS Message class that supports YAML as the body of the message.
-
-This module requires the yaml module.
-"""
-from boto.sqs.message import Message
-import yaml
+import boto.ec2containerservice
+from boto.ec2containerservice.layer1 import EC2ContainerServiceConnection
 
 
-class YAMLMessage(Message):
-    """
-    The YAMLMessage class provides a YAML compatible message. Encoding and
-    decoding are handled automaticaly.
+class TestConnectToRegion(unittest.TestCase):
 
-    Access this message data like such:
-
-    m.data = [ 1, 2, 3]
-    m.data[0] # Returns 1
-
-    This depends on the PyYAML package
-    """
-
-    def __init__(self, queue=None, body='', xml_attrs=None):
-        self.data = None
-        super(YAMLMessage, self).__init__(queue, body)
-
-    def set_body(self, body):
-        self.data = yaml.safe_load(body)
-
-    def get_body(self):
-        return yaml.dump(self.data)
+    def test_aws_region(self):
+        ecs = boto.ec2containerservice.connect_to_region('us-east-1')
+        self.assertIsInstance(ecs, EC2ContainerServiceConnection)

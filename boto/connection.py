@@ -726,7 +726,7 @@ class AWSAuthConnection(object):
 
         # Make sure the host is really just the host, not including
         # the port number
-        host = host.split(':', 1)[0]
+        host = boto.utils.parse_host(host)
 
         http_connection_kwargs = self.http_connection_kwargs.copy()
 
@@ -1048,7 +1048,7 @@ class AWSAuthConnection(object):
         if self.host_header and not boto.utils.find_matching_headers('host', headers):
             headers['host'] = self.host_header
         host = host or self.host
-        if self.use_proxy:
+        if self.use_proxy and not self.skip_proxy(host):
             if not auth_path:
                 auth_path = path
             path = self.prefix_proxy_to_path(path, host)

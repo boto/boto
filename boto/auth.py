@@ -55,9 +55,11 @@ except ImportError:
 # by default.
 SIGV4_DETECT = [
     '.cn-',
-    # In eu-central we support both host styles for S3
+    # In eu-central and ap-northeast-2 we support both host styles for S3
     '.eu-central',
     '-eu-central',
+    '.ap-northeast-2',
+    '-ap-northeast-2'
 ]
 
 
@@ -878,8 +880,8 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
     def _calc_signature(self, params, *args):
         boto.log.debug('using _calc_signature_1')
         hmac = self._get_hmac()
-        keys = params.keys()
-        keys.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
+        keys = list(params.keys())
+        keys.sort(key=lambda x: x.lower())
         pairs = []
         for key in keys:
             hmac.update(key.encode('utf-8'))

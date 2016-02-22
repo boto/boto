@@ -31,7 +31,7 @@ The recommended method of doing this is as follows::
 At this point the variable conn will point to an RDSConnection object in the
 US-WEST-2 region. Bear in mind that just as any other AWS service, RDS is
 region-specific. In this example, the AWS access key and AWS secret key are
-passed in to the method explicitely. Alternatively, you can set the environment
+passed in to the method explicitly. Alternatively, you can set the environment
 variables:
 
 * ``AWS_ACCESS_KEY_ID`` - Your AWS Access Key ID

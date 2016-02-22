@@ -57,6 +57,11 @@ class S3SpecifyHost(unittest.TestCase):
         self.assertEquals('s3.amazonaws.com', connection.host)
         self.assertIsInstance(connection, S3Connection)
 
+    def testSuccessWithDefaultEUCentral1(self):
+        connection = connect_to_region('eu-central-1')
+        self.assertEquals('s3.eu-central-1.amazonaws.com', connection.host)
+        self.assertIsInstance(connection, S3Connection)
+
     def testDefaultWithInvalidHost(self):
         connect_args = dict({'host':''})
         connection = connect_to_region('us-west-2', **connect_args)

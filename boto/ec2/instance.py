@@ -201,7 +201,6 @@ class Instance(TaggedEC2Object):
     :ivar root_device_type: The root device type (ebs|instance-store).
     :ivar block_device_mapping: The Block Device Mapping for the instance.
     :ivar state_reason: The reason for the most recent state transition.
-    :ivar groups: List of security Groups associated with the instance.
     :ivar interfaces: List of Elastic Network Interfaces associated with
         this instance.
     :ivar ebs_optimized: Whether instance is using optimized EBS volumes

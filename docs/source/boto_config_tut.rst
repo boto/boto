@@ -23,8 +23,14 @@ on startup, the boto library looks for configuration files in the following loca
 and in the following order:
 
 * /etc/boto.cfg - for site-wide settings that all users on this machine will use
-* ~/.boto - for user-specific settings
+* (if profile is given) ~/.aws/credentials - for credentials shared between SDKs
+* (if profile is given) ~/.boto - for user-specific settings
 * ~/.aws/credentials - for credentials shared between SDKs
+* ~/.boto - for user-specific settings
+
+**Comments** 
+You can comment out a line by putting a '#' at the beginning of the line, just like in Python code.
+
 
 In Windows, create a text file that has any name (e.g. boto.config). It's
 recommended that you put this file in your user folder. Then set 
@@ -167,7 +173,7 @@ For example::
 :connection_stale_duration: Amount of time to wait in seconds before a
   connection will stop getting reused. AWS will disconnect connections which
   have been idle for 180 seconds.
-:is_secure: Is the connection over SSL. This setting will overide passed in
+:is_secure: Is the connection over SSL. This setting will override passed in
   values.
 :https_validate_certificates: Validate HTTPS certificates. This is on by default
 :ca_certificates_file: Location of CA certificates or the keyword "system".

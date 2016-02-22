@@ -230,6 +230,11 @@ class Image(TaggedEC2Object):
             * c3.2xlarge
             * c3.4xlarge
             * c3.8xlarge
+            * c4.large
+            * c4.xlarge
+            * c4.2xlarge
+            * c4.4xlarge
+            * c4.8xlarge
             * i2.xlarge
             * i2.2xlarge
             * i2.4xlarge
