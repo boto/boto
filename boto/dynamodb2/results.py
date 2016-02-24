@@ -185,10 +185,11 @@ class BatchGetResultSet(ResultSet):
 
         results = self.the_callable(*args, **kwargs)
 
-        if not len(results.get('results', [])):
+        # Can return early iff both lists are empty
+        if not len(results.get('results', [])) and not len(results.get('unprocessed_keys', [])):
             return
 
-        self._results.extend(results['results'])
+        self._results.extend(results.get('results', []))
 
         for offset, key_data in enumerate(results.get('unprocessed_keys', [])):
             # We've got an unprocessed key. Reinsert it into the list.
