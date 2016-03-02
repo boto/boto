@@ -410,7 +410,11 @@ class KinesisConnection(AWSQueryConnection):
         :param starting_sequence_number: The sequence number of the data record
             in the shard from which to start reading from.
 
+        :returns: A dictionary containing:
+
+            1) a `ShardIterator` with the value being the shard-iterator object
         """
+
         params = {
             'StreamName': stream_name,
             'ShardId': shard_id,
