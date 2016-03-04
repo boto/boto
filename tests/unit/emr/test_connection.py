@@ -1002,3 +1002,19 @@ class TestRunJobFlow(AWSMockServiceTestCase):
                                   'Instances.KeepJobFlowAliveWhenNoSteps',
                                   'Instances.MasterInstanceType',
                                   'Instances.SlaveInstanceType'])
+
+    def test_run_jobflow_subnet_id(self):
+        self.set_http_response(200)
+        response = self.service_connection.run_jobflow(
+            'EmrCluster', ec2_subnet_id='subnet-123a4567')
+
+        self.assertTrue(response)
+        self.assert_request_parameters({
+            'Action': 'RunJobFlow',
+            'Version': '2009-03-31',
+            'Instances.Ec2SubnetId': 'subnet-123a4567',
+            'Name': 'EmrCluster' },
+            ignore_params_values=['ActionOnFailure', 'Instances.InstanceCount',
+                                  'Instances.KeepJobFlowAliveWhenNoSteps',
+                                  'Instances.MasterInstanceType',
+                                  'Instances.SlaveInstanceType'])
