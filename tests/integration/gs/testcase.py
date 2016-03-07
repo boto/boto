@@ -61,11 +61,11 @@ class GSTestCase(unittest.TestCase):
                     for k in bucket.list_versions():
                         try:
                             bucket.delete_key(k.name, generation=k.generation)
-                        except GSResponseError, e:
+                        except GSResponseError as e:
                             if e.status != 404:
                                 raise
                 bucket.delete()
-            except GSResponseError, e:
+            except GSResponseError as e:
                 if e.status != 404:
                     raise
             self._buckets.pop()

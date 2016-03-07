@@ -82,7 +82,8 @@ class CloudSearchDomainConnectionTest(AWSMockServiceTestCase):
 
         }
 
-        self.set_http_response(status_code=200, body=json.dumps(response))
+        self.set_http_response(status_code=200,
+                               body=json.dumps(response).encode('utf-8'))
         search_service.domain_connection = self.service_connection
         resp = search_service.search()
 
@@ -109,7 +110,8 @@ class CloudSearchDomainConnectionTest(AWSMockServiceTestCase):
             "category": ["cat_a", "cat_b", "cat_c"]
         }
 
-        self.set_http_response(status_code=200, body=json.dumps(response))
+        self.set_http_response(status_code=200,
+                               body=json.dumps(response).encode('utf-8'))
         document_service.domain_connection = self.service_connection
         document_service.add("1234", document)
         resp = document_service.commit()

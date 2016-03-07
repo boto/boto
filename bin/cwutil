@@ -135,6 +135,6 @@ if __name__ == "__main__":
         cmd = help
     try:
         cmd(*args)
-    except TypeError, e:
+    except TypeError as e:
         print e
         help(cmd.__name__)
