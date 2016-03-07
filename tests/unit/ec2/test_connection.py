@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from mock import MagicMock, Mock
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSQueryConnectionParamOverrideTestBase
 
 import boto.ec2
 
@@ -975,6 +976,10 @@ class TestConnectToRegion(unittest.TestCase):
         )
         self.assertEqual(None, self.ec2)
 
+
+class TestEC2ConnectionParamOverride(AWSQueryConnectionParamOverrideTestBase):
+    def get_conn_class(self):
+        return EC2Connection
 
 class TestTrimSnapshots(TestEC2ConnectionBase):
     """

@@ -23,7 +23,9 @@ import boto.utils
 
 from datetime import datetime
 from time import time
+from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSQueryConnectionParamOverrideTestBase
 
 from boto.emr.connection import EmrConnection
 from boto.emr.emrobject import BootstrapAction, BootstrapActionList, \
@@ -1002,3 +1004,10 @@ class TestRunJobFlow(AWSMockServiceTestCase):
                                   'Instances.KeepJobFlowAliveWhenNoSteps',
                                   'Instances.MasterInstanceType',
                                   'Instances.SlaveInstanceType'])
+
+class TestEMRConnectionParamOverride(AWSQueryConnectionParamOverrideTestBase):
+    def get_conn_class(self):
+        return EmrConnection
+
+if __name__ == '__main__':
+    unittest.main()

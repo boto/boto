@@ -23,6 +23,7 @@
 
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSQueryConnectionParamOverrideTestBase
 
 from boto.ec2.securitygroup import SecurityGroup
 from boto.rds import RDSConnection
@@ -780,6 +781,11 @@ class TestRDSOptionGroupOptions(AWSMockServiceTestCase):
         self.assertEqual(options.permanent, False)
         self.assertEqual(options.persistent, False)
         self.assertEqual(options.depends_on, [])
+
+
+class TestRDSConnectionParamOverride(AWSQueryConnectionParamOverrideTestBase):
+    def get_conn_class(self):
+        return RDSConnection
 
 
 if __name__ == '__main__':

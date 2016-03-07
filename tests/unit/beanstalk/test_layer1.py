@@ -2,7 +2,9 @@
 
 import json
 
+from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSQueryConnectionParamOverrideTestBase
 
 from boto.beanstalk.layer1 import Layer1
 
@@ -147,3 +149,12 @@ class TestCreateEnvironment(AWSMockServiceTestCase):
             'Tier.Type': 'SQS/HTTP',
             'Tier.Version': '1.0',
         })
+
+
+class TestLayer1ConnectionParamOverride(AWSQueryConnectionParamOverrideTestBase):
+    def get_conn_class(self):
+        return Layer1
+
+
+if __name__ == '__main__':
+    unittest.main()

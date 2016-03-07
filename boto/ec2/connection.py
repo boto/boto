@@ -96,7 +96,7 @@ class EC2Connection(AWSQueryConnection):
                                             aws_secret_access_key,
                                             is_secure, port, proxy, proxy_port,
                                             proxy_user, proxy_pass,
-                                            self.region.endpoint, debug,
+                                            host or self.region.endpoint, debug,
                                             https_connection_factory, path,
                                             security_token,
                                             validate_certs=validate_certs,

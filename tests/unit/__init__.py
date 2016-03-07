@@ -108,3 +108,27 @@ class MockServiceWithConfigTestCase(AWSMockServiceTestCase):
             return self.config[section_name][key]
         except KeyError:
             return None
+
+class AWSQueryConnectionParamOverrideTestBase(unittest.TestCase):
+    def get_conn_class(self):
+        raise Exception("Abstract method")
+
+    def test_host_override(self):
+        host_name = 'some.dummy.host'
+        conn = self.get_conn_class()(host=host_name)
+        self.assertEqual(host_name, conn.host)
+
+    def test_port_override(self):
+        port_num = 12345
+        conn = self.get_conn_class()(port=port_num)
+        self.assertEqual(port_num, conn.port)
+
+    def _test_ssl_override(self, is_secure):
+        conn = self.get_conn_class()(is_secure=is_secure)
+        self.assertEqual(is_secure, conn.is_secure)
+
+    def test_ssl_override_true(self):
+        self._test_ssl_override(True)
+
+    def test_ssl_override_false(self):
+        self._test_ssl_override(False)

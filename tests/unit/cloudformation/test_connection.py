@@ -4,6 +4,7 @@ from datetime import datetime
 from mock import Mock
 
 from tests.unit import AWSMockServiceTestCase
+from tests.unit import AWSQueryConnectionParamOverrideTestBase
 from boto.cloudformation.connection import CloudFormationConnection
 from boto.exception import BotoServerError
 from boto.compat import json
@@ -718,6 +719,11 @@ class TestCloudFormationSetStackPolicy(CloudFormationConnectionBase):
             'StackPolicyBody': '{}',
             'Version': '2010-05-15',
         })
+
+
+class TestCloudFormationConnectionParamOverride(AWSQueryConnectionParamOverrideTestBase):
+    def get_conn_class(self):
+        return CloudFormationConnection
 
 
 if __name__ == '__main__':

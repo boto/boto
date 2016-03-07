@@ -53,7 +53,7 @@ class EmrConnection(AWSQueryConnection):
     DebuggingArgs = 's3n://us-east-1.elasticmapreduce/libs/state-pusher/0.1/fetch'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
-                 is_secure=True, port=None, proxy=None, proxy_port=None,
+                 is_secure=True, host=None, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None, debug=0,
                  https_connection_factory=None, region=None, path='/',
                  security_token=None, validate_certs=True, profile_name=None):
@@ -65,7 +65,7 @@ class EmrConnection(AWSQueryConnection):
                                     aws_secret_access_key,
                                     is_secure, port, proxy, proxy_port,
                                     proxy_user, proxy_pass,
-                                    self.region.endpoint, debug,
+                                    host or self.region.endpoint, debug,
                                     https_connection_factory, path,
                                     security_token,
                                     validate_certs=validate_certs,

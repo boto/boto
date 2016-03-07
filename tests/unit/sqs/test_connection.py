@@ -22,7 +22,9 @@
 # IN THE SOFTWARE.
 #
 
+from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase, MockServiceWithConfigTestCase
+from tests.unit import AWSQueryConnectionParamOverrideTestBase
 
 from tests.compat import mock
 
@@ -308,6 +310,12 @@ class SQSSendBatchMessageAttributes(AWSMockServiceTestCase):
             'SendMessageBatchRequestEntry.2.MessageBody': 'Message 2',
             'Version': '2012-11-05'
         })
+
+
+class TestSQSConnectionParamOverride(AWSQueryConnectionParamOverrideTestBase):
+    def get_conn_class(self):
+        return SQSConnection
+
 
 if __name__ == '__main__':
     unittest.main()
