@@ -920,7 +920,7 @@ class AWSAuthConnection(object):
         while i <= num_retries:
             # Use binary exponential backoff to desynchronize client requests.
             next_sleep = min(random.random() * (2 ** i),
-                             boto.config.get('Boto', 'max_retry_delay', 60))
+                             boto.config.getfloat('Boto', 'max_retry_delay', 60))
             try:
                 # we now re-sign each request before it is retried
                 boto.log.debug('Token: %s' % self.provider.security_token)
