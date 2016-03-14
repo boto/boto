@@ -635,7 +635,7 @@ API requests necessary to access a large number of items. The
 & fetches all of them, presented as an iterator interface.
 
 This is done lazily, so if you never iterate over the results, no requests are
-executed. Additionally, if you only iterate over part of the set, the minumum
+executed. Additionally, if you only iterate over part of the set, the minimum
 number of calls are made to fetch those results (typically max 100 per
 response).
 

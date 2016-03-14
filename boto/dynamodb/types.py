@@ -333,7 +333,7 @@ class Dynamizer(object):
         the appropriate python type.
 
         """
-        if len(attr) > 1 or not attr:
+        if len(attr) > 1 or not attr or is_str(attr):
             return attr
         dynamodb_type = list(attr.keys())[0]
         if dynamodb_type.lower() == dynamodb_type:

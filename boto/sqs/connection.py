@@ -425,19 +425,19 @@ class SQSConnection(AWSQueryConnection):
                     params[p_name] = name
 
                     if 'data_type' in attribute:
-                        p_name = '%s.%i.DataType' % (base, j + 1)
+                        p_name = '%s.%i.Value.DataType' % (base, j + 1)
                         params[p_name] = attribute['data_type']
                     if 'string_value' in attribute:
-                        p_name = '%s.%i.StringValue' % (base, j + 1)
+                        p_name = '%s.%i.Value.StringValue' % (base, j + 1)
                         params[p_name] = attribute['string_value']
                     if 'binary_value' in attribute:
-                        p_name = '%s.%i.BinaryValue' % (base, j + 1)
+                        p_name = '%s.%i.Value.BinaryValue' % (base, j + 1)
                         params[p_name] = attribute['binary_value']
                     if 'string_list_value' in attribute:
-                        p_name = '%s.%i.StringListValue' % (base, j + 1)
+                        p_name = '%s.%i.Value.StringListValue' % (base, j + 1)
                         params[p_name] = attribute['string_list_value']
                     if 'binary_list_value' in attribute:
-                        p_name = '%s.%i.BinaryListValue' % (base, j + 1)
+                        p_name = '%s.%i.Value.BinaryListValue' % (base, j + 1)
                         params[p_name] = attribute['binary_list_value']
 
         return self.get_object('SendMessageBatch', params, BatchResults,
