@@ -82,6 +82,10 @@ class _CallingFormat(object):
         return url_base
 
     def build_host(self, server, bucket):
+        # Make sure the server is really just the host, not including
+        # the port number
+        server = boto.utils.parse_host(server)
+
         if bucket == '':
             return server
         else:

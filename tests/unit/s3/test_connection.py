@@ -254,6 +254,12 @@ class TestUnicodeCallingFormat(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         self.service_connection.get_all_buckets()
 
+    def test_build_host(self):
+        # build_host should only ever return a hostname, no port
+        host = self.service_connection.calling_format.build_host(
+            'testhost:8080', 'bucket')
+        self.assertEqual(host, 'testhost')
+
 
 class TestHeadBucket(AWSMockServiceTestCase):
     connection_class = S3Connection
