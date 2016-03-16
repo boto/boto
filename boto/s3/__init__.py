@@ -1,5 +1,6 @@
 # Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2014, Steven Richards <sbrichards@mit.edu>
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,6 +60,15 @@ def regions():
 
 def connect_to_region(region_name, **kw_params):
     for region in regions():
+        if 'host' in kw_params.keys():
+            # Make sure the host specified is not nothing
+            if kw_params['host'] not in ['', None]:
+                region.endpoint = kw_params['host']
+                del kw_params['host']
+                return region.connect(**kw_params)
+            # If it is nothing then remove it from kw_params and proceed with default
+            else:
+                del kw_params['host']
         if region.name == region_name:
             return region.connect(**kw_params)
     return None

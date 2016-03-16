@@ -23,9 +23,13 @@
 from boto.mws.connection import MWSConnection, api_call_map, destructure_object
 from boto.mws.response import (ResponseElement, GetFeedSubmissionListResult,
                                ResponseFactory)
+from boto.exception import BotoServerError
+
 from tests.compat import unittest
 
 from tests.unit import AWSMockServiceTestCase
+
+from mock import MagicMock
 
 
 class TestMWSConnection(AWSMockServiceTestCase):
@@ -50,6 +54,22 @@ doc/2009-01-01/">
     <RequestId>1105b931-6f1c-4480-8e97-f3b467840a9e</RequestId>
   </ResponseMetadata>
 </GetFeedSubmissionListResponse>"""
+
+    def default_body_error(self):
+        return b"""<?xml version="1.0" encoding="UTF-8"?>
+<ErrorResponse xmlns="http://mws.amazonaws.com/doc/2009-01-01/">
+  <!--1 or more repetitions:-->
+  <Error>
+    <Type>Sender</Type>
+    <Code>string</Code>
+    <Message>string</Message>
+    <Detail>
+      <!--You may enter ANY elements at this point-->
+      <AnyElement xmlns=""/>
+    </Detail>
+  </Error>
+  <RequestId>string</RequestId>
+</ErrorResponse>"""
 
     def test_destructure_object(self):
         # Test that parsing of user input to Amazon input works.
@@ -156,6 +176,30 @@ doc/2009-01-01/">
         self.assertTrue('inventory' in str(err.exception))
         self.assertTrue('feeds' in str(err.exception))
 
+    def test_post_request(self):
+
+        self.service_connection._mexe = MagicMock(
+            side_effect=
+                BotoServerError(500, 'You request has bee throttled', body=self.default_body_error()))
+
+        with self.assertRaises(BotoServerError) as err:
+            self.service_connection.get_lowest_offer_listings_for_asin(
+                MarketplaceId='12345',
+                ASINList='ASIN12345',
+                condition='Any',
+                SellerId='1234',
+                excludeme='True')
+
+            self.assertTrue('throttled' in str(err.reason))
+            self.assertEqual(int(err.status), 200)
+            
+    def test_sandboxify(self):
+        # Create one-off connection class that has self._sandboxed = True
+        conn = MWSConnection(https_connection_factory=self.https_connection_factory,
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key',
+            sandbox=True)
+        self.assertEqual(conn._sandboxify('a/bogus/path'), 'a/bogus_Sandbox/path')
 
 if __name__ == '__main__':
     unittest.main()

@@ -98,7 +98,7 @@ class ELBConnection(AWSQueryConnection):
                                             profile_name=profile_name)
 
     def _required_auth_capability(self):
-        return ['ec2']
+        return ['hmac-v4']
 
     def build_list_params(self, params, items, label):
         if isinstance(items, six.string_types):
@@ -400,7 +400,7 @@ class ELBConnection(AWSQueryConnection):
         :param attribute: The attribute you wish to change.
 
         * crossZoneLoadBalancing - Boolean (true)
-        * connectionSettings - :py:class:`ConnectionSettingAttribute` instance
+        * connectingSettings - :py:class:`ConnectionSettingAttribute` instance
         * accessLog - :py:class:`AccessLogAttribute` instance
         * connectionDraining - :py:class:`ConnectionDrainingAttribute` instance
 
@@ -437,7 +437,7 @@ class ELBConnection(AWSQueryConnection):
                 value.enabled and 'true' or 'false'
             params['LoadBalancerAttributes.ConnectionDraining.Timeout'] = \
                 value.timeout
-        elif attribute.lower == 'connectingsettings':
+        elif attribute.lower() == 'connectingsettings':
             params['LoadBalancerAttributes.ConnectionSettings.IdleTimeout'] = \
                 value.idle_timeout
         else:
@@ -472,7 +472,7 @@ class ELBConnection(AWSQueryConnection):
 
           * accessLog - :py:class:`AccessLogAttribute` instance
           * crossZoneLoadBalancing - Boolean
-          * connectionSettings - :py:class:`ConnectionSettingAttribute` instance
+          * connectingSettings - :py:class:`ConnectionSettingAttribute` instance
           * connectionDraining - :py:class:`ConnectionDrainingAttribute`
             instance
 
@@ -695,9 +695,9 @@ class ELBConnection(AWSQueryConnection):
 
     def apply_security_groups_to_lb(self, name, security_groups):
         """
-        Applies security groups to the load balancer.
-        Applying security groups that are already registered with the
-        Load Balancer has no effect.
+        Associates one or more security groups with the load balancer.
+        The provided security groups will override any currently applied
+        security groups.
 
         :type name: string
         :param name: The name of the Load Balancer

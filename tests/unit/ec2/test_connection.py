@@ -1092,7 +1092,8 @@ class TestModifyReservedInstances(TestEC2ConnectionBase):
                 ReservedInstancesConfiguration(
                     availability_zone='us-west-2c',
                     platform='EC2-VPC',
-                    instance_count=3
+                    instance_count=3,
+                    instance_type='c3.large'
                 ),
             ]
         )
@@ -1102,6 +1103,7 @@ class TestModifyReservedInstances(TestEC2ConnectionBase):
             'ReservedInstancesConfigurationSetItemType.0.AvailabilityZone': 'us-west-2c',
             'ReservedInstancesConfigurationSetItemType.0.InstanceCount': 3,
             'ReservedInstancesConfigurationSetItemType.0.Platform': 'EC2-VPC',
+            'ReservedInstancesConfigurationSetItemType.0.InstanceType': 'c3.large',
             'ReservedInstancesId.1': '2567o137-8a55-48d6-82fb-7258506bb497'
         }, ignore_params_values=[
             'AWSAccessKeyId', 'SignatureMethod',
@@ -1420,7 +1422,7 @@ class TestSignatureAlteration(TestEC2ConnectionBase):
     def test_unchanged(self):
         self.assertEqual(
             self.service_connection._required_auth_capability(),
-            ['ec2']
+            ['hmac-v4']
         )
 
     def test_switched(self):
@@ -1637,6 +1639,82 @@ class TestCreateVolume(TestEC2ConnectionBase):
                                   'Version'])
         self.assertEqual(result.id, 'vol-1a2b3c4d')
         self.assertTrue(result.encrypted)
+
+    def test_create_volume_with_specify_kms(self):
+        self.set_http_response(status_code=200)
+        result = self.ec2.create_volume(80, 'us-east-1e', snapshot='snap-1a2b3c4d',
+                                        encrypted=True,kms_key_id='arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef')
+        self.assert_request_parameters({
+            'Action': 'CreateVolume',
+            'AvailabilityZone': 'us-east-1e',
+            'Size': 80,
+            'SnapshotId': 'snap-1a2b3c4d',
+            'Encrypted': 'true',
+            'KmsKeyId': 'arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef'},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+        self.assertEqual(result.id, 'vol-1a2b3c4d')
+        self.assertTrue(result.encrypted)
+
+
+class TestGetClassicLinkInstances(TestEC2ConnectionBase):
+    def default_body(self):
+        return b"""
+            <DescribeClassicLinkInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2014-09-01/">
+               <requestId>f4bf0cc6-5967-4687-9355-90ce48394bd3</requestId>
+               <instancesSet>
+                  <item>
+                     <instanceId>i-31489bd8</instanceId>
+                     <vpcId>vpc-9d24f8f8</vpcId>
+                     <groupSet>
+                        <item>
+                           <groupId>sg-9b4343fe</groupId>
+                        </item>
+                    </groupSet>
+                    <tagSet>
+                        <item>
+                           <key>Name</key>
+                           <value>hello</value>
+                        </item>
+                    </tagSet>
+                 </item>
+              </instancesSet>
+           </DescribeClassicLinkInstancesResponse>
+        """
+    def test_get_classic_link_instances(self):
+        self.set_http_response(status_code=200)
+        response = self.ec2.get_all_classic_link_instances()
+        self.assertEqual(len(response), 1)
+        instance = response[0]
+        self.assertEqual(instance.id, 'i-31489bd8')
+        self.assertEqual(instance.vpc_id, 'vpc-9d24f8f8')
+        self.assertEqual(len(instance.groups), 1)
+        self.assertEqual(instance.groups[0].id, 'sg-9b4343fe')
+        self.assertEqual(instance.tags, {'Name': 'hello'})
+
+
+    def test_get_classic_link_instances_params(self):
+        self.set_http_response(status_code=200)
+        self.ec2.get_all_classic_link_instances(
+            instance_ids=['id1', 'id2'],
+            filters={'GroupId': 'sg-9b4343fe'},
+            dry_run=True,
+            next_token='next_token',
+            max_results=10
+        )
+        self.assert_request_parameters({
+            'Action': 'DescribeClassicLinkInstances',
+            'InstanceId.1': 'id1',
+            'InstanceId.2': 'id2',
+            'Filter.1.Name': 'GroupId',
+            'Filter.1.Value.1': 'sg-9b4343fe',
+            'DryRun': 'true',
+            'NextToken': 'next_token',
+            'MaxResults': 10},
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp', 'Version'])
+
 
 if __name__ == '__main__':
     unittest.main()

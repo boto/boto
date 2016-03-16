@@ -26,6 +26,7 @@ Some unit tests for the S3Connection
 import unittest
 import time
 import os
+import socket
 
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
@@ -222,7 +223,7 @@ class S3ConnectionTest (unittest.TestCase):
 
         # give bucket anon user access and anon read again
         auth_bucket.set_acl('public-read')
-        time.sleep(5)
+        time.sleep(10)  # Was 5 secondes, turns out not enough
         try:
             next(iter(anon_bucket.list()))
             self.fail("not expecting contents")
@@ -241,5 +242,7 @@ class S3ConnectionTest (unittest.TestCase):
             c.create_bucket('bad$bucket$name')
         except S3ResponseError as e:
             self.assertEqual(e.error_code, 'InvalidBucketName')
+        except socket.gaierror:
+            pass  # This is also a possible result for an invalid bucket name
         else:
             self.fail("S3ResponseError not raised.")

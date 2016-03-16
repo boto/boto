@@ -103,7 +103,9 @@ class LaunchConfiguration(object):
                  instance_monitoring=False, spot_price=None,
                  instance_profile_name=None, ebs_optimized=False,
                  associate_public_ip_address=None, volume_type=None,
-                 delete_on_termination=True, iops=None, use_block_device_types=False):
+                 delete_on_termination=True, iops=None,
+                 use_block_device_types=False, classic_link_vpc_id=None,
+                 classic_link_vpc_security_groups=None):
         """
         A launch configuration.
 
@@ -128,8 +130,8 @@ class LaunchConfiguration(object):
         :type instance_type: str
         :param instance_type: The instance type
 
-        :type kern_id: str
-        :param kern_id: Kernel id for instance
+        :type kernel_id: str
+        :param kernel_id: Kernel id for instance
 
         :type ramdisk_id: str
         :param ramdisk_id: RAM disk id for instance
@@ -159,6 +161,14 @@ class LaunchConfiguration(object):
         :type associate_public_ip_address: bool
         :param associate_public_ip_address: Used for Auto Scaling groups that launch instances into an Amazon Virtual Private Cloud.
             Specifies whether to assign a public IP address to each instance launched in a Amazon VPC.
+
+        :type classic_link_vpc_id: str
+        :param classic_link_vpc_id: ID of ClassicLink enabled VPC.
+
+        :type classic_link_vpc_security_groups: list
+        :param classic_link_vpc_security_groups: Security group
+            id's of the security groups with which to associate the
+            ClassicLink VPC instances.
         """
         self.connection = connection
         self.name = name
@@ -183,6 +193,10 @@ class LaunchConfiguration(object):
         self.delete_on_termination = delete_on_termination
         self.iops = iops
         self.use_block_device_types = use_block_device_types
+        self.classic_link_vpc_id = classic_link_vpc_id
+        classic_link_vpc_sec_groups = classic_link_vpc_security_groups or []
+        self.classic_link_vpc_security_groups = \
+            ListElement(classic_link_vpc_sec_groups)
 
         if connection is not None:
             self.use_block_device_types = connection.use_block_device_types
@@ -193,6 +207,8 @@ class LaunchConfiguration(object):
     def startElement(self, name, attrs, connection):
         if name == 'SecurityGroups':
             return self.security_groups
+        elif name == 'ClassicLinkVPCSecurityGroups':
+            return self.classic_link_vpc_security_groups
         elif name == 'BlockDeviceMappings':
             if self.use_block_device_types:
                 self.block_device_mappings = BDM()
@@ -244,6 +260,8 @@ class LaunchConfiguration(object):
                 self.delete_on_termination = False
         elif name == 'Iops':
             self.iops = int(value)
+        elif name == 'ClassicLinkVPCId':
+            self.classic_link_vpc_id = value
         else:
             setattr(self, name, value)
 

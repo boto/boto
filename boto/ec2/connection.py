@@ -72,7 +72,7 @@ from boto.compat import six
 
 class EC2Connection(AWSQueryConnection):
 
-    APIVersion = boto.config.get('Boto', 'ec2_version', '2014-05-01')
+    APIVersion = boto.config.get('Boto', 'ec2_version', '2014-10-01')
     DefaultRegionName = boto.config.get('Boto', 'ec2_region_name', 'us-east-1')
     DefaultRegionEndpoint = boto.config.get('Boto', 'ec2_region_endpoint',
                                             'ec2.us-east-1.amazonaws.com')
@@ -104,9 +104,8 @@ class EC2Connection(AWSQueryConnection):
         if api_version:
             self.APIVersion = api_version
 
-    @detect_potential_sigv4
     def _required_auth_capability(self):
-        return ['ec2']
+        return ['hmac-v4']
 
     def get_params(self):
         """
@@ -805,6 +804,11 @@ class EC2Connection(AWSQueryConnection):
             * c3.2xlarge
             * c3.4xlarge
             * c3.8xlarge
+            * c4.large
+            * c4.xlarge
+            * c4.2xlarge
+            * c4.4xlarge
+            * c4.8xlarge
             * i2.xlarge
             * i2.2xlarge
             * i2.4xlarge
@@ -1505,6 +1509,11 @@ class EC2Connection(AWSQueryConnection):
             * c3.2xlarge
             * c3.4xlarge
             * c3.8xlarge
+            * c4.large
+            * c4.xlarge
+            * c4.2xlarge
+            * c4.4xlarge
+            * c4.8xlarge
             * i2.xlarge
             * i2.2xlarge
             * i2.4xlarge
@@ -2266,7 +2275,7 @@ class EC2Connection(AWSQueryConnection):
         return self.get_status('ModifyVolumeAttribute', params, verb='POST')
 
     def create_volume(self, size, zone, snapshot=None, volume_type=None,
-                      iops=None, encrypted=False, dry_run=False):
+                      iops=None, encrypted=False, kms_key_id=None, dry_run=False):
         """
         Create a new EBS Volume.
 
@@ -2292,6 +2301,11 @@ class EC2Connection(AWSQueryConnection):
         :param encrypted: Specifies whether the volume should be encrypted.
             (optional)
 
+        :type kms_key_id: string
+        :params kms_key_id: If encrypted is True, this KMS Key ID may be specified to
+            encrypt volume with this key (optional)
+            e.g.: arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -2311,6 +2325,8 @@ class EC2Connection(AWSQueryConnection):
             params['Iops'] = str(iops)
         if encrypted:
             params['Encrypted'] = 'true'
+            if kms_key_id:
+                params['KmsKeyId'] = kms_key_id
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CreateVolume', params, Volume, verb='POST')
@@ -3786,6 +3802,8 @@ class EC2Connection(AWSQueryConnection):
                 params[prefix + 'Platform'] = tc.platform
             if tc.instance_count is not None:
                 params[prefix + 'InstanceCount'] = tc.instance_count
+            if tc.instance_type is not None:
+                params[prefix + 'InstanceType'] = tc.instance_type
 
     def modify_reserved_instances(self, client_token, reserved_instance_ids,
                                   target_configurations):
@@ -4459,3 +4477,47 @@ class EC2Connection(AWSQueryConnection):
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_status('ModifyVpcAttribute', params, verb='POST')
+
+    def get_all_classic_link_instances(self, instance_ids=None, filters=None,
+                                       dry_run=False, max_results=None,
+                                       next_token=None):
+        """
+        Get all of your linked EC2-Classic instances. This request only
+        returns information about EC2-Classic instances linked  to
+        a VPC through ClassicLink
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of instance IDs. Must be
+            instances linked to a VPC through ClassicLink.
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit the
+            results returned.  Filters are provided in the form of a
+            dictionary consisting of filter names as the key and
+            filter values as the value.  The set of allowable filter
+            names/values is dependent on the request being performed.
+            Check the EC2 API guide for details.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :type max_results: int
+        :param max_results: The maximum number of paginated instance
+            items per response.
+
+        :rtype: list
+        :return: A list of  :class:`boto.ec2.instance.Instance`
+        """
+        params = {}
+        if instance_ids:
+            self.build_list_params(params, instance_ids, 'InstanceId')
+        if filters:
+            self.build_filter_params(params, filters)
+        if dry_run:
+            params['DryRun'] = 'true'
+        if max_results is not None:
+            params['MaxResults'] = max_results
+        if next_token:
+            params['NextToken'] = next_token
+        return self.get_list('DescribeClassicLinkInstances', params,
+                             [('item', Instance)], verb='POST')

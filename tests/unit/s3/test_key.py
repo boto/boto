@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +39,11 @@ class TestS3Key(AWSMockServiceTestCase):
 
     def default_body(self):
         return "default body"
+
+    def test_unicode_name(self):
+        k = Key()
+        k.name = u'Österreich'
+        print(repr(k))
 
     def test_when_no_restore_header_present(self):
         self.set_http_response(status_code=200)
@@ -96,6 +102,54 @@ class TestS3Key(AWSMockServiceTestCase):
         k.storage_class = 'GLACIER'
         k.set_contents_from_string('test')
         k.bucket.list.assert_not_called()
+
+    def test_change_storage_class(self):
+        self.set_http_response(status_code=200)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.get_key('fookey')
+
+        # Mock out Key.copy so we can record calls to it
+        k.copy = mock.MagicMock()
+        # Mock out the bucket so we don't actually need to have fake responses
+        k.bucket = mock.MagicMock()
+        k.bucket.name = 'mybucket'
+
+        self.assertEqual(k.storage_class, 'STANDARD')
+
+        # The default change_storage_class call should result in a copy to our
+        # bucket
+        k.change_storage_class('REDUCED_REDUNDANCY')
+        k.copy.assert_called_with(
+            'mybucket',
+            'fookey',
+            reduced_redundancy=True,
+            preserve_acl=True,
+            validate_dst_bucket=True,
+        )
+
+    def test_change_storage_class_new_bucket(self):
+        self.set_http_response(status_code=200)
+        b = Bucket(self.service_connection, 'mybucket')
+        k = b.get_key('fookey')
+
+        # Mock out Key.copy so we can record calls to it
+        k.copy = mock.MagicMock()
+        # Mock out the bucket so we don't actually need to have fake responses
+        k.bucket = mock.MagicMock()
+        k.bucket.name = 'mybucket'
+
+        self.assertEqual(k.storage_class, 'STANDARD')
+        # Specifying a different dst_bucket should result in a copy to the new
+        # bucket
+        k.copy.reset_mock()
+        k.change_storage_class('REDUCED_REDUNDANCY', dst_bucket='yourbucket')
+        k.copy.assert_called_with(
+            'yourbucket',
+            'fookey',
+            reduced_redundancy=True,
+            preserve_acl=True,
+            validate_dst_bucket=True,
+        )
 
 
 def counter(fn):

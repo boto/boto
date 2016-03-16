@@ -22,7 +22,6 @@
 #
 
 from base64 import b64decode
-from tests.unit import unittest
 from boto.compat import json
 from boto.iam.connection import IAMConnection
 from tests.unit import AWSMockServiceTestCase
@@ -53,8 +52,8 @@ class TestCreateSamlProvider(AWSMockServiceTestCase):
              'Name': 'name'},
             ignore_params_values=['Version'])
 
-        self.assertEqual(response['create_saml_provider_response']\
-                                 ['create_saml_provider_result']\
+        self.assertEqual(response['create_saml_provider_response']
+                                 ['create_saml_provider_result']
                                  ['saml_provider_arn'], 'arn')
 
 
@@ -92,12 +91,12 @@ class TestListSamlProviders(AWSMockServiceTestCase):
             {'Action': 'ListSAMLProviders'},
             ignore_params_values=['Version'])
         self.assertEqual(response.saml_provider_list, [
-            {'arn':'arn:aws:iam::123456789012:instance-profile/application_abc/component_xyz/Database',
-             'valid_until':'2032-05-09T16:27:11Z',
-             'create_date':'2012-05-09T16:27:03Z'},
-            {'arn':'arn:aws:iam::123456789012:instance-profile/application_abc/component_xyz/Webserver',
-             'valid_until':'2015-03-11T13:11:02Z',
-             'create_date':'2012-05-09T16:27:11Z'}])
+            {'arn': 'arn:aws:iam::123456789012:instance-profile/application_abc/component_xyz/Database',
+             'valid_until': '2032-05-09T16:27:11Z',
+             'create_date': '2012-05-09T16:27:03Z'},
+            {'arn': 'arn:aws:iam::123456789012:instance-profile/application_abc/component_xyz/Webserver',
+             'valid_until': '2015-03-11T13:11:02Z',
+             'create_date': '2012-05-09T16:27:11Z'}])
 
 
 class TestGetSamlProvider(AWSMockServiceTestCase):
@@ -119,7 +118,7 @@ class TestGetSamlProvider(AWSMockServiceTestCase):
 
     def test_get_saml_provider(self):
         self.set_http_response(status_code=200)
-        response = self.service_connection.get_saml_provider('arn')
+        self.service_connection.get_saml_provider('arn')
 
         self.assert_request_parameters(
             {
@@ -146,7 +145,7 @@ class TestUpdateSamlProvider(AWSMockServiceTestCase):
 
     def test_update_saml_provider(self):
         self.set_http_response(status_code=200)
-        response = self.service_connection.update_saml_provider('arn', 'doc')
+        self.service_connection.update_saml_provider('arn', 'doc')
 
         self.assert_request_parameters(
             {
@@ -165,7 +164,7 @@ class TestDeleteSamlProvider(AWSMockServiceTestCase):
 
     def test_delete_saml_provider(self):
         self.set_http_response(status_code=200)
-        response = self.service_connection.delete_saml_provider('arn')
+        self.service_connection.delete_saml_provider('arn')
 
         self.assert_request_parameters(
             {
@@ -199,7 +198,7 @@ class TestCreateRole(AWSMockServiceTestCase):
 
     def test_create_role_default(self):
         self.set_http_response(status_code=200)
-        response = self.service_connection.create_role('a_name')
+        self.service_connection.create_role('a_name')
 
         self.assert_request_parameters(
             {'Action': 'CreateRole',
@@ -210,7 +209,7 @@ class TestCreateRole(AWSMockServiceTestCase):
     def test_create_role_default_cn_north(self):
         self.set_http_response(status_code=200)
         self.service_connection.host = 'iam.cn-north-1.amazonaws.com.cn'
-        response = self.service_connection.create_role('a_name')
+        self.service_connection.create_role('a_name')
 
         self.assert_request_parameters(
             {'Action': 'CreateRole',
@@ -220,7 +219,7 @@ class TestCreateRole(AWSMockServiceTestCase):
 
     def test_create_role_string_policy(self):
         self.set_http_response(status_code=200)
-        response = self.service_connection.create_role(
+        self.service_connection.create_role(
             'a_name',
             # Historical usage.
             assume_role_policy_document='{"hello": "policy"}'
@@ -234,7 +233,7 @@ class TestCreateRole(AWSMockServiceTestCase):
 
     def test_create_role_data_policy(self):
         self.set_http_response(status_code=200)
-        response = self.service_connection.create_role(
+        self.service_connection.create_role(
             'a_name',
             # With plain data, we should dump it for them.
             assume_role_policy_document={"hello": "policy"}
@@ -288,11 +287,11 @@ class TestGetSigninURL(AWSMockServiceTestCase):
         url = self.service_connection.get_signin_url()
         self.assertEqual(
             url,
-            'https://foocorporation.signin.aws.amazon.com/console/ec2'
+            'https://foocorporation.signin.amazonaws.cn/console/ec2'
         )
 
 
-class TestGetSigninURL(AWSMockServiceTestCase):
+class TestGetSigninURLNoAliases(AWSMockServiceTestCase):
     connection_class = IAMConnection
 
     def default_body(self):
@@ -317,7 +316,7 @@ class TestGetSigninURL(AWSMockServiceTestCase):
 
 class TestGenerateCredentialReport(AWSMockServiceTestCase):
     connection_class = IAMConnection
-    
+
     def default_body(self):
         return b"""
           <GenerateCredentialReportResponse>
@@ -333,9 +332,9 @@ class TestGenerateCredentialReport(AWSMockServiceTestCase):
     def test_generate_credential_report(self):
         self.set_http_response(status_code=200)
         response = self.service_connection.generate_credential_report()
-        self.assertEquals(response['generate_credential_report_response']\
-                                  ['generate_credential_report_result']\
-                                  ['state'], 'COMPLETE') 
+        self.assertEquals(response['generate_credential_report_response']
+                                  ['generate_credential_report_result']
+                                  ['state'], 'COMPLETE')
 
 
 class TestGetCredentialReport(AWSMockServiceTestCase):
@@ -354,10 +353,129 @@ class TestGetCredentialReport(AWSMockServiceTestCase):
             </GetCredentialReportResult>
           </GetCredentialReportResponse>
         """
+
     def test_get_credential_report(self):
         self.set_http_response(status_code=200)
         response = self.service_connection.get_credential_report()
-        b64decode(response['get_credential_report_response']\
-                          ['get_credential_report_result']\
+        b64decode(response['get_credential_report_response']
+                          ['get_credential_report_result']
                           ['content'])
 
+class TestCreateVirtualMFADevice(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+            <CreateVirtualMFADeviceResponse>
+              <CreateVirtualMFADeviceResult>
+                <VirtualMFADevice>
+                  <SerialNumber>arn:aws:iam::123456789012:mfa/ExampleName</SerialNumber>
+                  <Base32StringSeed>2K5K5XTLA7GGE75TQLYEXAMPLEEXAMPLEEXAMPLECHDFW4KJYZ6
+                  UFQ75LL7COCYKM</Base32StringSeed>
+                  <QRCodePNG>89504E470D0A1A0AASDFAHSDFKJKLJFKALSDFJASDF</QRCodePNG>
+                </VirtualMFADevice>
+              </CreateVirtualMFADeviceResult>
+              <ResponseMetadata>
+                <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+              </ResponseMetadata>
+            </CreateVirtualMFADeviceResponse>
+        """
+
+    def test_create_virtual_mfa_device(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.create_virtual_mfa_device('/', 'ExampleName')
+        self.assert_request_parameters(
+            {'Path': '/',
+             'VirtualMFADeviceName': 'ExampleName',
+             'Action': 'CreateVirtualMFADevice'},
+            ignore_params_values=['Version'])
+        self.assertEquals(response['create_virtual_mfa_device_response']
+                                  ['create_virtual_mfa_device_result']
+                                  ['virtual_mfa_device']
+                                  ['serial_number'], 'arn:aws:iam::123456789012:mfa/ExampleName')
+
+class TestGetAccountPasswordPolicy(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+            <GetAccountPasswordPolicyResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+              <GetAccountPasswordPolicyResult>
+                <PasswordPolicy>
+                  <AllowUsersToChangePassword>true</AllowUsersToChangePassword>
+                  <RequireUppercaseCharacters>true</RequireUppercaseCharacters>
+                  <RequireSymbols>true</RequireSymbols>
+                  <ExpirePasswords>false</ExpirePasswords>
+                  <PasswordReusePrevention>12</PasswordReusePrevention>
+                  <RequireLowercaseCharacters>true</RequireLowercaseCharacters>
+                  <MaxPasswordAge>90</MaxPasswordAge>
+                  <HardExpiry>false</HardExpiry>
+                  <RequireNumbers>true</RequireNumbers>
+                  <MinimumPasswordLength>12</MinimumPasswordLength>
+                </PasswordPolicy>
+              </GetAccountPasswordPolicyResult>
+              <ResponseMetadata>
+                <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+              </ResponseMetadata>
+            </GetAccountPasswordPolicyResponse>
+        """
+
+    def test_get_account_password_policy(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_account_password_policy()
+
+        self.assert_request_parameters(
+            {
+                'Action': 'GetAccountPasswordPolicy',
+            },
+            ignore_params_values=['Version'])
+        self.assertEquals(response['get_account_password_policy_response']
+                          ['get_account_password_policy_result']['password_policy']
+                          ['minimum_password_length'], '12')
+
+
+class TestUpdateAccountPasswordPolicy(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+            <UpdateAccountPasswordPolicyResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+               <ResponseMetadata>
+                  <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+               </ResponseMetadata>
+            </UpdateAccountPasswordPolicyResponse>
+        """
+
+    def test_update_account_password_policy(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.update_account_password_policy(minimum_password_length=88)
+
+        self.assert_request_parameters(
+            {
+                'Action': 'UpdateAccountPasswordPolicy',
+                'MinimumPasswordLength': 88
+            },
+            ignore_params_values=['Version'])
+
+
+class TestDeleteAccountPasswordPolicy(AWSMockServiceTestCase):
+    connection_class = IAMConnection
+
+    def default_body(self):
+        return b"""
+            <DeleteAccountPasswordPolicyResponse>
+              <ResponseMetadata>
+                <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+              </ResponseMetadata>
+            </DeleteAccountPasswordPolicyResponse>
+        """
+
+    def test_delete_account_password_policy(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.delete_account_password_policy()
+
+        self.assert_request_parameters(
+            {
+                'Action': 'DeleteAccountPasswordPolicy'
+            },
+            ignore_params_values=['Version'])

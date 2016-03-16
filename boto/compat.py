@@ -54,6 +54,7 @@ from boto.vendored.six.moves import filter, http_client, map, _thread, \
 from boto.vendored.six.moves.queue import Queue
 from boto.vendored.six.moves.urllib.parse import parse_qs, quote, unquote, \
                                                  urlparse, urlsplit
+from boto.vendored.six.moves.urllib.parse import unquote_plus
 from boto.vendored.six.moves.urllib.request import urlopen
 
 if six.PY3:
@@ -61,7 +62,18 @@ if six.PY3:
     StandardError = Exception
     long_type = int
     from configparser import ConfigParser
+    unquote_str = unquote_plus
 else:
     StandardError = StandardError
     long_type = long
     from ConfigParser import SafeConfigParser as ConfigParser
+
+    def unquote_str(value, encoding='utf-8'):
+        # In python2, unquote() gives us a string back that has the urldecoded
+        # bits, but not the unicode parts.  We need to decode this manually.
+        # unquote has special logic in which if it receives a unicode object it
+        # will decode it to latin1.  This is hard coded.  To avoid this, we'll
+        # encode the string with the passed in encoding before trying to
+        # unquote it.
+        byte_string = value.encode(encoding)
+        return unquote_plus(byte_string).decode(encoding)

@@ -57,6 +57,7 @@ class S3WebsiteEndpointTranslate(object):
 
     trans_region = defaultdict(lambda: 's3-website-us-east-1')
     trans_region['eu-west-1'] = 's3-website-eu-west-1'
+    trans_region['eu-central-1'] = 's3-website.eu-central-1'
     trans_region['us-west-1'] = 's3-website-us-west-1'
     trans_region['us-west-2'] = 's3-website-us-west-2'
     trans_region['sa-east-1'] = 's3-website-sa-east-1'
@@ -204,12 +205,9 @@ class Bucket(object):
             k = self.key_class(self)
             provider = self.connection.provider
             k.metadata = boto.utils.get_aws_metadata(response.msg, provider)
-            k.etag = response.getheader('etag')
-            k.content_type = response.getheader('content-type')
-            k.content_encoding = response.getheader('content-encoding')
-            k.content_disposition = response.getheader('content-disposition')
-            k.content_language = response.getheader('content-language')
-            k.last_modified = response.getheader('last-modified')
+            for field in Key.base_fields:
+                k.__dict__[field.lower().replace('-', '_')] = \
+                    response.getheader(field)
             # the following machinations are a workaround to the fact that
             # apache/fastcgi omits the content-length header on HEAD
             # requests when the content-length is zero.
@@ -219,7 +217,6 @@ class Bucket(object):
                 k.size = int(response.getheader('content-length'))
             else:
                 k.size = 0
-            k.cache_control = response.getheader('cache-control')
             k.name = key_name
             k.handle_version_headers(response)
             k.handle_encryption_headers(response)
@@ -359,7 +356,7 @@ class Bucket(object):
             Valid options: ``url``
         :type encoding_type: string
 
-        :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
+        :rtype: :class:`boto.s3.bucketlistresultset.MultiPartUploadListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
         return MultiPartUploadListResultSet(self, key_marker,
@@ -381,7 +378,9 @@ class Bucket(object):
                 key = 'max-keys'
             if not isinstance(value, six.string_types + (six.binary_type,)):
                 value = six.text_type(value)
-            if value != '':
+            if not isinstance(value, six.binary_type):
+                value = value.encode('utf-8')
+            if value:
                 pairs.append(u'%s=%s' % (
                     urllib.parse.quote(key),
                     urllib.parse.quote(value)

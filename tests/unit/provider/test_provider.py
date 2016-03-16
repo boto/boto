@@ -104,6 +104,17 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.secret_key, 'env_secret_key')
         self.assertEqual(p.security_token, 'env_security_token')
 
+    def test_no_credentials_provided(self):
+        p = provider.Provider(
+            'aws',
+            provider.NO_CREDENTIALS_PROVIDED,
+            provider.NO_CREDENTIALS_PROVIDED,
+            provider.NO_CREDENTIALS_PROVIDED
+        )
+        self.assertEqual(p.access_key, provider.NO_CREDENTIALS_PROVIDED)
+        self.assertEqual(p.secret_key, provider.NO_CREDENTIALS_PROVIDED)
+        self.assertEqual(p.security_token, provider.NO_CREDENTIALS_PROVIDED)
+
     def test_config_profile_values_are_used(self):
         self.config = {
             'profile dev': {

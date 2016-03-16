@@ -1,7 +1,5 @@
 from copy import deepcopy
 
-from boto.dynamodb2.types import Dynamizer
-
 
 class NEWVALUE(object):
     # A marker for new data added.
@@ -35,7 +33,8 @@ class Item(object):
         being table-level. It's also for persisting schema around many objects.
 
         Optionally accepts a ``data`` parameter, which should be a dictionary
-        of the fields & values of the item.
+        of the fields & values of the item. Alternatively, an ``Item`` instance
+        may be provided from which to extract the data.
 
         Optionally accepts a ``loaded`` parameter, which should be a boolean.
         ``True`` if it was preexisting data loaded from DynamoDB, ``False`` if
@@ -69,8 +68,10 @@ class Item(object):
         self._loaded = loaded
         self._orig_data = {}
         self._data = data
-        self._dynamizer = Dynamizer()
+        self._dynamizer = table._dynamizer
 
+        if isinstance(self._data, Item):
+            self._data = self._data._data
         if self._data is None:
             self._data = {}
 

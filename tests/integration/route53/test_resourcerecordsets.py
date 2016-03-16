@@ -20,12 +20,11 @@
 # IN THE SOFTWARE.
 #
 
-import time
 from tests.compat import unittest
 from tests.integration.route53 import Route53TestCase
 
-from boto.route53.connection import Route53Connection
 from boto.route53.record import ResourceRecordSets
+
 
 class TestRoute53ResourceRecordSets(Route53TestCase):
     def test_add_change(self):

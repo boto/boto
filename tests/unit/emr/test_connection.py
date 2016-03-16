@@ -27,7 +27,7 @@ from tests.unit import AWSMockServiceTestCase
 
 from boto.emr.connection import EmrConnection
 from boto.emr.emrobject import BootstrapAction, BootstrapActionList, \
-                               ClusterStatus, ClusterSummaryList, \
+                               ClusterStateChangeReason, ClusterStatus, ClusterSummaryList, \
                                ClusterSummary, ClusterTimeline, InstanceInfo, \
                                InstanceList, InstanceGroupInfo, \
                                InstanceGroup, InstanceGroupList, JobFlow, \
@@ -62,6 +62,7 @@ class TestListClusters(AWSMockServiceTestCase):
           </Timeline>
         </Status>
         <Name>analytics test</Name>
+        <NormalizedInstanceHours>10</NormalizedInstanceHours>
       </member>
       <member>
         <Id>j-aaaaaaaaaaaab</Id>
@@ -78,6 +79,7 @@ class TestListClusters(AWSMockServiceTestCase):
           </Timeline>
         </Status>
         <Name>test job</Name>
+        <NormalizedInstanceHours>20</NormalizedInstanceHours>
       </member>
     </Clusters>
   </ListClustersResult>
@@ -99,10 +101,13 @@ class TestListClusters(AWSMockServiceTestCase):
         self.assertTrue(isinstance(response, ClusterSummaryList))
 
         self.assertEqual(len(response.clusters), 2)
+
         self.assertTrue(isinstance(response.clusters[0], ClusterSummary))
         self.assertEqual(response.clusters[0].name, 'analytics test')
+        self.assertEqual(response.clusters[0].normalizedinstancehours, '10')
 
         self.assertTrue(isinstance(response.clusters[0].status, ClusterStatus))
+        self.assertEqual(response.clusters[0].status.state, 'TERMINATED')
 
         self.assertTrue(isinstance(response.clusters[0].status.timeline, ClusterTimeline))
 
@@ -110,6 +115,9 @@ class TestListClusters(AWSMockServiceTestCase):
         self.assertEqual(response.clusters[0].status.timeline.readydatetime, '2014-01-24T01:25:26Z')
         self.assertEqual(response.clusters[0].status.timeline.enddatetime, '2014-01-24T02:19:46Z')
 
+        self.assertTrue(isinstance(response.clusters[0].status.statechangereason, ClusterStateChangeReason))
+        self.assertEqual(response.clusters[0].status.statechangereason.code, 'USER_REQUEST')
+        self.assertEqual(response.clusters[0].status.statechangereason.message, 'Terminated by user request')
 
     def test_list_clusters_created_before(self):
         self.set_http_response(status_code=200)
@@ -362,8 +370,8 @@ class TestListInstances(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'ListInstances',
             'ClusterId': 'j-123',
-            'InstanceGroupTypeList.member.1': 'MASTER',
-            'InstanceGroupTypeList.member.2': 'TASK',
+            'InstanceGroupTypes.member.1': 'MASTER',
+            'InstanceGroupTypes.member.2': 'TASK',
             'Version': '2009-03-31'
         })
 
@@ -492,8 +500,8 @@ class TestListSteps(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'ListSteps',
             'ClusterId': 'j-123',
-            'StepStateList.member.1': 'COMPLETED',
-            'StepStateList.member.2': 'FAILED',
+            'StepStates.member.1': 'COMPLETED',
+            'StepStates.member.2': 'FAILED',
             'Version': '2009-03-31'
         })
         self.assertTrue(isinstance(response, StepSummaryList))
@@ -558,6 +566,9 @@ class TestDescribeCluster(AWSMockServiceTestCase):
         </member>
       </Applications>
       <TerminationProtected>false</TerminationProtected>
+      <MasterPublicDnsName>ec2-184-0-0-1.us-west-1.compute.amazonaws.com</MasterPublicDnsName>
+      <NormalizedInstanceHours>10</NormalizedInstanceHours>
+      <ServiceRole>my-service-role</ServiceRole>
     </Cluster>
   </DescribeClusterResult>
   <ResponseMetadata>
@@ -587,6 +598,9 @@ class TestDescribeCluster(AWSMockServiceTestCase):
         self.assertEqual(response.status.state, 'TERMINATED')
         self.assertEqual(response.applications[0].name, 'hadoop')
         self.assertEqual(response.applications[0].version, '1.0.3')
+        self.assertEqual(response.masterpublicdnsname, 'ec2-184-0-0-1.us-west-1.compute.amazonaws.com')
+        self.assertEqual(response.normalizedinstancehours, '10')
+        self.assertEqual(response.servicerole, 'my-service-role')
 
         self.assert_request_parameters({
             'Action': 'DescribeCluster',

@@ -28,6 +28,7 @@ This module requires the yaml module.
 from boto.sqs.message import Message
 import yaml
 
+
 class YAMLMessage(Message):
     """
     The YAMLMessage class provides a YAML compatible message. Encoding and
@@ -46,7 +47,7 @@ class YAMLMessage(Message):
         super(YAMLMessage, self).__init__(queue, body)
 
     def set_body(self, body):
-        self.data = yaml.load(body)
+        self.data = yaml.safe_load(body)
 
     def get_body(self):
         return yaml.dump(self.data)
