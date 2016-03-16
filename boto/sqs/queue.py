@@ -438,7 +438,7 @@ class Queue(object):
                 try:
                     fp.write(array("B", map(ord, m.get_body())))
                 except:
-                    print "Error writing message"
+                    print("Error writing SQS message")
                     continue
                 if sep:
                     fp.write(sep)
