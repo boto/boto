@@ -316,18 +316,18 @@ class Record(object):
     elif self.weight is not None or self.region is not None or self.failover is not None:
         raise Exception('If you choose weight, region or failover routing policy you have to specify identifier.');
 
-        health_check = ""
-        if self.health_check is not None:
-            health_check = self.HealthCheckBody % (self.health_check)
+    health_check = ""
+    if self.health_check is not None:
+        health_check = self.HealthCheckBody % (self.health_check)
 
-        params = {
-            "name": self.name,
-            "type": self.type,
-            "weight": weight,
-            "body": body,
-            "health_check": health_check
-        }
-        return self.XMLBody % params
+    params = {
+        "name": self.name,
+        "type": self.type,
+        "weight": weight,
+        "body": body,
+        "health_check": health_check
+    }
+    return self.XMLBody % params
 
     def to_print(self):
         rr = ""
