@@ -20,6 +20,14 @@ class Stack(object):
         self.stack_name = None
         self.timeout_in_minutes = None
 
+    @property
+    def stack_name_reason(self):
+        return self.stack_status_reason
+
+    @stack_name_reason.setter
+    def stack_name_reason(self, value):
+        self.stack_status_reason = value
+
     def startElement(self, name, attrs, connection):
         if name == "Parameters":
             self.parameters = ResultSet([('member', Parameter)])
