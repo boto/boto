@@ -531,37 +531,85 @@ class TestCopyImage(TestEC2ConnectionBase):
         </CopyImageResponse>
         """
 
-    def test_copy_image(self):
+    def test_copy_image_required_params(self):
         self.set_http_response(status_code=200)
-        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id',
-                                         'name', 'description', 'client-token')
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id')
         self.assertEqual(copied_ami.image_id, 'ami-copied-id')
-
         self.assert_request_parameters({
             'Action': 'CopyImage',
-            'Description': 'description',
-            'Name': 'name',
             'SourceRegion': 'us-west-2',
-            'SourceImageId': 'ami-id',
-            'ClientToken': 'client-token'},
-            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+            'SourceImageId': 'ami-id'
+        }, ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                   'SignatureVersion', 'Timestamp',
                                   'Version'])
 
-    def test_copy_image_without_name(self):
+    def test_copy_image_name_and_description(self):
         self.set_http_response(status_code=200)
-        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id',
-                                         description='description',
-                                         client_token='client-token')
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id', 'name', 'description')
+        self.assertEqual(copied_ami.image_id, 'ami-copied-id')
+        self.assert_request_parameters({
+            'Action': 'CopyImage',
+            'SourceRegion': 'us-west-2',
+            'SourceImageId': 'ami-id',
+            'Name': 'name',
+            'Description': 'description'
+        }, ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
+    def test_copy_image_client_token(self):
+        self.set_http_response(status_code=200)
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id', client_token='client-token')
+        self.assertEqual(copied_ami.image_id, 'ami-copied-id')
+        self.assert_request_parameters({
+            'Action': 'CopyImage',
+            'SourceRegion': 'us-west-2',
+            'SourceImageId': 'ami-id',
+            'ClientToken': 'client-token'
+        }, ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
+    def test_copy_image_encrypted(self):
+        self.set_http_response(status_code=200)
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id', encrypted=True)
         self.assertEqual(copied_ami.image_id, 'ami-copied-id')
 
         self.assert_request_parameters({
             'Action': 'CopyImage',
-            'Description': 'description',
             'SourceRegion': 'us-west-2',
             'SourceImageId': 'ami-id',
-            'ClientToken': 'client-token'},
-            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+            'Encrypted': 'true'
+        }, ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
+    def test_copy_image_not_encrypted(self):
+        self.set_http_response(status_code=200)
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id', encrypted=False)
+        self.assertEqual(copied_ami.image_id, 'ami-copied-id')
+
+        self.assert_request_parameters({
+            'Action': 'CopyImage',
+            'SourceRegion': 'us-west-2',
+            'SourceImageId': 'ami-id',
+            'Encrypted': 'false'
+        }, ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
+    def test_copy_image_encrypted_with_kms_key(self):
+        self.set_http_response(status_code=200)
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id', encrypted=False, kms_key_id='kms-key')
+        self.assertEqual(copied_ami.image_id, 'ami-copied-id')
+
+        self.assert_request_parameters({
+            'Action': 'CopyImage',
+            'SourceRegion': 'us-west-2',
+            'SourceImageId': 'ami-id',
+            'Encrypted': 'false',
+            'KmsKeyId': 'kms-key'
+        }, ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                   'SignatureVersion', 'Timestamp',
                                   'Version'])
 
