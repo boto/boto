@@ -3824,9 +3824,9 @@ class EC2Connection(AWSQueryConnection):
         :rtype: string
         :return: The unique ID for the submitted modification request.
         """
-        params = {
-            'ClientToken': client_token,
-        }
+        params = {}
+        if client_token is not None:
+            params['ClientToken'] = client_token
         if reserved_instance_ids is not None:
             self.build_list_params(params, reserved_instance_ids,
                                    'ReservedInstancesId')
