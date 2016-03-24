@@ -584,20 +584,25 @@ class Route53Connection(AWSAuthConnection):
         boto.log.debug("Saw HTTP status: %s" % response.status)
 
         if response.status == 400:
-            code = response.getheader('Code')
+            body = response.read()
 
-            if code:
+            # We need to parse the error first
+            err = exception.DNSServerError(
+                response.status,
+                response.reason,
+                body)
+            if err.error_code:
                 # This is a case where we need to ignore a 400 error, as
                 # Route53 returns this. See
                 # http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html
-                if 'PriorRequestNotComplete' in code:
-                    error = 'PriorRequestNotComplete'
-                elif 'Throttling' in code:
-                    error = 'Throttling'
-                else:
+                if not err.error_code in (
+                        'PriorRequestNotComplete',
+                        'Throttling',
+                        'ServiceUnavailable',
+                        'RequestExpired'):
                     return status
                 msg = "%s, retry attempt %s" % (
-                    error,
+                    err.error_code,
                     i
                 )
                 next_sleep = min(random.random() * (2 ** i),
