@@ -16,8 +16,8 @@ class Stack(object):
         self.tags = []
         self.stack_id = None
         self.stack_status = None
+        self.stack_status_reason = None
         self.stack_name = None
-        self.stack_name_reason = None
         self.timeout_in_minutes = None
 
     def startElement(self, name, attrs, connection):

@@ -444,7 +444,7 @@ class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
         self.assertEqual(stack.stack_id, 'arn:aws:cfn:us-east-1:1:stack')
         self.assertEqual(stack.stack_status, 'CREATE_COMPLETE')
         self.assertEqual(stack.stack_name, 'MyStack')
-        self.assertEqual(stack.stack_name_reason, None)
+        self.assertEqual(stack.stack_status_reason, '')
         self.assertEqual(stack.timeout_in_minutes, None)
 
         self.assertEqual(len(stack.outputs), 1)
