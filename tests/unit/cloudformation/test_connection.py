@@ -391,8 +391,8 @@ class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
                 <member>
                   <StackId>arn:aws:cfn:us-east-1:1:stack</StackId>
                   <StackStatus>CREATE_COMPLETE</StackStatus>
+                  <StackStatusReason>REASON</StackStatusReason>
                   <StackName>MyStack</StackName>
-                  <StackStatusReason/>
                   <Description>My Description</Description>
                   <CreationTime>2012-05-16T22:55:31Z</CreationTime>
                   <Capabilities>
@@ -444,7 +444,8 @@ class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
         self.assertEqual(stack.stack_id, 'arn:aws:cfn:us-east-1:1:stack')
         self.assertEqual(stack.stack_status, 'CREATE_COMPLETE')
         self.assertEqual(stack.stack_name, 'MyStack')
-        self.assertEqual(stack.stack_name_reason, None)
+        self.assertEqual(stack.stack_name_reason, 'REASON')
+        self.assertEqual(stack.stack_status_reason, 'REASON')
         self.assertEqual(stack.timeout_in_minutes, None)
 
         self.assertEqual(len(stack.outputs), 1)
