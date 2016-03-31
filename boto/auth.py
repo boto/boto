@@ -576,6 +576,8 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         unquoted = urllib.parse.unquote(path.path)
         # Requote, this time addressing all characters.
         encoded = urllib.parse.quote(unquoted)
+        # %7E -> ~ (convert %7E back to ~ to fix key name == ~)
+        encoded = encoded.replace('%7E', '~')
         return encoded
 
     def canonical_query_string(self, http_request):
