@@ -52,8 +52,8 @@ elif 'BOTO_PATH' in os.environ:
 class Config(object):
 
     def __init__(self, path=None, fp=None, do_load=True):
-        self._impl = ConfigParser({'working_dir': '/mnt/pyami',
-                                         'debug': '0'})
+        self._parser = ConfigParser({'working_dir': '/mnt/pyami',
+                                     'debug': '0'})
         if do_load:
             if path:
                 self.load_from_path(path)
@@ -69,18 +69,10 @@ class Config(object):
                     warnings.warn('Unable to load AWS_CREDENTIAL_FILE (%s)' % full_path)
 
     def __getattr__(self, name):
-        try:
-            impl = self.__dict__['_impl']
-        except KeyError:
-            raise AttributeError(name)
-        return getattr(impl, name)
+        return getattr(self._parser, name)
 
     def has_option(self, *args, **kwargs):
-        try:
-            impl = self.__dict__['_impl']
-        except KeyError:
-            return False
-        return impl.has_option(*args, **kwargs)
+        return self._parser.has_option(*args, **kwargs)
 
     def load_credential_file(self, path):
         """Load a credential file as is setup like the Java utilities"""
@@ -151,31 +143,19 @@ class Config(object):
 
     def get(self, section, name, default=None):
         try:
-            impl = self.__dict__['_impl']
-        except KeyError:
-            return default
-        try:
-            return impl.get(section, name)
+            return self._parser.get(section, name)
         except (NoOptionError, NoSectionError):
             return default
 
     def getint(self, section, name, default=0):
         try:
-            impl = self.__dict__['_impl']
-        except KeyError:
-            return int(default)
-        try:
-            return impl.getint(section, name)
+            return self._parser.getint(section, name)
         except (NoOptionError, NoSectionError):
             return int(default)
 
     def getfloat(self, section, name, default=0.0):
         try:
-            impl = self.__dict__['_impl']
-        except KeyError:
-            return float(default)
-        try:
-            return impl.getfloat(section, name)
+            return self._parser.getfloat(section, name)
         except (NoOptionError, NoSectionError):
             return float(default)
 
