@@ -68,6 +68,15 @@ class Config(object):
                 except IOError:
                     warnings.warn('Unable to load AWS_CREDENTIAL_FILE (%s)' % full_path)
 
+    def __setstate__(self, state):
+        # There's test that verify that (transitively) a Config
+        # object can be pickled.  Now that we're storing a _parser
+        # attribute and relying on __getattr__ to proxy requests,
+        # we need to implement setstate to ensure we don't get
+        # into recursive loops when looking up _parser when
+        # this object is unpickled.
+        self._parser = state['_parser']
+
     def __getattr__(self, name):
         return getattr(self._parser, name)
 
