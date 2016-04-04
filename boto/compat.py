@@ -61,12 +61,13 @@ if six.PY3:
     # StandardError was removed, so use the base exception type instead
     StandardError = Exception
     long_type = int
-    from configparser import ConfigParser
+    from configparser import ConfigParser, NoOptionError, NoSectionError
     unquote_str = unquote_plus
 else:
     StandardError = StandardError
     long_type = long
     from ConfigParser import SafeConfigParser as ConfigParser
+    from ConfigParser import NoOptionError, NoSectionError
 
     def unquote_str(value, encoding='utf-8'):
         # In python2, unquote() gives us a string back that has the urldecoded
