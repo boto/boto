@@ -63,6 +63,7 @@ if six.PY3:
     long_type = int
     from configparser import ConfigParser, NoOptionError, NoSectionError
     unquote_str = unquote_plus
+    parse_qs_safe = parse_qs
 else:
     StandardError = StandardError
     long_type = long
@@ -78,3 +79,24 @@ else:
         # unquote it.
         byte_string = value.encode(encoding)
         return unquote_plus(byte_string).decode(encoding)
+
+    # These are the same default arguments for python3's
+    # urllib.parse.parse_qs.
+    def parse_qs_safe(qs, keep_blank_values=False, strict_parsing=False,
+                      encoding='utf-8', errors='replace'):
+        """Parse a query handling unicode arguments properly in Python 2."""
+        is_text_type = isinstance(qs, six.text_type)
+        if is_text_type:
+            # URL encoding uses ASCII code points only.
+            qs = qs.encode('ascii')
+        qs_dict = parse_qs(qs, keep_blank_values, strict_parsing)
+        if is_text_type:
+            # Decode the parsed dictionary back to unicode.
+            result = {}
+            for (name, value) in qs_dict.items():
+                decoded_name = name.decode(encoding, errors)
+                decoded_value = [item.decode(encoding, errors)
+                                 for item in value]
+                result[decoded_name] = decoded_value
+            return result
+        return qs_dict

@@ -39,7 +39,7 @@ import hmac
 import os
 import posixpath
 
-from boto.compat import urllib, encodebytes
+from boto.compat import urllib, encodebytes, parse_qs_safe
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
 
@@ -690,7 +690,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
             modified_req.params = copy_params
 
         raw_qs = parsed_path.query
-        existing_qs = boto.utils.parse_qs_safe(
+        existing_qs = parse_qs_safe(
             raw_qs,
             keep_blank_values=True
         )
