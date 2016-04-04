@@ -575,7 +575,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         # Because some quoting may have already been applied, let's back it out.
         unquoted = urllib.parse.unquote(path.path)
         # Requote, this time addressing all characters.
-        encoded = urllib.parse.quote(unquoted)
+        encoded = urllib.parse.quote(unquoted, safe='/~')
         return encoded
 
     def canonical_query_string(self, http_request):
@@ -690,7 +690,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
             modified_req.params = copy_params
 
         raw_qs = parsed_path.query
-        existing_qs = urllib.parse.parse_qs(
+        existing_qs = boto.utils.parse_qs_safe(
             raw_qs,
             keep_blank_values=True
         )
