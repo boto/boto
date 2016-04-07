@@ -368,7 +368,7 @@ class HTTPRequest(object):
             for key in self.headers:
                 val = self.headers[key]
                 if isinstance(val, six.text_type):
-                    safe = '!"#$%&\'()*+,/:;<=>?@[\\]^`{|}~'
+                    safe = '!"#$%&\'()*+,/:;<=>?@[\\]^`{|}~ '
                     self.headers[key] = quote(val.encode('utf-8'), safe)
             setattr(self, '_headers_quoted', True)
 

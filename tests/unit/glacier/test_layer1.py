@@ -83,6 +83,15 @@ class GlacierJobOperations(GlacierLayer1ConnectionBase):
 
 
 class TestGlacierUploadPart(GlacierLayer1ConnectionBase):
+    def test_upload_part_content_range_header(self):
+        fake_data = b'\xe2'
+        self.set_http_response(status_code=204)
+        self.service_connection.upload_part(
+            u'unicode_vault_name', 'upload_id', 'linear_hash', 'tree_hash',
+            (1,2), fake_data)
+        self.assertEqual(
+            self.actual_request.headers['Content-Range'], 'bytes 1-2/*')
+
     def test_upload_part_with_unicode_name(self):
         fake_data = b'\xe2'
         self.set_http_response(status_code=204)
