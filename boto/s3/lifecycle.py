@@ -44,7 +44,7 @@ class Rule(object):
 
     """
     def __init__(self, id=None, prefix=None, status=None, expiration=None,
-                 transition=None):
+                 transition=None, noncurrentVersionTransition=None, noncurrentVersionExpiration=None):
         self.id = id
         self.prefix = '' if prefix is None else prefix
         self.status = status
@@ -54,7 +54,13 @@ class Rule(object):
         else:
             # None or object
             self.expiration = expiration
+        if isinstance(noncurrentVersionExpiration, six.integer_types):
+            self.noncurrentVersionExpiration = NoncurrentVersionExpiration(noncurrentDays=noncurrentVersionExpiration)
+        else:
+            # None or object
+            self.noncurrentVersionExpiration = noncurrentVersionExpiration
         self.transition = transition
+        self.noncurrentVersionTransition = noncurrentVersionTransition
 
     def __repr__(self):
         return '<Rule: %s>' % self.id
@@ -63,10 +69,17 @@ class Rule(object):
         if name == 'Transition':
             self.transition = Transition()
             return self.transition
+        elif name == 'NoncurrentVersionTransition':
+            self.noncurrentVersionTransition = NonCurrentVersionTransition()
+            return self.noncurrentVersionTransition
         elif name == 'Expiration':
             self.expiration = Expiration()
             return self.expiration
-        return None
+        elif name == 'NoncurrentVersionExpiration':
+            self.noncurrentVersionExpiration = NoncurrentVersionExpiration()
+            return self.noncurrentVersionExpiration
+        else:
+            return None
 
     def endElement(self, name, value, connection):
         if name == 'ID':
@@ -88,6 +101,10 @@ class Rule(object):
             s += self.expiration.to_xml()
         if self.transition is not None:
             s += self.transition.to_xml()
+        if self.noncurrentVersionTransition is not None:
+            s += self.noncurrentVersionTransition.to_xml()
+        if self.noncurrentVersionExpiration is not None:
+            s += self.noncurrentVersionExpiration.to_xml()            
         s += '</Rule>'
         return s
 
@@ -129,6 +146,39 @@ class Expiration(object):
         s += '</Expiration>'
         return s
 
+class NoncurrentVersionExpiration(object):
+    """
+    When an object will expire.
+
+    :ivar days: The number of days until the object expires
+
+    :ivar date: The date when the object will expire. Must be
+        in ISO 8601 format.
+    """
+    def __init__(self, noncurrentDays=None):
+        self.noncurrentDays = noncurrentDays
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'NoncurrentDays':
+            self.noncurrentDays = int(value)
+            
+    def __repr__(self):
+        if self.noncurrentDays is None:
+            return None
+        else:
+            how_long = "in: %s days" % self.noncurrentDays
+        return '<NoncurrentVersionExpiration: %s>' % how_long
+
+    def to_xml(self):
+        s = '<NoncurrentVersionExpiration>'
+        if self.noncurrentDays is not None:
+            s += '<NoncurrentDays>%s</NoncurrentDays>' % self.noncurrentDays
+        s += '</NoncurrentVersionExpiration>'
+        return s
+    
 class Transition(object):
     """
     A transition to a different storage class.
@@ -175,6 +225,44 @@ class Transition(object):
         s += '</Transition>'
         return s
 
+class NoncurrentVersionTransition(object):
+    """
+    A transition to a different storage class.
+
+    :ivar noncurrentDays: The number of days until the object should be moved.
+
+    :ivar storage_class: The storage class to transition to.  Valid
+        values are GLACIER.
+
+    """
+    def __init__(self, noncurrentDays=None, storage_class=None):
+        self.noncurrentDays = noncurrentDays
+        self.storage_class = storage_class
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'NoncurrentDays':
+            self.noncurrentDays = int(value)
+        elif name == 'StorageClass':
+            self.storage_class = value
+
+    def __repr__(self):
+        if self.noncurrentDays is None:
+            return None
+        else:
+            how_long = "in: %s noncurrentDays" % self.noncurrentDays
+        return '<NoncurrentVersionTransition: %s, %s>' % (how_long, self.storage_class)
+
+    def to_xml(self):
+        s = '<NoncurrentVersionTransition>'
+        s += '<StorageClass>%s</StorageClass>' % self.storage_class
+        if self.noncurrentDays is not None:
+            s += '<NoncurrentDays>%s</NoncurrentDays>' % self.noncurrentDays
+        s += '</NoncurrentVersionTransition>'
+        return s
+    
 class Lifecycle(list):
     """
     A container for the rules associated with a Lifecycle configuration.
@@ -203,7 +291,8 @@ class Lifecycle(list):
         return s
 
     def add_rule(self, id=None, prefix='', status='Enabled',
-                 expiration=None, transition=None):
+                 expiration=None, transition=None, noncurrentVersionExpiration=None,
+                 noncurrentVersionTransition=None):
         """
         Add a rule to this Lifecycle configuration.  This only adds
         the rule to the local copy.  To install the new rule(s) on
@@ -223,14 +312,22 @@ class Lifecycle(list):
         :param status: If 'Enabled', the rule is currently being applied.
             If 'Disabled', the rule is not currently being applied.
 
-        :type expiration: int
+        :type expiration: Expiration
         :param expiration: Indicates the lifetime, in days, of the objects
-            that are subject to the rule. The value must be a non-zero
-            positive integer. A Expiration object instance is also perfect.
+            that are subject to the rule. 
+
+        :type noncurrentVersionExpiration: NoncurrentVersionExpiration
+        :param expiration: Indicates the lifetime, in days, of the objects
+            that are subject to the rule. 
 
         :type transition: Transition
         :param transition: Indicates when an object transitions to a
-            different storage class. 
+            different storage class.
+
+        :type noncurrentVersionTransition: NonCurrentVersionTransition
+        :param transition: Indicates when an non-current object transitions to a
+            different storage class.
+
         """
-        rule = Rule(id, prefix, status, expiration, transition)
+        rule = Rule(id, prefix, status, expiration, transition, noncurrentVersionTransition, noncurrentVersionExpiration)
         self.append(rule)
