@@ -447,9 +447,10 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.access_key, 'cfg_access_key')
         self.assertEqual(p.secret_key, 'cfg_secret_key')
 
+    @mock.patch('os.access', return_value=True)
     @mock.patch('os.path.isfile', return_value=True)
     @mock.patch.object(provider.Config, 'load_from_path')
-    def test_shared_config_loading(self, load_from_path, exists):
+    def test_shared_config_loading(self, load_from_path, exists, mock_access):
         provider.Provider('aws')
         path = os.path.join(expanduser('~'), '.aws', 'credentials')
         exists.assert_called_once_with(path)
