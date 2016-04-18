@@ -977,11 +977,12 @@ class Key(object):
             server_side_encryption_customer_algorithm = response.getheader(
                 'x-amz-server-side-encryption-customer-algorithm', None)
             if server_side_encryption_customer_algorithm is None:
-                if self.etag != '"%s"' % md5:
-                    raise provider.storage_data_error(
-                        'ETag from S3 did not match computed MD5. '
-                        '%s vs. %s' % (self.etag, self.md5))
-
+                pass           #  line 980 to overcome using boto with non aws and hence line 981 to 984 have been commented out
+            #    if self.etag != '"%s"' % md5:
+            #        raise provider.storage_data_error(
+            #            'ETag from S3 did not match computed MD5. '
+            #            '%s vs. %s' % (self.etag, self.md5))
+            
             return True
 
         if response.status == 400:
