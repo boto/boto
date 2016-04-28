@@ -146,7 +146,12 @@ class Parameter(object):
             value = int(value)
         if isinstance(value, int) or isinstance(value, long):
             if self.allowed_values:
-                min, max = self.allowed_values.split('-')
+                if self.allowed_values.startswith('-'):
+                    # range which begins with a negative value
+                    ign, min, max = self.allowed_values.split('-')
+                    min = '-' + min
+                else:
+                    min, max = self.allowed_values.split('-')
                 if value < int(min) or value > int(max):
                     raise ValueError('range is %s' % self.allowed_values)
             self._value = value
