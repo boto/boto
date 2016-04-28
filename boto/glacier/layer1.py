@@ -1273,7 +1273,7 @@ class Layer1(AWSAuthConnection):
                    'x-amz-sha256-tree-hash': tree_hash,
                    'Content-Range': 'bytes %d-%d/*' % byte_range}
         response_headers = [('x-amz-sha256-tree-hash', u'TreeHash')]
-        uri = 'vaults/%s/multipart-uploads/%s' % (vault_name, upload_id)
+        uri = 'vaults/%s/multipart-uploads/%s' % (str(vault_name), upload_id)
         return self.make_request('PUT', uri, headers=headers,
                                  data=part_data, ok_responses=(204,),
                                  response_headers=response_headers)

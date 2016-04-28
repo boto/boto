@@ -772,8 +772,7 @@ class EC2Connection(AWSQueryConnection):
             with which to associate instances
 
         :type user_data: string
-        :param user_data: The Base64-encoded MIME user data to be made
-            available to the instance(s) in this reservation.
+        :param user_data: The user data passed to the launched instances
 
         :type instance_type: string
         :param instance_type: The type of instance to run:
@@ -3825,9 +3824,9 @@ class EC2Connection(AWSQueryConnection):
         :rtype: string
         :return: The unique ID for the submitted modification request.
         """
-        params = {
-            'ClientToken': client_token,
-        }
+        params = {}
+        if client_token is not None:
+            params['ClientToken'] = client_token
         if reserved_instance_ids is not None:
             self.build_list_params(params, reserved_instance_ids,
                                    'ReservedInstancesId')
@@ -4406,7 +4405,8 @@ class EC2Connection(AWSQueryConnection):
         return self.get_list('DescribeInstanceTypes', params, [('item', InstanceType)], verb='POST')
 
     def copy_image(self, source_region, source_image_id, name=None,
-                   description=None, client_token=None, dry_run=False):
+                   description=None, client_token=None, dry_run=False,
+                   encrypted=None, kms_key_id=None):
         """
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -4423,6 +4423,10 @@ class EC2Connection(AWSQueryConnection):
             params['Description'] = description
         if client_token is not None:
             params['ClientToken'] = client_token
+        if encrypted is not None:
+            params['Encrypted'] = 'true' if encrypted else 'false'
+        if kms_key_id is not None:
+            params['KmsKeyId'] = kms_key_id
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_object('CopyImage', params, CopyImage,
