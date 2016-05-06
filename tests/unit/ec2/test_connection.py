@@ -531,37 +531,85 @@ class TestCopyImage(TestEC2ConnectionBase):
         </CopyImageResponse>
         """
 
-    def test_copy_image(self):
+    def test_copy_image_required_params(self):
         self.set_http_response(status_code=200)
-        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id',
-                                         'name', 'description', 'client-token')
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id')
         self.assertEqual(copied_ami.image_id, 'ami-copied-id')
-
         self.assert_request_parameters({
             'Action': 'CopyImage',
-            'Description': 'description',
-            'Name': 'name',
             'SourceRegion': 'us-west-2',
-            'SourceImageId': 'ami-id',
-            'ClientToken': 'client-token'},
-            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+            'SourceImageId': 'ami-id'
+        }, ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                   'SignatureVersion', 'Timestamp',
                                   'Version'])
 
-    def test_copy_image_without_name(self):
+    def test_copy_image_name_and_description(self):
         self.set_http_response(status_code=200)
-        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id',
-                                         description='description',
-                                         client_token='client-token')
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id', 'name', 'description')
+        self.assertEqual(copied_ami.image_id, 'ami-copied-id')
+        self.assert_request_parameters({
+            'Action': 'CopyImage',
+            'SourceRegion': 'us-west-2',
+            'SourceImageId': 'ami-id',
+            'Name': 'name',
+            'Description': 'description'
+        }, ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
+    def test_copy_image_client_token(self):
+        self.set_http_response(status_code=200)
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id', client_token='client-token')
+        self.assertEqual(copied_ami.image_id, 'ami-copied-id')
+        self.assert_request_parameters({
+            'Action': 'CopyImage',
+            'SourceRegion': 'us-west-2',
+            'SourceImageId': 'ami-id',
+            'ClientToken': 'client-token'
+        }, ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
+    def test_copy_image_encrypted(self):
+        self.set_http_response(status_code=200)
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id', encrypted=True)
         self.assertEqual(copied_ami.image_id, 'ami-copied-id')
 
         self.assert_request_parameters({
             'Action': 'CopyImage',
-            'Description': 'description',
             'SourceRegion': 'us-west-2',
             'SourceImageId': 'ami-id',
-            'ClientToken': 'client-token'},
-            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+            'Encrypted': 'true'
+        }, ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
+    def test_copy_image_not_encrypted(self):
+        self.set_http_response(status_code=200)
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id', encrypted=False)
+        self.assertEqual(copied_ami.image_id, 'ami-copied-id')
+
+        self.assert_request_parameters({
+            'Action': 'CopyImage',
+            'SourceRegion': 'us-west-2',
+            'SourceImageId': 'ami-id',
+            'Encrypted': 'false'
+        }, ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
+    def test_copy_image_encrypted_with_kms_key(self):
+        self.set_http_response(status_code=200)
+        copied_ami = self.ec2.copy_image('us-west-2', 'ami-id', encrypted=False, kms_key_id='kms-key')
+        self.assertEqual(copied_ami.image_id, 'ami-copied-id')
+
+        self.assert_request_parameters({
+            'Action': 'CopyImage',
+            'SourceRegion': 'us-west-2',
+            'SourceImageId': 'ami-id',
+            'Encrypted': 'false',
+            'KmsKeyId': 'kms-key'
+        }, ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
                                   'SignatureVersion', 'Timestamp',
                                   'Version'])
 
@@ -1100,6 +1148,38 @@ class TestModifyReservedInstances(TestEC2ConnectionBase):
         self.assert_request_parameters({
             'Action': 'ModifyReservedInstances',
             'ClientToken': 'a-token-goes-here',
+            'ReservedInstancesConfigurationSetItemType.0.AvailabilityZone': 'us-west-2c',
+            'ReservedInstancesConfigurationSetItemType.0.InstanceCount': 3,
+            'ReservedInstancesConfigurationSetItemType.0.Platform': 'EC2-VPC',
+            'ReservedInstancesConfigurationSetItemType.0.InstanceType': 'c3.large',
+            'ReservedInstancesId.1': '2567o137-8a55-48d6-82fb-7258506bb497'
+        }, ignore_params_values=[
+            'AWSAccessKeyId', 'SignatureMethod',
+            'SignatureVersion', 'Timestamp',
+            'Version'
+        ])
+
+        self.assertEqual(response, 'rimod-3aae219d-3d63-47a9-a7e9-e764example')
+
+    def test_none_token(self):
+        """Ensures that if the token is set to None, nothing is serialized."""
+        self.set_http_response(status_code=200)
+        response = self.ec2.modify_reserved_instances(
+            None,
+            reserved_instance_ids=[
+                '2567o137-8a55-48d6-82fb-7258506bb497',
+            ],
+            target_configurations=[
+                ReservedInstancesConfiguration(
+                    availability_zone='us-west-2c',
+                    platform='EC2-VPC',
+                    instance_count=3,
+                    instance_type='c3.large'
+                ),
+            ]
+        )
+        self.assert_request_parameters({
+            'Action': 'ModifyReservedInstances',
             'ReservedInstancesConfigurationSetItemType.0.AvailabilityZone': 'us-west-2c',
             'ReservedInstancesConfigurationSetItemType.0.InstanceCount': 3,
             'ReservedInstancesConfigurationSetItemType.0.Platform': 'EC2-VPC',

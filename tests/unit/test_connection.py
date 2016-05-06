@@ -522,7 +522,7 @@ class TestAWSQueryStatus(TestAWSQueryConnection):
 
 class TestHTTPRequest(unittest.TestCase):
     def test_user_agent_not_url_encoded(self):
-        headers = {'Some-Header': u'should be url encoded',
+        headers = {'Some-Header': u'should be encoded \u2713',
                    'User-Agent': UserAgent}
         request = HTTPRequest('PUT', 'https', 'amazon.com', 443, None,
                               None, {}, headers, 'Body')
@@ -539,7 +539,7 @@ class TestHTTPRequest(unittest.TestCase):
         # Ensure the headers at authorization are as expected i.e.
         # the user agent header was not url encoded but the other header was.
         self.assertEqual(mock_connection.headers_at_auth,
-                         {'Some-Header': 'should%20be%20url%20encoded',
+                         {'Some-Header': 'should be encoded %E2%9C%93',
                           'User-Agent': UserAgent})
 
     def test_content_length_str(self):
