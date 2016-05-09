@@ -753,7 +753,11 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
             if '_sha256' in req.headers:
                 req.headers['x-amz-content-sha256'] = req.headers.pop('_sha256')
             else:
-                req.headers['x-amz-content-sha256'] = self.payload(req)
+                streaming = sigv4_streaming()
+                if streaming == 3:
+                    req.headers['x-amz-content-sha256'] = 'UNSIGNED-PAYLOAD'
+                else:
+                    req.headers['x-amz-content-sha256'] = self.payload(req)
         updated_req = self.mangle_path_and_params(req)
         return super(S3HmacAuthV4Handler, self).add_auth(updated_req,
                                                          unmangled_req=req,
@@ -1115,13 +1119,13 @@ def sigv4_streaming():
 
     streaming = os.environ.get('S3_SIGV4_STREAMING')
     if streaming is not None:
-        if streaming in ['0','1','2']:
+        if streaming in ['0','1','2','3']:
             return int(streaming)
         else:
             return default
 
     streaming = boto.config.getint('s3', 'sigv4_streaming', default)
-    if streaming >= 0 and streaming <= 2:
+    if streaming >= 0 and streaming <= 3:
         return streaming
 
     return default

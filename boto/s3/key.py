@@ -1029,6 +1029,9 @@ class Key(object):
                 headers['_sha256'] = compute_hash(fp, size=self.size,
                                          hash_algorithm=hashlib.sha256)[0]
                 headers['Content-Length'] = str(self.size)
+            elif streaming == 3:
+                headers['_sha256'] = 'UNSIGNED-PAYLOAD'
+                headers['Content-Length'] = str(self.size)
             else:
                 streaming_auth = self.bucket.connection._auth_handler
                 # AWS Streaming Chunks have a minimum size requirement.
