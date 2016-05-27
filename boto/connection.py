@@ -751,6 +751,11 @@ class AWSAuthConnection(object):
                 connection = https_connection.CertValidatingHTTPSConnection(
                     host, ca_certs=self.ca_certificates_file,
                     **http_connection_kwargs)
+            elif HAVE_HTTPS_CONNECTION and \
+                    hasattr(ssl, '_create_unverified_context'):
+                http_connection_kwargs['context'] = ssl._create_unverified_context()
+                connection = http_client.HTTPSConnection(
+                    host, **http_connection_kwargs)
             else:
                 connection = http_client.HTTPSConnection(
                     host, **http_connection_kwargs)
