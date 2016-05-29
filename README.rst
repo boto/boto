@@ -204,7 +204,7 @@ Credentials and other boto-related settings can also be stored in a
 boto config file.  See `this`_ for details.
 
 .. _Contributing Guidelines: https://github.com/boto/boto/blob/develop/CONTRIBUTING
-.. _Porting Guide: http://boto.readthedocs.org/en/latest/porting_guide.html
+.. _Porting Guide: https://boto.readthedocs.io/en/latest/porting_guide.html
 .. _pip: http://www.pip-installer.org/
 .. _release notes: https://github.com/boto/boto/wiki
 .. _github.com: http://github.com/boto/boto

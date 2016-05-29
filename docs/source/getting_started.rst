@@ -73,7 +73,7 @@ When you are done using ``boto``, you can deactivate your virtual environment::
 If you are creating a lot of virtual environments, `virtualenvwrapper`_
 is an excellent tool that lets you easily manage your virtual environments.
 
-.. _`virtualenvwrapper`: http://virtualenvwrapper.readthedocs.org/en/latest/
+.. _`virtualenvwrapper`: https://virtualenvwrapper.readthedocs.io/en/latest/
 
 
 Configuring Boto Credentials

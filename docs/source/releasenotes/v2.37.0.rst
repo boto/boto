@@ -13,7 +13,7 @@ bugs in several services.
    ``trail`` parameter, which has been marked for removal by the service
    since early 2014. Instead, you pass each trail parameter as a keyword
    argument now. Please see the
-   `reference <http://boto.readthedocs.org/en/latest/ref/cloudtrail.html#boto.cloudtrail.layer1.CloudTrailConnection.create_trail>`__
+   `reference <https://boto.readthedocs.io/en/latest/ref/cloudtrail.html#boto.cloudtrail.layer1.CloudTrailConnection.create_trail>`__
    to help port over existing code.
 
 
