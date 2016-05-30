@@ -297,7 +297,8 @@ class MWSConnection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['mws']
 
-    def _post_request(self, request, params, parser, body='', headers=None):
+    def _post_request(self, request, params, parser, body='', headers=None,
+                      raw_response=False):
         """Make a POST request, optionally with a content body,
            and return the response, optionally as raw text.
         """
@@ -310,15 +311,18 @@ class MWSConnection(AWSQueryConnection):
             response = self._mexe(request, override_num_retries=None)
         except BotoServerError as bs:
             raise self._response_error_factory(bs.status, bs.reason, bs.body)
+        if response.status != 200:
+            body = response.read()
+            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s' % body)
+            raise self._response_error_factory(response.status,
+                                               response.reason, body)
+        if raw_response:
+            return response
         body = response.read()
         boto.log.debug(body)
         if not body:
             boto.log.error('Null body %s' % body)
-            raise self._response_error_factory(response.status,
-                                               response.reason, body)
-        if response.status != 200:
-            boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
             raise self._response_error_factory(response.status,
                                                response.reason, body)
         digest = response.getheader('Content-MD5')
@@ -497,10 +501,11 @@ class MWSConnection(AWSQueryConnection):
 
     @requires(['ReportId'])
     @api_action('Reports', 15, 60)
-    def get_report(self, request, response, **kw):
+    def get_report(self, request, response, raw_response=False, **kw):
         """Returns the contents of a report.
         """
-        return self._post_request(request, kw, response)
+        return self._post_request(request, kw, response,
+                                  raw_response=raw_response)
 
     @requires(['ReportType', 'Schedule'])
     @api_action('Reports', 10, 45)
