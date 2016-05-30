@@ -20,9 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-from boto.mws.connection import MWSConnection, api_call_map, destructure_object
-from boto.mws.response import (ResponseElement, GetFeedSubmissionListResult,
-                               ResponseFactory)
+from boto.compat import six
+from boto.mws.connection import (MWSConnection, api_call_map, content_md5,
+                                 destructure_object)
+from boto.mws.response import ResponseElement, GetFeedSubmissionListResult
 from boto.exception import BotoServerError
 
 from tests.compat import unittest
@@ -70,6 +71,9 @@ doc/2009-01-01/">
   </Error>
   <RequestId>string</RequestId>
 </ErrorResponse>"""
+
+    def test_content_md5(self):
+        self.assertEqual(content_md5(six.b('aaa')), 'R7zlx09Yn0hn29V+nKn4CA==')
 
     def test_destructure_object(self):
         # Test that parsing of user input to Amazon input works.
