@@ -233,7 +233,7 @@ class Bucket(object):
     def list(self, prefix='', delimiter='', marker='', headers=None,
              encoding_type=None):
         """
-        List key objects within a bucket.  This returns an instance of an
+        List key objects within a bucket.  This returns an instance of a
         BucketListResultSet that automatically handles all of the result
         paging, etc. from S3.  You just need to keep iterating until
         there are no more results.
@@ -285,7 +285,7 @@ class Bucket(object):
                       version_id_marker='', headers=None, encoding_type=None):
         """
         List version objects within a bucket.  This returns an
-        instance of an VersionedBucketListResultSet that automatically
+        instance of a VersionedBucketListResultSet that automatically
         handles all of the result paging, etc. from S3.  You just need
         to keep iterating until there are no more results.  Called
         with no arguments, this will return an iterator object across
@@ -334,7 +334,7 @@ class Bucket(object):
                                headers=None, encoding_type=None):
         """
         List multipart upload objects within a bucket.  This returns an
-        instance of an MultiPartUploadListResultSet that automatically
+        instance of a MultiPartUploadListResultSet that automatically
         handles all of the result paging, etc. from S3.  You just need
         to keep iterating until there are no more results.
 
