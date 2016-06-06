@@ -771,8 +771,8 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         # Add signature to params now that we have it
         req.params['X-Amz-Signature'] = signature
 
-        return 'https://%s%s?%s' % (req.host, req.path,
-                                    urllib.parse.urlencode(req.params))
+        return '%s://%s%s?%s' % (req.protocol, req.host, req.path,
+                                 urllib.parse.urlencode(req.params))
 
 
 class STSAnonHandler(AuthHandler):
