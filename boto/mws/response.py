@@ -342,6 +342,26 @@ class ListInboundShipmentItemsResult(ResponseElement):
     ItemData = MemberList()
 
 
+class PutTransportContentResult(ResponseElement):
+    TransportResult = Element()
+
+
+class EstimateTransportRequestResult(ResponseElement):
+    TransportResult = Element()
+
+
+class ConfirmTransportRequestResult(ResponseElement):
+    TransportResult = Element()
+
+
+class GetPackageLabelsResult(ResponseElement):
+    TransportDocument = Element()
+
+
+class VoidTransportRequestResult(ResponseElement):
+    TransportResult = Element()
+
+
 class ListInventorySupplyResult(ResponseElement):
     InventorySupplyList = MemberList(
         EarliestAvailability=Element(),
@@ -415,21 +435,57 @@ class ComplexDimensions(ResponseElement):
 
     def __repr__(self):
         values = [getattr(self, key, None) for key in self._dimensions]
-        values = filter(None, values)
-        return 'x'.join(map('{0.Value:0.2f}{0[Units]}'.format, values))
+        values = [x for x in values if x is not None]
+        return 'x'.join(map('{0.Value:0.2f}'.format, values))
 
     @strip_namespace
     def startElement(self, name, attrs, connection):
-        if name not in self._dimensions:
+        if name not in self._dimensions and name != 'Unit':
             message = 'Unrecognized tag {0} in ComplexDimensions'.format(name)
             raise AssertionError(message)
-        setattr(self, name, Dimension(attrs.copy()))
+        if name == 'Unit':
+            return super(ComplexDimensions, self).startElement(name, attrs, connection)
+        else:
+            setattr(self, name, Dimension(attrs.copy()))
 
     @strip_namespace
     def endElement(self, name, value, connection):
         if name in self._dimensions:
             value = Decimal(value or '0')
-        ResponseElement.endElement(self, name, value, connection)
+        super(ComplexDimensions, self).endElement(name, value, connection)
+
+
+class PartneredEstimate(ResponseElement):
+    Amount = Element(ComplexAmount)
+
+
+class GetTransportContentResult(ResponseElement):
+    TransportContent = Element(
+        TransportHeader=Element(),
+        TransportDetails=Element(
+            PartneredSmallParcelData=Element(
+                PackageList=MemberList(
+                    Dimensions=Element(ComplexDimensions),
+                    Weight=Element(ComplexWeight),
+                ),
+                PartneredEstimate=Element(PartneredEstimate),
+            ),
+            NonPartneredSmallParcelData=Element(PackageList=ElementList()),
+            PartneredLtlData=Element(
+                Contact=Element(),
+                PalletList=MemberList(
+                    Dimensions=Element(ComplexDimensions),
+                    Weight=Element(ComplexWeight),
+                ),
+                TotalWeight=Element(ComplexWeight),
+                SellerDeclaredValue=Element(ComplexAmount),
+                AmazonCalculatedValue=Element(ComplexAmount),
+                PartneredEstimate=Element(PartneredEstimate),
+            ),
+            NonPartneredLtlData=Element(),
+        ),
+        TransportResult=Element(),
+    )
 
 
 class FulfillmentPreviewItem(ResponseElement):
