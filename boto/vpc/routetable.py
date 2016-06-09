@@ -70,6 +70,7 @@ class Route(object):
         self.interface_id = None
         self.vpc_peering_connection_id = None
         self.state = None
+        self.origin = None
 
     def __repr__(self):
         return 'Route:%s' % self.destination_cidr_block
@@ -90,6 +91,8 @@ class Route(object):
             self.vpc_peering_connection_id = value
         elif name == 'state':
             self.state = value
+        elif name == 'origin':
+            self.origin = value
 
 class RouteAssociation(object):
     def __init__(self, connection=None):

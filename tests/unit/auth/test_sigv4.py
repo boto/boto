@@ -342,13 +342,13 @@ class TestS3HmacAuthV4Handler(unittest.TestCase):
     def test_canonical_uri(self):
         request = HTTPRequest(
             'GET', 'https', 's3-us-west-2.amazonaws.com', 443,
-            'x/./././x .html', None, {},
+            'x/./././~x .html', None, {},
             {}, ''
         )
         canonical_uri = self.auth.canonical_uri(request)
         # S3 doesn't canonicalize the way other SigV4 services do.
         # This just urlencoded, no normalization of the path.
-        self.assertEqual(canonical_uri, 'x/./././x%20.html')
+        self.assertEqual(canonical_uri, 'x/./././~x%20.html')
 
     def test_determine_service_name(self):
         # What we wish we got.
@@ -447,6 +447,27 @@ class TestS3HmacAuthV4Handler(unittest.TestCase):
             'delete': ''
         })
 
+    def test_unicode_query_string(self):
+        request = HTTPRequest(
+            method='HEAD',
+            protocol='https',
+            host='awesome-bucket.s3-us-west-2.amazonaws.com',
+            port=443,
+            path=u'/?max-keys=1&prefix=El%20Ni%C3%B1o',
+            auth_path=u'/awesome-bucket/?max-keys=1&prefix=El%20Ni%C3%B1o',
+            params={},
+            headers={},
+            body=''
+        )
+
+        mod_req = self.auth.mangle_path_and_params(request)
+        self.assertEqual(mod_req.path, u'/?max-keys=1&prefix=El%20Ni%C3%B1o')
+        self.assertEqual(mod_req.auth_path, u'/awesome-bucket/')
+        self.assertEqual(mod_req.params, {
+            u'max-keys': u'1',
+            u'prefix': u'El Ni\xf1o',
+        })
+
     def test_canonical_request(self):
         expected = """GET
 /
@@ -530,11 +551,23 @@ class TestS3SigV4OptIn(MockServiceWithConfigTestCase):
         self.assertEqual(fake._required_auth_capability(), ['nope'])
 
     def test_sigv4_non_optional(self):
-        # Requires SigV4.
-        for region in ['.cn-north', '.eu-central', '-eu-central']:
+        region_groups = ['.cn-north', '.eu-central', '-eu-central']
+        specific_regions = ['.ap-northeast-2', '-ap-northeast-2']
+
+        # Create a connection for a sample region in each of these groups
+        # and ensure sigv4 is used.
+        for region in region_groups:
             fake = FakeS3Connection(host='s3' + region + '-1.amazonaws.com')
             self.assertEqual(
                 fake._required_auth_capability(), ['hmac-v4-s3'])
+
+        # Create a connection from the specific regions and make sure
+        # that these use sigv4.
+        for region in specific_regions:
+            fake = FakeS3Connection(host='s3' + region + '.amazonaws.com')
+            self.assertEqual(
+                fake._required_auth_capability(), ['hmac-v4-s3'])
+
 
     def test_sigv4_opt_in_config(self):
         # Opt-in via the config.

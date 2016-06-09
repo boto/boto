@@ -26,7 +26,7 @@ import warnings
 
 import boto
 
-from boto.compat import expanduser, ConfigParser, StringIO
+from boto.compat import expanduser, ConfigParser, NoOptionError, NoSectionError, StringIO
 
 
 # By default we use two locations for the boto configurations,
@@ -42,20 +42,18 @@ if 'BOTO_CONFIG' in os.environ:
     BotoConfigLocations = [expanduser(os.environ['BOTO_CONFIG'])]
 
 # If there's a BOTO_PATH variable set, we use anything there
-# as the current configuration locations, split with colons
+# as the current configuration locations, split with os.pathsep.
 elif 'BOTO_PATH' in os.environ:
     BotoConfigLocations = []
-    for path in os.environ['BOTO_PATH'].split(":"):
+    for path in os.environ['BOTO_PATH'].split(os.pathsep):
         BotoConfigLocations.append(expanduser(path))
 
 
-class Config(ConfigParser):
+class Config(object):
 
     def __init__(self, path=None, fp=None, do_load=True):
-        # We don't use ``super`` here, because ``ConfigParser`` still uses
-        # old-style classes.
-        ConfigParser.__init__(self, {'working_dir': '/mnt/pyami',
-                                         'debug': '0'})
+        self._parser = ConfigParser({'working_dir': '/mnt/pyami',
+                                     'debug': '0'})
         if do_load:
             if path:
                 self.load_from_path(path)
@@ -69,6 +67,21 @@ class Config(ConfigParser):
                     self.load_credential_file(full_path)
                 except IOError:
                     warnings.warn('Unable to load AWS_CREDENTIAL_FILE (%s)' % full_path)
+
+    def __setstate__(self, state):
+        # There's test that verify that (transitively) a Config
+        # object can be pickled.  Now that we're storing a _parser
+        # attribute and relying on __getattr__ to proxy requests,
+        # we need to implement setstate to ensure we don't get
+        # into recursive loops when looking up _parser when
+        # this object is unpickled.
+        self._parser = state['_parser']
+
+    def __getattr__(self, name):
+        return getattr(self._parser, name)
+
+    def has_option(self, *args, **kwargs):
+        return self._parser.has_option(*args, **kwargs)
 
     def load_credential_file(self, path):
         """Load a credential file as is setup like the Java utilities"""
@@ -116,21 +129,21 @@ class Config(ConfigParser):
     def get_instance(self, name, default=None):
         try:
             val = self.get('Instance', name)
-        except:
+        except (NoOptionError, NoSectionError):
             val = default
         return val
 
     def get_user(self, name, default=None):
         try:
             val = self.get('User', name)
-        except:
+        except (NoOptionError, NoSectionError):
             val = default
         return val
 
     def getint_user(self, name, default=0):
         try:
             val = self.getint('User', name)
-        except:
+        except (NoOptionError, NoSectionError):
             val = default
         return val
 
@@ -139,24 +152,21 @@ class Config(ConfigParser):
 
     def get(self, section, name, default=None):
         try:
-            val = ConfigParser.get(self, section, name)
-        except:
-            val = default
-        return val
+            return self._parser.get(section, name)
+        except (NoOptionError, NoSectionError):
+            return default
 
     def getint(self, section, name, default=0):
         try:
-            val = ConfigParser.getint(self, section, name)
-        except:
-            val = int(default)
-        return val
+            return self._parser.getint(section, name)
+        except (NoOptionError, NoSectionError):
+            return int(default)
 
     def getfloat(self, section, name, default=0.0):
         try:
-            val = ConfigParser.getfloat(self, section, name)
-        except:
-            val = float(default)
-        return val
+            return self._parser.getfloat(section, name)
+        except (NoOptionError, NoSectionError):
+            return float(default)
 
     def getbool(self, section, name, default=False):
         if self.has_option(section, name):

@@ -18,7 +18,7 @@ There are two ways to do this in boto.  The first is:
 
 At this point the variable conn will point to an S3Connection object.  In
 this example, the AWS access key and AWS secret key are passed in to the
-method explicitely.  Alternatively, you can set the environment variables:
+method explicitly.  Alternatively, you can set the environment variables:
 
 * `AWS_ACCESS_KEY_ID` - Your AWS Access Key ID
 * `AWS_SECRET_ACCESS_KEY` - Your AWS Secret Access Key
@@ -81,6 +81,7 @@ boto.s3.connection module, like this::
     APSoutheast2
     DEFAULT
     EU
+    EUCentral1
     SAEast
     USWest
     USWest2
@@ -96,7 +97,7 @@ bucket in that location.  For example::
 will create the bucket in the EU region (assuming the name is available).
 
 Storing Data
-----------------
+------------
 
 Once you have a bucket, presumably you will want to store some data
 in it.  S3 doesn't care what kind of information you store in your objects
@@ -190,12 +191,12 @@ to be taken. The example below makes use of the FileChunkIO module, so
 
     # Use a chunk size of 50 MiB (feel free to change this)
     >>> chunk_size = 52428800
-    >>> chunk_count = int(math.ceil(source_size / chunk_size))
+    >>> chunk_count = int(math.ceil(source_size / float(chunk_size)))
 
     # Send the file parts, using FileChunkIO to create a file-like object
     # that points to a certain byte range within the original file. We
     # set bytes to never exceed the original file size.
-    >>> for i in range(chunk_count + 1):
+    >>> for i in range(chunk_count):
     >>>     offset = chunk_size * i
     >>>     bytes = min(chunk_size, source_size - offset)
     >>>     with FileChunkIO(source_path, 'r', offset=offset,
@@ -441,33 +442,38 @@ And, finally, to delete all CORS configurations from a bucket::
 
     >>> bucket.delete_cors()
 
-Transitioning Objects to Glacier
+Transitioning Objects
 --------------------------------
 
-You can configure objects in S3 to transition to Glacier after a period of
-time.  This is done using lifecycle policies.  A lifecycle policy can also
-specify that an object should be deleted after a period of time.  Lifecycle
-configurations are assigned to buckets and require these parameters:
+S3 buckets support transitioning objects to various storage classes. This is
+done using lifecycle policies. You can currently transitions objects to 
+Infrequent Access, Glacier, or just plain Expire. All of these options are 
+capable of being applied after a number of days or after a given date.
+Lifecycle configurations are assigned to buckets and require these parameters:
 
-* The object prefix that identifies the objects you are targeting.
+* The object prefix that identifies the objects you are targeting. (or none)
 * The action you want S3 to perform on the identified objects.
-* The date (or time period) when you want S3 to perform these actions.
+* The date or number of days when you want S3 to perform these actions.
 
-For example, given a bucket ``s3-glacier-boto-demo``, we can first retrieve the
+For example, given a bucket ``s3-lifecycle-boto-demo``, we can first retrieve the
 bucket::
 
     >>> import boto
     >>> c = boto.connect_s3()
-    >>> bucket = c.get_bucket('s3-glacier-boto-demo')
+    >>> bucket = c.get_bucket('s3-lifecycle-boto-demo')
 
 Then we can create a lifecycle object.  In our example, we want all objects
-under ``logs/*`` to transition to Glacier 30 days after the object is created.
+under ``logs/*`` to transition to Standard IA 30 days after the object is created,
+glacier 90 days after creation, and be deleted 120 days after creation.
 
 ::
 
-    >>> from boto.s3.lifecycle import Lifecycle, Transition, Rule
-    >>> to_glacier = Transition(days=30, storage_class='GLACIER')
-    >>> rule = Rule('ruleid', 'logs/', 'Enabled', transition=to_glacier)
+    >>> from boto.s3.lifecycle import Lifecycle, Transitions, Rule
+    >>> transitions = Transitions()
+    >>> transitions.add_transition(days=30, storage_class='STANDARD_IA')
+    >>> transitions.add_transition(days=90, storage_class='GLACIER')
+    >>> expiration = Expiration(days=120)
+    >>> rule = Rule(id='ruleid', prefix='logs/', status='Enabled', expiration=expiration, transition=transitions)
     >>> lifecycle = Lifecycle()
     >>> lifecycle.append(rule)
 
@@ -484,19 +490,27 @@ You can also retrieve the current lifecycle policy for the bucket::
 
     >>> current = bucket.get_lifecycle_config()
     >>> print current[0].transition
-    <Transition: in: 30 days, GLACIER>
+    >>> print current[0].expiration
+    [<Transition: in: 90 days, GLACIER>, <Transition: in: 30 days, STANDARD_IA>]
+    <Expiration: in: 120 days>
 
-When an object transitions to Glacier, the storage class will be
+Note: We have deprecated directly accessing transition properties from the lifecycle
+object. You must index into the transition array first.
+
+When an object transitions, the storage class will be
 updated.  This can be seen when you **list** the objects in a bucket::
 
     >>> for key in bucket.list():
     ...   print key, key.storage_class
     ...
-    <Key: s3-glacier-boto-demo,logs/testlog1.log> GLACIER
+    <Key: s3-lifecycle-boto-demo,logs/testlog1.log> STANDARD_IA
+    <Key: s3-lifecycle-boto-demo,logs/testlog2.log> GLACIER
 
 You can also use the prefix argument to the ``bucket.list`` method::
 
     >>> print list(b.list(prefix='logs/testlog1.log'))[0].storage_class
+    >>> print list(b.list(prefix='logs/testlog2.log'))[0].storage_class
+    u'STANDARD_IA'
     u'GLACIER'
 
 

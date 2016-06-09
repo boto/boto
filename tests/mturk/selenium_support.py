@@ -17,7 +17,7 @@ def has_selenium():
 		# a little trick to see if the server is responding
 		try:
 			sel.do_command('shutdown', '')
-		except Exception, e:
+		except Exception as e:
 			if not 'Server Exception' in str(e):
 				raise
 		result = True

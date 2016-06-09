@@ -102,7 +102,7 @@ class ResumableDownloadTests(GSTestCase):
                 dst_fp, cb=harness.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             # We'll get a ResumableDownloadException at this point because
             # of CallbackTestHarness (above). Check that the tracker file was
             # created correctly.
@@ -164,7 +164,7 @@ class ResumableDownloadTests(GSTestCase):
                 dst_fp, cb=harness.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected OSError')
-        except OSError, e:
+        except OSError as e:
             # Ensure the error was re-raised.
             self.assertEqual(e.errno, 13)
 
@@ -228,7 +228,7 @@ class ResumableDownloadTests(GSTestCase):
                 dst_fp, cb=harness.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected ResumableDownloadException')
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             self.assertEqual(e.disposition,
                              ResumableTransferDisposition.ABORT_CUR_PROCESS)
             # Ensure a tracker file survived.
@@ -345,7 +345,7 @@ class ResumableDownloadTests(GSTestCase):
             os.chmod(tmp_dir, 0)
             res_download_handler = ResumableDownloadHandler(
                 tracker_file_name=tracker_file_name)
-        except ResumableDownloadException, e:
+        except ResumableDownloadException as e:
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(
                 e.message.find('Couldn\'t write URI tracker file'), -1)

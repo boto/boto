@@ -17,7 +17,7 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
@@ -45,6 +45,7 @@ class S3MultiDeleteTest(unittest.TestCase):
     def tearDown(self):
         for key in self.bucket:
             key.delete()
+        self.bucket.delete_keys(self.bucket.list_versions())
         self.bucket.delete()
 
     def test_delete_nothing(self):
@@ -130,13 +131,11 @@ class S3MultiDeleteTest(unittest.TestCase):
         # Adding 1000 objects is painful otherwise...
         key_names = ['key-%03d' % i for i in range(0, 1000)]
         result = self.bucket.delete_keys(key_names)
-        self.assertEqual(len(result.deleted), 1000)
-        self.assertEqual(len(result.errors), 0)
+        self.assertEqual(len(result.deleted) + len(result.errors), 1000)
 
         # delete them again to create 1000 more delete markers
         result = self.bucket.delete_keys(key_names)
-        self.assertEqual(len(result.deleted), 1000)
-        self.assertEqual(len(result.errors), 0)
+        self.assertEqual(len(result.deleted) + len(result.errors), 1000)
 
         # Sometimes takes AWS sometime to settle
         time.sleep(10)
@@ -144,12 +143,11 @@ class S3MultiDeleteTest(unittest.TestCase):
         # delete all versions to delete 2000 objects.
         # this tests the 1000 limit.
         result = self.bucket.delete_keys(self.bucket.list_versions())
-        self.assertEqual(len(result.deleted), 2000)
-        self.assertEqual(len(result.errors), 0)
+        self.assertEqual(len(result.deleted) + len(result.errors), 2000)
 
     def test_1(self):
         nkeys = 100
-        
+
         # create a bunch of keynames
         key_names = ['key-%03d' % i for i in range(0, nkeys)]
 
@@ -170,9 +168,9 @@ class S3MultiDeleteTest(unittest.TestCase):
 
         self.assertEqual(len(result.deleted), nkeys)
         self.assertEqual(len(result.errors), 0)
-        
+
         time.sleep(5)
-        
+
         # now count keys in bucket
         n = 0
         for key in self.bucket:

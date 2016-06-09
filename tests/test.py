@@ -28,51 +28,7 @@ import sys
 from nose.core import run
 
 
-# This is a whitelist of unit tests that support Python 3.
-# When porting a new module to Python 3, please update this
-# list so that its tests will run by default. See the
-# `default` target below for more information.
-# We use this instead of test attributes/tags because in
-# order to filter on tags nose must load each test - many
-# will fail to import with Python 3.
-PY3_WHITELIST = (
-    'tests/unit/auth',
-    'tests/unit/beanstalk',
-    'tests/unit/cloudformation',
-    'tests/unit/cloudfront',
-    'tests/unit/cloudsearch',
-    'tests/unit/cloudsearch2',
-    'tests/unit/cloudtrail',
-    'tests/unit/directconnect',
-    'tests/unit/dynamodb',
-    'tests/unit/dynamodb2',
-    'tests/unit/ecs',
-    'tests/unit/elasticache',
-    'tests/unit/emr',
-    'tests/unit/glacier',
-    'tests/unit/iam',
-    'tests/unit/ec2',
-    'tests/unit/logs',
-    'tests/unit/manage',
-    'tests/unit/mws',
-    'tests/unit/provider',
-    'tests/unit/rds2',
-    'tests/unit/route53',
-    'tests/unit/s3',
-    'tests/unit/sns',
-    'tests/unit/ses',
-    'tests/unit/sqs',
-    'tests/unit/sts',
-    'tests/unit/swf',
-    'tests/unit/utils',
-    'tests/unit/vpc',
-    'tests/unit/test_connection.py',
-    'tests/unit/test_exception.py',
-    'tests/unit/test_regioninfo.py',
-)
-
-
-def main(whitelist=[]):
+def main():
     description = ("Runs boto unit and/or integration tests. "
                    "Arguments will be passed on to nosetests. "
                    "See nosetests --help for more information.")
@@ -98,11 +54,7 @@ def main(whitelist=[]):
 
         for i, arg in enumerate(remaining_args):
             if arg == 'default':
-                if sys.version_info[0] == 3:
-                    del remaining_args[i]
-                    remaining_args += PY3_WHITELIST
-                else:
-                    remaining_args[i] = 'tests/unit'
+                remaining_args[i] = 'tests/unit'
 
     all_args = [__file__] + attribute_args + remaining_args
     print("nose command:", ' '.join(all_args))

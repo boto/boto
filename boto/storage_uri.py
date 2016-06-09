@@ -432,7 +432,10 @@ class BucketStorageUri(StorageUri):
         """sets or updates a bucket's CORS XML"""
         self._check_bucket_uri('set_cors ')
         bucket = self.get_bucket(validate, headers)
-        bucket.set_cors(cors.to_xml(), headers)
+        if self.scheme == 's3':
+          bucket.set_cors(cors, headers)
+        else:
+          bucket.set_cors(cors.to_xml(), headers)
 
     def get_location(self, validate=False, headers=None):
         self._check_bucket_uri('get_location')

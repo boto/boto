@@ -134,7 +134,9 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
         api_response = self.service_connection.update_stack(
             'stack_name', template_url='http://url',
             template_body=SAMPLE_TEMPLATE,
-            parameters=[('KeyName', 'myKeyName')],
+            parameters=[('KeyName', 'myKeyName'), ('KeyName2', "", True),
+                        ('KeyName3', "", False), ('KeyName4', None, True),
+                        ('KeyName5', "Ignore Me", True)],
             tags={'TagKey': 'TagValue'},
             notification_arns=['arn:notify1', 'arn:notify2'],
             disable_rollback=True,
@@ -149,6 +151,14 @@ class TestCloudFormationUpdateStack(CloudFormationConnectionBase):
             'NotificationARNs.member.2': 'arn:notify2',
             'Parameters.member.1.ParameterKey': 'KeyName',
             'Parameters.member.1.ParameterValue': 'myKeyName',
+            'Parameters.member.2.ParameterKey': 'KeyName2',
+            'Parameters.member.2.UsePreviousValue': 'true',
+            'Parameters.member.3.ParameterKey': 'KeyName3',
+            'Parameters.member.3.ParameterValue': '',
+            'Parameters.member.4.UsePreviousValue': 'true',
+            'Parameters.member.4.ParameterKey': 'KeyName4',
+            'Parameters.member.5.UsePreviousValue': 'true',
+            'Parameters.member.5.ParameterKey': 'KeyName5',
             'Tags.member.1.Key': 'TagKey',
             'Tags.member.1.Value': 'TagValue',
             'StackName': 'stack_name',
@@ -381,8 +391,8 @@ class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
                 <member>
                   <StackId>arn:aws:cfn:us-east-1:1:stack</StackId>
                   <StackStatus>CREATE_COMPLETE</StackStatus>
+                  <StackStatusReason>REASON</StackStatusReason>
                   <StackName>MyStack</StackName>
-                  <StackStatusReason/>
                   <Description>My Description</Description>
                   <CreationTime>2012-05-16T22:55:31Z</CreationTime>
                   <Capabilities>
@@ -434,7 +444,8 @@ class TestCloudFormationDescribeStacks(CloudFormationConnectionBase):
         self.assertEqual(stack.stack_id, 'arn:aws:cfn:us-east-1:1:stack')
         self.assertEqual(stack.stack_status, 'CREATE_COMPLETE')
         self.assertEqual(stack.stack_name, 'MyStack')
-        self.assertEqual(stack.stack_name_reason, None)
+        self.assertEqual(stack.stack_name_reason, 'REASON')
+        self.assertEqual(stack.stack_status_reason, 'REASON')
         self.assertEqual(stack.timeout_in_minutes, None)
 
         self.assertEqual(len(stack.outputs), 1)

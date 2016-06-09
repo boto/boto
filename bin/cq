@@ -65,7 +65,7 @@ def main():
     if queue_name:
         try:
             rs = [c.create_queue(queue_name)]
-        except SQSError, e:
+        except SQSError as e:
             print 'An Error Occurred:'
             print '%s: %s' % (e.status, e.reason)
             print e.body
@@ -73,7 +73,7 @@ def main():
     else:
         try:
             rs = c.get_all_queues()
-        except SQSError, e:
+        except SQSError as e:
             print 'An Error Occurred:'
             print '%s: %s' % (e.status, e.reason)
             print e.body

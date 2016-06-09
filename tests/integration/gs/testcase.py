@@ -55,11 +55,19 @@ class GSTestCase(unittest.TestCase):
 
         while(len(self._buckets)):
             b = self._buckets[-1]
-            bucket = self._conn.get_bucket(b)
-            while len(list(bucket.list_versions())) > 0:
-                for k in bucket.list_versions():
-                    bucket.delete_key(k.name, generation=k.generation)
-            bucket.delete()
+            try:
+                bucket = self._conn.get_bucket(b)
+                while len(list(bucket.list_versions())) > 0:
+                    for k in bucket.list_versions():
+                        try:
+                            bucket.delete_key(k.name, generation=k.generation)
+                        except GSResponseError as e:
+                            if e.status != 404:
+                                raise
+                bucket.delete()
+            except GSResponseError as e:
+                if e.status != 404:
+                    raise
             self._buckets.pop()
 
     def _GetConnection(self):

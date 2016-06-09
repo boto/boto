@@ -660,9 +660,10 @@ class Layer1(AWSAuthConnection):
 
     def deprecate_activity_type(self, domain, activity_name, activity_version):
         """
-        Returns information about the specified activity type. This
-        includes configuration settings provided at registration time
-        as well as other general information about the type.
+        Deprecates the specified activity type. After an activity 
+        type has been deprecated, you cannot create new tasks of 
+        that activity type. Tasks of this type that were scheduled 
+        before the type was deprecated will continue to run.
 
         :type domain: string
         :param domain: The name of the domain in which the activity

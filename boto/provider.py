@@ -34,6 +34,7 @@ import boto
 from boto import config
 from boto.compat import expanduser
 from boto.pyami.config import Config
+from boto.exception import InvalidInstanceMetadataError
 from boto.gs.acl import ACL
 from boto.gs.acl import CannedACLStrings as CannedGSACLStrings
 from boto.s3.acl import CannedACLStrings as CannedS3ACLStrings
@@ -390,16 +391,47 @@ class Provider(object):
             timeout=timeout, num_retries=attempts,
             data='meta-data/iam/security-credentials/')
         if metadata:
+            creds = self._get_credentials_from_metadata(metadata)
+            self._access_key = creds[0]
+            self._secret_key = creds[1]
+            self._security_token = creds[2]
+            expires_at = creds[3]
             # I'm assuming there's only one role on the instance profile.
-            security = list(metadata.values())[0]
-            self._access_key = security['AccessKeyId']
-            self._secret_key = self._convert_key_to_str(security['SecretAccessKey'])
-            self._security_token = security['Token']
-            expires_at = security['Expiration']
             self._credential_expiry_time = datetime.strptime(
                 expires_at, "%Y-%m-%dT%H:%M:%SZ")
             boto.log.debug("Retrieved credentials will expire in %s at: %s",
-                           self._credential_expiry_time - datetime.now(), expires_at)
+                           self._credential_expiry_time - datetime.now(),
+                           expires_at)
+
+    def _get_credentials_from_metadata(self, metadata):
+        # Given metadata, return a tuple of (access, secret, token, expiration)
+        # On errors, an InvalidInstanceMetadataError will be raised.
+        # The "metadata" is a lazy loaded dictionary means that it's possible
+        # to still encounter errors as we traverse through the metadata dict.
+        # We try to be careful and raise helpful error messages when this
+        # happens.
+        creds = list(metadata.values())[0]
+        if not isinstance(creds, dict):
+            # We want to special case a specific error condition which is
+            # where get_instance_metadata() returns an empty string on
+            # error conditions.
+            if creds == '':
+                msg = 'an empty string'
+            else:
+                msg = 'type: %s' % creds
+            raise InvalidInstanceMetadataError("Expected a dict type of "
+                                               "credentials instead received "
+                                               "%s" % (msg))
+        try:
+            access_key = creds['AccessKeyId']
+            secret_key = self._convert_key_to_str(creds['SecretAccessKey'])
+            security_token = creds['Token']
+            expires_at = creds['Expiration']
+        except KeyError as e:
+            raise InvalidInstanceMetadataError(
+                "Credentials from instance metadata missing "
+                "required key: %s" % e)
+        return access_key, secret_key, security_token, expires_at
 
     def _convert_key_to_str(self, key):
         if isinstance(key, six.text_type):

@@ -4,6 +4,15 @@
 boto: A Python interface to Amazon Web Services
 ===============================================
 
+.. note::
+
+  `Boto3 <https://github.com/boto/boto3>`__, the next version of Boto, is now
+  stable and recommended for general use.  It can be used side-by-side with
+  Boto in the same project, so it is easy to start using Boto3 in your existing
+  projects as well as new projects. Going forward, API updates and all new
+  feature work will be focused on Boto3.
+
+
 An integrated interface to current and future infrastructural services
 offered by `Amazon Web Services`_.
 
@@ -82,6 +91,7 @@ Currently Supported Services
   * :doc:`Simple Email Service (SES) <ses_tut>` -- (:doc:`API Reference <ref/ses>`) (Python 3)
   * Amazon Cognito Identity -- (:doc:`API Reference <ref/cognito-identity>`) (Python 3)
   * Amazon Cognito Sync -- (:doc:`API Reference <ref/cognito-sync>`) (Python 3)
+  * Amazon Machine Learning -- (:doc:`API Reference <ref/machinelearning>`) (Python 3)
 
 * **Monitoring**
 
@@ -142,6 +152,10 @@ Release Notes
 .. toctree::
    :titlesonly:
 
+   releasenotes/v2.40.0
+   releasenotes/v2.39.0
+   releasenotes/v2.38.0
+   releasenotes/v2.37.0
    releasenotes/v2.36.0
    releasenotes/v2.35.2
    releasenotes/v2.35.1

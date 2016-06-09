@@ -27,6 +27,7 @@ Some unit tests for S3 Key
 
 from tests.unit import unittest
 import time
+import random
 
 import boto.s3
 from boto.compat import six, StringIO, urllib
@@ -40,7 +41,9 @@ class S3KeyTest(unittest.TestCase):
 
     def setUp(self):
         self.conn = S3Connection()
-        self.bucket_name = 'keytest-%d' % int(time.time())
+        random.seed()
+        self.bucket_name = 'keytest-%d-%d' % (
+            time.time(), random.randint(1, 99999999))
         self.bucket = self.conn.create_bucket(self.bucket_name)
 
     def tearDown(self):
@@ -488,6 +491,19 @@ class S3KeySigV4Test(unittest.TestCase):
         self.assertEqual(from_s3_key.get_contents_as_string().decode('utf-8'),
                          body)
 
+    def test_head_put_get_with_non_ascii_key(self):
+        k = Key(self.bucket)
+        k.key = u'''pt-Olá_ch-你好_ko-안녕_ru-Здравствуйте%20,.<>~`!@#$%^&()_-+='"'''
+        body = 'This is a test of S3'
+
+        k.set_contents_from_string(body)
+        from_s3_key = self.bucket.get_key(k.key, validate=True)
+        self.assertEqual(from_s3_key.get_contents_as_string().decode('utf-8'),
+                         body)
+
+        keys = self.bucket.get_all_keys(prefix=k.key, max_keys=1)
+        self.assertEqual(1, len(keys))
+
 
 class S3KeyVersionCopyTest(unittest.TestCase):
     def setUp(self):
@@ -495,15 +511,15 @@ class S3KeyVersionCopyTest(unittest.TestCase):
         self.bucket_name = 'boto-key-version-copy-%d' % int(time.time())
         self.bucket = self.conn.create_bucket(self.bucket_name)
         self.bucket.configure_versioning(True)
-        
+
     def tearDown(self):
         for key in self.bucket.list_versions():
             key.delete()
         self.bucket.delete()
-        
+
     def test_key_overwrite_and_copy(self):
-        first_content = "abcdefghijklm"
-        second_content = "nopqrstuvwxyz"
+        first_content = b"abcdefghijklm"
+        second_content = b"nopqrstuvwxyz"
         k = Key(self.bucket, 'testkey')
         k.set_contents_from_string(first_content)
         # Wait for S3's eventual consistency (may not be necessary)

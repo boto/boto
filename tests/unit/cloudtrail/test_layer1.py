@@ -25,7 +25,7 @@ class TestDescribeTrails(AWSMockServiceTestCase):
     def test_describe(self):
         self.set_http_response(status_code=200)
         api_response = self.service_connection.describe_trails()
-        
+
         self.assertEqual(1, len(api_response['trailList']))
         self.assertEqual('test', api_response['trailList'][0]['Name'])
 
@@ -38,7 +38,7 @@ class TestDescribeTrails(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
         api_response = self.service_connection.describe_trails(
             trail_name_list=['test'])
-        
+
         self.assertEqual(1, len(api_response['trailList']))
         self.assertEqual('test', api_response['trailList'][0]['Name'])
 
@@ -67,13 +67,15 @@ class TestCreateTrail(AWSMockServiceTestCase):
     def test_create(self):
         self.set_http_response(status_code=200)
 
-        trail = {'Name': 'test', 'S3BucketName': 'cloudtrail-1',
-                 'SnsTopicName': 'cloudtrail-1',
-                 'IncludeGlobalServiceEvents': False}
+        api_response = self.service_connection.create_trail(
+            'test', 'cloudtrail-1', sns_topic_name='cloudtrail-1',
+            include_global_service_events=False)
 
-        api_response = self.service_connection.create_trail(trail=trail)
-        
-        self.assertEqual(trail, api_response['trail'])
+        self.assertEqual('test', api_response['trail']['Name'])
+        self.assertEqual('cloudtrail-1', api_response['trail']['S3BucketName'])
+        self.assertEqual('cloudtrail-1', api_response['trail']['SnsTopicName'])
+        self.assertEqual(False,
+                         api_response['trail']['IncludeGlobalServiceEvents'])
 
         target = self.actual_request.headers['X-Amz-Target']
         self.assertTrue('CreateTrail' in target)

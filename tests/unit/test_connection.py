@@ -145,6 +145,24 @@ class TestAWSAuthConnection(unittest.TestCase):
         )
         self.assertEqual(conn.get_proxy_url_with_auth(), 'http://john.doe:p4ssw0rd@127.0.0.1:8180')
 
+    def test_build_base_http_request_noproxy(self):
+        os.environ['no_proxy'] = 'mockservice.cc-zone-1.amazonaws.com'
+
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False,
+            proxy="127.0.0.1",
+            proxy_user="john.doe",
+            proxy_pass="p4ssw0rd",
+            proxy_port="8180"
+        )
+        request = conn.build_base_http_request('GET', '/', None)
+
+        del os.environ['no_proxy']
+        self.assertEqual(request.path, '/')
+
     def test_connection_behind_proxy_without_explicit_port(self):
         os.environ['http_proxy'] = "http://127.0.0.1"
         conn = AWSAuthConnection(
@@ -504,7 +522,7 @@ class TestAWSQueryStatus(TestAWSQueryConnection):
 
 class TestHTTPRequest(unittest.TestCase):
     def test_user_agent_not_url_encoded(self):
-        headers = {'Some-Header': u'should be url encoded',
+        headers = {'Some-Header': u'should be encoded \u2713',
                    'User-Agent': UserAgent}
         request = HTTPRequest('PUT', 'https', 'amazon.com', 443, None,
                               None, {}, headers, 'Body')
@@ -521,7 +539,7 @@ class TestHTTPRequest(unittest.TestCase):
         # Ensure the headers at authorization are as expected i.e.
         # the user agent header was not url encoded but the other header was.
         self.assertEqual(mock_connection.headers_at_auth,
-                         {'Some-Header': 'should%20be%20url%20encoded',
+                         {'Some-Header': 'should be encoded %E2%9C%93',
                           'User-Agent': UserAgent})
 
     def test_content_length_str(self):

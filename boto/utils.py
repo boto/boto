@@ -220,10 +220,10 @@ def retry_url(url, retry_on_404=True, num_retries=10, timeout=None):
             if code == 404 and not retry_on_404:
                 return ''
         except Exception as e:
-            pass
-        boto.log.exception('Caught exception reading instance data')
+            boto.log.exception('Caught exception reading instance data')
         # If not on the last iteration of the loop then sleep.
         if i + 1 != num_retries:
+            boto.log.debug('Sleeping before retrying')
             time.sleep(min(2 ** i,
                            boto.config.get('Boto', 'max_retry_delay', 60)))
     boto.log.error('Unable to read instance data, giving up')
@@ -393,6 +393,8 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254',
         metadata_url = _build_instance_metadata_url(url, version, data)
         return _get_instance_metadata(metadata_url, num_retries=num_retries, timeout=timeout)
     except urllib.error.URLError:
+        boto.log.exception("Exception caught when trying to retrieve "
+                           "instance metadata for: %s", data)
         return None
 
 
@@ -1049,3 +1051,41 @@ class RequestHook(object):
     """
     def handle_request_data(self, request, response, error=False):
         pass
+
+
+def host_is_ipv6(hostname):
+    """
+    Detect (naively) if the hostname is an IPV6 host.
+    Return a boolean.
+    """
+    # empty strings or anything that is not a string is automatically not an
+    # IPV6 address
+    if not hostname or not isinstance(hostname, str):
+        return False
+
+    if hostname.startswith('['):
+        return True
+
+    if len(hostname.split(':')) > 2:
+        return True
+
+    # Anything else that doesn't start with brackets or doesn't have more than
+    # one ':' should not be an IPV6 address. This is very naive but the rest of
+    # the connection chain should error accordingly for typos or ill formed
+    # addresses
+    return False
+
+
+def parse_host(hostname):
+    """
+    Given a hostname that may have a port name, ensure that the port is trimmed
+    returning only the host, including hostnames that are IPV6 and may include
+    brackets.
+    """
+    # ensure that hostname does not have any whitespaces
+    hostname = hostname.strip()
+
+    if host_is_ipv6(hostname):
+        return hostname.split(']:', 1)[0].strip('[]')
+    else:
+        return hostname.split(':', 1)[0]

@@ -368,7 +368,7 @@ class HTTPRequest(object):
             for key in self.headers:
                 val = self.headers[key]
                 if isinstance(val, six.text_type):
-                    safe = '!"#$%&\'()*+,/:;<=>?@[\\]^`{|}~'
+                    safe = '!"#$%&\'()*+,/:;<=>?@[\\]^`{|}~ '
                     self.headers[key] = quote(val.encode('utf-8'), safe)
             setattr(self, '_headers_quoted', True)
 
@@ -726,7 +726,7 @@ class AWSAuthConnection(object):
 
         # Make sure the host is really just the host, not including
         # the port number
-        host = host.split(':', 1)[0]
+        host = boto.utils.parse_host(host)
 
         http_connection_kwargs = self.http_connection_kwargs.copy()
 
@@ -931,7 +931,8 @@ class AWSAuthConnection(object):
                 # not include the port.
                 if 's3' not in self._required_auth_capability():
                     if not getattr(self, 'anon', False):
-                        self.set_host_header(request)
+                        if not request.headers.get('Host'):
+                            self.set_host_header(request)
                 boto.log.debug('Final headers: %s' % request.headers)
                 request.start_time = datetime.now()
                 if callable(sender):
@@ -1047,7 +1048,7 @@ class AWSAuthConnection(object):
         if self.host_header and not boto.utils.find_matching_headers('host', headers):
             headers['host'] = self.host_header
         host = host or self.host
-        if self.use_proxy:
+        if self.use_proxy and not self.skip_proxy(host):
             if not auth_path:
                 auth_path = path
             path = self.prefix_proxy_to_path(path, host)
