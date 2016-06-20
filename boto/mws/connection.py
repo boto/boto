@@ -817,7 +817,7 @@ class MWSConnection(AWSQueryConnection):
 
     @requires(['MarketplaceId', 'SellerSKUList'])
     @structured_lists('SellerSKUList.SellerSKU')
-    @api_action('Products', 20, 5, 'GetLowestOfferListingsForSKU')
+    @api_action('Products', 20, 10, 'GetLowestOfferListingsForSKU')
     def get_lowest_offer_listings_for_sku(self, request, response, **kw):
         """Returns the lowest price offer listings for a specific
            product by item condition and SellerSKUs.
@@ -826,7 +826,7 @@ class MWSConnection(AWSQueryConnection):
 
     @requires(['MarketplaceId', 'ASINList'])
     @structured_lists('ASINList.ASIN')
-    @api_action('Products', 20, 5, 'GetLowestOfferListingsForASIN')
+    @api_action('Products', 20, 10, 'GetLowestOfferListingsForASIN')
     def get_lowest_offer_listings_for_asin(self, request, response, **kw):
         """Returns the lowest price offer listings for a specific
            product by item condition and ASINs.
