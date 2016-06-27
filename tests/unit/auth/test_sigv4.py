@@ -552,7 +552,8 @@ class TestS3SigV4OptIn(MockServiceWithConfigTestCase):
 
     def test_sigv4_non_optional(self):
         region_groups = ['.cn-north', '.eu-central', '-eu-central']
-        specific_regions = ['.ap-northeast-2', '-ap-northeast-2']
+        specific_regions = ['.ap-northeast-2', '-ap-northeast-2',
+                            '.ap-south-1', '-ap-south-1']
 
         # Create a connection for a sample region in each of these groups
         # and ensure sigv4 is used.
