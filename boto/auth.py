@@ -59,7 +59,9 @@ SIGV4_DETECT = [
     '.eu-central',
     '-eu-central',
     '.ap-northeast-2',
-    '-ap-northeast-2'
+    '-ap-northeast-2',
+    '.ap-south-1',
+    '-ap-south-1'
 ]
 
 
