@@ -31,11 +31,18 @@ class Qualifications(object):
 
     def get_as_params(self):
         params = {}
-        assert(len(self.requirements) <= 10)
+        assert (len(self.requirements) <= 10)
         for n, req in enumerate(self.requirements):
             reqparams = req.get_as_params()
             for rp in reqparams:
-                params['QualificationRequirement.%s.%s' % ((n+1), rp) ] = reqparams[rp]
+                if rp == 'LocaleValue':
+                    if isinstance(reqparams[rp], list):
+                        for k, item in enumerate(reqparams[rp]):
+                            params['QualificationRequirement.%s.%s.%s.Country' % ((n + 1), rp, (k + 1))] = item
+                    else:
+                        params['QualificationRequirement.%s.%s.Country' % ((n + 1), rp)] = reqparams[rp]
+                else:
+                    params['QualificationRequirement.%s.%s' % ((n + 1), rp)] = reqparams[rp]
         return params
 
 
@@ -122,7 +129,7 @@ class LocaleRequirement(Requirement):
         params =  {
             "QualificationTypeId": self.qualification_type_id,
             "Comparator": self.comparator,
-            'LocaleValue.Country': self.locale,
+            'LocaleValue': self.locale,
         }
         if self.required_to_preview:
             params['RequiredToPreview'] = "true"
