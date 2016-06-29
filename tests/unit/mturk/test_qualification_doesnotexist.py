@@ -4,18 +4,18 @@ from tests.unit import AWSMockServiceTestCase
 
 from boto.mturk.connection import MTurkConnection
 from boto.mturk.question import ExternalQuestion
-from boto.mturk.qualification import (Qualifications,
-                                     PercentAssignmentsApprovedRequirement,
-                                     Requirement)
+from boto.mturk.qualification import \
+     Qualifications, Requirement
 
 QUAL_NO_ONE_ELSE_HAS_ID = "333333333333333333333333333333"
 
-MOCK_SERVER_RESPONSE = """
+MOCK_SERVER_RESPONSE = b"""
 <MockServerResponse>
   <Request>
     <IsValid>True</IsValid>
   </Request>
 </MockServerResponse>"""
+
 
 class TestMTurkPostingWithQualificationsDoesnotexist(AWSMockServiceTestCase):
     connection_class = MTurkConnection
@@ -44,7 +44,7 @@ class TestMTurkPostingWithQualificationsDoesnotexist(AWSMockServiceTestCase):
                         max_assignments=2,
                         title=title,
                         keywords=keywords,
-                        reward = 0.05,
+                        reward=0.05,
                         duration=60*6,
                         approval_delay=60*60,
                         annotation=annotation,
@@ -52,7 +52,7 @@ class TestMTurkPostingWithQualificationsDoesnotexist(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'QualificationRequirement.1.Comparator':
                 'DoesNotExist',
-            'QualificationRequirement.1.QualificationTypeId': 
+            'QualificationRequirement.1.QualificationTypeId':
                 '333333333333333333333333333333'},
             ignore_params_values=['AWSAccessKeyId',
                                   'SignatureVersion',
@@ -68,6 +68,6 @@ class TestMTurkPostingWithQualificationsDoesnotexist(AWSMockServiceTestCase):
                                   'Description',
                                   'MaxAssignments',
                                   'Reward.1.CurrencyCode',
-                                  'Keywords', 
+                                  'Keywords',
                                   'Operation'])
         self.assertEquals(create_hit_rs.status, True)

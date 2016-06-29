@@ -4,11 +4,10 @@ from tests.unit import AWSMockServiceTestCase
 
 from boto.mturk.connection import MTurkConnection
 from boto.mturk.question import ExternalQuestion
-from boto.mturk.qualification import (Qualifications,
-                                     PercentAssignmentsApprovedRequirement,
-                                     LocaleRequirement)
+from boto.mturk.qualification import \
+     Qualifications, LocaleRequirement
 
-MOCK_SERVER_RESPONSE = """
+MOCK_SERVER_RESPONSE = b"""
 <MockServerResponse>
   <Request>
     <IsValid>True</IsValid>
@@ -35,7 +34,7 @@ class TestMTurkPostingWithQualificationsNotin(AWSMockServiceTestCase):
         qualifications = Qualifications()
         test_requirement = LocaleRequirement(
                            comparator='NotIn',
-                           locale=[('US','WA'), 'CA'])
+                           locale=[('US', 'WA'), 'CA'])
         qualifications.add(test_requirement)
         create_hit_rs = self.service_connection.create_hit(
                         question=q,
@@ -43,7 +42,7 @@ class TestMTurkPostingWithQualificationsNotin(AWSMockServiceTestCase):
                         max_assignments=2,
                         title=title,
                         keywords=keywords,
-                        reward = 0.05,
+                        reward=0.05,
                         duration=60*6,
                         approval_delay=60*60,
                         annotation=annotation,
@@ -53,7 +52,8 @@ class TestMTurkPostingWithQualificationsNotin(AWSMockServiceTestCase):
             'QualificationRequirement.1.LocaleValue.1.Country': 'US',
             'QualificationRequirement.1.LocaleValue.1.Subdivision': 'WA',
             'QualificationRequirement.1.LocaleValue.2.Country': 'CA',
-            'QualificationRequirement.1.QualificationTypeId': '00000000000000000071'},
+            'QualificationRequirement.1.QualificationTypeId':
+                '00000000000000000071'},
             ignore_params_values=['AWSAccessKeyId',
                                   'SignatureVersion',
                                   'Timestamp',
@@ -68,9 +68,9 @@ class TestMTurkPostingWithQualificationsNotin(AWSMockServiceTestCase):
                                   'Description',
                                   'MaxAssignments',
                                   'Reward.1.CurrencyCode',
-                                  'Keywords', 
+                                  'Keywords',
                                   'Operation'])
-        self.assertEquals(create_hit_rs.status, True)  
+        self.assertEquals(create_hit_rs.status, True)
 
     def test_locale_qualification_in_notin(self):
         self.set_http_response(
@@ -85,10 +85,10 @@ class TestMTurkPostingWithQualificationsNotin(AWSMockServiceTestCase):
         qualifications = Qualifications()
         test_requirement1 = LocaleRequirement(
                             comparator='In',
-                            locale=[('US','CA')])
+                            locale=[('US', 'CA')])
         test_requirement2 = LocaleRequirement(
                             comparator='NotIn',
-                            locale=[('US','WA'), 'CA'])
+                            locale=[('US', 'WA'), 'CA'])
         qualifications.add(test_requirement1)
         qualifications.add(test_requirement2)
         create_hit_rs = self.service_connection.create_hit(
@@ -97,7 +97,7 @@ class TestMTurkPostingWithQualificationsNotin(AWSMockServiceTestCase):
                         max_assignments=2,
                         title=title,
                         keywords=keywords,
-                        reward = 0.05,
+                        reward=0.05,
                         duration=60*6,
                         approval_delay=60*60,
                         annotation=annotation,
@@ -106,12 +106,14 @@ class TestMTurkPostingWithQualificationsNotin(AWSMockServiceTestCase):
             'QualificationRequirement.1.Comparator': 'In',
             'QualificationRequirement.1.LocaleValue.1.Country': 'US',
             'QualificationRequirement.1.LocaleValue.1.Subdivision': 'CA',
-            'QualificationRequirement.1.QualificationTypeId': '00000000000000000071',
+            'QualificationRequirement.1.QualificationTypeId':
+                '00000000000000000071',
             'QualificationRequirement.2.Comparator': 'NotIn',
             'QualificationRequirement.2.LocaleValue.1.Country': 'US',
             'QualificationRequirement.2.LocaleValue.1.Subdivision': 'WA',
             'QualificationRequirement.2.LocaleValue.2.Country': 'CA',
-            'QualificationRequirement.2.QualificationTypeId': '00000000000000000071'}, 
+            'QualificationRequirement.2.QualificationTypeId':
+                '00000000000000000071'},
             ignore_params_values=['AWSAccessKeyId',
                                   'SignatureVersion',
                                   'Timestamp',
@@ -126,6 +128,6 @@ class TestMTurkPostingWithQualificationsNotin(AWSMockServiceTestCase):
                                   'Description',
                                   'MaxAssignments',
                                   'Reward.1.CurrencyCode',
-                                  'Keywords', 
+                                  'Keywords',
                                   'Operation'])
-        self.assertEquals(create_hit_rs.status, True)  
+        self.assertEquals(create_hit_rs.status, True)
