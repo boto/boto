@@ -20,18 +20,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-import httplib
 from mock import Mock
 from tests.unit import unittest
 
 import boto.ec2containerservice
 from boto.ec2containerservice.layer1 import EC2ContainerServiceConnection
+from boto.compat import http_client
 
 
 class TestConnectToRegion(unittest.TestCase):
 
     def setUp(self):
-        self.https_connection = Mock(spec=httplib.HTTPSConnection)
+        self.https_connection = Mock(spec=http_client.HTTPSConnection)
         self.https_connection_factory = (
             Mock(return_value=self.https_connection), ())
 

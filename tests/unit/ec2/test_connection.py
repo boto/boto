@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-import httplib
-
 from datetime import datetime, timedelta
 from mock import MagicMock, Mock
 from tests.unit import unittest
@@ -13,6 +11,7 @@ from boto.ec2.blockdevicemapping import BlockDeviceType, BlockDeviceMapping
 from boto.ec2.connection import EC2Connection
 from boto.ec2.snapshot import Snapshot
 from boto.ec2.reservedinstance import ReservedInstancesConfiguration
+from boto.compat import http_client
 
 
 class TestEC2ConnectionBase(AWSMockServiceTestCase):
@@ -990,12 +989,12 @@ class TestModifyInterfaceAttribute(TestEC2ConnectionBase):
 
 class TestConnectToRegion(unittest.TestCase):
     def setUp(self):
-        self.https_connection = Mock(spec=httplib.HTTPSConnection)
+        self.https_connection = Mock(spec=http_client.HTTPSConnection)
         self.https_connection_factory = (
             Mock(return_value=self.https_connection), ())
 
     def test_aws_region(self):
-        region = boto.ec2.RegionData.keys()[0]
+        region = list(boto.ec2.RegionData.keys())[0]
         self.ec2 = boto.ec2.connect_to_region(
             region,
             https_connection_factory=self.https_connection_factory,
