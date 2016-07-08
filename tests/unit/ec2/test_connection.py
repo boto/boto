@@ -1056,9 +1056,17 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
         ]
 
         for date in dates:
-            # Create a fake snapshot for each date
+            # Create a fake snapshot for each date with name tag "foo"
             snap = Snapshot(self.ec2)
             snap.tags['Name'] = 'foo'
+            # Times are expected to be ISO8601 strings
+            snap.start_time = date.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+            snaps.append(snap)
+
+        for date in dates:
+            # Create a fake snapshot for each date named tagged "foo2"
+            snap = Snapshot(self.ec2)
+            snap.tags['Name'] = 'foo2'
             # Times are expected to be ISO8601 strings
             snap.start_time = date.strftime('%Y-%m-%dT%H:%M:%S.000Z')
             snaps.append(snap)
@@ -1097,7 +1105,8 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
         """
         Test trimming monthly snapshots and ensure that older months
         get deleted properly. The result of this test should be that
-        the two oldest snapshots get deleted.
+        the four oldest snapshots get deleted (two each of "foo" and
+        "foo2").
         """
         # Setup mocks
         orig = {
@@ -1112,6 +1121,34 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
 
         # Call the tested method
         self.ec2.trim_snapshots(monthly_backups=1)
+
+        # Assertions
+        self.assertEqual(True, self.ec2.get_all_snapshots.called)
+        self.assertEqual(4, self.ec2.delete_snapshot.call_count)
+
+        # Restore
+        self.ec2.get_all_snapshots = orig['get_all_snapshots']
+        self.ec2.delete_snapshot = orig['delete_snapshot']
+
+    def test_trim_filter(self):
+        """
+        Test trimming filtered snapshots and ensure that older
+        snapshots get deleted properly. The result of this test should
+        be that the two oldest snapshots with name "foo2" get deleted.
+        """
+        # Setup mocks
+        orig = {
+            'get_all_snapshots': self.ec2.get_all_snapshots,
+            'delete_snapshot': self.ec2.delete_snapshot
+        }
+
+        snaps = self._get_snapshots()
+
+        self.ec2.get_all_snapshots = MagicMock(return_value=snaps)
+        self.ec2.delete_snapshot = MagicMock()
+
+        # Call the tested method
+	self.ec2.trim_snapshots(months=1, filters={'tag:Name': 'foo2'})
 
         # Assertions
         self.assertEqual(True, self.ec2.get_all_snapshots.called)
