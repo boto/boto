@@ -268,7 +268,7 @@ class EC2Connection(AWSQueryConnection):
                        architecture=None, kernel_id=None, ramdisk_id=None,
                        root_device_name=None, block_device_map=None,
                        dry_run=False, virtualization_type=None,
-                       sriov_net_support=None,
+                       sriov_net_support=None, ena_support=False,
                        snapshot_id=None,
                        delete_root_volume_on_termination=False):
         """
@@ -314,6 +314,9 @@ class EC2Connection(AWSQueryConnection):
             Valid choices are:
             * simple
 
+        :type ena_support: bool
+        :param ena_net_support: ENA networking support.
+
         :type snapshot_id: string
         :param snapshot_id: A snapshot ID for the snapshot to be used
             as root device for the image. Mutually exclusive with
@@ -356,6 +359,8 @@ class EC2Connection(AWSQueryConnection):
             params['VirtualizationType'] = virtualization_type
         if sriov_net_support:
             params['SriovNetSupport'] = sriov_net_support
+        if ena_support:
+            params['EnaSupport'] = 'true'
 
         rs = self.get_object('RegisterImage', params, ResultSet, verb='POST')
         image_id = getattr(rs, 'imageId', None)
@@ -1123,6 +1128,7 @@ class EC2Connection(AWSQueryConnection):
             * groupSet
             * ebsOptimized
             * sriovNetSupport
+            * enaSupport
 
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
@@ -1233,6 +1239,7 @@ class EC2Connection(AWSQueryConnection):
             * groupSet - Set of Security Groups or IDs
             * ebsOptimized - Boolean (false)
             * sriovNetSupport - String - ie: 'simple'
+            * enaSupport - Boolean (false)
 
         :type value: string
         :param value: The new value for the attribute
