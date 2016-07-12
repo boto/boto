@@ -1131,7 +1131,7 @@ class BatchGetResultSetTestCase(unittest.TestCase):
         self.assertFalse(self.results._results_left)
 
     def test_fetch_more_empty(self):
-        self.results.to_call(lambda keys: {'results': [], 'last_key': None}) 
+        self.results.to_call(lambda keys: {'results': [], 'last_key': None})
 
         self.results.fetch_more()
         self.assertEqual(self.results._results, [])
@@ -2913,9 +2913,11 @@ class TableTestCase(unittest.TestCase):
         # Now alter the expected.
         del expected['Responses']['users'][2]
         expected['UnprocessedKeys'] = {
-            'Keys': [
-                {'username': {'S': 'jane',}},
-            ],
+            'users': {
+                'Keys': [
+                    {'username': {'S': 'jane',}},
+                ],
+            },
         }
 
         with mock.patch.object(
