@@ -1583,13 +1583,15 @@ class Table(object):
 
         raw_unproccessed = raw_results.get('UnprocessedKeys', {})
 
-        for raw_key in raw_unproccessed.get('Keys', []):
-            py_key = {}
+        for table_name, table_unprocessed in raw_unproccessed.iteritems():
+            # We assume table_name == self.table_name
+            for raw_key in table_unprocessed['Keys']:
+                py_key = {}
 
-            for key, value in raw_key.items():
-                py_key[key] = self._dynamizer.decode(value)
+                for key, value in raw_key.items():
+                    py_key[key] = self._dynamizer.decode(value)
 
-            unprocessed_keys.append(py_key)
+                unprocessed_keys.append(py_key)
 
         return {
             'results': results,
