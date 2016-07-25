@@ -628,7 +628,7 @@ class Key(object):
 
     def generate_url(self, expires_in, method='GET', headers=None,
                      query_auth=True, force_http=False, response_headers=None,
-                     expires_in_absolute=False, version_id=None,
+                     expires_in_absolute=False, version_id=None, merge_meta=True,
                      policy=None, reduced_redundancy=False, encrypt_key=False):
         """
         Generate a URL to access this key.
@@ -696,7 +696,8 @@ class Key(object):
                 headers[provider.storage_class_header] = self.storage_class
         if encrypt_key:
             headers[provider.server_side_encryption_header] = 'AES256'
-        headers = boto.utils.merge_meta(headers, self.metadata, provider)
+        if merge_meta:
+            headers = boto.utils.merge_meta(headers, self.metadata, provider)
 
         return self.bucket.connection.generate_url(expires_in, method,
                                                    self.bucket.name, self.name,
