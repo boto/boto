@@ -539,13 +539,13 @@ class S3KeySigV4Test(unittest.TestCase):
     def test_set_contents_from_string(self):
         body = 'This is a test of S3'
         # Upload using each of the sigv4 streaming methods 0,1,2
-        for s4s in ('0', '1', '2'):
+        for s4s in ('0', '1', '2', '3'):
             boto.config.set('s3', 'sigv4_streaming', s4s)
             k = Key(self.bucket)
             k.key = 'foobar' + s4s
             k.set_contents_from_string(body)
         # fetch them back and confirm each has same body
-        for s4s in ('0', '1', '2'):
+        for s4s in ('0', '1', '2', '3'):
             k = self.bucket.get_key('foobar' + s4s)
             self.assertEqual(k.get_contents_as_string().decode('utf-8'), body)
 
@@ -553,7 +553,7 @@ class S3KeySigV4Test(unittest.TestCase):
         # Upload 9 bytes starting at byte 5 => 'is a test'
         sfp = StringIO('This is a test of S3')
         # Upload using each of the sigv4 streaming methods 0,1,2
-        for s4s in ('0', '1', '2'):
+        for s4s in ('0', '1', '2', '3'):
             boto.config.set('s3', 'sigv4_streaming', s4s)
             sfp.seek(5) # is a test
             k = Key(self.bucket)
@@ -561,7 +561,7 @@ class S3KeySigV4Test(unittest.TestCase):
             k.set_contents_from_file(sfp, size=9)
         # fetch them back and confirm each has same body
         need = 'is a test'
-        for s4s in ('0', '1', '2'):
+        for s4s in ('0', '1', '2', '3'):
             k = self.bucket.get_key('foobar' + s4s)
             self.assertEqual(k.get_contents_as_string().decode('utf-8'), need)
 
@@ -579,7 +579,7 @@ class S3KeySigV4Test(unittest.TestCase):
                 else:
                     return (super(Slow, self).read(size))
         sfp = Slow('x' * 9216)
-        for s4s in ('1', '2'): # '0' doesn't use chunking
+        for s4s in ('1', '2'): # '0', '3' don't use chunking
             sfp.seek(0) # rewind for each iteration
             boto.config.set('s3', 'sigv4_streaming', s4s)
             k = Key(self.bucket)

@@ -1112,8 +1112,12 @@ def sigv4_streaming():
         transfer-encoding header to transfer the data piece by piece.
         This uses HTTP chunking on top of aws-chunked.
 
+    3 - This method is similar to 0 and transfers the payload in a single
+        chunk but unlike 0, this method does *not* sign the payload This
+        method implements the UNSIGNED PAYLOAD option for SigV4.
+
     Returns:
-        One of 0,1,2
+        One of 0,1,2,3
     """
     default = 1
 
