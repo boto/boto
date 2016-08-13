@@ -94,11 +94,12 @@ class TerminationPolicies(list):
 class AutoScalingGroup(object):
     def __init__(self, connection=None, name=None,
                  launch_config=None, availability_zones=None,
-                 load_balancers=None, default_cooldown=None,
+                 load_balancers=None, target_groups=None, default_cooldown=None,
                  health_check_type=None, health_check_period=None,
                  placement_group=None, vpc_zone_identifier=None,
                  desired_capacity=None, min_size=None, max_size=None,
                  tags=None, termination_policies=None, instance_id=None,
+                 new_instances_protected_from_scale_in=False,
                  **kwargs):
         """
         Creates a new AutoScalingGroup with the specified name.
@@ -136,6 +137,9 @@ class AutoScalingGroup(object):
         :type load_balancers: list
         :param load_balancers: List of load balancers.
 
+        :type target_groups: list
+        :param target_groups: List of target groups.
+
         :type max_size: int
         :param max_size: Maximum size of group (required).
 
@@ -163,6 +167,11 @@ class AutoScalingGroup(object):
         :param instance_id: The ID of the Amazon EC2 instance you want to use
             to create the Auto Scaling group.
 
+        :type new_instances_protected_from_scale_in: bool
+        :param new_instances_protected_from_scale_in: Indicates whether newly
+            launched instances are protected from termination by Auto Scaling
+            when scaling in. Default is False.
+
         :rtype: :class:`boto.ec2.autoscale.group.AutoScalingGroup`
         :return: An autoscale group.
         """
@@ -182,6 +191,8 @@ class AutoScalingGroup(object):
         self.desired_capacity = desired_capacity
         lbs = load_balancers or []
         self.load_balancers = ListElement(lbs)
+        tgs = target_groups or []
+        self.target_groups = ListElement(tgs)
         zones = availability_zones or []
         self.availability_zones = ListElement(zones)
         self.health_check_period = health_check_period
@@ -196,6 +207,7 @@ class AutoScalingGroup(object):
         termination_policies = termination_policies or []
         self.termination_policies = ListElement(termination_policies)
         self.instance_id = instance_id
+        self.new_instances_protected_from_scale_in = new_instances_protected_from_scale_in
 
     # backwards compatible access to 'cooldown' param
     def _get_cooldown(self):

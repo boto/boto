@@ -177,6 +177,12 @@ class AutoScaleConnection(AWSQueryConnection):
             if as_group.load_balancers:
                 self.build_list_params(params, as_group.load_balancers,
                                        'LoadBalancerNames')
+            if as_group.target_groups:
+                self.build_list_params(params, as_group.target_groups,
+                                       'TargetGroupARNs')
+            if as_group.new_instances_protected_from_scale_in:
+                self.build_list_params(params, as_group.new_instances_protected_from_scale_in,
+                                       'NewInstancesProtectedFromScaleIn')
             if as_group.tags:
                 for i, tag in enumerate(as_group.tags):
                     tag.build_params(params, i + 1)
@@ -212,6 +218,47 @@ class AutoScaleConnection(AWSQueryConnection):
 
         self.build_list_params(params, instance_ids, 'InstanceIds')
         return self.get_status('DetachInstances', params)
+
+    def attach_load_balancer_target_groups(self, name, target_groups_arns):
+        """
+        Attaches one or more target groups to the specified Auto Scaling group.
+        """
+        params = {
+            'AutoScalingGroupName': name,
+        }
+        self.build_list_params(params, target_groups_arns, 'TargetGroupARNs')
+        return self.get_status('AttachLoadBalancerTargetGroups', params)
+
+    def detach_load_balancer_target_groups(self, name, target_groups_arns):
+        """
+        Detaches one or more target groups from the specified Auto Scaling group.
+
+        """
+
+        params = {'AutoScalingGroupName': name}
+
+        self.build_list_params(params, target_groups_arns, 'TargetGroupARNs')
+        return self.get_status('DetachLoadBalancerTargetGroups', params)
+
+    def attach_load_balancers(self, name, load_balancers):
+        """
+        Attaches one or more Classic load balancers to the specified Auto Scaling group.
+        """
+        params = {
+            'AutoScalingGroupName': name,
+        }
+        self.build_list_params(params, load_balancers, 'LoadBalancerNames')
+        return self.get_status('AttachLoadBalancers', params)
+
+    def detach_load_balancers(self, name, load_balancers):
+        """
+        Detaches one or more Classic load balancers from the specified Auto Scaling group.
+        """
+
+        params = {'AutoScalingGroupName': name}
+
+        self.build_list_params(params, load_balancers, 'LoadBalancerNames')
+        return self.get_status('DetachLoadBalancers', params)
 
     def create_auto_scaling_group(self, as_group):
         """
