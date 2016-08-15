@@ -617,6 +617,21 @@ class S3KeySigV4Test(unittest.TestCase):
         with self.assertRaises(k.provider.storage_response_error):
             k.set_contents_from_file(sfp)
 
+    def test_put_using_sigv4_redirected_with_sigv4(self):
+        # The bucket name is a bucket in the eu-central-1 region.
+        # Put the object using the external-1 endpoint and use
+        # sigvr4. AWS will redirect us and tell us also using sigv4.
+        non_sigv4_conn = S3Connection(host='s3-external-1.amazonaws.com', use_sigv4=True)
+        bucket = Bucket(non_sigv4_conn, self.bucket_name)
+        body = 'y' * 10
+        sfp = StringIO(body)
+        k = Key(bucket)
+        k.key = 'redirected'
+        wrote = k.set_contents_from_file(sfp)
+        self.assertEqual(wrote, 10)
+        k = self.bucket.get_key('redirected')
+        self.assertEqual(k.get_contents_as_string().decode('utf-8'), body)
+
 
 class S3KeyVersionCopyTest(unittest.TestCase):
     def setUp(self):
