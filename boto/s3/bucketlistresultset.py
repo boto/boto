@@ -64,6 +64,54 @@ class BucketListResultSet(object):
                              headers=self.headers,
                              encoding_type=self.encoding_type)
 
+def bucket_lister_v2(bucket, prefix='', delimiter='', fetch_owner=None,
+                     start_after='', headers=None, encoding_type=None):
+    """
+    A generator function for listing keys in a bucket.
+    """
+    more_results = True
+    k = None
+    token = None
+    while more_results:
+        rs = bucket.get_all_keys_v2(prefix=prefix, delimiter=delimiter,
+                                    fetch_owner=fetch_owner,
+                                    start_after=start_after,
+                                    continuation_token=token,
+                                    headers=headers,
+                                    encoding_type=encoding_type)
+        for k in rs:
+            yield k
+        token = rs.next_continuation_token
+        more_results= rs.is_truncated
+
+class BucketListResultSetV2(object):
+    """
+    A resultset for listing keys within a bucket.  Uses the bucket_lister_v2
+    generator function and implements the iterator interface.  This
+    transparently handles the results paging from S3 so even if you have
+    many thousands of keys within the bucket you can iterate over all
+    keys in a reasonably efficient manner.
+    """
+
+    def __init__(self, bucket=None, prefix='', delimiter='',
+                 fetch_owner='false', start_after='',
+                 headers=None, encoding_type=None):
+        self.bucket = bucket
+        self.prefix = prefix
+        self.delimiter = delimiter
+        self.fetch_owner = fetch_owner
+        self.start_after = start_after
+        self.headers = headers
+        self.encoding_type = encoding_type
+
+    def __iter__(self):
+        return bucket_lister_v2(self.bucket, prefix=self.prefix,
+                             delimiter=self.delimiter,
+                             fetch_owner=self.fetch_owner,
+                             start_after=self.start_after,
+                             headers=self.headers,
+                             encoding_type=self.encoding_type)
+
 def versioned_bucket_lister(bucket, prefix='', delimiter='',
                             key_marker='', version_id_marker='', headers=None,
                             encoding_type=None):
