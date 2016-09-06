@@ -109,6 +109,14 @@ class Binary(XMLTemplate):
         del self.self
 
 
+class EmbeddedBinary(XMLTemplate):
+    template = """<EmbeddedBinary><EmbeddedMimeType><Type>%(type)s</Type><SubType>%(subtype)s</SubType></EmbeddedMimeType><DataURL>%(url)s</DataURL><AltText>%(alt_text)s</AltText><Width>%(width)d</Width><Height>%(height)d</Height></EmbeddedBinary>"""
+
+    def __init__(self, type, subtype, url, alt_text, width, height):
+        self.__dict__.update(vars())
+        del self.self
+
+
 class List(list):
     """A bulleted list suitable for OrderedContent or Overview content"""
     def get_as_xml(self):
