@@ -438,7 +438,7 @@ class Bucket(S3Bucket):
             headers['x-goog-if-metageneration-match'] = str(if_metageneration)
 
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), get_utf8_value(key_name),
+            'PUT', self.name, get_utf8_value(key_name),
             data=get_utf8_value(data), headers=headers, query_args=query_args)
         body = response.read()
         if response.status != 200:
@@ -584,7 +584,7 @@ class Bucket(S3Bucket):
         :param dict headers: Additional headers to send with the request.
         """
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(cors),
+            'PUT', self.name, data=get_utf8_value(cors),
             query_args=CORS_ARG, headers=headers)
         body = response.read()
         if response.status != 200:
@@ -847,7 +847,7 @@ class Bucket(S3Bucket):
 
         body = self.WebsiteBody % (main_page_frag, error_frag)
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(body),
+            'PUT', self.name, data=get_utf8_value(body),
             query_args='websiteConfig', headers=headers)
         body = response.read()
         if response.status == 200:
@@ -979,7 +979,7 @@ class Bucket(S3Bucket):
         """
         xml = lifecycle_config.to_xml()
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(xml),
+            'PUT', self.name, data=get_utf8_value(xml),
             query_args=LIFECYCLE_ARG, headers=headers)
         body = response.read()
         if response.status == 200:
