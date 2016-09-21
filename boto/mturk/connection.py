@@ -678,7 +678,7 @@ class MTurkConnection(AWSQueryConnection):
             params['TestDurationInSeconds'] = test_duration
 
         if answer_key is not None:
-            if isinstance(answer_key, six.string_types):
+            if isinstance(answer_key, six.string_types) or isinstance(answer_key, six.binary_type):
                 params['AnswerKey'] = answer_key  # xml
             else:
                 raise TypeError
@@ -746,7 +746,7 @@ class MTurkConnection(AWSQueryConnection):
             params['TestDurationInSeconds'] = test_duration
 
         if answer_key is not None:
-            if isinstance(answer_key, basestring):
+            if isinstance(answer_key, six.string_types) or isinstance(answer_key, six.binary_type):
                 params['AnswerKey'] = answer_key  # xml
             else:
                 raise TypeError
