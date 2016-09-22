@@ -56,15 +56,22 @@ LIFECYCLE_EMPTY = ('<?xml version="1.0" encoding="UTF-8"?>'
 LIFECYCLE_DOC = ('<?xml version="1.0" encoding="UTF-8"?>'
                  '<LifecycleConfiguration><Rule>'
                  '<Action><Delete/></Action>'
-                 '<Condition><Age>365</Age>'
+                 '<Condition>''<IsLive>true</IsLive>'
+                 '<MatchesStorageClass>STANDARD</MatchesStorageClass>'
+                 '<Age>365</Age>'
                  '<CreatedBefore>2013-01-15</CreatedBefore>'
                  '<NumberOfNewerVersions>3</NumberOfNewerVersions>'
-                 '<IsLive>true</IsLive></Condition>'
-                 '</Rule></LifecycleConfiguration>')
-LIFECYCLE_CONDITIONS = {'Age': '365',
-                        'CreatedBefore': '2013-01-15',
-                        'NumberOfNewerVersions': '3',
-                        'IsLive': 'true'}
+                 '</Condition></Rule><Rule>'
+                 '<Action><SetStorageClass>NEARLINE</SetStorageClass></Action>'
+                 '<Condition><Age>366</Age>'
+                 '</Condition></Rule></LifecycleConfiguration>')
+LIFECYCLE_CONDITIONS_FOR_DELETE_RULE = {
+    'Age': '365',
+    'CreatedBefore': '2013-01-15',
+    'NumberOfNewerVersions': '3',
+    'IsLive': 'true',
+    'MatchesStorageClass': ['STANDARD']}
+LIFECYCLE_CONDITIONS_FOR_SET_STORAGE_CLASS_RULE = {'Age': '366'}
 
 # Regexp for matching project-private default object ACL.
 PROJECT_PRIVATE_RE = ('\s*<AccessControlList>\s*<Entries>\s*<Entry>'
@@ -412,7 +419,11 @@ class GSBasicTest(GSTestCase):
         self.assertEqual(xml, LIFECYCLE_EMPTY)
         # set lifecycle config
         lifecycle_config = LifecycleConfig()
-        lifecycle_config.add_rule('Delete', None, LIFECYCLE_CONDITIONS)
+        lifecycle_config.add_rule(
+            'Delete', None, LIFECYCLE_CONDITIONS_FOR_DELETE_RULE)
+        lifecycle_config.add_rule(
+            'SetStorageClass', 'NEARLINE',
+            LIFECYCLE_CONDITIONS_FOR_SET_STORAGE_CLASS_RULE)
         bucket.configure_lifecycle(lifecycle_config)
         xml = bucket.get_lifecycle_config().to_xml()
         self.assertEqual(xml, LIFECYCLE_DOC)
@@ -428,7 +439,11 @@ class GSBasicTest(GSTestCase):
         self.assertEqual(xml, LIFECYCLE_EMPTY)
         # set lifecycle config
         lifecycle_config = LifecycleConfig()
-        lifecycle_config.add_rule('Delete', None, LIFECYCLE_CONDITIONS)
+        lifecycle_config.add_rule(
+            'Delete', None, LIFECYCLE_CONDITIONS_FOR_DELETE_RULE)
+        lifecycle_config.add_rule(
+            'SetStorageClass', 'NEARLINE',
+            LIFECYCLE_CONDITIONS_FOR_SET_STORAGE_CLASS_RULE)
         uri.configure_lifecycle(lifecycle_config)
         xml = uri.get_lifecycle_config().to_xml()
         self.assertEqual(xml, LIFECYCLE_DOC)
