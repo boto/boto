@@ -113,6 +113,7 @@ class GSTestCase(unittest.TestCase):
         deleted."""
         b = self._MakeBucket()
         b.configure_versioning(True)
+        time.sleep(30)  # Ensure versioning config propagates.
         return b
 
     def _MakeTempDir(self):
