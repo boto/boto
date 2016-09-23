@@ -99,6 +99,7 @@ class AutoScalingGroup(object):
                  placement_group=None, vpc_zone_identifier=None,
                  desired_capacity=None, min_size=None, max_size=None,
                  tags=None, termination_policies=None, instance_id=None,
+                 target_group_arns=None,
                  **kwargs):
         """
         Creates a new AutoScalingGroup with the specified name.
@@ -163,6 +164,10 @@ class AutoScalingGroup(object):
         :param instance_id: The ID of the Amazon EC2 instance you want to use
             to create the Auto Scaling group.
 
+        :type target_group_arns: list
+        :param target_group_arns: list of target group arns. Non empty for application load balancers
+            attached to autoscaling group.
+
         :rtype: :class:`boto.ec2.autoscale.group.AutoScalingGroup`
         :return: An autoscale group.
         """
@@ -196,6 +201,8 @@ class AutoScalingGroup(object):
         termination_policies = termination_policies or []
         self.termination_policies = ListElement(termination_policies)
         self.instance_id = instance_id
+        target_group_arns = target_group_arns or []
+        self.target_group_arns = ListElement(target_group_arns)
 
     # backwards compatible access to 'cooldown' param
     def _get_cooldown(self):
@@ -228,6 +235,8 @@ class AutoScalingGroup(object):
             return self.tags
         elif name == 'TerminationPolicies':
             return self.termination_policies
+        elif name == 'TargetGroupARNs':
+            return self.target_group_arns
         else:
             return
 
@@ -261,6 +270,8 @@ class AutoScalingGroup(object):
             self.vpc_zone_identifier = value
         elif name == 'InstanceId':
             self.instance_id = value
+        elif name == 'TargetGroupARNs':
+            self.target_group_arns = value
         else:
             setattr(self, name, value)
 
