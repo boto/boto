@@ -185,7 +185,9 @@ class MTurkConnection(AWSQueryConnection):
                    reward=None, duration=datetime.timedelta(days=7),
                    approval_delay=None, annotation=None,
                    questions=None, qualifications=None,
-                   layout_params=None, response_groups=None):
+                   layout_params=None, response_groups=None,
+                   assignment_review_policy=None,
+                   hit_review_policy=None):
         """
         Creates a new HIT.
         Returns a ResultSet
@@ -260,6 +262,13 @@ class MTurkConnection(AWSQueryConnection):
         # Handle optional response groups argument
         if response_groups:
             self.build_list_params(params, response_groups, 'ResponseGroup')
+
+        # add AssignmentReviewPolicy and HITReviewPolicy if specified
+        if assignment_review_policy is not None:
+            params.update(assignment_review_policy.get_as_params())
+
+        if hit_review_policy is not None:
+            params.update(hit_review_policy.get_as_params())
 
         # Submit
         return self._process_request('CreateHIT', params, [('HIT', HIT)])
