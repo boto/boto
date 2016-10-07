@@ -23,7 +23,7 @@
 Provides ReviewPolicy, Parameter, and MapEntry classes, implementing
 the AssignmentReviewPolicy and HITReviewPolicy data structures described in
 http://docs.aws.amazon.com/AWSMechTurk/latest/AWSMturkAPI/ApiReference_HITReviewPolicyDataStructureArticle.html.
-To be used as arguments to boto.mturk.connection.create_hit.
+To be used as arguments to boto.mturk.connection.create_hit().
 """
 
 
@@ -54,9 +54,10 @@ class Parameter(object):
     A Parameter consists of a Key element (string) and either a Value (string) or one or several MapEntry structures.
     The argument map_entries should be a list of MapEntry elements.
     """
-    def __init__(self, key, value=None, map_entries=None):
+    def __init__(self, key, value=None, values=None, map_entries=None):
         self.key = key
         self.value = value
+        self.values = values
         self.map_entries = map_entries
     def get_as_params(self):
         params =  {
@@ -67,10 +68,12 @@ class Parameter(object):
                 mapparams = map_entry.get_as_params()
                 for mp in mapparams:
                     params['MapEntry.%s.%s' % (i, mp) ] = mapparams[mp]
+        elif self.values is not None:
+            for i, value in enumerate(self.values, 1):
+                params['Value.%d' % i] = value
         else:
             params['Value'] = self.value
         return params
-
 
 class MapEntry(object):
     """Representation of a single MapEntry
