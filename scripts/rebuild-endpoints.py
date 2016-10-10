@@ -271,7 +271,8 @@ def main():
     builder = StaticEndpointBuilder(strict_resolver)
     static_endpoints = builder.build_static_endpoints(
         known_services_in_existing_endpoints)
-    json_data = json.dumps(static_endpoints, indent=4, sort_keys=True)
+    json_data = json.dumps(
+        static_endpoints, indent=4, sort_keys=True, separators=(',', ': '))
     if args.overwrite:
         with open(EXISTING_ENDPOINTS_FILE, 'w') as f:
             f.write(json_data)
