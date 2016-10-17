@@ -78,7 +78,7 @@ class GSConnection(S3Connection):
             if headers:
                 headers[self.provider.acl_header] = policy
             else:
-                headers = {self.provider.acl_header : policy}
+                headers = {self.provider.acl_header: policy}
         if not location:
             location = Location.DEFAULT
         location_elem = ('<LocationConstraint>%s</LocationConstraint>'

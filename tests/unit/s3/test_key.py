@@ -24,7 +24,7 @@
 from tests.compat import mock, unittest
 from tests.unit import AWSMockServiceTestCase
 
-from boto.compat import StringIO
+from io import BytesIO
 from boto.exception import BotoServerError
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
@@ -168,7 +168,7 @@ class TestS3KeyRetries(AWSMockServiceTestCase):
         self.set_http_response(status_code=500)
         b = Bucket(self.service_connection, 'mybucket')
         k = b.new_key('test_failure')
-        fail_file = StringIO('This will attempt to retry.')
+        fail_file = BytesIO(b'This will attempt to retry.')
 
         with self.assertRaises(BotoServerError):
             k.send_file(fail_file)
@@ -179,7 +179,7 @@ class TestS3KeyRetries(AWSMockServiceTestCase):
         self.set_http_response(status_code=400, body=weird_timeout_body)
         b = Bucket(self.service_connection, 'mybucket')
         k = b.new_key('test_failure')
-        fail_file = StringIO('This will pretend to be chunk-able.')
+        fail_file = BytesIO(b'This will pretend to be chunk-able.')
 
         k.should_retry = counter(k.should_retry)
         self.assertEqual(k.should_retry.count, 0)
@@ -195,7 +195,7 @@ class TestS3KeyRetries(AWSMockServiceTestCase):
         self.set_http_response(status_code=502, body=weird_timeout_body)
         b = Bucket(self.service_connection, 'mybucket')
         k = b.new_key('test_failure')
-        fail_file = StringIO('This will pretend to be chunk-able.')
+        fail_file = BytesIO(b'This will pretend to be chunk-able.')
 
         k.should_retry = counter(k.should_retry)
         self.assertEqual(k.should_retry.count, 0)
@@ -211,7 +211,7 @@ class TestS3KeyRetries(AWSMockServiceTestCase):
         self.set_http_response(status_code=504, body=weird_timeout_body)
         b = Bucket(self.service_connection, 'mybucket')
         k = b.new_key('test_failure')
-        fail_file = StringIO('This will pretend to be chunk-able.')
+        fail_file = BytesIO(b'This will pretend to be chunk-able.')
 
         k.should_retry = counter(k.should_retry)
         self.assertEqual(k.should_retry.count, 0)

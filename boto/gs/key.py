@@ -24,7 +24,7 @@ import binascii
 import os
 import re
 
-from boto.compat import StringIO
+from io import BytesIO
 from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
 from boto.s3.keyfile import KeyFile
@@ -705,7 +705,7 @@ class Key(S3Key):
         self.md5 = None
         self.base64md5 = None
 
-        fp = StringIO(get_utf8_value(s))
+        fp = BytesIO(get_utf8_value(s))
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5,
                                         if_generation=if_generation)
@@ -929,7 +929,7 @@ class Key(S3Key):
             compose_req.append('<Component><Name>%s</Name>%s</Component>' %
                                (key.name, generation_tag))
         compose_req_xml = ('<ComposeRequest>%s</ComposeRequest>' %
-                         ''.join(compose_req))
+                           ''.join(compose_req))
         headers = headers or {}
         if content_type:
             headers['Content-Type'] = content_type

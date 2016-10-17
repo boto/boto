@@ -329,7 +329,7 @@ class Bucket(S3Bucket):
         response = self.connection.make_request('GET', self.name, key_name,
                                                 query_args=query_args,
                                                 headers=headers)
-        body = response.read()
+        body = response.read().decode('utf-8')
         if response.status != 200:
             if response.status == 403:
                 match = ERROR_DETAILS_REGEX.search(body)
@@ -348,7 +348,7 @@ class Bucket(S3Bucket):
         body = self._get_xml_acl_helper(key_name, headers, query_args)
         acl = ACL(self)
         h = handler.XmlHandler(acl, self)
-        xml.sax.parseString(body, h)
+        xml.sax.parseString(body.encode('utf-8'), h)
         return acl
 
     def get_acl(self, key_name='', headers=None, version_id=None,
@@ -409,8 +409,8 @@ class Bucket(S3Bucket):
         return self._get_acl_helper('', headers, DEF_OBJ_ACL)
 
     def _set_acl_helper(self, acl_or_str, key_name, headers, query_args,
-                          generation, if_generation, if_metageneration,
-                          canned=False):
+                        generation, if_generation, if_metageneration,
+                        canned=False):
         """Provides common functionality for set_acl, set_xml_acl,
         set_canned_acl, set_def_acl, set_def_xml_acl, and
         set_def_canned_acl()."""
@@ -609,7 +609,6 @@ class Bucket(S3Bucket):
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
-
 
     # Method with same signature as boto.s3.bucket.Bucket.add_email_grant(),
     # to allow polymorphic treatment at application layer.

@@ -32,7 +32,7 @@ from boto.s3.resumable_download_handler import get_cur_file_size
 from boto.s3.resumable_download_handler import ResumableDownloadHandler
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableDownloadException
-from cb_test_harness import CallbackTestHarness
+from tests.integration.gs.cb_test_harness import CallbackTestHarness
 from tests.integration.gs.testcase import GSTestCase
 
 
@@ -58,7 +58,7 @@ class ResumableDownloadTests(GSTestCase):
         if not tmpdir:
             tmpdir = self._MakeTempDir()
         dst_file = os.path.join(tmpdir, 'dstfile')
-        return open(dst_file, 'w')
+        return open(dst_file, 'wb')
 
     def test_non_resumable_download(self):
         """
@@ -255,7 +255,7 @@ class ResumableDownloadTests(GSTestCase):
         # Set up harness to fail download after several hundred KB so download
         # server will have saved something before we retry.
         harness = CallbackTestHarness(
-            fail_after_n_bytes=LARGE_KEY_SIZE/2)
+            fail_after_n_bytes=LARGE_KEY_SIZE / 2)
         larger_src_key_as_string = os.urandom(LARGE_KEY_SIZE)
         larger_src_key = self._MakeKey(data=larger_src_key_as_string)
         res_download_handler = ResumableDownloadHandler(num_retries=1)
