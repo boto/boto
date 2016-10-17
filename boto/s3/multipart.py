@@ -259,7 +259,7 @@ class MultiPartUpload(object):
                                    cb=cb, num_cb=num_cb, md5=md5,
                                    reduced_redundancy=False,
                                    query_args=query_args, size=size,
-                                   encrypt, auth_token)
+                                   encrypt=encrypt, auth_token=auth_token)
         return key
 
     def copy_part_from_key(self, src_bucket_name, src_key_name, part_num,
