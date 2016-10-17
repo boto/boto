@@ -21,6 +21,7 @@
 #
 import os
 import socket
+import platform
 
 from tests.compat import mock, unittest
 from httpretty import HTTPretty
@@ -179,7 +180,8 @@ class TestAWSAuthConnection(unittest.TestCase):
     @mock.patch.object(socket, 'create_connection')
     @mock.patch('boto.compat.http_client.HTTPResponse')
     @mock.patch('boto.compat.http_client.ssl')
-    def test_proxy_ssl(self, ssl_mock, http_response_mock,
+    @mock.patch('socket.socket')
+    def test_proxy_ssl(self, socket_mock, ssl_mock, http_response_mock,
                        create_connection_mock):
         type(http_response_mock.return_value).status = mock.PropertyMock(
             return_value=200)
@@ -193,8 +195,47 @@ class TestAWSAuthConnection(unittest.TestCase):
         )
         conn.https_validate_certificates = False
 
+        create_connection_mock.return_value = socket_mock
+
         # Attempt to call proxy_ssl and make sure it works
         conn.proxy_ssl('mockservice.cc-zone-1.amazonaws.com', 80)
+
+        socket_mock.assert_has_calls([
+            mock.call.sendall(b'CONNECT mockservice.cc-zone-1.amazonaws.com:80 HTTP/1.0\r\n'),
+            mock.call.sendall(b'User-Agent: Boto/2.42.0 Python/' + platform.python_version().encode() + b' Darwin/16.0.0\r\n'),
+            mock.call.sendall(b'\r\n')
+        ])
+
+    @mock.patch.object(socket, 'create_connection')
+    @mock.patch('boto.compat.http_client.HTTPResponse')
+    @mock.patch('boto.compat.http_client.ssl')
+    @mock.patch('socket.socket')
+    def test_proxy_ssl_with_authentication(self, socket_mock, ssl_mock, http_response_mock,
+                       create_connection_mock):
+        type(http_response_mock.return_value).status = mock.PropertyMock(
+            return_value=200)
+
+        conn = AWSAuthConnection(
+            'mockservice.cc-zone-1.amazonaws.com',
+            aws_access_key_id='access_key',
+            aws_secret_access_key='secret',
+            suppress_consec_slashes=False,
+            proxy_port=80,
+            proxy_user='puser',
+            proxy_pass='ppass'
+        )
+        conn.https_validate_certificates = False
+
+        create_connection_mock.return_value = socket_mock
+
+        # Attempt to call proxy_ssl and make sure it works
+        conn.proxy_ssl('mockservice.cc-zone-1.amazonaws.com', 80)
+
+        socket_mock.assert_has_calls([
+            mock.call.sendall(b'CONNECT mockservice.cc-zone-1.amazonaws.com:80 HTTP/1.0\r\n'),
+            mock.call.sendall(b'User-Agent: Boto/2.42.0 Python/' + platform.python_version().encode() + b' Darwin/16.0.0\r\n'),
+            mock.call.sendall(b'Proxy-Authorization: Basic cHVzZXI6cHBhc3M=\n\r\n')
+        ])
 
     # this tests the proper setting of the host_header in v4 signing
     def test_host_header_with_nonstandard_port(self):
