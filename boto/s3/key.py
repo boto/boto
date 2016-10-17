@@ -39,6 +39,10 @@ from boto.exception import PleaseRetryException
 from boto.provider import Provider
 from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
+# Encryption / Decryption
+from boto.s3.aes_ctr_128_mac import encrypt_data
+from boto.s3.aes_ctr_128_mac import decrypt_data
+###
 from boto import UserAgent
 from boto.utils import compute_md5, compute_hash
 from boto.utils import find_matching_headers
@@ -707,7 +711,8 @@ class Key(object):
                                                    version_id)
 
     def send_file(self, fp, headers=None, cb=None, num_cb=10,
-                  query_args=None, chunked_transfer=False, size=None):
+                  query_args=None, chunked_transfer=False, size=None,
+                  encrypt=False, auth_token=None):
         """
         Upload a file to a key into a bucket on S3.
 
@@ -747,11 +752,12 @@ class Key(object):
         """
         self._send_file_internal(fp, headers=headers, cb=cb, num_cb=num_cb,
                                  query_args=query_args,
-                                 chunked_transfer=chunked_transfer, size=size)
+                                 chunked_transfer=chunked_transfer, size=size,
+                                 encrypt, auth_token)
 
     def _send_file_internal(self, fp, headers=None, cb=None, num_cb=10,
                             query_args=None, chunked_transfer=False, size=None,
-                            hash_algs=None):
+                            hash_algs=None, encrypt=False, auth_token=None):
         provider = self.bucket.connection.provider
         try:
             spos = fp.tell()
@@ -833,6 +839,11 @@ class Key(object):
             if spos is None:
                 # read at least something from a non-seekable fp.
                 self.read_from_stream = True
+
+            # Alex add encryption
+            if encrypt:
+                chunk = encrypt_data(chunk, auth_token)
+
             while chunk:
                 chunk_len = len(chunk)
                 data_len += chunk_len
@@ -860,6 +871,10 @@ class Key(object):
 
                 if not isinstance(chunk, bytes):
                     chunk = chunk.encode('utf-8')
+
+                # Alex add encryption
+                if encrypt:
+                    chunk = encrypt_data(chunk, auth_token)
 
             self.size = data_len
 
@@ -1119,7 +1134,8 @@ class Key(object):
     def set_contents_from_file(self, fp, headers=None, replace=True,
                                cb=None, num_cb=10, policy=None, md5=None,
                                reduced_redundancy=False, query_args=None,
-                               encrypt_key=False, size=None, rewind=False):
+                               encrypt_key=False, size=None, rewind=False,
+                               encrypt=False, auth_token=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file pointed to by 'fp' as the
@@ -1290,14 +1306,15 @@ class Key(object):
 
             self.send_file(fp, headers=headers, cb=cb, num_cb=num_cb,
                            query_args=query_args,
-                           chunked_transfer=chunked_transfer, size=size)
+                           chunked_transfer=chunked_transfer, size=size,
+                           encrypt, auth_token)
             # return number of bytes written.
             return self.size
 
     def set_contents_from_filename(self, filename, headers=None, replace=True,
                                    cb=None, num_cb=10, policy=None, md5=None,
-                                   reduced_redundancy=False,
-                                   encrypt_key=False):
+                                   reduced_redundancy=False, encrypt_key=False,
+                                   encrypt=False, auth_token=None):
         """
         Store an object in S3 using the name of the Key object as the
         key in S3 and the contents of the file named by 'filename'.
@@ -1359,7 +1376,8 @@ class Key(object):
             return self.set_contents_from_file(fp, headers, replace, cb,
                                                num_cb, policy, md5,
                                                reduced_redundancy,
-                                               encrypt_key=encrypt_key)
+                                               encrypt_key=encrypt_key,
+                                               encrypt, auth_token)
 
     def set_contents_from_string(self, string_data, headers=None, replace=True,
                                  cb=None, num_cb=10, policy=None, md5=None,
