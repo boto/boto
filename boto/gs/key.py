@@ -131,6 +131,8 @@ class Key(S3Key):
                 self.content_encoding = value
             elif key == 'x-goog-stored-content-length':
                 self.size = int(value)
+            elif key == 'x-goog-storage-class':
+                self.storage_class = value
 
     def open_read(self, headers=None, query_args='',
                   override_num_retries=None, response_headers=None):
