@@ -297,15 +297,18 @@ class MWSConnection(AWSQueryConnection):
     def _required_auth_capability(self):
         return ['mws']
 
-    def _post_request(self, request, params, parser, body='', headers=None):
+    def _post_request(self, request, params, parser, body=None, headers=None):
         """Make a POST request, optionally with a content body,
            and return the response, optionally as raw text.
         """
+        request_has_body = body is not None
+        body = body or ''
         headers = headers or {}
         path = self._sandboxify(request['path'])
         request = self.build_base_http_request('POST', path, None, data=body,
                                                params=params, headers=headers,
                                                host=self.host)
+        request.has_body = request_has_body
         try:
             response = self._mexe(request, override_num_retries=None)
         except BotoServerError as bs:
