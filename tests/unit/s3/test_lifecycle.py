@@ -50,27 +50,103 @@ class TestS3LifeCycle(AWSMockServiceTestCase):
             <Status>Disabled</Status>
             <Transition>
               <Date>2012-12-31T00:00:000Z</Date>
-              <StorageClass>GLACIER</StorageClass>
+              <StorageClass>STANDARD_IA</StorageClass>
+            </Transition>
+            <Expiration>
+              <Date>2012-12-31T00:00:000Z</Date>
+            </Expiration>
+          </Rule>
+          <Rule>
+            <ID>multiple-transitions</ID>
+            <Prefix></Prefix>
+            <Status>Enabled</Status>
+            <Transition>
+                <Days>30</Days>
+                <StorageClass>STANDARD_IA</StorageClass>
+            </Transition>
+            <Transition>
+                <Days>90</Days>
+                <StorageClass>GLACIER</StorageClass>
             </Transition>
           </Rule>
         </LifecycleConfiguration>
         """
 
-    def test_parse_lifecycle_response(self):
+    def _get_bucket_lifecycle_config(self):
         self.set_http_response(status_code=200)
         bucket = Bucket(self.service_connection, 'mybucket')
-        response = bucket.get_lifecycle_config()
-        self.assertEqual(len(response), 2)
-        rule = response[0]
+        return bucket.get_lifecycle_config()
+
+    def test_lifecycle_response_contains_all_rules(self):
+        self.assertEqual(len(self._get_bucket_lifecycle_config()), 3)
+
+    def test_parse_lifecycle_id(self):
+        rule = self._get_bucket_lifecycle_config()[0]
         self.assertEqual(rule.id, 'rule-1')
+
+    def test_parse_lifecycle_prefix(self):
+        rule = self._get_bucket_lifecycle_config()[0]
         self.assertEqual(rule.prefix, 'prefix/foo')
+
+    def test_parse_lifecycle_no_prefix(self):
+        rule = self._get_bucket_lifecycle_config()[2]
+        self.assertEquals(rule.prefix, '')
+
+    def test_parse_lifecycle_enabled(self):
+        rule = self._get_bucket_lifecycle_config()[0]
         self.assertEqual(rule.status, 'Enabled')
+
+    def test_parse_lifecycle_disabled(self):
+        rule = self._get_bucket_lifecycle_config()[1]
+        self.assertEqual(rule.status, 'Disabled')
+
+    def test_parse_expiration_days(self):
+        rule = self._get_bucket_lifecycle_config()[0]
         self.assertEqual(rule.expiration.days, 365)
-        self.assertIsNone(rule.expiration.date)
-        transition = rule.transition
-        self.assertEqual(transition.days, 30)
+
+    def test_parse_expiration_date(self):
+        rule = self._get_bucket_lifecycle_config()[1]
+        self.assertEqual(rule.expiration.date, '2012-12-31T00:00:000Z')
+
+    def test_parse_expiration_not_required(self):
+        rule = self._get_bucket_lifecycle_config()[2]
+        self.assertIsNone(rule.expiration)
+
+    def test_parse_transition_days(self):
+        transition = self._get_bucket_lifecycle_config()[0].transition[0]
+        self.assertEquals(transition.days, 30)
+        self.assertIsNone(transition.date)
+
+    def test_parse_transition_days_deprecated(self):
+        transition = self._get_bucket_lifecycle_config()[0].transition
+        self.assertEquals(transition.days, 30)
+        self.assertIsNone(transition.date)
+
+    def test_parse_transition_date(self):
+        transition = self._get_bucket_lifecycle_config()[1].transition[0]
+        self.assertEquals(transition.date, '2012-12-31T00:00:000Z')
+        self.assertIsNone(transition.days)
+
+    def test_parse_transition_date_deprecated(self):
+        transition = self._get_bucket_lifecycle_config()[1].transition
+        self.assertEquals(transition.date, '2012-12-31T00:00:000Z')
+        self.assertIsNone(transition.days)
+
+    def test_parse_storage_class_standard_ia(self):
+        transition = self._get_bucket_lifecycle_config()[1].transition[0]
+        self.assertEqual(transition.storage_class, 'STANDARD_IA')
+
+    def test_parse_storage_class_glacier(self):
+        transition = self._get_bucket_lifecycle_config()[0].transition[0]
         self.assertEqual(transition.storage_class, 'GLACIER')
-        self.assertEqual(response[1].transition.date, '2012-12-31T00:00:000Z')
+
+    def test_parse_storage_class_deprecated(self):
+        transition = self._get_bucket_lifecycle_config()[1].transition
+        self.assertEqual(transition.storage_class, 'STANDARD_IA')
+
+    def test_parse_multiple_lifecycle_rules(self):
+        transition = self._get_bucket_lifecycle_config()[2].transition
+        self.assertEqual(len(transition), 2)
 
     def test_expiration_with_no_transition(self):
         lifecycle = Lifecycle()
@@ -87,7 +163,14 @@ class TestS3LifeCycle(AWSMockServiceTestCase):
             '<Transition><StorageClass>GLACIER</StorageClass><Days>30</Days>',
             xml)
 
-    def test_expiration_with_expiration_and_transition(self):
+    def test_transition_is_optional(self):
+        r = Rule('myid', 'prefix', 'Enabled')
+        xml = r.to_xml()
+        self.assertEqual(
+            '<Rule><ID>myid</ID><Prefix>prefix</Prefix><Status>Enabled</Status></Rule>',
+            xml)
+
+    def test_expiration_and_transition(self):
         t = Transition(date='2012-11-30T00:00:000Z', storage_class='GLACIER')
         r = Rule('myid', 'prefix', 'Enabled', expiration=30, transition=t)
         xml = r.to_xml()

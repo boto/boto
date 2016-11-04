@@ -141,6 +141,37 @@ class TestSigV4Presigned(MockServiceWithConfigTestCase):
             'a937f5fbc125d98ac8f04c49e0204ea1526a7b8ca058000a54c192457be05b7d',
             url)
 
+    def test_sigv4_presign_respects_is_secure(self):
+        self.config = {
+            's3': {
+                'use-sigv4': True,
+            }
+        }
+
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more',
+            host='s3.amazonaws.com',
+            is_secure=True,
+        )
+
+        url = conn.generate_url_sigv4(86400, 'GET', bucket='examplebucket',
+                                      key='test.txt')
+        self.assertTrue(url.startswith(
+            'https://examplebucket.s3.amazonaws.com/test.txt?'))
+
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more',
+            host='s3.amazonaws.com',
+            is_secure=False,
+        )
+
+        url = conn.generate_url_sigv4(86400, 'GET', bucket='examplebucket',
+                                      key='test.txt')
+        self.assertTrue(url.startswith(
+            'http://examplebucket.s3.amazonaws.com/test.txt?'))
+
     def test_sigv4_presign_optional_params(self):
         self.config = {
             's3': {

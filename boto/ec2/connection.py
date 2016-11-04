@@ -2650,7 +2650,7 @@ class EC2Connection(AWSQueryConnection):
         # get all the snapshots, sort them by date and time, and
         # organize them into one array for each volume:
         all_snapshots = self.get_all_snapshots(owner = 'self')
-        all_snapshots.sort(cmp = lambda x, y: cmp(x.start_time, y.start_time))
+        all_snapshots.sort(key=lambda x: x.start_time)
         snaps_for_each_volume = {}
         for snap in all_snapshots:
             # the snapshot name and the volume name are the same.

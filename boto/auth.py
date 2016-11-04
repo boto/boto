@@ -59,7 +59,11 @@ SIGV4_DETECT = [
     '.eu-central',
     '-eu-central',
     '.ap-northeast-2',
-    '-ap-northeast-2'
+    '-ap-northeast-2',
+    '.ap-south-1',
+    '-ap-south-1',
+    '.us-east-2',
+    '-us-east-2',
 ]
 
 
@@ -771,8 +775,8 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         # Add signature to params now that we have it
         req.params['X-Amz-Signature'] = signature
 
-        return 'https://%s%s?%s' % (req.host, req.path,
-                                    urllib.parse.urlencode(req.params))
+        return '%s://%s%s?%s' % (req.protocol, req.host, req.path,
+                                 urllib.parse.urlencode(req.params))
 
 
 class STSAnonHandler(AuthHandler):
