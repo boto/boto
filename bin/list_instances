@@ -8,7 +8,8 @@ import boto
 from boto.ec2 import regions
 
 HEADERS = {
-    'ID': {'get': attrgetter('id'), 'length': 15},
+    'ID': {'get': attrgetter('id'),
+           'length': len('i-12345678901234567') + 1},
     'Zone': {'get': attrgetter('placement'), 'length': 15},
     'Groups': {'get': attrgetter('groups'), 'length': 30},
     'Hostname': {'get': attrgetter('public_dns_name'), 'length': 50},
