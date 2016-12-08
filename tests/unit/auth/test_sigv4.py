@@ -551,7 +551,11 @@ class TestS3SigV4OptIn(MockServiceWithConfigTestCase):
         self.assertEqual(fake._required_auth_capability(), ['nope'])
 
     def test_sigv4_non_optional(self):
-        region_groups = ['.cn-north', '.eu-central', '-eu-central']
+        region_groups = [
+            '.cn-north',
+            '.eu-central', '-eu-central',
+            '.ca-central', '-ca-central'
+        ]
         specific_regions = [
             '.ap-northeast-2', '-ap-northeast-2',
             '.ap-south-1', '-ap-south-1',
@@ -571,7 +575,6 @@ class TestS3SigV4OptIn(MockServiceWithConfigTestCase):
             fake = FakeS3Connection(host='s3' + region + '.amazonaws.com')
             self.assertEqual(
                 fake._required_auth_capability(), ['hmac-v4-s3'])
-
 
     def test_sigv4_opt_in_config(self):
         # Opt-in via the config.
