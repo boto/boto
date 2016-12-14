@@ -27,7 +27,7 @@ import base64
 from boto.compat import six, urllib
 import time
 
-from boto.auth import detect_potential_s3sigv4
+from boto.auth import detect_potential_s3sigv4, detect_anon
 import boto.utils
 from boto.connection import AWSAuthConnection
 from boto import handler
@@ -172,7 +172,7 @@ class S3Connection(AWSAuthConnection):
                  calling_format=DefaultCallingFormat, path='/',
                  provider='aws', bucket_class=Bucket, security_token=None,
                  suppress_consec_slashes=True, anon=False,
-                 validate_certs=None, profile_name=None):
+                 validate_certs=None, profile_name=None, use_sigv4=False):
         no_host_provided = False
         if host is NoHostProvided:
             no_host_provided = True
@@ -182,6 +182,7 @@ class S3Connection(AWSAuthConnection):
         self.calling_format = calling_format
         self.bucket_class = bucket_class
         self.anon = anon
+        self.use_sigv4 = use_sigv4
         super(S3Connection, self).__init__(host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
@@ -197,12 +198,10 @@ class S3Connection(AWSAuthConnection):
                     "When using SigV4, you must specify a 'host' parameter."
                 )
 
+    @detect_anon
     @detect_potential_s3sigv4
     def _required_auth_capability(self):
-        if self.anon:
-            return ['anon']
-        else:
-            return ['s3']
+        return ['s3']
 
     def __iter__(self):
         for bucket in self.get_all_buckets():

@@ -31,8 +31,10 @@ import binascii
 import math
 from hashlib import md5
 import boto.utils
+from socket import error as SocketError
 from boto.compat import BytesIO, six, urllib, encodebytes
 
+from boto.auth import sigv4_streaming
 from boto.exception import BotoClientError
 from boto.exception import StorageDataError
 from boto.exception import PleaseRetryException
@@ -43,7 +45,7 @@ from boto import UserAgent
 from boto.utils import compute_md5, compute_hash
 from boto.utils import find_matching_headers
 from boto.utils import merge_headers_by_name
-
+from boto.utils import squash_headers_by_name
 
 class Key(object):
     """
@@ -83,6 +85,8 @@ class Key(object):
 
 
     BufferSize = boto.config.getint('Boto', 'key_buffer_size', 8192)
+    # AWS has a minimum aws-chunk size of 8K when using SigV4.
+    MinChunkSize = boto.config.getint('s3', 'min_chunk_size', 8192)
 
     # The object metadata fields a user can set, other than custom metadata
     # fields (i.e., those beginning with a provider-specific prefix like
@@ -735,7 +739,10 @@ class Key(object):
 
         :type chunked_transfer: boolean
         :param chunked_transfer: (optional) If true, we use chunked
-            Transfer-Encoding.
+            Transfer-Encoding. Note that AWS does not support this
+            except when using Signature V4. If using SV4, this option
+            should still be False for AWS and it will be adjusted
+            internally.
 
         :type size: int
         :param size: (optional) The Maximum number of bytes to read
@@ -763,9 +770,8 @@ class Key(object):
         # default to an MD5 hash_alg to hash the data on-the-fly.
         if hash_algs is None and not self.md5:
             hash_algs = {'md5': md5}
-        digesters = dict((alg, hash_algs[alg]()) for alg in hash_algs or {})
 
-        def sender(http_conn, method, path, data, headers):
+        def sender(http_conn, request):
             # This function is called repeatedly for temporary retries
             # so we must be sure the file pointer is pointing at the
             # start of the data.
@@ -777,6 +783,13 @@ class Key(object):
                 # avoid setting bad data.
                 raise provider.storage_data_error(
                     'Cannot retry failed request. fp does not support seeking.')
+            # likewise, the digesters should be reset for repeated calls
+            digesters = dict((alg, hash_algs[alg]()) for alg in hash_algs or {})
+
+            method = request.method
+            path = request.path
+            data = request.body
+            headers = request.headers
 
             # If the caller explicitly specified host header, tell putrequest
             # not to add a second host header. Similarly for accept-encoding.
@@ -810,10 +823,10 @@ class Key(object):
                 if chunked_transfer and cb_size == 0:
                     # For chunked Transfer, we call the cb for every 1MB
                     # of data transferred, except when we know size.
-                    cb_count = (1024 * 1024) / self.BufferSize
+                    cb_count = (1024 * 1024) / BufferSize
                 elif num_cb > 1:
                     cb_count = int(
-                        math.ceil(cb_size / self.BufferSize / (num_cb - 1.0)))
+                        math.ceil(cb_size / BufferSize / (num_cb - 1.0)))
                 elif num_cb < 0:
                     cb_count = -1
                 else:
@@ -822,57 +835,114 @@ class Key(object):
                 cb(data_len, cb_size)
 
             bytes_togo = size
-            if bytes_togo and bytes_togo < self.BufferSize:
-                chunk = fp.read(bytes_togo)
-            else:
-                chunk = fp.read(self.BufferSize)
+            need = BufferSize
+            if bytes_togo and bytes_togo < BufferSize:
+                need = bytes_togo
+            chunk = fp.read(need)
+            if streaming_auth is not None:
+                # aws content-length calculations, and minimum chunk size
+                # requirements rely on all chunks except the last being
+                # exactly BufferSize large. We repeat this check below also.
+                required_len = need - len(chunk)
+                while required_len > 0:
+                    more_data = fp.read(required_len)
+                    if more_data == '':
+                        break
+                    else:
+                        chunk += more_data
+                    required_len -= len(more_data)
 
+            # TODO: Won't this break things?
             if not isinstance(chunk, bytes):
                 chunk = chunk.encode('utf-8')
 
             if spos is None:
                 # read at least something from a non-seekable fp.
                 self.read_from_stream = True
-            while chunk:
-                chunk_len = len(chunk)
-                data_len += chunk_len
+
+            try:
+                while chunk:
+                    chunk_len = len(chunk)
+                    data_len += chunk_len
+                    if streaming_auth is not None:
+                        chunk_hdr = streaming_auth.chunk_header(request, chunk)
+                        if chunked_transfer:
+                            cte_chunk_len = chunk_len + streaming_auth.chunk_extra_size(chunk_len)
+                            http_conn.send('%x\r\n' % cte_chunk_len)
+                            http_conn.send('%s%s\r\n' % (chunk_hdr, chunk))
+                            http_conn.send('\r\n')
+                        else:
+                            http_conn.send('%s' % chunk_hdr)
+                            http_conn.send(chunk)
+                            http_conn.send('\r\n')
+                    elif chunked_transfer:
+                        http_conn.send('%x\r\n' % chunk_len)
+                        http_conn.send(chunk)
+                        http_conn.send('\r\n')
+                    else:
+                        http_conn.send(chunk)
+
+                    for alg in digesters:
+                        digesters[alg].update(chunk)
+                    if bytes_togo:
+                        bytes_togo -= chunk_len
+                        if bytes_togo <= 0:
+                            break
+                    if cb:
+                        i += 1
+                        if i == cb_count or cb_count == -1:
+                            cb(data_len, cb_size)
+                            i = 0
+
+                    need = BufferSize
+                    if bytes_togo and bytes_togo < BufferSize:
+                        need = bytes_togo
+                    chunk = fp.read(need)
+                    if streaming_auth is not None:
+                        required_len = need - len(chunk)
+                        while required_len > 0:
+                            more_data = fp.read(required_len)
+                            if more_data == '':
+                                break
+                            else:
+                                chunk += more_data
+                            required_len -= len(more_data)
+
+                    # TODO: Won't this break things?
+                    if not isinstance(chunk, bytes):
+                        chunk = chunk.encode('utf-8')
+
+                if streaming_auth is not None:
+                    # Need to write the final empty aws-chunk
+                    chunk_hdr = streaming_auth.chunk_header(request, '')
+                    if chunked_transfer:
+                        cte_chunk_len = streaming_auth.chunk_extra_size(0)
+                        http_conn.send('%x\r\n' % cte_chunk_len)
+                        http_conn.send('%s\r\n' % chunk_hdr)
+                        http_conn.send('\r\n')
+                    else:
+                        http_conn.send('%s\r\n' % chunk_hdr)
+
                 if chunked_transfer:
-                    http_conn.send('%x;\r\n' % chunk_len)
-                    http_conn.send(chunk)
+                    http_conn.send('0\r\n')
                     http_conn.send('\r\n')
-                else:
-                    http_conn.send(chunk)
+
+                self.size = data_len
+
                 for alg in digesters:
-                    digesters[alg].update(chunk)
-                if bytes_togo:
-                    bytes_togo -= chunk_len
-                    if bytes_togo <= 0:
-                        break
-                if cb:
-                    i += 1
-                    if i == cb_count or cb_count == -1:
-                        cb(data_len, cb_size)
-                        i = 0
-                if bytes_togo and bytes_togo < self.BufferSize:
-                    chunk = fp.read(bytes_togo)
-                else:
-                    chunk = fp.read(self.BufferSize)
+                    self.local_hashes[alg] = digesters[alg].digest()
 
-                if not isinstance(chunk, bytes):
-                    chunk = chunk.encode('utf-8')
+                if cb and (cb_count <= 1 or i > 0) and data_len > 0:
+                    cb(data_len, cb_size)
 
-            self.size = data_len
-
-            for alg in digesters:
-                self.local_hashes[alg] = digesters[alg].digest()
-
-            if chunked_transfer:
-                http_conn.send('0\r\n')
-                    # http_conn.send("Content-MD5: %s\r\n" % self.base64md5)
-                http_conn.send('\r\n')
-
-            if cb and (cb_count <= 1 or i > 0) and data_len > 0:
-                cb(data_len, cb_size)
+            except SocketError as e:
+                # AWS cuts connections after sending a failure
+                # response to the client when using 100-continue.
+                # Handle the connection cut gracefully here as
+                # we can probably read the response below and
+                # handle it normally.
+                if e.errno != errno.EPIPE and e.errno != errno.ECONNRESET:
+                    raise
 
             http_conn.set_debuglevel(save_debug)
             self.bucket.connection.debug = save_debug
@@ -884,6 +954,25 @@ class Key(object):
                     response.status, response.reason, body)
 
             return response
+
+        def retry_handler(response, i, next_sleep, request):
+            # When doing forced retry from non-sigv4 to sigv4, we need
+            # to calculate the sha256 hash before the sender is called
+            # so the request can be authorized correctly. We calc
+            # the sha256 here so the normal retry code can work.
+            if response.status == 400:
+                body = response.read()
+                if (body is not None and
+                    body.find('AWS4-HMAC-SHA256') != -1):
+                    boto.log.debug("Reworking request for AWS4-HMAC-SHA256")
+                    if spos is not None and spos != fp.tell():
+                        fp.seek(spos)
+                    # Only support entire payload style sigv4 redirection
+                    request.headers['_sha256'] = compute_hash(fp,
+                                         size=self.size,
+                                         hash_algorithm=hashlib.sha256)[0]
+            # Always return None to enable normal retry logic
+            return None
 
         if not headers:
             headers = {}
@@ -897,9 +986,6 @@ class Key(object):
         # a storage class, so we can assume STANDARD here
         if self._storage_class not in [None, 'STANDARD']:
             headers[provider.storage_class_header] = self.storage_class
-        if find_matching_headers('Content-Encoding', headers):
-            self.content_encoding = merge_headers_by_name(
-                'Content-Encoding', headers)
         if find_matching_headers('Content-Language', headers):
             self.content_language = merge_headers_by_name(
                 'Content-Language', headers)
@@ -923,23 +1009,66 @@ class Key(object):
             headers['Content-Type'] = self.content_type
         else:
             headers['Content-Type'] = self.content_type
+
         if self.base64md5:
             headers['Content-MD5'] = self.base64md5
-        if chunked_transfer:
+
+        # Unforunately, we have to know at this point what our authentication
+        # method is so that we know how to calculate the signatures on the
+        # data if using sigV4. There are 3 types of payloads available for AWS
+        # SigV4. We either a) calculate the signature using the entire body;
+        # b) calculate it in chunks using aws-chunked or c) similar to b but
+        # additionally use chunked transfer encoding.
+        streaming_auth = None
+        BufferSize = self.BufferSize
+        if 'hmac-v4-s3' in self.bucket.connection._required_auth_capability():
+            streaming = sigv4_streaming()
+            boto.log.debug('sigv4 streaming: %d' % streaming)
+            if streaming == 0:
+                # No streaming. Calc sig over entire payload
+                headers['_sha256'] = compute_hash(fp, size=self.size,
+                                         hash_algorithm=hashlib.sha256)[0]
+                headers['Content-Length'] = str(self.size)
+            elif streaming == 3:
+                headers['_sha256'] = 'UNSIGNED-PAYLOAD'
+                headers['Content-Length'] = str(self.size)
+            else:
+                streaming_auth = self.bucket.connection._auth_handler
+                # AWS Streaming Chunks have a minimum size requirement.
+                if BufferSize < self.MinChunkSize:
+                    BufferSize = self.MinChunkSize
+                headers['_sha256'] = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
+                # add a new content-encoding header while squashing any
+                # existing ones back as sigv4 can only manage 1 header.
+                squash_headers_by_name('Content-Encoding', headers, 'aws-chunked')
+                headers['x-amz-decoded-content-length'] = str(size)
+                if streaming == 1:
+                    # Stream using Content-Length
+                    cl = self.size
+                    full = self.size / BufferSize
+                    cl += full * streaming_auth.chunk_extra_size(BufferSize)
+                    partial = self.size % BufferSize
+                    if partial > 0:
+                        cl += streaming_auth.chunk_extra_size(partial)
+                    cl += streaming_auth.chunk_extra_size(0)
+                    headers['Content-Length'] = str(cl)
+                else:
+                    # AWS has special support for chunked Transfer-Encoding
+                    # for SigV4 only. It does however require the header
+                    # x-amz-deconded-content-length so it's not full support which
+                    # is why it's still marked as provider not supporting it.
+                    chunked_transfer = True
+                    headers['Transfer-Encoding'] = 'chunked'
+        elif chunked_transfer:
             headers['Transfer-Encoding'] = 'chunked'
-            #if not self.base64md5:
-            #    headers['Trailer'] = "Content-MD5"
         else:
             headers['Content-Length'] = str(self.size)
-        # This is terrible. We need a SHA256 of the body for SigV4, but to do
-        # the chunked ``sender`` behavior above, the ``fp`` isn't available to
-        # the auth mechanism (because closures). Detect if it's SigV4 & embelish
-        # while we can before the auth calculations occur.
-        if 'hmac-v4-s3' in self.bucket.connection._required_auth_capability():
-            kwargs = {'fp': fp, 'hash_algorithm': hashlib.sha256}
-            if size is not None:
-                kwargs['size'] = size
-            headers['_sha256'] = compute_hash(**kwargs)[0]
+
+        # merge content-encoding headers back to the key
+        if find_matching_headers('Content-Encoding', headers):
+            self.content_encoding = merge_headers_by_name(
+                'Content-Encoding', headers)
+
         headers['Expect'] = '100-Continue'
         headers = boto.utils.merge_meta(headers, self.metadata, provider)
         resp = self.bucket.connection.make_request(
@@ -948,7 +1077,8 @@ class Key(object):
             self.name,
             headers,
             sender=sender,
-            query_args=query_args
+            query_args=query_args,
+            retry_handler=retry_handler
         )
         self.handle_version_headers(resp, force=True)
         self.handle_addl_headers(resp.getheaders())
@@ -961,9 +1091,9 @@ class Key(object):
                 # 500 & 503 can be plain retries.
                 return True
 
-            if response.getheader('location'):
-                # If there's a redirect, plain retry.
-                return True
+        if response.getheader('location'):
+            # If there's a redirect, plain retry.
+            return True
 
         if 200 <= response.status <= 299:
             self.etag = response.getheader('etag')
@@ -1001,6 +1131,10 @@ class Key(object):
                     "Saw %s, retrying" % err.error_code,
                     response=response
                 )
+            elif (err.error_code in ['InvalidRequest'] and
+                  err.body.find('AWS4-HMAC-SHA256') != -1):
+                # Newer AWS endpoints require sigv4, try that.
+                return True
 
         return False
 
@@ -1263,7 +1397,8 @@ class Key(object):
                     if (re.match('^"[a-fA-F0-9]{32}"$', key.etag)):
                         etag = key.etag.strip('"')
                         md5 = (etag, base64.b64encode(binascii.unhexlify(etag)))
-                if not md5:
+                if (not md5 and 'hmac-v4-s3'
+                    not in self.bucket.connection._required_auth_capability()):
                     # compute_md5() and also set self.size to actual
                     # size of the bytes read computing the md5.
                     md5 = self.compute_md5(fp, size)
@@ -1272,15 +1407,16 @@ class Key(object):
                 elif size:
                     self.size = size
                 else:
-                    # If md5 is provided, still need to size so
-                    # calculate based on bytes to end of content
+                    # If md5 is provided or not required, we still need the
+                    # size so calculate based on bytes to end of content
                     spos = fp.tell()
                     fp.seek(0, os.SEEK_END)
                     self.size = fp.tell() - spos
                     fp.seek(spos)
                     size = self.size
-                self.md5 = md5[0]
-                self.base64md5 = md5[1]
+                if md5:
+                    self.md5 = md5[0]
+                    self.base64md5 = md5[1]
 
             if self.name is None:
                 self.name = self.md5

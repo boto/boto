@@ -38,6 +38,7 @@ from email.utils import formatdate
 import hmac
 import os
 import posixpath
+import re
 
 from boto.compat import urllib, encodebytes, parse_qs_safe
 from boto.auth_handler import AuthHandler
@@ -491,13 +492,16 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         sts.append(sha256(canonical_request.encode('utf-8')).hexdigest())
         return '\n'.join(sts)
 
-    def signature(self, http_request, string_to_sign):
+    def signing_key(self, http_request):
         key = self._provider.secret_key
         k_date = self._sign(('AWS4' + key).encode('utf-8'),
                             http_request.timestamp)
         k_region = self._sign(k_date, http_request.region_name)
         k_service = self._sign(k_region, http_request.service_name)
-        k_signing = self._sign(k_service, 'aws4_request')
+        return self._sign(k_service, 'aws4_request')
+
+    def signature(self, http_request, string_to_sign):
+        k_signing = self.signing_key(http_request)
         return self._sign(k_signing, string_to_sign, hex=True)
 
     def add_auth(self, req, **kwargs):
@@ -600,17 +604,17 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
     def host_header(self, host, http_request):
         port = http_request.port
         secure = http_request.protocol == 'https'
+        hostonly = http_request.host.split(':', 1)[0]
         if ((port == 80 and not secure) or (port == 443 and secure)):
-            return http_request.host
-        return '%s:%s' % (http_request.host, port)
+            return hostonly
+        return '%s:%s' % (hostonly, port)
 
     def headers_to_sign(self, http_request):
         """
         Select the headers from the request that need to be included
         in the StringToSign.
         """
-        host_header_value = self.host_header(self.host, http_request)
-        headers_to_sign = {'Host': host_header_value}
+        headers_to_sign = {}
         for name, value in http_request.headers.items():
             lname = name.lower()
             # Hooray for the only difference! The main SigV4 signer only does
@@ -618,52 +622,41 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
             # signed, except for authorization itself.
             if lname not in ['authorization']:
                 headers_to_sign[name] = value
+        # Add the Host last to ensure it's correct.
+        headers_to_sign['Host'] = self.host_header(self.host, http_request)
         return headers_to_sign
 
     def determine_region_name(self, host):
-        # S3's different format(s) of representing region/service from the
-        # rest of AWS makes this hurt too.
-        #
-        # Possible domain formats:
-        # - s3.amazonaws.com (Classic)
-        # - s3-us-west-2.amazonaws.com (Specific region)
-        # - bukkit.s3.amazonaws.com (Vhosted Classic)
-        # - bukkit.s3-ap-northeast-1.amazonaws.com (Vhosted specific region)
-        # - s3.cn-north-1.amazonaws.com.cn - (Beijing region)
-        # - bukkit.s3.cn-north-1.amazonaws.com.cn - (Vhosted Beijing region)
-        parts = self.split_host_parts(host)
-
-        if self.region_name is not None:
-            region_name = self.region_name
+        # lookup the region/endpoint map to determine the region name to
+        # use for the given host. As some endpoints also interchange
+        # s3- and s3., we translate all '-' characters to '.' for matching.
+        port = host.rfind(':')
+        if port == -1:
+            dothost = host.replace('-','.')
         else:
-            # Classic URLs - s3-us-west-2.amazonaws.com
-            if len(parts) == 3:
-                region_name = self.clean_region_name(parts[0])
-
-                # Special-case for Classic.
-                if region_name == 's3':
-                    region_name = 'us-east-1'
-            else:
-                # Iterate over the parts in reverse order.
-                for offset, part in enumerate(reversed(parts)):
-                    part = part.lower()
-
-                    # Look for the first thing starting with 's3'.
-                    # Until there's a ``.s3`` TLD, we should be OK. :P
-                    if part == 's3':
-                        # If it's by itself, the region is the previous part.
-                        region_name = parts[-offset]
-
-                        # Unless it's Vhosted classic
-                        if region_name == 'amazonaws':
-                            region_name = 'us-east-1'
-
-                        break
-                    elif part.startswith('s3-'):
-                        region_name = self.clean_region_name(part)
-                        break
-
-        return region_name
+            dothost = host[:port].replace('-','.')
+        from boto.s3 import regions
+        for ri in regions():
+            if dothost.endswith(ri.endpoint.replace('-','.')):
+                return ri.name
+        # No match using endpoints. Before asking the user to specify a
+        # custom endpoint, see if we can guess the region by grabbing it
+        # out of hostname. We handle the following with optional ports:
+        #   - s3.region.xyz
+        #   - bucket.s3.region.xyz
+        #   - s3-region.domain.xyz
+        #   - s3.region.domain.xyz
+        #   - bucket.s3-region.domain.xyz
+        #   - bucket.s3.region.domain.xyz
+        m = re.match('^(.+\.)*s3[-\.]([^\.]+)\..+', host)
+        if m and m.lastindex == 2:
+            return m.group(2)
+        msg = 'Cannot detect region name from the endpoint/host "%s" ' % host
+        msg += 'for Signature V4. You can add additional region/endpoint '
+        msg += 'mappings by creating an endpoints.json file and pointing '
+        msg += 'Boto at it using the config \'Boto\' \'endpoints_path\'. '
+        msg += 'The file format should be: {"s3":{"region":"endpoint"}}.'
+        raise BotoClientError(msg)
 
     def determine_service_name(self, host):
         # Should this signing mechanism ever be used for anything else, this
@@ -719,12 +712,58 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
 
         return super(S3HmacAuthV4Handler, self).payload(http_request)
 
+    def signing_key(self, http_request):
+        k_signing = super(S3HmacAuthV4Handler,
+                          self).signing_key(http_request)
+        http_request.sigv4['signing_key'] = k_signing
+        return k_signing
+
+    def signature(self, http_request, string_to_sign):
+        signature = super(S3HmacAuthV4Handler,
+                          self).signature(http_request, string_to_sign)
+        http_request.sigv4['signature'] = signature
+        return signature
+
+    def chunk_string_to_sign(self, http_request, chunk):
+        sts = ['AWS4-HMAC-SHA256-PAYLOAD']
+        sts.append(http_request.headers['X-Amz-Date'])
+        sts.append(self.credential_scope(http_request))
+        sts.append(http_request.sigv4['signature'])
+        sts.append(sha256('').hexdigest())
+        sts.append(sha256(chunk).hexdigest())
+        return '\n'.join(sts)
+
+    def chunk_signature(self, http_request, chunk):
+        sts = self.chunk_string_to_sign(http_request, chunk)
+        k_signing = http_request.sigv4['signing_key']
+        signature = self._sign(k_signing, sts, hex=True)
+        http_request.sigv4['signature'] = signature
+        return signature
+
+    def chunk_header(self, http_request, chunk):
+        signature = self.chunk_signature(http_request, chunk)
+        return '%x;chunk-signature=%s\r\n' % (len(chunk), signature)
+
+    def chunk_extra_size(self, chunk_len):
+        # each aws-chunk adds this many bytes to the length
+        #  17 ';chunk-signature='
+        # +64 signature hex digest
+        # + 4 '\r\n\r\n'
+        # =85
+        return 85 + len('%x' % chunk_len)
+
     def add_auth(self, req, **kwargs):
+        if 'X-Amzn-Authorization' in req.headers:
+            req.sigv4 = {}
         if 'x-amz-content-sha256' not in req.headers:
             if '_sha256' in req.headers:
                 req.headers['x-amz-content-sha256'] = req.headers.pop('_sha256')
             else:
-                req.headers['x-amz-content-sha256'] = self.payload(req)
+                streaming = sigv4_streaming()
+                if streaming == 3:
+                    req.headers['x-amz-content-sha256'] = 'UNSIGNED-PAYLOAD'
+                else:
+                    req.headers['x-amz-content-sha256'] = self.payload(req)
         updated_req = self.mangle_path_and_params(req)
         return super(S3HmacAuthV4Handler, self).add_auth(updated_req,
                                                          unmangled_req=req,
@@ -1029,9 +1068,18 @@ def detect_potential_sigv4(func):
         return func(self)
     return _wrapper
 
+def detect_anon(func):
+    def _wrapper(self):
+        if self.anon:
+            return ['anon']
+        return func(self)
+    return _wrapper
 
 def detect_potential_s3sigv4(func):
     def _wrapper(self):
+        if self.use_sigv4:
+            return ['hmac-v4-s3']
+
         if os.environ.get('S3_USE_SIGV4', False):
             return ['hmac-v4-s3']
 
@@ -1048,3 +1096,46 @@ def detect_potential_s3sigv4(func):
 
         return func(self)
     return _wrapper
+
+def sigv4_streaming():
+    """Return the method to use for the SigV4 payload.
+
+    AWS allows S3 requests using signature V4 to be transferred using
+    three different methods:
+
+    0 - Don't do streaming. The entire payload is checksummed and
+        used as part of the signature. The payload is sent in one shot.
+        This method requires the entire payload to be read twice, once to
+        calculate the checksum and again while sending the data in
+        the request.
+
+    1 - Do standard streaming. The request headers are signed first,
+        then the body is sent using a special 'aws-chunked' content-encoding.
+        Each chunk is checksummed and signed on the go. This method is the
+        standard payload method if not specified.
+
+    2 - This is also a streaming method but uses the chunked
+        transfer-encoding header to transfer the data piece by piece.
+        This uses HTTP chunking on top of aws-chunked.
+
+    3 - This method is similar to 0 and transfers the payload in a single
+        chunk but unlike 0, this method does *not* sign the payload This
+        method implements the UNSIGNED PAYLOAD option for SigV4.
+
+    Returns:
+        One of 0,1,2,3
+    """
+    default = 1
+
+    streaming = os.environ.get('S3_SIGV4_STREAMING')
+    if streaming is not None:
+        if streaming in ['0','1','2','3']:
+            return int(streaming)
+        else:
+            return default
+
+    streaming = boto.config.getint('s3', 'sigv4_streaming', default)
+    if streaming >= 0 and streaming <= 3:
+        return streaming
+
+    return default

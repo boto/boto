@@ -2852,7 +2852,7 @@ class DynamoDBConnection(AWSQueryConnection):
             raise exception_class(response.status, response.reason,
                                   body=json_body)
 
-    def _retry_handler(self, response, i, next_sleep):
+    def _retry_handler(self, response, i, next_sleep, request):
         status = None
         boto.log.debug("Saw HTTP status: %s" % response.status)
         if response.status == 400:

@@ -30,8 +30,10 @@ import time
 import random
 
 import boto.s3
+from boto import config
 from boto.compat import six, StringIO, urllib
 from boto.s3.connection import S3Connection
+from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
 
@@ -446,6 +448,34 @@ class S3KeyTest(unittest.TestCase):
             expected
         )
 
+    def test_no_perm_hangup_response(self):
+        # Recently AWS drops the connection after returning 403
+        # to a client who is using 100-Continue. Previously we
+        # returning an exception instead of processing the response.
+        # Write a 500K object as anon user to trigger the condition.
+        anon_con = S3Connection(anon=True)
+        anon_bucket = Bucket(anon_con, self.bucket_name)
+        sfp = StringIO('x' * (500 * 1024))
+        k = anon_bucket.new_key("k")
+        with self.assertRaises(k.provider.storage_response_error):
+            k.set_contents_from_file(sfp)
+
+
+class S3KeySSECTest(unittest.TestCase):
+    def setUp(self):
+        # Force HTTPS which is required for SSEC.
+        if not config.has_section('Boto'):
+            boto.config.add_section('Boto')
+        boto.config.setbool('Boto', 'is_secure', True)
+        self.conn = S3Connection()
+        self.bucket_name = 'boto-ssec-key-%d' % int(time.time())
+        self.bucket = self.conn.create_bucket(self.bucket_name)
+
+    def tearDown(self):
+        for key in self.bucket:
+            key.delete()
+        self.bucket.delete()
+
     def test_set_contents_with_sse_c(self):
         content="01234567890123456789"
         # the plain text of customer key is "01testKeyToSSEC!"
@@ -467,6 +497,8 @@ class S3KeyTest(unittest.TestCase):
 
 class S3KeySigV4Test(unittest.TestCase):
     def setUp(self):
+        if not config.has_section('s3'):
+            boto.config.add_section('s3')
         self.conn = boto.s3.connect_to_region('eu-central-1')
         self.bucket_name = 'boto-sigv4-key-%d' % int(time.time())
         self.bucket = self.conn.create_bucket(self.bucket_name,
@@ -503,6 +535,102 @@ class S3KeySigV4Test(unittest.TestCase):
 
         keys = self.bucket.get_all_keys(prefix=k.key, max_keys=1)
         self.assertEqual(1, len(keys))
+
+    def test_set_contents_from_string(self):
+        body = 'This is a test of S3'
+        # Upload using each of the sigv4 streaming methods 0,1,2
+        for s4s in ('0', '1', '2', '3'):
+            boto.config.set('s3', 'sigv4_streaming', s4s)
+            k = Key(self.bucket)
+            k.key = 'foobar' + s4s
+            k.set_contents_from_string(body)
+        # fetch them back and confirm each has same body
+        for s4s in ('0', '1', '2', '3'):
+            k = self.bucket.get_key('foobar' + s4s)
+            self.assertEqual(k.get_contents_as_string().decode('utf-8'), body)
+
+    def test_set_contents_from_file_partial(self):
+        # Upload 9 bytes starting at byte 5 => 'is a test'
+        sfp = StringIO('This is a test of S3')
+        # Upload using each of the sigv4 streaming methods 0,1,2
+        for s4s in ('0', '1', '2', '3'):
+            boto.config.set('s3', 'sigv4_streaming', s4s)
+            sfp.seek(5) # is a test
+            k = Key(self.bucket)
+            k.key = 'foobar' + s4s
+            k.set_contents_from_file(sfp, size=9)
+        # fetch them back and confirm each has same body
+        need = 'is a test'
+        for s4s in ('0', '1', '2', '3'):
+            k = self.bucket.get_key('foobar' + s4s)
+            self.assertEqual(k.get_contents_as_string().decode('utf-8'), need)
+
+    def test_multichunk_with_slow_io(self):
+        # A single PUT can use chunks when using SigV4.
+        # SigV4 chunks are 8K by default. Upload a 9K object to
+        # test multiple chunks and use a slow file object which
+        # only reads a max of 4096 bytes at a time to ensure the
+        # chunk pre-calculation works.
+        class Slow(StringIO, object):
+            def read(self, size=None):
+                max = 4096 # 4096 max bytes at a time
+                if size and size > max:
+                    return (super(Slow, self).read(max))
+                else:
+                    return (super(Slow, self).read(size))
+        sfp = Slow('x' * 9216)
+        for s4s in ('1', '2'): # '0', '3' don't use chunking
+            sfp.seek(0) # rewind for each iteration
+            boto.config.set('s3', 'sigv4_streaming', s4s)
+            k = Key(self.bucket)
+            k.key = 'foobar' + s4s
+            wrote = k.set_contents_from_file(sfp)
+            self.assertEqual(wrote, 9216)
+
+    def test_put_redirect_using_sigv4(self):
+        # The bucket name is a bucket in the eu-central-1 region.
+        # Put the object using the external-1 endpoint which by
+        # default using sigv2. AWS will redirect us and tell us
+        # we need to use sigv4.
+        non_sigv4_conn = S3Connection(host='s3-external-1.amazonaws.com')
+        bucket = Bucket(non_sigv4_conn, self.bucket_name)
+        body = 'y' * 9216
+        sfp = StringIO(body)
+        k = Key(bucket)
+        k.key = 'redirected'
+        wrote = k.set_contents_from_file(sfp)
+        self.assertEqual(wrote, 9216)
+        k = self.bucket.get_key('redirected')
+        self.assertEqual(k.get_contents_as_string().decode('utf-8'), body)
+
+    def test_anon_using_sigv4(self):
+        # anon write to bucket should fail (ie not add auth headers)
+        # This should be true even if access/secret key is available
+        # as it is for sigv2 connections.
+        anon_con = S3Connection(host='s3-external-1.amazonaws.com',
+                                anon=True,
+                                aws_access_key_id='ak',
+                                aws_secret_access_key='sk')
+        anon_bucket = Bucket(anon_con, self.bucket_name)
+        sfp = StringIO('No authorization header')
+        k = anon_bucket.new_key("anon")
+        with self.assertRaises(k.provider.storage_response_error):
+            k.set_contents_from_file(sfp)
+
+    def test_put_using_sigv4_redirected_with_sigv4(self):
+        # The bucket name is a bucket in the eu-central-1 region.
+        # Put the object using the external-1 endpoint and use
+        # sigvr4. AWS will redirect us and tell us also using sigv4.
+        non_sigv4_conn = S3Connection(host='s3-external-1.amazonaws.com', use_sigv4=True)
+        bucket = Bucket(non_sigv4_conn, self.bucket_name)
+        body = 'y' * 10
+        sfp = StringIO(body)
+        k = Key(bucket)
+        k.key = 'redirected'
+        wrote = k.set_contents_from_file(sfp)
+        self.assertEqual(wrote, 10)
+        k = self.bucket.get_key('redirected')
+        self.assertEqual(k.get_contents_as_string().decode('utf-8'), body)
 
 
 class S3KeyVersionCopyTest(unittest.TestCase):
