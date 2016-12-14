@@ -276,6 +276,7 @@ def main():
     if args.overwrite:
         with open(EXISTING_ENDPOINTS_FILE, 'w') as f:
             f.write(json_data)
+            f.write('\n')
     else:
         print(json_data)
 

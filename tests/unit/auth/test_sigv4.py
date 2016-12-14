@@ -560,6 +560,7 @@ class TestS3SigV4OptIn(MockServiceWithConfigTestCase):
             '.ap-northeast-2', '-ap-northeast-2',
             '.ap-south-1', '-ap-south-1',
             '.us-east-2', '-us-east-2',
+            '.eu-west-2', '-eu-west-2',
         ]
 
         # Create a connection for a sample region in each of these groups
