@@ -250,3 +250,49 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
         }
         self.assertEqual(endpoint, expected_endpoint)
 
+    def test_construct_endpoint_with_boto_format_data(self):
+        boto_endpoints = {
+            'ec2': {'mars-west-1': 'ec2.mars-west-1.amazonaws.com'}
+        }
+        resolver = BotoEndpointResolver(
+            endpoint_data=self._endpoint_data(),
+            boto_endpoint_data=boto_endpoints
+        )
+        constructed_endpoint = resolver.construct_endpoint(
+            'ec2', 'mars-west-1')
+        expected_endpoint = {
+            'endpointName': 'mars-west-1',
+            'hostname': 'ec2.mars-west-1.amazonaws.com',
+            'partition': 'aws'
+        }
+        self.assertEqual(constructed_endpoint, expected_endpoint)
+
+    def test_boto_format_data_has_priority_in_construct_endpoint(self):
+        boto_endpoints = {
+            'ec2': {'us-foo': 'ec2.us-foo-3.amazonaws.com'}
+        }
+        resolver = BotoEndpointResolver(
+            endpoint_data=self._endpoint_data(),
+            boto_endpoint_data=boto_endpoints
+        )
+        constructed_endpoint = resolver.construct_endpoint('ec2', 'us-foo')
+        expected_endpoint = {
+            'endpointName': 'us-foo',
+            'hostname': 'ec2.us-foo-3.amazonaws.com',
+            'partition': 'aws'
+        }
+        self.assertEqual(constructed_endpoint, expected_endpoint)
+
+    def test_get_endpoints_with_boto_format_data(self):
+        boto_endpoints = {
+            'ec2': {'mars-west-1': 'ec2.mars-west-1.amazonaws.com'}
+        }
+        resolver = BotoEndpointResolver(
+            endpoint_data=self._endpoint_data(),
+            boto_endpoint_data=boto_endpoints
+        )
+        endpoints = sorted(resolver.get_available_endpoints('ec2'))
+        expected_endpoints = sorted([
+            'us-bar', 'eu-baz', 'us-foo', 'mars-west-1'])
+        self.assertEqual(endpoints, expected_endpoints)
+

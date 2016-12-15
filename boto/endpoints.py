@@ -201,8 +201,10 @@ class BotoEndpointResolver(EndpointResolver):
         'configservice': 'config',
     }
 
-    def __init__(self, endpoint_data, service_rename_map=None):
+    def __init__(self, endpoint_data, boto_endpoint_data=None,
+                 service_rename_map=None):
         super(BotoEndpointResolver, self).__init__(endpoint_data)
+        self._boto_endpoint_data = boto_endpoint_data
         if service_rename_map is None:
             service_rename_map = self.SERVICE_RENAMES
         self._service_rename_map = service_rename_map
@@ -210,13 +212,55 @@ class BotoEndpointResolver(EndpointResolver):
     def get_available_endpoints(self, service_name, partition_name='aws',
                                 allow_non_regional=False):
         endpoint_prefix = self._endpoint_prefix(service_name)
-        return super(BotoEndpointResolver, self).get_available_endpoints(
+        endpoints = super(BotoEndpointResolver, self).get_available_endpoints(
             endpoint_prefix, partition_name, allow_non_regional)
+        boto_endpoints = self._get_available_boto_endpoints(service_name)
+        return set(endpoints + boto_endpoints)
+
+    def _get_available_boto_endpoints(self, service_name):
+        """Get available regions from the boto format endpoints data.
+
+        This does not make any assumptions about partition location or
+        regionality.
+        """
+        if self._boto_endpoint_data is None:
+            return []
+        return list(self._boto_endpoint_data.get(service_name, {}).keys())
 
     def construct_endpoint(self, service_name, region_name=None):
+        # Always prioritize the endpoint data in the boto format
+        boto_endpoint = self._construct_boto_endpoint(
+            service_name, region_name)
+        if boto_endpoint is not None:
+            return boto_endpoint
+
+        # If there is no boto format data to be found, use the
         endpoint_prefix = self._endpoint_prefix(service_name)
         return super(BotoEndpointResolver, self).construct_endpoint(
             endpoint_prefix, region_name)
+
+    def _construct_boto_endpoint(self, service_name, region_name):
+        """Construct an endpoint from the boto format endpoints data."""
+        if region_name is None or self._boto_endpoint_data is None:
+            return None
+
+        # Grab the hostname from the boto format endpoints data
+        boto_endpoints = self._boto_endpoint_data.get(service_name, {})
+        hostname = boto_endpoints.get(region_name, None)
+
+        if hostname is None:
+            return None
+
+        # Put that data in the standard endpoint resolver format. The
+        # partition is set as 'aws', but it ultimately doesn't matter what
+        # it is set to since the boto data will always be returned.
+        endpoint_data = {
+            'partition': 'aws',
+            'endpointName': region_name,
+            'hostname': hostname,
+        }
+
+        return endpoint_data
 
     def _endpoint_prefix(self, service_name):
         return self._service_rename_map.get(service_name, service_name)
