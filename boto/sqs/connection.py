@@ -28,6 +28,8 @@ from boto.sqs.attributes import Attributes
 from boto.sqs.batchresults import BatchResults
 from boto.exception import SQSError, BotoServerError
 
+from itertools import islice
+import cStringIO
 
 class SQSConnection(AWSQueryConnection):
     """
@@ -314,6 +316,101 @@ class SQSConnection(AWSQueryConnection):
         return self.get_object('DeleteMessageBatch', params, BatchResults,
                                queue.id, verb='POST')
 
+    def static_vars(**kwargs):
+        def decorate(func):
+            for k in kwargs:
+                setattr(func, k, kwargs[k])
+            return func
+    return decorate
+
+    @static_vars(counter=0)
+    def take(n, iterabl, reset=False):
+        "Return next n items of the iterable as same type"
+        if reset: take.counter = 0
+        take.counter += n
+        bob = islice(iterabl, take.counter-n, take.counter)
+        if isinstance(iterabl, dict): return dict(bob)
+        elif isinstance(iterabl, list): return list(bob)
+        elif isinstance(iterabl, tuple): return tuple(bob)
+        elif isinstance(iterabl, set): return set(bob)
+        elif isinstance(iterabl, file): return file(bob)
+        else: return bob
+
+    def kv2str(k, v, b4="\t{{", aft="}}\n"):
+        """just a way of prepping a string to display a key-value pair"""
+        l = cStringIO.StringIO()
+        try:
+            l.write("List (size {}): {}".format(len(v),v) if iz.isList(v) else "{}".format(v))
+        except:
+            l.write("<ERROR WHILE PRINTING VALUE>")
+        finally:
+            l.seek(0)
+        return("{}{}: {}{}".format(b4,k,l.getvalue(),aft))
+
+    def stringify_result_message(resultList):
+        cnt = 0
+        bs = ""
+        for y in resultList:
+            cnt += 1
+            for k,v in y.iteritems():
+                bs += kv2str(k,v,b4=" {",aft="},")
+        bs = bs.rstrip(",")
+        return bs, cnt
+
+    def tup_result_messages(dr):
+        return (stringify_result_message(dr.results), stringify_result_message(dr.errors))
+
+    def stringify_final_tup(sSuc="", sErr="", cS=0, cE=0, expect=0):
+        if sSuc == "": sSuc="None"
+        if sErr == "": sErr="None"
+        if cS == expect: sSuc="All"
+        if cE == expect: sErr="All"
+        return "Up to {} messages removed [{}]\t\tMessages remaining ({}) [{}]".format(cS,sSuc,cE,sErr)
+        
+    def delete_message_batch_no_object(self, queue, messages): #returns a string reflecting level of success rather than throwing an exception or True/False
+        """
+        Deletes a list of messages from a queue in a single request.
+  
+        :self: A boto connection object.
+        :param queue: The :class:`boto.sqs.queue.Queue` from which the messages will be deleted
+        :param messages: List of any object or structure with id and receipt_handle attributes such as :class:`boto.sqs.message.Message` objects.
+        """
+        listof10s = []
+        asSuc, asErr, acS, acE = "","",0,0
+        res = []
+        it = tuple(enumerate(messages))
+        params = {}
+        tenmsg = take(10,it,True)
+        while len(tenmsg)>0:
+            listof10s.append(tenmsg)
+            tenmsg = take(10,it)
+        while len(listof10s)>0:
+            tenmsg = listof10s.pop()
+            params.clear()
+            for i, msg in tenmsg: # enumerate(tenmsg):
+                prefix = 'DeleteMessageBatchRequestEntry'
+                numb = (i%10)+1
+                p_name = '%s.%i.Id' % (prefix, numb)
+                params[p_name] = msg.get('id')
+                p_name = '%s.%i.ReceiptHandle' % (prefix, numb)
+                params[p_name] = msg.get('receipt_handle')
+            try:
+                go = self.get_object('DeleteMessageBatch', params, BatchResults, queue.id, verb='POST')
+                (sSuc,cS),(sErr,cE) = tup_result_messages(go)
+                if cS:
+                    asSuc += ","+sSuc
+                    acS += cS
+                if cE:
+                    asErr += ","+sErr
+                    acE += cE
+            except self.ResponseError:
+                print "Error in batch delete for queue %s (%s)\nParams (%d) list: %s" % (queue.name, queue.id, len(params), params)
+                break # bail
+#                eprint("Error in batch delete for queue {}({})\nParams ({}) list: {} ".format(queue.name, queue.id, len(params), params))
+#            except:
+#                eprint("Error of unknown type in batch delete for queue {}({})\nParams ({}) list: {} ".format(queue.name, queue.id, len(params), params))
+        return stringify_final_tup(asSuc, asErr, acS, acE, expect=len(messages)) # mdel # res
+    
     def delete_message_from_handle(self, queue, receipt_handle):
         """
         Delete a message from a queue, given a receipt handle.
