@@ -186,3 +186,37 @@ class EndpointResolver(BaseEndpointResolver):
         return template.format(
             service=service_name, region=endpoint_name,
             dnsSuffix=partition['dnsSuffix'])
+
+
+class BotoEndpointResolver(EndpointResolver):
+    SERVICE_RENAMES = {
+        # The botocore resolver is based on endpoint prefix.
+        # These don't always sync up to the name that boto2 uses.
+        # A mapping can be provided that handles the mapping between
+        # "service names" and endpoint prefixes.
+        'awslambda': 'lambda',
+        'cloudwatch': 'monitoring',
+        'ses': 'email',
+        'ec2containerservice': 'ecs',
+        'configservice': 'config',
+    }
+
+    def __init__(self, endpoint_data, service_rename_map=None):
+        super(BotoEndpointResolver, self).__init__(endpoint_data)
+        if service_rename_map is None:
+            service_rename_map = self.SERVICE_RENAMES
+        self._service_rename_map = service_rename_map
+
+    def get_available_endpoints(self, service_name, partition_name='aws',
+                                allow_non_regional=False):
+        endpoint_prefix = self._endpoint_prefix(service_name)
+        return super(BotoEndpointResolver, self).get_available_endpoints(
+            endpoint_prefix, partition_name, allow_non_regional)
+
+    def construct_endpoint(self, service_name, region_name=None):
+        endpoint_prefix = self._endpoint_prefix(service_name)
+        return super(BotoEndpointResolver, self).construct_endpoint(
+            endpoint_prefix, region_name)
+
+    def _endpoint_prefix(self, service_name):
+        return self._service_rename_map.get(service_name, service_name)
