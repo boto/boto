@@ -25,6 +25,8 @@ import os
 import boto
 from boto.compat import json
 from boto.exception import BotoClientError
+from boto.endpoints import BotoEndpointResolver
+from boto.endpoints import StaticEndpointBuilder
 
 
 def load_endpoint_json(path):
@@ -81,21 +83,20 @@ def load_regions():
     """
     # Load the defaults first.
     endpoints = load_endpoint_json(boto.ENDPOINTS_PATH)
-    additional_path = None
+    additional_data = None
 
     # Try the ENV var. If not, check the config file.
     if os.environ.get('BOTO_ENDPOINTS'):
         additional_path = os.environ['BOTO_ENDPOINTS']
+        additional_data = load_endpoint_json(additional_path)
     elif boto.config.get('Boto', 'endpoints_path'):
         additional_path = boto.config.get('Boto', 'endpoints_path')
+        additional_data = load_endpoint_json(additional_path)
 
-    # If there's a file provided, we'll load it & additively merge it into
-    # the endpoints.
-    if additional_path:
-        additional = load_endpoint_json(additional_path)
-        endpoints = merge_endpoints(endpoints, additional)
-
-    return endpoints
+    # If there's a file provided, we'll load it as well.
+    resolver = BotoEndpointResolver(endpoints, additional_data)
+    builder = StaticEndpointBuilder(resolver)
+    return builder.build_static_endpoints()
 
 
 def get_regions(service_name, region_cls=None, connection_cls=None):
