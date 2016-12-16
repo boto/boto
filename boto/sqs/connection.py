@@ -367,7 +367,7 @@ class SQSConnection(AWSQueryConnection):
         if cE == expect: sErr="All"
         return "Up to {} messages removed [{}]\t\tMessages remaining ({}) [{}]".format(cS,sSuc,cE,sErr)
         
-    def delete_message_batch_no_object(self, queue, messages): #returns a string reflecting level of success rather than throwing an exception or True/False
+    def delete_message_batch_no_object(self, queue, messages): # returns a string reflecting level of success rather than throwing an exception or True/False
         """
         Deletes a list of messages from a queue in a single request.
   
@@ -404,8 +404,8 @@ class SQSConnection(AWSQueryConnection):
                     asErr += ","+sErr
                     acE += cE
             except self.ResponseError:
-                print "Error in batch delete for queue {} ({})\nParams ({}) list: {}".format(queue.name, queue.id, len(params), params)
-                break # bail
+                return "Error in batch delete for queue {} ({})\nParams ({}) list: {}".format(queue.name, queue.id, len(params), params)
+#                break # bail
 #                eprint("Error in batch delete for queue {}({})\nParams ({}) list: {} ".format(queue.name, queue.id, len(params), params))
 #            except:
 #                eprint("Error of unknown type in batch delete for queue {}({})\nParams ({}) list: {} ".format(queue.name, queue.id, len(params), params))
