@@ -189,6 +189,8 @@ class EndpointResolver(BaseEndpointResolver):
 
 
 class BotoEndpointResolver(EndpointResolver):
+    """Endpoint resolver which handles boto2 compatibility concerns."""
+
     SERVICE_RENAMES = {
         # The botocore resolver is based on endpoint prefix.
         # These don't always sync up to the name that boto2 uses.
@@ -203,6 +205,20 @@ class BotoEndpointResolver(EndpointResolver):
 
     def __init__(self, endpoint_data, boto_endpoint_data=None,
                  service_rename_map=None):
+        """
+        :type endpoint_data: dict
+        :param endpoint_data: Regions and endpoints data in the same format
+            as is used by botocore / boto3.
+
+        :type boto_endpoint_data: dict
+        :param boto_endpoint_data: Regions and endpoints data in the legacy
+            boto2 format. This data takes precedence over any data found in
+            `endpoint_data`.
+
+        :type service_rename_map: dict
+        :param service_rename_map: A mapping of boto2 service name to
+            endpoint prefix.
+        """
         super(BotoEndpointResolver, self).__init__(endpoint_data)
         self._boto_endpoint_data = boto_endpoint_data
         if service_rename_map is None:
