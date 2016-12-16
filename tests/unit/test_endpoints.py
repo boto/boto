@@ -336,6 +336,52 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
         }
         self.assertEqual(constructed_endpoint, expected_endpoint)
 
+    def test_resolve_hostname(self):
+        resolver = BotoEndpointResolver(self._endpoint_data())
+        hostname = resolver.resolve_hostname('ec2', 'us-foo')
+        expected_hostname = 'ec2.us-foo.amazonaws.com'
+        self.assertEqual(hostname, expected_hostname)
+
+    def test_resolve_hostname_with_rename(self):
+        rename_map = {'ec3': 'ec2'}
+        resolver = BotoEndpointResolver(
+            endpoint_data=self._endpoint_data(),
+            service_rename_map=rename_map
+        )
+        hostname = resolver.resolve_hostname('ec3', 'us-foo')
+        expected_hostname = 'ec2.us-foo.amazonaws.com'
+        self.assertEqual(hostname, expected_hostname)
+
+    def test_resolve_hostname_with_boto_format_data(self):
+        boto_endpoints = {
+            'ec2': {'mars-west-1': 'ec2.mars-west-1.amazonaws.com'}
+        }
+        resolver = BotoEndpointResolver(
+            endpoint_data=self._endpoint_data(),
+            boto_endpoint_data=boto_endpoints
+        )
+        hostname = resolver.resolve_hostname('ec2', 'mars-west-1')
+        expected_hostname = 'ec2.mars-west-1.amazonaws.com'
+        self.assertEqual(hostname, expected_hostname)
+
+    def test_boto_format_data_has_priority_in_resolve_hostname(self):
+        boto_endpoints = {
+            'ec2': {'us-foo': 'ec2.us-foo-3.amazonaws.com'}
+        }
+        resolver = BotoEndpointResolver(
+            endpoint_data=self._endpoint_data(),
+            boto_endpoint_data=boto_endpoints
+        )
+        hostname = resolver.resolve_hostname('ec2', 'us-foo')
+        expected_hostname = 'ec2.us-foo-3.amazonaws.com'
+        self.assertEqual(hostname, expected_hostname)
+
+    def test_resolve_hostname_with_ssl_common_name(self):
+        resolver = BotoEndpointResolver(self._endpoint_data())
+        hostname = resolver.resolve_hostname('s3', 'us-foo')
+        expected_hostname = 'us-foo.s3.amazonaws.com'
+        self.assertEqual(hostname, expected_hostname)
+
     def test_get_available_services(self):
         resolver = BotoEndpointResolver(self._endpoint_data())
         services = sorted(resolver.get_available_services())

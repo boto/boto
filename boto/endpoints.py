@@ -306,6 +306,11 @@ class BotoEndpointResolver(EndpointResolver):
 
         return endpoint_data
 
+    def resolve_hostname(self, service, region_name):
+        """Resolve the hostname for a service in a particular region."""
+        endpoint = self.construct_endpoint(service, region_name)
+        return endpoint.get('sslCommonName', endpoint['hostname'])
+
     def get_available_services(self):
         """Get a list of all the available services in the endpoints file(s)"""
         services = set()
