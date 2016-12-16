@@ -294,6 +294,36 @@ class BotoEndpointResolver(EndpointResolver):
 
         return [self._service_name(s) for s in services]
 
+    def is_global_service(self, service_name, partition_name='aws'):
+        """Determines whether a service uses a global endpoint.
+
+        In theory a service can be 'global' in one partition but regional in
+        another. In practice, each service is all global or all regional.
+        """
+        endpoint_prefix = self._endpoint_prefix(service_name)
+        partition = self._get_partition_data(partition_name)
+        service = partition['services'].get(endpoint_prefix, {})
+        return 'partitionEndpoint' in service
+
+    def _get_partition_data(self, partition_name):
+        """Get partition information for a particular partition.
+
+        This should NOT be used to get service endpoint data because it only
+        loads from the new endpoint format. It should only be used for
+        partition metadata and partition specific service metadata.
+
+        :type partition_name: str
+        :param partition_name: The name of the partition to search for.
+
+        :returns: Partition info from the new endpoints format.
+        :rtype: dict or None
+        """
+        for partition in self._endpoint_data['partitions']:
+            if partition['partition'] == partition_name:
+                return partition
+        raise ValueError(
+            "Could not find partition data for: %s" % partition_name)
+
     def _endpoint_prefix(self, service_name):
         """Given a boto2 service name, get the endpoint prefix."""
         return self._endpoint_prefix_map.get(service_name, service_name)
