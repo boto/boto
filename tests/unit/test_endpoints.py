@@ -296,3 +296,37 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
             'us-bar', 'eu-baz', 'us-foo', 'mars-west-1'])
         self.assertEqual(endpoints, expected_endpoints)
 
+    def test_get_available_services(self):
+        resolver = BotoEndpointResolver(self._endpoint_data())
+        services = sorted(resolver.get_available_services())
+        expected_services = sorted([
+            'ec2', 's3', 'not-regionalized', 'non-partition', 'merge'])
+        self.assertEqual(services, expected_services)
+
+    def test_get_available_services_with_extra_data(self):
+        boto_endpoints = {
+            'new-service': {
+                'moon-darkside-1': 'new-service.moon-darkside-1.amazonaws.com'
+            }
+        }
+        resolver = BotoEndpointResolver(
+            endpoint_data=self._endpoint_data(),
+            boto_endpoint_data=boto_endpoints
+        )
+        services = sorted(resolver.get_available_services())
+        expected_services = sorted([
+            'ec2', 's3', 'not-regionalized', 'non-partition', 'merge',
+            'new-service'
+        ])
+        self.assertEqual(services, expected_services)
+
+    def test_get_available_services_with_renames(self):
+        rename_map = {'ec3': 'ec2'}
+        resolver = BotoEndpointResolver(
+            endpoint_data=self._endpoint_data(),
+            service_rename_map=rename_map
+        )
+        services = sorted(resolver.get_available_services())
+        expected_services = sorted([
+            'ec3', 's3', 'not-regionalized', 'non-partition', 'merge'])
+        self.assertEqual(services, expected_services)

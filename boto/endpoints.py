@@ -207,7 +207,11 @@ class BotoEndpointResolver(EndpointResolver):
         self._boto_endpoint_data = boto_endpoint_data
         if service_rename_map is None:
             service_rename_map = self.SERVICE_RENAMES
-        self._service_rename_map = service_rename_map
+        # Mapping of boto2 service name to endpoint prefix
+        self._endpoint_prefix_map = service_rename_map
+        # Mapping of endpoint prefix to boto2 service name
+        self._service_name_map = dict(
+            (v, k) for k, v in service_rename_map.items())
 
     def get_available_endpoints(self, service_name, partition_name='aws',
                                 allow_non_regional=False):
@@ -262,5 +266,22 @@ class BotoEndpointResolver(EndpointResolver):
 
         return endpoint_data
 
+    def get_available_services(self):
+        """Get a list of all the available services in the endpoints file(s)"""
+        services = set()
+
+        if self._boto_endpoint_data is not None:
+            services.update(self._boto_endpoint_data.keys())
+
+        for partition in self._endpoint_data['partitions']:
+            services.update(partition['services'].keys())
+
+        return [self._service_name(s) for s in services]
+
     def _endpoint_prefix(self, service_name):
-        return self._service_rename_map.get(service_name, service_name)
+        """Given a boto2 service name, get the endpoint prefix."""
+        return self._endpoint_prefix_map.get(service_name, service_name)
+
+    def _service_name(self, endpoint_prefix):
+        """Given an endpoint prefix, get the boto2 service name."""
+        return self._service_name_map.get(endpoint_prefix, endpoint_prefix)
