@@ -10,11 +10,17 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
-from tests.unit import unittest
+import mock
+import os
+import json
 
+from nose.tools import assert_equal
+
+from tests.unit import unittest
 from boto.exception import NoRegionError
 from boto.endpoints import EndpointResolver
 from boto.endpoints import BotoEndpointResolver
+from boto.endpoints import StaticEndpointBuilder
 
 
 class BaseEndpointResolverTest(unittest.TestCase):
@@ -438,3 +444,108 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
         resolver = BotoEndpointResolver(self._endpoint_data())
         with self.assertRaises(ValueError):
             resolver.is_global_service('ec2', 'fake-partition')
+
+
+class TestStaticEndpointBuilder(unittest.TestCase):
+    def setUp(self):
+        self.resolver = mock.Mock(spec=BotoEndpointResolver)
+        self.builder = StaticEndpointBuilder(self.resolver)
+
+    def test_build_single_service(self):
+        regions = ['mars-west-1', 'moon-darkside-1']
+        self.resolver.get_all_available_regions.return_value = regions
+        self.resolver.resolve_hostname.side_effect = [
+            'fake-service.mars-west-1.amazonaws.com',
+            'fake-service.moon-darkside-1.amazonaws.com'
+        ]
+        endpoints = self.builder.build_static_endpoints(['fake-service'])
+        expected_endpoints = {'fake-service': {
+            'mars-west-1': 'fake-service.mars-west-1.amazonaws.com',
+            'moon-darkside-1': 'fake-service.moon-darkside-1.amazonaws.com'
+        }}
+        self.assertEqual(endpoints, expected_endpoints)
+
+    def test_build_multiple_services(self):
+        regions = [['mars-west-1', 'moon-darkside-1'], ['mars-west-1']]
+        self.resolver.get_all_available_regions.side_effect = regions
+        self.resolver.resolve_hostname.side_effect = [
+            'fake-service.mars-west-1.amazonaws.com',
+            'fake-service.moon-darkside-1.amazonaws.com',
+            'sample-service.mars-west-1.amazonaws.com'
+        ]
+        services = ['fake-service', 'sample-service']
+        endpoints = self.builder.build_static_endpoints(services)
+        expected_endpoints = {
+            'fake-service': {
+                'mars-west-1': 'fake-service.mars-west-1.amazonaws.com',
+                'moon-darkside-1': 'fake-service.moon-darkside-1.amazonaws.com'
+            },
+            'sample-service': {
+                'mars-west-1': 'sample-service.mars-west-1.amazonaws.com'
+            }
+        }
+        self.assertEqual(endpoints, expected_endpoints)
+
+    def test_build_all_services(self):
+        regions = [['mars-west-1', 'moon-darkside-1'], ['mars-west-1']]
+        self.resolver.get_all_available_regions.side_effect = regions
+        self.resolver.resolve_hostname.side_effect = [
+            'fake-service.mars-west-1.amazonaws.com',
+            'fake-service.moon-darkside-1.amazonaws.com',
+            'sample-service.mars-west-1.amazonaws.com'
+        ]
+        
+        # Set the list of available services on the resolver so it doesn't
+        # have to be specified on the call to build_static_endpoints
+        services = ['fake-service', 'sample-service']
+        self.resolver.get_available_services.return_value = services
+
+        endpoints = self.builder.build_static_endpoints()
+        expected_endpoints = {
+            'fake-service': {
+                'mars-west-1': 'fake-service.mars-west-1.amazonaws.com',
+                'moon-darkside-1': 'fake-service.moon-darkside-1.amazonaws.com'
+            },
+            'sample-service': {
+                'mars-west-1': 'sample-service.mars-west-1.amazonaws.com'
+            }
+        }
+        self.assertEqual(endpoints, expected_endpoints)
+
+
+def test_backwards_compatibility():
+    # Tests backwards compatibility with the old endpoint generation tooling.
+    # There are snapshots of the two endpoint formats at a single point in
+    # time. Given the snapshot of the new endpoint file, this asserts that
+    # we can generate the exact data in the snapshot of the old endpoints file.
+    # A single 'test' is generated for each service.
+    data_dir = os.path.join(os.path.dirname(__file__), 'data')
+    old_endpoints_file = os.path.join(data_dir, 'old_endpoints.json')
+    new_endpoints_file = os.path.join(data_dir, 'new_endpoints.json')
+
+    with open(old_endpoints_file) as f:
+        old_endpoints = json.load(f)
+
+    with open(new_endpoints_file) as f:
+        new_endpoints = json.load(f)
+
+    resolver = BotoEndpointResolver(new_endpoints)
+    builder = StaticEndpointBuilder(resolver)
+    services = resolver.get_available_services()
+    built = builder.build_static_endpoints(services)
+
+    for service in services:
+        old = old_endpoints[service]
+        new = built[service]
+        case = EndpointTestCase(service, old, new)
+        yield case.run
+
+
+class EndpointTestCase(object):
+    def __init__(self, service, old_endpoints, new_endpoints):
+        self.service = service
+        self.old_endpoints = old_endpoints
+        self.new_endpoints = new_endpoints
+
+    def run(self):
+        assert_equal(self.old_endpoints, self.new_endpoints)
