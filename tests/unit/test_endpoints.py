@@ -235,6 +235,59 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
         expected_endpoints = sorted(['us-bar', 'eu-baz', 'us-foo'])
         self.assertEqual(endpoints, expected_endpoints)
 
+    def test_get_endpoints_with_boto_format_data(self):
+        boto_endpoints = {
+            'ec2': {'mars-west-1': 'ec2.mars-west-1.amazonaws.com'}
+        }
+        resolver = BotoEndpointResolver(
+            endpoint_data=self._endpoint_data(),
+            boto_endpoint_data=boto_endpoints
+        )
+        endpoints = sorted(resolver.get_available_endpoints('ec2'))
+        expected_endpoints = sorted([
+            'us-bar', 'eu-baz', 'us-foo', 'mars-west-1'])
+        self.assertEqual(endpoints, expected_endpoints)
+
+    def test_get_all_available_regions(self):
+        resolver = BotoEndpointResolver(self._endpoint_data())
+        regions = sorted(resolver.get_all_available_regions('ec2'))
+        expected_regions = sorted([
+            'us-bar', 'eu-baz', 'us-foo', 'foo-1', 'foo-2', 'foo-3'])
+        self.assertEqual(regions, expected_regions)
+
+    def test_get_all_regions_on_non_regional_service(self):
+        resolver = BotoEndpointResolver(self._endpoint_data())
+        regions = sorted(
+            resolver.get_all_available_regions('not-regionalized'))
+        expected_regions = sorted(['us-foo', 'us-bar', 'eu-baz'])
+        self.assertEqual(regions, expected_regions)
+
+    def test_get_all_regions_with_boto_format_data(self):
+        boto_endpoints = {
+            'ec2': {'mars-west-1': 'ec2.mars-west-1.amazonaws.com'}
+        }
+        resolver = BotoEndpointResolver(
+            endpoint_data=self._endpoint_data(),
+            boto_endpoint_data=boto_endpoints
+        )
+        regions = sorted(resolver.get_all_available_regions('ec2'))
+        expected_regions = sorted([
+            'us-bar', 'eu-baz', 'us-foo', 'foo-1', 'foo-2', 'foo-3',
+            'mars-west-1'
+        ])
+        self.assertEqual(regions, expected_regions)
+
+    def test_get_all_regions_with_renames(self):
+        rename_map = {'ec3': 'ec2'}
+        resolver = BotoEndpointResolver(
+            endpoint_data=self._endpoint_data(),
+            service_rename_map=rename_map
+        )
+        regions = sorted(resolver.get_all_available_regions('ec2'))
+        expected_regions = sorted([
+            'us-bar', 'eu-baz', 'us-foo', 'foo-1', 'foo-2', 'foo-3'])
+        self.assertEqual(regions, expected_regions)
+
     def test_construct_endpoint_with_rename(self):
         rename_map = {'ec3': 'ec2'}
         resolver = BotoEndpointResolver(
@@ -282,19 +335,6 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
             'partition': 'aws'
         }
         self.assertEqual(constructed_endpoint, expected_endpoint)
-
-    def test_get_endpoints_with_boto_format_data(self):
-        boto_endpoints = {
-            'ec2': {'mars-west-1': 'ec2.mars-west-1.amazonaws.com'}
-        }
-        resolver = BotoEndpointResolver(
-            endpoint_data=self._endpoint_data(),
-            boto_endpoint_data=boto_endpoints
-        )
-        endpoints = sorted(resolver.get_available_endpoints('ec2'))
-        expected_endpoints = sorted([
-            'us-bar', 'eu-baz', 'us-foo', 'mars-west-1'])
-        self.assertEqual(endpoints, expected_endpoints)
 
     def test_get_available_services(self):
         resolver = BotoEndpointResolver(self._endpoint_data())

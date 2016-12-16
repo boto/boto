@@ -235,7 +235,31 @@ class BotoEndpointResolver(EndpointResolver):
         endpoints = super(BotoEndpointResolver, self).get_available_endpoints(
             endpoint_prefix, partition_name, allow_non_regional)
         boto_endpoints = self._get_available_boto_endpoints(service_name)
-        return set(endpoints + boto_endpoints)
+        return list(set(endpoints + boto_endpoints))
+
+    def get_all_available_regions(self, service_name):
+        """Retrieve every region across partitions for a service."""
+        regions = set()
+        endpoint_prefix = self._endpoint_prefix(service_name)
+
+        # Get every region for every partition in the new endpoint format
+        for partition_name in self.get_available_partitions():
+            if self.is_global_service(service_name, partition_name):
+                # Global services are available in every region in the
+                # partition in which they are considered global.
+                partition = self._get_partition_data(partition_name)
+                regions.update(partition['regions'].keys())
+            else:
+                regions.update(
+                    super(BotoEndpointResolver, self).get_available_endpoints(
+                        endpoint_prefix, partition_name
+                    )
+                )
+
+        # boto2 endpoint format has no partitions, so load them all.
+        boto_endpoints = self._get_available_boto_endpoints(service_name)
+        regions.update(boto_endpoints)
+        return list(regions)
 
     def _get_available_boto_endpoints(self, service_name):
         """Get available regions from the boto format endpoints data.
