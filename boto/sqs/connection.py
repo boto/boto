@@ -404,7 +404,7 @@ class SQSConnection(AWSQueryConnection):
                     asErr += ","+sErr
                     acE += cE
             except self.ResponseError:
-                print "Error in batch delete for queue %s (%s)\nParams (%d) list: %s" % (queue.name, queue.id, len(params), params)
+                print "Error in batch delete for queue {} ({})\nParams ({}) list: {}".format(queue.name, queue.id, len(params), params)
                 break # bail
 #                eprint("Error in batch delete for queue {}({})\nParams ({}) list: {} ".format(queue.name, queue.id, len(params), params))
 #            except:
