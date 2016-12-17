@@ -132,6 +132,7 @@ class Query(object):
                 params['highlight.%s' % k] = v
 
         if self.options:
+            params['options'] = self.options
             params['q.options'] = self.options
 
         if self.return_fields:
