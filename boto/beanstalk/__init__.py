@@ -21,6 +21,7 @@
 # IN THE SOFTWARE.
 #
 from boto.regioninfo import RegionInfo, get_regions
+from boto.regioninfo import connect
 
 
 def regions():
@@ -30,15 +31,14 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
-    import boto.beanstalk.layer1
+    from boto.beanstalk.layer1 import Layer1
     return get_regions(
         'elasticbeanstalk',
-        connection_cls=boto.beanstalk.layer1.Layer1
+        connection_cls=Layer1
     )
 
 
 def connect_to_region(region_name, **kw_params):
-    for region in regions():
-        if region.name == region_name:
-            return region.connect(**kw_params)
-    return None
+    from boto.beanstalk.layer1 import Layer1
+    return connect('elasticbeanstalk', region_name, connection_cls=Layer1,
+                   **kw_params)

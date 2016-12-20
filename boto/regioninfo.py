@@ -205,26 +205,40 @@ def connect(service_name, region_name, region_cls=None,
 
     :returns: A configured connection class.
     """
+    region = _get_region(service_name, region_name, region_cls, connection_cls)
+
+    if region is None and _use_endpoint_heuristics():
+        region = _get_region_with_heuristics(
+            service_name, region_name, region_cls, connection_cls
+        )
+
+    if region is None:
+        return None
+
+    return region.connect(**kw_params)
+
+
+def _get_region(service_name, region_name, region_cls=None,
+                connection_cls=None):
+    """Finds the region by searching through the known regions."""
+    for region in get_regions(service_name, region_cls, connection_cls):
+        if region.name == region_name:
+            return region
+    return None
+
+
+def _get_region_with_heuristics(service_name, region_name, region_cls=None,
+                                connection_cls=None):
+    """Finds the region using known regions and heuristics."""
     endpoints = load_endpoint_json(boto.ENDPOINTS_PATH)
     resolver = BotoEndpointResolver(endpoints)
-
-    if not _use_endpoint_heuristics():
-        available_regions = resolver.get_all_available_regions(service_name)
-        if region_name not in available_regions:
-            return None
-
     hostname = resolver.resolve_hostname(service_name, region_name)
 
-    if region_cls is None:
-        region_cls = RegionInfo
-
-    region = region_cls(
+    return region_cls(
         name=region_name,
         endpoint=hostname,
         connection_cls=connection_cls
     )
-
-    return region.connect(**kw_params)
 
 
 def _use_endpoint_heuristics():

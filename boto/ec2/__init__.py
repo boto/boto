@@ -25,6 +25,7 @@ service from AWS.
 """
 from boto.ec2.connection import EC2Connection
 from boto.regioninfo import RegionInfo, get_regions, load_regions
+from boto.regioninfo import connect
 
 
 RegionData = load_regions().get('ec2', {})
@@ -61,11 +62,8 @@ def connect_to_region(region_name, **kw_params):
        and region_name == kw_params['region'].name:
         return EC2Connection(**kw_params)
 
-    for region in regions(**kw_params):
-        if region.name == region_name:
-            return region.connect(**kw_params)
-
-    return None
+    return connect('ec2', region_name,
+                   connection_cls=EC2Connection, **kw_params)
 
 
 def get_region(region_name, **kw_params):

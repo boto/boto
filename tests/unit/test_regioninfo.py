@@ -172,7 +172,8 @@ class TestConnectToRegion(unittest.TestCase):
         os.environ['BOTO_USE_ENDPOINT_HEURISTICS'] = 'True'
         self.addCleanup(os.environ.pop, 'BOTO_USE_ENDPOINT_HEURISTICS')
         connection = connect(
-            'ec2', 'us-southeast-43', connection_cls=FakeConn)
+            'ec2', 'us-southeast-43', connection_cls=FakeConn,
+            region_cls=TestRegionInfo)
         self.assertIsNotNone(connection)
         self.assertEqual(connection.region.name, 'us-southeast-43')
         expected_endpoint = 'ec2.us-southeast-43.amazonaws.com'
@@ -180,11 +181,19 @@ class TestConnectToRegion(unittest.TestCase):
 
     def test_use_heuristics_via_config(self):
         config = mock.Mock(spec=Config)
-        config.getbool.return_value = True
+
+        def _getbool(section, name, default=False):
+            if section == 'Boto' and name == 'use_endpoint_heuristics':
+                return True
+            return default
+
+        config.getbool = _getbool
+        config.get.return_value = None
 
         with mock.patch('boto.config', config):
             connection = connect(
-                'ec2', 'us-southeast-43', connection_cls=FakeConn)
+                'ec2', 'us-southeast-43', connection_cls=FakeConn,
+                region_cls=TestRegionInfo)
 
         self.assertIsNotNone(connection)
         self.assertEqual(connection.region.name, 'us-southeast-43')
