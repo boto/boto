@@ -311,28 +311,6 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
             'ec3', 's3', 'not-regionalized', 'non-partition', 'merge'])
         self.assertEqual(services, expected_services)
 
-    def test_is_global_endpoint(self):
-        resolver = BotoEndpointResolver(self._endpoint_data())
-        self.assertFalse(resolver.is_global_service('ec2'))
-        self.assertFalse(resolver.is_global_service(
-            'ec2', partition_name='foo'))
-        self.assertTrue(resolver.is_global_service('not-regionalized'))
-        self.assertTrue(resolver.is_global_service('non-partition'))
-
-    def test_is_global_endpoint_with_renames(self):
-        rename_map = {'ec3': 'ec2', 'nr': 'not-regionalized'}
-        resolver = BotoEndpointResolver(
-            endpoint_data=self._endpoint_data(),
-            service_rename_map=rename_map
-        )
-        self.assertFalse(resolver.is_global_service('ec3'))
-        self.assertTrue(resolver.is_global_service('nr'))
-
-    def test_is_global_endpoint_in_invalid_partition(self):
-        resolver = BotoEndpointResolver(self._endpoint_data())
-        with self.assertRaises(ValueError):
-            resolver.is_global_service('ec2', 'fake-partition')
-
 
 class TestStaticEndpointBuilder(unittest.TestCase):
     def setUp(self):

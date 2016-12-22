@@ -69,7 +69,7 @@ class BotoEndpointResolver(EndpointResolver):
 
         # Get every region for every partition in the new endpoint format
         for partition_name in self.get_available_partitions():
-            if self.is_global_service(service_name, partition_name):
+            if self._is_global_service(service_name, partition_name):
                 # Global services are available in every region in the
                 # partition in which they are considered global.
                 partition = self._get_partition_data(partition_name)
@@ -148,7 +148,7 @@ class BotoEndpointResolver(EndpointResolver):
 
         return [self._service_name(s) for s in services]
 
-    def is_global_service(self, service_name, partition_name='aws'):
+    def _is_global_service(self, service_name, partition_name='aws'):
         """Determines whether a service uses a global endpoint.
 
         In theory a service can be 'global' in one partition but regional in

@@ -222,7 +222,7 @@ class StaticEndpointBuilder(object):
     def _build_endpoints_for_service(self, service_name):
         # Given a service name, 'ec2', build a dict of
         # 'region' -> 'hostname'
-        if self._resolver.is_global_service(service_name):
+        if self._resolver._is_global_service(service_name):
             return self._special_case_global_service(service_name)
         endpoints = {}
         for region_name in self._resolver.regions_for_service(service_name):
