@@ -10,7 +10,15 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
+import logging
+
 from boto.vendored.regions.regions import EndpointResolver
+
+
+# Since we will be resolving every region, it's worth not cluttering up the
+# logs with all that data.
+_endpoint_logger = logging.getLogger('boto.vendored.regions.regions')
+_endpoint_logger.disabled = True
 
 
 class BotoEndpointResolver(EndpointResolver):
