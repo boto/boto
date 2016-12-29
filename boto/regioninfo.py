@@ -38,6 +38,18 @@ def load_endpoint_json(path):
 
     :returns: The loaded data
     """
+    return _load_json_file(path)
+
+
+def _load_json_file(path):
+    """
+    Loads a given JSON file & returns it.
+
+    :param path: The path to the JSON file
+    :type path: string
+
+    :returns: The loaded data
+    """
     with open(path, 'r') as endpoints_file:
         return json.load(endpoints_file)
 
@@ -82,16 +94,16 @@ def load_regions():
     :rtype: dict
     """
     # Load the defaults first.
-    endpoints = load_endpoint_json(boto.ENDPOINTS_PATH)
+    endpoints = _load_json_file(boto.ENDPOINTS_PATH)
     additional_data = None
 
     # Try the ENV var. If not, check the config file.
     if os.environ.get('BOTO_ENDPOINTS'):
         additional_path = os.environ['BOTO_ENDPOINTS']
-        additional_data = load_endpoint_json(additional_path)
+        additional_data = _load_json_file(additional_path)
     elif boto.config.get('Boto', 'endpoints_path'):
         additional_path = boto.config.get('Boto', 'endpoints_path')
-        additional_data = load_endpoint_json(additional_path)
+        additional_data = _load_json_file(additional_path)
 
     # If there's a file provided, we'll load it as well.
     resolver = BotoEndpointResolver(endpoints, additional_data)
