@@ -28,16 +28,16 @@ class BotoEndpointResolver(EndpointResolver):
         'configservice': 'config',
     }
 
-    def __init__(self, endpoint_data, boto_endpoint_data=None,
+    def __init__(self, endpoint_data, legacy_endpoint_data=None,
                  service_rename_map=None):
         """
         :type endpoint_data: dict
         :param endpoint_data: Regions and endpoints data in the same format
             as is used by botocore / boto3.
 
-        :type boto_endpoint_data: dict
-        :param boto_endpoint_data: Regions and endpoints data in the legacy
-            boto2 format. This data takes precedence over any data found in
+        :type legacy_endpoint_data: dict
+        :param legacy_endpoint_data: Regions and endpoints data in the legacy
+            format. This data takes precedence over any data found in
             `endpoint_data`.
 
         :type service_rename_map: dict
@@ -45,7 +45,7 @@ class BotoEndpointResolver(EndpointResolver):
             endpoint prefix.
         """
         super(BotoEndpointResolver, self).__init__(endpoint_data)
-        self._boto_endpoint_data = boto_endpoint_data
+        self._legacy_endpoint_data = legacy_endpoint_data
         if service_rename_map is None:
             service_rename_map = self.SERVICE_RENAMES
         # Mapping of boto2 service name to endpoint prefix
@@ -59,8 +59,8 @@ class BotoEndpointResolver(EndpointResolver):
         endpoint_prefix = self._endpoint_prefix(service_name)
         endpoints = super(BotoEndpointResolver, self).get_available_endpoints(
             endpoint_prefix, partition_name, allow_non_regional)
-        boto_endpoints = self._get_available_boto_endpoints(service_name)
-        return list(set(endpoints + boto_endpoints))
+        legacy_endpoints = self._get_available_legacy_endpoints(service_name)
+        return list(set(endpoints + legacy_endpoints))
 
     def get_all_available_regions(self, service_name):
         """Retrieve every region across partitions for a service."""
@@ -81,48 +81,48 @@ class BotoEndpointResolver(EndpointResolver):
                     )
                 )
 
-        # boto2 endpoint format has no partitions, so load them all.
-        boto_endpoints = self._get_available_boto_endpoints(service_name)
-        regions.update(boto_endpoints)
+        # The legacy endpoint format has no partitions, so load them all.
+        legacy_endpoints = self._get_available_legacy_endpoints(service_name)
+        regions.update(legacy_endpoints)
         return list(regions)
 
-    def _get_available_boto_endpoints(self, service_name):
-        """Get available regions from the boto format endpoints data.
+    def _get_available_legacy_endpoints(self, service_name):
+        """Get available regions from the legacy format endpoints data.
 
         This does not make any assumptions about partition location or
         regionality.
         """
-        if self._boto_endpoint_data is None:
+        if self._legacy_endpoint_data is None:
             return []
-        return list(self._boto_endpoint_data.get(service_name, {}).keys())
+        return list(self._legacy_endpoint_data.get(service_name, {}).keys())
 
     def construct_endpoint(self, service_name, region_name=None):
-        # Always prioritize the endpoint data in the boto format
-        boto_endpoint = self._construct_boto_endpoint(
+        # Always prioritize the endpoint data in the legacy format
+        legacy_endpoint = self._construct_legacy_endpoint(
             service_name, region_name)
-        if boto_endpoint is not None:
-            return boto_endpoint
+        if legacy_endpoint is not None:
+            return legacy_endpoint
 
-        # If there is no boto format data to be found, use the
+        # If there is no legacy format data to be found, use the
         endpoint_prefix = self._endpoint_prefix(service_name)
         return super(BotoEndpointResolver, self).construct_endpoint(
             endpoint_prefix, region_name)
 
-    def _construct_boto_endpoint(self, service_name, region_name):
+    def _construct_legacy_endpoint(self, service_name, region_name):
         """Construct an endpoint from the boto format endpoints data."""
-        if region_name is None or self._boto_endpoint_data is None:
+        if region_name is None or self._legacy_endpoint_data is None:
             return None
 
-        # Grab the hostname from the boto format endpoints data
-        boto_endpoints = self._boto_endpoint_data.get(service_name, {})
-        hostname = boto_endpoints.get(region_name, None)
+        # Grab the hostname from the legacy format endpoints data
+        legacy_endpoints = self._legacy_endpoint_data.get(service_name, {})
+        hostname = legacy_endpoints.get(region_name, None)
 
         if hostname is None:
             return None
 
         # Put that data in the standard endpoint resolver format. The
         # partition is set as 'aws', but it ultimately doesn't matter what
-        # it is set to since the boto data will always be returned.
+        # it is set to since the legacy data will always be returned.
         endpoint_data = {
             'partition': 'aws',
             'endpointName': region_name,
@@ -140,8 +140,8 @@ class BotoEndpointResolver(EndpointResolver):
         """Get a list of all the available services in the endpoints file(s)"""
         services = set()
 
-        if self._boto_endpoint_data is not None:
-            services.update(self._boto_endpoint_data.keys())
+        if self._legacy_endpoint_data is not None:
+            services.update(self._legacy_endpoint_data.keys())
 
         for partition in self._endpoint_data['partitions']:
             services.update(partition['services'].keys())
@@ -188,7 +188,7 @@ class BotoEndpointResolver(EndpointResolver):
 
 
 class StaticEndpointBuilder(object):
-    """Builds a static mapping of endpoints in the boto2 format."""
+    """Builds a static mapping of endpoints in the legacy format."""
 
     def __init__(self, resolver):
         """
