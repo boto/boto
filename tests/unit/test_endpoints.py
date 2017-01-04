@@ -129,19 +129,6 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
         expected_endpoints = sorted(['us-bar', 'eu-baz', 'us-foo'])
         self.assertEqual(endpoints, expected_endpoints)
 
-    def test_get_endpoints_with_legacy_format_data(self):
-        legacy_endpoints = {
-            'ec2': {'mars-west-1': 'ec2.mars-west-1.amazonaws.com'}
-        }
-        resolver = BotoEndpointResolver(
-            endpoint_data=self._endpoint_data(),
-            legacy_endpoint_data=legacy_endpoints
-        )
-        endpoints = sorted(resolver.get_available_endpoints('ec2'))
-        expected_endpoints = sorted([
-            'us-bar', 'eu-baz', 'us-foo', 'mars-west-1'])
-        self.assertEqual(endpoints, expected_endpoints)
-
     def test_get_all_available_regions(self):
         resolver = BotoEndpointResolver(self._endpoint_data())
         regions = sorted(resolver.get_all_available_regions('ec2'))
@@ -154,21 +141,6 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
         regions = sorted(
             resolver.get_all_available_regions('not-regionalized'))
         expected_regions = sorted(['us-foo', 'us-bar', 'eu-baz'])
-        self.assertEqual(regions, expected_regions)
-
-    def test_get_all_regions_with_legacy_format_data(self):
-        legacy_endpoints = {
-            'ec2': {'mars-west-1': 'ec2.mars-west-1.amazonaws.com'}
-        }
-        resolver = BotoEndpointResolver(
-            endpoint_data=self._endpoint_data(),
-            legacy_endpoint_data=legacy_endpoints
-        )
-        regions = sorted(resolver.get_all_available_regions('ec2'))
-        expected_regions = sorted([
-            'us-bar', 'eu-baz', 'us-foo', 'foo-1', 'foo-2', 'foo-3',
-            'mars-west-1'
-        ])
         self.assertEqual(regions, expected_regions)
 
     def test_get_all_regions_with_renames(self):
@@ -197,39 +169,6 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
         }
         self.assertEqual(endpoint, expected_endpoint)
 
-    def test_construct_endpoint_with_legacy_format_data(self):
-        legacy_endpoints = {
-            'ec2': {'mars-west-1': 'ec2.mars-west-1.amazonaws.com'}
-        }
-        resolver = BotoEndpointResolver(
-            endpoint_data=self._endpoint_data(),
-            legacy_endpoint_data=legacy_endpoints
-        )
-        constructed_endpoint = resolver.construct_endpoint(
-            'ec2', 'mars-west-1')
-        expected_endpoint = {
-            'endpointName': 'mars-west-1',
-            'hostname': 'ec2.mars-west-1.amazonaws.com',
-            'partition': 'aws'
-        }
-        self.assertEqual(constructed_endpoint, expected_endpoint)
-
-    def test_legacy_format_data_has_priority_in_construct_endpoint(self):
-        legacy_endpoints = {
-            'ec2': {'us-foo': 'ec2.us-foo-3.amazonaws.com'}
-        }
-        resolver = BotoEndpointResolver(
-            endpoint_data=self._endpoint_data(),
-            legacy_endpoint_data=legacy_endpoints
-        )
-        constructed_endpoint = resolver.construct_endpoint('ec2', 'us-foo')
-        expected_endpoint = {
-            'endpointName': 'us-foo',
-            'hostname': 'ec2.us-foo-3.amazonaws.com',
-            'partition': 'aws'
-        }
-        self.assertEqual(constructed_endpoint, expected_endpoint)
-
     def test_resolve_hostname(self):
         resolver = BotoEndpointResolver(self._endpoint_data())
         hostname = resolver.resolve_hostname('ec2', 'us-foo')
@@ -246,30 +185,6 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
         expected_hostname = 'ec2.us-foo.amazonaws.com'
         self.assertEqual(hostname, expected_hostname)
 
-    def test_resolve_hostname_with_legacy_format_data(self):
-        legacy_endpoints = {
-            'ec2': {'mars-west-1': 'ec2.mars-west-1.amazonaws.com'}
-        }
-        resolver = BotoEndpointResolver(
-            endpoint_data=self._endpoint_data(),
-            legacy_endpoint_data=legacy_endpoints
-        )
-        hostname = resolver.resolve_hostname('ec2', 'mars-west-1')
-        expected_hostname = 'ec2.mars-west-1.amazonaws.com'
-        self.assertEqual(hostname, expected_hostname)
-
-    def test_legacy_format_data_has_priority_in_resolve_hostname(self):
-        legacy_endpoints = {
-            'ec2': {'us-foo': 'ec2.us-foo-3.amazonaws.com'}
-        }
-        resolver = BotoEndpointResolver(
-            endpoint_data=self._endpoint_data(),
-            legacy_endpoint_data=legacy_endpoints
-        )
-        hostname = resolver.resolve_hostname('ec2', 'us-foo')
-        expected_hostname = 'ec2.us-foo-3.amazonaws.com'
-        self.assertEqual(hostname, expected_hostname)
-
     def test_resolve_hostname_with_ssl_common_name(self):
         resolver = BotoEndpointResolver(self._endpoint_data())
         hostname = resolver.resolve_hostname('s3', 'us-foo')
@@ -281,23 +196,6 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
         services = sorted(resolver.get_available_services())
         expected_services = sorted([
             'ec2', 's3', 'not-regionalized', 'non-partition', 'merge'])
-        self.assertEqual(services, expected_services)
-
-    def test_get_available_services_with_extra_data(self):
-        legacy_endpoints = {
-            'new-service': {
-                'moon-darkside-1': 'new-service.moon-darkside-1.amazonaws.com'
-            }
-        }
-        resolver = BotoEndpointResolver(
-            endpoint_data=self._endpoint_data(),
-            legacy_endpoint_data=legacy_endpoints
-        )
-        services = sorted(resolver.get_available_services())
-        expected_services = sorted([
-            'ec2', 's3', 'not-regionalized', 'non-partition', 'merge',
-            'new-service'
-        ])
         self.assertEqual(services, expected_services)
 
     def test_get_available_services_with_renames(self):

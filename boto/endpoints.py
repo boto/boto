@@ -36,8 +36,7 @@ class BotoEndpointResolver(EndpointResolver):
         'configservice': 'config',
     }
 
-    def __init__(self, endpoint_data, legacy_endpoint_data=None,
-                 service_rename_map=None):
+    def __init__(self, endpoint_data, service_rename_map=None):
         """
         :type endpoint_data: dict
         :param endpoint_data: Regions and endpoints data in the same format
@@ -53,7 +52,6 @@ class BotoEndpointResolver(EndpointResolver):
             endpoint prefix.
         """
         super(BotoEndpointResolver, self).__init__(endpoint_data)
-        self._legacy_endpoint_data = legacy_endpoint_data
         if service_rename_map is None:
             service_rename_map = self.SERVICE_RENAMES
         # Mapping of boto2 service name to endpoint prefix
@@ -65,10 +63,8 @@ class BotoEndpointResolver(EndpointResolver):
     def get_available_endpoints(self, service_name, partition_name='aws',
                                 allow_non_regional=False):
         endpoint_prefix = self._endpoint_prefix(service_name)
-        endpoints = super(BotoEndpointResolver, self).get_available_endpoints(
+        return super(BotoEndpointResolver, self).get_available_endpoints(
             endpoint_prefix, partition_name, allow_non_regional)
-        legacy_endpoints = self._get_available_legacy_endpoints(service_name)
-        return list(set(endpoints + legacy_endpoints))
 
     def get_all_available_regions(self, service_name):
         """Retrieve every region across partitions for a service."""
@@ -89,55 +85,12 @@ class BotoEndpointResolver(EndpointResolver):
                     )
                 )
 
-        # The legacy endpoint format has no partitions, so load them all.
-        legacy_endpoints = self._get_available_legacy_endpoints(service_name)
-        regions.update(legacy_endpoints)
         return list(regions)
 
-    def _get_available_legacy_endpoints(self, service_name):
-        """Get available regions from the legacy format endpoints data.
-
-        This does not make any assumptions about partition location or
-        regionality.
-        """
-        if self._legacy_endpoint_data is None:
-            return []
-        return list(self._legacy_endpoint_data.get(service_name, {}).keys())
-
     def construct_endpoint(self, service_name, region_name=None):
-        # Always prioritize the endpoint data in the legacy format
-        legacy_endpoint = self._construct_legacy_endpoint(
-            service_name, region_name)
-        if legacy_endpoint is not None:
-            return legacy_endpoint
-
-        # If there is no legacy format data to be found, use the
         endpoint_prefix = self._endpoint_prefix(service_name)
         return super(BotoEndpointResolver, self).construct_endpoint(
             endpoint_prefix, region_name)
-
-    def _construct_legacy_endpoint(self, service_name, region_name):
-        """Construct an endpoint from the boto format endpoints data."""
-        if region_name is None or self._legacy_endpoint_data is None:
-            return None
-
-        # Grab the hostname from the legacy format endpoints data
-        legacy_endpoints = self._legacy_endpoint_data.get(service_name, {})
-        hostname = legacy_endpoints.get(region_name, None)
-
-        if hostname is None:
-            return None
-
-        # Put that data in the standard endpoint resolver format. The
-        # partition is set as 'aws', but it ultimately doesn't matter what
-        # it is set to since the legacy data will always be returned.
-        endpoint_data = {
-            'partition': 'aws',
-            'endpointName': region_name,
-            'hostname': hostname,
-        }
-
-        return endpoint_data
 
     def resolve_hostname(self, service, region_name):
         """Resolve the hostname for a service in a particular region."""
@@ -147,9 +100,6 @@ class BotoEndpointResolver(EndpointResolver):
     def get_available_services(self):
         """Get a list of all the available services in the endpoints file(s)"""
         services = set()
-
-        if self._legacy_endpoint_data is not None:
-            services.update(self._legacy_endpoint_data.keys())
 
         for partition in self._endpoint_data['partitions']:
             services.update(partition['services'].keys())
