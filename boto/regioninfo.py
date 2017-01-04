@@ -94,19 +94,28 @@ def load_regions():
     :rtype: dict
     """
     # Load the defaults first.
-    endpoints = _load_json_file(boto.ENDPOINTS_PATH)
-    additional_data = None
+    endpoints = _load_builtin_endpoints()
+    additional_path = None
 
     # Try the ENV var. If not, check the config file.
     if os.environ.get('BOTO_ENDPOINTS'):
         additional_path = os.environ['BOTO_ENDPOINTS']
-        additional_data = _load_json_file(additional_path)
     elif boto.config.get('Boto', 'endpoints_path'):
         additional_path = boto.config.get('Boto', 'endpoints_path')
-        additional_data = _load_json_file(additional_path)
 
-    # If there's a file provided, we'll load it as well.
-    resolver = BotoEndpointResolver(endpoints, additional_data)
+    # If there's a file provided, we'll load it & additively merge it into
+    # the endpoints.
+    if additional_path:
+        additional = load_endpoint_json(additional_path)
+        endpoints = merge_endpoints(endpoints, additional)
+
+    return endpoints
+
+
+def _load_builtin_endpoints():
+    """Loads the builtin endpoints in the legacy format."""
+    endpoints = _load_json_file(boto.ENDPOINTS_PATH)
+    resolver = BotoEndpointResolver(endpoints)
     builder = StaticEndpointBuilder(resolver)
     return builder.build_static_endpoints()
 
