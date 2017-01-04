@@ -76,11 +76,16 @@ def load_regions():
     environment variable or a ``endpoints_path`` config variable, either of
     which should be an absolute path to the user's JSON file.
 
+    The default file will be completely ignored if the ``endpoints_override``
+    config variable is set to True.
+
     :returns: The endpoints data
     :rtype: dict
     """
-    # Load the defaults first.
-    endpoints = load_endpoint_json(boto.ENDPOINTS_PATH)
+    override = boto.config.get('Boto', 'endpoints_default')
+
+    # Assume the default state (non-overridden non-custom path) first.
+    path = boto.ENDPOINTS_PATH
     additional_path = None
 
     # Try the ENV var. If not, check the config file.
@@ -89,8 +94,15 @@ def load_regions():
     elif boto.config.get('Boto', 'endpoints_path'):
         additional_path = boto.config.get('Boto', 'endpoints_path')
 
-    # If there's a file provided, we'll load it & additively merge it into
-    # the endpoints.
+    # If overriding, replace the default path with the additional path.
+    if override and additional_path:
+        path = additional_path
+        additional_path = None
+
+    endpoints = load_endpoint_json(path)
+
+    # If there is a custom path in addition to the default path, we'll load it
+    # & additively merge it into the endpoints.
     if additional_path:
         additional = load_endpoint_json(additional_path)
         endpoints = merge_endpoints(endpoints, additional)
