@@ -190,6 +190,11 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
         hostname = resolver.resolve_hostname('s3', 'us-foo')
         expected_hostname = 'us-foo.s3.amazonaws.com'
         self.assertEqual(hostname, expected_hostname)
+        
+    def test_resolve_hostname_on_invalid_region_prefix(self):
+        resolver = BotoEndpointResolver(self._endpoint_data())
+        hostname = resolver.resolve_hostname('s3', 'fake-west-1')
+        self.assertIsNone(hostname)
 
     def test_get_available_services(self):
         resolver = BotoEndpointResolver(self._endpoint_data())

@@ -95,6 +95,8 @@ class BotoEndpointResolver(EndpointResolver):
     def resolve_hostname(self, service, region_name):
         """Resolve the hostname for a service in a particular region."""
         endpoint = self.construct_endpoint(service, region_name)
+        if endpoint is None:
+            return None
         return endpoint.get('sslCommonName', endpoint['hostname'])
 
     def get_available_services(self):
