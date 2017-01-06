@@ -42,11 +42,6 @@ class BotoEndpointResolver(EndpointResolver):
         :param endpoint_data: Regions and endpoints data in the same format
             as is used by botocore / boto3.
 
-        :type legacy_endpoint_data: dict
-        :param legacy_endpoint_data: Regions and endpoints data in the legacy
-            format. This data takes precedence over any data found in
-            `endpoint_data`.
-
         :type service_rename_map: dict
         :param service_rename_map: A mapping of boto2 service name to
             endpoint prefix.
