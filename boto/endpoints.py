@@ -16,7 +16,7 @@ from boto.vendored.regions.regions import EndpointResolver
 class BotoEndpointResolver(EndpointResolver):
     """Endpoint resolver which handles boto2 compatibility concerns."""
 
-    SERVICE_RENAMES = {
+    _DEFAULT_SERVICE_RENAMES = {
         # The botocore resolver is based on endpoint prefix.
         # These don't always sync up to the name that boto2 uses.
         # A mapping can be provided that handles the mapping between
@@ -40,7 +40,7 @@ class BotoEndpointResolver(EndpointResolver):
         """
         super(BotoEndpointResolver, self).__init__(endpoint_data)
         if service_rename_map is None:
-            service_rename_map = self.SERVICE_RENAMES
+            service_rename_map = self._DEFAULT_SERVICE_RENAMES
         # Mapping of boto2 service name to endpoint prefix
         self._endpoint_prefix_map = service_rename_map
         # Mapping of endpoint prefix to boto2 service name
