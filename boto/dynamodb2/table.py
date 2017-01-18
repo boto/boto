@@ -1303,7 +1303,10 @@ class Table(object):
 
             count_buffer += int(raw_results.get('Count', 0))
             last_evaluated_key = raw_results.get('LastEvaluatedKey')
-            if not last_evaluated_key or count_buffer < 1:
+            # It is possible for a count to be zero when filtered, yet further values
+            # valid for counting to be in subsequent raw_results, so we only test for a
+            # missing last_evaluated_key.
+            if not last_evaluated_key:
                 break
 
         return count_buffer
