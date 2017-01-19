@@ -22,26 +22,25 @@
 from boto.exception import InvalidLifecycleConfigError
 
 # Relevant tags for the lifecycle configuration XML document.
-LIFECYCLE_CONFIG   = 'LifecycleConfiguration'
-RULE               = 'Rule'
-ACTION             = 'Action'
-DELETE             = 'Delete'
-CONDITION          = 'Condition'
-AGE                = 'Age'
-CREATED_BEFORE     = 'CreatedBefore'
-NUM_NEWER_VERSIONS = 'NumberOfNewerVersions'
-IS_LIVE            = 'IsLive'
+LIFECYCLE_CONFIG      = 'LifecycleConfiguration'
+RULE                  = 'Rule'
+ACTION                = 'Action'
+DELETE                = 'Delete'
+SET_STORAGE_CLASS     = 'SetStorageClass'
+CONDITION             = 'Condition'
+AGE                   = 'Age'
+CREATED_BEFORE        = 'CreatedBefore'
+NUM_NEWER_VERSIONS    = 'NumberOfNewerVersions'
+IS_LIVE               = 'IsLive'
+MATCHES_STORAGE_CLASS = 'MatchesStorageClass'
 
 # List of all action elements.
-LEGAL_ACTIONS = [DELETE]
-# List of all action parameter elements.
-LEGAL_ACTION_PARAMS = []
+LEGAL_ACTIONS = [DELETE, SET_STORAGE_CLASS]
 # List of all condition elements.
-LEGAL_CONDITIONS = [AGE, CREATED_BEFORE, NUM_NEWER_VERSIONS, IS_LIVE]
-# Dictionary mapping actions to supported action parameters for each action.
-LEGAL_ACTION_ACTION_PARAMS = {
-    DELETE: [],
-}
+LEGAL_CONDITIONS = [AGE, CREATED_BEFORE, NUM_NEWER_VERSIONS, IS_LIVE,
+                    MATCHES_STORAGE_CLASS]
+# List of conditions elements that may be repeated.
+LEGAL_REPEATABLE_CONDITIONS = [MATCHES_STORAGE_CLASS]
 
 class Rule(object):
     """
@@ -49,17 +48,16 @@ class Rule(object):
 
     :ivar action: Action to be taken.
 
-    :ivar action_params: A dictionary of action specific parameters. Each item
-    in the dictionary represents the name and value of an action parameter.
+    :ivar action_text: The text value for the specified action, if any.
 
     :ivar conditions: A dictionary of conditions that specify when the action
-    should be taken. Each item in the dictionary represents the name and value
-    of a condition.
+    should be taken. Each item in the dictionary represents the name and
+    value (or a list of multiple values, if applicable) of a condition.
     """
 
-    def __init__(self, action=None, action_params=None, conditions=None):
+    def __init__(self, action=None, action_text=None, conditions=None):
         self.action = action
-        self.action_params = action_params or {}
+        self.action_text = action_text
         self.conditions = conditions or {}
 
         # Name of the current enclosing tag (used to validate the schema).
@@ -88,23 +86,15 @@ class Rule(object):
                 raise InvalidLifecycleConfigError(
                     'Only one action tag is allowed in each rule')
             self.action = name
-        elif name in LEGAL_ACTION_PARAMS:
-            # Make sure this tag is found in an action tag.
-            if self.current_tag not in LEGAL_ACTIONS:
-                raise InvalidLifecycleConfigError(
-                    'Tag %s found outside of action' % name)
-            # Make sure this tag is allowed for the current action tag.
-            if name not in LEGAL_ACTION_ACTION_PARAMS[self.action]:
-                raise InvalidLifecycleConfigError(
-                    'Tag %s not allowed in action %s' % (name, self.action))
         elif name == CONDITION:
             self.validateStartTag(name, RULE)
         elif name in LEGAL_CONDITIONS:
             self.validateStartTag(name, CONDITION)
             # Verify there is no duplicate conditions.
-            if name in self.conditions:
+            if (name in self.conditions and
+                name not in LEGAL_REPEATABLE_CONDITIONS):
                 raise InvalidLifecycleConfigError(
-                    'Found duplicate conditions %s' % name)
+                    'Found duplicate non-repeatable conditions %s' % name)
         else:
             raise InvalidLifecycleConfigError('Unsupported tag ' + name)
         self.current_tag = name
@@ -118,17 +108,20 @@ class Rule(object):
         elif name == ACTION:
             self.current_tag = RULE
         elif name in LEGAL_ACTIONS:
+            if name == SET_STORAGE_CLASS and value is not None:
+                self.action_text = value.strip()
             self.current_tag = ACTION
-        elif name in LEGAL_ACTION_PARAMS:
-            self.current_tag = self.action
-            # Add the action parameter name and value to the dictionary.
-            self.action_params[name] = value.strip()
         elif name == CONDITION:
             self.current_tag = RULE
         elif name in LEGAL_CONDITIONS:
             self.current_tag = CONDITION
-            # Add the condition name and value to the dictionary.
-            self.conditions[name] = value.strip()
+            # Some conditions specify a list of values.
+            if name in LEGAL_REPEATABLE_CONDITIONS:
+                if name not in self.conditions:
+                    self.conditions[name] = []
+                self.conditions[name].append(value.strip())
+            else:
+                self.conditions[name] = value.strip()
         else:
             raise InvalidLifecycleConfigError('Unsupported end tag ' + name)
 
@@ -143,26 +136,32 @@ class Rule(object):
 
     def to_xml(self):
         """Convert the rule into XML string representation."""
-        s = '<' + RULE + '>'
-        s += '<' + ACTION + '>'
-        if self.action_params:
-            s += '<' + self.action + '>'
-            for param in LEGAL_ACTION_PARAMS:
-                if param in self.action_params:
-                    s += ('<' + param + '>' + self.action_params[param] + '</'
-                          + param + '>')
-            s += '</' + self.action + '>'
+        s = ['<' + RULE + '>']
+        s.append('<' + ACTION + '>')
+        if self.action_text:
+            s.extend(['<' + self.action + '>',
+                      self.action_text,
+                      '</' + self.action + '>'])
         else:
-            s += '<' + self.action + '/>'
-        s += '</' + ACTION + '>'
-        s += '<' + CONDITION + '>'
-        for condition in LEGAL_CONDITIONS:
-            if condition in self.conditions:
-                s += ('<' + condition + '>' + self.conditions[condition] + '</'
-                      + condition + '>')
-        s += '</' + CONDITION + '>'
-        s += '</' + RULE + '>'
-        return s
+            s.append('<' + self.action + '/>')
+        s.append('</' + ACTION + '>')
+        s.append('<' + CONDITION + '>')
+        for condition_name in self.conditions:
+            if condition_name not in LEGAL_CONDITIONS:
+                continue
+            if condition_name in LEGAL_REPEATABLE_CONDITIONS:
+                condition_values = self.conditions[condition_name]
+            else:
+                # Wrap condition value in a list, allowing us to iterate over
+                # all condition values using the same logic.
+                condition_values = [self.conditions[condition_name]]
+            for condition_value in condition_values:
+                s.extend(['<' + condition_name + '>',
+                          condition_value,
+                          '</' + condition_name + '>'])
+        s.append('</' + CONDITION + '>')
+        s.append('</' + RULE + '>')
+        return ''.join(s)
 
 class LifecycleConfig(list):
     """
@@ -196,14 +195,14 @@ class LifecycleConfig(list):
 
     def to_xml(self):
         """Convert LifecycleConfig object into XML string representation."""
-        s = '<?xml version="1.0" encoding="UTF-8"?>'
-        s += '<' + LIFECYCLE_CONFIG + '>'
+        s = ['<?xml version="1.0" encoding="UTF-8"?>']
+        s.append('<' + LIFECYCLE_CONFIG + '>')
         for rule in self:
-            s += rule.to_xml()
-        s += '</' + LIFECYCLE_CONFIG + '>'
-        return s
+            s.append(rule.to_xml())
+        s.append('</' + LIFECYCLE_CONFIG + '>')
+        return ''.join(s)
 
-    def add_rule(self, action, action_params, conditions):
+    def add_rule(self, action, action_text, conditions):
         """
         Add a rule to this Lifecycle configuration.  This only adds the rule to
         the local copy.  To install the new rule(s) on the bucket, you need to
@@ -213,15 +212,13 @@ class LifecycleConfig(list):
         :type action: str
         :param action: Action to be taken.
 
-        :type action_params: dict
-        :param action_params: A dictionary of action specific parameters. Each
-        item in the dictionary represents the name and value of an action
-        parameter.
+        :type action_text: str
+        :param action_text: Value for the specified action.
 
         :type conditions: dict
         :param conditions: A dictionary of conditions that specify when the
         action should be taken. Each item in the dictionary represents the name
         and value of a condition.
         """
-        rule = Rule(action, action_params, conditions)
+        rule = Rule(action, action_text, conditions)
         self.append(rule)

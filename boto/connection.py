@@ -368,7 +368,7 @@ class HTTPRequest(object):
             for key in self.headers:
                 val = self.headers[key]
                 if isinstance(val, six.text_type):
-                    safe = '!"#$%&\'()*+,/:;<=>?@[\\]^`{|}~'
+                    safe = '!"#$%&\'()*+,/:;<=>?@[\\]^`{|}~ '
                     self.headers[key] = quote(val.encode('utf-8'), safe)
             setattr(self, '_headers_quoted', True)
 
@@ -1048,7 +1048,7 @@ class AWSAuthConnection(object):
         if self.host_header and not boto.utils.find_matching_headers('host', headers):
             headers['host'] = self.host_header
         host = host or self.host
-        if self.use_proxy:
+        if self.use_proxy and not self.skip_proxy(host):
             if not auth_path:
                 auth_path = path
             path = self.prefix_proxy_to_path(path, host)

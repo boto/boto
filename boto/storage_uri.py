@@ -444,13 +444,24 @@ class BucketStorageUri(StorageUri):
 
     def get_storage_class(self, validate=False, headers=None):
         self._check_bucket_uri('get_storage_class')
-        # StorageClass is defined as a bucket param for GCS, but as a key
-        # param for S3.
+        # StorageClass is defined as a bucket and object param for GCS, but
+        # only as a key param for S3.
         if self.scheme != 'gs':
             raise ValueError('get_storage_class() not supported for %s '
                              'URIs.' % self.scheme)
         bucket = self.get_bucket(validate, headers)
         return bucket.get_storage_class()
+
+    def set_storage_class(self, storage_class, validate=False, headers=None):
+        """Updates a bucket's storage class."""
+        self._check_bucket_uri('set_storage_class')
+        # StorageClass is defined as a bucket and object param for GCS, but
+        # only as a key param for S3.
+        if self.scheme != 'gs':
+            raise ValueError('set_storage_class() not supported for %s '
+                             'URIs.' % self.scheme)
+        bucket = self.get_bucket(validate, headers)
+        bucket.set_storage_class(storage_class, headers)
 
     def get_subresource(self, subresource, validate=False, headers=None,
                         version_id=None):

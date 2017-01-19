@@ -36,7 +36,7 @@ class TestKinesis(AWSMockServiceTestCase):
         self.service_connection.put_record('stream-name',
             b'\x00\x01\x02\x03\x04\x05', 'partition-key')
 
-        body = json.loads(self.actual_request.body)
+        body = json.loads(self.actual_request.body.decode('utf-8'))
         self.assertEqual(body['Data'], 'AAECAwQF')
 
         target = self.actual_request.headers['X-Amz-Target']
@@ -47,7 +47,7 @@ class TestKinesis(AWSMockServiceTestCase):
         self.service_connection.put_record('stream-name',
             'data', 'partition-key')
 
-        body = json.loads(self.actual_request.body)
+        body = json.loads(self.actual_request.body.decode('utf-8'))
         self.assertEqual(body['Data'], 'ZGF0YQ==')
 
         target = self.actual_request.headers['X-Amz-Target']
@@ -66,7 +66,7 @@ class TestKinesis(AWSMockServiceTestCase):
         self.service_connection.put_records(stream_name='stream-name',
             records=[record_binary, record_str])
 
-        body = json.loads(self.actual_request.body)
+        body = json.loads(self.actual_request.body.decode('utf-8'))
         self.assertEqual(body['Records'][0]['Data'], 'AAECAwQF')
         self.assertEqual(body['Records'][1]['Data'], 'ZGF0YQ==')
 

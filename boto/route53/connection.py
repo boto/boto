@@ -211,8 +211,8 @@ class Route53Connection(AWSAuthConnection):
             associate to is required.
 
         :type vpc_region: str
-        :param vpc_id: When creating a private hosted zone, the region of
-            the associated VPC is required.
+        :param vpc_region: When creating a private hosted zone, the region
+            of the associated VPC is required.
 
         """
         if caller_ref is None:
@@ -527,8 +527,8 @@ class Route53Connection(AWSAuthConnection):
             associate to is required.
 
         :type vpc_region: str
-        :param vpc_id: When creating a private hosted zone, the region of
-            the associated VPC is required.
+        :param vpc_region: When creating a private hosted zone, the region
+            of the associated VPC is required.
         """
         zone = self.create_hosted_zone(name, private_zone=private_zone,
                                        vpc_id=vpc_id, vpc_region=vpc_region)
@@ -584,20 +584,25 @@ class Route53Connection(AWSAuthConnection):
         boto.log.debug("Saw HTTP status: %s" % response.status)
 
         if response.status == 400:
-            code = response.getheader('Code')
+            body = response.read()
 
-            if code:
+            # We need to parse the error first
+            err = exception.DNSServerError(
+                response.status,
+                response.reason,
+                body)
+            if err.error_code:
                 # This is a case where we need to ignore a 400 error, as
                 # Route53 returns this. See
                 # http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html
-                if 'PriorRequestNotComplete' in code:
-                    error = 'PriorRequestNotComplete'
-                elif 'Throttling' in code:
-                    error = 'Throttling'
-                else:
+                if not err.error_code in (
+                        'PriorRequestNotComplete',
+                        'Throttling',
+                        'ServiceUnavailable',
+                        'RequestExpired'):
                     return status
                 msg = "%s, retry attempt %s" % (
-                    error,
+                    err.error_code,
                     i
                 )
                 next_sleep = min(random.random() * (2 ** i),

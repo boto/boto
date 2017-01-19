@@ -318,7 +318,7 @@ class Item(object):
 
         Largely internal.
         """
-        # This doesn't save on it's own. Rather, we prepare the datastructure
+        # This doesn't save on its own. Rather, we prepare the datastructure
         # and hand-off to the table to handle creation/update.
         final_data = {}
 
@@ -338,7 +338,7 @@ class Item(object):
 
         Largely internal.
         """
-        # This doesn't save on it's own. Rather, we prepare the datastructure
+        # This doesn't save on its own. Rather, we prepare the datastructure
         # and hand-off to the table to handle creation/update.
         final_data = {}
         fields = set()

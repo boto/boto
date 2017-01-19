@@ -88,7 +88,7 @@ class CertValidationTest(unittest.TestCase):
         boto.config.set('Boto', 'proxy_port', PROXY_PORT)
 
     def assertConnectionThrows(self, connection_class, error):
-        conn = connection_class()
+        conn = connection_class('fake_id', 'fake_secret')
         self.assertRaises(error, conn.get_all_buckets)
 
     def do_test_valid_cert(self):

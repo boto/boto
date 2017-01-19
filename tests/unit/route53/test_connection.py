@@ -64,16 +64,16 @@ class TestRoute53Connection(AWSMockServiceTestCase):
 
     def test_retryable_400_prior_request_not_complete(self):
         # Test ability to retry on ``PriorRequestNotComplete``.
-        self.set_http_response(status_code=400, header=[
-            ['Code', 'PriorRequestNotComplete'],
-        ])
+        self.set_http_response(status_code=400, body="""<?xml version="1.0"?>
+<ErrorResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/"><Error><Type>Sender</Type><Code>PriorRequestNotComplete</Code><Message>The request was rejected because Route 53 was still processing a prior request.</Message></Error><RequestId>12d222a0-f3d9-11e4-a611-c321a3a00f9c</RequestId></ErrorResponse>
+""")
         self.do_retry_handler()
 
     def test_retryable_400_throttling(self):
         # Test ability to rety on ``Throttling``.
-        self.set_http_response(status_code=400, header=[
-            ['Code', 'Throttling'],
-        ])
+        self.set_http_response(status_code=400, body="""<?xml version="1.0"?>
+<ErrorResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/"><Error><Type>Sender</Type><Code>Throttling</Code><Message>Rate exceeded</Message></Error><RequestId>19d0a9a0-f3d9-11e4-a611-c321a3a00f9c</RequestId></ErrorResponse>
+""")
         self.do_retry_handler()
 
     @mock.patch('time.sleep')

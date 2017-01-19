@@ -48,9 +48,11 @@ class EmrConnection(AWSQueryConnection):
                                             'elasticmapreduce.us-east-1.amazonaws.com')
     ResponseError = EmrResponseError
 
-    # Constants for AWS Console debugging
-    DebuggingJar = 's3n://us-east-1.elasticmapreduce/libs/script-runner/script-runner.jar'
-    DebuggingArgs = 's3n://us-east-1.elasticmapreduce/libs/state-pusher/0.1/fetch'
+
+
+    # Constants for AWS Console debugging    
+    DebuggingJar = 's3://{region_name}.elasticmapreduce/libs/script-runner/script-runner.jar'
+    DebuggingArgs = 's3://{region_name}.elasticmapreduce/libs/state-pusher/0.1/fetch'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -411,7 +413,7 @@ class EmrConnection(AWSQueryConnection):
                     action_on_failure='TERMINATE_JOB_FLOW', keep_alive=False,
                     enable_debugging=False,
                     hadoop_version=None,
-                    steps=[],
+                    steps=None,
                     bootstrap_actions=[],
                     instance_groups=None,
                     additional_info=None,
@@ -508,6 +510,7 @@ class EmrConnection(AWSQueryConnection):
         :rtype: str
         :return: The jobflow id
         """
+        steps = steps or []
         params = {}
         if action_on_failure:
             params['ActionOnFailure'] = action_on_failure
@@ -547,8 +550,8 @@ class EmrConnection(AWSQueryConnection):
             debugging_step = JarStep(name='Setup Hadoop Debugging',
                                      action_on_failure='TERMINATE_JOB_FLOW',
                                      main_class=None,
-                                     jar=self.DebuggingJar,
-                                     step_args=self.DebuggingArgs)
+                                     jar=self.DebuggingJar.format(region_name=self.region.name),    
+                                     step_args=self.DebuggingArgs.format(region_name=self.region.name))
             steps.insert(0, debugging_step)
 
         # Step args

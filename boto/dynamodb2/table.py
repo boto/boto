@@ -669,7 +669,7 @@ class Table(object):
         should be fetched)
 
         Returns an ``Item`` instance containing all the data for that record.
-        
+
         Raises an ``ItemNotFound`` exception if the item is not found.
 
         Example::
@@ -1581,9 +1581,9 @@ class Table(object):
             })
             results.append(item)
 
-        raw_unproccessed = raw_results.get('UnprocessedKeys', {})
+        raw_unprocessed = raw_results.get('UnprocessedKeys', {}).get(self.table_name, {})
 
-        for raw_key in raw_unproccessed.get('Keys', []):
+        for raw_key in raw_unprocessed.get('Keys', []):
             py_key = {}
 
             for key, value in raw_key.items():
