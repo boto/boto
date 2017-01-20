@@ -629,7 +629,7 @@ class Key(object):
     def generate_url(self, expires_in, method='GET', headers=None,
                      query_auth=True, force_http=False, response_headers=None,
                      expires_in_absolute=False, version_id=None,
-                     policy=None, reduced_redundancy=False, encrypt_key=False):
+                     policy=None, reduced_redundancy=False, encrypt_key=False, query_parameters=None):
         """
         Generate a URL to access this key.
 
@@ -704,7 +704,8 @@ class Key(object):
                                                    force_http,
                                                    response_headers,
                                                    expires_in_absolute,
-                                                   version_id)
+                                                   version_id,
+                                                   query_parameters=query_parameters)
 
     def send_file(self, fp, headers=None, cb=None, num_cb=10,
                   query_args=None, chunked_transfer=False, size=None):
