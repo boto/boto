@@ -213,6 +213,29 @@ class TestSigV4Presigned(MockServiceWithConfigTestCase):
         self.assertIn('Signature=', url_enabled)
         self.assertNotIn('Signature=', url_disabled)
 
+    def test_sigv4_presign_respect_query_auth_security_token(self):
+        self.config = {
+            's3': {
+                'use-sigv4': True,
+            }
+        }
+
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more',
+            security_token='token',
+            host='s3.amazonaws.com'
+        )
+
+        url_enabled = conn.generate_url(86400, 'GET', bucket='examplebucket',
+                                        key='test.txt', query_auth=True)
+
+        url_disabled = conn.generate_url(86400, 'GET', bucket='examplebucket',
+                                         key='test.txt', query_auth=False)
+
+        self.assertIn('x-amz-security-token=', url_enabled.lower())
+        self.assertNotIn('x-amz-security-token=', url_disabled.lower())
+
     def test_sigv4_presign_headers(self):
         self.config = {
             's3': {
