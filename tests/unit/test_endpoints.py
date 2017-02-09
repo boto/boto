@@ -17,6 +17,7 @@ import json
 from nose.tools import assert_equal
 
 from tests.unit import unittest
+import boto
 from boto.endpoints import BotoEndpointResolver
 from boto.endpoints import StaticEndpointBuilder
 
@@ -294,3 +295,43 @@ class EndpointTestCase(object):
 
     def run(self):
         assert_equal(self.old_endpoints, self.new_endpoints)
+
+
+def test_no_lost_endpoints():
+    # This makes sure that a bad sync doesn't cause us to loose any services
+
+    data_dir = os.path.join(os.path.dirname(__file__), 'data')
+    old_endpoints_file = os.path.join(data_dir, 'old_endpoints.json')
+
+    with open(old_endpoints_file) as f:
+        old_endpoints = json.load(f)
+
+    with open(boto.ENDPOINTS_PATH) as f:
+        new_endpoints = json.load(f)
+
+    builder = StaticEndpointBuilder(BotoEndpointResolver(new_endpoints))
+    built = builder.build_static_endpoints()
+
+    # Assert no services are lost
+    for service, service_endpoints in old_endpoints.items():
+        new_service_endpoints = built.get(service, {})
+        for region, regional_endpoint in service_endpoints.items():
+            new_regional_endpoint = new_service_endpoints.get(region)
+            case = EndpointPreservedTestCase(
+                service, region, regional_endpoint, new_regional_endpoint)
+            yield case.run
+
+
+class EndpointPreservedTestCase(object):
+    def __init__(self, service_name, region_name, old_endpoint, new_endpoint):
+        self.service_name = service_name
+        self.region_name = region_name
+        self.old_endpoint = old_endpoint
+        self.new_endpoint = new_endpoint
+
+    def run(self):
+        message = "Endpoint for %s in %s does not match snapshot: %s != %s" % (
+            self.service_name, self.region_name, self.new_endpoint,
+            self.old_endpoint
+        )
+        assert_equal(self.old_endpoint, self.new_endpoint, message)
