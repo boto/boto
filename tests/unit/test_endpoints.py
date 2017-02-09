@@ -119,15 +119,6 @@ class BaseEndpointResolverTest(unittest.TestCase):
 
 
 class TestBotoEndpointResolver(BaseEndpointResolverTest):
-    def test_get_endpoints_with_rename(self):
-        rename_map = {'ec3': 'ec2'}
-        resolver = BotoEndpointResolver(
-            endpoint_data=self._endpoint_data(),
-            service_rename_map=rename_map
-        )
-        endpoints = sorted(resolver.get_available_endpoints('ec3'))
-        expected_endpoints = sorted(['us-bar', 'eu-baz', 'us-foo'])
-        self.assertEqual(endpoints, expected_endpoints)
 
     def test_get_all_available_regions(self):
         resolver = BotoEndpointResolver(self._endpoint_data())
@@ -153,21 +144,6 @@ class TestBotoEndpointResolver(BaseEndpointResolverTest):
         expected_regions = sorted([
             'us-bar', 'eu-baz', 'us-foo', 'foo-1', 'foo-2', 'foo-3'])
         self.assertEqual(regions, expected_regions)
-
-    def test_construct_endpoint_with_rename(self):
-        rename_map = {'ec3': 'ec2'}
-        resolver = BotoEndpointResolver(
-            endpoint_data=self._endpoint_data(),
-            service_rename_map=rename_map
-        )
-        endpoint = resolver.construct_endpoint('ec3', 'us-foo')
-        expected_endpoint = {
-            'dnsSuffix': 'amazonaws.com',
-            'endpointName': 'us-foo',
-            'hostname': 'ec2.us-foo.amazonaws.com',
-            'partition': 'aws'
-        }
-        self.assertEqual(endpoint, expected_endpoint)
 
     def test_resolve_hostname(self):
         resolver = BotoEndpointResolver(self._endpoint_data())

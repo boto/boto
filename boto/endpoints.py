@@ -10,11 +10,14 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
-from boto.vendored.regions.regions import EndpointResolver
+import boto.vendored.regions.regions as _regions
 
 
-class BotoEndpointResolver(EndpointResolver):
-    """Endpoint resolver which handles boto2 compatibility concerns."""
+class _CompatEndpointResolver(_regions.EndpointResolver):
+    """Endpoint resolver which handles boto2 compatibility concerns.
+
+    This is NOT intended for external use whatsoever.
+    """
 
     _DEFAULT_SERVICE_RENAMES = {
         # The botocore resolver is based on endpoint prefix.
@@ -38,7 +41,7 @@ class BotoEndpointResolver(EndpointResolver):
         :param service_rename_map: A mapping of boto2 service name to
             endpoint prefix.
         """
-        super(BotoEndpointResolver, self).__init__(endpoint_data)
+        super(_CompatEndpointResolver, self).__init__(endpoint_data)
         if service_rename_map is None:
             service_rename_map = self._DEFAULT_SERVICE_RENAMES
         # Mapping of boto2 service name to endpoint prefix
@@ -50,7 +53,7 @@ class BotoEndpointResolver(EndpointResolver):
     def get_available_endpoints(self, service_name, partition_name='aws',
                                 allow_non_regional=False):
         endpoint_prefix = self._endpoint_prefix(service_name)
-        return super(BotoEndpointResolver, self).get_available_endpoints(
+        return super(_CompatEndpointResolver, self).get_available_endpoints(
             endpoint_prefix, partition_name, allow_non_regional)
 
     def get_all_available_regions(self, service_name):
@@ -65,26 +68,19 @@ class BotoEndpointResolver(EndpointResolver):
                 # partition in which they are considered global.
                 partition = self._get_partition_data(partition_name)
                 regions.update(partition['regions'].keys())
+                continue
             else:
                 regions.update(
-                    super(BotoEndpointResolver, self).get_available_endpoints(
-                        endpoint_prefix, partition_name
-                    )
+                    self.get_available_endpoints(
+                        endpoint_prefix, partition_name)
                 )
 
         return list(regions)
 
     def construct_endpoint(self, service_name, region_name=None):
         endpoint_prefix = self._endpoint_prefix(service_name)
-        return super(BotoEndpointResolver, self).construct_endpoint(
+        return super(_CompatEndpointResolver, self).construct_endpoint(
             endpoint_prefix, region_name)
-
-    def resolve_hostname(self, service, region_name):
-        """Resolve the hostname for a service in a particular region."""
-        endpoint = self.construct_endpoint(service, region_name)
-        if endpoint is None:
-            return None
-        return endpoint.get('sslCommonName', endpoint['hostname'])
 
     def get_available_services(self):
         """Get a list of all the available services in the endpoints file(s)"""
@@ -132,6 +128,53 @@ class BotoEndpointResolver(EndpointResolver):
     def _service_name(self, endpoint_prefix):
         """Given an endpoint prefix, get the boto2 service name."""
         return self._service_name_map.get(endpoint_prefix, endpoint_prefix)
+
+
+class BotoEndpointResolver(object):
+    """Resolves endpoint hostnames for AWS services.
+
+    This is NOT intended for external use.
+    """
+
+    def __init__(self, endpoint_data, service_rename_map=None):
+        self._resolver = _CompatEndpointResolver(
+            endpoint_data, service_rename_map)
+
+    def resolve_hostname(self, service_name, region_name):
+        """Resolve the hostname for a service in a particular region.
+
+        :type service_name: str
+        :param service_name: The service to look up.
+
+        :type region_name: str
+        :param region_name: The region to find the endpoint for.
+
+        :return: The hostname for the given service in the given region.
+        """
+        endpoint = self._resolver.construct_endpoint(service_name, region_name)
+        if endpoint is None:
+            return None
+        return endpoint.get('sslCommonName', endpoint['hostname'])
+
+    def get_all_available_regions(self, service_name):
+        """Get all the regions a service is available in.
+
+        :type service_name: str
+        :param service_name: The service to look up.
+
+        :rtype: list of str
+        :return: A list of all the regions the given service is available in.
+        """
+        return self._resolver.get_all_available_regions(service_name)
+
+    def get_available_services(self):
+        """Get all the services supported by the endpoint data.
+
+        :rtype: list of str
+        :return: A list of all the services explicitly contained within the
+            endpoint data provided during instantiation.
+        """
+        return self._resolver.get_available_services()
 
 
 class StaticEndpointBuilder(object):
