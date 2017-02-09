@@ -25,9 +25,26 @@ import os
 import boto
 from boto.compat import json
 from boto.exception import BotoClientError
+from boto.endpoints import BotoEndpointResolver
+from boto.endpoints import StaticEndpointBuilder
+
+
+_endpoints_cache = {}
 
 
 def load_endpoint_json(path):
+    """
+    Loads a given JSON file & returns it.
+
+    :param path: The path to the JSON file
+    :type path: string
+
+    :returns: The loaded data
+    """
+    return _load_json_file(path)
+
+
+def _load_json_file(path):
     """
     Loads a given JSON file & returns it.
 
@@ -80,7 +97,7 @@ def load_regions():
     :rtype: dict
     """
     # Load the defaults first.
-    endpoints = load_endpoint_json(boto.ENDPOINTS_PATH)
+    endpoints = _load_builtin_endpoints()
     additional_path = None
 
     # Try the ENV var. If not, check the config file.
@@ -96,6 +113,25 @@ def load_regions():
         endpoints = merge_endpoints(endpoints, additional)
 
     return endpoints
+
+
+def _load_builtin_endpoints(_cache=_endpoints_cache):
+    """Loads the builtin endpoints in the legacy format."""
+    # If there's a cached response, return it
+    if _cache:
+        return _cache
+
+    # Load the endpoints file
+    endpoints = _load_json_file(boto.ENDPOINTS_PATH)
+
+    # Build the endpoints into the legacy format
+    resolver = BotoEndpointResolver(endpoints)
+    builder = StaticEndpointBuilder(resolver)
+    endpoints = builder.build_static_endpoints()
+
+    # Cache the endpoints and then return them
+    _cache.update(endpoints)
+    return _cache
 
 
 def get_regions(service_name, region_cls=None, connection_cls=None):

@@ -46,11 +46,7 @@ class TestEndpointLoading(unittest.TestCase):
 
     def test_load_endpoint_json(self):
         endpoints = load_endpoint_json(boto.ENDPOINTS_PATH)
-        self.assertTrue('ec2' in endpoints)
-        self.assertEqual(
-            endpoints['ec2']['us-east-1'],
-            'ec2.us-east-1.amazonaws.com'
-        )
+        self.assertTrue('partitions' in endpoints)
 
     def test_merge_endpoints(self):
         defaults = {
