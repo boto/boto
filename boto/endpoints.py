@@ -137,6 +137,15 @@ class BotoEndpointResolver(object):
     """
 
     def __init__(self, endpoint_data, service_rename_map=None):
+        """
+        :type endpoint_data: dict
+        :param endpoint_data: Regions and endpoints data in the same format
+            as is used by botocore / boto3.
+
+        :type service_rename_map: dict
+        :param service_rename_map: A mapping of boto2 service name to
+            endpoint prefix.
+        """
         self._resolver = _CompatEndpointResolver(
             endpoint_data, service_rename_map)
 
