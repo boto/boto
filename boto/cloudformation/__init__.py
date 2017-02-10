@@ -22,6 +22,7 @@
 
 from boto.cloudformation.connection import CloudFormationConnection
 from boto.regioninfo import RegionInfo, get_regions, load_regions
+from boto.regioninfo import connect
 
 RegionData = load_regions().get('cloudformation')
 
@@ -50,7 +51,5 @@ def connect_to_region(region_name, **kw_params):
     :return: A connection to the given region, or None if an invalid region
         name is given
     """
-    for region in regions():
-        if region.name == region_name:
-            return region.connect(**kw_params)
-    return None
+    return connect('cloudformation', region_name,
+                   connection_cls=CloudFormationConnection, **kw_params)

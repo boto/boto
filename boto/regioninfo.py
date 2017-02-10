@@ -182,6 +182,71 @@ def get_regions(service_name, region_cls=None, connection_cls=None):
     return region_objs
 
 
+def connect(service_name, region_name, region_cls=None,
+            connection_cls=None, **kw_params):
+    """Create a connection class for a given service in a given region.
+
+    :param service_name: The name of the service to construct the
+        ``RegionInfo`` object for, e.g. ``ec2``, ``s3``, etc.
+    :type service_name: str
+
+    :param region_name: The name of the region to connect to, e.g.
+        ``us-west-2``, ``eu-central-1``, etc.
+    :type region_name: str
+
+    :param region_cls: (Optional) The class to use when constructing. By
+        default, this is ``RegionInfo``.
+    :type region_cls: class
+
+    :param connection_cls: (Optional) The connection class for the
+        ``RegionInfo`` object. Providing this allows the ``connect`` method on
+        the ``RegionInfo`` to work. Default is ``None`` (no connection).
+    :type connection_cls: class
+
+    :returns: A configured connection class.
+    """
+    region = _get_region(service_name, region_name, region_cls, connection_cls)
+
+    if region is None and _use_endpoint_heuristics():
+        region = _get_region_with_heuristics(
+            service_name, region_name, region_cls, connection_cls
+        )
+
+    if region is None:
+        return None
+
+    return region.connect(**kw_params)
+
+
+def _get_region(service_name, region_name, region_cls=None,
+                connection_cls=None):
+    """Finds the region by searching through the known regions."""
+    for region in get_regions(service_name, region_cls, connection_cls):
+        if region.name == region_name:
+            return region
+    return None
+
+
+def _get_region_with_heuristics(service_name, region_name, region_cls=None,
+                                connection_cls=None):
+    """Finds the region using known regions and heuristics."""
+    endpoints = load_endpoint_json(boto.ENDPOINTS_PATH)
+    resolver = BotoEndpointResolver(endpoints)
+    hostname = resolver.resolve_hostname(service_name, region_name)
+
+    return region_cls(
+        name=region_name,
+        endpoint=hostname,
+        connection_cls=connection_cls
+    )
+
+
+def _use_endpoint_heuristics():
+    env_var = os.environ.get('BOTO_USE_ENDPOINT_HEURISTICS', 'false').lower()
+    config_var = boto.config.getbool('Boto', 'use_endpoint_heuristics', False)
+    return env_var == 'true' or config_var
+
+
 class RegionInfo(object):
     """
     Represents an AWS Region

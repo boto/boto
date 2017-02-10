@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 from boto.regioninfo import get_regions
+from boto.regioninfo import connect
 
 
 def regions():
@@ -28,15 +29,11 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
-    import boto.cloudsearch2.layer1
-    return get_regions(
-        'cloudsearch',
-        connection_cls=boto.cloudsearch2.layer1.CloudSearchConnection
-    )
+    from boto.cloudsearch2.layer1 import CloudSearchConnection
+    return get_regions('cloudsearch', connection_cls=CloudSearchConnection)
 
 
 def connect_to_region(region_name, **kw_params):
-    for region in regions():
-        if region.name == region_name:
-            return region.connect(**kw_params)
-    return None
+    from boto.cloudsearch2.layer1 import CloudSearchConnection
+    return connect('cloudsearch', region_name,
+                   connection_cls=CloudSearchConnection, **kw_params)
