@@ -655,7 +655,7 @@ class S3Connection(AWSAuthConnection):
         boto.log.debug('path=%s' % path)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         boto.log.debug('auth_path=%s' % auth_path)
-        host = self.calling_format.build_host(self.server_name(), bucket)
+        host = self.calling_format.build_host(self.host, bucket)
         if query_args:
             path += '?' + query_args
             boto.log.debug('path=%s' % path)
