@@ -24,6 +24,7 @@ import pickle
 import os
 from tests.compat import unittest, mock
 from tests.unit import MockServiceWithConfigTestCase
+from nose.tools import assert_equal
 
 from boto.auth import HmacAuthV4Handler
 from boto.auth import S3HmacAuthV4Handler
@@ -521,9 +522,12 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
 class FakeS3Connection(object):
     def __init__(self, *args, **kwargs):
         self.host = kwargs.pop('host', None)
+        self.anon = kwargs.pop('anon', None)
 
     @detect_potential_s3sigv4
     def _required_auth_capability(self):
+        if self.anon:
+            return ['anon']
         return ['nope']
 
     def _mexe(self, *args, **kwargs):
@@ -542,40 +546,105 @@ class FakeEC2Connection(object):
         pass
 
 
+def test_s3_sigv2_default():
+    sigv2_regions = [
+        'ap-northeast-1',
+        'ap-southeast-1',
+        'ap-southeast-2',
+        'eu-west-1',
+        'external-1',
+        'sa-east-1',
+        'us-east-1',
+        'us-gov-west-1',
+        'us-west-1',
+        'us-west-2'
+    ]
+
+    for region in sigv2_regions:
+        _yield_all_region_tests(region, expected_signature_version='nope')
+
+
+def test_s3_sigv4_default():
+    sigv4_regions = [
+        'ap-northeast-2',
+        'ap-south-1',
+        'ca-central-1',
+        'eu-central-1',
+        'eu-west-2',
+        'us-east-2'
+    ]
+
+    for region in sigv4_regions:
+        _yield_all_region_tests(region)
+
+    cn_regions = [
+        'cn-north-1'
+    ]
+
+    for region in cn_regions:
+        _yield_all_region_tests(region, dns_suffix='amazon.com.cn')
+
+    # Unknown region
+    _yield_all_region_tests('mars-west-1')
+
+
+def test_s3_special_domain_signature_version():
+    # Tests for specific domains, including the global host and custom domains.
+    special_domains = [
+        's3.amazonaws.com',
+        'storage.googleapis.com',
+        'mycustomdomain.example.com',
+        's3.amazonaws.com.example.com',
+        'mycustomdomain.example.com/amazonaws.com'
+    ]
+
+    for domain in special_domains:
+        yield S3SignatureVersionTestCase(domain, 'nope').run
+
+
+def test_s3_anon_signature_version():
+    # Anonymous
+    case = S3SignatureVersionTestCase('s3.amazonaws.com', 'anon', anon=True)
+    yield case.run
+
+
+def _yield_all_region_tests(region, expected_signature_version='hmac-v4-s3',
+                            dns_suffix='.amazonaws.com'):
+    """Yield tests for every variation of a region's endpoints."""
+    # Standard endpoint
+    host = 's3.' + region + dns_suffix
+    case = S3SignatureVersionTestCase(host, expected_signature_version)
+    yield case.run
+
+    # Dashed endpoint
+    host = 's3-' + region + dns_suffix
+    case = S3SignatureVersionTestCase(host, expected_signature_version)
+    yield case.run
+
+    # Endpoint with host style addressing
+    host = 'mybucket.s3-' + region + dns_suffix
+    case = S3SignatureVersionTestCase(host, expected_signature_version)
+    yield case.run
+
+
+class S3SignatureVersionTestCase(object):
+    def __init__(self, host, expected_signture_version, anon=None):
+        self.host = host
+        self.connection = FakeS3Connection(host=host, anon=anon)
+        self.expected_signature_version = expected_signture_version
+
+    def run(self):
+        auth = self.connection._required_auth_capability()
+        message = (
+            "Expected signature version ['%s'] for host %s but found %s." % (
+                self.expected_signature_version, self.host, auth
+            )
+        )
+        assert_equal(auth, [self.expected_signature_version], message)
+
+
 class TestS3SigV4OptIn(MockServiceWithConfigTestCase):
     connection_class = FakeS3Connection
-
-    def test_sigv4_opt_out(self):
-        # Default is opt-out.
-        fake = FakeS3Connection(host='s3.amazonaws.com')
-        self.assertEqual(fake._required_auth_capability(), ['nope'])
-
-    def test_sigv4_non_optional(self):
-        region_groups = [
-            '.cn-north',
-            '.eu-central', '-eu-central',
-            '.ca-central', '-ca-central'
-        ]
-        specific_regions = [
-            '.ap-northeast-2', '-ap-northeast-2',
-            '.ap-south-1', '-ap-south-1',
-            '.us-east-2', '-us-east-2',
-            '.eu-west-2', '-eu-west-2',
-        ]
-
-        # Create a connection for a sample region in each of these groups
-        # and ensure sigv4 is used.
-        for region in region_groups:
-            fake = FakeS3Connection(host='s3' + region + '-1.amazonaws.com')
-            self.assertEqual(
-                fake._required_auth_capability(), ['hmac-v4-s3'])
-
-        # Create a connection from the specific regions and make sure
-        # that these use sigv4.
-        for region in specific_regions:
-            fake = FakeS3Connection(host='s3' + region + '.amazonaws.com')
-            self.assertEqual(
-                fake._required_auth_capability(), ['hmac-v4-s3'])
 
     def test_sigv4_opt_in_config(self):
         # Opt-in via the config.

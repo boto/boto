@@ -169,10 +169,11 @@ class S3BucketTest (unittest.TestCase):
         t.add_tag_set(tag_set)
         self.bucket.set_tags(t)
         response = self.bucket.get_tags()
-        self.assertEqual(response[0][0].key, 'akey')
-        self.assertEqual(response[0][0].value, 'avalue')
-        self.assertEqual(response[0][1].key, 'anotherkey')
-        self.assertEqual(response[0][1].value, 'anothervalue')
+        tags = sorted(response[0], key=lambda tag: tag.key)
+        self.assertEqual(tags[0].key, 'akey')
+        self.assertEqual(tags[0].value, 'avalue')
+        self.assertEqual(tags[1].key, 'anotherkey')
+        self.assertEqual(tags[1].value, 'anothervalue')
 
     def test_website_configuration(self):
         response = self.bucket.configure_website('index.html')
@@ -214,7 +215,7 @@ class S3BucketTest (unittest.TestCase):
         self.assertEqual(actual_lifecycle.id, 'myid')
         self.assertEqual(actual_lifecycle.prefix, '')
         self.assertEqual(actual_lifecycle.status, 'Enabled')
-        self.assertEqual(actual_lifecycle.transition, None)
+        self.assertEqual(actual_lifecycle.transition, [])
 
     def test_lifecycle_with_glacier_transition(self):
         lifecycle = Lifecycle()
