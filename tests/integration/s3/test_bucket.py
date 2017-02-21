@@ -30,14 +30,17 @@ from mock import patch, Mock
 import unittest
 import time
 
+from boto.compat import StringIO
 from boto.exception import S3ResponseError
 from boto.s3.connection import S3Connection
 from boto.s3.bucketlogging import BucketLogging
+from boto.s3.crr import CRR, Destination
 from boto.s3.lifecycle import Lifecycle
 from boto.s3.lifecycle import Transition
 from boto.s3.lifecycle import Expiration
 from boto.s3.lifecycle import Rule
 from boto.s3.acl import Grant
+from boto.s3.key import Key
 from boto.s3.tagging import Tags, TagSet
 from boto.s3.website import RedirectLocation
 from boto.compat import unquote_str
@@ -301,3 +304,60 @@ class S3BucketTest (unittest.TestCase):
         self.assertEqual(s.find("<ID>"), -1)
         # Confirm Prefix is '' and not set to 'None'
         self.assertNotEqual(s.find("<Prefix></Prefix>"), -1)
+
+class S3BucketCRRTest (unittest.TestCase):
+    s3 = True
+
+    def setUp(self):
+        self.conn = S3Connection()
+        self.src_bname = 'src-bucket-%d' % int(time.time())
+        self.dst_bname = 'dst-bucket-%d' % int(time.time())
+        self.src_bucket = self.conn.create_bucket(self.src_bname)
+        self.dst_bucket = self.conn.create_bucket(self.dst_bname,
+                                                  location='us-west-2')
+        self.src_bucket.configure_versioning(True)
+        self.dst_bucket.configure_versioning(True)
+
+    def tearDown(self):
+        for key in self.src_bucket.list_versions():
+            key.delete()
+        self.src_bucket.delete()
+        for key in self.dst_bucket.list_versions():
+            key.delete()
+        self.dst_bucket.delete()
+
+    def test_CRR(self):
+        # replication will fail with this dummy role
+        roleId = 'arn:aws:iam::000240903217:role/FederatedWebIdentityRole'
+        crr = CRR(role=roleId)
+        destination = Destination(bucket=self.dst_bname)
+        crr.add_crrrule(id="CRR Rule", status='Enabled', destination=destination)
+        # PUT Bucket Replication
+        self.assertTrue(self.src_bucket.configure_crr(crr))
+        # GET Bucket Replication
+        crrconfig = self.src_bucket.get_crr_config()
+        act_crrconfig = crrconfig[0]
+        self.assertEqual(act_crrconfig.id, 'CRR Rule')
+        self.assertEqual(act_crrconfig.status, 'Enabled')
+        kname = 'object-key'
+        k = Key(self.src_bucket, kname)
+        content = "abc"
+        sfp = StringIO(content)
+        wrote = k.set_contents_from_file(sfp)
+        self.assertEqual(wrote, len(content))
+        time.sleep(5)
+        k = self.src_bucket.get_key(kname)
+        self.assertEqual(k.get_contents_as_string(), content)
+        if k.replication == 'PENDING' or k.replication == 'FAILED':
+            pass
+        else:
+            self.fail("unexpected status %s" % k.replication)
+        # DELETE Bucket Replication
+        self.assertTrue(self.src_bucket.delete_crr_configuration())
+        # GET Bucket Replication
+        try:
+            crrconfig = self.src_bucket.get_crr_config()
+        except S3ResponseError as e:
+            self.assertEqual(e.status, 404)
+        except Exception as e:
+            self.assertFalse('Expecting S3ResponseError not %s' % str(e))
