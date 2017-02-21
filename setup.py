@@ -82,7 +82,7 @@ setup(name = "boto",
                   "boto.cloudsearchdomain", "boto.kms",
                   "boto.awslambda", "boto.codedeploy", "boto.configservice",
                   "boto.cloudhsm", "boto.ec2containerservice",
-                  "boto.machinelearning"],
+                  "boto.machinelearning", "boto.vendored.regions"],
       package_data = {
           "boto.cacerts": ["cacerts.txt"],
           "boto": ["endpoints.json"],
