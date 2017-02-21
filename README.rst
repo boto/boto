@@ -1,7 +1,7 @@
 ####
 boto
 ####
-boto 2.46.0
+boto 2.46.1
 
 Released: 20-Feb-2017
 
