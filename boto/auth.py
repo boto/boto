@@ -472,7 +472,10 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
                 if len(parts) == 3:
                     region_name = 'us-east-1'
                 else:
-                    region_name = parts[1]
+                    if parts[1] == 'queue':
+                        region_name = parts[0]
+                    else:
+                        region_name = parts[1]
         else:
             region_name = parts[0]
 
