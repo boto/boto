@@ -155,7 +155,7 @@ class Provider(object):
             # Note that this version header is not to be confused with
             # the Google Cloud Storage 'x-goog-api-version' header.
             VERSION_ID_HEADER_KEY: GOOG_HEADER_PREFIX + 'version-id',
-            STORAGE_CLASS_HEADER_KEY: None,
+            STORAGE_CLASS_HEADER_KEY: GOOG_HEADER_PREFIX + 'storage-class',
             MFA_HEADER_KEY: None,
             RESTORE_HEADER_KEY: None,
         }
