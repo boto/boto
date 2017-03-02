@@ -230,6 +230,18 @@ class Key(object):
         else:
             self.encrypted = None
 
+    def handle_storage_class_header(self, resp):
+        provider = self.bucket.connection.provider
+        if provider.storage_class_header:
+            self._storage_class = resp.getheader(
+                provider.storage_class_header, None)
+            if (self._storage_class is None and
+                provider.get_provider_name() == 'aws'):
+                # S3 docs for HEAD object requests say S3 will return this
+                # header for all objects except Standard storage class objects.
+                self._storage_class = 'STANDARD'
+
+
     def handle_version_headers(self, resp, force=False):
         provider = self.bucket.connection.provider
         # If the Key object already has a version_id attribute value, it
