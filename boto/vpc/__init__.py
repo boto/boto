@@ -37,6 +37,7 @@ from boto.vpc.vpnconnection import VpnConnection
 from boto.vpc.vpc_peering_connection import VpcPeeringConnection
 from boto.ec2 import RegionData
 from boto.regioninfo import RegionInfo, get_regions
+from boto.regioninfo import connect
 
 
 def regions(**kw_params):
@@ -66,10 +67,8 @@ def connect_to_region(region_name, **kw_params):
     :return: A connection to the given region, or None if an invalid region
              name is given
     """
-    for region in regions(**kw_params):
-        if region.name == region_name:
-            return region.connect(**kw_params)
-    return None
+    return connect('ec2', region_name, connection_cls=VPCConnection,
+                   **kw_params)
 
 
 class VPCConnection(EC2Connection):

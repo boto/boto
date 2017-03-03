@@ -24,6 +24,7 @@
 #
 
 from boto.regioninfo import RegionInfo, get_regions
+from boto.regioninfo import connect
 
 
 class S3RegionInfo(RegionInfo):
@@ -59,16 +60,16 @@ def regions():
 
 
 def connect_to_region(region_name, **kw_params):
-    for region in regions():
-        if 'host' in kw_params.keys():
-            # Make sure the host specified is not nothing
-            if kw_params['host'] not in ['', None]:
-                region.endpoint = kw_params['host']
-                del kw_params['host']
-                return region.connect(**kw_params)
-            # If it is nothing then remove it from kw_params and proceed with default
-            else:
-                del kw_params['host']
-        if region.name == region_name:
+    from boto.s3.connection import S3Connection
+    if 'host' in kw_params:
+        host = kw_params.pop('host')
+        if host not in ['', None]:
+            region = S3RegionInfo(
+                name='custom',
+                endpoint=host,
+                connection_cls=S3Connection
+            )
             return region.connect(**kw_params)
-    return None
+
+    return connect('s3', region_name, region_cls=S3RegionInfo,
+                   connection_cls=S3Connection, **kw_params)

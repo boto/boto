@@ -221,6 +221,7 @@ class Bucket(object):
             k.handle_version_headers(response)
             k.handle_encryption_headers(response)
             k.handle_restore_headers(response)
+            k.handle_storage_class_header(response)
             k.handle_addl_headers(response.getheaders())
             return k, response
         else:
