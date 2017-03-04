@@ -18,6 +18,13 @@ boto.cloudsearch2.domain
    :members:
    :undoc-members:
 
+boto.cloudsearch2.exceptions
+----------------------------
+
+.. automodule:: boto.cloudsearch2.exceptions
+   :members:
+   :undoc-members:
+
 boto.cloudsearch2.layer1
 ------------------------
 

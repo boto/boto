@@ -104,10 +104,10 @@ message is less than or equal to 256Kb, SQS won't complain.
 
 So, first we need to create a Message object::
 
->>> from boto.sqs.message import Message
->>> m = Message()
->>> m.set_body('This is my first message.')
->>> q.write(m)
+    >>> from boto.sqs.message import Message
+    >>> m = Message()
+    >>> m.set_body('This is my first message.')
+    >>> q.write(m)
 
 The write method will return the ``Message`` object.  The ``id`` and
 ``md5`` attribute of the ``Message`` object will be updated with the
@@ -151,11 +151,11 @@ class with the boto queue object so that it knows that, when you read a message 
 queue, it should create one of your message objects rather than the
 default boto Message object.  To register your message class, you would::
 
->>> import MyMessage
->>> q.set_message_class(MyMessage)
->>> m = MyMessage()
->>> m.set_body('This is my first message.')
->>> q.write(m)
+    >>> import MyMessage
+    >>> q.set_message_class(MyMessage)
+    >>> m = MyMessage()
+    >>> m.set_body('This is my first message.')
+    >>> q.write(m)
 
 where MyMessage is the class definition for your message class.  Your
 message class should subclass the boto Message because there is a small
@@ -166,14 +166,14 @@ Reading Messages
 ----------------
 
 So, now we have a message in our queue.  How would we go about reading it?
-Here's one way:
+Here's one way::
 
->>> rs = q.get_messages()
->>> len(rs)
-1
->>> m = rs[0]
->>> m.get_body()
-u'This is my first message'
+    >>> rs = q.get_messages()
+    >>> len(rs)
+    1
+    >>> m = rs[0]
+    >>> m.get_body()
+    u'This is my first message'
 
 The get_messages method also returns a ResultSet object as described
 above.  In addition to the special attributes that we already talked
@@ -190,9 +190,9 @@ the message before the timeout period expires then no one else will ever see
 the message again.  However, if you don't delete it (maybe because your reader crashed
 or failed in some way, for example) it will magically reappear in my queue
 for someone else to read.  If you aren't happy with the default visibility
-timeout defined for the queue, you can override it when you read a message:
+timeout defined for the queue, you can override it when you read a message::
 
->>> q.get_messages(visibility_timeout=60)
+    >>> q.get_messages(visibility_timeout=60)
 
 This means that regardless of what the default visibility timeout is for
 the queue, this message will remain invisible to other readers for 60
@@ -201,7 +201,7 @@ seconds.
 The get_messages method can also return more than a single message.  By
 passing a num_messages parameter (defaults to 1) you can control the maximum
 number of messages that will be returned by the method.  To show this
-feature off, first let's load up a few more messages.
+feature off, first let's load up a few more messages.::
 
     >>> for i in range(1, 11):
     ...   m = Message()
@@ -219,11 +219,11 @@ visible in the queue.  Give it a minute or two and they will all show up.
 If you want a slightly simpler way to read messages from a queue, you
 can use the read method.  It will either return the message read or
 it will return None if no messages were available.  You can also pass
-a visibility_timeout parameter to read, if you desire:
+a visibility_timeout parameter to read, if you desire::
 
->>> m = q.read(60)
->>> m.get_body()
-u'This is my first message'
+    >>> m = q.read(60)
+    >>> m.get_body()
+    u'This is my first message'
 
 Reading Message Attributes
 --------------------------
@@ -231,9 +231,9 @@ By default, no arbitrary message attributes are returned when requesting
 messages. You can change this behavior by specifying the names of attributes
 you wish to have returned::
 
->>> rs = queue.get_messages(message_attributes=['name1', 'name2'])
->>> print rs[0].message_attributes['name1']['string_value']
-'I am a string'
+    >>> rs = queue.get_messages(message_attributes=['name1', 'name2'])
+    >>> print rs[0].message_attributes['name1']['string_value']
+    'I am a string'
 
 A special value of ``All`` or ``.*`` may be passed to return all available
 message attributes.
@@ -241,14 +241,14 @@ message attributes.
 Deleting Messages and Queues
 ----------------------------
 As stated above, messages are never deleted by the queue unless explicitly told to do so.
-To remove a message from a queue:
+To remove a message from a queue::
 
->>> q.delete_message(m)
-[]
+    >>> q.delete_message(m)
+    []
 
-If I want to delete the entire queue, I would use:
+If I want to delete the entire queue, I would use::
 
->>> conn.delete_queue(q)
+    >>> conn.delete_queue(q)
 
 This will delete the queue, even if there are still messages within the queue.
 
@@ -257,19 +257,19 @@ Additional Information
 The above tutorial covers the basic operations of creating queues, writing messages,
 reading messages, deleting messages, and deleting queues.  There are a
 few utility methods in boto that might be useful as well.  For example,
-to count the number of messages in a queue:
+to count the number of messages in a queue::
 
->>> q.count()
-10
+    >>> q.count()
+    10
 
-Removing all messages in a queue is as simple as calling purge:
+Removing all messages in a queue is as simple as calling purge::
 
->>> q.purge()
+    >>> q.purge()
 
 Be REAL careful with that one!  Finally, if you want to dump all of the
-messages in a queue to a local file:
+messages in a queue to a local file::
 
->>> q.dump('messages.txt', sep='\n------------------\n')
+    >>> q.dump('messages.txt', sep='\n------------------\n')
 
 This will read all of the messages in the queue and write the bodies of
 each of the messages to the file messages.txt.  The optional ``sep`` argument
