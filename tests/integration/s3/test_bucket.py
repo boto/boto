@@ -36,6 +36,7 @@ from boto.s3.bucketlogging import BucketLogging
 from boto.s3.lifecycle import Lifecycle
 from boto.s3.lifecycle import Transition
 from boto.s3.lifecycle import Expiration
+from boto.s3.lifecycle import AbortIncompleteMultipartUpload
 from boto.s3.lifecycle import Rule
 from boto.s3.acl import Grant
 from boto.s3.tagging import Tags, TagSet
@@ -205,6 +206,19 @@ class S3BucketTest (unittest.TestCase):
             }}}
         )
 
+class S3BucketLifeCycleTest (unittest.TestCase):
+    s3 = True
+
+    def setUp(self):
+        self.conn = S3Connection()
+        self.bucket_name = 'bucket-%d' % int(time.time())
+        self.bucket = self.conn.create_bucket(self.bucket_name)
+
+    def tearDown(self):
+        for key in self.bucket:
+            key.delete()
+        self.bucket.delete()
+
     def test_lifecycle(self):
         lifecycle = Lifecycle()
         lifecycle.add_rule('myid', '', 'Enabled', 30)
@@ -301,3 +315,34 @@ class S3BucketTest (unittest.TestCase):
         self.assertEqual(s.find("<ID>"), -1)
         # Confirm Prefix is '' and not set to 'None'
         self.assertNotEqual(s.find("<Prefix></Prefix>"), -1)
+
+    def test_lifecycle_abortincompletemultipartupload(self):
+        daysafterinit = 30
+        lifecycle = Lifecycle()
+        lifecycle.add_rule('myabortid', prefix='', status='Enabled',
+                            expiration=None, transition=None,
+                            abortincompletemultipartupload=daysafterinit)
+        # set the lifecycle
+        self.bucket.configure_lifecycle(lifecycle)
+        # read the lifecycle back
+        readlifecycle = self.bucket.get_lifecycle_config();
+        for rule in readlifecycle:
+            self.assertEqual(rule.id, 'myabortid')
+            self.assertEqual(rule.prefix, '')
+            self.assertEqual(rule.abortincompletemultipartupload.daysafterinit,
+                             daysafterinit)
+
+        lifecycle = Lifecycle()
+        abortincompletemultipartupload = AbortIncompleteMultipartUpload(daysafterinit=daysafterinit)
+        lifecycle.add_rule('myabortid', prefix='', status='Enabled',
+                            expiration=None, transition=None,
+                            abortincompletemultipartupload=abortincompletemultipartupload)
+        # set the lifecycle
+        self.bucket.configure_lifecycle(lifecycle)
+        # read the lifecycle back
+        readlifecycle = self.bucket.get_lifecycle_config();
+        for rule in readlifecycle:
+            self.assertEqual(rule.id, 'myabortid')
+            self.assertEqual(rule.prefix, '')
+            self.assertEqual(rule.abortincompletemultipartupload.daysafterinit,
+                             daysafterinit)

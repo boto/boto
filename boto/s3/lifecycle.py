@@ -42,9 +42,13 @@ class Rule(object):
     :ivar transition: An instance of `Transition`.  This indicates
         when to transition to a different storage class.
 
+    :ivar abortincompletemultipartupload:
+        An instance of `AbortIncompleteMultipartUpload`.  This indicates
+        when to abort incomplete multipart uploads X day(s) after initiation.
+
     """
     def __init__(self, id=None, prefix=None, status=None, expiration=None,
-                 transition=None):
+                 transition=None, abortincompletemultipartupload=None):
         self.id = id
         self.prefix = '' if prefix is None else prefix
         self.status = status
@@ -64,6 +68,11 @@ class Rule(object):
         else:
             self.transition = Transitions()
 
+        if isinstance(abortincompletemultipartupload, six.integer_types):
+            self.abortincompletemultipartupload = AbortIncompleteMultipartUpload(daysafterinit=abortincompletemultipartupload)
+        else:
+            self.abortincompletemultipartupload = abortincompletemultipartupload
+
     def __repr__(self):
         return '<Rule: %s>' % self.id
 
@@ -73,6 +82,9 @@ class Rule(object):
         elif name == 'Expiration':
             self.expiration = Expiration()
             return self.expiration
+        elif name == 'AbortIncompleteMultipartUpload':
+            self.abortincompletemultipartupload = AbortIncompleteMultipartUpload()
+            return self.abortincompletemultipartupload
         return None
 
     def endElement(self, name, value, connection):
@@ -95,7 +107,36 @@ class Rule(object):
             s += self.expiration.to_xml()
         if self.transition is not None:
             s += self.transition.to_xml()
+        if self.abortincompletemultipartupload is not None:
+            s += self.abortincompletemultipartupload.to_xml()
         s += '</Rule>'
+        return s
+
+class AbortIncompleteMultipartUpload(object):
+    """
+    When incomplete multipart uploads will be aborted.
+
+    :ivar daysafterinit: The number of days after initiation.
+
+    """
+    def __init__(self, daysafterinit=None):
+        self.daysafterinit = daysafterinit
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'DaysAfterInitiation':
+            self.daysafterinit = int(value)
+
+    def __repr__(self):
+        how_long = "in: %s days" % self.daysafterinit
+        return '<AbortIncompleteMultipartUpload: %s>' % how_long
+
+    def to_xml(self):
+        s = '<AbortIncompleteMultipartUpload>'
+        s += '<DaysAfterInitiation>%s</DaysAfterInitiation>' % self.daysafterinit
+        s += '</AbortIncompleteMultipartUpload>'
         return s
 
 class Expiration(object):
@@ -255,6 +296,10 @@ class Lifecycle(list):
     A container for the rules associated with a Lifecycle configuration.
     """
 
+    def __init__(self):
+        self.tieringinfo = None
+        self.compare = None
+
     def startElement(self, name, attrs, connection):
         if name == 'Rule':
             rule = Rule()
@@ -277,8 +322,8 @@ class Lifecycle(list):
         s += '</LifecycleConfiguration>'
         return s
 
-    def add_rule(self, id=None, prefix='', status='Enabled',
-                 expiration=None, transition=None):
+    def add_rule(self, id=None, prefix='', status='Enabled', expiration=None,
+                 transition=None, abortincompletemultipartupload=None):
         """
         Add a rule to this Lifecycle configuration.  This only adds
         the rule to the local copy.  To install the new rule(s) on
@@ -306,6 +351,14 @@ class Lifecycle(list):
         :type transition: Transitions
         :param transition: Indicates when an object transitions to a
             different storage class. 
+
+        :type abortincompletemultipartupload: int
+        :param abortincompletemultipartupload: Indicates when to abort
+            incomplete multipart uploads X day(s) after initiation.
+            The value must be a non-zero positive integer.
+            An AbortIncompleteMultipartUpload object instance is also perfect.
+
         """
-        rule = Rule(id, prefix, status, expiration, transition)
+        rule = Rule(id, prefix, status, expiration, transition,
+                    abortincompletemultipartupload)
         self.append(rule)
