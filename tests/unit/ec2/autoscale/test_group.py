@@ -23,6 +23,7 @@
 
 import base64
 from datetime import datetime
+from collections import Sequence
 
 from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
@@ -311,7 +312,7 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
         self.set_http_response(status_code=200)
 
         response = self.service_connection.get_all_launch_configurations()
-        self.assertTrue(isinstance(response, list))
+        self.assertTrue(isinstance(response, Sequence))
         self.assertEqual(len(response), 1)
         self.assertTrue(isinstance(response[0], LaunchConfiguration))
 
@@ -759,7 +760,7 @@ class TestGetAdjustmentTypes(AWSMockServiceTestCase):
             'Action': 'DescribeAdjustmentTypes'
         }, ignore_params_values=['Version'])
 
-        self.assertTrue(isinstance(response, list))
+        self.assertTrue(isinstance(response, Sequence))
         self.assertEqual(response[0].adjustment_type, "ChangeInCapacity")
         self.assertEqual(response[1].adjustment_type, "ExactCapacity")
         self.assertEqual(response[2].adjustment_type, "PercentChangeInCapacity")
@@ -833,7 +834,7 @@ class TestLaunchConfigurationDescribeWithBlockDeviceTypes(AWSMockServiceTestCase
         self.service_connection.use_block_device_types = True
 
         response = self.service_connection.get_all_launch_configurations()
-        self.assertTrue(isinstance(response, list))
+        self.assertTrue(isinstance(response, Sequence))
         self.assertEqual(len(response), 1)
         self.assertTrue(isinstance(response[0], LaunchConfiguration))
 
