@@ -800,3 +800,62 @@ class TestChangeResourceRecordSetsRoute53(AWSMockServiceTestCase):
 
         # Note: the alias XML should not include the TTL, even if it's specified in the object model
         self.assertEqual(actual_xml, expected_xml)
+
+
+@attr(route53=True)
+class TestFetchHealthChecksRoute53(AWSMockServiceTestCase):
+    connection_class = Route53Connection
+
+    def setUp(self):
+        super(TestFetchHealthChecksRoute53, self).setUp()
+
+    def default_body(self):
+        return b"""
+<ListHealthChecksResponse xmlns="https://route53.amazonaws.com/doc/2013-04-01/">
+   <HealthChecks>
+      <HealthCheck>
+         <Id>01234567-89ab-cccc-dddd-eeeeeeffffff</Id>
+         <CallerReference>0e6b37ba-c377-11e4-93f9-abd8d6ef2edc</CallerReference>
+         <HealthCheckConfig>
+            <IPAddress>10.0.0.1</IPAddress>
+            <Port>80</Port>
+            <Type>HTTP</Type>
+            <ResourcePath>/health_check</ResourcePath>
+            <FullyQualifiedDomainName>example0.test</FullyQualifiedDomainName>
+            <RequestInterval>30</RequestInterval>
+            <FailureThreshold>3</FailureThreshold>
+         </HealthCheckConfig>
+         <HealthCheckVersion>2</HealthCheckVersion>
+      </HealthCheck>
+      <HealthCheck>
+         <Id>01234567-89ab-cccc-dddd-eeeeeefffff0</Id>
+         <CallerReference>ba855f8a-c377-11e4-acab-f35a7af727f1</CallerReference>
+         <HealthCheckConfig>
+            <IPAddress>10.0.0.1</IPAddress>
+            <Port>80</Port>
+            <Type>HTTP</Type>
+            <ResourcePath>/health_check</ResourcePath>
+            <FullyQualifiedDomainName>example0.test</FullyQualifiedDomainName>
+            <RequestInterval>30</RequestInterval>
+            <FailureThreshold>3</FailureThreshold>
+         </HealthCheckConfig>
+         <HealthCheckVersion>2</HealthCheckVersion>
+      </HealthCheck>
+   </HealthChecks>
+   <IsTruncated>false</IsTruncated>
+</ListHealthChecksResponse>
+        """
+
+    def test_list_health_checks(self):
+        self.set_http_response(status_code=201)
+        response = self.service_connection.get_list_health_checks()
+
+        health_check_ids = ['01234567-89ab-cccc-dddd-eeeeeeffffff',
+                            '01234567-89ab-cccc-dddd-eeeeeefffff0']
+        print(response['ListHealthChecksResponse']['HealthChecks'])
+        #print(response['ListHealthChecksResponse']['HealthChecks'][0])
+        for d in response['ListHealthChecksResponse']['HealthChecks']:
+            print("Removing: %s" % d['Id'])
+            health_check_ids.remove(d['Id'])
+
+        self.assertEqual(health_check_ids, [])
