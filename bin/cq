@@ -24,6 +24,7 @@ import getopt, sys
 import boto.sqs
 from boto.sqs.connection import SQSConnection
 from boto.exception import SQSError
+from boto.sqs.message import RawMessage
 
 def usage():
     print 'cq [-c] [-q queue_name] [-o output_file] [-t timeout] [-r region]'
@@ -79,6 +80,7 @@ def main():
             print e.body
             sys.exit()
     for q in rs:
+        q.message_class = RawMessage
         if clear:
             n = q.clear()
             print 'clearing %d messages from %s' % (n, q.id)
