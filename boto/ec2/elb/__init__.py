@@ -437,6 +437,10 @@ class ELBConnection(AWSQueryConnection):
             params['LoadBalancerAttributes.ConnectionDraining.Timeout'] = \
                 value.timeout
         elif attribute.lower() == 'connectingsettings':
+            boto.log.warn('ConnectingSettings will be deprecated soon. Please use ConnectionSettings')
+            params['LoadBalancerAttributes.ConnectionSettings.IdleTimeout'] = \
+                value.idle_timeout
+        elif attribute.lower() == 'connectionsettings':
             params['LoadBalancerAttributes.ConnectionSettings.IdleTimeout'] = \
                 value.idle_timeout
         else:
@@ -486,7 +490,10 @@ class ELBConnection(AWSQueryConnection):
         if attribute.lower() == 'connectiondraining':
             return attributes.connection_draining
         if attribute.lower() == 'connectingsettings':
+            boto.log.warn('ConnectingSettings will be deprecated soon. Please use ConnectionSettings')
             return attributes.connecting_settings
+        if attribute.lower() == 'connectionsettings':
+            return attributes.connection_settings
         return None
 
     def register_instances(self, load_balancer_name, instances):
