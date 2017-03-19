@@ -44,6 +44,24 @@ class DecodeExceptionRaisingMessage(RawMessage):
     def decode(self, message):
         raise SQSDecodeError('Sample decode error', self)
 
+class TestDecodeMessage(unittest.TestCase):
+    @attr(sqs=True)
+    def test_binary_decode(self):
+        import zlib
+        compressed_body = zlib.compress("compress me")
+        m = Message()
+        encoded_body = m.encode(compressed_body)
+        decoded_body = m.decode(encoded_body)
+        self.assertEquals(decoded_body, compressed_body)
+
+    @attr(sqs=True)
+    def test_ascii_decode(self):
+        body = "ascii message"
+        m = Message()
+        encoded_body = m.encode(body)
+        decoded_body = m.decode(encoded_body)
+        self.assertEquals(decoded_body, body)
+
 class TestEncodeMessage(unittest.TestCase):
 
     @attr(sqs=True)
