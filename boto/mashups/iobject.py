@@ -38,6 +38,7 @@ class IObject(object):
         while not choice:
             n = 1
             choices = []
+            item_list =[ str(x) for x in item_list ] 
             for item in item_list:
                 if isinstance(item, basestring):
                     print('[%d] %s' % (n, item))
