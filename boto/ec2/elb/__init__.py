@@ -85,6 +85,10 @@ class ELBConnection(AWSQueryConnection):
         if not region:
             region = RegionInfo(self, self.DefaultRegionName,
                                 self.DefaultRegionEndpoint)
+        elif isinstance(region, basestring):
+            self.region = RegionInfo(self, region,
+                                RegionData[region])
+
         self.region = region
         super(ELBConnection, self).__init__(aws_access_key_id,
                                             aws_secret_access_key,
