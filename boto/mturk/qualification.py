@@ -120,6 +120,10 @@ class NumberHitsApprovedRequirement(Requirement):
 class LocaleRequirement(Requirement):
     """
     A Qualification requirement based on the Worker's location. The Worker's location is specified by the Worker to Mechanical Turk when the Worker creates his account.
+
+    If specifying a Country and Subdivision, use a tuple of valid  ISO 3166 country code and ISO 3166-2 subdivision code, e.g. ('US', 'CA') for the US State of California.
+
+    When using the 'In' and 'NotIn', locale should be a list of Countries and/or (Country, Subdivision) tuples.
     """
 
     def __init__(self, comparator, locale, required_to_preview=False):
