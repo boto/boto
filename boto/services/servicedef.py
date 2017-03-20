@@ -26,7 +26,7 @@ import boto
 class ServiceDef(Config):
 
     def __init__(self, config_file, aws_access_key_id=None, aws_secret_access_key=None):
-        super(ServiceDef, self).__init__(config_file)
+        Config.__init__(self, config_file)
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
         script = Config.get(self, 'Pyami', 'scripts')
@@ -37,14 +37,14 @@ class ServiceDef(Config):
 
 
     def get(self, name, default=None):
-        return super(ServiceDef, self).get(self.name, name, default)
+        return Config.get(self, self.name, name, default)
 
     def has_option(self, option):
-        return super(ServiceDef, self).has_option(self.name, option)
+        return Config.has_option(self, self.name, option)
 
     def getint(self, option, default=0):
         try:
-            val = super(ServiceDef, self).get(self.name, option)
+            val = Config.get(self, self.name, option)
             val = int(val)
         except:
             val = int(default)
@@ -52,7 +52,7 @@ class ServiceDef(Config):
 
     def getbool(self, option, default=False):
         try:
-            val = super(ServiceDef, self).get(self.name, option)
+            val = Config.get(self, self.name, option)
             if val.lower() == 'true':
                 val = True
             else:
