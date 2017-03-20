@@ -1595,7 +1595,6 @@ class Bucket(object):
 
     def delete_policy(self, headers=None):
         response = self.connection.make_request('DELETE', self.name,
-                                                data='/?policy',
                                                 query_args='policy',
                                                 headers=headers)
         body = response.read()
