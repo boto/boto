@@ -1,0 +1,97 @@
+#!/usr/bin/env python
+"""
+Script to emulate sendmail command but instead use AWS to send the email.
+By default it tries to use SES, but might optionaly publish the mail to SNS
+instead.
+"""
+
+# To parse args
+import argparse
+
+# To read msg from stdin
+import sys
+sys.path.insert(0, ".")
+
+# Import the email modules we'll need
+from email.parser import Parser
+
+# boto tools we use
+import boto.sns
+import boto.ses
+
+
+def main():
+    """
+    Simple script to simulate sendmail to forward messages via SES or SES
+    """
+    parser = argparse.ArgumentParser()
+    group = parser.add_argument_group("Ignored options")
+    group.add_argument("-F",
+                       action="store", type=str, dest="fullname",
+                       help="Set the sender full name." +
+                       " (This option is ignored)")
+    group.add_argument("-f",
+                       action="store", type=str, dest="sender",
+                       help="Set the envelope sender address." +
+                       " (This option is ignored)")
+    group.add_argument("-t",
+                       action="store_true", dest="recipients_extra",
+                       default=False,
+                       help="Extract recipients from message headers." +
+                       " These are added to any recipients specified on the" +
+                       " command line." +
+                       " (This option is ignored)")
+    group.add_argument("-i", "-oi",
+                       action="store_true", dest="dot_is_not_eom",
+                       default=False,
+                       help="When reading a message from standard input," +
+                       " don't treat a line with only a . character as the" +
+                       " end of input." +
+                       " (This option is ignored)")
+    group.add_argument("-bm",
+                       action="store_true", dest="read_stdin",
+                       default=True,
+                       help="Read mail from standard input and arrange for" +
+                       " delivery. This is the default mode of operation." +
+                       " (This option is ignored)")
+
+    parser.add_argument("-r", "--region", type=str, dest="region_name",
+                        default="us-east-1",
+                        help="Region (e.g. us-east-1[default] or eu-west-1)")
+    parser.add_argument("-sns", "--sns", type=str, dest="sns_topic",
+                        help="Use SNS topic to send message, instead of SES.")
+
+    options = parser.parse_args()
+
+    msg = Parser().parse(sys.stdin)
+
+    if options.sns_topic:
+        sns_conn = boto.sns.connect_to_region(options.region_name)
+        body = None
+
+        if msg.get_content_maintype() == 'multipart':
+            for part in msg.get_payload():
+                if part.get_content_type() == 'text/plain':
+                    body = part.get_payload()
+                    break
+                elif part.get_content_type() == 'text/html':
+                    body = part.get_payload()
+        elif msg.get_content_maintype() == 'text':
+            body = msg.get_payload()
+
+        if body is None:
+            sys.stderr.write("Don't know how to handle this message!\n")
+            sys.exit(1)
+
+        print options.sns_topic
+        print msg.get("subject")
+        print body
+        sns_conn.publish(options.sns_topic, subject=msg.get("subject"),
+                         message=body)
+    else:
+        ses_conn = boto.ses.connect_to_region(options.region_name)
+        ses_conn.send_raw_email(raw_message=msg.as_string())
+
+
+if __name__ == '__main__':
+    main()
