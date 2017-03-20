@@ -24,6 +24,8 @@ Represents an SQS Queue
 """
 from boto.compat import urllib
 from boto.sqs.message import Message
+import sys
+from array import array
 
 
 class Queue(object):
@@ -433,7 +435,11 @@ class Queue(object):
         l = self.get_messages(page_size, vtimeout)
         while l:
             for m in l:
-                fp.write(m.get_body())
+                try:
+                    fp.write(array("B", map(ord, m.get_body())))
+                except:
+                    print("Error writing SQS message")
+                    continue
                 if sep:
                     fp.write(sep)
                 n += 1
