@@ -176,7 +176,7 @@ class SESConnection(AWSAuthConnection):
 
         raise ExceptionToRaise(response.status, exc_reason, body)
 
-    def send_email(self, source, subject, body, to_addresses,
+    def send_email(self, source, subject, body=None, to_addresses=None,
                    cc_addresses=None, bcc_addresses=None,
                    format='text', reply_addresses=None,
                    return_path=None, text_body=None, html_body=None):
