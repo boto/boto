@@ -739,9 +739,9 @@ class EmrConnection(AWSQueryConnection):
         properly prefixed, can be used for describing InstanceGroups in
         RunJobFlow or AddInstanceGroups requests.
         """
-        params = {'InstanceCount': instance_group.num_instances,
-                  'InstanceRole': instance_group.role,
-                  'InstanceType': instance_group.type,
+        params = {'InstanceCount': instance_group.instancerequestcount,
+                  'InstanceRole': instance_group.instancerole,
+                  'InstanceType': instance_group.instancetype,
                   'Name': instance_group.name,
                   'Market': instance_group.market}
         if instance_group.market == 'SPOT':
