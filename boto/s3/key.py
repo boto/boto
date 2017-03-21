@@ -557,7 +557,31 @@ class Key(object):
         return self.bucket.delete_key(self.name, version_id=self.version_id,
                                       headers=headers)
 
+    def load_metadata(self):
+        """
+        Load metadata from S3.
+
+        This method downloads and updates the metadata cache for this key. Any
+        local modifications to the cache are discarded.
+
+        Metadata is not accessible prior to calling :meth:`open_read` or
+        :meth:`load_metadata`.
+        """
+        connection = self.bucket.connection
+        resp = connection.make_request('HEAD', self.bucket.name, self.name)
+        if resp.status < 199 or resp.status > 299:
+            exc = connection.provider.storage_response_error
+            raise exc(resp.status, resp.reason, resp.read())
+
+        self.metadata = boto.utils.get_aws_metadata(resp.msg,
+                                                    connection.provider)
+
     def get_metadata(self, name):
+        """
+        Returns the value for *name*.
+
+        See :meth:`load_metadata`.
+        """
         return self.metadata.get(name)
 
     def set_metadata(self, name, value):
