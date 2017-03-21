@@ -32,7 +32,7 @@ from boto.compat import six, long_type
 
 class Property(object):
 
-    data_type = str
+    data_type = basestring
     type_name = ''
     name = ''
     verbose_name = ''
@@ -270,7 +270,10 @@ class S3KeyProperty(Property):
                           validator, choices, unique)
 
     def validate(self, value):
-        value = super(S3KeyProperty, self).validate(value)
+        if self.required and value==None:
+            raise ValueError, '%s is a required property' % self.name
+        if self.validator:
+            self.validator(value)
         if value == self.default_value() or value == str(self.default_value()):
             return self.default_value()
         if isinstance(value, self.data_type):
@@ -621,6 +624,8 @@ class ListProperty(Property):
         super(ListProperty, self).__init__(verbose_name, name, default=default, required=True, **kwds)
 
     def validate(self, value):
+        if self.required and value==None:
+            raise ValueError, '%s is a required property' % self.name
         if self.validator:
             self.validator(value)
         if value is not None:
@@ -676,7 +681,10 @@ class MapProperty(Property):
         super(MapProperty, self).__init__(verbose_name, name, default=default, required=True, **kwds)
 
     def validate(self, value):
-        value = super(MapProperty, self).validate(value)
+        if self.required and value==None:
+            raise ValueError, '%s is a required property' % self.name
+        if self.validator:
+            self.validator(value)
         if value is not None:
             if not isinstance(value, dict):
                 raise ValueError('Value must of type dict')
