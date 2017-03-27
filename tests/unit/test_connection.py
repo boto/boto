@@ -26,10 +26,11 @@ from tests.compat import mock, unittest
 from httpretty import HTTPretty
 
 from boto import UserAgent
-from boto.compat import json, parse_qs
+from boto.compat import json, parse_qs, encodebytes
 from boto.connection import AWSQueryConnection, AWSAuthConnection, HTTPRequest
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
+from boto.vendored.six import PY3
 
 
 class TestListParamsSerialization(unittest.TestCase):
@@ -552,6 +553,14 @@ class TestHTTPRequest(unittest.TestCase):
         # relying on other code cast the value later. (Python 2.7.0, for
         # example, assumes headers are of type str.)
         self.assertIsInstance(request.headers['Content-Length'], str)
+
+    def test_b64_linebreaks(self):
+        auth = "username:" + ("alongpassword" * 10)
+        if PY3:
+            encoded = encodebytes(bytes(auth, "ascii")).decode("ascii")
+        else:
+            encoded = encodebytes(auth)
+        self.assertTrue("\n" not in encoded)
 
 if __name__ == '__main__':
     unittest.main()
