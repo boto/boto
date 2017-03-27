@@ -26,7 +26,7 @@ from tests.compat import mock, unittest
 from httpretty import HTTPretty
 
 from boto import UserAgent
-from boto.compat import json, parse_qs, encodebytes
+from boto.compat import json, parse_qs, b64encode
 from boto.connection import AWSQueryConnection, AWSAuthConnection, HTTPRequest
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
@@ -557,9 +557,9 @@ class TestHTTPRequest(unittest.TestCase):
     def test_b64_linebreaks(self):
         auth = "username:" + ("alongpassword" * 10)
         if PY3:
-            encoded = encodebytes(bytes(auth, "ascii")).decode("ascii")
+            encoded = b64encode(bytes(auth, "ascii")).decode("ascii")
         else:
-            encoded = encodebytes(auth)
+            encoded = b64encode(auth)
         self.assertTrue("\n" not in encoded)
 
 if __name__ == '__main__':

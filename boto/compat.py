@@ -31,7 +31,7 @@ except ImportError:
 
 # Switch to use b64encode, which doesn't insert newlines that break proxy
 # auth
-from base64 import b64encode as encodebytes
+from base64 import b64encode
 
 # If running in Google App Engine there is no "user" and
 # os.path.expanduser() will fail. Attempt to detect this case and use a

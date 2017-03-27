@@ -61,7 +61,7 @@ import boto.handler
 import boto.cacerts
 
 from boto import config, UserAgent
-from boto.compat import six, http_client, urlparse, quote, encodebytes
+from boto.compat import six, http_client, urlparse, quote, b64encode
 from boto.exception import AWSConnectionError
 from boto.exception import BotoClientError
 from boto.exception import BotoServerError
@@ -855,7 +855,7 @@ class AWSAuthConnection(object):
         return path
 
     def get_proxy_auth_header(self):
-        auth = encodebytes(self.proxy_user + ':' + self.proxy_pass)
+        auth = b64encode(self.proxy_user + ':' + self.proxy_pass)
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
     # For passing proxy information to other connection libraries, e.g. cloudsearch2

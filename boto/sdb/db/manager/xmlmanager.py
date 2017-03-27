@@ -22,7 +22,7 @@ import boto
 from boto.utils import find_class, Password
 from boto.sdb.db.key import Key
 from boto.sdb.db.model import Model
-from boto.compat import six, encodebytes
+from boto.compat import six, b64encode
 from datetime import datetime
 from xml.dom.minidom import getDOMImplementation, parse, parseString, Node
 
@@ -203,7 +203,7 @@ class XMLManager(object):
         self.enable_ssl = enable_ssl
         self.auth_header = None
         if self.db_user:
-            base64string = encodebytes('%s:%s' % (self.db_user, self.db_passwd))[:-1]
+            base64string = b64encode('%s:%s' % (self.db_user, self.db_passwd))[:-1]
             authheader = "Basic %s" % base64string
             self.auth_header = authheader
 
