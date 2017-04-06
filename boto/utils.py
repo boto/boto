@@ -225,7 +225,7 @@ def retry_url(url, retry_on_404=True, num_retries=10, timeout=None):
         if i + 1 != num_retries:
             boto.log.debug('Sleeping before retrying')
             time.sleep(min(2 ** i,
-                           boto.config.get('Boto', 'max_retry_delay', 60)))
+                           boto.config.getint('Boto', 'max_retry_delay', 60)))
     boto.log.error('Unable to read instance data, giving up')
     return ''
 
@@ -313,7 +313,7 @@ class LazyLoadMetadata(dict):
                 if i + 1 != self._num_retries:
                     next_sleep = min(
                         random.random() * 2 ** i,
-                        boto.config.get('Boto', 'max_retry_delay', 60))
+                        boto.config.getint('Boto', 'max_retry_delay', 60))
                     time.sleep(next_sleep)
             else:
                 boto.log.error('Unable to read meta data, giving up')
