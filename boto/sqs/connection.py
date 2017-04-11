@@ -29,7 +29,10 @@ from boto.sqs.batchresults import BatchResults
 from boto.exception import SQSError, BotoServerError
 
 from itertools import islice
-import cStringIO
+try:
+    from cStringIO import StringIO as _stringIO
+except ImportError:
+    from io import StringIO as _stringIO
 
 class SQSConnection(AWSQueryConnection):
     """
@@ -338,14 +341,16 @@ class SQSConnection(AWSQueryConnection):
 
     def kv2str(k, v, b4="\t{{", aft="}}\n"):
         """just a way of prepping a string to display a key-value pair"""
-        l = cStringIO.StringIO()
+        l = _stringIO()
         try:
             l.write("List (size {}): {}".format(len(v),v) if iz.isList(v) else "{}".format(v))
         except:
             l.write("<ERROR WHILE PRINTING VALUE>")
         finally:
             l.seek(0)
-        return("{}{}: {}{}".format(b4,k,l.getvalue(),aft))
+        retval = "{}{}: {}{}".format(b4,k,l.getvalue(),aft)
+        l.close()
+        return retval
 
     def stringify_result_message(resultList):
         cnt = 0
