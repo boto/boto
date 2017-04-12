@@ -151,6 +151,22 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteVpc', params)
 
+    def describe_vpc_attribute(self, vpc_id, attribute=None, dry_run=False):
+        """
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        """
+        params = {
+            'VpcId': vpc_id
+        }
+        if attribute is not None:
+            params['Attribute'] = attribute
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('DescribeVpcAttribute', params,
+                               VPCAttribute, verb='POST')
+
     def modify_vpc_attribute(self, vpc_id,
                              enable_dns_support=None,
                              enable_dns_hostnames=None, dry_run=False):
@@ -177,18 +193,14 @@ class VPCConnection(EC2Connection):
         """
         params = {'VpcId': vpc_id}
         if enable_dns_support is not None:
-            if enable_dns_support:
-                params['EnableDnsSupport.Value'] = 'true'
-            else:
-                params['EnableDnsSupport.Value'] = 'false'
+            params['EnableDnsSupport.Value'] = (
+                'true' if enable_dns_support else 'false')
         if enable_dns_hostnames is not None:
-            if enable_dns_hostnames:
-                params['EnableDnsHostnames.Value'] = 'true'
-            else:
-                params['EnableDnsHostnames.Value'] = 'false'
+            params['EnableDnsHostnames.Value'] = (
+                'true' if enable_dns_hostnames else 'false')
         if dry_run:
             params['DryRun'] = 'true'
-        return self.get_status('ModifyVpcAttribute', params)
+        return self.get_status('ModifyVpcAttribute', params, verb='POST')
 
     # Route Tables
 
