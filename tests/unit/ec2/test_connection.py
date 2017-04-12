@@ -672,33 +672,6 @@ class TestAccountAttributes(TestEC2ConnectionBase):
                          ['none'])
 
 
-class TestDescribeVPCAttribute(TestEC2ConnectionBase):
-    def default_body(self):
-        return b"""
-        <DescribeVpcAttributeResponse xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
-            <requestId>request_id</requestId>
-            <vpcId>vpc-id</vpcId>
-            <enableDnsHostnames>
-                <value>false</value>
-            </enableDnsHostnames>
-        </DescribeVpcAttributeResponse>
-        """
-
-    def test_describe_vpc_attribute(self):
-        self.set_http_response(status_code=200)
-        parsed = self.ec2.describe_vpc_attribute('vpc-id',
-                                                 'enableDnsHostnames')
-        self.assertEqual(parsed.vpc_id, 'vpc-id')
-        self.assertFalse(parsed.enable_dns_hostnames)
-        self.assert_request_parameters({
-            'Action': 'DescribeVpcAttribute',
-            'VpcId': 'vpc-id',
-            'Attribute': 'enableDnsHostnames', },
-            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
-                                  'SignatureVersion', 'Timestamp',
-                                  'Version'])
-
-
 class TestGetAllNetworkInterfaces(TestEC2ConnectionBase):
     def default_body(self):
         return b"""

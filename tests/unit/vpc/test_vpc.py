@@ -40,6 +40,36 @@ class TestDescribeVPCs(AWSMockServiceTestCase):
         self.assertEqual(vpc.instance_tenancy, 'default')
 
 
+class TestDescribeVPCAttribute(AWSMockServiceTestCase):
+
+    connection_class = VPCConnection
+
+    def default_body(self):
+        return b"""
+        <DescribeVpcAttributeResponse xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
+            <requestId>request_id</requestId>
+            <vpcId>vpc-id</vpcId>
+            <enableDnsHostnames>
+                <value>false</value>
+            </enableDnsHostnames>
+        </DescribeVpcAttributeResponse>
+        """
+
+    def test_describe_vpc_attribute(self):
+        self.set_http_response(status_code=200)
+        parsed = self.service_connection.describe_vpc_attribute('vpc-id',
+                                                 'enableDnsHostnames')
+        self.assertEqual(parsed.vpc_id, 'vpc-id')
+        self.assertFalse(parsed.enable_dns_hostnames)
+        self.assert_request_parameters({
+            'Action': 'DescribeVpcAttribute',
+            'VpcId': 'vpc-id',
+            'Attribute': 'enableDnsHostnames', },
+            ignore_params_values=['AWSAccessKeyId', 'SignatureMethod',
+                                  'SignatureVersion', 'Timestamp',
+                                  'Version'])
+
+
 class TestCreateVpc(AWSMockServiceTestCase):
 
     connection_class = VPCConnection
@@ -289,7 +319,7 @@ class TestDetachClassicLinkVpc(TestVpcClassicLink):
 class TestEnableClassicLinkVpc(TestVpcClassicLink):
     def default_body(self):
         return b"""
-            <EnableVpcClassicLinkResponse xmlns="http://ec2.amazonaws.com/doc/2014-09-01/"> 
+            <EnableVpcClassicLinkResponse xmlns="http://ec2.amazonaws.com/doc/2014-09-01/">
                 <requestId>4ab2b2b3-a267-4366-a070-bab853b5927d</requestId>
                 <return>true</return>
             </EnableVpcClassicLinkResponse>
