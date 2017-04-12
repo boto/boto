@@ -264,7 +264,7 @@ class AttachmentSet(object):
     :ivar attach_time: Attached since
     :ivar device: The device the instance has mapped
     """
-    def __init__(self):
+    def __init__(self, parent=None):
         self.id = None
         self.instance_id = None
         self.status = None
