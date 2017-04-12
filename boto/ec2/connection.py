@@ -62,7 +62,7 @@ from boto.ec2.instancetype import InstanceType
 from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
 from boto.ec2.networkinterface import NetworkInterface
-from boto.ec2.attributes import AccountAttribute, VPCAttribute
+from boto.ec2.attributes import AccountAttribute
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
 from boto.compat import six

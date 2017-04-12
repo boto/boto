@@ -25,7 +25,7 @@ Represents a connection to the EC2 service.
 
 from boto.ec2.connection import EC2Connection
 from boto.resultset import ResultSet
-from boto.vpc.vpc import VPC
+from boto.vpc.vpc import VPC, VPCAttribute
 from boto.vpc.customergateway import CustomerGateway
 from boto.vpc.networkacl import NetworkAcl
 from boto.vpc.routetable import RouteTable
