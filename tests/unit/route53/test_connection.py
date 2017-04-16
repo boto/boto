@@ -602,17 +602,24 @@ class TestCreateHealthCheckRoute53IpAddress(AWSMockServiceTestCase):
         hc_xml = hc.to_xml()
         self.assertFalse('<FullyQualifiedDomainName>' in hc_xml)
         self.assertTrue('<IPAddress>' in hc_xml)
+        self.assertTrue('<ResourcePath>' in hc_xml)
 
         response = self.service_connection.create_health_check(hc)
         hc_resp = response['CreateHealthCheckResponse']['HealthCheck']['HealthCheckConfig']
         self.assertEqual(hc_resp['IPAddress'], '74.125.228.81')
-        self.assertEqual(hc_resp['ResourcePath'], '/health_check')
         self.assertEqual(hc_resp['Type'], 'HTTPS_STR_MATCH')
         self.assertEqual(hc_resp['Port'], '443')
         self.assertEqual(hc_resp['ResourcePath'], '/health_check')
         self.assertEqual(hc_resp['SearchString'], 'OK')
         self.assertEqual(response['CreateHealthCheckResponse']['HealthCheck']['Id'], '34778cf8-e31e-4974-bad0-b108bd1623d3')
 
+    def test_create_health_check_tcp(self):
+        self.set_http_response(status_code=201)
+        hc = HealthCheck(ip_addr='74.125.228.81', port=22, hc_type='TCP')
+        hc_xml = hc.to_xml()
+        self.assertFalse('<FullyQualifiedDomainName>' in hc_xml)
+        self.assertTrue('<IPAddress>' in hc_xml)
+        self.assertFalse('<ResourcePath>' in hc_xml)
 
 @attr(route53=True)
 class TestGetCheckerIpRanges(AWSMockServiceTestCase):
