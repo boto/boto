@@ -58,7 +58,7 @@ class RDSConnection(AWSQueryConnection):
     more information on Amazon RDS concepts and usage scenarios, go to
     the `Amazon RDS User Guide`_.
     """
-    APIVersion = "2013-09-09"
+    APIVersion = "2014-09-01"
     DefaultRegionName = "us-east-1"
     DefaultRegionEndpoint = "rds.us-east-1.amazonaws.com"
     ResponseError = JSONResponseError
@@ -321,6 +321,7 @@ class RDSConnection(AWSQueryConnection):
             path='/', params=params)
 
     def create_db_instance(self, db_instance_identifier, allocated_storage,
+                           storage_type,
                            db_instance_class, engine, master_username,
                            master_user_password, db_name=None,
                            db_security_groups=None,
@@ -608,6 +609,13 @@ class RDSConnection(AWSQueryConnection):
         Valid values: `license-included` | `bring-your-own-license` | `general-
             public-license`
 
+        :type storage_type: string
+        :param storage_type: Specifies the storage type to be assoicated with the DB Instance.
+
+        Default: io1 if the Iops parameter is specified, otherwise standard.
+
+        Valid values: `standard` | `gp2` | `io1`
+
         :type iops: integer
         :param iops: The amount of Provisioned IOPS (input/output operations
             per second) to be initially allocated for the DB instance.
@@ -693,6 +701,8 @@ class RDSConnection(AWSQueryConnection):
                 auto_minor_version_upgrade).lower()
         if license_model is not None:
             params['LicenseModel'] = license_model
+        if storage_type is not None:
+            params['StorageType'] = storage_type
         if iops is not None:
             params['Iops'] = iops
         if option_group_name is not None:
@@ -717,6 +727,7 @@ class RDSConnection(AWSQueryConnection):
                                         db_instance_class=None,
                                         availability_zone=None, port=None,
                                         auto_minor_version_upgrade=None,
+                                        storage_type=None,
                                         iops=None, option_group_name=None,
                                         publicly_accessible=None, tags=None):
         """
@@ -771,6 +782,13 @@ class RDSConnection(AWSQueryConnection):
             maintenance window.
         Default: Inherits from the source DB instance
 
+        :type storage_type: string
+        :param storage_type: Specifies the storage type to be assoicated with the DB Instance.
+
+        Default: io1 if the Iops parameter is specified, otherwise standard.
+
+        Valid values: `standard` | `gp2` | `io1`
+
         :type iops: integer
         :param iops: The amount of Provisioned IOPS (input/output operations
             per second) to be initially allocated for the DB instance.
@@ -819,6 +837,8 @@ class RDSConnection(AWSQueryConnection):
         if auto_minor_version_upgrade is not None:
             params['AutoMinorVersionUpgrade'] = str(
                 auto_minor_version_upgrade).lower()
+        if storage_type is not None:
+            params['StorageType'] = storage_type
         if iops is not None:
             params['Iops'] = iops
         if option_group_name is not None:
@@ -2496,6 +2516,7 @@ class RDSConnection(AWSQueryConnection):
                            engine_version=None,
                            allow_major_version_upgrade=None,
                            auto_minor_version_upgrade=None, iops=None,
+                           storage_type=None,
                            option_group_name=None,
                            new_db_instance_identifier=None):
         """
@@ -2745,6 +2766,14 @@ class RDSConnection(AWSQueryConnection):
             and a newer minor version is available, and RDS has enabled auto
             patching for that engine version.
 
+        :type storage_type: string
+        :param storage_type: Specifies the storage type to be assoicated with the DB Instance.
+
+        Default: io1 if the Iops parameter is specified, otherwise standard.
+
+        Valid values: `standard` | `gp2` | `io1`
+
+
         :type iops: integer
         :param iops: The new Provisioned IOPS (I/O operations per second) value
             for the RDS instance. Changing this parameter does not result in an
@@ -2841,6 +2870,8 @@ class RDSConnection(AWSQueryConnection):
         if auto_minor_version_upgrade is not None:
             params['AutoMinorVersionUpgrade'] = str(
                 auto_minor_version_upgrade).lower()
+        if storage_type is not None:
+            params['StorageType'] = storage_type
         if iops is not None:
             params['Iops'] = iops
         if option_group_name is not None:
@@ -3316,6 +3347,7 @@ class RDSConnection(AWSQueryConnection):
                                              auto_minor_version_upgrade=None,
                                              license_model=None,
                                              db_name=None, engine=None,
+                                             storage_type=None,
                                              iops=None,
                                              option_group_name=None,
                                              tags=None):
@@ -3430,6 +3462,13 @@ class RDSConnection(AWSQueryConnection):
 
         Example: `oracle-ee`
 
+        :type storage_type: string
+        :param storage_type: Specifies the storage type to be assoicated with the DB Instance.
+
+        Default: io1 if the Iops parameter is specified, otherwise standard.
+
+        Valid values: `standard` | `gp2` | `io1`
+
         :type iops: integer
         :param iops: Specifies the amount of provisioned IOPS for the DB
             instance, expressed in I/O operations per second. If this parameter
@@ -3480,6 +3519,8 @@ class RDSConnection(AWSQueryConnection):
             params['DBName'] = db_name
         if engine is not None:
             params['Engine'] = engine
+        if storage_type is not None:
+            params['StorageType'] = storage_type
         if iops is not None:
             params['Iops'] = iops
         if option_group_name is not None:
@@ -3508,6 +3549,7 @@ class RDSConnection(AWSQueryConnection):
                                              auto_minor_version_upgrade=None,
                                              license_model=None,
                                              db_name=None, engine=None,
+                                             storage_type=None,
                                              iops=None,
                                              option_group_name=None,
                                              tags=None):
@@ -3644,6 +3686,13 @@ class RDSConnection(AWSQueryConnection):
 
         Example: `oracle-ee`
 
+        :type storage_type: string
+        :param storage_type: Specifies the storage type to be assoicated with the DB Instance.
+
+        Default: io1 if the Iops parameter is specified, otherwise standard.
+
+        Valid values: `standard` | `gp2` | `io1`
+
         :type iops: integer
         :param iops: The amount of Provisioned IOPS (input/output operations
             per second) to be initially allocated for the DB instance.
@@ -3694,6 +3743,8 @@ class RDSConnection(AWSQueryConnection):
             params['DBName'] = db_name
         if engine is not None:
             params['Engine'] = engine
+        if storage_type is not None:
+            params['StorageType'] = storage_type
         if iops is not None:
             params['Iops'] = iops
         if option_group_name is not None:
