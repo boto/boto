@@ -385,8 +385,7 @@ class SESConnection(AWSAuthConnection):
         })
 
     def verify_domain_dkim(self, domain):
-        """
-        Returns a set of DNS records, or tokens, that must be published in the
+        """Returns a set of DNS records, or tokens, that must be published in the
         domain name's DNS to complete the DKIM verification process. These
         tokens are DNS ``CNAME`` records that point to DKIM public keys hosted
         by Amazon SES. To complete the DKIM verification process, these tokens
@@ -402,7 +401,6 @@ class SESConnection(AWSAuthConnection):
 
         :type domain: string
         :param domain: The domain name.
-
         """
         return self._make_request('VerifyDomainDkim', {
             'Domain': domain,
@@ -444,11 +442,22 @@ class SESConnection(AWSAuthConnection):
         :type identities: list
         :param identities: A list of verified identities (email addresses
             and/or domains).
-
         """
         params = {}
         self._build_list_params(params, identities, 'Identities.member')
         return self._make_request('GetIdentityDkimAttributes', params)
+
+    def get_identity_mail_from_domain_attribute(self, identities):
+        """Returns the custom MAIL FROM attributes for a list of identities
+        (email addresses and/or domains).
+
+        :type identities: list of string
+        :param identities: A list of one or more identities (email addresses
+            and/or domains).
+        """
+        params = {}
+        self._build_list_params(params, identities, 'Identities.member')
+        return self._make_request('GetIdentityMailFromDomainAttributes', params)
 
     def list_identities(self):
         """Returns a list containing all of the identities (email addresses
@@ -522,6 +531,50 @@ class SESConnection(AWSAuthConnection):
             'Identity': identity,
         })
 
+    def get_identity_notification_attributes(self, identities):
+        """Given a list of verified identities (email addresses and/or domains),
+        returns a structure describing identity notification attributes.
+
+        :type identities: list of strings or string
+        :param identities: List of identities
+
+        :rtype: dict
+        :returns: An IdentityNotificationAttributes structure.
+        """
+        params = {}
+        self._build_list_params(params, identities,
+                                'Identities.member')
+        return self._make_request('GetIdentityNotificationAttributes', params)
+
+    def set_identity_headers_in_notifications_enabled(self, identity, notification_type, enabled):
+        """Given an identity (an email address or a domain), sets whether Amazon
+        SES includes the original email headers in the Amazon Simple Notification
+        Service (Amazon SNS) notifications of a specified type.
+
+        :type identity: String
+        :param identity: The identity for which to enable or disable headers in notifications.
+
+        :type notification_type: String
+        :param notification_type: The notification type for which to enable or
+            disable headers in notifications.
+            Valid values: Bounce | Complaint | Delivery
+
+        :type enabled: Boolean
+        :param enabled: Sets whether Amazon SES includes the original email headers
+            in Amazon SNS notifications of the specified notification type.
+            A value of true specifies that Amazon SES will include headers
+            in notifications, and a value of false specifies that Amazon SES will
+            not include headers in notifications.
+            This value can only be set when NotificationType is already set to
+            use a particular Amazon SNS topic.
+        """
+        params = {
+            'Identity': identity,
+            'NotificationType': notification_type,
+            'Enabled': enabled
+        }
+        return self._make_request('SetIdentityHeadersInNotificationsEnabled', params)
+
     def set_identity_notification_topic(self, identity, notification_type, sns_topic=None):
         """Sets an SNS topic to publish bounce or complaint notifications for
         emails sent with the given identity as the Source. Publishing to topics
@@ -548,8 +601,7 @@ class SESConnection(AWSAuthConnection):
         return self._make_request('SetIdentityNotificationTopic', params)
 
     def set_identity_feedback_forwarding_enabled(self, identity, forwarding_enabled=True):
-        """
-        Enables or disables SES feedback notification via email.
+        """Enables or disables SES feedback notification via email.
         Feedback forwarding may only be disabled when both complaint and
         bounce topics are set.
 
@@ -563,3 +615,46 @@ class SESConnection(AWSAuthConnection):
             'Identity': identity,
             'ForwardingEnabled': 'true' if forwarding_enabled else 'false'
         })
+
+    def set_identity_mail_from_domain(self,
+                                      identity,
+                                      behavior_on_mx_failure='UseDefaultValue',
+                                      mail_from_domain=None):
+        """Enables or disables the custom MAIL FROM domain setup for a verified
+        identity (an email address or a domain).
+
+            Important
+            To send emails using the specified MAIL FROM domain, you must add an
+            MX record to your MAIL FROM domain's DNS settings. If you want your
+            emails to pass Sender Policy Framework (SPF) checks, you must also
+            add or update an SPF record.
+
+        :type behavior_on_mx_failure: string
+        :param identity: The action that you want Amazon SES to take if it cannot
+            successfully read the required MX record when you send an email. If
+            you choose UseDefaultValue, Amazon SES will use amazonses.com (or a
+            subdomain of that) as the MAIL FROM domain. If you choose RejectMessage,
+            Amazon SES will return a MailFromDomainNotVerified error and not send
+            the email.
+            The action specified in BehaviorOnMXFailure is taken when the custom
+            MAIL FROM domain setup is in the Pending, Failed, and TemporaryFailure
+            states.
+
+        :type identity: string
+        :param identity: The verified identity for which you want to enable or
+            disable the specified custom MAIL FROM domain.
+
+        :type mail_from_domain: string
+        :param mail_from_domain: The custom MAIL FROM domain that you want the
+            verified identity to use. The MAIL FROM domain must 1) be a subdomain
+            of the verified identity, 2) not be used in a "From" address if the
+            MAIL FROM domain is the destination of email feedback forwarding,
+            and 3) not be used to receive emails. A value of null disables the
+            custom MAIL FROM setting for the identity.
+        """
+        params = {
+            'BehaviorOnMXFailure': behavior_on_mx_failure,
+            'Identity': identity,
+            'MailFromDomain': mail_from_domain
+        }
+        return self._make_request('SetIdentityMailFromDomain', params)
