@@ -571,7 +571,7 @@ class SESConnection(AWSAuthConnection):
         params = {
             'Identity': identity,
             'NotificationType': notification_type,
-            'Enabled': enabled
+            'Enabled': 'true' if enabled else 'false'
         }
         return self._make_request('SetIdentityHeadersInNotificationsEnabled', params)
 
