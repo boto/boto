@@ -306,7 +306,7 @@ class MTurkConnection(AWSQueryConnection):
         Given a page size (records per page) and a total number of
         records, return the page numbers to be retrieved.
         """
-        pages = total_records / page_size + bool(total_records % page_size)
+        pages = total_records // page_size + bool(total_records % page_size)
         return list(range(1, pages + 1))
 
     def get_all_hits(self):
