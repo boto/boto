@@ -711,7 +711,12 @@ class MTurkConnection(AWSQueryConnection):
         total_records = int(search_qual.TotalNumResults)
         get_page_quals = lambda page: self.get_qualifications_for_qualification_type(qualification_type_id = qualification_type_id, page_size=page_size, page_number = page)
         page_nums = self._get_pages(page_size, total_records)
-        qual_sets = itertools.imap(get_page_quals, page_nums)
+        if sys.version_info[0] == 2:
+            qual_sets = itertools.imap(get_page_quals, page_nums)
+        elif sys.version_info[0] == 3:
+            qual_sets = map(get_page_quals, page_nums)
+        else:
+            raise RuntimeError("%s is not a supported python version." % sys.version)
         return itertools.chain.from_iterable(qual_sets)
 
     def get_qualifications_for_qualification_type(self, qualification_type_id, page_size=100, page_number = 1):
