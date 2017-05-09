@@ -21,6 +21,7 @@
 import xml.sax
 import datetime
 import itertools
+import sys
 
 from boto import handler
 from boto import config
@@ -322,7 +323,12 @@ class MTurkConnection(AWSQueryConnection):
         total_records = int(search_rs.TotalNumResults)
         get_page_hits = lambda page: self.search_hits(page_size=page_size, page_number=page)
         page_nums = self._get_pages(page_size, total_records)
-        hit_sets = itertools.imap(get_page_hits, page_nums)
+        if sys.version_info[0] == 2:
+            hit_sets = itertools.imap(get_page_hits, page_nums)
+        elif sys.version_info[0] == 3:
+            hit_sets = map(get_page_hits, page_nums)
+        else:
+            raise RuntimeError("%s is not a supported python version." % sys.version)
         return itertools.chain.from_iterable(hit_sets)
 
     def search_hits(self, sort_by='CreationTime', sort_direction='Ascending',
