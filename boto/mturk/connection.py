@@ -320,7 +320,7 @@ class MTurkConnection(AWSQueryConnection):
         total_records = int(search_rs.TotalNumResults)
         get_page_hits = lambda page: self.search_hits(page_size=page_size, page_number=page)
         page_nums = self._get_pages(page_size, total_records)
-        hit_sets = itertools.imap(get_page_hits, page_nums)
+        hit_sets = map(get_page_hits, page_nums)
         return itertools.chain.from_iterable(hit_sets)
 
     def search_hits(self, sort_by='CreationTime', sort_direction='Ascending',
