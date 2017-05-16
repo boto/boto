@@ -34,6 +34,7 @@ from boto.regioninfo import RegionInfo, get_regions, load_regions
 from boto.regioninfo import connect
 import boto
 from boto.compat import six
+from boto.auth import detect_potential_sigv4
 
 RegionData = load_regions().get('elasticloadbalancing', {})
 
@@ -96,6 +97,7 @@ class ELBConnection(AWSQueryConnection):
                                             validate_certs=validate_certs,
                                             profile_name=profile_name)
 
+    @detect_potential_sigv4
     def _required_auth_capability(self):
         return ['hmac-v4']
 
