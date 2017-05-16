@@ -23,26 +23,44 @@
 
 try:
     import paramiko
-    from boto.manage.cmdshell import SSHClient
+    import time
+    from boto.manage.cmdshell import SSHClient, sshclient_from_instance
 except ImportError:
     paramiko = None
+    time = None
     SSHClient = None
+    sshclient_from_instance = None
 
 from tests.compat import mock, unittest
 
+def patch_sshclient_with(mock_constructor):
+    unpatched_sshclient = paramiko.SSHClient
+
+    def patched_constructor():
+        return mock_constructor(unpatched_sshclient)
+
+    paramiko.SSHClient = patched_constructor
+    paramiko.RSAKey.from_private_key_file = mock.Mock()
+
+def mock_with_transport(unpatched_sshclient):
+    mock_transport = mock.Mock()
+
+    client = unpatched_sshclient()
+
+    client.connect = mock.Mock(name='connect')
+    client.get_transport = mock.Mock(return_value=mock_transport)
+
+    return client
 
 class TestSSHTimeout(unittest.TestCase):
     @unittest.skipIf(not paramiko, 'Paramiko missing')
     def test_timeout(self):
-        client_tmp = paramiko.SSHClient
-
-        def client_mock():
-            client = client_tmp()
+        def client_mock(unpatched_sshclient):
+            client = unpatched_sshclient()
             client.connect = mock.Mock(name='connect')
             return client
 
-        paramiko.SSHClient = client_mock
-        paramiko.RSAKey.from_private_key_file = mock.Mock()
+        patch_sshclient_with(client_mock)
 
         server = mock.Mock()
         test = SSHClient(server)
@@ -52,3 +70,62 @@ class TestSSHTimeout(unittest.TestCase):
         test2 = SSHClient(server, timeout=30)
 
         self.assertEqual(test2._ssh_client.connect.call_args[1]['timeout'], 30)
+
+class TestSSHRetries(unittest.TestCase):
+    @mock.patch('time.sleep', return_value=None)
+    @unittest.skipIf(not paramiko, 'Paramiko missing')
+    def test_retries(self, patched_time_sleep):
+        client_tmp = paramiko.SSHClient
+
+        def client_mock(unpatched_sshclient):
+            client = unpatched_sshclient()
+
+            # When attempting connection, always throw EOFError; we'll make
+            # sure the connection gets retried the specified number of times
+            client.connect = mock.Mock(name='connect', side_effect=EOFError())
+
+            return client
+
+        patch_sshclient_with(client_mock)
+
+        server = mock.Mock()
+
+        test = SSHClient(server, num_retries=3)
+
+        self.assertEqual(test._ssh_client.connect.call_count, 3)
+
+    @unittest.skipIf(not paramiko, 'Paramiko missing')
+    def test_is_connected(self):
+        patch_sshclient_with(mock_with_transport)
+
+        server = mock.Mock()
+        test = SSHClient(server)
+
+        self.assertTrue(server.is_connected())
+
+        def negative_mock(unpatched_sshclient):
+            client = unpatched_sshclient()
+
+            client.connect = mock.Mock(name='connect')
+            client.get_transport = mock.Mock(return_value=None)
+
+            return client
+
+        patch_sshclient_with(negative_mock)
+
+        test = SSHClient(server)
+
+        self.assertFalse(test.is_connected())
+
+    @unittest.skipIf(not paramiko, 'Paramiko missing')
+    def test_sshclient_from_instance_close(self):
+        patch_sshclient_with(mock_with_transport)
+
+        instance = mock.Mock()
+        instance.id = 42
+        instance.dns_name = 'test.server.blah'
+
+        server = sshclient_from_instance(instance, '/dev/null')
+
+        # This shouldn't throw an exception
+        server.close()

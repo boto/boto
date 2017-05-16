@@ -47,10 +47,12 @@ class SSHClient(object):
     :ivar timeout: The optional timeout variable for the TCP connection.
     :ivar ssh_pwd: An optional password to use for authentication or for
                     unlocking the private key.
+    :ivar num_retries: The number of times to retry connecting before giving up.
     """
+
     def __init__(self, server,
                  host_key_file='~/.ssh/known_hosts',
-                 uname='root', timeout=None, ssh_pwd=None):
+                 uname='root', timeout=None, ssh_pwd=None, num_retries=5):
         self.server = server
         self.host_key_file = host_key_file
         self.uname = uname
@@ -61,7 +63,7 @@ class SSHClient(object):
         self._ssh_client.load_system_host_keys()
         self._ssh_client.load_host_keys(os.path.expanduser(host_key_file))
         self._ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.connect()
+        self.connect(num_retries)
 
     def connect(self, num_retries=5):
         """
@@ -81,7 +83,8 @@ class SSHClient(object):
             except socket.error as xxx_todo_changeme:
                 (value, message) = xxx_todo_changeme.args
                 if value in (51, 61, 111):
-                    print('SSH Connection refused, will retry in 5 seconds')
+                    print('SSH Connection refused (error %d: %s), will retry in 5 seconds' %
+                          (value, message))
                     time.sleep(5)
                     retry += 1
                 else:
@@ -96,6 +99,13 @@ class SSHClient(object):
                 time.sleep(5)
                 retry += 1
         print('Could not establish SSH connection')
+
+    def is_connected(self):
+        """
+        :return True if the client is connected, False otherwise
+        """
+
+        return self._ssh_client is not None and self._ssh_client.get_transport() is not None
 
     def open_sftp(self):
         """
@@ -362,6 +372,14 @@ class FakeServer(object):
         self.hostname = instance.dns_name
         self.instance_id = self.instance.id
 
+    def reset_cmdshell(self):
+        """
+        This method prevents close() calls on SSHClients created with FakeServers
+        from failing due to missing methods, but otherwise has no effect.
+        """
+        pass
+
+
 def start(server):
     """
     Connect to the specified server.
@@ -379,7 +397,8 @@ def start(server):
 
 def sshclient_from_instance(instance, ssh_key_file,
                             host_key_file='~/.ssh/known_hosts',
-                            user_name='root', ssh_pwd=None):
+                            user_name='root', ssh_pwd=None,
+                            num_retries=5):
     """
     Create and return an SSHClient object given an
     instance object.
