@@ -186,6 +186,12 @@ class TestRoute53PrivateZone(unittest.TestCase):
                                                     vpc_id=self.test_vpc.id,
                                                     vpc_region='us-east-1')
 
+    def test_get_hosted_zone_for_private_zone(self):
+        self.get_hosted_zone = self.route53.get_hosted_zone_by_name(self.base_domain)
+        self.assertEquals(len(self.get_hosted_zone['GetHostedZoneResponse']['VPCs']), 1)
+        self.assertEquals(self.get_hosted_zone['GetHostedZoneResponse']['VPCs'][0]['VPCRegion'], 'us-east-1')
+        self.assertEquals(self.get_hosted_zone['GetHostedZoneResponse']['VPCs'][0]['VPCId'], self.test_vpc.id)
+    
     @classmethod
     def tearDownClass(self):
         if self.zone is not None:
