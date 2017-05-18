@@ -137,8 +137,8 @@ class Parameter(object):
             raise ValueError('value must be of type str')
         if self.allowed_values:
             choices = self.allowed_values.split(',')
-            if value not in choices:
-                raise ValueError('value must be in %s' % self.allowed_values)
+            if value not in choices and len(choices) > 1:
+                raise ValueError('value "%s" must be in %s' % (value,self.allowed_values))
         self._value = value
 
     def _set_integer_value(self, value):
