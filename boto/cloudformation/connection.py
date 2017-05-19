@@ -552,6 +552,19 @@ class CloudFormationConnection(AWSQueryConnection):
         params = {'ContentType': "JSON", 'StackName': stack_name_or_id}
         return self._do_request('DeleteStack', params, '/', 'GET')
 
+    def cancel_update_stack(self, stack_name_or_id):
+        params = {'ContentType': "JSON", 'StackName': stack_name_or_id}
+        # TODO: change this to get_status ?
+        response = self.make_request('CancelUpdateStack', params, '/', 'GET')
+        body = response.read()
+        if response.status == 200:
+            return json.loads(body)
+        else:
+            boto.log.error('%s %s' % (response.status, response.reason))
+            boto.log.error('%s' % body)
+            raise self.ResponseError(response.status, response.reason, body)
+
+
     def describe_stack_events(self, stack_name_or_id=None, next_token=None):
         """
         Returns all stack related events for a specified stack. For
