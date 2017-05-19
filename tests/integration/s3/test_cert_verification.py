@@ -29,6 +29,7 @@ import unittest
 from tests.integration import ServiceCertVerificationTest
 
 import boto.s3
+import boto.s3.connection
 
 
 class S3CertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
@@ -37,3 +38,9 @@ class S3CertVerificationTest(unittest.TestCase, ServiceCertVerificationTest):
 
     def sample_service_call(self, conn):
         conn.get_all_buckets()
+        try:
+            conn.get_bucket("bucket.with.periods")
+        except boto.s3.connection.S3ResponseError:
+            # This may be a 403 or a 404, we don't care. What matters is that we
+            # don't get a certificate error.
+            pass

@@ -100,3 +100,17 @@ else:
                 result[decoded_name] = decoded_value
             return result
         return qs_dict
+
+
+# Create a wrapper function to get a non-validating SSL context (boto
+# implements its own certificate validation) on Python versions that
+# have that concept.
+try:
+    from ssl import create_default_context as _create_default_context
+    def create_non_validating_ssl_context(cafile=None):
+        ctx = _create_default_context(cafile=cafile)
+        ctx.check_hostname = False
+        return ctx
+except ImportError:
+    def create_non_validating_ssl_context(cafile=None):
+        return None

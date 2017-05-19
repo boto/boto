@@ -25,7 +25,7 @@ import ssl
 
 import boto
 
-from boto.compat import six, http_client
+from boto.compat import six, http_client, create_non_validating_ssl_context
 
 
 class InvalidCertificateException(http_client.HTTPException):
@@ -83,8 +83,24 @@ def ValidateCertificateHostname(cert, hostname):
     return False
 
 
-class CertValidatingHTTPSConnection(http_client.HTTPConnection):
-    """An HTTPConnection that connects over SSL and validates certificates."""
+class NonCertValidatingHTTPSConnection(http_client.HTTPConnection):
+    """
+    An HTTPConnection that connects over SSL and does not validate certificates against
+    the server's hostname.
+
+    Note that "NonCertValidating" isn't totally accurate. This implementation does validate
+    that the certificate is valid, only it doesn't validate that it actually matches the
+    host we are connecting to!
+
+    We provide our own implementation instead of http_client.HTTPSConnection to have
+    control over certificate validation, because the behavior in http_client.HTTPSConneciton
+    varies greatly across supported versions of Python:
+
+      + 2.6 -> 2.7.8:   those don't validate anything, ever.
+      + 2.7.9:          leaves it up to the SSL context to validate.
+      + 3.x:            leaves it up to the SSL context, but also requires
+                        `check_hostname=False` to actually skip SSL validation.
+    """
 
     default_port = http_client.HTTPS_PORT
 
@@ -125,10 +141,29 @@ class CertValidatingHTTPSConnection(http_client.HTTPConnection):
         else:
             msg += "using system provided SSL certs"
         boto.log.debug(msg)
-        self.sock = ssl.wrap_socket(sock, keyfile=self.key_file,
-                                    certfile=self.cert_file,
-                                    cert_reqs=ssl.CERT_REQUIRED,
-                                    ca_certs=self.ca_certs)
+
+        ctx = create_non_validating_ssl_context(cafile=self.ca_certs)
+        if ctx is not None:
+            if self.cert_file is not None:
+                ctx.load_cert_chain(certfile=self.cert_file, keyfile=self.key_file)
+            wrap_socket = ctx.wrap_socket
+        else:
+            wrap_socket = lambda s: ssl.wrap_socket(s, keyfile=self.key_file,
+                                                    certfile=self.cert_file,
+                                                    cert_reqs=ssl.CERT_REQUIRED,
+                                                    ca_certs=self.ca_certs)
+        self.sock = wrap_socket(sock)
+
+
+class CertValidatingHTTPSConnection(NonCertValidatingHTTPSConnection):
+    """
+    An HTTPConnection that connects over SSL and validates certificates against
+    the server's hostname.
+    """
+
+    def connect(self):
+        NonCertValidatingHTTPSConnection.connect(self)
+
         cert = self.sock.getpeercert()
         hostname = self.host.split(':', 0)[0]
         if not ValidateCertificateHostname(cert, hostname):
