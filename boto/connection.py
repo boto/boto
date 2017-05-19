@@ -804,7 +804,10 @@ class AWSAuthConnection(object):
                 sock.sendall(("\r\n").encode())
         else:
             sock.sendall(("\r\n").encode())
-        resp = http_client.HTTPResponse(sock, debuglevel=self.debug)
+        kwargs = {'sock': sock, 'debuglevel': self.debug}
+        if six.PY2:
+            kwargs['strict'] = True
+        resp = http_client.HTTPResponse(**kwargs)
         resp.begin()
 
         if resp.status != 200:
