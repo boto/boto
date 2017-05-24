@@ -32,6 +32,7 @@ import random
 import boto.s3
 from boto.compat import six, StringIO, urllib
 from boto.s3.connection import S3Connection
+from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
 
@@ -419,11 +420,11 @@ class S3KeyTest(unittest.TestCase):
         remote_metadata = check._get_remote_metadata()
 
         # TODO: investigate whether encoding ' ' as '%20' makes sense
-        self.assertEqual(check.cache_control, 'public,%20max-age=500')
-        self.assertEqual(remote_metadata['cache-control'], 'public,%20max-age=500')
+        self.assertEqual(check.cache_control, 'public, max-age=500')
+        self.assertEqual(remote_metadata['cache-control'], 'public, max-age=500')
         self.assertEqual(check.get_metadata('test-plus'), 'A plus (+)')
-        self.assertEqual(check.content_disposition, 'filename=Sch%C3%B6ne%20Zeit.txt')
-        self.assertEqual(remote_metadata['content-disposition'], 'filename=Sch%C3%B6ne%20Zeit.txt')
+        self.assertEqual(check.content_disposition, 'filename=Sch%C3%B6ne Zeit.txt')
+        self.assertEqual(remote_metadata['content-disposition'], 'filename=Sch%C3%B6ne Zeit.txt')
         self.assertEqual(check.content_encoding, 'gzip')
         self.assertEqual(remote_metadata['content-encoding'], 'gzip')
         self.assertEqual(check.content_language, 'de')
@@ -432,8 +433,8 @@ class S3KeyTest(unittest.TestCase):
         self.assertEqual(remote_metadata['content-type'], 'application/pdf')
         self.assertEqual(check.x_robots_tag, 'all')
         self.assertEqual(remote_metadata['x-robots-tag'], 'all')
-        self.assertEqual(check.expires, 'Thu,%2001%20Dec%201994%2016:00:00%20GMT')
-        self.assertEqual(remote_metadata['expires'], 'Thu,%2001%20Dec%201994%2016:00:00%20GMT')
+        self.assertEqual(check.expires, 'Thu, 01 Dec 1994 16:00:00 GMT')
+        self.assertEqual(remote_metadata['expires'], 'Thu, 01 Dec 1994 16:00:00 GMT')
 
         expected = u'filename=Schöne Zeit.txt'
         if six.PY2:
@@ -504,6 +505,26 @@ class S3KeySigV4Test(unittest.TestCase):
         keys = self.bucket.get_all_keys(prefix=k.key, max_keys=1)
         self.assertEqual(1, len(keys))
 
+    def test_set_contents_with_sse_c_using_sigv4(self):
+        # Force ssl for sse-c
+        secure_conn = boto.s3.connect_to_region('eu-central-1', is_secure=True)
+        secure_bucket = Bucket(secure_conn, self.bucket_name)
+        content="01234567890123456789"
+        # the plain text of customer key is "01testKeyToSSEC!"
+        header = {
+            "x-amz-server-side-encryption-customer-algorithm" :
+             "AES256",
+            "x-amz-server-side-encryption-customer-key" :
+             "MAAxAHQAZQBzAHQASwBlAHkAVABvAFMAUwBFAEMAIQA=",
+            "x-amz-server-side-encryption-customer-key-MD5" :
+             "fUgCZDDh6bfEMuP2bN38mg=="
+        }
+        # upload and download content with AWS specified headers
+        k = secure_bucket.new_key("testkey_for_sse_c")
+        k.set_contents_from_string(content, headers=header)
+        kn = secure_bucket.new_key("testkey_for_sse_c")
+        ks = kn.get_contents_as_string(headers=header)
+        self.assertEqual(ks, content.encode('utf-8'))
 
 class S3KeyVersionCopyTest(unittest.TestCase):
     def setUp(self):

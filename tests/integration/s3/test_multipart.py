@@ -41,6 +41,7 @@ import mock
 
 import boto
 from boto.s3.connection import S3Connection
+from boto.s3.key import Key
 
 
 class S3MultiPartUploadTest(unittest.TestCase):
@@ -168,6 +169,42 @@ class S3MultiPartUploadTest(unittest.TestCase):
         # Can't complete 2 small parts so just clean up.
         mpu.cancel_upload()
 
+class S3MultiPartCopySigV4Test(unittest.TestCase):
+    s3 = True
+
+    def setUp(self):
+        self.env_patch = mock.patch('os.environ', {'S3_USE_SIGV4': True})
+        self.env_patch.start()
+        self.conn = S3Connection(host='s3.amazonaws.com')
+        self.bucket_name = 'multipart-%d' % int(time.time())
+        self.bucket = self.conn.create_bucket(self.bucket_name)
+
+    def tearDown(self):
+        for key in self.bucket:
+            key.delete()
+        self.bucket.delete()
+        self.env_patch.stop()
+
+    def test_multipart_part_copy_with_range(self):
+        # prepare a source object
+        src = 'source'
+        src_body = '01234567890123456789'
+        src_key = Key(self.bucket, src)
+        src_key.set_contents_from_string(src_body)
+
+        # Next upload a target object with one part which is
+        # the middle 5 to 5 bytes of the source object.
+        trgt = 'target'
+        mpu = self.bucket.initiate_multipart_upload(trgt)
+        mpu.copy_part_from_key(self.bucket_name, src, 1,
+                           start=5, end=15, src_version_id=None,
+                           headers=None)
+        cmpu = mpu.complete_upload()
+        self.assertEqual(cmpu.key_name, trgt)
+        # Confirm final object contents
+        trgt_key = self.bucket.new_key(trgt)
+        trgt_body = trgt_key.get_contents_as_string().decode('utf-8')
+        self.assertEqual(trgt_body, '56789012345')
 
 class S3MultiPartUploadSigV4Test(unittest.TestCase):
     s3 = True
@@ -227,3 +264,4 @@ class S3MultiPartUploadSigV4Test(unittest.TestCase):
         # be a min of 5MB so so we'll assume that is enough
         # testing and abort the upload.
         mpu.cancel_upload()
+
