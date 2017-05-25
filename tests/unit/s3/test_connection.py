@@ -48,6 +48,18 @@ class TestSignatureAlteration(AWSMockServiceTestCase):
         )
 
 
+class TestAnon(MockServiceWithConfigTestCase):
+    connection_class = S3Connection
+
+    def test_generate_url(self):
+        conn = self.connection_class(
+            anon=True,
+            host='s3.amazonaws.com'
+        )
+        url = conn.generate_url(0, 'GET', bucket='examplebucket', key='test.txt')
+        self.assertNotIn('Signature=', url)
+
+
 class TestPresigned(MockServiceWithConfigTestCase):
     connection_class = S3Connection
 
