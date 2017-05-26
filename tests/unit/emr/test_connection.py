@@ -26,6 +26,7 @@ from time import time
 from tests.unit import AWSMockServiceTestCase
 
 from boto.compat import six
+from boto.regioninfo import RegionInfo
 from boto.emr.connection import EmrConnection
 from boto.emr.emrobject import BootstrapAction, BootstrapActionList, \
     ClusterStateChangeReason, ClusterStatus, ClusterSummaryList, \
@@ -1037,18 +1038,30 @@ class TestRunJobFlow(AWSMockServiceTestCase):
                                   'Instances.SlaveInstanceType'])
 
     def test_run_jobflow_enable_debugging(self):
-        self.region = 'ap-northeast-2'
+        region = RegionInfo(
+            name='ap-northeast-2',
+            endpoint='elasticmapreduce.ap-northeast-2.amazonaws.com'
+        )
+        self.service_connection = self.create_service_connection(
+            https_connection_factory=self.https_connection_factory,
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key',
+            region=region)
+        self.initialize_service_connection()
+
         self.set_http_response(200)
         self.service_connection.run_jobflow(
             'EmrCluster', enable_debugging=True)
 
         actual_params = set(self.actual_request.params.copy().items())
 
+        emr_bucket = 's3://ap-northeast-2.elasticmapreduce/libs'
+
         expected_params = set([
             ('Steps.member.1.HadoopJarStep.Jar',
-             's3://ap-northeast-2.elasticmapreduce/libs/script-runner/script-runner.jar'),
+             '%s/script-runner/script-runner.jar' % emr_bucket),
             ('Steps.member.1.HadoopJarStep.Args.member.1',
-                's3://ap-northeast-2.elasticmapreduce/libs/state-pusher/0.1/fetch'),
+             '%s/state-pusher/0.1/fetch' % emr_bucket),
         ])
 
         self.assertTrue(expected_params <= actual_params)
