@@ -574,6 +574,12 @@ class AWSAuthConnection(object):
     def __repr__(self):
         return '%s:%s' % (self.__class__.__name__, self.host)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
     def _required_auth_capability(self):
         return []
 
