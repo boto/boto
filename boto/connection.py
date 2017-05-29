@@ -90,7 +90,7 @@ ON_APP_ENGINE = all(key in os.environ for key in (
 PORTS_BY_SECURITY = {True: 443,
                      False: 80}
 
-DEFAULT_CA_CERTS_FILE = os.path.join(os.path.dirname(os.path.abspath(boto.cacerts.__file__)), "cacerts.txt")
+DEFAULT_CA_CERTS_FILE = boto.cacerts.CAcerts().cacerts_file
 
 
 class HostConnectionPool(object):
