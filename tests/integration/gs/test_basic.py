@@ -75,13 +75,13 @@ LIFECYCLE_CONDITIONS_FOR_SET_STORAGE_CLASS_RULE = {'Age': '366'}
 
 # Regexp for matching project-private default object ACL.
 PROJECT_PRIVATE_RE = ('\s*<AccessControlList>\s*<Entries>\s*<Entry>'
-  '\s*<Scope type="GroupById">\s*<ID>[0-9a-fA-F]+</ID>'
+  '\s*<Scope type="GroupById">\s*<ID>[-a-zA-Z0-9]+</ID>'
   '\s*(<Name>[^<]+</Name>)?\s*</Scope>'
   '\s*<Permission>FULL_CONTROL</Permission>\s*</Entry>\s*<Entry>'
-  '\s*<Scope type="GroupById">\s*<ID>[0-9a-fA-F]+</ID>'
+  '\s*<Scope type="GroupById">\s*<ID>[-a-zA-Z0-9]+</ID>'
   '\s*(<Name>[^<]+</Name>)?\s*</Scope>'
   '\s*<Permission>FULL_CONTROL</Permission>\s*</Entry>\s*<Entry>'
-  '\s*<Scope type="GroupById">\s*<ID>[0-9a-fA-F]+</ID>'
+  '\s*<Scope type="GroupById">\s*<ID>[-a-zA-Z0-9]+</ID>'
   '\s*(<Name>[^<]+</Name>)?\s*</Scope>'
   '\s*<Permission>READ</Permission>\s*</Entry>\s*</Entries>'
   '\s*</AccessControlList>\s*')
