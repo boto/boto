@@ -971,16 +971,25 @@ class POSTPathQSV2AuthHandler(QuerySignatureV2AuthHandler, AuthHandler):
                                              req.auth_path, req.host)
         boto.log.debug('query_string: %s Signature: %s' % (qs, signature))
         if req.method == 'POST':
-            req.headers['Content-Length'] = str(len(req.body))
-            req.headers['Content-Type'] = req.headers.get('Content-Type',
-                                                          'text/plain')
+            if getattr(req, 'has_body', False):
+                req.headers['Content-Length'] = str(len(req.body))
+                req.headers['Content-Type'] = req.headers.get('Content-Type',
+                                                              'text/plain')
+                req.path = req.path.split('?')[0]
+                req.path = (req.path + '?' + qs +
+                            '&Signature=' + urllib.parse.quote_plus(signature))
+            else:
+                req.headers['Content-Type'] = 'application/x-www-form-urlencoded;' \
+                                              ' charset=UTF-8'
+                req.body = qs + '&Signature=' + urllib.parse.quote_plus(signature)
+                req.headers['Content-Length'] = str(len(req.body))
         else:
             req.body = ''
-        # if this is a retried req, the qs from the previous try will
-        # already be there, we need to get rid of that and rebuild it
-        req.path = req.path.split('?')[0]
-        req.path = (req.path + '?' + qs +
-                    '&Signature=' + urllib.parse.quote_plus(signature))
+            # if this is a retried req, the qs from the previous try will
+            # already be there, we need to get rid of that and rebuild it
+            req.path = req.path.split('?')[0]
+            req.path = (req.path + '?' + qs +
+                        '&Signature=' + urllib.parse.quote_plus(signature))
 
 
 def get_auth_handler(host, config, provider, requested_capability=None):
