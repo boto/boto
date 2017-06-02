@@ -793,17 +793,17 @@ class AWSAuthConnection(object):
         else:
             sock = socket.create_connection((self.proxy, int(self.proxy_port)))
         boto.log.debug("Proxy connection: CONNECT %s HTTP/1.0\r\n", host)
-        sock.sendall("CONNECT %s HTTP/1.0\r\n" % host)
-        sock.sendall("User-Agent: %s\r\n" % UserAgent)
+        sock.sendall(six.b("CONNECT %s HTTP/1.0\r\n" % host))
+        sock.sendall(six.b("User-Agent: %s\r\n" % UserAgent))
         if self.proxy_user and self.proxy_pass:
             for k, v in self.get_proxy_auth_header().items():
-                sock.sendall("%s: %s\r\n" % (k, v))
+                sock.sendall(six.b("%s: %s\r\n" % (k, v)))
             # See discussion about this config option at
             # https://groups.google.com/forum/?fromgroups#!topic/boto-dev/teenFvOq2Cc
             if config.getbool('Boto', 'send_crlf_after_proxy_auth_headers', False):
-                sock.sendall("\r\n")
+                sock.sendall(b"\r\n")
         else:
-            sock.sendall("\r\n")
+            sock.sendall(b"\r\n")
         resp = http_client.HTTPResponse(sock, strict=True, debuglevel=self.debug)
         resp.begin()
 
@@ -855,8 +855,8 @@ class AWSAuthConnection(object):
         return path
 
     def get_proxy_auth_header(self):
-        auth = encodebytes(self.proxy_user + ':' + self.proxy_pass)
-        return {'Proxy-Authorization': 'Basic %s' % auth}
+        auth = encodebytes(six.b(self.proxy_user + ':' + self.proxy_pass))
+        return {'Proxy-Authorization': 'Basic %s' % auth.decode()}
 
     # For passing proxy information to other connection libraries, e.g. cloudsearch2
     def get_proxy_url_with_auth(self):
