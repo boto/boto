@@ -1,4 +1,5 @@
 # Copyright (c) 2012 Amazon.com, Inc. or its affiliates.  All Rights Reserved
+# Copyright (c) 2015 Steven Richards <sbrichards@mit.edu>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -66,20 +67,26 @@ class TestChunking(unittest.TestCase):
     def test_chunk_hashes_exact(self):
         chunks = chunk_hashes(b'a' * (2 * 1024 * 1024))
         self.assertEqual(len(chunks), 2)
-        self.assertEqual(chunks[0], sha256(b'a' * 1024 * 1024).digest())
+        self.assertEqual(chunks[0], sha256((b'a' * 1024 * 1024).decode().encode('utf-8')).digest())
 
     def test_chunks_with_leftovers(self):
         bytestring = b'a' * (2 * 1024 * 1024 + 20)
         chunks = chunk_hashes(bytestring)
         self.assertEqual(len(chunks), 3)
-        self.assertEqual(chunks[0], sha256(b'a' * 1024 * 1024).digest())
-        self.assertEqual(chunks[1], sha256(b'a' * 1024 * 1024).digest())
-        self.assertEqual(chunks[2], sha256(b'a' * 20).digest())
+        self.assertEqual(chunks[0], sha256((b'a' * 1024 * 1024).decode().encode('utf-8')).digest())
+        self.assertEqual(chunks[1], sha256((b'a' * 1024 * 1024).decode().encode('utf-8')).digest())
+        self.assertEqual(chunks[2], sha256((b'a' * 20).decode().encode('utf-8')).digest())
 
     def test_less_than_one_chunk(self):
         chunks = chunk_hashes(b'aaaa')
         self.assertEqual(len(chunks), 1)
-        self.assertEqual(chunks[0], sha256(b'aaaa').digest())
+        self.assertEqual(chunks[0], sha256(b'aaaa'.decode().encode('utf-8')).digest())
+
+    def test_unicode_chunk(self):
+        chunks = chunk_hashes(b'aaaa\u0107')
+        self.assertEqual(len(chunks), 1)
+        self.assertEqual(chunks[0], sha256(b'aaaa\u0107'.decode().encode('utf-8')).digest())
+
 
 
 class TestTreeHash(unittest.TestCase):
