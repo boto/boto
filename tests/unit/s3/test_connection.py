@@ -84,6 +84,8 @@ class TestSigV4HostError(MockServiceWithConfigTestCase):
         self.assertEqual(self.service_connection.host, 's3.amazonaws.com')
 
     def test_sigv4_opt_in(self):
+        host_value = 's3.cn-north-1.amazonaws.com.cn'
+
         # Switch it at the config, so we can check to see how the host is
         # handled.
         self.config = {
@@ -92,6 +94,8 @@ class TestSigV4HostError(MockServiceWithConfigTestCase):
             }
         }
 
+        # Should raise an error if no host is given in either the config or
+        # in connection arguments.
         with self.assertRaises(HostRequiredError):
             # No host+SigV4 == KABOOM
             self.connection_class(
@@ -99,11 +103,11 @@ class TestSigV4HostError(MockServiceWithConfigTestCase):
                 aws_secret_access_key='more'
             )
 
-        # Ensure passing a ``host`` still works.
+        # Ensure passing a ``host`` in the connection args still works.
         conn = self.connection_class(
             aws_access_key_id='less',
             aws_secret_access_key='more',
-            host='s3.cn-north-1.amazonaws.com.cn'
+            host=host_value
         )
         self.assertEqual(
             conn._required_auth_capability(),
@@ -111,7 +115,28 @@ class TestSigV4HostError(MockServiceWithConfigTestCase):
         )
         self.assertEqual(
             conn.host,
-            's3.cn-north-1.amazonaws.com.cn'
+            host_value
+        )
+
+        # Ensure that the host is populated from our config if one is not
+        # provided when creating a connection.
+        self.config = {
+            's3': {
+                'host': host_value,
+                'use-sigv4': True,
+            }
+        }
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more'
+        )
+        self.assertEqual(
+            conn._required_auth_capability(),
+            ['hmac-v4-s3']
+        )
+        self.assertEqual(
+            conn.host,
+            host_value
         )
 
 
