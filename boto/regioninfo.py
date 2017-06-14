@@ -205,6 +205,8 @@ def connect(service_name, region_name, region_cls=None,
 
     :returns: A configured connection class.
     """
+    if region_cls is None:
+        region_cls = RegionInfo
     region = _get_region(service_name, region_name, region_cls, connection_cls)
 
     if region is None and _use_endpoint_heuristics():
