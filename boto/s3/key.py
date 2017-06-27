@@ -969,8 +969,8 @@ class Key(object):
         provider = self.bucket.connection.provider
 
         if not chunked_transfer:
-            if response.status in [500, 503]:
-                # 500 & 503 can be plain retries.
+            if response.status in [500, 502, 503]:
+                # 500 & 502 & 503 can be plain retries.
                 return True
 
             if response.getheader('location'):

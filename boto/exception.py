@@ -30,7 +30,7 @@ import xml.sax
 import boto
 
 from boto import handler
-from boto.compat import json, StandardError
+from boto.compat import six, json, StandardError
 from boto.resultset import ResultSet
 
 
@@ -86,7 +86,7 @@ class BotoServerError(StandardError):
         self.message = ''
         self.box_usage = None
 
-        if isinstance(self.body, bytes):
+        if six.PY3 and isinstance(self.body, bytes):
             try:
                 self.body = self.body.decode('utf-8')
             except UnicodeDecodeError:
