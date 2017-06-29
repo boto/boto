@@ -306,7 +306,7 @@ class Item(object):
         # We need to prevent ``None``, empty string & empty set from
         # heading to DDB, but allow false-y values like 0 & False make it.
         if not value:
-            if not value in (0, 0.0, False):
+            if not value in (0, 0.0, False, dict()):
                 return False
 
         return True
