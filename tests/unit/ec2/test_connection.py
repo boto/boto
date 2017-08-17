@@ -1028,7 +1028,7 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
     Test snapshot trimming functionality by ensuring that expected calls
     are made when given a known set of volume snapshots.
     """
-    def _get_snapshots(self):
+    def _get_snapshots(self, filters=None):
         """
         Generate a list of fake snapshots with names and dates.
         """
@@ -1054,13 +1054,20 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
             datetime(now.year, now.month, 1) - timedelta(days=88)
         ]
 
-        for date in dates:
-            # Create a fake snapshot for each date
-            snap = Snapshot(self.ec2)
-            snap.tags['Name'] = 'foo'
-            # Times are expected to be ISO8601 strings
-            snap.start_time = date.strftime('%Y-%m-%dT%H:%M:%S.000Z')
-            snaps.append(snap)
+        names = ['foo', 'foo2']
+        if filters and 'tag:Name' in filters.keys():
+          if not isinstance(filters['tag:Name'], list):
+            filters['tag:Name'] = [filters['tag:Name']]
+          names = [x for x in names if x in filters['tag:Name']]
+
+        for name in names:
+          for date in dates:
+              # Create a fake snapshot for each name tag and date
+              snap = Snapshot(self.ec2)
+              snap.tags['Name'] = name
+              # Times are expected to be ISO8601 strings
+              snap.start_time = date.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+              snaps.append(snap)
 
         return snaps
 
@@ -1096,7 +1103,8 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
         """
         Test trimming monthly snapshots and ensure that older months
         get deleted properly. The result of this test should be that
-        the two oldest snapshots get deleted.
+        the four oldest snapshots get deleted (two each of "foo" and
+        "foo2").
         """
         # Setup mocks
         orig = {
@@ -1111,6 +1119,36 @@ class TestTrimSnapshots(TestEC2ConnectionBase):
 
         # Call the tested method
         self.ec2.trim_snapshots(monthly_backups=1)
+
+        # Assertions
+        self.assertEqual(True, self.ec2.get_all_snapshots.called)
+        self.assertEqual(4, self.ec2.delete_snapshot.call_count)
+
+        # Restore
+        self.ec2.get_all_snapshots = orig['get_all_snapshots']
+        self.ec2.delete_snapshot = orig['delete_snapshot']
+
+    def test_trim_filter(self):
+        """
+        Test trimming filtered snapshots and ensure that older
+        snapshots get deleted properly. The result of this test should
+        be that the two oldest snapshots with name "foo2" get deleted.
+        """
+        # Setup mocks
+        orig = {
+            'get_all_snapshots': self.ec2.get_all_snapshots,
+            'delete_snapshot': self.ec2.delete_snapshot
+        }
+
+        filters = {'tag:Name': 'foo2'}
+
+        snaps = self._get_snapshots(filters=filters)
+
+        self.ec2.get_all_snapshots = MagicMock(return_value=snaps)
+        self.ec2.delete_snapshot = MagicMock()
+
+        # Call the tested method
+        self.ec2.trim_snapshots(monthly_backups=1, filters=filters)
 
         # Assertions
         self.assertEqual(True, self.ec2.get_all_snapshots.called)
