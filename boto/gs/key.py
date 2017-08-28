@@ -134,7 +134,7 @@ class Key(S3Key):
             elif key == 'x-goog-storage-class':
                 self.storage_class = value
 
-    def open_read(self, headers=None, query_args='',
+    def open_read(self, headers=None, query_args=None,
                   override_num_retries=None, response_headers=None):
         """
         Open this key for reading
@@ -158,6 +158,7 @@ class Key(S3Key):
         """
         # For GCS we need to include the object generation in the query args.
         # The rest of the processing is handled in the parent class.
+        query_args = query_args or ''
         if self.generation:
             if query_args:
                 query_args += '&'
