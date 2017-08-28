@@ -19,7 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 import errno
-import httplib
+try:
+    import httplib
+except ImportError:
+    # Python 3
+    import http.client as httplib
 import os
 import re
 import socket
