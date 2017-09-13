@@ -852,8 +852,8 @@ class Bucket(object):
                 src_bucket = self
             else:
                 src_bucket = self.connection.get_bucket(
-                    src_bucket_name, validate=False, headers=headers)
-            acl = src_bucket.get_xml_acl(src_key_name, headers=headers)
+                    src_bucket_name, validate=False)
+            acl = src_bucket.get_xml_acl(src_key_name)
         if encrypt_key:
             headers[provider.server_side_encryption_header] = 'AES256'
         src = '%s/%s' % (src_bucket_name, urllib.parse.quote(src_key_name))
@@ -1123,7 +1123,7 @@ class Bucket(object):
         policy = self.get_acl(headers=headers)
         return policy.acl.grants
 
-    def get_location(self, headers=None):
+    def get_location(self):
         """
         Returns the LocationConstraint for the bucket.
 
@@ -1132,7 +1132,6 @@ class Bucket(object):
             string if no constraint was specified when bucket was created.
         """
         response = self.connection.make_request('GET', self.name,
-                                                headers=headers,
                                                 query_args='location')
         body = response.read()
         if response.status == 200:
@@ -1825,8 +1824,8 @@ class Bucket(object):
     def delete(self, headers=None):
         return self.connection.delete_bucket(self.name, headers=headers)
 
-    def get_tags(self, headers=None):
-        response = self.get_xml_tags(headers)
+    def get_tags(self):
+        response = self.get_xml_tags()
         tags = Tags()
         h = handler.XmlHandler(tags, self)
         if not isinstance(response, bytes):
@@ -1834,10 +1833,10 @@ class Bucket(object):
         xml.sax.parseString(response, h)
         return tags
 
-    def get_xml_tags(self, headers=None):
+    def get_xml_tags(self):
         response = self.connection.make_request('GET', self.name,
                                                 query_args='tagging',
-                                                headers=headers)
+                                                headers=None)
         body = response.read()
         if response.status == 200:
             return body
