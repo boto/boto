@@ -440,7 +440,7 @@ class BucketStorageUri(StorageUri):
     def get_location(self, validate=False, headers=None):
         self._check_bucket_uri('get_location')
         bucket = self.get_bucket(validate, headers)
-        return bucket.get_location(headers)
+        return bucket.get_location()
 
     def get_storage_class(self, validate=False, headers=None):
         self._check_bucket_uri('get_storage_class')
@@ -450,7 +450,7 @@ class BucketStorageUri(StorageUri):
             raise ValueError('get_storage_class() not supported for %s '
                              'URIs.' % self.scheme)
         bucket = self.get_bucket(validate, headers)
-        return bucket.get_storage_class(headers)
+        return bucket.get_storage_class()
 
     def set_storage_class(self, storage_class, validate=False, headers=None):
         """Updates a bucket's storage class."""
@@ -801,31 +801,11 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(validate, headers)
         bucket.configure_lifecycle(lifecycle_config, headers)
 
-    def get_billing_config(self, headers=None):
-        self._check_bucket_uri('get_billing_config')
-        # billing is defined as a bucket param for GCS, but not for S3.
-        if self.scheme != 'gs':
-            raise ValueError('get_billing_config() not supported for %s '
-                             'URIs.' % self.scheme)
-        bucket = self.get_bucket(False, headers)
-        return bucket.get_billing_config(headers)
-
-    def configure_billing(self, requester_pays=False, validate=False,
-                          headers=None):
-        """Sets or updates a bucket's billing configuration."""
-        self._check_bucket_uri('configure_billing')
-        # billing is defined as a bucket param for GCS, but not for S3.
-        if self.scheme != 'gs':
-            raise ValueError('configure_billing() not supported for %s '
-                             'URIs.' % self.scheme)
-        bucket = self.get_bucket(validate, headers)
-        bucket.configure_billing(requester_pays=requester_pays, headers=headers)
-
     def exists(self, headers=None):
         """Returns True if the object exists or False if it doesn't"""
         if not self.object_name:
             raise InvalidUriError('exists on object-less URI (%s)' % self.uri)
-        bucket = self.get_bucket(headers)
+        bucket = self.get_bucket()
         key = bucket.get_key(self.object_name, headers=headers)
         return bool(key)
 
