@@ -75,12 +75,15 @@ LIFECYCLE_CONDITIONS_FOR_SET_STORAGE_CLASS_RULE = {'Age': '366'}
 
 # Regexp for matching project-private default object ACL.
 PROJECT_PRIVATE_RE = ('\s*<AccessControlList>\s*<Entries>\s*<Entry>'
-  '\s*<Scope type="GroupById"><ID>[0-9a-fA-F]+</ID></Scope>'
+  '\s*<Scope type="GroupById">\s*<ID>[-a-zA-Z0-9]+</ID>'
+  '\s*(<Name>[^<]+</Name>)?\s*</Scope>'
   '\s*<Permission>FULL_CONTROL</Permission>\s*</Entry>\s*<Entry>'
-  '\s*<Scope type="GroupById"><ID>[0-9a-fA-F]+</ID></Scope>'
+  '\s*<Scope type="GroupById">\s*<ID>[-a-zA-Z0-9]+</ID>'
+  '\s*(<Name>[^<]+</Name>)?\s*</Scope>'
   '\s*<Permission>FULL_CONTROL</Permission>\s*</Entry>\s*<Entry>'
-  '\s*<Scope type="GroupById"><ID>[0-9a-fA-F]+</ID></Scope>'
-  '\s*<Permission>READ</Permission></Entry>\s*</Entries>'
+  '\s*<Scope type="GroupById">\s*<ID>[-a-zA-Z0-9]+</ID>'
+  '\s*(<Name>[^<]+</Name>)?\s*</Scope>'
+  '\s*<Permission>READ</Permission>\s*</Entry>\s*</Entries>'
   '\s*</AccessControlList>\s*')
 
 
@@ -349,7 +352,9 @@ class GSBasicTest(GSTestCase):
         uri = storage_uri('gs://' + bucket_name)
         # get default acl and make sure it's project-private
         acl = uri.get_def_acl()
-        self.assertIsNotNone(re.search(PROJECT_PRIVATE_RE, acl.to_xml()))
+        self.assertIsNotNone(
+            re.search(PROJECT_PRIVATE_RE, acl.to_xml()),
+            'PROJECT_PRIVATE_RE not found in ACL XML:\n' + acl.to_xml())
         # set default acl to a canned acl and verify it gets set
         uri.set_def_acl('public-read')
         acl = uri.get_def_acl()
