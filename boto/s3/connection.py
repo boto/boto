@@ -161,7 +161,7 @@ class HostRequiredError(BotoClientError):
 
 class S3Connection(AWSAuthConnection):
 
-    DefaultHost = boto.config.get('s3', 'host', 's3.amazonaws.com')
+    DefaultHost = 's3.amazonaws.com'
     DefaultCallingFormat = boto.config.get('s3', 'calling_format', 'boto.s3.connection.SubdomainCallingFormat')
     QueryString = 'Signature=%s&Expires=%d&AWSAccessKeyId=%s'
 
@@ -174,9 +174,12 @@ class S3Connection(AWSAuthConnection):
                  suppress_consec_slashes=True, anon=False,
                  validate_certs=None, profile_name=None):
         no_host_provided = False
+        # Try falling back to the boto config file's value, if present.
         if host is NoHostProvided:
-            no_host_provided = True
-            host = self.DefaultHost
+            host = boto.config.get('s3', 'host')
+            if host is None:
+                host = self.DefaultHost
+                no_host_provided = True
         if isinstance(calling_format, six.string_types):
             calling_format=boto.utils.find_class(calling_format)()
         self.calling_format = calling_format
@@ -406,12 +409,12 @@ class S3Connection(AWSAuthConnection):
         if extra_qp:
             delimiter = '?' if '?' not in auth_path else '&'
             auth_path += delimiter + '&'.join(extra_qp)
-        c_string = boto.utils.canonical_string(method, auth_path, headers,
-                                               expires, self.provider)
-        b64_hmac = self._auth_handler.sign_string(c_string)
-        encoded_canonical = urllib.parse.quote(b64_hmac, safe='')
         self.calling_format.build_path_base(bucket, key)
-        if query_auth:
+        if query_auth and not self.anon:
+            c_string = boto.utils.canonical_string(method, auth_path, headers,
+                                                   expires, self.provider)
+            b64_hmac = self._auth_handler.sign_string(c_string)
+            encoded_canonical = urllib.parse.quote(b64_hmac, safe='')
             query_part = '?' + self.QueryString % (encoded_canonical, expires,
                                                    self.aws_access_key_id)
         else:

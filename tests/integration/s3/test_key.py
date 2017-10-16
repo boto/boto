@@ -419,7 +419,10 @@ class S3KeyTest(unittest.TestCase):
         remote_metadata = check._get_remote_metadata()
 
         # TODO: investigate whether encoding ' ' as '%20' makes sense
-        self.assertEqual(check.cache_control, 'public,%20max-age=500')
+        self.assertIn(
+            check.cache_control,
+            ('public,%20max-age=500', 'public, max-age=500')
+        )
         self.assertEqual(remote_metadata['cache-control'], 'public,%20max-age=500')
         self.assertEqual(check.get_metadata('test-plus'), 'A plus (+)')
         self.assertEqual(check.content_disposition, 'filename=Sch%C3%B6ne%20Zeit.txt')
