@@ -79,9 +79,10 @@ class Provider(object):
 
     CredentialMap = {
         'aws':    ('aws_access_key_id', 'aws_secret_access_key',
-                   'aws_security_token', 'aws_profile'),
+                   'aws_session_token', 'aws_security_token',
+                   'aws_profile', 'aws_default_profile'),
         'google': ('gs_access_key_id',  'gs_secret_access_key',
-                   None, None),
+                   None, None, None, None),
     }
 
     AclClassMap = {
@@ -265,13 +266,18 @@ class Provider(object):
     def get_credentials(self, access_key=None, secret_key=None,
                         security_token=None, profile_name=None):
         access_key_name, secret_key_name, security_token_name, \
-            profile_name_name = self.CredentialMap[self.name]
+            security_token_name_fallback, profile_name_name, \
+            profile_name_name_fallback = self.CredentialMap[self.name]
 
         # Load profile from shared environment variable if it was not
         # already passed in and the environment variable exists
         if profile_name is None and profile_name_name is not None and \
            profile_name_name.upper() in os.environ:
             profile_name = os.environ[profile_name_name.upper()]
+
+        if profile_name is None and profile_name_name_fallback is not None and \
+           profile_name_name_fallback.upper() in os.environ:
+            profile_name = os.environ[profile_name_name_fallback.upper()]
 
         shared = self.shared_credentials
 
@@ -353,10 +359,21 @@ class Provider(object):
                 self.security_token = os.environ[security_token_name.upper()]
                 boto.log.debug("Using security token found in environment"
                                " variable.")
+            elif (security_token_name_fallback is not None) and \
+                    (security_token_name_fallback.upper() in os.environ):
+                self.security_token = os.environ[security_token_name_fallback.upper()]
+                boto.log.debug("Using security token found in environment"
+                               " variable.")
             elif shared.has_option(profile_name or 'default',
                                    security_token_name):
                 self.security_token = shared.get(profile_name or 'default',
                                                  security_token_name)
+                boto.log.debug("Using security token found in shared "
+                               "credential file.")
+            elif (security_token_name_fallback is not None) and \
+                (shared.has_option(profile_name or 'default', security_token_name_fallback)):
+                self.security_token = shared.get(profile_name or 'default',
+                                                 security_token_name_fallback)
                 boto.log.debug("Using security token found in shared "
                                "credential file.")
             elif profile_name is not None:
@@ -367,9 +384,22 @@ class Provider(object):
                                                      security_token_name)
                     boto.log.debug("Using security token found in config file: "
                                    "profile %s." % profile_name)
+                elif (security_token_name_fallback is not None) and \
+                    (config.has_option("profile %s" % profile_name,
+                                       security_token_name_fallback)):
+                    boto.log.debug("config has option")
+                    self.security_token = config.get("profile %s" % profile_name,
+                                                     security_token_name_fallback)
+                    boto.log.debug("Using security token found in config file: "
+                                   "profile %s." % profile_name)
             elif config.has_option('Credentials', security_token_name):
                 self.security_token = config.get('Credentials',
                                                  security_token_name)
+                boto.log.debug("Using security token found in config file.")
+            elif (security_token_name_fallback is not None) and \
+                    (config.has_option('Credentials', security_token_name_fallback)):
+                self.security_token = config.get('Credentials',
+                                                 security_token_name_fallback)
                 boto.log.debug("Using security token found in config file.")
 
         if ((self._access_key is None or self._secret_key is None) and
