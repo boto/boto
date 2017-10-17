@@ -105,6 +105,15 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.secret_key, 'env_secret_key')
         self.assertEqual(p.security_token, 'env_security_token')
 
+    def test_environment_variable_aws_session_token(self):
+        self.environ['AWS_ACCESS_KEY_ID'] = 'env_access_key'
+        self.environ['AWS_SECRET_ACCESS_KEY'] = 'env_secret_key'
+        self.environ['AWS_SESSION_TOKEN'] = 'env_session_token'
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'env_access_key')
+        self.assertEqual(p.secret_key, 'env_secret_key')
+        self.assertEqual(p.security_token, 'env_session_token')
+
     def test_no_credentials_provided(self):
         p = provider.Provider(
             'aws',
@@ -124,10 +133,14 @@ class TestProvider(unittest.TestCase):
             }, 'profile prod': {
                 'aws_access_key_id': 'prod_access_key',
                 'aws_secret_access_key': 'prod_secret_key',
-            }, 'profile prod_withtoken': {
+            }, 'profile prod_with_security_token': {
                 'aws_access_key_id': 'prod_access_key',
                 'aws_secret_access_key': 'prod_secret_key',
-                'aws_security_token': 'prod_token',
+                'aws_security_token': 'prod_security_token',
+            }, 'profile prod_with_session_token': {
+                'aws_access_key_id': 'prod_access_key',
+                'aws_secret_access_key': 'prod_secret_key',
+                'aws_session_token': 'prod_session_token',
             }, 'Credentials': {
                 'aws_access_key_id': 'default_access_key',
                 'aws_secret_access_key': 'default_secret_key'
@@ -136,10 +149,14 @@ class TestProvider(unittest.TestCase):
         p = provider.Provider('aws', profile_name='prod')
         self.assertEqual(p.access_key, 'prod_access_key')
         self.assertEqual(p.secret_key, 'prod_secret_key')
-        p = provider.Provider('aws', profile_name='prod_withtoken')
+        p = provider.Provider('aws', profile_name='prod_with_security_token')
         self.assertEqual(p.access_key, 'prod_access_key')
         self.assertEqual(p.secret_key, 'prod_secret_key')
-        self.assertEqual(p.security_token, 'prod_token')
+        self.assertEqual(p.security_token, 'prod_security_token')
+        p = provider.Provider('aws', profile_name='prod_with_session_token')
+        self.assertEqual(p.access_key, 'prod_access_key')
+        self.assertEqual(p.secret_key, 'prod_secret_key')
+        self.assertEqual(p.security_token, 'prod_session_token')
         q = provider.Provider('aws', profile_name='dev')
         self.assertEqual(q.access_key, 'dev_access_key')
         self.assertEqual(q.secret_key, 'dev_secret_key')
@@ -272,6 +289,39 @@ class TestProvider(unittest.TestCase):
 
     def test_env_profile_loads_profile(self):
         self.environ['AWS_PROFILE'] = 'foo'
+        self.shared_config = {
+            'default': {
+                'aws_access_key_id': 'shared_access_key',
+                'aws_secret_access_key': 'shared_secret_key',
+            },
+            'foo': {
+                'aws_access_key_id': 'shared_access_key_foo',
+                'aws_secret_access_key': 'shared_secret_key_foo',
+            }
+        }
+        self.config = {
+            'profile foo': {
+                'aws_access_key_id': 'cfg_access_key_foo',
+                'aws_secret_access_key': 'cfg_secret_key_foo',
+            },
+            'Credentials': {
+                'aws_access_key_id': 'cfg_access_key',
+                'aws_secret_access_key': 'cfg_secret_key',
+            }
+        }
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'shared_access_key_foo')
+        self.assertEqual(p.secret_key, 'shared_secret_key_foo')
+        self.assertIsNone(p.security_token)
+
+        self.shared_config = {}
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'cfg_access_key_foo')
+        self.assertEqual(p.secret_key, 'cfg_secret_key_foo')
+        self.assertIsNone(p.security_token)
+
+    def test_env_profile_loads_default_profile(self):
+        self.environ['AWS_DEFAULT_PROFILE'] = 'foo'
         self.shared_config = {
             'default': {
                 'aws_access_key_id': 'shared_access_key',
