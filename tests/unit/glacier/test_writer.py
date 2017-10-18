@@ -67,7 +67,7 @@ def calculate_mock_vault_calls(data, part_size, chunk_size):
         data_part_tree_hash = bytes_to_hex(data_part_tree_hash_blob)
         data_part_linear_hash = sha256(data_part).hexdigest()
         upload_part_calls.append(
-            call.layer1.upload_part(
+            call(
                 sentinel.vault_name, sentinel.upload_id,
                 data_part_linear_hash, data_part_tree_hash,
                 (start, end - 1), data_part))

@@ -50,6 +50,9 @@ ERROR_DETAILS_REGEX = re.compile(r'<Details>(?P<details>.*)</Details>')
 class Bucket(S3Bucket):
     """Represents a Google Cloud Storage bucket."""
 
+    BillingBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                   '<BillingConfiguration><RequesterPays>%s</RequesterPays>'
+                   '</BillingConfiguration>')
     StorageClassBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
                         '<StorageClass>%s</StorageClass>')
     VersioningBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -594,7 +597,7 @@ class Bucket(S3Bucket):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def get_storage_class(self):
+    def get_storage_class(self, headers=None):
         """
         Returns the StorageClass for the bucket.
 
@@ -602,7 +605,8 @@ class Bucket(S3Bucket):
         :return: The StorageClass for the bucket.
         """
         response = self.connection.make_request('GET', self.name,
-                                                query_args=STORAGE_CLASS_ARG)
+                                                query_args=STORAGE_CLASS_ARG,
+                                                headers=headers)
         body = response.read()
         if response.status == 200:
             rs = ResultSet(self)
@@ -999,3 +1003,65 @@ class Bucket(S3Bucket):
         else:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
+
+    def get_billing_config(self, headers=None):
+        """Returns the current status of billing configuration on the bucket.
+
+        :param dict headers: Additional headers to send with the request.
+
+        :rtype: dict
+        :returns: A dictionary containing the parsed XML response from GCS. The
+            overall structure is:
+
+            * BillingConfiguration
+
+              * RequesterPays: Enabled/Disabled.
+        """
+        return self.get_billing_configuration_with_xml(headers)[0]
+
+    def get_billing_configuration_with_xml(self, headers=None):
+        """Returns the current status of billing configuration on the bucket as
+        unparsed XML.
+
+        :param dict headers: Additional headers to send with the request.
+
+        :rtype: 2-Tuple
+        :returns: 2-tuple containing:
+
+            1) A dictionary containing the parsed XML response from GCS. The
+              overall structure is:
+
+              * BillingConfiguration
+
+                * RequesterPays: Enabled/Disabled.
+
+            2) Unparsed XML describing the bucket's website configuration.
+        """
+        response = self.connection.make_request('GET', self.name,
+                                                query_args='billing',
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+
+        if response.status != 200:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+        e = boto.jsonresponse.Element()
+        h = boto.jsonresponse.XmlHandler(e, None);
+        h.parse(body)
+        return e, body
+
+    def configure_billing(self, requester_pays=False, headers=None):
+        """Configure billing for this bucket.
+
+        :param bool requester_pays: If set to True, enables requester pays on
+            this bucket. If set to False, disables requester pays.
+
+        :param dict headers: Additional headers to send with the request.
+        """
+        if requester_pays == True:
+            req_body = self.BillingBody % ('Enabled')
+        else:
+            req_body = self.BillingBody % ('Disabled')
+        self.set_subresource('billing', req_body, headers=headers)
