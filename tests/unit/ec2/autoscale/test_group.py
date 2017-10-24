@@ -321,7 +321,7 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
         self.assertEqual(response[0].launch_configuration_arn, "arn:aws:autoscaling:us-east-1:803981987763:launchConfiguration:9dbbbf87-6141-428a-a409-0752edbe6cad:launchConfigurationName/my-test-lc")
         self.assertEqual(response[0].image_id, "ami-514ac838")
         self.assertTrue(isinstance(response[0].instance_monitoring, launchconfig.InstanceMonitoring))
-        self.assertEqual(response[0].instance_monitoring.enabled, 'true')
+        self.assertEqual(response[0].instance_monitoring.enabled, True)
         self.assertEqual(response[0].ebs_optimized, False)
         self.assertEqual(response[0].block_device_mappings, [])
         self.assertEqual(response[0].classic_link_vpc_id, 'vpc-12345')
@@ -357,9 +357,13 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
     def test_launch_config(self):
         # This unit test is based on #753 and #1343
         self.set_http_response(status_code=200)
+        dev_sdb = EBSBlockDeviceType(ephemeral_name='ephemeral0')
+        dev_sdc = EBSBlockDeviceType(no_device=True)
         dev_sdf = EBSBlockDeviceType(snapshot_id='snap-12345')
 
         bdm = BlockDeviceMapping()
+        bdm['/dev/sdb'] = dev_sdb
+        bdm['/dev/sdc'] = dev_sdc
         bdm['/dev/sdf'] = dev_sdf
 
         lc = launchconfig.LaunchConfiguration(
@@ -381,26 +385,48 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
 
         response = self.service_connection.create_launch_configuration(lc)
 
-        self.assert_request_parameters({
-            'Action': 'CreateLaunchConfiguration',
-            'BlockDeviceMappings.member.1.DeviceName': '/dev/sdf',
-            'BlockDeviceMappings.member.1.Ebs.DeleteOnTermination': 'false',
-            'BlockDeviceMappings.member.1.Ebs.SnapshotId': 'snap-12345',
-            'EbsOptimized': 'false',
-            'LaunchConfigurationName': 'launch_config',
-            'ImageId': '123456',
-            'UserData': base64.b64encode(b'#!/bin/bash').decode('utf-8'),
-            'InstanceMonitoring.Enabled': 'false',
-            'InstanceType': 'm1.large',
-            'SecurityGroups.member.1': 'group1',
-            'SpotPrice': 'price',
-            'AssociatePublicIpAddress': 'true',
-            'VolumeType': 'atype',
-            'DeleteOnTermination': 'false',
-            'Iops': 3000,
-            'ClassicLinkVPCId': 'vpc-1234',
-            'ClassicLinkVPCSecurityGroups.member.1': 'classic_link_group'
-        }, ignore_params_values=['Version'])
+        request_params = {}
+        for i, dev in enumerate(bdm.keys()):
+            dev_params = {}
+            if dev == '/dev/sdf':
+                dev_params = {
+                    '%s.DeviceName': '/dev/sdf',
+                    '%s.Ebs.DeleteOnTermination': 'false',
+                    '%s.Ebs.SnapshotId': 'snap-12345'
+                }
+            elif dev == '/dev/sdb':
+                dev_params = {
+                    '%s.DeviceName': '/dev/sdb',
+                    '%s.VirtualName': 'ephemeral0',
+                }
+            elif dev == '/dev/sdc':
+                dev_params = {
+                    '%s.DeviceName': '/dev/sdc',
+                    '%s.NoDevice': 'true',
+                }
+
+            pre = "BlockDeviceMappings.member.%d" % (i+1,)
+            request_params.update(dict((key % pre, value) for key, value in dev_params.items()))
+
+        request_params.update({
+          'Action': 'CreateLaunchConfiguration',
+          'EbsOptimized': 'false',
+          'LaunchConfigurationName': 'launch_config',
+          'ImageId': '123456',
+          'UserData': base64.b64encode(b'#!/bin/bash').decode('utf-8'),
+          'InstanceMonitoring.Enabled': 'false',
+          'InstanceType': 'm1.large',
+          'SecurityGroups.member.1': 'group1',
+          'SpotPrice': 'price',
+          'AssociatePublicIpAddress': 'true',
+          'VolumeType': 'atype',
+          'DeleteOnTermination': 'false',
+          'Iops': 3000,
+          'ClassicLinkVPCId': 'vpc-1234',
+          'ClassicLinkVPCSecurityGroups.member.1': 'classic_link_group'
+        })
+
+        self.assert_request_parameters(request_params, ignore_params_values=['Version'])
 
 
 class TestCreateAutoScalePolicy(AWSMockServiceTestCase):
@@ -843,9 +869,9 @@ class TestLaunchConfigurationDescribeWithBlockDeviceTypes(AWSMockServiceTestCase
         self.assertEqual(response[0].launch_configuration_arn, "arn:aws:autoscaling:us-east-1:803981987763:launchConfiguration:9dbbbf87-6141-428a-a409-0752edbe6cad:launchConfigurationName/my-test-lc")
         self.assertEqual(response[0].image_id, "ami-514ac838")
         self.assertTrue(isinstance(response[0].instance_monitoring, launchconfig.InstanceMonitoring))
-        self.assertEqual(response[0].instance_monitoring.enabled, 'true')
+        self.assertEqual(response[0].instance_monitoring.enabled, True)
         self.assertEqual(response[0].ebs_optimized, False)
-
+        self.assertIsInstance(response[0].block_device_mappings, BlockDeviceMapping)
         self.assertEqual(response[0].block_device_mappings['/dev/xvdb'].ephemeral_name, 'ephemeral0')
 
         self.assertEqual(response[0].block_device_mappings['/dev/xvdc'].ephemeral_name, 'ephemeral1')
