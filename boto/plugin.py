@@ -37,7 +37,7 @@ The actual interface is duck typed.
 """
 
 import glob
-import imp
+import importlib
 import os.path
 
 
