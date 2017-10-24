@@ -162,7 +162,6 @@ class JavaApplet(Application):
         super(JavaApplet, self).__init__(*args, **kwargs)
 
     def get_inner_content(self, content):
-        content = OrderedContent()
         content.append_field('AppletPath', self.path)
         content.append_field('AppletFilename', self.filename)
         super(JavaApplet, self).get_inner_content(content)
@@ -174,7 +173,6 @@ class Flash(Application):
         super(Flash, self).__init__(*args, **kwargs)
 
     def get_inner_content(self, content):
-        content = OrderedContent()
         content.append_field('FlashMovieURL', self.url)
         super(Flash, self).get_inner_content(content)
 
