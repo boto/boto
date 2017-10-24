@@ -773,7 +773,7 @@ class Layer1(AWSQueryConnection):
             both.  If you do not specify either, AWS Elastic Beanstalk returns
             MissingRequiredParameter error.
 
-        :raises InvalidParameterValue: If the environment hadn't be created or is terminated
+        :raises InvalidParameterValue: If environment_name doesn't refer to a currently active environment
         :raises: InsufficientPrivilegesException
         """
         params = {}
