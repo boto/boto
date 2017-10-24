@@ -4,7 +4,8 @@ rsa==3.1.4
 simplejson==3.6.5
 argparse==1.2.1
 httpretty>=0.7.0,<=0.8.6
-paramiko>=1.10.0
+paramiko>=1.10.0,<=2.3.1
+cryptography>=1.5,<=1.9
 PyYAML>=3.10
 coverage==3.7.1
 mock==1.0.1
