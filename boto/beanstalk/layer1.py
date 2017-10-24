@@ -772,9 +772,8 @@ class Layer1(AWSQueryConnection):
             Condition: You must specify either this or an EnvironmentId, or
             both.  If you do not specify either, AWS Elastic Beanstalk returns
             MissingRequiredParameter error.
-            If the environment hadn't be created or is terminated returns 
-            InvalidParameterValue error.
 
+        :raises InvalidParameterValue: If the environment hadn't be created or is terminated
         :raises: InsufficientPrivilegesException
         """
         params = {}
