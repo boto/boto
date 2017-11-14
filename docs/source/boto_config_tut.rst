@@ -450,3 +450,19 @@ Example::
     [DynamoDB]
     region = us-west-2
     validate_checksums = True
+
+s3
+^^
+
+This section is used to configure S3
+
+:use-sigv4: Whether to use the `Signature Version 4 Signing Process <http://docs.aws.amazon.com/general/latest/gr/signature-version-4.html>`_
+:calling_format: The class used to build S3-related paths to be called
+:host: S3 host to connect to
+
+Example::
+
+    [s3]
+    use-sigv4 = True
+    host = s3.amazonaws.com
+    calling_format = boto.s3.connection.SubdomainCallingFormat
