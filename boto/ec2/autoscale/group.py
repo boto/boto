@@ -238,6 +238,8 @@ class AutoScalingGroup(object):
         elif name == 'Tags':
             self.tags = ResultSet([('member', Tag)])
             return self.tags
+        elif name == 'TargetGroupARNs':
+            return self.target_groups
         elif name == 'TerminationPolicies':
             return self.termination_policies
         else:
