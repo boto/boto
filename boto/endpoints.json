@@ -42,6 +42,9 @@
         "eu-west-2": {
           "description": "EU (London)"
         }, 
+        "eu-west-3": {
+          "description": "EU (Paris)"
+        },
         "sa-east-1": {
           "description": "South America (Sao Paulo)"
         }, 
@@ -76,6 +79,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -94,6 +98,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -156,6 +161,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -174,6 +180,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -216,6 +223,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -243,6 +251,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -267,6 +276,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "local": {
               "credentialScope": {
                 "region": "us-east-1"
@@ -300,6 +310,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -316,6 +327,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "us-east-1": {}, 
             "us-east-2": {}, 
             "us-west-1": {}, 
@@ -333,6 +345,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -351,6 +364,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -375,6 +389,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -402,6 +417,7 @@
             }, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {
               "sslCommonName": "{service}.{region}.{dnsSuffix}"
@@ -446,6 +462,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "us-east-1": {}, 
             "us-east-2": {}, 
             "us-west-1": {}, 
@@ -492,6 +509,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -510,6 +528,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -542,6 +561,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -572,6 +592,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -589,6 +610,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -607,6 +629,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {
               "sslCommonName": "{service}.{dnsSuffix}"
@@ -627,6 +650,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -705,6 +729,13 @@
                 "s3v4"
               ]
             }, 
+            "eu-west-3": {
+              "hostname": "s3-eu-west-3.amazonaws.com",
+              "signatureVersions": [
+                "s3",
+                "s3v4"
+              ]
+            },
             "sa-east-1": {
               "hostname": "s3-sa-east-1.amazonaws.com", 
               "signatureVersions": [
@@ -778,6 +809,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -803,6 +835,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {
               "sslCommonName": "queue.{dnsSuffix}"
@@ -822,6 +855,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -852,6 +886,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
@@ -876,6 +911,7 @@
             "eu-central-1": {}, 
             "eu-west-1": {}, 
             "eu-west-2": {}, 
+            "eu-west-3": {},
             "sa-east-1": {}, 
             "us-east-1": {}, 
             "us-east-2": {}, 
