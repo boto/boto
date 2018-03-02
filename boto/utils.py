@@ -347,6 +347,10 @@ class LazyLoadMetadata(dict):
         self._materialize()
         return super(LazyLoadMetadata, self).items()
 
+    def iteritems(self):
+        self._materialize()
+        return super(LazyLoadMetadata, self).iteritems()
+
     def __str__(self):
         self._materialize()
         return super(LazyLoadMetadata, self).__str__()
