@@ -9,6 +9,7 @@ def simple(e):
 
     try:
         # Dynamically get the error class.
+        # I've updated this one too
         simple_e = getattr(sys.modules[__name__], code)(e, err)
     except AttributeError:
         # Return original exception on failure.
