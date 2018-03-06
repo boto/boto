@@ -28,6 +28,8 @@ class Condition(object):
     """
     Base class for conditions.  Doesn't do a darn thing but allows
     is to test if something is a Condition instance or not.
+
+    I have some extra comments here too
     """
 
     def __eq__(self, other):
