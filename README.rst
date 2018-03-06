@@ -8,7 +8,7 @@ boto 2.6.0
         :target: https://secure.travis-ci.org/boto/boto
 
 ************
-Introduction
+Introduction From James
 ************
 
 Boto is a Python package that provides interfaces to Amazon Web Services.
