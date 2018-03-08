@@ -475,9 +475,12 @@ class InvalidCorsError(Exception):
         self.message = message
 
 
-class NoAuthHandlerFound(Exception):
-    """Is raised when no auth handlers were found ready to authenticate."""
-    pass
+class InvalidEncryptionConfigError(Exception):
+    """Exception raised when GCS encryption configuration XML is invalid."""
+
+    def __init__(self, message):
+        super(InvalidEncryptionConfigError, self).__init__(message)
+        self.message = message
 
 
 class InvalidLifecycleConfigError(Exception):
@@ -486,6 +489,11 @@ class InvalidLifecycleConfigError(Exception):
     def __init__(self, message):
         super(InvalidLifecycleConfigError, self).__init__(message)
         self.message = message
+
+
+class NoAuthHandlerFound(Exception):
+    """Is raised when no auth handlers were found ready to authenticate."""
+    pass
 
 
 # Enum class for resumable upload failure disposition.
