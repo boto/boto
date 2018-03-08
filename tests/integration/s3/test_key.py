@@ -468,6 +468,17 @@ class S3KeyTest(unittest.TestCase):
         ks = kn.get_contents_as_string(headers=header)
         self.assertEqual(ks, content.encode('utf-8'))
 
+    def test_set_contents_with_sse_kms(self):
+        content="01234567890123456789"
+        # use default aws/s3 KMS key
+        header = {'x-amz-server-side-encryption': 'aws:kms'}
+        # upload and download content with AWS specified headers
+        k = self.bucket.new_key("testkey_for_sse_kms")
+        k.set_contents_from_string(content, headers=header)
+        kn = self.bucket.new_key("testkey_for_sse_kms")
+        ks = kn.get_contents_as_string()
+        self.assertEqual(ks, content)
+        self.assertEqual(kn.encrypted, 'aws:kms')
 
 class S3KeySigV4Test(unittest.TestCase):
     def setUp(self):
