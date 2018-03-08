@@ -821,6 +821,25 @@ class BucketStorageUri(StorageUri):
         bucket = self.get_bucket(validate, headers)
         bucket.configure_billing(requester_pays=requester_pays, headers=headers)
 
+    def get_encryption_config(self, validate=False, headers=None):
+        """Returns a GCS bucket's encryption configuration."""
+        self._check_bucket_uri('get_encryption_config')
+        # EncryptionConfiguration is defined as a bucket param for GCS, but not
+        # for S3.
+        if self.scheme != 'gs':
+            raise ValueError('get_encryption_config() not supported for %s '
+                             'URIs.' % self.scheme)
+        bucket = self.get_bucket(validate, headers)
+        return bucket.get_encryption_config(headers=headers)
+
+    def set_encryption_config(self, default_kms_key_name=None, validate=False,
+                              headers=None):
+        """Sets a GCS bucket's encryption configuration."""
+        self._check_bucket_uri('set_encryption_config')
+        bucket = self.get_bucket(validate, headers)
+        bucket.set_encryption_config(default_kms_key_name=default_kms_key_name,
+                                     headers=headers)
+
     def exists(self, headers=None):
         """Returns True if the object exists or False if it doesn't"""
         if not self.object_name:

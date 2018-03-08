@@ -423,7 +423,8 @@ class S3KeyTest(unittest.TestCase):
             check.cache_control,
             ('public,%20max-age=500', 'public, max-age=500')
         )
-        self.assertEqual(remote_metadata['cache-control'], 'public,%20max-age=500')
+        self.assertIn(remote_metadata['cache-control'],
+                      ('public,%20max-age=500', 'public, max-age=500'))
         self.assertEqual(check.get_metadata('test-plus'), 'A plus (+)')
         self.assertEqual(check.content_disposition, 'filename=Sch%C3%B6ne%20Zeit.txt')
         self.assertEqual(remote_metadata['content-disposition'], 'filename=Sch%C3%B6ne%20Zeit.txt')
