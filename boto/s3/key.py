@@ -989,7 +989,7 @@ class Key(object):
             server_side_encryption_customer_algorithm = response.getheader(
                 'x-amz-server-side-encryption-customer-algorithm', None)
             if server_side_encryption_customer_algorithm is None:
-                if self.etag != '"%s"' % md5:
+                if str(self.etag).lower() != '"%s"' % md5:
                     raise provider.storage_data_error(
                         'ETag from S3 did not match computed MD5. '
                         '%s vs. %s' % (self.etag, self.md5))
