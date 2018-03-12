@@ -236,7 +236,7 @@ class Key(object):
             self._storage_class = resp.getheader(
                 provider.storage_class_header, None)
             if (self._storage_class is None and
-                provider.get_provider_name() == 'aws'):
+                    provider.get_provider_name() == 'aws'):
                 # S3 docs for HEAD object requests say S3 will return this
                 # header for all objects except Standard storage class objects.
                 self._storage_class = 'STANDARD'
@@ -321,7 +321,7 @@ class Key(object):
                 # header if one was returned. If not, use Content-Length
                 # header.
                 if (name.lower() == 'content-length' and
-                    'Content-Range' not in response_headers):
+                        'Content-Range' not in response_headers):
                     self.size = int(value)
                 elif name.lower() == 'content-range':
                     end_range = re.sub('.*/(.*)', '\\1', value)
@@ -922,7 +922,7 @@ class Key(object):
             # type. This can be achieved by setting headers['Content-Type']
             # to None when calling this method.
             if (len(content_type_headers) == 1 and
-                headers[content_type_headers[0]] is None):
+                    headers[content_type_headers[0]] is None):
                 # Delete null Content-Type value to skip sending that header.
                 del headers[content_type_headers[0]]
             else:
@@ -986,9 +986,13 @@ class Key(object):
             # If you use customer-provided encryption keys, the ETag value that
             # Amazon S3 returns in the response will not be the MD5 of the
             # object.
-            server_side_encryption_customer_algorithm = response.getheader(
+            amz_server_side_encryption_customer_algorithm = response.getheader(
                 'x-amz-server-side-encryption-customer-algorithm', None)
-            if server_side_encryption_customer_algorithm is None:
+            # The same is applicable for KMS-encrypted objects in gs buckets.
+            goog_customer_managed_encryption = response.getheader(
+                'x-goog-encryption-kms-key-name', None)
+            if (amz_server_side_encryption_customer_algorithm is None and
+                    goog_customer_managed_encryption is None):
                 if self.etag != '"%s"' % md5:
                     raise provider.storage_data_error(
                         'ETag from S3 did not match computed MD5. '
