@@ -405,7 +405,8 @@ class S3Connection(AWSAuthConnection):
             for k, v in response_headers.items():
                 extra_qp.append("%s=%s" % (k, urllib.parse.quote(v)))
         if self.provider.security_token:
-            headers['x-amz-security-token'] = self.provider.security_token
+            element_name = 'SecurityToken' if query_auth else 'x-amz-security-token'
+            headers[element_name] = self.provider.security_token
         if extra_qp:
             delimiter = '?' if '?' not in auth_path else '&'
             auth_path += delimiter + '&'.join(extra_qp)
