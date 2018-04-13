@@ -21,6 +21,14 @@ INSTANCE_CONFIG = {
     }
 }
 
+CONTAINER_CONFIG = {
+    u'AccessKeyId': u'container_iam_access_key',
+    u'SecretAccessKey': u'container_iam_secret_key',
+    u'Token': u'container_iam_token',
+    u'RoleArn': u'container_role_arn',
+    u'Expiration': u'2018-04-14T04:38:13Z',
+}
+
 
 class TestProvider(unittest.TestCase):
     def setUp(self):
@@ -28,6 +36,8 @@ class TestProvider(unittest.TestCase):
         self.config = {}
         self.shared_config = {}
 
+        self.container_metadata_patch = mock.patch(
+            'boto.utils.get_container_credentials')
         self.metadata_patch = mock.patch('boto.utils.get_instance_metadata')
         self.config_patch = mock.patch('boto.provider.config.get',
                                        self.get_config)
@@ -39,6 +49,8 @@ class TestProvider(unittest.TestCase):
             provider.Config, 'has_option', self.has_shared_config)
         self.environ_patch = mock.patch('os.environ', self.environ)
 
+        self.get_container_credentials = self.container_metadata_patch.start()
+        self.get_container_credentials.return_value = None
         self.get_instance_metadata = self.metadata_patch.start()
         self.get_instance_metadata.return_value = None
         self.config_patch.start()
@@ -417,6 +429,13 @@ class TestProvider(unittest.TestCase):
         self.get_instance_metadata.assert_called_with(
             timeout=4.0, num_retries=10,
             data='meta-data/iam/security-credentials/')
+
+    def test_container_metadata_server_credentials(self):
+        self.get_container_credentials.return_value = CONTAINER_CONFIG
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'container_iam_access_key')
+        self.assertEqual(p.secret_key, 'container_iam_secret_key')
+        self.assertEqual(p.security_token, 'container_iam_token')
 
     def test_provider_google(self):
         self.environ['GS_ACCESS_KEY_ID'] = 'env_access_key'
