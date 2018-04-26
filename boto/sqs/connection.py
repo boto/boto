@@ -362,7 +362,7 @@ class SQSConnection(AWSQueryConnection):
 
         """
         params = {'MessageBody' : message_content}
-        if delay_seconds:
+        if delay_seconds is not None:
             params['DelaySeconds'] = int(delay_seconds)
 
         if message_attributes is not None:
