@@ -318,6 +318,7 @@ class SQSConnectionTest(unittest.TestCase):
         conn = SQSConnection()
         queue_name = 'test_send_message_postpone_%s' % int(time.time())
         queue = conn.create_queue(queue_name)
+        self.addCleanup(conn.delete_queue, queue)
         conn.set_queue_attribute(queue, 'DelaySeconds', 900)
         conn.send_message(queue, 'test message', delay_seconds=0)
         attributes = queue.get_attributes()
