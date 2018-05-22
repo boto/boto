@@ -250,7 +250,8 @@ class LazyLoadMetadata(dict):
         self._timeout = timeout
 
         if is_container_metadata:
-            # Container metadata doesn't have path based keys, so we'll just do the get once in materialize()
+            # Container metadata doesn't have path based keys,
+            # so we'll just do the get once in materialize()
             key = url.split('/')[-1]
             self._leaves[key] = ''
             self[key] = None
@@ -413,13 +414,18 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254',
         return None
 
 
-def get_container_credentials(relative_container_uri, url='http://169.254.170.2', timeout=None, num_retries=5):
+def get_container_credentials(relative_container_uri,
+                              url='http://169.254.170.2',
+                              timeout=None,
+                              num_retries=5):
     """
-    Support ECS Task Credentials https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html
+    Support ECS Task Credentials
+    https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html
     """
     try:
         metadata_url = '%s%s' % (url, relative_container_uri)
-        return _get_instance_metadata(metadata_url, num_retries=num_retries, timeout=timeout,
+        return _get_instance_metadata(metadata_url, num_retries=num_retries,
+                                      timeout=timeout,
                                       is_container_metadata=True)
     except urllib.error.URLError:
         boto.log.exception("Exception caught when trying to retrieve "
