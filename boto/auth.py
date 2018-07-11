@@ -579,7 +579,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         l = ['AWS4-HMAC-SHA256 Credential=%s' % self.scope(req)]
         l.append('SignedHeaders=%s' % self.signed_headers(headers_to_sign))
         l.append('Signature=%s' % signature)
-        req.headers['Authorization'] = ','.join(l)
+        req.headers['Authorization'] = ', '.join(l)
 
 
 class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
