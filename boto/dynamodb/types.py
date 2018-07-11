@@ -33,7 +33,7 @@ from boto.compat import filter, map, six, long_type
 
 
 DYNAMODB_CONTEXT = Context(
-    Emin=-128, Emax=126, rounding=None, prec=38,
+    Emin=-128, Emax=126, prec=38,
     traps=[Clamped, Overflow, Inexact, Rounded, Underflow])
 
 
