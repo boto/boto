@@ -655,6 +655,7 @@ class AWSAuthConnection(object):
             # (and higher!)
             # it no longer does that.  Hence, this kludge.
             if ((ON_APP_ENGINE and sys.version[:3] == '2.5') or
+                    sys.version[:2] == '3.' or
                     sys.version[:3] in ('2.6', '2.7')) and port == 443:
                 signature_host = self.host
             else:
