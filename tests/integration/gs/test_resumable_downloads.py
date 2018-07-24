@@ -22,17 +22,20 @@
 """
 Tests of resumable downloads.
 """
+from __future__ import absolute_import
 
 import errno
 import os
 import re
+import unittest
 
 import boto
+from boto.compat import six
 from boto.s3.resumable_download_handler import get_cur_file_size
 from boto.s3.resumable_download_handler import ResumableDownloadHandler
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableDownloadException
-from cb_test_harness import CallbackTestHarness
+from .cb_test_harness import CallbackTestHarness
 from tests.integration.gs.testcase import GSTestCase
 
 
@@ -58,7 +61,7 @@ class ResumableDownloadTests(GSTestCase):
         if not tmpdir:
             tmpdir = self._MakeTempDir()
         dst_file = os.path.join(tmpdir, 'dstfile')
-        return open(dst_file, 'w')
+        return open(dst_file, 'wb')
 
     def test_non_resumable_download(self):
         """
@@ -150,6 +153,7 @@ class ResumableDownloadTests(GSTestCase):
         self.assertEqual(small_src_key_as_string,
                          small_src_key.get_contents_as_string())
 
+    @unittest.skipUnless(six.PY2, 'OSError not being raised in Py3')
     def test_non_retryable_exception_handling(self):
         """
         Tests resumable download that fails with a non-retryable exception

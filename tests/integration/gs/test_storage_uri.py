@@ -25,8 +25,8 @@
 
 import binascii
 import re
-import StringIO
 
+from boto.compat import StringIO
 from boto import storage_uri
 from boto.exception import BotoClientError
 from boto.gs.acl import SupportedPermissions as perms
@@ -110,25 +110,25 @@ class GSStorageUriTest(GSTestCase):
         self.assertRegexpMatches(str(key_uri.generation), r"[0-9]+")
         k = b.get_key("obj")
         self.assertEqual(k.generation, key_uri.generation)
-        self.assertEquals(k.get_contents_as_string(), "data1")
+        self.assertEquals(k.get_contents_as_string(encoding='utf-8'), "data1")
 
-        key_uri.set_contents_from_stream(StringIO.StringIO("data2"))
+        key_uri.set_contents_from_stream(StringIO("data2"))
         self.assertRegexpMatches(str(key_uri.generation), r"[0-9]+")
         self.assertGreater(key_uri.generation, k.generation)
         k = b.get_key("obj")
         self.assertEqual(k.generation, key_uri.generation)
-        self.assertEquals(k.get_contents_as_string(), "data2")
+        self.assertEquals(k.get_contents_as_string(encoding='utf-8'), "data2")
 
-        key_uri.set_contents_from_file(StringIO.StringIO("data3"))
+        key_uri.set_contents_from_file(StringIO("data3"))
         self.assertRegexpMatches(str(key_uri.generation), r"[0-9]+")
         self.assertGreater(key_uri.generation, k.generation)
         k = b.get_key("obj")
         self.assertEqual(k.generation, key_uri.generation)
-        self.assertEquals(k.get_contents_as_string(), "data3")
+        self.assertEquals(k.get_contents_as_string(encoding='utf-8'), "data3")
 
     def testCompose(self):
-        data1 = 'hello '
-        data2 = 'world!'
+        data1 = b'hello '
+        data2 = b'world!'
         expected_crc = 1238062967
 
         b = self._MakeBucket()
@@ -147,7 +147,7 @@ class GSStorageUriTest(GSTestCase):
         composite_key = key_uri_composite.get_key()
         cloud_crc32c = binascii.hexlify(
             composite_key.cloud_hashes['crc32c'])
-        self.assertEquals(cloud_crc32c, hex(expected_crc)[2:])
+        self.assertEquals(cloud_crc32c, hex(expected_crc)[2:].encode('utf-8'))
         self.assertEquals(composite_key.content_type, 'text/plain')
 
         # Compose disallowed between buckets.

@@ -20,6 +20,8 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from __future__ import print_function
+
 import email.utils
 import errno
 import hashlib
@@ -849,9 +851,10 @@ class Key(object):
                 chunk_len = len(chunk)
                 data_len += chunk_len
                 if chunked_transfer:
-                    http_conn.send('%x;\r\n' % chunk_len)
+                    chunk_len_bytes = ('%x' % chunk_len).encode('utf-8')
+                    http_conn.send(chunk_len_bytes + b';\r\n')
                     http_conn.send(chunk)
-                    http_conn.send('\r\n')
+                    http_conn.send(b'\r\n')
                 else:
                     http_conn.send(chunk)
                 for alg in digesters:
@@ -879,9 +882,9 @@ class Key(object):
                 self.local_hashes[alg] = digesters[alg].digest()
 
             if chunked_transfer:
-                http_conn.send('0\r\n')
+                http_conn.send(b'0\r\n')
                     # http_conn.send("Content-MD5: %s\r\n" % self.base64md5)
-                http_conn.send('\r\n')
+                http_conn.send(b'\r\n')
 
             if cb and (cb_count <= 1 or i > 0) and data_len > 0:
                 cb(data_len, cb_size)
