@@ -66,8 +66,9 @@ save the state needed to allow retrying later, in a separate process
 class ResumableUploadHandler(object):
 
     BUFFER_SIZE = 8192
-    RETRYABLE_EXCEPTIONS = (http_client.HTTPException, IOError, socket.error,
-                            socket.gaierror)
+    RETRYABLE_EXCEPTIONS = (
+        http_client.HTTPException, IOError, OSError,
+        socket.error, socket.gaierror)
 
     # (start, end) response indicating server has nothing (upload protocol uses
     # inclusive numbering).

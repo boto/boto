@@ -159,19 +159,8 @@ class ResumableDownloadTests(GSTestCase):
         """
         Tests resumable download that fails with a non-retryable exception
         """
-        # TODO - Need to create a function to determine retryable errors
-        #        since Python3 has subsumed many errors into OSError.
-        # Python3 docs sez:
-        # Changed in version 3.3: EnvironmentError, IOError, WindowsError,
-        # socket.error, select.error and mmap.error have been merged into
-        # OSError, and the constructor may return a subclass.
-        class FooError(Exception):
-            def __init__(self, errno, errmsg):
-                self.errno = errno
-                self.errmsg = errmsg
-
         harness = CallbackTestHarness(
-            exception=FooError(errno.EACCES, 'Permission denied'))
+            exception=ValueError('test ValueError'))
         res_download_handler = ResumableDownloadHandler(num_retries=1)
         dst_fp = self.make_dst_fp()
         small_src_key_as_string, small_src_key = self.make_small_key()
@@ -179,10 +168,10 @@ class ResumableDownloadTests(GSTestCase):
             small_src_key.get_contents_to_file(
                 dst_fp, cb=harness.call,
                 res_download_handler=res_download_handler)
-            self.fail('Did not get expected OSError')
-        except FooError as e:
+            self.fail('Did not get expected ValueError')
+        except ValueError as e:
             # Ensure the error was re-raised.
-            self.assertEqual(e.errno, 13)
+            self.assertEqual(str(e), 'test ValueError')
 
     def test_failed_and_restarted_download_with_persistent_tracker(self):
         """

@@ -180,19 +180,8 @@ class ResumableUploadTests(GSTestCase):
         """
         Tests a resumable upload that fails with a non-retryable exception
         """
-        # TODO - Need to create a function to determine retryable errors
-        #        since Python3 has subsumed many errors into OSError.
-        # Python3 docs sez:
-        # Changed in version 3.3: EnvironmentError, IOError, WindowsError,
-        # socket.error, select.error and mmap.error have been merged into
-        # OSError, and the constructor may return a subclass.
-        class FooError(Exception):
-            def __init__(self, errno, errmsg):
-                self.errno = errno
-                self.errmsg = errmsg
-
         harness = CallbackTestHarness(
-            exception=FooError(errno.EACCES, 'Permission denied'))
+            exception=ValueError('test ValueError'))
         res_upload_handler = ResumableUploadHandler(num_retries=1)
         small_src_file_as_string, small_src_file = self.make_small_file()
         small_src_file.seek(0)
@@ -201,10 +190,10 @@ class ResumableUploadTests(GSTestCase):
             dst_key.set_contents_from_file(
                 small_src_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
-            self.fail('Did not get expected OSError')
-        except FooError as e:
+            self.fail('Did not get expected ValueError')
+        except ValueError as e:
             # Ensure the error was re-raised.
-            self.assertEqual(e.errno, 13)
+            self.assertEqual(str(e), 'test ValueError')
 
     def test_failed_and_restarted_upload_with_persistent_tracker(self):
         """
