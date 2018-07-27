@@ -23,6 +23,8 @@
 Tests of resumable downloads.
 """
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import errno
 import os
@@ -153,13 +155,23 @@ class ResumableDownloadTests(GSTestCase):
         self.assertEqual(small_src_key_as_string,
                          small_src_key.get_contents_as_string())
 
-    @unittest.skipUnless(six.PY2, 'OSError not being raised in Py3')
     def test_non_retryable_exception_handling(self):
         """
         Tests resumable download that fails with a non-retryable exception
         """
+        # TODO - Need to create a function to determine retryable errors
+        #        since Python3 has subsumed many errors into OSError.
+        # Python3 docs sez:
+        # Changed in version 3.3: EnvironmentError, IOError, WindowsError,
+        # socket.error, select.error and mmap.error have been merged into
+        # OSError, and the constructor may return a subclass.
+        class FooError(Exception):
+            def __init__(self, errno, errmsg):
+                self.errno = errno
+                self.errmsg = errmsg
+
         harness = CallbackTestHarness(
-            exception=OSError(errno.EACCES, 'Permission denied'))
+            exception=FooError(errno.EACCES, 'Permission denied'))
         res_download_handler = ResumableDownloadHandler(num_retries=1)
         dst_fp = self.make_dst_fp()
         small_src_key_as_string, small_src_key = self.make_small_key()
@@ -168,7 +180,7 @@ class ResumableDownloadTests(GSTestCase):
                 dst_fp, cb=harness.call,
                 res_download_handler=res_download_handler)
             self.fail('Did not get expected OSError')
-        except OSError as e:
+        except FooError as e:
             # Ensure the error was re-raised.
             self.assertEqual(e.errno, 13)
 
@@ -219,7 +231,7 @@ class ResumableDownloadTests(GSTestCase):
         # ResumableDownloadHandler instance will handle, writing enough data
         # before the first failure that some of it survives that process run.
         harness = CallbackTestHarness(
-            fail_after_n_bytes=LARGE_KEY_SIZE/2, num_times_to_fail=2)
+            fail_after_n_bytes=LARGE_KEY_SIZE//2, num_times_to_fail=2)
         larger_src_key_as_string = os.urandom(LARGE_KEY_SIZE)
         larger_src_key = self._MakeKey(data=larger_src_key_as_string)
         tmpdir = self._MakeTempDir()
@@ -259,7 +271,7 @@ class ResumableDownloadTests(GSTestCase):
         # Set up harness to fail download after several hundred KB so download
         # server will have saved something before we retry.
         harness = CallbackTestHarness(
-            fail_after_n_bytes=LARGE_KEY_SIZE/2)
+            fail_after_n_bytes=LARGE_KEY_SIZE//2)
         larger_src_key_as_string = os.urandom(LARGE_KEY_SIZE)
         larger_src_key = self._MakeKey(data=larger_src_key_as_string)
         res_download_handler = ResumableDownloadHandler(num_retries=1)

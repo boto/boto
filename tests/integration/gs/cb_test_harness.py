@@ -26,6 +26,9 @@ upload and download cases. The 'call' method of this harness can be passed
 as the 'cb' parameter to boto.s3.Key.send_file() and boto.s3.Key.get_file(),
 allowing testing of various file upload/download conditions.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import socket
 import time

@@ -18,6 +18,11 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import errno
 import os
 import random
@@ -26,6 +31,7 @@ import socket
 import time
 from hashlib import md5
 
+from boto.compat import six
 from boto.compat import http_client
 from boto.compat import urlparse
 from boto import config, UserAgent
@@ -34,6 +40,11 @@ from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.s3.keyfile import KeyFile
+
+
+if six.PY3:
+    long = int
+
 
 """
 Handler for Google Cloud Storage resumable uploads. See
@@ -329,7 +340,7 @@ class ResumableUploadHandler(object):
             # The cb_count represents the number of full buffers to send between
             # cb executions.
             if num_cb > 2:
-                cb_count = file_length / self.BUFFER_SIZE / (num_cb-2)
+                cb_count = file_length // self.BUFFER_SIZE // (num_cb-2)
             elif num_cb < 0:
                 cb_count = -1
             else:
