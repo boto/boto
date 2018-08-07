@@ -69,6 +69,28 @@ class TestSigV4Handler(unittest.TestCase):
                          'x-amz-glacier-version:2012-06-01\n'
                          'x-amz-quoted-string:"a   b   c"')
 
+    def test_header_ordering(self):
+        auth = HmacAuthV4Handler('test.s3.eu-central-1.amazonaws.com',
+                                 mock.Mock(), self.provider)
+        self.request.headers['x-amz-copy-source-range'] = 'bytes=0-15'
+        self.request.headers['x-amz-copy-source'] = 'test/original_file'
+        self.request.headers['Content-Length'] = 0
+
+        headers = auth.headers_to_sign(self.request)
+
+        self.assertEqual(headers, {
+            'Host': 'test.s3.eu-central-1.amazonaws.com',
+            'x-amz-copy-source': 'test/original_file',
+            'x-amz-copy-source-range': 'bytes=0-15',
+            'x-amz-glacier-version': '2012-06-01',
+        })
+
+        self.assertEqual(auth.canonical_headers(headers), 
+                         'host:test.s3.eu-central-1.amazonaws.com\n'
+                         'x-amz-copy-source:test/original_file\n'
+                         'x-amz-copy-source-range:bytes=0-15\n'
+                         'x-amz-glacier-version:2012-06-01')
+
     def test_canonical_query_string(self):
         auth = HmacAuthV4Handler('glacier.us-east-1.amazonaws.com',
                                  mock.Mock(), self.provider)
