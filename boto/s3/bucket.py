@@ -250,6 +250,9 @@ class Bucket(object):
         Therefore, if you want these additional metadata fields you will
         have to do a HEAD request on the Key in the bucket.
 
+        But with argument prefix, this may also return some instances of Prefix,
+        you must handle them, not only Key objects.
+
         :type prefix: string
         :param prefix: allows you to limit the listing to a particular
             prefix.  For example, if you call the method with
