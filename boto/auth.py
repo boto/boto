@@ -413,7 +413,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
             canonical[c_name] = c_value
 
         canonical_strings = []
-        for name, value in sorted(canonical.iteritems()):
+        for name, value in sorted(canonical.items()):
             canonical_strings.append('%s:%s' % (name, value))
 
         return '\n'.join(canonical_strings)
