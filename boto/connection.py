@@ -543,6 +543,8 @@ class AWSAuthConnection(object):
             self.http_connection_kwargs['timeout'] = config.getint(
                 'Boto', 'http_socket_timeout', 70)
 
+        is_anonymous_connection = getattr(self, 'anon', False)
+
         if isinstance(provider, Provider):
             # Allow overriding Provider
             self.provider = provider
@@ -552,7 +554,8 @@ class AWSAuthConnection(object):
                                      aws_access_key_id,
                                      aws_secret_access_key,
                                      security_token,
-                                     profile_name)
+                                     profile_name,
+                                     anon=is_anonymous_connection)
 
         # Allow config file to override default host, port, and host header.
         if self.provider.host:
