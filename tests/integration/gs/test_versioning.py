@@ -22,6 +22,9 @@
 # IN THE SOFTWARE.
 
 """Integration tests for GS versioning support."""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 from xml import sax
 
@@ -97,7 +100,7 @@ class GSVersioningTest(GSTestCase):
 
         k = b.get_key("foo")
         g1 = k.generation
-        o1 = k.get_contents_as_string()
+        o1 = k.get_contents_as_string(encoding='utf-8')
         self.assertEqual(o1, s1)
 
         s2 = "test2"
@@ -105,13 +108,13 @@ class GSVersioningTest(GSTestCase):
         k = b.get_key("foo")
         g2 = k.generation
         self.assertNotEqual(g2, g1)
-        o2 = k.get_contents_as_string()
+        o2 = k.get_contents_as_string(encoding='utf-8')
         self.assertEqual(o2, s2)
 
         k = b.get_key("foo", generation=g1)
-        self.assertEqual(k.get_contents_as_string(), s1)
+        self.assertEqual(k.get_contents_as_string(encoding='utf-8'), s1)
         k = b.get_key("foo", generation=g2)
-        self.assertEqual(k.get_contents_as_string(), s2)
+        self.assertEqual(k.get_contents_as_string(encoding='utf-8'), s2)
 
     def testVersionedBucketCannedAcl(self):
         b = self._MakeVersionedBucket()
@@ -174,9 +177,9 @@ class GSVersioningTest(GSTestCase):
         self.assertEqual(len(entries1g1), len(entries1g2))
 
         acl_xml = (
-            '<ACCESSControlList><EntrIes><Entry>'    +
-            '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
-            '</Entry></EntrIes></ACCESSControlList>')
+            b'<ACCESSControlList><EntrIes><Entry>'
+            b'<Scope type="AllUsers"></Scope><Permission>READ</Permission>'
+            b'</Entry></EntrIes></ACCESSControlList>')
         aclo = acl.ACL()
         h = handler.XmlHandler(aclo, b)
         sax.parseString(acl_xml, h)
@@ -248,7 +251,7 @@ class GSVersioningTest(GSTestCase):
         b2.copy_key("foo2", b.name, "foo", src_generation=g1)
 
         k2 = b2.get_key("foo2")
-        s3 = k2.get_contents_as_string()
+        s3 = k2.get_contents_as_string(encoding='utf-8')
         self.assertEqual(s3, s1)
 
     def testKeyGenerationUpdatesOnSet(self):

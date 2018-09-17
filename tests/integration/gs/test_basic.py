@@ -27,13 +27,18 @@
 """
 Some integration tests for the GSConnection
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import os
 import re
-import StringIO
-import urllib
 import xml.sax
+import xml.etree.ElementTree as ET
+import unittest
 
+from boto.compat import StringIO
+from boto.compat import urlopen
 from boto import handler
 from boto import storage_uri
 from boto.gs.acl import ACL
@@ -62,11 +67,12 @@ LIFECYCLE_EMPTY = ('<?xml version="1.0" encoding="UTF-8"?>'
 LIFECYCLE_DOC = ('<?xml version="1.0" encoding="UTF-8"?>'
                  '<LifecycleConfiguration><Rule>'
                  '<Action><Delete/></Action>'
-                 '<Condition>''<IsLive>true</IsLive>'
-                 '<MatchesStorageClass>STANDARD</MatchesStorageClass>'
-                 '<Age>365</Age>'
-                 '<CreatedBefore>2013-01-15</CreatedBefore>'
+                 '<Condition>'
                  '<NumberOfNewerVersions>3</NumberOfNewerVersions>'
+                 '<IsLive>true</IsLive>'
+                 '<CreatedBefore>2013-01-15</CreatedBefore>'
+                 '<Age>365</Age>'
+                 '<MatchesStorageClass>STANDARD</MatchesStorageClass>'
                  '</Condition></Rule><Rule>'
                  '<Action><SetStorageClass>NEARLINE</SetStorageClass></Action>'
                  '<Condition><Age>366</Age>'
@@ -97,6 +103,66 @@ PROJECT_PRIVATE_RE = ('\s*<AccessControlList>\s*<Entries>\s*<Entry>'
   '\s*</AccessControlList>\s*')
 
 
+class XmlCompare(object):
+    """Compares to XML etrees
+
+       Modified from this stackoverflow code to properly recurse for misordered
+       elements.
+       https://stackoverflow.com/questions/24492895/comparing-two-xml-files-in-python
+    """
+    def xml_compare(self, tree1, tree2, excludes=[]):
+        """
+        Compares two xml etrees
+        :param tree1: the first tree
+        :param tree2: the second tree
+        :param excludes: list of string of attributes to exclude from comparison
+        :return:
+            True if both files match
+        """
+        if tree1.tag != tree2.tag:
+            return False
+        for name, value in tree1.attrib.items():
+            if not name in excludes:
+                if tree2.attrib.get(name) != value:
+                    return False
+        for name in tree2.attrib.keys():
+            if not name in excludes:
+                if name not in tree1.attrib:
+                    return False
+        if not self.text_compare(tree1.text, tree2.text):
+            return False
+        if not self.text_compare(tree1.tail, tree2.tail):
+            return False
+        children1 = list(tree1)
+        children2 = list(tree2)
+        if len(children1) != len(children2):
+            return False
+        for child1 in children1:
+            potential_children2 = tree2.findall('%s' % child1.tag)
+            result = False
+            for child2 in potential_children2:
+                result = self.xml_compare(child1, child2, excludes)
+                if result:
+                    break
+            if not result:
+                return False
+        return True
+
+    def text_compare(self, t1, t2):
+        """
+        Compare two text strings
+        :param t1: text one
+        :param t2: text two
+        :return:
+            True if a match
+        """
+        if not t1 and not t2:
+            return True
+        if t1 == '*' or t2 == '*':
+            return True
+        return (t1 or '').strip() == (t2 or '').strip()
+
+
 class GSBasicTest(GSTestCase):
     """Tests some basic GCS functionality."""
 
@@ -122,16 +188,16 @@ class GSBasicTest(GSTestCase):
         fp.close()
         # Use generate_url to get the contents
         url = self._conn.generate_url(900, 'GET', bucket=bucket.name, key=key_name)
-        f = urllib.urlopen(url)
-        self.assertEqual(s1, f.read())
+        f = urlopen(url)
+        self.assertEqual(s1, f.read().decode('utf-8'))
         f.close()
         # check to make sure set_contents_from_file is working
-        sfp = StringIO.StringIO('foo')
+        sfp = StringIO('foo')
         k.set_contents_from_file(sfp)
-        self.assertEqual(k.get_contents_as_string(), 'foo')
-        sfp2 = StringIO.StringIO('foo2')
+        self.assertEqual(k.get_contents_as_string(encoding='utf-8'), 'foo')
+        sfp2 = StringIO('foo2')
         k.set_contents_from_file(sfp2)
-        self.assertEqual(k.get_contents_as_string(), 'foo2')
+        self.assertEqual(k.get_contents_as_string(encoding='utf-8'), 'foo2')
 
     def test_get_all_keys(self):
         """Tests get_all_keys."""
@@ -259,26 +325,26 @@ class GSBasicTest(GSTestCase):
 
         # Test case-insensitivity of XML ACL parsing.
         acl_xml = (
-            '<ACCESSControlList><EntrIes><Entry>'    +
-            '<Scope type="AllUsers"></Scope><Permission>READ</Permission>' +
-            '</Entry></EntrIes></ACCESSControlList>')
+            b'<ACCESSControlList><EntrIes><Entry>'
+            b'<Scope type="AllUsers"></Scope><Permission>READ</Permission>'
+            b'</Entry></EntrIes></ACCESSControlList>')
         acl = ACL()
         h = handler.XmlHandler(acl, bucket)
         xml.sax.parseString(acl_xml, h)
         bucket.set_acl(acl)
         self.assertEqual(len(acl.entries.entry_list), 1)
         aclstr = k.get_xml_acl()
-        self.assertGreater(aclstr.count('/Entry', 1), 0)
+        self.assertGreater(aclstr.count(b'/Entry', 1), 0)
 
     def test_logging(self):
         """Test set/get raw logging subresource."""
         bucket = self._MakeBucket()
-        empty_logging_str="<?xml version='1.0' encoding='UTF-8'?><Logging/>"
+        empty_logging_str=b"<?xml version='1.0' encoding='UTF-8'?><Logging/>"
         logging_str = (
-            "<?xml version='1.0' encoding='UTF-8'?><Logging>"
-            "<LogBucket>log-bucket</LogBucket>" +
-            "<LogObjectPrefix>example</LogObjectPrefix>" +
-            "</Logging>")
+            b"<?xml version='1.0' encoding='UTF-8'?><Logging>"
+            b"<LogBucket>log-bucket</LogBucket>"
+            b"<LogObjectPrefix>example</LogObjectPrefix>"
+            b"</Logging>")
         bucket.set_subresource('logging', logging_str)
         self.assertEqual(bucket.get_subresource('logging'), logging_str)
         # try disable/enable logging
@@ -417,7 +483,7 @@ class GSBasicTest(GSTestCase):
         # set cors document on new bucket
         cors_obj = Cors()
         h = handler.XmlHandler(cors_obj, None)
-        xml.sax.parseString(CORS_DOC, h)
+        xml.sax.parseString(CORS_DOC.encode('utf-8'), h)
         uri.set_cors(cors_obj)
         cors = re.sub(r'\s', '', uri.get_cors().to_xml())
         self.assertEqual(cors, CORS_DOC)
@@ -441,7 +507,9 @@ class GSBasicTest(GSTestCase):
             LIFECYCLE_CONDITIONS_FOR_SET_STORAGE_CLASS_RULE)
         bucket.configure_lifecycle(lifecycle_config)
         xml = bucket.get_lifecycle_config().to_xml()
-        self.assertEqual(xml, LIFECYCLE_DOC)
+        self.assertTrue(
+            XmlCompare().xml_compare(ET.fromstring(xml),
+                                     ET.fromstring(LIFECYCLE_DOC)))
 
     def test_lifecycle_config_storage_uri(self):
         """Test setting and getting of lifecycle config with storage_uri."""
@@ -461,7 +529,9 @@ class GSBasicTest(GSTestCase):
             LIFECYCLE_CONDITIONS_FOR_SET_STORAGE_CLASS_RULE)
         uri.configure_lifecycle(lifecycle_config)
         xml = uri.get_lifecycle_config().to_xml()
-        self.assertEqual(xml, LIFECYCLE_DOC)
+        self.assertTrue(
+            XmlCompare().xml_compare(ET.fromstring(xml),
+                                     ET.fromstring(LIFECYCLE_DOC)))
 
     def test_billing_config_bucket(self):
         """Test setting and getting of billing config on Bucket."""

@@ -18,21 +18,33 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import errno
-import httplib
 import os
 import random
 import re
 import socket
 import time
-import urlparse
 from hashlib import md5
+
+from boto.compat import six
+from boto.compat import http_client
+from boto.compat import urlparse
 from boto import config, UserAgent
 from boto.connection import AWSAuthConnection
 from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
 from boto.s3.keyfile import KeyFile
+
+
+if six.PY3:
+    long = int
+
 
 """
 Handler for Google Cloud Storage resumable uploads. See
@@ -54,8 +66,9 @@ save the state needed to allow retrying later, in a separate process
 class ResumableUploadHandler(object):
 
     BUFFER_SIZE = 8192
-    RETRYABLE_EXCEPTIONS = (httplib.HTTPException, IOError, socket.error,
-                            socket.gaierror)
+    RETRYABLE_EXCEPTIONS = (
+        http_client.HTTPException, IOError, OSError,
+        socket.error, socket.gaierror)
 
     # (start, end) response indicating server has nothing (upload protocol uses
     # inclusive numbering).
@@ -139,7 +152,7 @@ class ResumableUploadHandler(object):
 
         Raises InvalidUriError if URI is syntactically invalid.
         """
-        parse_result = urlparse.urlparse(uri)
+        parse_result = urlparse(uri)
         if (parse_result.scheme.lower() not in ['http', 'https'] or
             not parse_result.netloc):
             raise InvalidUriError('Invalid tracker URI (%s)' % uri)
@@ -328,7 +341,7 @@ class ResumableUploadHandler(object):
             # The cb_count represents the number of full buffers to send between
             # cb executions.
             if num_cb > 2:
-                cb_count = file_length / self.BUFFER_SIZE / (num_cb-2)
+                cb_count = file_length // self.BUFFER_SIZE // (num_cb-2)
             elif num_cb < 0:
                 cb_count = -1
             else:
@@ -510,7 +523,7 @@ class ResumableUploadHandler(object):
         """
         if key.bucket.connection.debug >= 1:
             print('Checking md5 against etag.')
-        if key.md5 != etag.strip('"\''):
+        if key.md5 != etag.strip('"\'').encode('utf-8'):
             # Call key.open_read() before attempting to delete the
             # (incorrect-content) key, so we perform that request on a
             # different HTTP connection. This is neededb because httplib

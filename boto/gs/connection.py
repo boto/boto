@@ -19,6 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from boto.gs.bucket import Bucket
 from boto.s3.connection import S3Connection
 from boto.s3.connection import SubdomainCallingFormat
@@ -91,8 +95,8 @@ class GSConnection(S3Connection):
         data = ('<CreateBucketConfiguration>%s%s</CreateBucketConfiguration>'
                  % (location_elem, storage_class_elem))
         response = self.make_request(
-            'PUT', get_utf8_value(bucket_name), headers=headers,
-            data=get_utf8_value(data))
+            'PUT', bucket_name, headers=headers,
+            data=data)
         body = response.read()
         if response.status == 409:
             raise self.provider.storage_create_error(

@@ -19,9 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import base64
 import binascii
 import os
+import io
 import re
 
 from boto.compat import StringIO
@@ -707,7 +712,7 @@ class Key(S3Key):
         self.md5 = None
         self.base64md5 = None
 
-        fp = StringIO(get_utf8_value(s))
+        fp = io.BytesIO(get_utf8_value(s))
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5,
                                         if_generation=if_generation)
@@ -936,9 +941,9 @@ class Key(S3Key):
         if content_type:
             headers['Content-Type'] = content_type
         resp = self.bucket.connection.make_request(
-            'PUT', get_utf8_value(self.bucket.name), get_utf8_value(self.name),
+            'PUT', self.bucket.name, self.name,
             headers=headers, query_args='compose',
-            data=get_utf8_value(compose_req_xml))
+            data=compose_req_xml)
         if resp.status < 200 or resp.status > 299:
             raise self.bucket.connection.provider.storage_response_error(
                 resp.status, resp.reason, resp.read())

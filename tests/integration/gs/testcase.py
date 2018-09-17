@@ -22,6 +22,9 @@
 # IN THE SOFTWARE.
 
 """Base TestCase class for gs integration tests."""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import shutil
 import tempfile

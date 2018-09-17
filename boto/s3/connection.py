@@ -24,9 +24,9 @@
 
 import xml.sax
 import base64
-from boto.compat import six, urllib
 import time
 
+from boto.compat import six, urllib
 from boto.auth import detect_potential_s3sigv4
 import boto.utils
 from boto.connection import AWSAuthConnection

@@ -864,7 +864,7 @@ def get_utf8_value(value):
         return value
 
     if not isinstance(value, six.string_types):
-        value = six.text_type(value)
+        value = six.text_type(value).encode('utf-8')
 
     if isinstance(value, six.text_type):
         value = value.encode('utf-8')

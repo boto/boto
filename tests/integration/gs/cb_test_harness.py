@@ -26,6 +26,9 @@ upload and download cases. The 'call' method of this harness can be passed
 as the 'cb' parameter to boto.s3.Key.send_file() and boto.s3.Key.get_file(),
 allowing testing of various file upload/download conditions.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import socket
 import time
@@ -68,7 +71,7 @@ class CallbackTestHarness(object):
             if self.fp_to_change and self.fp_change_pos is not None:
                 cur_pos = self.fp_to_change.tell()
                 self.fp_to_change.seek(self.fp_change_pos)
-                self.fp_to_change.write('abc')
+                self.fp_to_change.write(b'abc')
                 self.fp_to_change.seek(cur_pos)
                 if self.delay_after_change:
                     time.sleep(self.delay_after_change)

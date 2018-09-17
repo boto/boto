@@ -22,20 +22,26 @@
 """
 Tests of Google Cloud Storage resumable uploads.
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-import StringIO
 import errno
 import random
 import os
 import time
+import unittest
 
 import boto
+from boto.compat import six
+from boto.compat import StringIO
+from boto.compat import BytesIO
 from boto import storage_uri
 from boto.gs.resumable_upload_handler import ResumableUploadHandler
 from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
-from cb_test_harness import CallbackTestHarness
+from .cb_test_harness import CallbackTestHarness
 from tests.integration.gs.testcase import GSTestCase
 
 
@@ -56,8 +62,8 @@ class ResumableUploadTests(GSTestCase):
         # known-to-be-different values.
         for i in range(size):
             buf.append(str(random.randint(0, 9)))
-        file_as_string = ''.join(buf)
-        return (file_as_string, StringIO.StringIO(file_as_string))
+        file_as_string = ''.join(buf).encode('utf-8')
+        return (file_as_string, BytesIO(file_as_string))
 
     def make_small_file(self):
         return self.build_input_file(SMALL_KEY_SIZE)
@@ -175,7 +181,7 @@ class ResumableUploadTests(GSTestCase):
         Tests a resumable upload that fails with a non-retryable exception
         """
         harness = CallbackTestHarness(
-            exception=OSError(errno.EACCES, 'Permission denied'))
+            exception=ValueError('test ValueError'))
         res_upload_handler = ResumableUploadHandler(num_retries=1)
         small_src_file_as_string, small_src_file = self.make_small_file()
         small_src_file.seek(0)
@@ -184,10 +190,10 @@ class ResumableUploadTests(GSTestCase):
             dst_key.set_contents_from_file(
                 small_src_file, cb=harness.call,
                 res_upload_handler=res_upload_handler)
-            self.fail('Did not get expected OSError')
-        except OSError as e:
+            self.fail('Did not get expected ValueError')
+        except ValueError as e:
             # Ensure the error was re-raised.
-            self.assertEqual(e.errno, 13)
+            self.assertEqual(str(e), 'test ValueError')
 
     def test_failed_and_restarted_upload_with_persistent_tracker(self):
         """
@@ -235,7 +241,7 @@ class ResumableUploadTests(GSTestCase):
         # ResumableUploadHandler instance will handle, writing enough data
         # before the first failure that some of it survives that process run.
         harness = CallbackTestHarness(
-            fail_after_n_bytes=LARGE_KEY_SIZE/2, num_times_to_fail=2)
+            fail_after_n_bytes=LARGE_KEY_SIZE//2, num_times_to_fail=2)
         tracker_file_name = self.make_tracker_file()
         res_upload_handler = ResumableUploadHandler(
             tracker_file_name=tracker_file_name, num_retries=1)
@@ -274,7 +280,7 @@ class ResumableUploadTests(GSTestCase):
         # Set up harness to fail upload after several hundred KB so upload
         # server will have saved something before we retry.
         harness = CallbackTestHarness(
-            fail_after_n_bytes=LARGE_KEY_SIZE/2)
+            fail_after_n_bytes=LARGE_KEY_SIZE//2)
         res_upload_handler = ResumableUploadHandler(num_retries=1)
         larger_src_file_as_string, larger_src_file = self.make_large_file()
         larger_src_file.seek(0)
@@ -296,7 +302,7 @@ class ResumableUploadTests(GSTestCase):
         Tests uploading an empty file (exercises boundary conditions).
         """
         res_upload_handler = ResumableUploadHandler()
-        empty_src_file = StringIO.StringIO('')
+        empty_src_file = StringIO('')
         empty_src_file.seek(0)
         dst_key = self._MakeKey(set_contents=False)
         dst_key.set_contents_from_file(
@@ -336,7 +342,7 @@ class ResumableUploadTests(GSTestCase):
         upload start and restart
         """
         harness = CallbackTestHarness(
-            fail_after_n_bytes=LARGE_KEY_SIZE/2)
+            fail_after_n_bytes=LARGE_KEY_SIZE//2)
         tracker_file_name = self.make_tracker_file()
         # Set up first process' ResumableUploadHandler not to do any
         # retries (initial upload request will establish expected size to
@@ -373,6 +379,7 @@ class ResumableUploadTests(GSTestCase):
             # transfer).
             self.assertEqual(e.disposition, ResumableTransferDisposition.ABORT)
             self.assertNotEqual(e.message.find('file size changed'), -1, e.message)
+        # self.fail('Always fail to get debug trace')
 
     def test_upload_with_file_size_change_during_upload(self):
         """
