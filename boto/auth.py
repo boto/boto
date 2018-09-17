@@ -98,21 +98,26 @@ SIGV4_DETECT = [
 class HmacKeys(object):
     """Key based Auth handler helper."""
 
-    def __init__(self, host, config, provider):
+    def __init__(self, host, config, provider, anon=False):
         if provider.access_key is None or provider.secret_key is None:
-            raise boto.auth_handler.NotReadyToAuthenticate()
+            if not anon:
+                raise boto.auth_handler.NotReadyToAuthenticate()
+            else:
+                self._hmac = None
+                self._hmac_256 = None
         self.host = host
         self.update_provider(provider)
 
     def update_provider(self, provider):
         self._provider = provider
-        self._hmac = hmac.new(self._provider.secret_key.encode('utf-8'),
-                              digestmod=sha)
-        if sha256:
-            self._hmac_256 = hmac.new(self._provider.secret_key.encode('utf-8'),
-                                      digestmod=sha256)
-        else:
-            self._hmac_256 = None
+        if self._provider.secret_key:  # Anonymous handler has no key.
+            self._hmac = hmac.new(self._provider.secret_key.encode('utf-8'),
+                                  digestmod=sha)
+            if sha256:
+                self._hmac_256 = hmac.new(
+                    self._provider.secret_key.encode('utf-8'), digestmod=sha256)
+            else:
+                self._hmac_256 = None
 
     def algorithm(self):
         if self._hmac_256:
@@ -152,7 +157,8 @@ class AnonAuthHandler(AuthHandler, HmacKeys):
     capability = ['anon']
 
     def __init__(self, host, config, provider):
-        super(AnonAuthHandler, self).__init__(host, config, provider)
+        AuthHandler.__init__(self, host, config, provider)
+        HmacKeys.__init__(self, host, config, provider, anon=True)
 
     def add_auth(self, http_request, **kwargs):
         pass
