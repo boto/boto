@@ -119,20 +119,20 @@ class CertValidatingHTTPSConnection(http_client.HTTPConnection):
             sock = socket.create_connection((self.host, self.port), self.timeout)
         else:
             sock = socket.create_connection((self.host, self.port))
+
+        context = ssl.create_default_context()
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.check_hostname = True
+        if self.key_file:
+            context.load_cert_chain(certfile=self.cert_file, keyfile=self.key_file)
+
         msg = "wrapping ssl socket; "
         if self.ca_certs:
             msg += "CA certificate file=%s" % self.ca_certs
+            context.load_verify_locations(cafile=self.ca_certs)
         else:
             msg += "using system provided SSL certs"
+            context.load_default_certs()
         boto.log.debug(msg)
-        self.sock = ssl.wrap_socket(sock, keyfile=self.key_file,
-                                    certfile=self.cert_file,
-                                    cert_reqs=ssl.CERT_REQUIRED,
-                                    ca_certs=self.ca_certs)
-        cert = self.sock.getpeercert()
-        hostname = self.host.split(':', 0)[0]
-        if not ValidateCertificateHostname(cert, hostname):
-            raise InvalidCertificateException(hostname,
-                                              cert,
-                                              'remote hostname "%s" does not match '
-                                              'certificate' % hostname)
+
+        self.sock = context.wrap_socket(sock, server_hostname=self.host)
