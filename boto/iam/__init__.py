@@ -40,8 +40,10 @@ class IAMRegionInfo(RegionInfo):
         :rtype: Connection object
         :return: The connection to this regions endpoint
         """
-        if self.connection_cls:
+        if self.connection_cls and 'host' not in kw_params:
             return self.connection_cls(host=self.endpoint, **kw_params)
+        elif self.connection_cls:
+            return self.connection_cls(**kw_params)
 
 
 def regions():
