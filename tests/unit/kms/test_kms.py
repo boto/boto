@@ -61,3 +61,20 @@ class TestKinesis(AWSMockServiceTestCase):
                                body=json.dumps(content).encode('utf-8'))
         response = self.service_connection.decrypt(b'some arbitrary value')
         self.assertEqual(response['Plaintext'], b'\x00\x01\x02\x03\x04\x05')
+
+    def test_uses_custom_host_for_header(self):
+        self.service_connection = self.create_service_connection(
+            https_connection_factory=self.https_connection_factory,
+            host='custom.host',
+            aws_access_key_id='aws_access_key_id',
+            aws_secret_access_key='aws_secret_access_key'
+        )
+        self.initialize_service_connection()
+
+
+
+        content = {'Plaintext': 'AAECAwQF'}
+        self.set_http_response(status_code=200,
+                               body=json.dumps(content).encode('utf-8'))
+        self.service_connection.decrypt(b'some arbitrary value')
+        self.assertEqual('custom.host', self.actual_request.headers['Host'])

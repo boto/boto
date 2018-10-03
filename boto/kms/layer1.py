@@ -798,7 +798,7 @@ class KMSConnection(AWSQueryConnection):
     def make_request(self, action, body):
         headers = {
             'X-Amz-Target': '%s.%s' % (self.TargetPrefix, action),
-            'Host': self.region.endpoint,
+            'Host': self.host,
             'Content-Type': 'application/x-amz-json-1.1',
             'Content-Length': str(len(body)),
         }
