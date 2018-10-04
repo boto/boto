@@ -824,23 +824,24 @@ class AWSAuthConnection(object):
         h = http_client.HTTPConnection(host)
 
         if self.https_validate_certificates and HAVE_HTTPS_CONNECTION:
+            context = ssl.create_default_context()
+            context.verify_mode = ssl.CERT_REQUIRED
+            context.check_hostname = True
+
             msg = "wrapping ssl socket for proxied connection; "
             if self.ca_certificates_file:
                 msg += "CA certificate file=%s" % self.ca_certificates_file
+                context.load_verify_locations(cafile=self.ca_certificates_file)
             else:
                 msg += "using system provided SSL certs"
+                context.load_default_certs()
             boto.log.debug(msg)
             key_file = self.http_connection_kwargs.get('key_file', None)
             cert_file = self.http_connection_kwargs.get('cert_file', None)
-            sslSock = ssl.wrap_socket(sock, keyfile=key_file,
-                                      certfile=cert_file,
-                                      cert_reqs=ssl.CERT_REQUIRED,
-                                      ca_certs=self.ca_certificates_file)
-            cert = sslSock.getpeercert()
-            hostname = self.host.split(':', 0)[0]
-            if not https_connection.ValidateCertificateHostname(cert, hostname):
-                raise https_connection.InvalidCertificateException(
-                    hostname, cert, 'hostname mismatch')
+            if key_file:
+                context.load_cert_chain(certfile=cert_file, keyfile=key_file)
+
+            sslSock = context.wrap_socket(sock, server_hostname=host)
         else:
             # Fallback for old Python without ssl.wrap_socket
             if hasattr(http_client, 'ssl'):
