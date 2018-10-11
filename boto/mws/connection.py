@@ -54,7 +54,7 @@ api_version_path = {
     'OffAmazonPayments': ('2013-01-01', 'SellerId',
                           '/OffAmazonPayments/2013-01-01'),
     'Finances':          ('2015-05-01', 'SellerId', '/Finances/2015-05-01'),
-    
+
 }
 content_md5 = lambda c: encodebytes(hashlib.md5(c).digest()).strip()
 decorated_attrs = ('action', 'response', 'section',
@@ -250,7 +250,7 @@ def api_action(section, quota, restore, *api):
             kw['Action'] = action
             kw['Version'] = version
             try:
-            	kw['MWSAuthToken'] = self.MWSAuthToken
+                kw['MWSAuthToken'] = self.MWSAuthToken
             except AttributeError:
                 pass
             response = self._response_factory(action, connection=self)
