@@ -30,7 +30,10 @@ import copy
 import boto
 import base64
 import re
+import locale
 from hashlib import md5
+
+import six
 
 from boto.utils import compute_md5
 from boto.utils import find_matching_headers
@@ -88,7 +91,26 @@ class MockKey(object):
                              torrent=NOT_IMPL,
                              version_id=NOT_IMPL,
                              res_download_handler=NOT_IMPL):
-        fp.write(self.data)
+        if six.PY2:
+            fp.write(self.data)
+        else:
+            if isinstance(self.data, bytes):
+                if 'b' in fp.mode:
+                    # data is bytes, and fp is binary
+                    fp.write(self.data)
+                elif hasattr(fp, 'buffer'):
+                    # data is bytes, but fp is text - try the underlying buffer
+                    fp.buffer.write(self.data)
+                else:
+                    # data is bytes, but fp is text - try to decode bytes
+                    fp.write(
+                        self.data.decode(locale.getpreferredencoding(False)))
+            elif 'b' in fp.mode:
+                # data is not bytes, but fp is binary
+                fp.write(self.data.encode(locale.getpreferredencoding(False)))
+            else:
+                # data is not bytes, and fp is text
+                fp.write(self.data)
 
     def get_file(self, fp, headers=NOT_IMPL, cb=NOT_IMPL, num_cb=NOT_IMPL,
                  torrent=NOT_IMPL, version_id=NOT_IMPL,
@@ -147,7 +169,7 @@ class MockKey(object):
                                cb=NOT_IMPL, num_cb=NOT_IMPL, policy=NOT_IMPL,
                                reduced_redundancy=NOT_IMPL, query_args=NOT_IMPL,
                                size=NOT_IMPL):
-        self.data = ''
+        self.data = b''
         chunk = fp.read(self.BufferSize)
         while chunk:
           self.data += chunk
@@ -188,7 +210,7 @@ class MockKey(object):
 
     def set_etag(self):
         """
-        Set etag attribute by generating hex MD5 checksum on current 
+        Set etag attribute by generating hex MD5 checksum on current
         contents of mock key.
         """
         m = md5()
@@ -213,11 +235,11 @@ class MockKey(object):
         """
         tup = compute_md5(fp)
         # Returned values are MD5 hash, base64 encoded MD5 hash, and file size.
-        # The internal implementation of compute_md5() needs to return the 
+        # The internal implementation of compute_md5() needs to return the
         # file size but we don't want to return that value to the external
         # caller because it changes the class interface (i.e. it might
-        # break some code) so we consume the third tuple value here and 
-        # return the remainder of the tuple to the caller, thereby preserving 
+        # break some code) so we consume the third tuple value here and
+        # return the remainder of the tuple to the caller, thereby preserving
         # the existing interface.
         self.size = tup[2]
         return tup[0:2]
@@ -268,7 +290,7 @@ class MockBucket(object):
             # Return ACL for the bucket.
             return self.acls[self.name]
 
-    def get_def_acl(self, key_name=NOT_IMPL, headers=NOT_IMPL, 
+    def get_def_acl(self, key_name=NOT_IMPL, headers=NOT_IMPL,
                     version_id=NOT_IMPL):
         # Return default ACL for the bucket.
         return self.def_acl

@@ -22,6 +22,7 @@
 # IN THE SOFTWARE.
 
 from __future__ import division
+
 import boto
 from boto import handler
 from boto.resultset import ResultSet
@@ -847,13 +848,11 @@ class Bucket(object):
         """
         headers = headers or {}
         provider = self.connection.provider
-        
         if six.PY3:
             if isinstance(src_key_name, bytes):
                 src_key_name = src_key_name.decode('utf-8')
         else:
             src_key_name = boto.utils.get_utf8_value(src_key_name)
-
         if preserve_acl:
             if self.name == src_bucket_name:
                 src_bucket = self
@@ -882,8 +881,6 @@ class Bucket(object):
         if response.status == 200:
             key = self.new_key(new_key_name)
             h = handler.XmlHandler(key, self)
-            if not isinstance(body, bytes):
-                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             if hasattr(key, 'Error'):
                 raise provider.storage_copy_error(key.Code, key.Message, body)

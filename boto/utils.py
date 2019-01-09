@@ -35,7 +35,6 @@
 #  this software code. (c) 2006 Amazon Digital Services, Inc. or its
 #  affiliates.
 
-from boto.compat import json
 """
 Some handy utility functions used by several classes.
 """
@@ -43,7 +42,6 @@ Some handy utility functions used by several classes.
 import os
 import sys
 import io
-import collections
 import subprocess
 import time
 import logging.handlers
@@ -62,6 +60,7 @@ import email.encoders
 import gzip
 import threading
 import locale
+import collections
 from boto.compat import six, StringIO, urllib, encodebytes
 
 from contextlib import contextmanager
@@ -69,6 +68,7 @@ from contextlib import contextmanager
 from hashlib import md5, sha512
 _hashfn = sha512
 
+from boto.compat import json
 
 try:
     from boto.compat.json import JSONDecodeError
@@ -252,8 +252,7 @@ class LazyLoadMetadata(dict):
         self._leaves = {}
         self._dicts = []
         self._timeout = timeout
-        data = boto.utils.retry_url(
-            self._url, num_retries=self._num_retries, timeout=self._timeout)
+        data = boto.utils.retry_url(self._url, num_retries=self._num_retries, timeout=self._timeout)
         if data:
             fields = data.split('\n')
             for field in fields:
@@ -422,8 +421,7 @@ def get_instance_identity(version='latest', url='http://169.254.169.254',
         data = retry_url(base_url, num_retries=num_retries, timeout=timeout)
         fields = data.split('\n')
         for field in fields:
-            val = retry_url(base_url + '/' + field + '/',
-                            num_retries=num_retries, timeout=timeout)
+            val = retry_url(base_url + '/' + field + '/', num_retries=num_retries, timeout=timeout)
             if val[0] == '{':
                 val = json.loads(val)
             if field:
@@ -436,8 +434,7 @@ def get_instance_identity(version='latest', url='http://169.254.169.254',
 def get_instance_userdata(version='latest', sep=None,
                           url='http://169.254.169.254', timeout=None, num_retries=5):
     ud_url = _build_instance_metadata_url(url, version, 'user-data')
-    user_data = retry_url(ud_url, retry_on_404=False,
-                          num_retries=num_retries, timeout=timeout)
+    user_data = retry_url(ud_url, retry_on_404=False, num_retries=num_retries, timeout=timeout)
     if user_data:
         if sep:
             l = user_data.split(sep)
@@ -446,7 +443,6 @@ def get_instance_userdata(version='latest', sep=None,
                 t = nvpair.split('=')
                 user_data[t[0].strip()] = t[1].strip()
     return user_data
-
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 ISO8601_MS = '%Y-%m-%dT%H:%M:%S.%fZ'
@@ -512,8 +508,7 @@ def update_dme(username, password, dme_id, ip_address):
     """
     dme_url = 'https://www.dnsmadeeasy.com/servlet/updateip'
     dme_url += '?username=%s&password=%s&id=%s&ip=%s'
-    s = urllib.request.urlopen(dme_url % (
-        username, password, dme_id, ip_address))
+    s = urllib.request.urlopen(dme_url % (username, password, dme_id, ip_address))
     return s.read()
 
 
@@ -869,13 +864,15 @@ def notify(subject, body=None, html_body=None, to_string=None,
 
 
 def get_utf8_value(value):
+    # if not six.PY2 and isinstance(value, bytes):
+    #     return value
+
     if six.PY3:
         if isinstance(value, bytes):
             return value.decode('utf-8')
         return value
-
     if not isinstance(value, six.string_types):
-        value = six.text_type(value)
+        value = six.text_type(value).encode('utf-8')
 
     if isinstance(value, six.text_type):
         value = value.encode('utf-8')
@@ -1067,7 +1064,6 @@ class RequestHook(object):
     to gain access to request and response object after the request completes.
     One use for this would be to implement some specific request logging.
     """
-
     def handle_request_data(self, request, response, error=False):
         pass
 
@@ -1110,79 +1106,79 @@ def parse_host(hostname):
         return hostname.split(':', 1)[0]
 
 
-# def ttyprint(*objects, **kwargs):
-#     """ A Python 2&3 compatible version of the print function.
+def ttyprint(*objects, **kwargs):
+  """ A Python 2&3 compatible version of the print function.
 
-#     The main purpose of this function is to favor binary output
-#     over text output.
+  The main purpose of this function is to favor binary output
+  over text output.
 
-#     Args are the same as documented for the print function in Python2.
-#     """
-#     kw_params = collections.OrderedDict([('sep', ' '),
-#                                          ('end', os.linesep),
-#                                          ('file', sys.stdout)])
-#     for key, value in kwargs.items():
-#         if key not in kw_params:
-#             raise TypeError(
-#                 "'{}' is an invalid keyword argument for this function".format(key))
-#         kw_params[key] = value
-#     sep, end, file = kw_params.values()
-#     if six.PY2:
-#         if hasattr(file, 'mode') and 'b' not in file.mode and end == os.linesep:
-#             end = b'\n'
-#         pref_enc = 'utf-8'
-#         if isinstance(sep, unicode):
-#             sep = sep.encode(pref_enc)
-#         if isinstance(end, unicode):
-#             end = end.encode(pref_enc)
-#         byte_objects = []
-#         for object in objects:
-#             if isinstance(object, str):
-#                 byte_objects.append(object)
-#             elif isinstance(object, unicode):
-#                 byte_objects.append(object.encode(pref_enc))
-#             else:
-#                 byte_objects.append(str(object).encode(pref_enc))
-#         data = sep.join(byte_objects)
-#         data += end
-#         ttywrite(file, data)
-#     else:  # PY3
-#         pref_enc = locale.getpreferredencoding(False)
-#         if isinstance(sep, str):
-#             sep = sep.encode(pref_enc)
-#         if isinstance(end, str):
-#             end = end.encode(pref_enc)
-#         byte_objects = []
-#         for object in objects:
-#             if isinstance(object, bytes):
-#                 byte_objects.append(object)
-#             elif isinstance(object, str):
-#                 byte_objects.append(object.encode(pref_enc))
-#             else:
-#                 byte_objects.append(str(object).encode(pref_enc))
-#         data = sep.join(byte_objects)
-#         data += end
-#         ttywrite(file, data)
+  Args are the same as documented for the print function in Python2.
+  """
+  kw_params = collections.OrderedDict([('sep', ' '),
+                                       ('end', os.linesep),
+                                       ('file', sys.stdout)])
+  for key, value in kwargs.items():
+    if key not in kw_params:
+      raise TypeError(
+        "'{}' is an invalid keyword argument for this function".format(key))
+    kw_params[key] = value
+  sep, end, file = kw_params.values()
+  if six.PY2:
+    if hasattr(file, 'mode') and 'b' not in file.mode and end == os.linesep:
+      end = b'\n'
+    pref_enc = 'utf-8'
+    if isinstance(sep, unicode):
+      sep = sep.encode(pref_enc)
+    if isinstance(end, unicode):
+      end = end.encode(pref_enc)
+    byte_objects = []
+    for object in objects:
+      if isinstance(object, str):
+        byte_objects.append(object)
+      elif isinstance(object, unicode):
+        byte_objects.append(object.encode(pref_enc))
+      else:
+        byte_objects.append(str(object).encode(pref_enc))
+    data = sep.join(byte_objects)
+    data += end
+    ttywrite(file, data)
+  else:  # PY3
+    pref_enc = locale.getpreferredencoding(False)
+    if isinstance(sep, str):
+      sep = sep.encode(pref_enc)
+    if isinstance(end, str):
+      end = end.encode(pref_enc)
+    byte_objects = []
+    for object in objects:
+      if isinstance(object, bytes):
+        byte_objects.append(object)
+      elif isinstance(object, str):
+        byte_objects.append(object.encode(pref_enc))
+      else:
+        byte_objects.append(str(object).encode(pref_enc))
+    data = sep.join(byte_objects)
+    data += end
+    ttywrite(file, data)
 
 
-# def ttywrite(fp, data):
-#     if six.PY2:
-#         fp.write(data)
-#     else:  # PY3
-#         if isinstance(data, bytes):
-#             if (hasattr(fp, 'mode') and 'b' in fp.mode) or isinstance(fp, io.BytesIO):
-#                 # data is bytes, and fp is binary
-#                 fp.write(data)
-#             elif hasattr(fp, 'buffer'):
-#                 # data is bytes, but fp is text - try the underlying buffer
-#                 fp.buffer.write(data)
-#             else:
-#                 # data is bytes, but fp is text - try to decode bytes
-#                 fp.write(
-#                     data.decode(locale.getpreferredencoding(False)))
-#         elif 'b' in fp.mode:
-#             # data is not bytes, but fp is binary
-#             fp.write(data.encode(locale.getpreferredencoding(False)))
-#         else:
-#             # data is not bytes, and fp is text
-#             fp.write(data)
+def ttywrite(fp, data):
+  if six.PY2:
+    fp.write(data)
+  else:  # PY3
+    if isinstance(data, bytes):
+      if (hasattr(fp, 'mode') and 'b' in fp.mode) or isinstance(fp, io.BytesIO):
+        # data is bytes, and fp is binary
+        fp.write(data)
+      elif hasattr(fp, 'buffer'):
+        # data is bytes, but fp is text - try the underlying buffer
+        fp.buffer.write(data)
+      else:
+        # data is bytes, but fp is text - try to decode bytes
+        fp.write(
+          data.decode(locale.getpreferredencoding(False)))
+    elif 'b' in fp.mode:
+      # data is not bytes, but fp is binary
+      fp.write(data.encode(locale.getpreferredencoding(False)))
+    else:
+      # data is not bytes, and fp is text
+      fp.write(data)

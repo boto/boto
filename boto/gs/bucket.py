@@ -19,6 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import re
 import urllib
 import xml.sax
@@ -48,10 +52,8 @@ ENCRYPTION_CONFIG_ARG = 'encryptionConfig'
 LIFECYCLE_ARG = 'lifecycle'
 STORAGE_CLASS_ARG='storageClass'
 ERROR_DETAILS_REGEX_STR = r'<Details>(?P<details>.*)</Details>'
-
 if six.PY3:
     ERROR_DETAILS_REGEX_STR = ERROR_DETAILS_REGEX_STR.encode('ascii')
-
 ERROR_DETAILS_REGEX = re.compile(ERROR_DETAILS_REGEX_STR)
 
 
@@ -461,8 +463,8 @@ class Bucket(S3Bucket):
             headers['x-goog-if-metageneration-match'] = str(if_metageneration)
 
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), get_utf8_value(key_name),
-            data=get_utf8_value(data), headers=headers, query_args=query_args)
+            'PUT', self.name, key_name,
+            data=data, headers=headers, query_args=query_args)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
@@ -607,7 +609,7 @@ class Bucket(S3Bucket):
         :param dict headers: Additional headers to send with the request.
         """
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(cors),
+            'PUT', self.name, data=cors,
             query_args=CORS_ARG, headers=headers)
         body = response.read()
         if response.status != 200:
@@ -1012,7 +1014,7 @@ class Bucket(S3Bucket):
         """
         xml = lifecycle_config.to_xml()
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(xml),
+            'PUT', self.name, data=xml,
             query_args=LIFECYCLE_ARG, headers=headers)
         body = response.read()
         if response.status == 200:
@@ -1134,7 +1136,7 @@ class Bucket(S3Bucket):
         body = self._construct_encryption_config_xml(
             default_kms_key_name=default_kms_key_name)
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(body),
+            'PUT', self.name, data=body,
             query_args=ENCRYPTION_CONFIG_ARG, headers=headers)
         body = response.read()
         if response.status != 200:
