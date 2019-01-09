@@ -20,6 +20,9 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+
+from __future__ import print_function
+
 import email.utils
 import errno
 import hashlib
@@ -1549,7 +1552,7 @@ class Key(object):
             cb(data_len, cb_size)
         try:
             for bytes in self:
-                fp.write(bytes)
+                print_function(bytes, file=fp)
                 data_len += len(bytes)
                 for alg in digesters:
                     digesters[alg].update(bytes)

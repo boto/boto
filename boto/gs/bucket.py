@@ -47,7 +47,13 @@ CORS_ARG = 'cors'
 ENCRYPTION_CONFIG_ARG = 'encryptionConfig'
 LIFECYCLE_ARG = 'lifecycle'
 STORAGE_CLASS_ARG='storageClass'
-ERROR_DETAILS_REGEX = re.compile(r'<Details>(?P<details>.*)</Details>')
+ERROR_DETAILS_REGEX_STR = r'<Details>(?P<details>.*)</Details>'
+
+if six.PY3:
+    ERROR_DETAILS_REGEX_STR = ERROR_DETAILS_REGEX_STR.encode('ascii')
+
+ERROR_DETAILS_REGEX = re.compile(ERROR_DETAILS_REGEX_STR)
+
 
 class Bucket(S3Bucket):
     """Represents a Google Cloud Storage bucket."""
@@ -353,6 +359,8 @@ class Bucket(S3Bucket):
                     details = (('<Details>%s. Note that Full Control access'
                                 ' is required to access ACLs.</Details>') %
                                details)
+                    if six.PY3:
+                        details = details.encode('utf-8')
                     body = re.sub(ERROR_DETAILS_REGEX, details, body)
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
