@@ -24,8 +24,10 @@ from __future__ import division
 from __future__ import print_function
 
 import re
-import urllib
 import xml.sax
+
+from six import PY3
+from six.moves.urllib.parse import quote
 
 import boto
 from boto import handler
@@ -52,7 +54,7 @@ ENCRYPTION_CONFIG_ARG = 'encryptionConfig'
 LIFECYCLE_ARG = 'lifecycle'
 STORAGE_CLASS_ARG='storageClass'
 ERROR_DETAILS_REGEX_STR = r'<Details>(?P<details>.*)</Details>'
-if six.PY3:
+if PY3:
     ERROR_DETAILS_REGEX_STR = ERROR_DETAILS_REGEX_STR.encode('ascii')
 ERROR_DETAILS_REGEX = re.compile(ERROR_DETAILS_REGEX_STR)
 
@@ -125,7 +127,7 @@ class Bucket(S3Bucket):
             query_args_l.append('generation=%s' % generation)
         if response_headers:
             for rk, rv in six.iteritems(response_headers):
-                query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
+                query_args_l.append('%s=%s' % (rk, quote(rv)))
         try:
             key, resp = self._get_key_internal(key_name, headers,
                                                query_args_l=query_args_l)
@@ -361,7 +363,7 @@ class Bucket(S3Bucket):
                     details = (('<Details>%s. Note that Full Control access'
                                 ' is required to access ACLs.</Details>') %
                                details)
-                    if six.PY3:
+                    if PY3:
                         details = details.encode('utf-8')
                     body = re.sub(ERROR_DETAILS_REGEX, details, body)
             raise self.connection.provider.storage_response_error(
