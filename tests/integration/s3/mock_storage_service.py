@@ -33,13 +33,13 @@ import re
 import locale
 from hashlib import md5
 
-import six
-
 from boto.utils import compute_md5
 from boto.utils import find_matching_headers
 from boto.utils import merge_headers_by_name
 from boto.s3.prefix import Prefix
 from boto.compat import six
+
+import six
 
 NOT_IMPL = None
 
@@ -92,7 +92,10 @@ class MockKey(object):
                              version_id=NOT_IMPL,
                              res_download_handler=NOT_IMPL):
         if six.PY2:
-            fp.write(self.data)
+            if hasattr(fp, "mode") and 'b' in fp.mode:
+                fp.write(six.ensure_binary(self.data))
+            else:
+                fp.write(six.ensure_text(self.data))
         else:
             if isinstance(self.data, bytes):
                 if 'b' in fp.mode:
