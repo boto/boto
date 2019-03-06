@@ -24,7 +24,6 @@ from __future__ import division
 from __future__ import print_function
 
 import re
-import urllib
 import xml.sax
 
 import boto
@@ -43,6 +42,8 @@ from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
 from boto.utils import get_utf8_value
 from boto.compat import six
+
+quote = six.moves.urllib.parse.quote
 
 # constants for http query args
 DEF_OBJ_ACL = 'defaultObjectAcl'
@@ -125,7 +126,7 @@ class Bucket(S3Bucket):
             query_args_l.append('generation=%s' % generation)
         if response_headers:
             for rk, rv in six.iteritems(response_headers):
-                query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
+                query_args_l.append('%s=%s' % (rk, quote(rv)))
         try:
             key, resp = self._get_key_internal(key_name, headers,
                                                query_args_l=query_args_l)
