@@ -91,29 +91,23 @@ class MockKey(object):
                              torrent=NOT_IMPL,
                              version_id=NOT_IMPL,
                              res_download_handler=NOT_IMPL):
-        if six.PY2:
-            if hasattr(fp, "mode") and 'b' in fp.mode:
-                fp.write(six.ensure_binary(self.data))
-            else:
-                fp.write(six.ensure_text(self.data))
-        else:
-            if isinstance(self.data, bytes):
-                if 'b' in fp.mode:
-                    # data is bytes, and fp is binary
-                    fp.write(self.data)
-                elif hasattr(fp, 'buffer'):
-                    # data is bytes, but fp is text - try the underlying buffer
-                    fp.buffer.write(self.data)
-                else:
-                    # data is bytes, but fp is text - try to decode bytes
-                    fp.write(
-                        self.data.decode(locale.getpreferredencoding(False)))
-            elif 'b' in fp.mode:
-                # data is not bytes, but fp is binary
-                fp.write(self.data.encode(locale.getpreferredencoding(False)))
-            else:
-                # data is not bytes, and fp is text
+        if isinstance(self.data, six.binary_type):
+            if 'b' in fp.mode:
+                # data is bytes, and fp is binary
                 fp.write(self.data)
+            elif hasattr(fp, 'buffer'):
+                # data is bytes, but fp is text - try the underlying buffer
+                fp.buffer.write(self.data)
+            else:
+                # data is bytes, but fp is text - try to decode bytes
+                fp.write(
+                    self.data.decode(locale.getpreferredencoding(False)))
+        elif 'b' in fp.mode:
+            # data is not bytes, but fp is binary
+            fp.write(self.data.encode(locale.getpreferredencoding(False)))
+        else:
+            # data is not bytes, and fp is text
+            fp.write(self.data)
 
     def get_file(self, fp, headers=NOT_IMPL, cb=NOT_IMPL, num_cb=NOT_IMPL,
                  torrent=NOT_IMPL, version_id=NOT_IMPL,
