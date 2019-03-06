@@ -173,20 +173,31 @@ class S3Connection(AWSAuthConnection):
                  host=NoHostProvided, debug=0, https_connection_factory=None,
                  calling_format=DefaultCallingFormat, path='/',
                  provider='aws', bucket_class=Bucket, security_token=None,
-                 suppress_consec_slashes=True, anon=False,
+                 suppress_consec_slashes=True, anon=None,
                  validate_certs=None, profile_name=None):
+        self.bucket_class = bucket_class
+
+        if isinstance(calling_format, six.string_types):
+            calling_format=boto.utils.find_class(calling_format)()
+        self.calling_format = calling_format
+
+        # Fetching config options at init time, instead of using a class-level
+        # default (set at class declaration time) as the default arg value,
+        # allows our tests to ensure that the config file options are
+        # respected.
+        if anon is None:
+            # Only fetch from the config option if a non-default arg value was
+            # provided.
+            anon = boto.config.getbool('s3', 'no_sign_request', False)
+        self.anon = anon
+
         no_host_provided = False
-        # Try falling back to the boto config file's value, if present.
         if host is NoHostProvided:
             host = boto.config.get('s3', 'host')
             if host is None:
                 host = self.DefaultHost
                 no_host_provided = True
-        if isinstance(calling_format, six.string_types):
-            calling_format=boto.utils.find_class(calling_format)()
-        self.calling_format = calling_format
-        self.bucket_class = bucket_class
-        self.anon = anon
+
         super(S3Connection, self).__init__(host,
                 aws_access_key_id, aws_secret_access_key,
                 is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
