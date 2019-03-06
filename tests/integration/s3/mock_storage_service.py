@@ -39,8 +39,6 @@ from boto.utils import merge_headers_by_name
 from boto.s3.prefix import Prefix
 from boto.compat import six
 
-import six
-
 NOT_IMPL = None
 
 
