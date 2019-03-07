@@ -1114,7 +1114,10 @@
       "regionRegex": "^us\\-gov\\-\\w+\\-\\d+$", 
       "regions": {
         "us-gov-west-1": {
-          "description": "AWS GovCloud (US)"
+          "description": "AWS GovCloud (US) West"
+        },
+        "us-gov-east-1": {
+          "description": "AWS GovCloud (US) East"
         }
       }, 
       "services": {
@@ -1125,52 +1128,72 @@
                 "http", 
                 "https"
               ]
+            },
+            "us-gov-east-1": {
+              "protocols": [
+                "http",
+                "https"
+              ]
             }
           }
         }, 
         "cloudformation": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "cloudhsm": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "cloudtrail": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "config": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "directconnect": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "dynamodb": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "ec2": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "elasticache": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "elasticloadbalancing": {
           "endpoints": {
             "us-gov-west-1": {
+              "protocols": [
+                "http", 
+                "https"
+              ]
+            },
+            "us-gov-east-1": {
               "protocols": [
                 "http", 
                 "https"
@@ -1185,12 +1208,24 @@
                 "http", 
                 "https"
               ]
+            },
+            "us-gov-east-1": {
+              "protocols": [
+                "http", 
+                "https"
+              ]
             }
           }
         }, 
         "glacier": {
           "endpoints": {
             "us-gov-west-1": {
+              "protocols": [
+                "http", 
+                "https"
+              ]
+            },
+            "us-gov-east-1": {
               "protocols": [
                 "http", 
                 "https"
@@ -1212,27 +1247,32 @@
         }, 
         "kms": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "logs": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "monitoring": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "rds": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "redshift": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "s3": {
@@ -1281,12 +1321,14 @@
         }, 
         "sts": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }, 
         "swf": {
           "endpoints": {
-            "us-gov-west-1": {}
+            "us-gov-west-1": {},
+            "us-gov-east-1": {}
           }
         }
       }
