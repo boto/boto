@@ -1295,6 +1295,19 @@
                 "http", 
                 "https"
               ]
+            },
+            "fips-us-gov-east-1": {
+              "credentialScope": {
+                "region": "us-gov-east-1"
+              },
+              "hostname": "s3-fips-us-gov-east-1.amazonaws.com"
+            },
+            "us-gov-east-1": {
+              "hostname": "s3-us-gov-east-1.amazonaws.com",
+              "protocols": [
+                "http",
+                "https"
+              ]
             }
           }
         }, 
@@ -1303,6 +1316,12 @@
             "us-gov-west-1": {
               "protocols": [
                 "http", 
+                "https"
+              ]
+            },
+            "us-gov-east-1": {
+              "protocols": [
+                "http",
                 "https"
               ]
             }
@@ -1315,6 +1334,13 @@
                 "http", 
                 "https"
               ], 
+              "sslCommonName": "{region}.queue.{dnsSuffix}"
+            },
+            "us-gov-east-1": {
+              "protocols": [
+                "http",
+                "https"
+              ],
               "sslCommonName": "{region}.queue.{dnsSuffix}"
             }
           }
