@@ -864,9 +864,6 @@ def notify(subject, body=None, html_body=None, to_string=None,
 
 
 def get_utf8_value(value):
-    # if not six.PY2 and isinstance(value, bytes):
-    #     return value
-
     if six.PY3:
         if isinstance(value, bytes):
             return value.decode('utf-8')

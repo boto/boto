@@ -716,9 +716,9 @@ class Key(S3Key):
         if six.PY3:
             if isinstance(s, str):
                 s = s.encode('utf-8')
-            fp = io.BytesIO(s)
-        else:
-            fp = io.BytesIO(get_utf8_value(s))
+            fp = six.BytesIO(s)
+        else:absolute_import
+            fp = six.BytesIO(get_utf8_value(s))
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5,
                                         if_generation=if_generation)
