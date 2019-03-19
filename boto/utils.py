@@ -863,6 +863,14 @@ def notify(subject, body=None, html_body=None, to_string=None,
             boto.log.exception('notify failed')
 
 
+def get_binary_str(value):
+    if isinstance(value, six.binary_type):
+        return value
+    if isinstance(value, six.text_type):
+        return six.ensure_binary(value)
+    return six.ensure_binary(str(value))
+
+
 def get_utf8_value(value):
     if six.PY3:
         if isinstance(value, bytes):
