@@ -5,6 +5,15 @@ matrix:
     - os: linux
       dist: trusty
       python: "pypy"
+    - os: linux
+      dist: trusty
+      python: "2.6"
+    - os: linux
+      dist: trusty
+      python: "3.3"
+    - os: linux
+      dist: trusty
+      python: "3.4"
     # Xenial Tests
     - os: linux
       dist: xenial
