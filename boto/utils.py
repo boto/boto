@@ -866,10 +866,10 @@ def notify(subject, body=None, html_body=None, to_string=None,
 def get_utf8_value(value):
     if six.PY3:
         if isinstance(value, bytes):
-            return value.decode('utf-8')
+            value = value.decode('utf-8')
         return value
     if not isinstance(value, six.string_types):
-        value = six.text_type(value).encode('utf-8')
+        value = six.text_type(value)
 
     if isinstance(value, six.text_type):
         value = value.encode('utf-8')
