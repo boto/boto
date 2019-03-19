@@ -52,10 +52,10 @@ CORS_ARG = 'cors'
 ENCRYPTION_CONFIG_ARG = 'encryptionConfig'
 LIFECYCLE_ARG = 'lifecycle'
 STORAGE_CLASS_ARG='storageClass'
-ERROR_DETAILS_REGEX_STR = r'<Details>(?P<details>.*)</Details>'
+_ERROR_DETAILS_REGEX_STR = r'<Details>(?P<details>.*)</Details>'
 if six.PY3:
-    ERROR_DETAILS_REGEX_STR = ERROR_DETAILS_REGEX_STR.encode('ascii')
-ERROR_DETAILS_REGEX = re.compile(ERROR_DETAILS_REGEX_STR)
+    _ERROR_DETAILS_REGEX_STR = _ERROR_DETAILS_REGEX_STR.encode('ascii')
+ERROR_DETAILS_REGEX = re.compile(_ERROR_DETAILS_REGEX_STR)
 
 
 class Bucket(S3Bucket):
