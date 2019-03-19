@@ -41,9 +41,8 @@ from boto.gs.key import Key as GSKey
 from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
 from boto.utils import get_utf8_value
+from boto.compat import quote
 from boto.compat import six
-
-quote = six.moves.urllib.parse.quote
 
 # constants for http query args
 DEF_OBJ_ACL = 'defaultObjectAcl'
@@ -363,6 +362,7 @@ class Bucket(S3Bucket):
                                 ' is required to access ACLs.</Details>') %
                                details)
                     if six.PY3:
+                        # All args to re.sub() must be of same type
                         details = details.encode('utf-8')
                     body = re.sub(ERROR_DETAILS_REGEX, details, body)
             raise self.connection.provider.storage_response_error(
