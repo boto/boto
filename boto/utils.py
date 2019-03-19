@@ -859,10 +859,19 @@ def notify(subject, body=None, html_body=None, to_string=None,
             boto.log.exception('notify failed')
 
 
-def get_utf8_value(value):
-    if not six.PY2 and isinstance(value, bytes):
+def get_binary_str(value):
+    if isinstance(value, six.binary_type):
         return value
+    if isinstance(value, six.text_type):
+        return six.ensure_binary(value)
+    return six.ensure_binary(str(value))
 
+
+def get_utf8_value(value):
+    if six.PY3:
+        if isinstance(value, bytes):
+            value = value.decode('utf-8')
+        return value
     if not isinstance(value, six.string_types):
         value = six.text_type(value)
 
@@ -1096,3 +1105,4 @@ def parse_host(hostname):
         return hostname.split(']:', 1)[0].strip('[]')
     else:
         return hostname.split(':', 1)[0]
+
