@@ -868,10 +868,10 @@ def get_binary_str(value):
 
 
 def get_utf8_value(value):
-    if six.PY3:
-        if isinstance(value, bytes):
-            value = value.decode('utf-8')
+    if isinstance(value, bytes):
+        value.decode('utf-8')
         return value
+
     if not isinstance(value, six.string_types):
         value = six.text_type(value)
 
