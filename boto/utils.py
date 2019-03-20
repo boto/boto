@@ -57,7 +57,7 @@ import email.encoders
 import gzip
 import threading
 import locale
-from boto.compat import six, StringIO, urllib, encodebytes
+from boto.compat import six, StringIO, urllib, b64encode
 
 from contextlib import contextmanager
 
@@ -1020,7 +1020,7 @@ def compute_hash(fp, buf_size=8192, size=None, hash_algorithm=md5):
         else:
             s = fp.read(buf_size)
     hex_digest = hash_obj.hexdigest()
-    base64_digest = encodebytes(hash_obj.digest()).decode('utf-8')
+    base64_digest = b64encode(hash_obj.digest()).decode('utf-8')
     if base64_digest[-1] == '\n':
         base64_digest = base64_digest[0:-1]
     # data_size based on bytes read.

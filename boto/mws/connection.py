@@ -27,7 +27,7 @@ from boto.exception import BotoServerError
 import boto.mws.exception
 import boto.mws.response
 from boto.handler import XmlHandler
-from boto.compat import filter, map, six, encodebytes
+from boto.compat import filter, map, six, b64encode
 
 __all__ = ['MWSConnection']
 
@@ -54,7 +54,7 @@ api_version_path = {
     'OffAmazonPayments': ('2013-01-01', 'SellerId',
                           '/OffAmazonPayments/2013-01-01'),
 }
-content_md5 = lambda c: encodebytes(hashlib.md5(c).digest()).strip()
+content_md5 = lambda c: b64encode(hashlib.md5(c).digest()).strip()
 decorated_attrs = ('action', 'response', 'section',
                    'quota', 'restore', 'version')
 api_call_map = {}

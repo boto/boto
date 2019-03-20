@@ -29,12 +29,9 @@ except ImportError:
     import json
 
 
-# Switch to use encodebytes, which deprecates encodestring in Python 3
-try:
-    from base64 import encodebytes
-except ImportError:
-    from base64 import encodestring as encodebytes
-
+# Switch to use b64encode, which doesn't insert newlines that break proxy
+# auth
+from base64 import b64encode
 
 # If running in Google App Engine there is no "user" and
 # os.path.expanduser() will fail. Attempt to detect this case and use a
