@@ -186,6 +186,37 @@ class TestSigV4HostError(MockServiceWithConfigTestCase):
             host_value
         )
 
+    def test_sigv4_default_opt_in(self):
+        # If a SigV4 compatible host has been specified in the config it should
+        # also be allowed.
+        self.config = {
+            's3': {
+                'use-sigv4': True,
+                'host': 's3.eu-central-1.amazonaws.com'
+            }
+        }
+
+        # As S3Connection has already been initalized we need to manually alter
+        # the DefaultHost here as well
+        default_host = self.connection_class.DefaultHost
+        self.connection_class.DefaultHost = self.config['s3']['host']
+
+        conn = self.connection_class(
+            aws_access_key_id='less',
+            aws_secret_access_key='more'
+        )
+        self.assertEqual(
+            conn._required_auth_capability(),
+            ['hmac-v4-s3']
+        )
+        self.assertEqual(
+            conn.host,
+            's3.eu-central-1.amazonaws.com'
+        )
+
+        # Restore DefaultHost for the other tests to use
+        self.connection_class.DefaultHost = default_host
+
 
 class TestSigV4Presigned(MockServiceWithConfigTestCase):
     connection_class = S3Connection
