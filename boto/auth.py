@@ -385,7 +385,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         for pname in parameter_names:
             pval = boto.utils.get_utf8_value(http_request.params[pname])
             pairs.append(urllib.parse.quote(pname, safe=''.encode('ascii')) +
-                         '='.encode('ascii') +
+                         '=' +
                          urllib.parse.quote(pval, safe='-_~'.encode('ascii')))
         return '&'.join(pairs)
 
