@@ -24,9 +24,9 @@
 
 import xml.sax
 import base64
-from boto.compat import six, urllib
 import time
 
+from boto.compat import six, urllib
 from boto.auth import detect_potential_s3sigv4
 import boto.utils
 from boto.connection import AWSAuthConnection
@@ -89,6 +89,8 @@ class _CallingFormat(object):
 
     def build_auth_path(self, bucket, key=''):
         key = boto.utils.get_utf8_value(key)
+        if isinstance(bucket, bytes):
+            bucket = bucket.decode('utf-8')
         path = ''
         if bucket != '':
             path = '/' + bucket

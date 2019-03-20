@@ -19,8 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import re
-import urllib
 import xml.sax
 
 import boto
@@ -38,6 +41,7 @@ from boto.gs.key import Key as GSKey
 from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
 from boto.utils import get_utf8_value
+from boto.compat import quote
 from boto.compat import six
 
 # constants for http query args
@@ -47,7 +51,11 @@ CORS_ARG = 'cors'
 ENCRYPTION_CONFIG_ARG = 'encryptionConfig'
 LIFECYCLE_ARG = 'lifecycle'
 STORAGE_CLASS_ARG='storageClass'
-ERROR_DETAILS_REGEX = re.compile(r'<Details>(?P<details>.*)</Details>')
+_ERROR_DETAILS_REGEX_STR = r'<Details>(?P<details>.*)</Details>'
+if six.PY3:
+    _ERROR_DETAILS_REGEX_STR = _ERROR_DETAILS_REGEX_STR.encode('ascii')
+ERROR_DETAILS_REGEX = re.compile(_ERROR_DETAILS_REGEX_STR)
+
 
 class Bucket(S3Bucket):
     """Represents a Google Cloud Storage bucket."""
@@ -117,7 +125,7 @@ class Bucket(S3Bucket):
             query_args_l.append('generation=%s' % generation)
         if response_headers:
             for rk, rv in six.iteritems(response_headers):
-                query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
+                query_args_l.append('%s=%s' % (rk, quote(rv)))
         try:
             key, resp = self._get_key_internal(key_name, headers,
                                                query_args_l=query_args_l)
@@ -353,6 +361,9 @@ class Bucket(S3Bucket):
                     details = (('<Details>%s. Note that Full Control access'
                                 ' is required to access ACLs.</Details>') %
                                details)
+                    if six.PY3:
+                        # All args to re.sub() must be of same type
+                        details = details.encode('utf-8')
                     body = re.sub(ERROR_DETAILS_REGEX, details, body)
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
@@ -453,8 +464,8 @@ class Bucket(S3Bucket):
             headers['x-goog-if-metageneration-match'] = str(if_metageneration)
 
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), get_utf8_value(key_name),
-            data=get_utf8_value(data), headers=headers, query_args=query_args)
+            'PUT', self.name, key_name,
+            data=data, headers=headers, query_args=query_args)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
@@ -599,7 +610,7 @@ class Bucket(S3Bucket):
         :param dict headers: Additional headers to send with the request.
         """
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(cors),
+            'PUT', self.name, data=cors,
             query_args=CORS_ARG, headers=headers)
         body = response.read()
         if response.status != 200:
@@ -1004,7 +1015,7 @@ class Bucket(S3Bucket):
         """
         xml = lifecycle_config.to_xml()
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(xml),
+            'PUT', self.name, data=xml,
             query_args=LIFECYCLE_ARG, headers=headers)
         body = response.read()
         if response.status == 200:
@@ -1126,7 +1137,7 @@ class Bucket(S3Bucket):
         body = self._construct_encryption_config_xml(
             default_kms_key_name=default_kms_key_name)
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(body),
+            'PUT', self.name, data=body,
             query_args=ENCRYPTION_CONFIG_ARG, headers=headers)
         body = response.read()
         if response.status != 200:
