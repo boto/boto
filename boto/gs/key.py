@@ -936,7 +936,7 @@ class Key(S3Key):
         if content_type:
             headers['Content-Type'] = content_type
         resp = self.bucket.connection.make_request(
-            'PUT', get_utf8_value(self.bucket.name), get_utf8_value(self.name),
+            'PUT', self.bucket.name, get_utf8_value(self.name),
             headers=headers, query_args='compose',
             data=get_utf8_value(compose_req_xml))
         if resp.status < 200 or resp.status > 299:
