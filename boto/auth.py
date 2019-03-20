@@ -39,7 +39,7 @@ import hmac
 import os
 import posixpath
 
-from boto.compat import urllib, encodebytes, parse_qs_safe, urlparse
+from boto.compat import urllib, encodebytes, parse_qs_safe, urlparse, six
 from boto.auth_handler import AuthHandler
 from boto.exception import BotoClientError
 
@@ -384,8 +384,9 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         pairs = []
         for pname in parameter_names:
             pval = boto.utils.get_utf8_value(http_request.params[pname])
-            pairs.append(urllib.parse.quote(pname, safe='') + '=' +
-                         urllib.parse.quote(pval, safe='-_~'))
+            pairs.append(urllib.parse.quote(pname, safe=''.encode('ascii')) +
+                         '='.encode('ascii') +
+                         urllib.parse.quote(pval, safe='-_~'.encode('ascii')))
         return '&'.join(pairs)
 
     def canonical_query_string(self, http_request):
@@ -836,7 +837,7 @@ class STSAnonHandler(AuthHandler):
         pairs = []
         for key in keys:
             val = boto.utils.get_utf8_value(params[key])
-            pairs.append(key + '=' + self._escape_value(val.decode('utf-8')))
+            pairs.append(key + '=' + self._escape_value(six.ensure_str(val)))
         return '&'.join(pairs)
 
     def add_auth(self, http_request, **kwargs):
