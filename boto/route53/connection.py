@@ -605,8 +605,10 @@ class Route53Connection(AWSAuthConnection):
                     err.error_code,
                     i
                 )
-                next_sleep = min(random.random() * (2 ** i),
-                                 boto.config.get('Boto', 'max_retry_delay', 60))
+                next_sleep = min(
+                    random.random() * (2 ** i),
+                    boto.config.getint('Boto', 'max_retry_delay', 60)
+                )
                 i += 1
                 status = (msg, i, next_sleep)
 
