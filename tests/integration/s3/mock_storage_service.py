@@ -30,7 +30,6 @@ import copy
 import boto
 import base64
 import re
-import locale
 from hashlib import md5
 
 from boto.utils import compute_md5
@@ -89,23 +88,7 @@ class MockKey(object):
                              torrent=NOT_IMPL,
                              version_id=NOT_IMPL,
                              res_download_handler=NOT_IMPL):
-        if isinstance(self.data, six.binary_type):
-            if 'b' in fp.mode:
-                # data is bytes, and fp is binary
-                fp.write(self.data)
-            elif hasattr(fp, 'buffer'):
-                # data is bytes, but fp is text - try the underlying buffer
-                fp.buffer.write(self.data)
-            else:
-                # data is bytes, but fp is text - try to decode bytes
-                fp.write(
-                    self.data.decode(locale.getpreferredencoding(False)))
-        elif 'b' in fp.mode:
-            # data is not bytes, but fp is binary
-            fp.write(self.data.encode(locale.getpreferredencoding(False)))
-        else:
-            # data is not bytes, and fp is text
-            fp.write(self.data)
+        fp.write(self.data)
 
     def get_file(self, fp, headers=NOT_IMPL, cb=NOT_IMPL, num_cb=NOT_IMPL,
                  torrent=NOT_IMPL, version_id=NOT_IMPL,
@@ -164,7 +147,7 @@ class MockKey(object):
                                cb=NOT_IMPL, num_cb=NOT_IMPL, policy=NOT_IMPL,
                                reduced_redundancy=NOT_IMPL, query_args=NOT_IMPL,
                                size=NOT_IMPL):
-        self.data = b''
+        self.data = ''
         chunk = fp.read(self.BufferSize)
         while chunk:
           self.data += chunk

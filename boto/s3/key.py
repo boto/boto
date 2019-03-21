@@ -392,7 +392,7 @@ class Key(object):
         By providing a next method, the key object supports use as an iterator.
         For example, you can now say:
 
-        for bytes in key:
+        for key_bytes in key:
             write bytes to a file or whatever
 
         All of the HTTP connection stuff is handled for you.
@@ -1552,11 +1552,11 @@ class Key(object):
             i = 0
             cb(data_len, cb_size)
         try:
-            for bytes in self:
-                six.ensure_binary(bytes, file=fp, end='')
-                data_len += len(bytes)
+            for key_bytes in self:
+                print(key_bytes, file=fp, end='')
+                data_len += len(key_bytes)
                 for alg in digesters:
-                    digesters[alg].update(bytes)
+                    digesters[alg].update(key_bytes)
                 if cb:
                     if cb_size > 0 and data_len >= cb_size:
                         break
