@@ -58,6 +58,7 @@ import email.encoders
 import gzip
 import threading
 import locale
+import sys
 from boto.compat import six, StringIO, urllib, encodebytes
 
 from contextlib import contextmanager
@@ -1114,7 +1115,7 @@ def print_to_fd(*objects, **kwargs):
     Returns the above kwargs of the above types.
     """
     expected_keywords = collections.OrderedDict([
-http://blog.danskingdom.com/allow-others-to-run-your-powershell-scripts-from-a-batch-file-they-will-love-you-for-it/      ('sep', ' '),
+      ('sep', ' '),
       ('end', '\n'),
       ('file', sys.stdout)])
 
