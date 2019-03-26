@@ -1101,81 +1101,81 @@ def parse_host(hostname):
         return hostname.split(':', 1)[0]
 
 def print_to_fd(*objects, **kwargs):
-  """A Python 2/3 compatible analogue to the print function.
-  This function writes text to a file descriptor as the
-  builtin print function would, favoring unicode encoding.
-  Aguments and return values are the same as documented in
-  the Python 2 print function.
-  """
-  def _get_args(**kwargs):
-    """Validates keyword arguments that would be used in Print
-    Valid keyword arguments, mirroring print(), are 'sep',
-    'end', and 'file'. These must be of types string, string,
-    and file / file interface respectively.
-    Returns the above kwargs of the above types.
+    """A Python 2/3 compatible analogue to the print function.
+
+    This function writes text to a file descriptor as the
+    builtin print function would, favoring utf-8 encoding.
+    Arguments and return values are the same as documented in
+    the Python 2 print function.
     """
-    expected_keywords = collections.OrderedDict([
-      ('sep', ' '),
-      ('end', '\n'),
-      ('file', sys.stdout)])
+    def _get_args(**kwargs):
+        """Validates keyword arguments that would be used in Print
+        Valid keyword arguments, mirroring print(), are 'sep',
+        'end', and 'file'. These must be of types string, string,
+        and file / file interface respectively.
+        Returns the above kwargs of the above types.
+        """
+        expected_keywords = collections.OrderedDict([
+            ('sep', ' '),
+            ('end', '\n'),
+            ('file', sys.stdout)])
 
-    for key, value in kwargs.items():
-      if key not in expected_keywords:
-        error_msg = (
-          '{} is not a valid keyword argument. '
-          'Please use one of: {}')
-        raise KeyError(
-          error_msg.format(
-            key,
-            ' '.join(expected_keywords.keys())))
-      else:
-        expected_keywords[key] = value
+        for key, value in kwargs.items():
+            if key not in expected_keywords:
+                error_msg = (
+                    '{} is not a valid keyword argument. '
+                    'Please use one of: {}')
+                raise KeyError(
+                    error_msg.format(
+                        key,
+                        ' '.join(expected_keywords.keys())))
+            else:
+                expected_keywords[key] = value
 
-    return expected_keywords.values()
+        return expected_keywords.values()
 
+    def _get_byte_strings(*objects):
+        """Gets a `bytes` string for each item in list of printable objects."""
+        byte_objects = []
+        for item in objects:
+            if not isinstance(item, (six.binary_type, six.text_type)):
+                # If the item wasn't bytes or unicode, its __str__ method
+                # should return one of those types.
+                item = str(item)
 
-  def _get_byte_strings(*objects):
-    """Gets a `bytes` string for each item in a list of printable objects."""
-    byte_objects = []
-    for item in objects:
-      if not isinstance(item, (six.binary_type, six.text_type)):
-        # If the item wasn't bytes or unicode, its __str__ method
-        # should return one of those types.
-        item = str(item)
+            if isinstance(item, six.binary_type):
+                byte_objects.append(item)
+            else:
+                # The item should be unicode. If it's not, ensure_binary()
+                # will throw a TypeError.
+                byte_objects.append(six.ensure_binary(item))
+        return byte_objects
 
-      if isinstance(item, six.binary_type):
-        byte_objects.append(item)
-      else:
-        # The item should be unicode. If it's not, ensure_binary()
-        # will throw a TypeError.
-        byte_objects.append(six.ensure_binary(item))
-    return byte_objects
-
-  sep, end, file = _get_args(**kwargs)
-  sep = six.ensure_binary(sep)
-  end = six.ensure_binary(end)
-  data = _get_byte_strings(*objects)
-  data = sep.join(data)
-  data += end
-  write_to_fd(file, data)
+    sep, end, file = _get_args(**kwargs)
+    sep = six.ensure_binary(sep)
+    end = six.ensure_binary(end)
+    data = _get_byte_strings(*objects)
+    data = sep.join(data)
+    data += end
+    write_to_fd(file, data)
 
 
 def write_to_fd(fd, data):
-  """Write given data to given file descriptor, doing any conversions needed"""
-  if six.PY2:
-    fd.write(data)
-    return
-  # PY3 logic:
-  if isinstance(data, bytes):
-    if (hasattr(fd, 'mode') and 'b' in fd.mode) or isinstance(fd, io.BytesIO):
-      fd.write(data)
-    elif hasattr(fd, 'buffer'):
-      fd.buffer.write(data)
+    """Write given data to given file descriptor, doing any conversions needed"""
+    if six.PY2:
+        fd.write(data)
+        return
+    # PY3 logic:
+    if isinstance(data, bytes):
+        if ((hasattr(fd, 'mode') and 'b' in fd.mode) or
+                isinstance(fd, io.BytesIO)):
+            fd.write(data)
+        elif hasattr(fd, 'buffer'):
+            fd.buffer.write(data)
+        else:
+            fd.write(six.ensure_text(data))
+    elif 'b' in fd.mode:
+        fd.write(six.ensure_binary(data))
     else:
-      fd.write(six.ensure_text(data))
-  elif 'b' in fd.mode:
-    fd.write(six.ensure_binary(data))
-  else:
-    fd.write(data)
-
+        fd.write(data)
 
