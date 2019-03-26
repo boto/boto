@@ -861,7 +861,7 @@ def notify(subject, body=None, html_body=None, to_string=None,
 
 def get_utf8_value(value):
     if isinstance(value, bytes):
-        value = value.decode('utf-8')
+        value.decode('utf-8')
         return value
     if not isinstance(value, six.string_types):
         value = six.text_type(value)
