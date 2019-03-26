@@ -44,6 +44,7 @@ import time
 import logging.handlers
 import boto
 import boto.provider
+import collections
 import tempfile
 import random
 import smtplib
@@ -1113,7 +1114,7 @@ def print_to_fd(*objects, **kwargs):
     Returns the above kwargs of the above types.
     """
     expected_keywords = collections.OrderedDict([
-      ('sep', ' '),
+http://blog.danskingdom.com/allow-others-to-run-your-powershell-scripts-from-a-batch-file-they-will-love-you-for-it/      ('sep', ' '),
       ('end', '\n'),
       ('file', sys.stdout)])
 
