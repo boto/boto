@@ -50,6 +50,7 @@ import random
 import smtplib
 import datetime
 import re
+import io
 import email.mime.multipart
 import email.mime.base
 import email.mime.text
