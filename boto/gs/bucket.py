@@ -40,6 +40,7 @@ from boto.gs.lifecycle import LifecycleConfig
 from boto.gs.key import Key as GSKey
 from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
+from boto.utils import get_utf8able_str
 from boto.compat import quote
 from boto.compat import six
 
@@ -643,7 +644,7 @@ class Bucket(S3Bucket):
         :param str storage_class: A string containing the storage class.
         :param dict headers: Additional headers to send with the request.
         """
-        req_body = self.StorageClassBody % (six.ensure_str(storage_class))
+        req_body = self.StorageClassBody % (get_utf8able_str(storage_class))
         self.set_subresource(STORAGE_CLASS_ARG, req_body, headers=headers)
 
     # Method with same signature as boto.s3.bucket.Bucket.add_email_grant(),
@@ -882,7 +883,7 @@ class Bucket(S3Bucket):
 
         body = self.WebsiteBody % (main_page_frag, error_frag)
         response = self.connection.make_request(
-            'PUT', six.ensure_str(self.name), data=six.ensure_str(body),
+            'PUT', get_utf8able_str(self.name), data=six.ensure_str(body),
             query_args='websiteConfig', headers=headers)
         body = response.read()
         if response.status == 200:

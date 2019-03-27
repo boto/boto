@@ -24,6 +24,7 @@ from boto.s3.connection import S3Connection
 from boto.s3.connection import SubdomainCallingFormat
 from boto.s3.connection import check_lowercase_bucketname
 from boto.compat import six
+from boto.utils import get_utf8able_str
 
 class Location(object):
     DEFAULT = 'US'
@@ -91,8 +92,8 @@ class GSConnection(S3Connection):
         data = ('<CreateBucketConfiguration>%s%s</CreateBucketConfiguration>'
                  % (location_elem, storage_class_elem))
         response = self.make_request(
-            'PUT', six.ensure_str(bucket_name), headers=headers,
-            data=six.ensure_str(data))
+            'PUT', get_utf8able_str(bucket_name), headers=headers,
+            data=get_utf8able_str(data))
         body = response.read()
         if response.status == 409:
             raise self.provider.storage_create_error(

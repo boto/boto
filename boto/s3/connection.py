@@ -88,7 +88,7 @@ class _CallingFormat(object):
             return self.get_bucket_server(server, bucket)
 
     def build_auth_path(self, bucket, key=''):
-        key = six.ensure_str(key)
+        key = get_utf8able_str(key)
         if isinstance(bucket, bytes):
             bucket = bucket.decode('utf-8')
         path = ''
@@ -97,7 +97,7 @@ class _CallingFormat(object):
         return path + '/%s' % urllib.parse.quote(key)
 
     def build_path_base(self, bucket, key=''):
-        key = six.ensure_str(key)
+        key = get_utf8able_str(key)
         return '/%s' % urllib.parse.quote(key)
 
 
@@ -121,7 +121,7 @@ class OrdinaryCallingFormat(_CallingFormat):
         return server
 
     def build_path_base(self, bucket, key=''):
-        key = six.ensure_str(key)
+        key = get_utf8able_str(key)
         path_base = '/'
         if bucket:
             path_base += "%s/" % bucket
