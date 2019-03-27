@@ -883,7 +883,7 @@ class Bucket(S3Bucket):
 
         body = self.WebsiteBody % (main_page_frag, error_frag)
         response = self.connection.make_request(
-            'PUT', get_utf8able_str(self.name), data=six.ensure_str(body),
+            'PUT', get_utf8able_str(self.name), data=get_utf8able_str(body),
             query_args='websiteConfig', headers=headers)
         body = response.read()
         if response.status == 200:
