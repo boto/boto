@@ -849,11 +849,8 @@ class Bucket(object):
         """
         headers = headers or {}
         provider = self.connection.provider
-        if six.PY3:
-            if isinstance(src_key_name, bytes):
-                src_key_name = src_key_name.decode('utf-8')
-        else:
-            src_key_name = get_utf8able_str(src_key_name)
+        src_key_name = get_utf8able_str(src_key_name)
+        
         if preserve_acl:
             if self.name == src_bucket_name:
                 src_bucket = self
