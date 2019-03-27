@@ -1127,6 +1127,15 @@ def get_utf8able_str(s, errors='strict'):
     raise TypeError('not expecting type "%s"' % type(s))
 
 
+def get_utf8_value(self, value):
+    """This replaces public interface get_utf8_value with new implementation.
+
+    The old implementation of get_utf8_value has been deprecated and replaced
+    with get_utf8able_str.
+    """
+    return get_utf8able_str(value)
+    
+
 def print_to_fd(*objects, **kwargs):
     """A Python 2/3 compatible analogue to the print function.
 
