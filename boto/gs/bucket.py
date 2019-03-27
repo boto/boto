@@ -40,7 +40,6 @@ from boto.gs.lifecycle import LifecycleConfig
 from boto.gs.key import Key as GSKey
 from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
-from boto.utils import get_utf8_value
 from boto.compat import quote
 from boto.compat import six
 

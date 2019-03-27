@@ -29,7 +29,6 @@ from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
 from boto.s3.keyfile import KeyFile
 from boto.utils import compute_hash
-from boto.utils import get_utf8_value
 
 class Key(S3Key):
     """

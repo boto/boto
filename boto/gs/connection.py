@@ -23,7 +23,6 @@ from boto.gs.bucket import Bucket
 from boto.s3.connection import S3Connection
 from boto.s3.connection import SubdomainCallingFormat
 from boto.s3.connection import check_lowercase_bucketname
-from boto.utils import get_utf8_value
 
 class Location(object):
     DEFAULT = 'US'
