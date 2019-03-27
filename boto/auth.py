@@ -383,7 +383,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         parameter_names = sorted(http_request.params.keys())
         pairs = []
         for pname in parameter_names:
-            pval = boto.utils.get_utf8_value(http_request.params[pname])
+            pval = six.ensure_str(http_request.params[pname])
             pairs.append(urllib.parse.quote(pname, safe=''.encode('ascii')) +
                          '=' +
                          urllib.parse.quote(pval, safe='-_~'.encode('ascii')))
@@ -396,7 +396,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
             return ""
         l = []
         for param in sorted(http_request.params):
-            value = boto.utils.get_utf8_value(http_request.params[param])
+            value = six.ensure_str(http_request.params[param])
             l.append('%s=%s' % (urllib.parse.quote(param, safe='-_.~'),
                                 urllib.parse.quote(value, safe='-_.~')))
         return '&'.join(l)
@@ -623,7 +623,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         # query string.
         l = []
         for param in sorted(http_request.params):
-            value = boto.utils.get_utf8_value(http_request.params[param])
+            value = six.ensure_str(http_request.params[param])
             l.append('%s=%s' % (urllib.parse.quote(param, safe='-_.~'),
                                 urllib.parse.quote(value, safe='-_.~')))
         return '&'.join(l)
@@ -836,7 +836,7 @@ class STSAnonHandler(AuthHandler):
         keys.sort(key=lambda x: x.lower())
         pairs = []
         for key in keys:
-            val = boto.utils.get_utf8_value(params[key])
+            val = six.ensure_str(params[key])
             pairs.append(key + '=' + self._escape_value(six.ensure_str(val)))
         return '&'.join(pairs)
 
@@ -897,7 +897,7 @@ class QuerySignatureV0AuthHandler(QuerySignatureHelper, AuthHandler):
         keys.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
         pairs = []
         for key in keys:
-            val = boto.utils.get_utf8_value(params[key])
+            val = six.ensure_str(params[key])
             pairs.append(key + '=' + urllib.parse.quote(val))
         qs = '&'.join(pairs)
         return (qs, base64.b64encode(hmac.digest()))
@@ -924,7 +924,7 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
         pairs = []
         for key in keys:
             hmac.update(key.encode('utf-8'))
-            val = boto.utils.get_utf8_value(params[key])
+            val = six.ensure_str(params[key])
             hmac.update(val)
             pairs.append(key + '=' + urllib.parse.quote(val))
         qs = '&'.join(pairs)
@@ -948,7 +948,7 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
         keys = sorted(params.keys())
         pairs = []
         for key in keys:
-            val = boto.utils.get_utf8_value(params[key])
+            val = six.ensure_str(params[key])
             pairs.append(urllib.parse.quote(key, safe='') + '=' +
                          urllib.parse.quote(val, safe='-_~'))
         qs = '&'.join(pairs)

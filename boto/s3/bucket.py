@@ -852,7 +852,7 @@ class Bucket(object):
             if isinstance(src_key_name, bytes):
                 src_key_name = src_key_name.decode('utf-8')
         else:
-            src_key_name = boto.utils.get_utf8_value(src_key_name)
+            src_key_name = six.ensure_str(src_key_name)
         if preserve_acl:
             if self.name == src_bucket_name:
                 src_bucket = self

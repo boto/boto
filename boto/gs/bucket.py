@@ -644,7 +644,7 @@ class Bucket(S3Bucket):
         :param str storage_class: A string containing the storage class.
         :param dict headers: Additional headers to send with the request.
         """
-        req_body = self.StorageClassBody % (get_utf8_value(storage_class))
+        req_body = self.StorageClassBody % (six.ensure_str(storage_class))
         self.set_subresource(STORAGE_CLASS_ARG, req_body, headers=headers)
 
     # Method with same signature as boto.s3.bucket.Bucket.add_email_grant(),
@@ -883,7 +883,7 @@ class Bucket(S3Bucket):
 
         body = self.WebsiteBody % (main_page_frag, error_frag)
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(body),
+            'PUT', six.ensure_str(self.name), data=six.ensure_str(body),
             query_args='websiteConfig', headers=headers)
         body = response.read()
         if response.status == 200:
