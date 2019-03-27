@@ -46,7 +46,7 @@ import boto.utils
 from boto.utils import compute_md5, compute_hash
 from boto.utils import find_matching_headers
 from boto.utils import merge_headers_by_name
-
+from boto.utils import print_to_fd
 
 class Key(object):
     """
@@ -1553,7 +1553,7 @@ class Key(object):
             cb(data_len, cb_size)
         try:
             for key_bytes in self:
-                print(key_bytes, file=fp, end='')
+                print_to_fd(six.ensure_binary(key_bytes), file=fp, end=b'')
                 data_len += len(key_bytes)
                 for alg in digesters:
                     digesters[alg].update(key_bytes)
