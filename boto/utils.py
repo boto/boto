@@ -1127,14 +1127,19 @@ def get_utf8able_str(s, errors='strict'):
     raise TypeError('not expecting type "%s"' % type(s))
 
 
-def get_utf8_value(self, value):
-    """This replaces public interface get_utf8_value with new implementation.
+def get_utf8_value(value):
+    if isinstance(value, bytes):
+        value.decode('utf-8')
+        return value
 
-    The old implementation of get_utf8_value has been deprecated and replaced
-    with get_utf8able_str.
-    """
-    return get_utf8able_str(value)
-    
+    if not isinstance(value, six.string_types):
+        value = six.text_type(value)
+
+    if isinstance(value, six.text_type):
+        value = value.encode('utf-8')
+
+    return value
+
 
 def print_to_fd(*objects, **kwargs):
     """A Python 2/3 compatible analogue to the print function.
