@@ -925,7 +925,7 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
         pairs = []
         for key in keys:
             hmac.update(key.encode('utf-8'))
-            val = get_utf8able_str(params[key])
+            val = get_utf8able_str(params[key]).encode('utf-8')
             hmac.update(val)
             pairs.append(key + '=' + urllib.parse.quote(val))
         qs = '&'.join(pairs)
@@ -949,7 +949,7 @@ class QuerySignatureV2AuthHandler(QuerySignatureHelper, AuthHandler):
         keys = sorted(params.keys())
         pairs = []
         for key in keys:
-            val = get_utf8able_str(params[key])
+            val = get_utf8able_str(params[key]).encode('utf-8')
             pairs.append(urllib.parse.quote(key, safe='') + '=' +
                          urllib.parse.quote(val, safe='-_~'))
         qs = '&'.join(pairs)
