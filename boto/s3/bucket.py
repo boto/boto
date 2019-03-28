@@ -51,6 +51,7 @@ import re
 import base64
 from collections import defaultdict
 from boto.compat import BytesIO, six, StringIO, urllib
+from boto.utils import get_utf8able_str
 
 # as per http://goo.gl/BDuud (02/19/2011)
 
@@ -848,11 +849,8 @@ class Bucket(object):
         """
         headers = headers or {}
         provider = self.connection.provider
-        if six.PY3:
-            if isinstance(src_key_name, bytes):
-                src_key_name = src_key_name.decode('utf-8')
-        else:
-            src_key_name = boto.utils.get_utf8_value(src_key_name)
+        src_key_name = get_utf8able_str(src_key_name)
+        
         if preserve_acl:
             if self.name == src_bucket_name:
                 src_bucket = self

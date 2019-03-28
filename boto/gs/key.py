@@ -24,12 +24,11 @@ import binascii
 import os
 import re
 
-from boto.compat import StringIO
+from boto.compat import StringIO, six
 from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
 from boto.s3.keyfile import KeyFile
-from boto.utils import compute_hash
-from boto.utils import get_utf8_value
+from boto.utils import compute_hash, get_utf8able_str
 
 class Key(S3Key):
     """
@@ -707,7 +706,7 @@ class Key(S3Key):
         self.md5 = None
         self.base64md5 = None
 
-        fp = StringIO(get_utf8_value(s))
+        fp = StringIO(get_utf8able_str(s))
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5,
                                         if_generation=if_generation)
