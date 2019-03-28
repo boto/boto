@@ -1109,7 +1109,7 @@ def get_utf8able_str(s, errors='strict'):
     makes sure that any bytes passed in can be decoded using the
     utf-8 codec (and raises a UnicodeDecodeError if not).
     """
-    if not isinstance(s, (text_type, binary_type)):
+    if not isinstance(s, (six.text_type, six.binary_type)):
         s = str(s)
     if six.PY2:
         # We want to return utf-8 encoded bytes.
