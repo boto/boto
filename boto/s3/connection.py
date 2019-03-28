@@ -35,6 +35,7 @@ from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.resultset import ResultSet
 from boto.exception import BotoClientError, S3ResponseError
+from boto.utils import get_utf8able_str
 
 
 def check_lowercase_bucketname(n):
