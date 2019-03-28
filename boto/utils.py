@@ -1107,7 +1107,10 @@ def get_utf8able_str(s, errors='strict'):
 
     This method is similar to six's `ensure_str()`, except it also
     makes sure that any bytes passed in can be decoded using the
-    utf-8 codec (and raises a UnicodeDecodeError if not).
+    utf-8 codec (and raises a UnicodeDecodeError if not). If the
+    object isn't a string, this method will attempt to coerce it
+    to a string with `str()`. Objects without `__str__` property
+    or `__repr__` property will raise an exception.
     """
     if not isinstance(s, (six.text_type, six.binary_type)):
         s = str(s)
