@@ -1107,12 +1107,7 @@ class AWSQueryConnection(AWSAuthConnection):
 
 
     def get_utf8_value(self, value):
-        """This replaces public interface get_utf8_value with new implementation.
-        
-        The old implementation of get_utf8_value has been deprecated and replaced
-        with get_utf8able_str.
-        """
-        return boto.utils.get_utf8able_str(value)
+        return boto.utils.get_utf8_value(value)
 
 
     def make_request(self, action, params=None, path='/', verb='GET'):
