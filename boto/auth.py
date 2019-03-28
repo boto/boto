@@ -838,7 +838,7 @@ class STSAnonHandler(AuthHandler):
         pairs = []
         for key in keys:
             val = get_utf8able_str(params[key])
-            pairs.append(key + '=' + self._escape_value(six.ensure_str(val)))
+            pairs.append(key + '=' + self._escape_value(get_utf8able_str(val)))
         return '&'.join(pairs)
 
     def add_auth(self, http_request, **kwargs):
@@ -925,7 +925,7 @@ class QuerySignatureV1AuthHandler(QuerySignatureHelper, AuthHandler):
         pairs = []
         for key in keys:
             hmac.update(key.encode('utf-8'))
-            val = six.ensure_str(params[key])
+            val = get_utf8able_str(params[key])
             hmac.update(val)
             pairs.append(key + '=' + urllib.parse.quote(val))
         qs = '&'.join(pairs)
