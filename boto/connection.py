@@ -1105,8 +1105,10 @@ class AWSQueryConnection(AWSAuthConnection):
     def _required_auth_capability(self):
         return []
 
+
     def get_utf8_value(self, value):
         return boto.utils.get_utf8_value(value)
+
 
     def make_request(self, action, params=None, path='/', verb='GET'):
         http_request = self.build_base_http_request(verb, path, None,

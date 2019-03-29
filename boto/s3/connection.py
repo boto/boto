@@ -35,6 +35,7 @@ from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 from boto.resultset import ResultSet
 from boto.exception import BotoClientError, S3ResponseError
+from boto.utils import get_utf8able_str
 
 
 def check_lowercase_bucketname(n):
@@ -88,7 +89,7 @@ class _CallingFormat(object):
             return self.get_bucket_server(server, bucket)
 
     def build_auth_path(self, bucket, key=''):
-        key = boto.utils.get_utf8_value(key)
+        key = get_utf8able_str(key)
         if isinstance(bucket, bytes):
             bucket = bucket.decode('utf-8')
         path = ''
@@ -97,7 +98,7 @@ class _CallingFormat(object):
         return path + '/%s' % urllib.parse.quote(key)
 
     def build_path_base(self, bucket, key=''):
-        key = boto.utils.get_utf8_value(key)
+        key = get_utf8able_str(key)
         return '/%s' % urllib.parse.quote(key)
 
 
@@ -121,7 +122,7 @@ class OrdinaryCallingFormat(_CallingFormat):
         return server
 
     def build_path_base(self, bucket, key=''):
-        key = boto.utils.get_utf8_value(key)
+        key = get_utf8able_str(key)
         path_base = '/'
         if bucket:
             path_base += "%s/" % bucket

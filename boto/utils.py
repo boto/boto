@@ -1101,6 +1101,51 @@ def parse_host(hostname):
     else:
         return hostname.split(':', 1)[0]
 
+
+def get_utf8able_str(s, errors='strict'):
+    """Returns a UTF8-encodable string in PY3, UTF8 bytes in PY2.
+
+    This method is similar to six's `ensure_str()`, except it also
+    makes sure that any bytes passed in can be decoded using the
+    utf-8 codec (and raises a UnicodeDecodeError if not). If the
+    object isn't a string, this method will attempt to coerce it
+    to a string with `str()`. Objects without `__str__` property
+    or `__repr__` property will raise an exception.
+    """
+    if not isinstance(s, (six.text_type, six.binary_type)):
+        s = str(s)
+    if six.PY2:
+        # We want to return utf-8 encoded bytes.
+        if isinstance(s, six.text_type):
+            return s.encode('utf-8', errors)
+        if isinstance(s, six.binary_type):
+            # Verify the bytes can be represented in utf-8
+            s.decode('utf-8')
+            return s
+    else:
+        # We want to return a unicode/str object.
+        if isinstance(s, six.text_type):
+            return s
+        if isinstance(s, six.binary_type):
+            s = s.decode('utf-8')
+            return s
+    raise TypeError('not expecting type "%s"' % type(s))
+
+
+def get_utf8_value(value):
+    if isinstance(value, bytes):
+        value.decode('utf-8')
+        return value
+
+    if not isinstance(value, six.string_types):
+        value = six.text_type(value)
+
+    if isinstance(value, six.text_type):
+        value = value.encode('utf-8')
+
+    return value
+
+
 def print_to_fd(*objects, **kwargs):
     """A Python 2/3 compatible analogue to the print function.
 
@@ -1179,4 +1224,3 @@ def write_to_fd(fd, data):
         fd.write(six.ensure_binary(data))
     else:
         fd.write(data)
-
