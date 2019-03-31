@@ -1,0 +1,2 @@
+idna<2.8
+pycparser<2.19
