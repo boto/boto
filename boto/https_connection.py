@@ -125,10 +125,28 @@ class CertValidatingHTTPSConnection(http_client.HTTPConnection):
         else:
             msg += "using system provided SSL certs"
         boto.log.debug(msg)
-        self.sock = ssl.wrap_socket(sock, keyfile=self.key_file,
-                                    certfile=self.cert_file,
-                                    cert_reqs=ssl.CERT_REQUIRED,
-                                    ca_certs=self.ca_certs)
+        if hasattr(ssl, 'SSLContext') and getattr(ssl, 'HAS_SNI', False):
+            # Use SSLContext so we can specify server_hostname for SNI
+            # (Required for connections to storage.googleapis.com)
+            context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+            context.verify_mode = ssl.CERT_REQUIRED
+            if self.ca_certs:
+                context.load_verify_locations(self.ca_certs)
+            if self.cert_file:
+                context.load_cert_chain(self.cert_file, self.key_file)
+            self.sock = context.wrap_socket(sock, server_hostname=self.host)
+            # Add attributes only set in SSLSocket constructor without context:
+            self.sock.keyfile = self.key_file
+            self.sock.certfile = self.cert_file
+            self.sock.cert_reqs = context.verify_mode
+            self.sock.ssl_version = ssl.PROTOCOL_SSLv23
+            self.sock.ca_certs = self.ca_certs
+            self.sock.ciphers = None
+        else:
+            self.sock = ssl.wrap_socket(sock, keyfile=self.key_file,
+                                        certfile=self.cert_file,
+                                        cert_reqs=ssl.CERT_REQUIRED,
+                                        ca_certs=self.ca_certs)
         cert = self.sock.getpeercert()
         hostname = self.host.split(':', 0)[0]
         if not ValidateCertificateHostname(cert, hostname):

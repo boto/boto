@@ -179,7 +179,7 @@ class Provider(object):
     }
 
     def __init__(self, name, access_key=None, secret_key=None,
-                 security_token=None, profile_name=None):
+                 security_token=None, profile_name=None, anon=False):
         self.host = None
         self.port = None
         self.host_header = None
@@ -187,6 +187,7 @@ class Provider(object):
         self.secret_key = secret_key
         self.security_token = security_token
         self.profile_name = profile_name
+        self.anon = anon
         self.name = name
         self.acl_class = self.AclClassMap[self.name]
         self.canned_acls = self.CannedAclsMap[self.name]
@@ -244,6 +245,9 @@ class Provider(object):
     security_token = property(get_security_token, set_security_token)
 
     def _credentials_need_refresh(self):
+        if self.anon:
+            return False
+
         if self._credential_expiry_time is None:
             return False
         else:
@@ -264,6 +268,9 @@ class Provider(object):
 
     def get_credentials(self, access_key=None, secret_key=None,
                         security_token=None, profile_name=None):
+        if self.anon:
+            return
+
         access_key_name, secret_key_name, security_token_name, \
             profile_name_name = self.CredentialMap[self.name]
 

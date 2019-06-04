@@ -44,11 +44,13 @@ import time
 import logging.handlers
 import boto
 import boto.provider
+import collections
 import tempfile
 import random
 import smtplib
 import datetime
 import re
+import io
 import email.mime.multipart
 import email.mime.base
 import email.mime.text
@@ -57,6 +59,7 @@ import email.encoders
 import gzip
 import threading
 import locale
+import sys
 from boto.compat import six, StringIO, urllib, encodebytes
 
 from contextlib import contextmanager
@@ -860,7 +863,8 @@ def notify(subject, body=None, html_body=None, to_string=None,
 
 
 def get_utf8_value(value):
-    if not six.PY2 and isinstance(value, bytes):
+    if isinstance(value, bytes):
+        value.decode('utf-8')
         return value
 
     if not isinstance(value, six.string_types):
@@ -1096,3 +1100,127 @@ def parse_host(hostname):
         return hostname.split(']:', 1)[0].strip('[]')
     else:
         return hostname.split(':', 1)[0]
+
+
+def get_utf8able_str(s, errors='strict'):
+    """Returns a UTF8-encodable string in PY3, UTF8 bytes in PY2.
+
+    This method is similar to six's `ensure_str()`, except it also
+    makes sure that any bytes passed in can be decoded using the
+    utf-8 codec (and raises a UnicodeDecodeError if not). If the
+    object isn't a string, this method will attempt to coerce it
+    to a string with `str()`. Objects without `__str__` property
+    or `__repr__` property will raise an exception.
+    """
+    if not isinstance(s, (six.text_type, six.binary_type)):
+        s = str(s)
+    if six.PY2:
+        # We want to return utf-8 encoded bytes.
+        if isinstance(s, six.text_type):
+            return s.encode('utf-8', errors)
+        if isinstance(s, six.binary_type):
+            # Verify the bytes can be represented in utf-8
+            s.decode('utf-8')
+            return s
+    else:
+        # We want to return a unicode/str object.
+        if isinstance(s, six.text_type):
+            return s
+        if isinstance(s, six.binary_type):
+            s = s.decode('utf-8')
+            return s
+    raise TypeError('not expecting type "%s"' % type(s))
+
+
+def get_utf8_value(value):
+    if isinstance(value, bytes):
+        value.decode('utf-8')
+        return value
+
+    if not isinstance(value, six.string_types):
+        value = six.text_type(value)
+
+    if isinstance(value, six.text_type):
+        value = value.encode('utf-8')
+
+    return value
+
+
+def print_to_fd(*objects, **kwargs):
+    """A Python 2/3 compatible analogue to the print function.
+
+    This function writes text to a file descriptor as the
+    builtin print function would, favoring utf-8 encoding.
+    Arguments and return values are the same as documented in
+    the Python 2 print function.
+    """
+    def _get_args(**kwargs):
+        """Validates keyword arguments that would be used in Print
+        Valid keyword arguments, mirroring print(), are 'sep',
+        'end', and 'file'. These must be of types string, string,
+        and file / file interface respectively.
+        Returns the above kwargs of the above types.
+        """
+        expected_keywords = collections.OrderedDict([
+            ('sep', ' '),
+            ('end', '\n'),
+            ('file', sys.stdout)])
+
+        for key, value in kwargs.items():
+            if key not in expected_keywords:
+                error_msg = (
+                    '{} is not a valid keyword argument. '
+                    'Please use one of: {}')
+                raise KeyError(
+                    error_msg.format(
+                        key,
+                        ' '.join(expected_keywords.keys())))
+            else:
+                expected_keywords[key] = value
+
+        return expected_keywords.values()
+
+    def _get_byte_strings(*objects):
+        """Gets a `bytes` string for each item in list of printable objects."""
+        byte_objects = []
+        for item in objects:
+            if not isinstance(item, (six.binary_type, six.text_type)):
+                # If the item wasn't bytes or unicode, its __str__ method
+                # should return one of those types.
+                item = str(item)
+
+            if isinstance(item, six.binary_type):
+                byte_objects.append(item)
+            else:
+                # The item should be unicode. If it's not, ensure_binary()
+                # will throw a TypeError.
+                byte_objects.append(six.ensure_binary(item))
+        return byte_objects
+
+    sep, end, file = _get_args(**kwargs)
+    sep = six.ensure_binary(sep)
+    end = six.ensure_binary(end)
+    data = _get_byte_strings(*objects)
+    data = sep.join(data)
+    data += end
+    write_to_fd(file, data)
+
+
+def write_to_fd(fd, data):
+    """Write given data to given file descriptor, doing any conversions needed"""
+    if six.PY2:
+        fd.write(data)
+        return
+    # PY3 logic:
+    if isinstance(data, bytes):
+        if ((hasattr(fd, 'mode') and 'b' in fd.mode) or
+                isinstance(fd, io.BytesIO)):
+            fd.write(data)
+        elif hasattr(fd, 'buffer'):
+            fd.buffer.write(data)
+        else:
+            fd.write(six.ensure_text(data))
+    elif 'b' in fd.mode:
+        fd.write(six.ensure_binary(data))
+    else:
+        fd.write(data)
