@@ -76,7 +76,7 @@ class _CallingFormat(object):
         return ''
 
     def build_url_base(self, connection, protocol, server, bucket, key=''):
-        url_base = '%s://' % protocol
+        url_base = '%s://' % six.ensure_text(protocol)
         url_base += self.build_host(server, bucket)
         url_base += connection.get_path(self.build_path_base(bucket, key))
         return url_base
@@ -89,6 +89,7 @@ class _CallingFormat(object):
 
     def build_auth_path(self, bucket, key=''):
         key = boto.utils.get_utf8_value(key)
+        bucket = six.ensure_text(bucket, encoding='utf-8')
         path = ''
         if bucket != '':
             path = '/' + bucket
