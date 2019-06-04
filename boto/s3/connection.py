@@ -91,8 +91,6 @@ class _CallingFormat(object):
     def build_auth_path(self, bucket, key=''):
         bucket = six.ensure_text(bucket, encoding='utf-8')
         key = get_utf8able_str(key)
-        if isinstance(bucket, bytes):
-            bucket = bucket.decode('utf-8')
         path = ''
         if bucket != '':
             path = '/' + bucket
