@@ -77,7 +77,7 @@ class _CallingFormat(object):
         return ''
 
     def build_url_base(self, connection, protocol, server, bucket, key=''):
-        url_base = '%s://' % protocol
+        url_base = '%s://' % six.ensure_text(protocol)
         url_base += self.build_host(server, bucket)
         url_base += connection.get_path(self.build_path_base(bucket, key))
         return url_base
@@ -88,13 +88,12 @@ class _CallingFormat(object):
         else:
             return self.get_bucket_server(server, bucket)
 
-    def build_auth_path(self, bucket, key=''):
+    def build_auth_path(self, bucket, key=u''):
+        bucket = six.ensure_text(bucket, encoding='utf-8')
         key = get_utf8able_str(key)
-        if isinstance(bucket, bytes):
-            bucket = bucket.decode('utf-8')
-        path = ''
-        if bucket != '':
-            path = '/' + bucket
+        path = u''
+        if bucket != u'':
+            path = u'/' + bucket
         return path + '/%s' % urllib.parse.quote(key)
 
     def build_path_base(self, bucket, key=''):
