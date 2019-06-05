@@ -1,5 +1,3 @@
-"""Utilities for writing code that runs on Python 2 and 3"""
-
 # Copyright (c) 2010-2018 Benjamin Peterson
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,6 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+"""Utilities for writing code that runs on Python 2 and 3"""
 
 from __future__ import absolute_import
 
@@ -849,9 +849,11 @@ def add_metaclass(metaclass):
 
 def ensure_binary(s, encoding='utf-8', errors='strict'):
     """Coerce **s** to six.binary_type.
+
     For Python 2:
       - `unicode` -> encoded to `str`
       - `str` -> `str`
+
     For Python 3:
       - `str` -> encoded to `bytes`
       - `bytes` -> `bytes`
@@ -866,9 +868,11 @@ def ensure_binary(s, encoding='utf-8', errors='strict'):
 
 def ensure_str(s, encoding='utf-8', errors='strict'):
     """Coerce *s* to `str`.
+
     For Python 2:
       - `unicode` -> encoded to `str`
       - `str` -> `str`
+
     For Python 3:
       - `str` -> `str`
       - `bytes` -> decoded to `str`
@@ -884,9 +888,11 @@ def ensure_str(s, encoding='utf-8', errors='strict'):
 
 def ensure_text(s, encoding='utf-8', errors='strict'):
     """Coerce *s* to six.text_type.
+
     For Python 2:
       - `unicode` -> `unicode`
       - `str` -> `unicode`
+
     For Python 3:
       - `str` -> `str`
       - `bytes` -> decoded to `str`
