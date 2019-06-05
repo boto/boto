@@ -30,6 +30,7 @@ import copy
 import boto
 import base64
 import re
+import six
 from hashlib import md5
 
 from boto.utils import compute_md5
@@ -88,12 +89,14 @@ class MockKey(object):
                              torrent=NOT_IMPL,
                              version_id=NOT_IMPL,
                              res_download_handler=NOT_IMPL):
-        fp.write(self.data)
+        data = six.ensure_binary(self.data)
+        fp.write(data)
 
     def get_file(self, fp, headers=NOT_IMPL, cb=NOT_IMPL, num_cb=NOT_IMPL,
                  torrent=NOT_IMPL, version_id=NOT_IMPL,
                  override_num_retries=NOT_IMPL):
-        fp.write(self.data)
+        data = six.ensure_binary(self.data)
+        fp.write(data)
 
     def _handle_headers(self, headers):
         if not headers:
