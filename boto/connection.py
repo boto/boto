@@ -650,17 +650,13 @@ class AWSAuthConnection(object):
         if port == 80:
             signature_host = self.host
         else:
-            # This unfortunate little hack can be attributed to
-            # a difference in the 2.6 version of http_client.  In old
-            # versions, it would append ":443" to the hostname sent
-            # in the Host header and so we needed to make sure we
-            # did the same when calculating the V2 signature.  In 2.6
-            # (and higher!)
-            # it no longer does that.  Hence, this kludge.
-            if ((ON_APP_ENGINE and sys.version[:3] == '2.5') or
-                    sys.version[:3] in ('2.6', '2.7')) and port == 443:
+            ver_int = sys.version_info[0] * 10 + sys.version_info[1]
+            if port == 443 and ver_int >= 26:  # Py >= 2.6
                 signature_host = self.host
             else:
+                # In versions < 2.6, Python's http_client would append ":443"
+                # to the hostname sent in the Host header and so we needed to
+                # make sure we did the same when calculating the V2 signature.
                 signature_host = '%s:%d' % (self.host, port)
         return signature_host
 
