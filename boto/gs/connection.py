@@ -50,7 +50,7 @@ class GSConnection(S3Connection):
     def _required_auth_capability(self):
         """
         Overrides the S3 version of this method to remove the
-        @detect_potential_s3sigv4 decorator to avoid sending s3 credentials to
+        @detect_potential_s3sigv4 decorator to avoid sending v4 headers to
         gcs.
         """
         if self.anon:
