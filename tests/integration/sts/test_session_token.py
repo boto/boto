@@ -25,7 +25,6 @@ Tests for Session Tokens
 """
 
 import unittest
-import time
 import os
 from boto.exception import BotoServerError
 from boto.sts.connection import STSConnection
@@ -37,7 +36,7 @@ class SessionTokenTest(unittest.TestCase):
     sts = True
 
     def test_session_token(self):
-        print '--- running Session Token tests ---'
+        print('--- running Session Token tests ---')
         c = STSConnection()
 
         # Create a session token
@@ -64,7 +63,7 @@ class SessionTokenTest(unittest.TestCase):
                           security_token=token.session_token)
         buckets = s3.get_all_buckets()
 
-        print '--- tests completed ---'
+        print('--- tests completed ---')
 
     def test_assume_role_with_web_identity(self):
         c = STSConnection(anon=True)
@@ -89,4 +88,4 @@ class SessionTokenTest(unittest.TestCase):
             creds = c.decode_authorization_message('b94d27b9934')
         except BotoServerError as err:
             self.assertEqual(err.status, 400)
-            self.assertTrue('Invalid token' in err.body)
+            self.assertIn('InvalidAuthorizationMessageException', err.body)

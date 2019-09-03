@@ -116,7 +116,7 @@ Invalidate a list of paths in a CloudFront distribution::
 
 This will return a :class:`boto.cloudfront.invalidation.InvalidationBatch`
 object representing the invalidation request. You can also fetch a single
-invalidaton request for a given distribution using
+invalidation request for a given distribution using
 ``invalidation_request_status``::
 
     >>> inval_req = c.invalidation_request_status(u'ECH69MOIW7613', u'IFCT7K03VUETK')
@@ -187,7 +187,7 @@ representing the invalidation request pointed to by a
     >>> print inval_req
     <InvalidationBatch: IFCT7K03VUETK>
 
-Simiarly you can get the parent
+Similarly you can get the parent
 :class:`boto.cloudfront.distribution.Distribution` object for the invalidation
 request from a :class:`boto.cloudfront.invalidation.InvalidationSummary` object
 using::

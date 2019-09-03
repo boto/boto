@@ -27,6 +27,7 @@ import os
 from boto.ec2.ec2object import EC2Object
 from boto.exception import BotoClientError
 
+
 class KeyPair(EC2Object):
 
     def __init__(self, connection=None):
@@ -83,7 +84,7 @@ class KeyPair(EC2Object):
             fp = open(file_path, 'wb')
             fp.write(self.material)
             fp.close()
-            os.chmod(file_path, 0600)
+            os.chmod(file_path, 0o600)
             return True
         else:
             raise BotoClientError('KeyPair contains no material')
@@ -108,6 +109,3 @@ class KeyPair(EC2Object):
         rconn = region.connect(**conn_params)
         kp = rconn.create_key_pair(self.name, dry_run=dry_run)
         return kp
-
-
-

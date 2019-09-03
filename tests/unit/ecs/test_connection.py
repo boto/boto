@@ -29,7 +29,7 @@ class TestECSConnection(AWSMockServiceTestCase):
     connection_class = ECSConnection
 
     def default_body(self):
-        return """
+        return b"""
             <Items>
               <Request>
               <IsValid>True</IsValid>

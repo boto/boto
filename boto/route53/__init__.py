@@ -25,6 +25,7 @@
 # originally, the Route53Connection class was defined here
 from boto.route53.connection import Route53Connection
 from boto.regioninfo import RegionInfo, get_regions
+from boto.regioninfo import connect
 
 
 class Route53RegionInfo(RegionInfo):
@@ -81,7 +82,13 @@ def connect_to_region(region_name, **kw_params):
     :return: A connection to the given region, or None if an invalid region
              name is given
     """
-    for region in regions():
-        if region.name == region_name:
-            return region.connect(**kw_params)
-    return None
+    if region_name == 'universal':
+        region = Route53RegionInfo(
+            name='universal',
+            endpoint='route53.amazonaws.com',
+            connection_cls=Route53Connection
+        )
+        return region.connect(**kw_params)
+
+    return connect('route53', region_name, region_cls=Route53RegionInfo,
+                   connection_cls=Route53Connection, **kw_params)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2012 Kodi Arfer
+# Copyright 2012, 2014 Kodi Arfer
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the
@@ -39,6 +39,8 @@ mturk_website = None
 default_nicknames_path = os.path.expanduser('~/.boto_mturkcli_hit_nicknames')
 nicknames = {}
 nickname_pool = set(string.ascii_lowercase)
+
+get_assignments_page_size = 100
 
 time_units = dict(
     s = 1,
@@ -281,10 +283,20 @@ but apparently, it does.'''
     nicknames = {k: v for k, v in nicknames.items() if v != hit}
 
 def list_assignments(hit, only_reviewable = False):
-    assignments = map(digest_assignment, con.get_assignments(
-        hit_id = hit,
-        page_size = 100,
-        status = 'Submitted' if only_reviewable else None))
+    # Accumulate all relevant assignments, one page of results at
+    # a time.
+    assignments = []
+    page = 1
+    while True:
+        rs = con.get_assignments(
+            hit_id = hit,
+            page_size = get_assignments_page_size,
+            page_number = page,
+            status = 'Submitted' if only_reviewable else None)
+        assignments += map(digest_assignment, rs)
+        if len(assignments) >= int(rs.TotalNumResults):
+            break
+        page += 1
     if interactive:
         print json.dumps(assignments, sort_keys = True, indent = 4)
         print ' '.join([a['AssignmentId'] for a in assignments])
@@ -315,6 +327,16 @@ def unreject_assignments(message, assignments):
 def notify_workers(subject, text, workers):
     con.notify_workers(workers, subject, text)
 
+def give_qualification(qualification, workers, value = 1, notify = True):
+    for w in workers:
+        con.assign_qualification(qualification, w, value, notify)
+        if interactive: print 'Gave to', w
+
+def revoke_qualification(qualification, workers, message = None):
+    for w in workers:
+        con.revoke_qualification(w, qualification, message)
+        if interactive: print 'Revoked from', w
+
 # --------------------------------------------------
 # Mainline code
 # --------------------------------------------------
@@ -332,10 +354,10 @@ if __name__ == '__main__':
 
     sub = subs.add_parser('hit',
         help = 'get information about a HIT')
-    sub.add_argument('hit',
+    sub.add_argument('HIT',
         help = 'nickname or ID of the HIT to show')
     sub.set_defaults(f = show_hit, a = lambda:
-        [get_hitid(args.hit)])
+        [get_hitid(args.HIT)])
 
     sub = subs.add_parser('hits',
         help = 'list all your HITs')
@@ -345,7 +367,7 @@ if __name__ == '__main__':
         help = 'create a new HIT (external questions only)',
         epilog = example_config_file,
         formatter_class = argparse.RawDescriptionHelpFormatter)
-    sub.add_argument('json_path',
+    sub.add_argument('JSON_PATH',
         help = 'path to JSON configuration file for the HIT')
     sub.add_argument('-u', '--question-url', dest = 'question_url',
         metavar = 'URL',
@@ -357,13 +379,13 @@ if __name__ == '__main__':
         type = float, metavar = 'PRICE',
         help = 'reward amount, in USD')
     sub.set_defaults(f = make_hit, a = lambda: dict(
-        unjson(args.json_path).items() + [(k, getattr(args, k))
+        unjson(args.JSON_PATH).items() + [(k, getattr(args, k))
             for k in ('question_url', 'assignments', 'reward')
             if getattr(args, k) is not None]))
 
     sub = subs.add_parser('extend',
         help = 'add assignments or time to a HIT')
-    sub.add_argument('hit',
+    sub.add_argument('HIT',
         help = 'nickname or ID of the HIT to extend')
     sub.add_argument('-a', '--assignments', dest = 'assignments',
         metavar = 'N', type = int,
@@ -372,68 +394,95 @@ if __name__ == '__main__':
         metavar = 'T',
         help = 'amount of time to add to the expiration date')
     sub.set_defaults(f = extend_hit, a = lambda:
-        [get_hitid(args.hit), args.assignments,
+        [get_hitid(args.HIT), args.assignments,
             args.time and parse_duration(args.time)])
 
     sub = subs.add_parser('expire',
         help = 'force a HIT to expire without deleting it')
-    sub.add_argument('hit',
+    sub.add_argument('HIT',
         help = 'nickname or ID of the HIT to expire')
     sub.set_defaults(f = expire_hit, a = lambda:
-        [get_hitid(args.hit)])
+        [get_hitid(args.HIT)])
 
     sub = subs.add_parser('rm',
         help = 'delete a HIT')
-    sub.add_argument('hit',
+    sub.add_argument('HIT',
         help = 'nickname or ID of the HIT to delete')
     sub.set_defaults(f = delete_hit, a = lambda:
-        [get_hitid(args.hit)])
+        [get_hitid(args.HIT)])
 
     sub = subs.add_parser('as',
         help = "list a HIT's submitted assignments")
-    sub.add_argument('hit',
+    sub.add_argument('HIT',
         help = 'nickname or ID of the HIT to get assignments for')
     sub.add_argument('-r', '--reviewable', dest = 'only_reviewable',
         action = 'store_true',
         help = 'show only unreviewed assignments')
     sub.set_defaults(f = list_assignments, a = lambda:
-        [get_hitid(args.hit), args.only_reviewable])
+        [get_hitid(args.HIT), args.only_reviewable])
 
     for command, fun, helpmsg in [
             ('approve', approve_assignments, 'approve assignments'),
             ('reject', reject_assignments, 'reject assignments'),
             ('unreject', unreject_assignments, 'approve previously rejected assignments')]:
         sub = subs.add_parser(command, help = helpmsg)
-        sub.add_argument('assignment', nargs = '+',
+        sub.add_argument('ASSIGNMENT', nargs = '+',
             help = 'ID of an assignment')
         sub.add_argument('-m', '--message', dest = 'message',
             metavar = 'TEXT',
             help = 'feedback message shown to workers')
         sub.set_defaults(f = fun, a = lambda:
-            [args.message, args.assignment])
+            [args.message, args.ASSIGNMENT])
 
     sub = subs.add_parser('bonus',
         help = 'give some workers a bonus')
-    sub.add_argument('amount', type = float,
+    sub.add_argument('AMOUNT', type = float,
         help = 'bonus amount, in USD')
-    sub.add_argument('message',
+    sub.add_argument('MESSAGE',
         help = 'the reason for the bonus (shown to workers in an email sent by MTurk)')
-    sub.add_argument('widaid', nargs = '+',
+    sub.add_argument('WIDAID', nargs = '+',
         help = 'a WORKER_ID,ASSIGNMENT_ID pair')
     sub.set_defaults(f = grant_bonus, a = lambda:
-        [args.message, args.amount,
-            [p.split(',') for p in args.widaid]])
+        [args.MESSAGE, args.AMOUNT,
+            [p.split(',') for p in args.WIDAID]])
 
     sub = subs.add_parser('notify',
         help = 'send a message to some workers')
-    sub.add_argument('subject',
+    sub.add_argument('SUBJECT',
         help = 'subject of the message')
-    sub.add_argument('message',
+    sub.add_argument('MESSAGE',
         help = 'text of the message')
-    sub.add_argument('worker', nargs = '+',
+    sub.add_argument('WORKER', nargs = '+',
         help = 'ID of a worker')
     sub.set_defaults(f = notify_workers, a = lambda:
-        [args.subject, args.message, args.worker])
+        [args.SUBJECT, args.MESSAGE, args.WORKER])
+
+    sub = subs.add_parser('give-qual',
+        help = 'give a qualification to some workers')
+    sub.add_argument('QUAL',
+        help = 'ID of the qualification')
+    sub.add_argument('WORKER', nargs = '+',
+        help = 'ID of a worker')
+    sub.add_argument('-v', '--value', dest = 'value',
+        metavar = 'N', type = int, default = 1,
+        help = 'value of the qualification')
+    sub.add_argument('--dontnotify', dest = 'notify',
+        action = 'store_false', default = True,
+        help = "don't notify workers")
+    sub.set_defaults(f = give_qualification, a = lambda:
+        [args.QUAL, args.WORKER, args.value, args.notify])
+
+    sub = subs.add_parser('revoke-qual',
+        help = 'revoke a qualification from some workers')
+    sub.add_argument('QUAL',
+        help = 'ID of the qualification')
+    sub.add_argument('WORKER', nargs = '+',
+        help = 'ID of a worker')
+    sub.add_argument('-m', '--message', dest = 'message',
+        metavar = 'TEXT',
+        help = 'the reason the qualification was revoked (shown to workers in an email sent by MTurk)')
+    sub.set_defaults(f = revoke_qualification, a = lambda:
+        [args.QUAL, args.WORKER, args.message])
 
     args = parser.parse_args()
 

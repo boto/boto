@@ -19,8 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import re
-import urllib
 import xml.sax
 
 import boto
@@ -32,24 +35,45 @@ from boto.gs.acl import ACL, CannedACLStrings
 from boto.gs.acl import SupportedPermissions as GSPermissions
 from boto.gs.bucketlistresultset import VersionedBucketListResultSet
 from boto.gs.cors import Cors
+from boto.gs.encryptionconfig import EncryptionConfig
 from boto.gs.lifecycle import LifecycleConfig
 from boto.gs.key import Key as GSKey
 from boto.s3.acl import Policy
 from boto.s3.bucket import Bucket as S3Bucket
-from boto.utils import get_utf8_value
+from boto.utils import get_utf8able_str
+from boto.compat import quote
+from boto.compat import six
 
 # constants for http query args
 DEF_OBJ_ACL = 'defaultObjectAcl'
 STANDARD_ACL = 'acl'
 CORS_ARG = 'cors'
+ENCRYPTION_CONFIG_ARG = 'encryptionConfig'
 LIFECYCLE_ARG = 'lifecycle'
-ERROR_DETAILS_REGEX = re.compile(r'<Details>(?P<details>.*)</Details>')
+STORAGE_CLASS_ARG='storageClass'
+_ERROR_DETAILS_REGEX_STR = r'<Details>(?P<details>.*)</Details>'
+if six.PY3:
+    _ERROR_DETAILS_REGEX_STR = _ERROR_DETAILS_REGEX_STR.encode('ascii')
+ERROR_DETAILS_REGEX = re.compile(_ERROR_DETAILS_REGEX_STR)
+
 
 class Bucket(S3Bucket):
     """Represents a Google Cloud Storage bucket."""
 
+    BillingBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                   '<BillingConfiguration>'
+                   '<RequesterPays>%s</RequesterPays>'
+                   '</BillingConfiguration>')
+    EncryptionConfigBody = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<EncryptionConfiguration>%s</EncryptionConfiguration>')
+    EncryptionConfigDefaultKeyNameFragment = (
+        '<DefaultKmsKeyName>%s</DefaultKmsKeyName>')
+    StorageClassBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                        '<StorageClass>%s</StorageClass>')
     VersioningBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
-                      '<VersioningConfiguration><Status>%s</Status>'
+                      '<VersioningConfiguration>'
+                      '<Status>%s</Status>'
                       '</VersioningConfiguration>')
     WebsiteBody = ('<?xml version="1.0" encoding="UTF-8"?>\n'
                    '<WebsiteConfiguration>%s%s</WebsiteConfiguration>')
@@ -100,12 +124,12 @@ class Bucket(S3Bucket):
         if generation:
             query_args_l.append('generation=%s' % generation)
         if response_headers:
-            for rk, rv in response_headers.iteritems():
-                query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
+            for rk, rv in six.iteritems(response_headers):
+                query_args_l.append('%s=%s' % (rk, quote(rv)))
         try:
             key, resp = self._get_key_internal(key_name, headers,
                                                query_args_l=query_args_l)
-        except GSResponseError, e:
+        except GSResponseError as e:
             if e.status == 403 and 'Forbidden' in e.reason:
                 # If we failed getting an object, let the user know which object
                 # failed rather than just returning a generic 403.
@@ -337,6 +361,9 @@ class Bucket(S3Bucket):
                     details = (('<Details>%s. Note that Full Control access'
                                 ' is required to access ACLs.</Details>') %
                                details)
+                    if six.PY3:
+                        # All args to re.sub() must be of same type
+                        details = details.encode('utf-8')
                     body = re.sub(ERROR_DETAILS_REGEX, details, body)
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
@@ -437,8 +464,8 @@ class Bucket(S3Bucket):
             headers['x-goog-if-metageneration-match'] = str(if_metageneration)
 
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), get_utf8_value(key_name),
-            data=get_utf8_value(data), headers=headers, query_args=query_args)
+            'PUT', self.name, key_name,
+            data=data, headers=headers, query_args=query_args)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
@@ -583,14 +610,14 @@ class Bucket(S3Bucket):
         :param dict headers: Additional headers to send with the request.
         """
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(cors),
+            'PUT', self.name, data=cors,
             query_args=CORS_ARG, headers=headers)
         body = response.read()
         if response.status != 200:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
-    def get_storage_class(self):
+    def get_storage_class(self, headers=None):
         """
         Returns the StorageClass for the bucket.
 
@@ -598,7 +625,8 @@ class Bucket(S3Bucket):
         :return: The StorageClass for the bucket.
         """
         response = self.connection.make_request('GET', self.name,
-                                                query_args='storageClass')
+                                                query_args=STORAGE_CLASS_ARG,
+                                                headers=headers)
         body = response.read()
         if response.status == 200:
             rs = ResultSet(self)
@@ -609,6 +637,15 @@ class Bucket(S3Bucket):
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)
 
+    def set_storage_class(self, storage_class, headers=None):
+        """
+        Sets a bucket's storage class.
+
+        :param str storage_class: A string containing the storage class.
+        :param dict headers: Additional headers to send with the request.
+        """
+        req_body = self.StorageClassBody % (get_utf8able_str(storage_class))
+        self.set_subresource(STORAGE_CLASS_ARG, req_body, headers=headers)
 
     # Method with same signature as boto.s3.bucket.Bucket.add_email_grant(),
     # to allow polymorphic treatment at application layer.
@@ -846,7 +883,7 @@ class Bucket(S3Bucket):
 
         body = self.WebsiteBody % (main_page_frag, error_frag)
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(body),
+            'PUT', get_utf8able_str(self.name), data=get_utf8able_str(body),
             query_args='websiteConfig', headers=headers)
         body = response.read()
         if response.status == 200:
@@ -978,11 +1015,131 @@ class Bucket(S3Bucket):
         """
         xml = lifecycle_config.to_xml()
         response = self.connection.make_request(
-            'PUT', get_utf8_value(self.name), data=get_utf8_value(xml),
+            'PUT', self.name, data=xml,
             query_args=LIFECYCLE_ARG, headers=headers)
         body = response.read()
         if response.status == 200:
             return True
         else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def get_billing_config(self, headers=None):
+        """Returns the current status of billing configuration on the bucket.
+
+        :param dict headers: Additional headers to send with the request.
+
+        :rtype: dict
+        :returns: A dictionary containing the parsed XML response from GCS. The
+            overall structure is:
+
+            * BillingConfiguration
+
+              * RequesterPays: Enabled/Disabled.
+        """
+        return self.get_billing_configuration_with_xml(headers)[0]
+
+    def get_billing_configuration_with_xml(self, headers=None):
+        """Returns the current status of billing configuration on the bucket as
+        unparsed XML.
+
+        :param dict headers: Additional headers to send with the request.
+
+        :rtype: 2-Tuple
+        :returns: 2-tuple containing:
+
+            1) A dictionary containing the parsed XML response from GCS. The
+              overall structure is:
+
+              * BillingConfiguration
+
+                * RequesterPays: Enabled/Disabled.
+
+            2) Unparsed XML describing the bucket's website configuration.
+        """
+        response = self.connection.make_request('GET', self.name,
+                                                query_args='billing',
+                                                headers=headers)
+        body = response.read()
+        boto.log.debug(body)
+
+        if response.status != 200:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+        e = boto.jsonresponse.Element()
+        h = boto.jsonresponse.XmlHandler(e, None);
+        h.parse(body)
+        return e, body
+
+    def configure_billing(self, requester_pays=False, headers=None):
+        """Configure billing for this bucket.
+
+        :param bool requester_pays: If set to True, enables requester pays on
+            this bucket. If set to False, disables requester pays.
+
+        :param dict headers: Additional headers to send with the request.
+        """
+        if requester_pays == True:
+            req_body = self.BillingBody % ('Enabled')
+        else:
+            req_body = self.BillingBody % ('Disabled')
+        self.set_subresource('billing', req_body, headers=headers)
+
+    def get_encryption_config(self, headers=None):
+        """Returns a bucket's EncryptionConfig.
+
+        :param dict headers: Additional headers to send with the request.
+        :rtype: :class:`~.encryption_config.EncryptionConfig`
+        """
+        response = self.connection.make_request(
+            'GET', self.name, query_args=ENCRYPTION_CONFIG_ARG, headers=headers)
+        body = response.read()
+        if response.status == 200:
+            # Success - parse XML and return EncryptionConfig object.
+            encryption_config = EncryptionConfig()
+            h = handler.XmlHandler(encryption_config, self)
+            xml.sax.parseString(body, h)
+            return encryption_config
+        else:
+            raise self.connection.provider.storage_response_error(
+                response.status, response.reason, body)
+
+    def _construct_encryption_config_xml(self, default_kms_key_name=None):
+        """Creates an XML document for setting a bucket's EncryptionConfig.
+
+        This method is internal as it's only here for testing purposes. As
+        managing Cloud KMS resources for testing is complex, we settle for
+        testing that we're creating correctly-formed XML for setting a bucket's
+        encryption configuration.
+
+        :param str default_kms_key_name: A string containing a fully-qualified
+            Cloud KMS key name.
+        :rtype: str
+        """
+        if default_kms_key_name:
+            default_kms_key_name_frag = (
+                self.EncryptionConfigDefaultKeyNameFragment %
+                default_kms_key_name)
+        else:
+            default_kms_key_name_frag = ''
+
+        return self.EncryptionConfigBody % default_kms_key_name_frag
+
+
+    def set_encryption_config(self, default_kms_key_name=None, headers=None):
+        """Sets a bucket's EncryptionConfig XML document.
+
+        :param str default_kms_key_name: A string containing a fully-qualified
+            Cloud KMS key name.
+        :param dict headers: Additional headers to send with the request.
+        """
+        body = self._construct_encryption_config_xml(
+            default_kms_key_name=default_kms_key_name)
+        response = self.connection.make_request(
+            'PUT', self.name, data=body,
+            query_args=ENCRYPTION_CONFIG_ARG, headers=headers)
+        body = response.read()
+        if response.status != 200:
             raise self.connection.provider.storage_response_error(
                 response.status, response.reason, body)

@@ -24,7 +24,6 @@
 """
 Some unit tests for the S3 Encryption
 """
-
 import unittest
 import time
 from boto.s3.connection import S3Connection
@@ -54,7 +53,7 @@ class S3EncryptionTest (unittest.TestCase):
     s3 = True
 
     def test_1_versions(self):
-        print '--- running S3Encryption tests ---'
+        print('--- running S3Encryption tests ---')
         c = S3Connection()
         # create a new, empty bucket
         bucket_name = 'encryption-%d' % int(time.time())
@@ -71,7 +70,7 @@ class S3EncryptionTest (unittest.TestCase):
         time.sleep(5)
         
         # now get the contents from s3 
-        o = k.get_contents_as_string()
+        o = k.get_contents_as_string().decode('utf-8')
         
         # check to make sure content read from s3 is identical to original
         assert o == s1
@@ -81,7 +80,7 @@ class S3EncryptionTest (unittest.TestCase):
         time.sleep(5)
         
         # now retrieve the contents as a string and compare
-        o = k.get_contents_as_string()
+        o = k.get_contents_as_string().decode('utf-8')
         assert o == s2
         
         # now set bucket policy to require encrypted objects
@@ -112,4 +111,4 @@ class S3EncryptionTest (unittest.TestCase):
 
         # now delete bucket
         bucket.delete()
-        print '--- tests completed ---'
+        print('--- tests completed ---')

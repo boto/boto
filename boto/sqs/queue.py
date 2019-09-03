@@ -22,8 +22,7 @@
 """
 Represents an SQS Queue
 """
-
-import urlparse
+from boto.compat import urllib
 from boto.sqs.message import Message
 
 
@@ -40,7 +39,7 @@ class Queue(object):
 
     def _id(self):
         if self.url:
-            val = urlparse.urlparse(self.url)[2]
+            val = urllib.parse.urlparse(self.url)[2]
         else:
             val = self.url
         return val
@@ -48,7 +47,7 @@ class Queue(object):
 
     def _name(self):
         if self.url:
-            val = urlparse.urlparse(self.url)[2].split('/')[2]
+            val = urllib.parse.urlparse(self.url)[2].split('/')[2]
         else:
             val = self.url
         return  val
@@ -56,8 +55,12 @@ class Queue(object):
 
     def _arn(self):
         parts = self.id.split('/')
-        return 'arn:aws:sqs:%s:%s:%s' % (
-            self.connection.region.name, parts[1], parts[2])
+        if self.connection.region.name == 'cn-north-1':
+            partition = 'aws-cn'
+        else:
+            partition = 'aws'
+        return 'arn:%s:sqs:%s:%s:%s' % (
+            partition, self.connection.region.name, parts[1], parts[2])
     arn = property(_arn)
 
     def startElement(self, name, attrs, connection):
@@ -108,12 +111,57 @@ class Queue(object):
         Set a new value for an attribute of the Queue.
 
         :type attribute: String
-        :param attribute: The name of the attribute you want to set.  The
-                           only valid value at this time is: VisibilityTimeout
-        :type value: int
-        :param value: The new value for the attribute.
-            For VisibilityTimeout the value must be an
-            integer number of seconds from 0 to 86400.
+        :param attribute: The name of the attribute you want to set.
+
+        :param value: The new value for the attribute must be:
+
+
+            * For `DelaySeconds` the value must be an integer number of
+            seconds from 0 to 900 (15 minutes).
+                >>> queue.set_attribute('DelaySeconds', 900)
+
+            * For `MaximumMessageSize` the value must be an integer number of
+            bytes from 1024 (1 KiB) to 262144 (256 KiB).
+                >>> queue.set_attribute('MaximumMessageSize', 262144)
+
+            * For `MessageRetentionPeriod` the value must be an integer number of
+            seconds from 60 (1 minute) to 1209600 (14 days).
+                >>> queue.set_attribute('MessageRetentionPeriod', 1209600)
+
+            * For `Policy` the value must be an string that contains JSON formatted
+            parameters and values.
+                >>> queue.set_attribute('Policy', json.dumps({
+                ...     'Version': '2008-10-17',
+                ...     'Id': '/123456789012/testQueue/SQSDefaultPolicy',
+                ...     'Statement': [
+                ...        {
+                ...            'Sid': 'Queue1ReceiveMessage',
+                ...            'Effect': 'Allow',
+                ...            'Principal': {
+                ...                'AWS': '*'
+                ...            },
+                ...            'Action': 'SQS:ReceiveMessage',
+                ...            'Resource': 'arn:aws:aws:sqs:us-east-1:123456789012:testQueue'
+                ...        }
+                ...    ]
+                ... }))
+
+            * For `ReceiveMessageWaitTimeSeconds` the value must be an integer number of
+            seconds from 0 to 20.
+                >>> queue.set_attribute('ReceiveMessageWaitTimeSeconds', 20)
+
+            * For `VisibilityTimeout` the value must be an integer number of
+            seconds from 0 to 43200 (12 hours).
+                >>> queue.set_attribute('VisibilityTimeout', 43200)
+
+            * For `RedrivePolicy` the value must be an string that contains JSON formatted
+            parameters and values. You can set maxReceiveCount to a value between 1 and 1000.
+            The deadLetterTargetArn value is the Amazon Resource Name (ARN) of the queue that
+            will receive the dead letter messages.
+                >>> queue.set_attribute('RedrivePolicy', json.dumps({
+                ...    'maxReceiveCount': 5,
+                ...    'deadLetterTargetArn': "arn:aws:aws:sqs:us-east-1:123456789012:testDeadLetterQueue"
+                ... }))
 
         :rtype: bool
         :return: True if successful, otherwise False.
@@ -182,7 +230,8 @@ class Queue(object):
         """
         return self.connection.remove_permission(self, label)
 
-    def read(self, visibility_timeout=None, wait_time_seconds=None):
+    def read(self, visibility_timeout=None, wait_time_seconds=None,
+             message_attributes=None):
         """
         Read a single message from the queue.
 
@@ -195,11 +244,17 @@ class Queue(object):
             If a message is available, the call will return sooner than
             wait_time_seconds.
 
+        :type message_attributes: list
+        :param message_attributes: The name(s) of additional message
+            attributes to return. The default is to return no additional
+            message attributes. Use ``['All']`` or ``['.*']`` to return all.
+
         :rtype: :class:`boto.sqs.message.Message`
         :return: A single message or None if queue is empty
         """
         rs = self.get_messages(1, visibility_timeout,
-                               wait_time_seconds=wait_time_seconds)
+                               wait_time_seconds=wait_time_seconds,
+                               message_attributes=message_attributes)
         if len(rs) == 1:
             return rs[0]
         else:
@@ -216,8 +271,8 @@ class Queue(object):
         :return: The :class:`boto.sqs.message.Message` object that was written.
         """
         new_msg = self.connection.send_message(self,
-                                               message.get_body_encoded(),
-                                               delay_seconds)
+            message.get_body_encoded(), delay_seconds=delay_seconds,
+            message_attributes=message.message_attributes)
         message.id = new_msg.id
         message.md5 = new_msg.md5
         return message
@@ -231,10 +286,12 @@ class Queue(object):
             tuple represents a single message to be written
             and consists of and ID (string) that must be unique
             within the list of messages, the message body itself
-            which can be a maximum of 64K in length, and an
+            which can be a maximum of 64K in length, an
             integer which represents the delay time (in seconds)
             for the message (0-900) before the message will
-            be delivered to the queue.
+            be delivered to the queue, and an optional dict of
+            message attributes like those passed to ``send_message``
+            in the connection class.
         """
         return self.connection.send_message_batch(self, messages)
 
@@ -254,7 +311,8 @@ class Queue(object):
 
     # get a variable number of messages, returns a list of messages
     def get_messages(self, num_messages=1, visibility_timeout=None,
-                     attributes=None, wait_time_seconds=None):
+                     attributes=None, wait_time_seconds=None,
+                     message_attributes=None):
         """
         Get a variable number of messages.
 
@@ -278,13 +336,19 @@ class Queue(object):
             If a message is available, the call will return sooner than
             wait_time_seconds.
 
+        :type message_attributes: list
+        :param message_attributes: The name(s) of additional message
+            attributes to return. The default is to return no additional
+            message attributes. Use ``['All']`` or ``['.*']`` to return all.
+
         :rtype: list
         :return: A list of :class:`boto.sqs.message.Message` objects.
         """
         return self.connection.receive_message(
             self, number_messages=num_messages,
             visibility_timeout=visibility_timeout, attributes=attributes,
-            wait_time_seconds=wait_time_seconds)
+            wait_time_seconds=wait_time_seconds,
+            message_attributes=message_attributes)
 
     def delete_message(self, message):
         """
@@ -325,16 +389,15 @@ class Queue(object):
         """
         return self.connection.delete_queue(self)
 
+    def purge(self):
+        """
+        Purge all messages in the queue.
+        """
+        return self.connection.purge_queue(self)
+
     def clear(self, page_size=10, vtimeout=10):
-        """Utility function to remove all messages from a queue"""
-        n = 0
-        l = self.get_messages(page_size, vtimeout)
-        while l:
-            for m in l:
-                self.delete_message(m)
-                n += 1
-            l = self.get_messages(page_size, vtimeout)
-        return n
+        """Deprecated utility function to remove all messages from a queue"""
+        return self.purge()
 
     def count(self, page_size=10, vtimeout=10):
         """
@@ -350,7 +413,7 @@ class Queue(object):
         Deprecated.  This is the old 'count' method that actually counts
         the messages by reading them all.  This gives an accurate count but
         is very slow for queues with non-trivial number of messasges.
-        Instead, use get_attribute('ApproximateNumberOfMessages') to take
+        Instead, use get_attributes('ApproximateNumberOfMessages') to take
         advantage of the new SQS capability.  This is retained only for
         the unit tests.
         """
@@ -459,7 +522,7 @@ class Queue(object):
                 m = Message(self, body)
                 self.write(m)
                 n += 1
-                print 'writing message %d' % n
+                print('writing message %d' % n)
                 body = ''
             else:
                 body = body + l

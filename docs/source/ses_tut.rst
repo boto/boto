@@ -25,10 +25,10 @@ To do so, the most straight forward way is the following::
 
 Bear in mind that if you have your credentials in boto config in your home
 directory, the two keyword arguments in the call above are not needed. More
-details on configuration can be fond in :doc:`boto_config_tut`.
+details on configuration can be found in :doc:`boto_config_tut`.
 
 The :py:func:`boto.ses.connect_to_region` functions returns a
-:py:class:`boto.ses.connection.SESConnection` instance, which is a the boto API
+:py:class:`boto.ses.connection.SESConnection` instance, which is the boto API
 for working with SES.
 
 Notes on Sending

@@ -30,16 +30,13 @@ import copy
 import boto
 import base64
 import re
+from hashlib import md5
 
 from boto.utils import compute_md5
 from boto.utils import find_matching_headers
 from boto.utils import merge_headers_by_name
 from boto.s3.prefix import Prefix
-
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
+from boto.compat import six
 
 NOT_IMPL = None
 
@@ -91,7 +88,7 @@ class MockKey(object):
                              torrent=NOT_IMPL,
                              version_id=NOT_IMPL,
                              res_download_handler=NOT_IMPL):
-        fp.write(self.data)
+        fp.write(six.ensure_binary(self.data))
 
     def get_file(self, fp, headers=NOT_IMPL, cb=NOT_IMPL, num_cb=NOT_IMPL,
                  torrent=NOT_IMPL, version_id=NOT_IMPL,
@@ -191,11 +188,14 @@ class MockKey(object):
 
     def set_etag(self):
         """
-        Set etag attribute by generating hex MD5 checksum on current 
+        Set etag attribute by generating hex MD5 checksum on current
         contents of mock key.
         """
         m = md5()
-        m.update(self.data)
+        if not isinstance(self.data, bytes):
+            m.update(self.data.encode('utf-8'))
+        else:
+            m.update(self.data)
         hex_md5 = m.hexdigest()
         self.etag = hex_md5
 
@@ -213,11 +213,11 @@ class MockKey(object):
         """
         tup = compute_md5(fp)
         # Returned values are MD5 hash, base64 encoded MD5 hash, and file size.
-        # The internal implementation of compute_md5() needs to return the 
+        # The internal implementation of compute_md5() needs to return the
         # file size but we don't want to return that value to the external
         # caller because it changes the class interface (i.e. it might
-        # break some code) so we consume the third tuple value here and 
-        # return the remainder of the tuple to the caller, thereby preserving 
+        # break some code) so we consume the third tuple value here and
+        # return the remainder of the tuple to the caller, thereby preserving
         # the existing interface.
         self.size = tup[2]
         return tup[0:2]
@@ -268,7 +268,7 @@ class MockBucket(object):
             # Return ACL for the bucket.
             return self.acls[self.name]
 
-    def get_def_acl(self, key_name=NOT_IMPL, headers=NOT_IMPL, 
+    def get_def_acl(self, key_name=NOT_IMPL, headers=NOT_IMPL,
                     version_id=NOT_IMPL):
         # Return default ACL for the bucket.
         return self.def_acl
@@ -293,7 +293,7 @@ class MockBucket(object):
         del self.keys[key_name]
 
     def get_all_keys(self, headers=NOT_IMPL):
-        return self.keys.itervalues()
+        return six.itervalues(self.keys)
 
     def get_key(self, key_name, headers=NOT_IMPL, version_id=NOT_IMPL):
         # Emulate behavior of boto when get_key called with non-existent key.
@@ -309,7 +309,7 @@ class MockBucket(object):
         # deletions while iterating (e.g., during test cleanup).
         result = []
         key_name_set = set()
-        for k in self.keys.itervalues():
+        for k in six.itervalues(self.keys):
             if k.name.startswith(prefix):
                 k_name_past_prefix = k.name[len(prefix):]
                 if delimiter:
@@ -396,7 +396,7 @@ class MockConnection(object):
         return self.buckets[bucket_name]
 
     def get_all_buckets(self, headers=NOT_IMPL):
-        return self.buckets.itervalues()
+        return six.itervalues(self.buckets)
 
 
 # We only mock a single provider/connection.

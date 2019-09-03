@@ -19,32 +19,35 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-from __future__ import with_statement
-
 import boto.utils
 
 from datetime import datetime
 from time import time
 from tests.unit import AWSMockServiceTestCase
 
+from boto.compat import six
 from boto.emr.connection import EmrConnection
 from boto.emr.emrobject import BootstrapAction, BootstrapActionList, \
-                               ClusterStatus, ClusterSummaryList, \
-                               ClusterSummary, ClusterTimeline, InstanceInfo, \
-                               InstanceList, InstanceGroupInfo, \
-                               InstanceGroup, InstanceGroupList, JobFlow, \
-                               JobFlowStepList, Step, StepSummaryList, Cluster
+    ClusterStateChangeReason, ClusterStatus, ClusterSummaryList, \
+    ClusterSummary, ClusterTimeline, InstanceInfo, \
+    InstanceList, InstanceGroupInfo, \
+    InstanceGroup, InstanceGroupList, JobFlow, \
+    JobFlowStepList, Step, StepSummaryList, \
+    Cluster, RunJobFlowResponse
+
 
 # These tests are just checking the basic structure of
 # the Elastic MapReduce code, by picking a few calls
 # and verifying we get the expected results with mocked
 # responses.  The integration tests actually verify the
 # API calls interact with the service correctly.
+
+
 class TestListClusters(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """
+        return b"""
 <ListClustersResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
   <ListClustersResult>
     <Clusters>
@@ -63,6 +66,7 @@ class TestListClusters(AWSMockServiceTestCase):
           </Timeline>
         </Status>
         <Name>analytics test</Name>
+        <NormalizedInstanceHours>10</NormalizedInstanceHours>
       </member>
       <member>
         <Id>j-aaaaaaaaaaaab</Id>
@@ -79,6 +83,7 @@ class TestListClusters(AWSMockServiceTestCase):
           </Timeline>
         </Status>
         <Name>test job</Name>
+        <NormalizedInstanceHours>20</NormalizedInstanceHours>
       </member>
     </Clusters>
   </ListClustersResult>
@@ -100,17 +105,30 @@ class TestListClusters(AWSMockServiceTestCase):
         self.assertTrue(isinstance(response, ClusterSummaryList))
 
         self.assertEqual(len(response.clusters), 2)
+
         self.assertTrue(isinstance(response.clusters[0], ClusterSummary))
         self.assertEqual(response.clusters[0].name, 'analytics test')
+        self.assertEqual(response.clusters[0].normalizedinstancehours, '10')
 
         self.assertTrue(isinstance(response.clusters[0].status, ClusterStatus))
+        self.assertEqual(response.clusters[0].status.state, 'TERMINATED')
 
-        self.assertTrue(isinstance(response.clusters[0].status.timeline, ClusterTimeline))
+        self.assertTrue(
+            isinstance(response.clusters[0].status.timeline, ClusterTimeline))
 
-        self.assertEqual(response.clusters[0].status.timeline.creationdatetime, '2014-01-24T01:21:21Z')
-        self.assertEqual(response.clusters[0].status.timeline.readydatetime, '2014-01-24T01:25:26Z')
-        self.assertEqual(response.clusters[0].status.timeline.enddatetime, '2014-01-24T02:19:46Z')
+        self.assertEqual(
+            response.clusters[0].status.timeline.creationdatetime, '2014-01-24T01:21:21Z')
+        self.assertEqual(
+            response.clusters[0].status.timeline.readydatetime, '2014-01-24T01:25:26Z')
+        self.assertEqual(
+            response.clusters[0].status.timeline.enddatetime, '2014-01-24T02:19:46Z')
 
+        self.assertTrue(isinstance(
+            response.clusters[0].status.statechangereason, ClusterStateChangeReason))
+        self.assertEqual(
+            response.clusters[0].status.statechangereason.code, 'USER_REQUEST')
+        self.assertEqual(response.clusters[
+                         0].status.statechangereason.message, 'Terminated by user request')
 
     def test_list_clusters_created_before(self):
         self.set_http_response(status_code=200)
@@ -155,7 +173,7 @@ class TestListInstanceGroups(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """
+        return b"""
 <ListInstanceGroupsResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
   <ListInstanceGroupsResult>
     <InstanceGroups>
@@ -216,7 +234,8 @@ class TestListInstanceGroups(AWSMockServiceTestCase):
         with self.assertRaises(TypeError):
             self.service_connection.list_instance_groups()
 
-        response = self.service_connection.list_instance_groups(cluster_id='j-123')
+        response = self.service_connection.list_instance_groups(
+            cluster_id='j-123')
 
         self.assert_request_parameters({
             'Action': 'ListInstanceGroups',
@@ -226,24 +245,30 @@ class TestListInstanceGroups(AWSMockServiceTestCase):
 
         self.assertTrue(isinstance(response, InstanceGroupList))
         self.assertEqual(len(response.instancegroups), 2)
-        self.assertTrue(isinstance(response.instancegroups[0], InstanceGroupInfo))
+        self.assertTrue(
+            isinstance(response.instancegroups[0], InstanceGroupInfo))
         self.assertEqual(response.instancegroups[0].id, 'ig-aaaaaaaaaaaaa')
-        self.assertEqual(response.instancegroups[0].instancegrouptype, "MASTER")
+        self.assertEqual(
+            response.instancegroups[0].instancegrouptype, "MASTER")
         self.assertEqual(response.instancegroups[0].instancetype, "m1.large")
         self.assertEqual(response.instancegroups[0].market, "ON_DEMAND")
-        self.assertEqual(response.instancegroups[0].name, "Master instance group")
-        self.assertEqual(response.instancegroups[0].requestedinstancecount, '1')
+        self.assertEqual(
+            response.instancegroups[0].name, "Master instance group")
+        self.assertEqual(
+            response.instancegroups[0].requestedinstancecount, '1')
         self.assertEqual(response.instancegroups[0].runninginstancecount, '0')
-        self.assertTrue(isinstance(response.instancegroups[0].status, ClusterStatus))
+        self.assertTrue(
+            isinstance(response.instancegroups[0].status, ClusterStatus))
         self.assertEqual(response.instancegroups[0].status.state, 'TERMINATED')
         # status.statechangereason is not parsed into an object
         #self.assertEqual(response.instancegroups[0].status.statechangereason.code, 'CLUSTER_TERMINATED')
+
 
 class TestListInstances(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """
+        return b"""
 <ListInstancesResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
   <ListInstancesResult>
     <Instances>
@@ -327,11 +352,12 @@ class TestListInstances(AWSMockServiceTestCase):
         self.assertTrue(isinstance(response.instances[0], InstanceInfo))
         self.assertEqual(response.instances[0].ec2instanceid, 'i-aaaaaaaa')
         self.assertEqual(response.instances[0].id, 'ci-123456789abc')
-        self.assertEqual(response.instances[0].privatednsname , 'ip-10-0-0-60.us-west-1.compute.internal')
-        self.assertEqual(response.instances[0].privateipaddress , '10.0.0.60')
-        self.assertEqual(response.instances[0].publicdnsname , 'ec2-54-0-0-1.us-west-1.compute.amazonaws.com')
-        self.assertEqual(response.instances[0].publicipaddress , '54.0.0.1')
-
+        self.assertEqual(
+            response.instances[0].privatednsname, 'ip-10-0-0-60.us-west-1.compute.internal')
+        self.assertEqual(response.instances[0].privateipaddress, '10.0.0.60')
+        self.assertEqual(response.instances[
+                         0].publicdnsname, 'ec2-54-0-0-1.us-west-1.compute.amazonaws.com')
+        self.assertEqual(response.instances[0].publicipaddress, '54.0.0.1')
 
         self.assert_request_parameters({
             'Action': 'ListInstances',
@@ -363,8 +389,8 @@ class TestListInstances(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'ListInstances',
             'ClusterId': 'j-123',
-            'InstanceGroupTypeList.member.1': 'MASTER',
-            'InstanceGroupTypeList.member.2': 'TASK',
+            'InstanceGroupTypes.member.1': 'MASTER',
+            'InstanceGroupTypes.member.2': 'TASK',
             'Version': '2009-03-31'
         })
 
@@ -373,7 +399,74 @@ class TestListSteps(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<ListStepsOutput><Steps><member><Name>Step 1</Name></member></Steps></ListStepsOutput>"""
+        return b"""<ListStepsResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+  <ListStepsResult>
+    <Steps>
+      <member>
+        <Id>abc123</Id>
+        <Status>
+          <StateChangeReason/>
+          <Timeline>
+            <CreationDateTime>2014-07-01T00:00:00.000Z</CreationDateTime>
+          </Timeline>
+          <State>PENDING</State>
+        </Status>
+        <Name>Step 1</Name>
+        <Config>
+          <Jar>/home/hadoop/lib/emr-s3distcp-1.0.jar</Jar>
+          <Args>
+            <member>--src</member>
+            <member>hdfs:///data/test/</member>
+            <member>--dest</member>
+            <member>s3n://test/data</member>
+          </Args>
+          <Properties/>
+        </Config>
+        <ActionOnFailure>CONTINUE</ActionOnFailure>
+      </member>
+      <member>
+        <Id>def456</Id>
+        <Status>
+          <StateChangeReason/>
+          <Timeline>
+            <CreationDateTime>2014-07-01T00:00:00.000Z</CreationDateTime>
+          </Timeline>
+          <State>COMPLETED</State>
+        </Status>
+        <Name>Step 2</Name>
+        <Config>
+          <MainClass>my.main.SomeClass</MainClass>
+          <Jar>s3n://test/jars/foo.jar</Jar>
+        </Config>
+        <ActionOnFailure>CONTINUE</ActionOnFailure>
+      </member>
+      <member>
+        <Id>ghi789</Id>
+        <Status>
+          <StateChangeReason/>
+          <Timeline>
+            <CreationDateTime>2014-07-01T00:00:00.000Z</CreationDateTime>
+          </Timeline>
+          <State>FAILED</State>
+        </Status>
+        <Name>Step 3</Name>
+        <Config>
+          <Jar>s3n://test/jars/bar.jar</Jar>
+          <Args>
+            <member>-arg</member>
+            <member>value</member>
+          </Args>
+          <Properties/>
+        </Config>
+        <ActionOnFailure>TERMINATE_CLUSTER</ActionOnFailure>
+      </member>
+    </Steps>
+  </ListStepsResult>
+  <ResponseMetadata>
+    <RequestId>eff31ee5-0342-11e4-b3c7-9de5a93f6fcb</RequestId>
+  </ResponseMetadata>
+</ListStepsResponse>
+"""
 
     def test_list_steps(self):
         self.set_http_response(200)
@@ -391,6 +484,30 @@ class TestListSteps(AWSMockServiceTestCase):
         self.assertTrue(isinstance(response, StepSummaryList))
         self.assertEqual(response.steps[0].name, 'Step 1')
 
+        valid_states = [
+            'PENDING',
+            'RUNNING',
+            'COMPLETED',
+            'CANCELLED',
+            'FAILED',
+            'INTERRUPTED'
+        ]
+
+        # Check for step states
+        for step in response.steps:
+            self.assertIn(step.status.state, valid_states)
+
+        # Check for step config
+        step = response.steps[0]
+        self.assertEqual(step.config.jar,
+                         '/home/hadoop/lib/emr-s3distcp-1.0.jar')
+        self.assertEqual(len(step.config.args), 4)
+        self.assertEqual(step.config.args[0].value, '--src')
+        self.assertEqual(step.config.args[1].value, 'hdfs:///data/test/')
+
+        step = response.steps[1]
+        self.assertEqual(step.config.mainclass, 'my.main.SomeClass')
+
     def test_list_steps_with_states(self):
         self.set_http_response(200)
         response = self.service_connection.list_steps(
@@ -402,18 +519,19 @@ class TestListSteps(AWSMockServiceTestCase):
         self.assert_request_parameters({
             'Action': 'ListSteps',
             'ClusterId': 'j-123',
-            'StepStateList.member.1': 'COMPLETED',
-            'StepStateList.member.2': 'FAILED',
+            'StepStates.member.1': 'COMPLETED',
+            'StepStates.member.2': 'FAILED',
             'Version': '2009-03-31'
         })
         self.assertTrue(isinstance(response, StepSummaryList))
         self.assertEqual(response.steps[0].name, 'Step 1')
 
+
 class TestListBootstrapActions(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<ListBootstrapActionsOutput></ListBootstrapActionsOutput>"""
+        return b"""<ListBootstrapActionsOutput></ListBootstrapActionsOutput>"""
 
     def test_list_bootstrap_actions(self):
         self.set_http_response(200)
@@ -421,7 +539,8 @@ class TestListBootstrapActions(AWSMockServiceTestCase):
         with self.assertRaises(TypeError):
             self.service_connection.list_bootstrap_actions()
 
-        response = self.service_connection.list_bootstrap_actions(cluster_id='j-123')
+        response = self.service_connection.list_bootstrap_actions(
+            cluster_id='j-123')
 
         self.assert_request_parameters({
             'Action': 'ListBootstrapActions',
@@ -434,7 +553,7 @@ class TestDescribeCluster(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """
+        return b"""
 <DescribeClusterResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
   <DescribeClusterResult>
     <Cluster>
@@ -468,6 +587,9 @@ class TestDescribeCluster(AWSMockServiceTestCase):
         </member>
       </Applications>
       <TerminationProtected>false</TerminationProtected>
+      <MasterPublicDnsName>ec2-184-0-0-1.us-west-1.compute.amazonaws.com</MasterPublicDnsName>
+      <NormalizedInstanceHours>10</NormalizedInstanceHours>
+      <ServiceRole>my-service-role</ServiceRole>
     </Cluster>
   </DescribeClusterResult>
   <ResponseMetadata>
@@ -492,11 +614,17 @@ class TestDescribeCluster(AWSMockServiceTestCase):
         self.assertEqual(response.name, 'test analytics')
         self.assertEqual(response.requestedamiversion, '2.4.2')
         self.assertEqual(response.terminationprotected, 'false')
-        self.assertEqual(response.ec2instanceattributes.ec2availabilityzone, "us-west-1c")
-        self.assertEqual(response.ec2instanceattributes.ec2keyname, 'my_secret_key')
+        self.assertEqual(
+            response.ec2instanceattributes.ec2availabilityzone, "us-west-1c")
+        self.assertEqual(
+            response.ec2instanceattributes.ec2keyname, 'my_secret_key')
         self.assertEqual(response.status.state, 'TERMINATED')
         self.assertEqual(response.applications[0].name, 'hadoop')
         self.assertEqual(response.applications[0].version, '1.0.3')
+        self.assertEqual(
+            response.masterpublicdnsname, 'ec2-184-0-0-1.us-west-1.compute.amazonaws.com')
+        self.assertEqual(response.normalizedinstancehours, '10')
+        self.assertEqual(response.servicerole, 'my-service-role')
 
         self.assert_request_parameters({
             'Action': 'DescribeCluster',
@@ -509,7 +637,7 @@ class TestDescribeStep(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<DescribeStepOutput></DescribeStepOutput>"""
+        return b"""<DescribeStepOutput></DescribeStepOutput>"""
 
     def test_describe_step(self):
         self.set_http_response(200)
@@ -538,7 +666,7 @@ class TestAddJobFlowSteps(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """
+        return b"""
 <AddJobFlowStepsOutput>
     <StepIds>
         <member>Foo</member>
@@ -597,7 +725,7 @@ class TestAddTag(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<AddTagsResponse
+        return b"""<AddTagsResponse
                xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
                    <AddTagsResult/>
                    <ResponseMetadata>
@@ -642,7 +770,7 @@ class TestRemoveTag(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """<RemoveTagsResponse
+        return b"""<RemoveTagsResponse
                xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
                    <RemoveTagsResult/>
                    <ResponseMetadata>
@@ -668,7 +796,8 @@ class TestRemoveTag(AWSMockServiceTestCase):
         with self.assertRaises(AssertionError):
             self.service_connection.add_tags('j-123', [])
 
-        response = self.service_connection.remove_tags('j-123', ['FirstKey', 'SecondKey'])
+        response = self.service_connection.remove_tags(
+            'j-123', ['FirstKey', 'SecondKey'])
 
         self.assertTrue(response)
         self.assert_request_parameters({
@@ -679,11 +808,12 @@ class TestRemoveTag(AWSMockServiceTestCase):
             'Version': '2009-03-31'
         })
 
+
 class DescribeJobFlowsTestBase(AWSMockServiceTestCase):
     connection_class = EmrConnection
 
     def default_body(self):
-        return """
+        return b"""
 <DescribeJobFlowsResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
   <DescribeJobFlowsResult>
     <JobFlows>
@@ -784,6 +914,7 @@ class DescribeJobFlowsTestBase(AWSMockServiceTestCase):
 </DescribeJobFlowsResponse>
         """
 
+
 class TestDescribeJobFlows(DescribeJobFlowsTestBase):
 
     def test_describe_jobflows_response(self):
@@ -806,14 +937,16 @@ class TestDescribeJobFlows(DescribeJobFlowsTestBase):
         self.assertEqual(jf.masterinstanceid, 'i-aaaaaa')
         self.assertEqual(jf.hadoopversion, '1.0.3')
         self.assertEqual(jf.normalizedinstancehours, '12')
-        self.assertEqual(jf.masterpublicdnsname, 'ec2-184-0-0-1.us-west-1.compute.amazonaws.com')
+        self.assertEqual(
+            jf.masterpublicdnsname, 'ec2-184-0-0-1.us-west-1.compute.amazonaws.com')
         self.assertEqual(jf.instancecount, '3')
         self.assertEqual(jf.terminationprotected, 'false')
 
         self.assertTrue(isinstance(jf.steps, list))
         step = jf.steps[0]
         self.assertTrue(isinstance(step, Step))
-        self.assertEqual(step.jar, 's3://us-west-1.elasticmapreduce/libs/script-runner/script-runner.jar')
+        self.assertEqual(
+            step.jar, 's3://us-west-1.elasticmapreduce/libs/script-runner/script-runner.jar')
         self.assertEqual(step.name, 'Setup hive')
         self.assertEqual(step.actiononfailure, 'TERMINATE_JOB_FLOW')
 
@@ -845,7 +978,8 @@ class TestDescribeJobFlows(DescribeJobFlowsTestBase):
         now = datetime.now()
         a_bit_before = datetime.fromtimestamp(time() - 1000)
 
-        self.service_connection.describe_jobflows(states=['WAITING', 'RUNNING'], jobflow_ids=['j-aaaaaa', 'j-aaaaab'], created_after=a_bit_before, created_before=now)
+        self.service_connection.describe_jobflows(states=['WAITING', 'RUNNING'], jobflow_ids=[
+                                                  'j-aaaaaa', 'j-aaaaab'], created_after=a_bit_before, created_before=now)
         self.assert_request_parameters({
             'Action': 'DescribeJobFlows',
             'JobFlowIds.member.1': 'j-aaaaaa',
@@ -856,7 +990,9 @@ class TestDescribeJobFlows(DescribeJobFlowsTestBase):
             'CreatedBefore': now.strftime(boto.utils.ISO8601),
         }, ignore_params_values=['Version'])
 
+
 class TestDescribeJobFlow(DescribeJobFlowsTestBase):
+
     def test_describe_jobflow(self):
         self.set_http_response(200)
 
@@ -866,3 +1002,53 @@ class TestDescribeJobFlow(DescribeJobFlowsTestBase):
             'Action': 'DescribeJobFlows',
             'JobFlowIds.member.1': 'j-aaaaaa',
         }, ignore_params_values=['Version'])
+
+
+class TestRunJobFlow(AWSMockServiceTestCase):
+    connection_class = EmrConnection
+
+    def default_body(self):
+        return b"""
+<RunJobFlowResponse xmlns="http://elasticmapreduce.amazonaws.com/doc/2009-03-31">
+  <RunJobFlowResult>
+    <JobFlowId>j-ZKIY4CKQRX72</JobFlowId>
+  </RunJobFlowResult>
+  <ResponseMetadata>
+    <RequestId>aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee</RequestId>
+  </ResponseMetadata>
+</RunJobFlowResponse>
+"""
+
+    def test_run_jobflow_service_role(self):
+        self.set_http_response(200)
+
+        response = self.service_connection.run_jobflow(
+            'EmrCluster', service_role='EMR_DefaultRole')
+
+        self.assertTrue(response)
+        self.assert_request_parameters({
+            'Action': 'RunJobFlow',
+            'Version': '2009-03-31',
+            'ServiceRole': 'EMR_DefaultRole',
+            'Name': 'EmrCluster'},
+            ignore_params_values=['ActionOnFailure', 'Instances.InstanceCount',
+                                  'Instances.KeepJobFlowAliveWhenNoSteps',
+                                  'Instances.MasterInstanceType',
+                                  'Instances.SlaveInstanceType'])
+
+    def test_run_jobflow_enable_debugging(self):
+        self.region = 'ap-northeast-2'
+        self.set_http_response(200)
+        self.service_connection.run_jobflow(
+            'EmrCluster', enable_debugging=True)
+
+        actual_params = set(self.actual_request.params.copy().items())
+
+        expected_params = set([
+            ('Steps.member.1.HadoopJarStep.Jar',
+             's3://ap-northeast-2.elasticmapreduce/libs/script-runner/script-runner.jar'),
+            ('Steps.member.1.HadoopJarStep.Args.member.1',
+                's3://ap-northeast-2.elasticmapreduce/libs/state-pusher/0.1/fetch'),
+        ])
+
+        self.assertTrue(expected_params <= actual_params)

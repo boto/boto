@@ -4,7 +4,7 @@ from tests.unit import AWSMockServiceTestCase
 
 from boto.vpc import VPCConnection, VpnConnection
 
-DESCRIBE_VPNCONNECTIONS = r'''<?xml version="1.0" encoding="UTF-8"?>
+DESCRIBE_VPNCONNECTIONS = b'''<?xml version="1.0" encoding="UTF-8"?>
 <DescribeVpnConnectionsResponse xmlns="http://ec2.amazonaws.com/doc/2013-02-01/">
     <requestId>12345678-asdf-ghjk-zxcv-0987654321nb</requestId>
     <vpnConnectionSet>
@@ -137,7 +137,7 @@ class TestCreateVPNConnection(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateVpnConnectionResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
               <requestId>5cc7891f-1f3b-4fc4-a626-bdea8f63ff5a</requestId>
               <vpnConnection>
@@ -180,7 +180,7 @@ class TestDeleteVPNConnection(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteVpnConnectionResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                <requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
                <return>true</return>
@@ -204,7 +204,7 @@ class TestCreateVPNConnectionRoute(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <CreateVpnConnectionRouteResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                 <requestId>4f35a1b2-c2c3-4093-b51f-abb9d7311990</requestId>
                 <return>true</return>
@@ -230,7 +230,7 @@ class TestDeleteVPNConnectionRoute(AWSMockServiceTestCase):
     connection_class = VPCConnection
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteVpnConnectionRouteResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-01/">
                 <requestId>4f35a1b2-c2c3-4093-b51f-abb9d7311990</requestId>
                 <return>true</return>

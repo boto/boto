@@ -34,9 +34,9 @@ class TestElastiCacheConnection(unittest.TestCase):
         timeout = time.time() + 600
         while time.time() < timeout:
             response = self.elasticache.describe_cache_clusters(cluster_id)
-            status = response['DescribeCacheClustersResponse']\
-                    ['DescribeCacheClustersResult']\
-                    ['CacheClusters'][0]['CacheClusterStatus']
+            status = (response['DescribeCacheClustersResponse']
+                              ['DescribeCacheClustersResult']
+                              ['CacheClusters'][0]['CacheClusterStatus'])
             if status == 'available':
                 break
             time.sleep(5)

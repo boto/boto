@@ -41,6 +41,7 @@ class BillingProducts(list):
         if name == 'billingProduct':
             self.append(value)
 
+
 class Image(TaggedEC2Object):
     """
     Represents an EC2 Image
@@ -106,7 +107,7 @@ class Image(TaggedEC2Object):
                 self.is_public = True
             else:
                 raise Exception(
-                    'Unexpected value of isPublic %s for image %s'%(
+                    'Unexpected value of isPublic %s for image %s' % (
                         value,
                         self.id
                     )
@@ -229,10 +230,18 @@ class Image(TaggedEC2Object):
             * c3.2xlarge
             * c3.4xlarge
             * c3.8xlarge
+            * c4.large
+            * c4.xlarge
+            * c4.2xlarge
+            * c4.4xlarge
+            * c4.8xlarge
             * i2.xlarge
             * i2.2xlarge
             * i2.4xlarge
             * i2.8xlarge
+            * t2.micro
+            * t2.small
+            * t2.medium
 
         :type placement: string
         :param placement: The Availability Zone to launch the instance into.
@@ -365,7 +374,7 @@ class Image(TaggedEC2Object):
         )
 
     def get_kernel(self, dry_run=False):
-        img_attrs =self.connection.get_image_attribute(
+        img_attrs = self.connection.get_image_attribute(
             self.id,
             'kernel',
             dry_run=dry_run

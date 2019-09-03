@@ -4,6 +4,7 @@ from boto.exception import BotoServerError, S3CreateError, JSONResponseError
 
 from httpretty import HTTPretty, httprettified
 
+
 class TestBotoServerError(unittest.TestCase):
 
     def test_botoservererror_basics(self):
@@ -45,7 +46,8 @@ class TestBotoServerError(unittest.TestCase):
   <RequestID>e73bb2bb-63e3-9cdc-f220-6332de66dbbe</RequestID>
 </Response>"""
         bse = BotoServerError('403', 'Forbidden', body=xml)
-        self.assertEqual(bse.error_message,
+        self.assertEqual(
+            bse.error_message,
             'Session does not have permission to perform (sdb:CreateDomain) on '
             'resource (arn:aws:sdb:us-east-1:xxxxxxx:domain/test_domain). '
             'Contact account owner.')
@@ -84,18 +86,19 @@ class TestBotoServerError(unittest.TestCase):
         self.assertEqual(s3ce.error_code, 'BucketAlreadyOwnedByYou')
         self.assertEqual(s3ce.status, '409')
         self.assertEqual(s3ce.reason, 'Conflict')
-        self.assertEqual(s3ce.error_message,
-                'Your previous request to create the named bucket succeeded '
-                'and you already own it.')
+        self.assertEqual(
+            s3ce.error_message,
+            'Your previous request to create the named bucket succeeded '
+            'and you already own it.')
         self.assertEqual(s3ce.error_message, s3ce.message)
         self.assertEqual(s3ce.request_id, 'FF8B86A32CC3FE4F')
 
     def test_message_json_response_error(self):
         # This test comes from https://forums.aws.amazon.com/thread.jspa?messageID=374936
         body = {
-                '__type': 'com.amazon.coral.validate#ValidationException',
-                'message': 'The attempted filter operation is not supported '
-                           'for the provided filter argument count'}
+            '__type': 'com.amazon.coral.validate#ValidationException',
+            'message': 'The attempted filter operation is not supported '
+                       'for the provided filter argument count'}
 
         jre = JSONResponseError('400', 'Bad Request', body=body)
 

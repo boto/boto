@@ -6,6 +6,7 @@ import os
 
 import boto
 from boto.compat import json
+from boto.compat import six
 
 
 DESCRIPTION = """Dump the contents of one or more DynamoDB tables to the local filesystem.
@@ -39,7 +40,7 @@ def dump_table(table, out_dir):
         for item in table.scan():
             # JSON can't serialize sets -- convert those to lists.
             data = {}
-            for k, v in item.iteritems():
+            for k, v in six.iteritems(item):
                 if isinstance(v, (set, frozenset)):
                     data[k] = list(v)
                 else:

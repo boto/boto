@@ -148,9 +148,10 @@ class Metric(object):
         :type statistic: string
         :param statistic: The statistic for the metric.
 
-        :param dimension_filters: A dictionary containing name/value
-            pairs that will be used to filter the results.  The key in
-            the dictionary is the name of a Dimension.  The value in
+        :type dimensions: dict
+        :param dimension: A dictionary containing name/value
+            pairs that will be used to filter the results. The key in
+            the dictionary is the name of a Dimension. The value in
             the dictionary is either a scalar value of that Dimension
             name that you want to filter on, a list of values to
             filter on or None if you want all metrics with that

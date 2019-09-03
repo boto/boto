@@ -78,7 +78,7 @@ an exception if the domain you are looking for doesn't exist. If you set it to f
 :py:class:`Domain <boto.sdb.domain.Domain>` object blindly regardless of its existence.
 
 Getting Domain Metadata
-------------------------
+-----------------------
 There are times when you might want to know your domains' machine usage, aprox. item count and other such data.
 To this end, boto offers a simple and convenient way to do so as shown below::
 
@@ -141,7 +141,7 @@ parameter.
 
 
 Retrieving Items
------------------
+----------------
 To retrieve an item along with its attributes is a fairly straight forward operation and can be accomplished as follows::
 
     >>> dom.get_item('item1')
@@ -190,7 +190,7 @@ delete_item() method, boto will take care of the rest::
 
 
 Deleting Domains
------------------------------------
+----------------
 To delete a domain and all items under it (i.e. be very careful), you can do it as follows::
 
     >>> conn.delete_domain('test-domain')

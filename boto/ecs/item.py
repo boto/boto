@@ -22,7 +22,7 @@
 
 import xml.sax
 import cgi
-from StringIO import StringIO
+from boto.compat import six, StringIO
 
 class ResponseGroup(xml.sax.ContentHandler):
     """A Generic "Response Group", which can
@@ -136,21 +136,23 @@ class ItemSet(ResponseGroup):
             self.curItem.endElement(name, value, connection)
         return None
 
-    def next(self):
+    def __next__(self):
         """Special paging functionality"""
         if self.iter is None:
             self.iter = iter(self.objs)
         try:
-            return self.iter.next()
+            return next(self.iter)
         except StopIteration:
             self.iter = None
             self.objs = []
             if int(self.page) < int(self.total_pages):
                 self.page += 1
                 self._connection.get_response(self.action, self.params, self.page, self)
-                return self.next()
+                return next(self)
             else:
                 raise
+
+    next = __next__
 
     def __iter__(self):
         return self

@@ -36,7 +36,7 @@ class TestGlacierLayer1(unittest.TestCase):
         glacier = Layer1()
         glacier.create_vault('l1testvault')
         self.addCleanup(glacier.delete_vault, 'l1testvault')
-        upload_id = glacier.initiate_multipart_upload('l1testvault', 4*1024*1024,
+        upload_id = glacier.initiate_multipart_upload('l1testvault', 4 * 1024 * 1024,
                                                       'double  spaces  here')['UploadId']
         self.addCleanup(glacier.abort_multipart_upload, 'l1testvault', upload_id)
         response = glacier.list_multipart_uploads('l1testvault')['UploadsList']

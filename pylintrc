@@ -51,7 +51,7 @@ load-plugins=
 
 # Disable the message(s) with the given id(s).
 # disable-msg=C0323,W0142,C0301,C0103,C0111,E0213,C0302,C0203,W0703,R0201
-disable-msg=C0111,C0103,W0703,W0702
+disable-msg=C0301,C0111,C0103,R0201,W0702,C0324
 
 [REPORTS]
 
@@ -299,7 +299,3 @@ max-module-lines=1000
 # String used as indentation unit. This is usually " " (4 spaces) or "\t" (1
 # tab).
 indent-string='    '
-
-
-[MESSAGES CONTROL]
-disable-msg=C0301,C0111,C0103,R0201,W0702,C0324

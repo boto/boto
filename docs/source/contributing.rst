@@ -152,7 +152,7 @@ into nosetests.
 
 
 Testing Supported Python Versions
-==================================
+=================================
 
 Boto supports python 2.6 and 2.7. An easy way to verify functionality
 across multiple python versions is to use tox_. A tox.ini file is included

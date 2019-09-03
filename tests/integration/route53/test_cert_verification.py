@@ -24,7 +24,7 @@
 """
 Check that all of the certs on all service endpoints validate.
 """
-import unittest
+from tests.compat import unittest
 from nose.plugins.attrib import attr
 
 from tests.integration import ServiceCertVerificationTest

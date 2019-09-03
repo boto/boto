@@ -15,9 +15,10 @@
 
 import boto
 import tempfile
-import urllib
+
 from boto.exception import InvalidUriError
 from boto import storage_uri
+from boto.compat import urllib
 from boto.s3.keyfile import KeyFile
 from tests.integration.s3.mock_storage_service import MockBucket
 from tests.integration.s3.mock_storage_service import MockBucketStorageUri
@@ -182,8 +183,8 @@ class UriTest(unittest.TestCase):
         self.assertEqual(uri.is_version_specific, True)
 
     def test_explicit_file_uri(self):
-        tmp_dir = tempfile.tempdir
-        uri_str = 'file://%s' % urllib.pathname2url(tmp_dir)
+        tmp_dir = tempfile.tempdir or ''
+        uri_str = 'file://%s' % urllib.request.pathname2url(tmp_dir)
         uri = boto.storage_uri(uri_str, validate=False,
             suppress_consec_slashes=False)
         self.assertEqual('file', uri.scheme)
@@ -203,8 +204,8 @@ class UriTest(unittest.TestCase):
         self.assertEqual(uri.is_stream(), False)
 
     def test_implicit_file_uri(self):
-        tmp_dir = tempfile.tempdir
-        uri_str = '%s' % urllib.pathname2url(tmp_dir)
+        tmp_dir = tempfile.tempdir or ''
+        uri_str = '%s' % urllib.request.pathname2url(tmp_dir)
         uri = boto.storage_uri(uri_str, validate=False,
             suppress_consec_slashes=False)
         self.assertEqual('file', uri.scheme)

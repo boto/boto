@@ -1,8 +1,5 @@
 #!/usr/bin/env python
-try:
-    from tests.unit import unittest
-except ImportError:
-    import unittest
+from __future__ import print_function
 import sys
 import os
 import os.path
@@ -11,10 +8,10 @@ from datetime import datetime, timedelta
 
 simple = os.environ.get('MWS_MERCHANT', None)
 if not simple:
-    print """
+    print("""
         Please set the MWS_MERCHANT environmental variable
         to your Merchant or SellerId to enable MWS tests.
-    """
+    """)
 
 
 advanced = False
@@ -25,9 +22,10 @@ if __name__ == "__main__":
     sys.path = [devpath] + sys.path
     advanced = simple and True or False
     if advanced:
-        print '>>> advanced MWS tests; using local boto sources'
+        print('>>> advanced MWS tests; using local boto sources')
 
 from boto.mws.connection import MWSConnection
+from tests.compat import unittest
 
 
 class MWSTestCase(unittest.TestCase):
@@ -71,9 +69,9 @@ class MWSTestCase(unittest.TestCase):
         response = self.mws.get_product_categories_for_asin(
             MarketplaceId=self.marketplace_id,
             ASIN=asin)
-        self.assertTrue(len(response._result.Self) == 2)
+        self.assertEqual(len(response._result.Self), 3)
         categoryids = [x.ProductCategoryId for x in response._result.Self]
-        self.assertSequenceEqual(categoryids, ['285856', '21'])
+        self.assertSequenceEqual(categoryids, ['285856', '21', '491314'])
 
     @unittest.skipUnless(simple and isolator, "skipping simple test")
     def test_list_matching_products(self):

@@ -22,7 +22,7 @@
 import uuid
 import base64
 import time
-from boto.compat import json
+from boto.compat import six, json
 from boto.cloudfront.identity import OriginAccessIdentity
 from boto.cloudfront.object import Object, StreamingObject
 from boto.cloudfront.signers import ActiveTrustedSigners, TrustedSigners
@@ -525,12 +525,12 @@ class Distribution(object):
         :param expire_time: The expiry time of the URL. If provided, the URL
             will expire after the time has passed. If not provided the URL will
             never expire. Format is a unix epoch.
-            Use time.time() + duration_in_sec.
+            Use int(time.time() + duration_in_sec).
 
         :type valid_after_time: int
         :param valid_after_time: If provided, the URL will not be valid until
             after valid_after_time. Format is a unix epoch.
-            Use time.time() + secs_until_valid.
+            Use int(time.time() + secs_until_valid).
 
         :type ip_address: str
         :param ip_address: If provided, only allows access from the specified
@@ -665,7 +665,7 @@ class Distribution(object):
             raise ValueError("You must specify one of private_key_file or private_key_string")
         # If private_key_file is a file name, open it and read it
         if private_key_string is None:
-            if isinstance(private_key_file, basestring):
+            if isinstance(private_key_file, six.string_types):
                 with open(private_key_file, 'r') as file_handle:
                     private_key_string = file_handle.read()
             # Otherwise, treat it like a file

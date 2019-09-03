@@ -21,10 +21,9 @@
 # IN THE SOFTWARE.
 #
 import tempfile
-from Queue import Queue
+from boto.compat import Queue
 
-import mock
-from tests.unit import unittest
+from tests.compat import mock, unittest
 from tests.unit import AWSMockServiceTestCase
 
 from boto.glacier.concurrent import ConcurrentUploader, ConcurrentDownloader
@@ -40,8 +39,8 @@ class FakeThreadedConcurrentUploader(ConcurrentUploader):
         self.upload_id = upload_id
 
     def _wait_for_upload_threads(self, hash_chunks, result_queue, total_parts):
-        for i in xrange(total_parts):
-            hash_chunks[i] = 'foo'
+        for i in range(total_parts):
+            hash_chunks[i] = b'foo'
 
 
 class FakeThreadedConcurrentDownloader(ConcurrentDownloader):
@@ -88,7 +87,7 @@ class TestConcurrentUploader(unittest.TestCase):
                                                   'vault_name')
         uploader.upload('foofile')
         q = uploader.worker_queue
-        items = [q.get() for i in xrange(q.qsize())]
+        items = [q.get() for i in range(q.qsize())]
         self.assertEqual(items[0], (0, 4 * 1024 * 1024))
         self.assertEqual(items[1], (1, 4 * 1024 * 1024))
         # 2 for the parts, 10 for the end sentinels (10 threads).
@@ -96,14 +95,20 @@ class TestConcurrentUploader(unittest.TestCase):
 
     def test_correct_low_level_api_calls(self):
         api_mock = mock.MagicMock()
+        upload_id = '0898d645-ea45-4548-9a67-578f507ead49'
+        initiate_upload_mock = mock.Mock(
+            return_value={'UploadId': upload_id})
+        # initiate_multipart_upload must return a body containing an `UploadId`
+        api_mock.attach_mock(initiate_upload_mock, 'initiate_multipart_upload')
+
         uploader = FakeThreadedConcurrentUploader(api_mock, 'vault_name')
         uploader.upload('foofile')
         # The threads call the upload_part, so we're just verifying the
         # initiate/complete multipart API calls.
-        api_mock.initiate_multipart_upload.assert_called_with(
+        initiate_upload_mock.assert_called_with(
             'vault_name', 4 * 1024 * 1024, None)
         api_mock.complete_multipart_upload.assert_called_with(
-            'vault_name', mock.ANY, mock.ANY, 8 * 1024 * 1024)
+            'vault_name', upload_id, mock.ANY, 8 * 1024 * 1024)
 
     def test_downloader_work_queue_is_correctly_populated(self):
         job = mock.MagicMock()
@@ -111,7 +116,7 @@ class TestConcurrentUploader(unittest.TestCase):
         downloader = FakeThreadedConcurrentDownloader(job)
         downloader.download('foofile')
         q = downloader.worker_queue
-        items = [q.get() for i in xrange(q.qsize())]
+        items = [q.get() for i in range(q.qsize())]
         self.assertEqual(items[0], (0, 4 * 1024 * 1024))
         self.assertEqual(items[1], (1, 4 * 1024 * 1024))
         # 2 for the parts, 10 for the end sentinels (10 threads).

@@ -32,6 +32,7 @@ from boto.rds.regioninfo import RDSRegionInfo
 from boto.rds.dbsubnetgroup import DBSubnetGroup
 from boto.rds.vpcsecuritygroupmembership import VPCSecurityGroupMembership
 from boto.regioninfo import get_regions
+from boto.regioninfo import connect
 from boto.rds.logfile import LogFile, LogFileObject
 
 
@@ -63,10 +64,8 @@ def connect_to_region(region_name, **kw_params):
     :return: A connection to the given region, or None if an invalid region
              name is given
     """
-    for region in regions():
-        if region.name == region_name:
-            return region.connect(**kw_params)
-    return None
+    return connect('rds', region_name, region_cls=RDSRegionInfo,
+                   connection_cls=RDSConnection, **kw_params)
 
 #boto.set_stream_logger('rds')
 
@@ -451,7 +450,7 @@ class RDSConnection(AWSQueryConnection):
             self.build_list_params(params, l, 'VpcSecurityGroupIds.member')
 
         # Remove any params set to None
-        for k, v in params.items():
+        for k, v in list(params.items()):
           if v is None: del(params[k])
 
         return self.get_object('CreateDBInstance', params, DBInstance)

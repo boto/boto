@@ -31,7 +31,7 @@ github_project_url = 'https://github.com/boto/boto/'
 try:
     release = os.environ.get('SVN_REVISION', 'HEAD')
     print release
-except Exception, e:
+except Exception as e:
     print e
 
 html_title = "boto v%s" % version

@@ -20,16 +20,12 @@
 # IN THE SOFTWARE.
 #
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
 import boto
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
 from boto.exception import JSONResponseError
 from boto.rds2 import exceptions
+from boto.compat import json
 
 
 class RDSConnection(AWSQueryConnection):
@@ -196,6 +192,8 @@ class RDSConnection(AWSQueryConnection):
 
         :type tags: list
         :param tags: The tags to be assigned to the Amazon RDS resource.
+            Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
 
         """
         params = {'ResourceName': resource_name, }
@@ -305,8 +303,8 @@ class RDSConnection(AWSQueryConnection):
         Example: `my-db-snapshot`
 
         :type tags: list
-        :param tags: A list of tags.
-
+        :param tags: A list of tags. Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
         """
         params = {
             'SourceDBSnapshotIdentifier': source_db_snapshot_identifier,
@@ -649,7 +647,8 @@ class RDSConnection(AWSQueryConnection):
             has not been set, the DB instance will be private.
 
         :type tags: list
-        :param tags: A list of tags.
+        :param tags: A list of tags. Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
 
         """
         params = {
@@ -803,7 +802,8 @@ class RDSConnection(AWSQueryConnection):
             has not been set, the DB instance will be private.
 
         :type tags: list
-        :param tags: A list of tags.
+        :param tags: A list of tags. Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
 
         """
         params = {
@@ -878,7 +878,8 @@ class RDSConnection(AWSQueryConnection):
         :param description: The description for the DB parameter group.
 
         :type tags: list
-        :param tags: A list of tags.
+        :param tags: A list of tags. Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
 
         """
         params = {
@@ -922,7 +923,8 @@ class RDSConnection(AWSQueryConnection):
             security group.
 
         :type tags: list
-        :param tags: A list of tags.
+        :param tags: A list of tags. Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
 
         """
         params = {
@@ -971,7 +973,8 @@ class RDSConnection(AWSQueryConnection):
         + Cannot end with a hyphen or contain two consecutive hyphens
 
         :type tags: list
-        :param tags: A list of tags.
+        :param tags: A list of tags. Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
 
         """
         params = {
@@ -1011,7 +1014,8 @@ class RDSConnection(AWSQueryConnection):
         :param subnet_ids: The EC2 Subnet IDs for the DB subnet group.
 
         :type tags: list
-        :param tags: A list of tags.
+        :param tags: A list of tags. Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
 
         """
         params = {
@@ -1110,7 +1114,8 @@ class RDSConnection(AWSQueryConnection):
             active it.
 
         :type tags: list
-        :param tags: A list of tags.
+        :param tags: A list of tags. Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
 
         """
         params = {
@@ -1172,7 +1177,8 @@ class RDSConnection(AWSQueryConnection):
         :param option_group_description: The description of the option group.
 
         :type tags: list
-        :param tags: A list of tags.
+        :param tags: A list of tags. Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
 
         """
         params = {
@@ -3113,7 +3119,8 @@ class RDSConnection(AWSQueryConnection):
         Default: `1`
 
         :type tags: list
-        :param tags: A list of tags.
+        :param tags: A list of tags. Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
 
         """
         params = {
@@ -3442,7 +3449,8 @@ class RDSConnection(AWSQueryConnection):
             DB instance
 
         :type tags: list
-        :param tags: A list of tags.
+        :param tags: A list of tags. Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
 
         """
         params = {
@@ -3650,7 +3658,8 @@ class RDSConnection(AWSQueryConnection):
             DB instance
 
         :type tags: list
-        :param tags: A list of tags.
+        :param tags: A list of tags. Tags must be passed as tuples in the form
+            [('key1', 'valueForKey1'), ('key2', 'valueForKey2')]
 
         """
         params = {

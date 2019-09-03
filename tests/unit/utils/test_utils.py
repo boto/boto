@@ -19,15 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+from tests.compat import mock, unittest
 
+import datetime
 import hashlib
 import hmac
-import mock
-import thread
+import locale
 import time
 
 import boto.utils
@@ -38,19 +35,19 @@ from boto.utils import get_instance_userdata
 from boto.utils import retry_url
 from boto.utils import LazyLoadMetadata
 
-from boto.compat import json
+from boto.compat import json, _thread
 
 
 @unittest.skip("http://bugs.python.org/issue7980")
 class TestThreadImport(unittest.TestCase):
     def test_strptime(self):
         def f():
-            for m in xrange(1, 13):
-                for d in xrange(1,29):
+            for m in range(1, 13):
+                for d in range(1,29):
                     boto.utils.parse_ts('2013-01-01T00:00:00Z')
 
-        for _ in xrange(10):
-            thread.start_new_thread(f, ())
+        for _ in range(10):
+            _thread.start_new_thread(f, ())
 
         time.sleep(3)
 
@@ -82,11 +79,13 @@ class TestPassword(unittest.TestCase):
 
         password = SHA224Password()
         password.set('foo')
-        self.assertEquals(hashlib.sha224('foo').hexdigest(), str(password))
+        self.assertEquals(hashlib.sha224(b'foo').hexdigest(), str(password))
 
     def test_hmac(self):
         def hmac_hashfunc(cls, msg):
-            return hmac.new('mysecretkey', msg)
+            if not isinstance(msg, bytes):
+                msg = msg.encode('utf-8')
+            return hmac.new(b'mysecretkey', msg)
 
         class HMACPassword(Password):
             hashfunc = hmac_hashfunc
@@ -96,15 +95,15 @@ class TestPassword(unittest.TestCase):
         password.set('foo')
 
         self.assertEquals(str(password),
-                          hmac.new('mysecretkey', 'foo').hexdigest())
+                          hmac.new(b'mysecretkey', b'foo').hexdigest())
 
     def test_constructor(self):
-        hmac_hashfunc = lambda msg: hmac.new('mysecretkey', msg)
+        hmac_hashfunc = lambda msg: hmac.new(b'mysecretkey', msg)
 
         password = Password(hashfunc=hmac_hashfunc)
         password.set('foo')
         self.assertEquals(password.str,
-                          hmac.new('mysecretkey', 'foo').hexdigest())
+                          hmac.new(b'mysecretkey', b'foo').hexdigest())
 
 
 class TestPythonizeName(unittest.TestCase):
@@ -182,8 +181,8 @@ class TestBuildInstanceMetadataURL(unittest.TestCase):
 
 class TestRetryURL(unittest.TestCase):
     def setUp(self):
-        self.urlopen_patch = mock.patch('urllib2.urlopen')
-        self.opener_patch = mock.patch('urllib2.build_opener')
+        self.urlopen_patch = mock.patch('boto.compat.urllib.request.urlopen')
+        self.opener_patch = mock.patch('boto.compat.urllib.request.build_opener')
         self.urlopen = self.urlopen_patch.start()
         self.opener = self.opener_patch.start()
 
@@ -207,6 +206,22 @@ class TestRetryURL(unittest.TestCase):
 
         response = retry_url('http://10.10.10.10/foo', num_retries=1)
         self.assertEqual(response, 'no proxy response')
+
+    def test_retry_url_using_bytes_and_string_response(self):
+        test_value = 'normal response'
+        fake_response = mock.Mock()
+
+        # test using unicode
+        fake_response.read.return_value = test_value
+        self.opener.return_value.open.return_value = fake_response
+        response = retry_url('http://10.10.10.10/foo', num_retries=1)
+        self.assertEqual(response, test_value)
+
+        # test using bytes
+        fake_response.read.return_value = test_value.encode('utf-8')
+        self.opener.return_value.open.return_value = fake_response
+        response = retry_url('http://10.10.10.10/foo', num_retries=1)
+        self.assertEqual(response, test_value)
 
 class TestLazyLoadMetadata(unittest.TestCase):
 
@@ -234,7 +249,7 @@ class TestLazyLoadMetadata(unittest.TestCase):
 
         self.set_normal_response([key_data, invalid_data, valid_data])
         response = LazyLoadMetadata(url, num_retries)
-        self.assertEqual(response.values()[0], json.loads(valid_data))
+        self.assertEqual(list(response.values())[0], json.loads(valid_data))
 
     def test_meta_data_with_invalid_json_format_happened_twice(self):
         key_data = "test"
@@ -257,7 +272,146 @@ class TestLazyLoadMetadata(unittest.TestCase):
 
         boto.utils.retry_url.assert_called_with(
             'http://169.254.169.254/latest/user-data',
-            retry_on_404=False)
+            retry_on_404=False,
+            num_retries=5, timeout=None)
+
+    def test_user_data_timeout(self):
+        self.set_normal_response(['foo'])
+
+        userdata = get_instance_userdata(timeout=1, num_retries=2)
+
+        self.assertEqual('foo', userdata)
+
+        boto.utils.retry_url.assert_called_with(
+            'http://169.254.169.254/latest/user-data',
+            retry_on_404=False,
+            num_retries=2, timeout=1)
+
+
+class TestStringToDatetimeParsing(unittest.TestCase):
+    """ Test string to datetime parsing """
+    def setUp(self):
+        self._saved = locale.setlocale(locale.LC_ALL)
+        try:
+            locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
+        except locale.Error:
+            self.skipTest('Unsupported locale setting')
+
+    def tearDown(self):
+        locale.setlocale(locale.LC_ALL, self._saved)
+
+    def test_nonus_locale(self):
+        test_string = 'Thu, 15 May 2014 09:06:03 GMT'
+
+        # Default strptime shoudl fail
+        with self.assertRaises(ValueError):
+            datetime.datetime.strptime(test_string, boto.utils.RFC1123)
+
+        # Our parser should succeed
+        result = boto.utils.parse_ts(test_string)
+
+        self.assertEqual(2014, result.year)
+        self.assertEqual(5, result.month)
+        self.assertEqual(15, result.day)
+        self.assertEqual(9, result.hour)
+        self.assertEqual(6, result.minute)
+
+
+class TestHostIsIPV6(unittest.TestCase):
+
+    def test_is_ipv6_no_brackets(self):
+        hostname = 'bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be'
+        result = boto.utils.host_is_ipv6(hostname)
+        self.assertTrue(result)
+
+    def test_is_ipv6_with_brackets(self):
+        hostname = '[bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be]'
+        result = boto.utils.host_is_ipv6(hostname)
+        self.assertTrue(result)
+
+    def test_is_ipv6_with_brackets_and_port(self):
+        hostname = '[bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be]:8080'
+        result = boto.utils.host_is_ipv6(hostname)
+        self.assertTrue(result)
+
+    def test_is_ipv6_no_brackets_abbreviated(self):
+        hostname = 'bf1d:cb48:4513::'
+        result = boto.utils.host_is_ipv6(hostname)
+        self.assertTrue(result)
+
+    def test_is_ipv6_with_brackets_abbreviated(self):
+        hostname = '[bf1d:cb48:4513::'
+        result = boto.utils.host_is_ipv6(hostname)
+        self.assertTrue(result)
+
+    def test_is_ipv6_with_brackets_and_port_abbreviated(self):
+        hostname = '[bf1d:cb48:4513::]:8080'
+        result = boto.utils.host_is_ipv6(hostname)
+        self.assertTrue(result)
+
+    def test_empty_string(self):
+        result = boto.utils.host_is_ipv6('')
+        self.assertFalse(result)
+
+    def test_not_of_string_type(self):
+        hostnames = [None, 0, False, [], {}]
+        for h in hostnames:
+            result = boto.utils.host_is_ipv6(h)
+            self.assertFalse(result)
+
+    def test_ipv4_no_port(self):
+        result = boto.utils.host_is_ipv6('192.168.1.1')
+        self.assertFalse(result)
+
+    def test_ipv4_with_port(self):
+        result = boto.utils.host_is_ipv6('192.168.1.1:8080')
+        self.assertFalse(result)
+
+    def test_hostnames_are_not_ipv6_with_port(self):
+        result = boto.utils.host_is_ipv6('example.org:8080')
+        self.assertFalse(result)
+
+    def test_hostnames_are_not_ipv6_without_port(self):
+        result = boto.utils.host_is_ipv6('example.org')
+        self.assertFalse(result)
+
+
+class TestParseHost(unittest.TestCase):
+
+    def test_parses_ipv6_hosts_no_brackets(self):
+        host = 'bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, host)
+
+    def test_parses_ipv6_hosts_with_brackets_stripping_them(self):
+        host = '[bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be]'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, 'bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be')
+
+    def test_parses_ipv6_hosts_with_brackets_and_port(self):
+        host = '[bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be]:8080'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, 'bf1d:cb48:4513:d1f1:efdd:b290:9ff9:64be')
+
+    def test_parses_ipv4_hosts(self):
+        host = '10.0.1.1'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, host)
+
+    def test_parses_ipv4_hosts_with_port(self):
+        host = '192.168.168.200:8080'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, '192.168.168.200')
+
+    def test_parses_hostnames_with_port(self):
+        host = 'example.org:8080'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, 'example.org')
+
+    def test_parses_hostnames_without_port(self):
+        host = 'example.org'
+        result = boto.utils.parse_host(host)
+        self.assertEquals(result, host)
 
 if __name__ == '__main__':
     unittest.main()

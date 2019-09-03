@@ -62,7 +62,7 @@ class ECSConnection(AWSQueryConnection):
         if page:
             params['ItemPage'] = page
         response = self.make_request(None, params, "/onca/xml")
-        body = response.read()
+        body = response.read().decode('utf-8')
         boto.log.debug(body)
 
         if response.status != 200:
@@ -75,7 +75,7 @@ class ECSConnection(AWSQueryConnection):
         else:
             rs = itemSet
         h = handler.XmlHandler(rs, self)
-        xml.sax.parseString(body, h)
+        xml.sax.parseString(body.encode('utf-8'), h)
         if not rs.is_valid:
             raise BotoServerError(response.status, '{Code}: {Message}'.format(**rs.errors[0]))
         return rs

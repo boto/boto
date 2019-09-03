@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-from tests.unit import unittest
+import base64
+from tests.compat import unittest, mock
 from tests.unit import AWSMockServiceTestCase
-
-import mock
 
 from boto.ec2.connection import EC2Connection
 
-DESCRIBE_INSTANCE_VPC = r"""<?xml version="1.0" encoding="UTF-8"?>
+DESCRIBE_INSTANCE_VPC = br"""<?xml version="1.0" encoding="UTF-8"?>
 <DescribeInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2012-10-01/">
     <requestId>c6132c74-b524-4884-87f5-0f4bde4a9760</requestId>
     <reservationSet>
@@ -120,7 +119,7 @@ DESCRIBE_INSTANCE_VPC = r"""<?xml version="1.0" encoding="UTF-8"?>
 </DescribeInstancesResponse>
 """
 
-RUN_INSTANCE_RESPONSE = r"""
+RUN_INSTANCE_RESPONSE = br"""
 <RunInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2012-06-01/">
     <requestId>ad4b83c2-f606-4c39-90c6-5dcc5be823e1</requestId>
     <reservationId>r-c5cef7a7</reservationId>
@@ -205,6 +204,41 @@ class TestRunInstanceResponseParsing(unittest.TestCase):
             {'arn': ('arn:aws:iam::ownerid:'
                      'instance-profile/myinstanceprofile'),
              'id': 'iamid'})
+
+
+class TestRunInstances(AWSMockServiceTestCase):
+    connection_class = EC2Connection
+
+    def default_body(self):
+        # This is a dummy response
+        return b"""
+        <DescribeLaunchConfigurationsResponse>
+        </DescribeLaunchConfigurationsResponse>
+        """
+
+    def test_run_instances_user_data(self):
+        self.set_http_response(status_code=200)
+
+        response = self.service_connection.run_instances(
+            image_id='123456',
+            instance_type='m1.large',
+            security_groups=['group1', 'group2'],
+            user_data='#!/bin/bash'
+        )
+
+        self.assert_request_parameters({
+            'Action': 'RunInstances',
+            'ImageId': '123456',
+            'InstanceType': 'm1.large',
+            'UserData': base64.b64encode(b'#!/bin/bash').decode('utf-8'),
+            'MaxCount': 1,
+            'MinCount': 1,
+            'SecurityGroup.1': 'group1',
+            'SecurityGroup.2': 'group2',
+        }, ignore_params_values=[
+            'Version', 'AWSAccessKeyId', 'SignatureMethod', 'SignatureVersion',
+            'Timestamp'
+        ])
 
 
 class TestDescribeInstances(AWSMockServiceTestCase):

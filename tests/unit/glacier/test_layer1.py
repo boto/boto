@@ -2,8 +2,10 @@ import json
 import copy
 import tempfile
 
+from tests.unit import unittest
 from tests.unit import AWSMockServiceTestCase
 from boto.glacier.layer1 import Layer1
+from boto.compat import six
 
 
 class GlacierLayer1ConnectionBase(AWSMockServiceTestCase):
@@ -34,7 +36,7 @@ class GlacierVaultsOperations(GlacierLayer1ConnectionBase):
                    u'RequestId': None,
                    u'VaultList': [self.vault_info]}
         self.set_http_response(status_code=200, header=self.json_header,
-                               body=json.dumps(content))
+                               body=json.dumps(content).encode('utf-8'))
         api_response = self.service_connection.list_vaults()
         self.assertDictEqual(content, api_response)
 
@@ -42,7 +44,7 @@ class GlacierVaultsOperations(GlacierLayer1ConnectionBase):
         content = copy.copy(self.vault_info)
         content[u'RequestId'] = None
         self.set_http_response(status_code=200, header=self.json_header,
-                               body=json.dumps(content))
+                               body=json.dumps(content).encode('utf-8'))
         api_response = self.service_connection.describe_vault(self.vault_name)
         self.assertDictEqual(content, api_response)
 
@@ -66,7 +68,7 @@ class GlacierJobOperations(GlacierLayer1ConnectionBase):
                    u'Location': None,
                    u'RequestId': None}
         self.set_http_response(status_code=202, header=self.json_header,
-                               body=json.dumps(content))
+                               body=json.dumps(content).encode('utf-8'))
         api_response = self.service_connection.initiate_job(self.vault_name,
                                                             self.job_content)
         self.assertDictEqual(content, api_response)
@@ -76,14 +78,41 @@ class GlacierJobOperations(GlacierLayer1ConnectionBase):
         self.set_http_response(status_code=200, header=header,
                                body=self.job_content)
         response = self.service_connection.get_job_output(self.vault_name,
-                                                         'example-job-id')
+                                                          'example-job-id')
         self.assertEqual(self.job_content, response.read())
+
+
+class TestGlacierUploadPart(GlacierLayer1ConnectionBase):
+    def test_upload_part_content_range_header(self):
+        fake_data = b'\xe2'
+        self.set_http_response(status_code=204)
+        self.service_connection.upload_part(
+            u'unicode_vault_name', 'upload_id', 'linear_hash', 'tree_hash',
+            (1,2), fake_data)
+        self.assertEqual(
+            self.actual_request.headers['Content-Range'], 'bytes 1-2/*')
+
+    def test_upload_part_with_unicode_name(self):
+        fake_data = b'\xe2'
+        self.set_http_response(status_code=204)
+        self.service_connection.upload_part(
+            u'unicode_vault_name', 'upload_id', 'linear_hash', 'tree_hash',
+            (1,2), fake_data)
+        self.assertEqual(
+            self.actual_request.path,
+            '/-/vaults/unicode_vault_name/multipart-uploads/upload_id')
+        # If the path is unicode in python2, it triggers the following bug
+        # noted in this PR: https://github.com/boto/boto/pull/2697
+        # httplib notices that if the path is unicode, it will try to encode
+        # body which may be impossible if there is the data is binary.
+        self.assertIsInstance(self.actual_request.body, six.binary_type)
+        self.assertEqual(self.actual_request.body, fake_data)
 
 
 class GlacierUploadArchiveResets(GlacierLayer1ConnectionBase):
     def test_upload_archive(self):
         fake_data = tempfile.NamedTemporaryFile()
-        fake_data.write('foobarbaz')
+        fake_data.write(b'foobarbaz')
         # First seek to a non zero offset.
         fake_data.seek(2)
         self.set_http_response(status_code=201)

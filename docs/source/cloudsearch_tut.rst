@@ -17,12 +17,13 @@ The recommended method of doing this is as follows::
 
     >>> import boto.cloudsearch
     >>> conn = boto.cloudsearch.connect_to_region("us-west-2",
-    ...             aws_access_key_id='<aws access key'>,
+    ...             aws_access_key_id='<aws access key>',
     ...             aws_secret_access_key='<aws secret key>')
 
 At this point, the variable conn will point to a CloudSearch connection object
-in the us-west-2 region. Currently, this is the only region which has the
-CloudSearch service. In this example, the AWS access key and AWS secret key are
+in the us-west-2 region. Available regions for cloudsearch can be found 
+`here <http://docs.aws.amazon.com/general/latest/gr/rande.html#cloudsearch_region>`_.
+In this example, the AWS access key and AWS secret key are
 passed in to the method explicitly. Alternatively, you can set the environment
 variables:
 
@@ -75,7 +76,7 @@ Creating index fields
 
 Each domain can have up to twenty index fields which are indexed by the
 CloudSearch service. For each index field, you will need to specify whether
-it's a text or integer field, as well as optionaly a default value::
+it's a text or integer field, as well as optionally a default value::
 
     >>> # Create an 'text' index field called 'username'
     >>> uname_field = domain.create_index_field('username', 'text')
@@ -177,11 +178,10 @@ The result is an instance of :py:class:`CommitResponse
 dictionary response a nice object (ie result.adds, result.deletes) and raise an
 exception for us if all of our documents weren't actually committed.
 
-After you have successfully committed some documents to cloudsearch, you must
-use :py:meth:`clear_sdf
-<boto.cloudsearch.document.DocumentServiceConnection.clear_sdf>`, if you wish
-to use the same document service connection again so that its internal cache is
-cleared.
+If you wish to use the same document service connection after a commit,
+you must use :py:meth:`clear_sdf
+<boto.cloudsearch.document.DocumentServiceConnection.clear_sdf>` to clear its
+internal cache.
 
 Searching Documents
 -------------------
@@ -380,7 +380,7 @@ The stopwords object has similar attributes defined above for stemming
 that provide additional information about the stopwords in your domain.
 
 
-Viewing and Adjusting Stopwords for a Domain
+Viewing and Adjusting Synonyms for a Domain
 --------------------------------------------
 
 You can configure synonyms for terms that appear in the data you are
@@ -429,4 +429,4 @@ It is also possible to delete documents::
     >>> # Again we'll cheat and use the current epoch time as our version number
 
     >>> doc_service.delete(4, int(time.mktime(datetime.utcnow().timetuple())))
-    >>> service.commit()
+    >>> doc_service.commit()

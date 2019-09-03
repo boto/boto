@@ -21,6 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from __future__ import division
+
 import boto
 from boto import handler
 from boto.resultset import ResultSet
@@ -45,11 +47,11 @@ import boto.jsonresponse
 import boto.utils
 import xml.sax
 import xml.sax.saxutils
-import StringIO
-import urllib
 import re
 import base64
 from collections import defaultdict
+from boto.compat import BytesIO, six, StringIO, urllib
+from boto.utils import get_utf8able_str
 
 # as per http://goo.gl/BDuud (02/19/2011)
 
@@ -58,6 +60,7 @@ class S3WebsiteEndpointTranslate(object):
 
     trans_region = defaultdict(lambda: 's3-website-us-east-1')
     trans_region['eu-west-1'] = 's3-website-eu-west-1'
+    trans_region['eu-central-1'] = 's3-website.eu-central-1'
     trans_region['us-west-1'] = 's3-website-us-west-1'
     trans_region['us-west-2'] = 's3-website-us-west-2'
     trans_region['sa-east-1'] = 's3-website-sa-east-1'
@@ -146,7 +149,7 @@ class Bucket(object):
                 response_headers=None, validate=True):
         """
         Check to see if a particular key exists within the bucket.  This
-        method uses a HEAD request to check for the existance of the key.
+        method uses a HEAD request to check for the existence of the key.
         Returns: An instance of a Key object or None
 
         :param key_name: The name of the key to retrieve
@@ -187,8 +190,8 @@ class Bucket(object):
         if version_id:
             query_args_l.append('versionId=%s' % version_id)
         if response_headers:
-            for rk, rv in response_headers.iteritems():
-                query_args_l.append('%s=%s' % (rk, urllib.quote(rv)))
+            for rk, rv in six.iteritems(response_headers):
+                query_args_l.append('%s=%s' % (rk, urllib.parse.quote(rv)))
 
         key, resp = self._get_key_internal(key_name, headers, query_args_l)
         return key
@@ -201,16 +204,13 @@ class Bucket(object):
         response.read()
         # Allow any success status (2xx) - for example this lets us
         # support Range gets, which return status 206:
-        if response.status / 100 == 2:
+        if response.status // 100 == 2:
             k = self.key_class(self)
             provider = self.connection.provider
             k.metadata = boto.utils.get_aws_metadata(response.msg, provider)
-            k.etag = response.getheader('etag')
-            k.content_type = response.getheader('content-type')
-            k.content_encoding = response.getheader('content-encoding')
-            k.content_disposition = response.getheader('content-disposition')
-            k.content_language = response.getheader('content-language')
-            k.last_modified = response.getheader('last-modified')
+            for field in Key.base_fields:
+                k.__dict__[field.lower().replace('-', '_')] = \
+                    response.getheader(field)
             # the following machinations are a workaround to the fact that
             # apache/fastcgi omits the content-length header on HEAD
             # requests when the content-length is zero.
@@ -220,11 +220,11 @@ class Bucket(object):
                 k.size = int(response.getheader('content-length'))
             else:
                 k.size = 0
-            k.cache_control = response.getheader('cache-control')
             k.name = key_name
             k.handle_version_headers(response)
             k.handle_encryption_headers(response)
             k.handle_restore_headers(response)
+            k.handle_storage_class_header(response)
             k.handle_addl_headers(response.getheaders())
             return k, response
         else:
@@ -360,7 +360,7 @@ class Bucket(object):
             Valid options: ``url``
         :type encoding_type: string
 
-        :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSet`
+        :rtype: :class:`boto.s3.bucketlistresultset.MultiPartUploadListResultSet`
         :return: an instance of a BucketListResultSet that handles paging, etc
         """
         return MultiPartUploadListResultSet(self, key_marker,
@@ -374,17 +374,21 @@ class Bucket(object):
         if initial_query_string:
             pairs.append(initial_query_string)
 
-        for key, value in params.items():
+        for key, value in sorted(params.items(), key=lambda x: x[0]):
+            if value is None:
+                continue
             key = key.replace('_', '-')
             if key == 'maxkeys':
                 key = 'max-keys'
-            if isinstance(value, unicode):
+            if not isinstance(value, six.string_types + (six.binary_type,)):
+                value = six.text_type(value)
+            if not isinstance(value, six.binary_type):
                 value = value.encode('utf-8')
-            if value is not None and value != '':
-                pairs.append('%s=%s' % (
-                    urllib.quote(key),
-                    urllib.quote(str(value)
-                )))
+            if value:
+                pairs.append(u'%s=%s' % (
+                    urllib.parse.quote(key),
+                    urllib.parse.quote(value)
+                ))
 
         return '&'.join(pairs)
 
@@ -402,6 +406,8 @@ class Bucket(object):
         if response.status == 200:
             rs = ResultSet(element_map)
             h = handler.XmlHandler(rs, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return rs
         else:
@@ -670,10 +676,10 @@ class Bucket(object):
             count = 0
             while count < 1000:
                 try:
-                    key = ikeys.next()
+                    key = next(ikeys)
                 except StopIteration:
                     break
-                if isinstance(key, basestring):
+                if isinstance(key, six.string_types):
                     key_name = key
                     version_id = None
                 elif isinstance(key, tuple) and len(key) == 2:
@@ -701,7 +707,7 @@ class Bucket(object):
             if count <= 0:
                 return False  # no more
             data = data.encode('utf-8')
-            fp = StringIO.StringIO(data)
+            fp = BytesIO(data)
             md5 = boto.utils.compute_md5(fp)
             hdrs['Content-MD5'] = md5[1]
             hdrs['Content-Type'] = 'text/xml'
@@ -714,6 +720,8 @@ class Bucket(object):
             body = response.read()
             if response.status == 200:
                 h = handler.XmlHandler(result, self)
+                if not isinstance(body, bytes):
+                    body = body.encode('utf-8')
                 xml.sax.parseString(body, h)
                 return count >= 1000  # more?
             else:
@@ -841,17 +849,18 @@ class Bucket(object):
         """
         headers = headers or {}
         provider = self.connection.provider
-        src_key_name = boto.utils.get_utf8_value(src_key_name)
+        src_key_name = get_utf8able_str(src_key_name)
+        
         if preserve_acl:
             if self.name == src_bucket_name:
                 src_bucket = self
             else:
                 src_bucket = self.connection.get_bucket(
-                    src_bucket_name, validate=False)
-            acl = src_bucket.get_xml_acl(src_key_name)
+                    src_bucket_name, validate=False, headers=headers)
+            acl = src_bucket.get_xml_acl(src_key_name, headers=headers)
         if encrypt_key:
             headers[provider.server_side_encryption_header] = 'AES256'
-        src = '%s/%s' % (src_bucket_name, urllib.quote(src_key_name))
+        src = '%s/%s' % (src_bucket_name, urllib.parse.quote(src_key_name))
         if src_version_id:
             src += '?versionId=%s' % src_version_id
         headers[provider.copy_source_header] = str(src)
@@ -918,8 +927,10 @@ class Bucket(object):
                     query_args='acl'):
         if version_id:
             query_args += '&versionId=%s' % version_id
+        if not isinstance(acl_str, bytes):
+            acl_str = acl_str.encode('utf-8')
         response = self.connection.make_request('PUT', self.name, key_name,
-                                                data=acl_str.encode('UTF-8'),
+                                                data=acl_str,
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()
@@ -946,6 +957,8 @@ class Bucket(object):
         if response.status == 200:
             policy = Policy(self)
             h = handler.XmlHandler(policy, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return policy
         else:
@@ -980,8 +993,10 @@ class Bucket(object):
         query_args = subresource
         if version_id:
             query_args += '&versionId=%s' % version_id
+        if not isinstance(value, bytes):
+            value = value.encode('utf-8')
         response = self.connection.make_request('PUT', self.name, key_name,
-                                                data=value.encode('UTF-8'),
+                                                data=value,
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()
@@ -1110,7 +1125,7 @@ class Bucket(object):
         policy = self.get_acl(headers=headers)
         return policy.acl.grants
 
-    def get_location(self):
+    def get_location(self, headers=None):
         """
         Returns the LocationConstraint for the bucket.
 
@@ -1119,11 +1134,14 @@ class Bucket(object):
             string if no constraint was specified when bucket was created.
         """
         response = self.connection.make_request('GET', self.name,
+                                                headers=headers,
                                                 query_args='location')
         body = response.read()
         if response.status == 200:
             rs = ResultSet(self)
             h = handler.XmlHandler(rs, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return rs.LocationConstraint
         else:
@@ -1143,7 +1161,9 @@ class Bucket(object):
         :rtype: bool
         :return: True if ok or raises an exception.
         """
-        body = logging_str.encode('utf-8')
+        body = logging_str
+        if not isinstance(body, bytes):
+            body = body.encode('utf-8')
         response = self.connection.make_request('PUT', self.name, data=body,
                 query_args='logging', headers=headers)
         body = response.read()
@@ -1201,6 +1221,8 @@ class Bucket(object):
         if response.status == 200:
             blogging = BucketLogging()
             h = handler.XmlHandler(blogging, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return blogging
         else:
@@ -1303,6 +1325,8 @@ class Bucket(object):
         response = self.connection.make_request('GET', self.name,
                 query_args='versioning', headers=headers)
         body = response.read()
+        if not isinstance(body, six.string_types):
+            body = body.decode('utf-8')
         boto.log.debug(body)
         if response.status == 200:
             d = {}
@@ -1326,8 +1350,8 @@ class Bucket(object):
             to configure for this bucket.
         """
         xml = lifecycle_config.to_xml()
-        xml = xml.encode('utf-8')
-        fp = StringIO.StringIO(xml)
+        #xml = xml.encode('utf-8')
+        fp = StringIO(xml)
         md5 = boto.utils.compute_md5(fp)
         if headers is None:
             headers = {}
@@ -1359,6 +1383,8 @@ class Bucket(object):
         if response.status == 200:
             lifecycle = Lifecycle()
             h = handler.XmlHandler(lifecycle, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return lifecycle
         else:
@@ -1505,7 +1531,7 @@ class Bucket(object):
         """Get raw website configuration xml"""
         response = self.connection.make_request('GET', self.name,
                 query_args='website', headers=headers)
-        body = response.read()
+        body = response.read().decode('utf-8')
         boto.log.debug(body)
 
         if response.status != 200:
@@ -1591,7 +1617,7 @@ class Bucket(object):
             CORS configuration.  See the S3 documentation for details
             of the exact syntax required.
         """
-        fp = StringIO.StringIO(cors_xml)
+        fp = StringIO(cors_xml)
         md5 = boto.utils.compute_md5(fp)
         if headers is None:
             headers = {}
@@ -1735,6 +1761,8 @@ class Bucket(object):
         if response.status == 200:
             resp = MultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             return resp
         else:
@@ -1754,7 +1782,7 @@ class Bucket(object):
                                                 query_args=query_args,
                                                 headers=headers, data=xml_body)
         contains_error = False
-        body = response.read()
+        body = response.read().decode('utf-8')
         # Some errors will be reported in the body of the response
         # even though the HTTP response code is 200.  This check
         # does a quick and dirty peek in the body for an error element.
@@ -1764,6 +1792,8 @@ class Bucket(object):
         if response.status == 200 and not contains_error:
             resp = CompleteMultiPartUpload(self)
             h = handler.XmlHandler(resp, self)
+            if not isinstance(body, bytes):
+                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             # Use a dummy key to parse various response headers
             # for versioning, encryption info and then explicitly
@@ -1797,17 +1827,19 @@ class Bucket(object):
     def delete(self, headers=None):
         return self.connection.delete_bucket(self.name, headers=headers)
 
-    def get_tags(self):
-        response = self.get_xml_tags()
+    def get_tags(self, headers=None):
+        response = self.get_xml_tags(headers)
         tags = Tags()
         h = handler.XmlHandler(tags, self)
+        if not isinstance(response, bytes):
+            response = response.encode('utf-8')
         xml.sax.parseString(response, h)
         return tags
 
-    def get_xml_tags(self):
+    def get_xml_tags(self, headers=None):
         response = self.connection.make_request('GET', self.name,
                                                 query_args='tagging',
-                                                headers=None)
+                                                headers=headers)
         body = response.read()
         if response.status == 200:
             return body
@@ -1818,11 +1850,13 @@ class Bucket(object):
     def set_xml_tags(self, tag_str, headers=None, query_args='tagging'):
         if headers is None:
             headers = {}
-        md5 = boto.utils.compute_md5(StringIO.StringIO(tag_str))
+        md5 = boto.utils.compute_md5(StringIO(tag_str))
         headers['Content-MD5'] = md5[1]
         headers['Content-Type'] = 'text/xml'
+        if not isinstance(tag_str, bytes):
+            tag_str = tag_str.encode('utf-8')
         response = self.connection.make_request('PUT', self.name,
-                                                data=tag_str.encode('utf-8'),
+                                                data=tag_str,
                                                 query_args=query_args,
                                                 headers=headers)
         body = response.read()

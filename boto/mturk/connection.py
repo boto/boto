@@ -18,7 +18,6 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
-
 import xml.sax
 import datetime
 import itertools
@@ -40,7 +39,7 @@ class MTurkRequestError(EC2ResponseError):
 
 class MTurkConnection(AWSQueryConnection):
 
-    APIVersion = '2012-03-25'
+    APIVersion = '2014-08-15'
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
@@ -307,7 +306,7 @@ class MTurkConnection(AWSQueryConnection):
         records, return the page numbers to be retrieved.
         """
         pages = total_records / page_size + bool(total_records % page_size)
-        return range(1, pages + 1)
+        return list(range(1, pages + 1))
 
     def get_all_hits(self):
         """
@@ -440,6 +439,21 @@ class MTurkConnection(AWSQueryConnection):
         if feedback:
             params['RequesterFeedback'] = feedback
         return self._process_request('ApproveRejectedAssignment', params)
+
+    def get_file_upload_url(self, assignment_id, question_identifier):
+        """
+        Generates and returns a temporary URL to an uploaded file. The
+        temporary URL is used to retrieve the file as an answer to a
+        FileUploadAnswer question, it is valid for 60 seconds.
+
+        Will have a FileUploadURL attribute as per the API Reference.
+        """
+
+        params = {'AssignmentId': assignment_id,
+                  'QuestionIdentifier': question_identifier}
+
+        return self._process_request('GetFileUploadURL', params,
+                                     [('FileUploadURL', FileUploadURL)])
 
     def get_hit(self, hit_id, response_groups=None):
         """
@@ -829,8 +843,8 @@ class MTurkConnection(AWSQueryConnection):
         """
         body = response.read()
         if self.debug == 2:
-            print body
-        if '<Errors>' not in body:
+            print(body)
+        if '<Errors>' not in body.decode('utf-8'):
             rs = ResultSet(marker_elems)
             h = handler.XmlHandler(rs, self)
             xml.sax.parseString(body, h)
@@ -916,6 +930,14 @@ class HIT(BaseAutoResultElement):
     expired = property(_has_expired)
 
 
+class FileUploadURL(BaseAutoResultElement):
+    """
+    Class to extract an FileUploadURL structure from a response
+    """
+
+    pass
+
+
 class HITTypeId(BaseAutoResultElement):
     """
     Class to extract an HITTypeId structure from a response
@@ -966,7 +988,7 @@ class QualificationRequest(BaseAutoResultElement):
         if name == 'Answer':
             answer_rs = ResultSet([('Answer', QuestionFormAnswer)])
             h = handler.XmlHandler(answer_rs, connection)
-            value = connection.get_utf8_value(value)
+            value = connection.get_utf8able_str(value)
             xml.sax.parseString(value, h)
             self.answers.append(answer_rs)
         else:
@@ -991,7 +1013,7 @@ class Assignment(BaseAutoResultElement):
         if name == 'Answer':
             answer_rs = ResultSet([('Answer', QuestionFormAnswer)])
             h = handler.XmlHandler(answer_rs, connection)
-            value = connection.get_utf8_value(value)
+            value = connection.get_utf8able_str(value)
             xml.sax.parseString(value, h)
             self.answers.append(answer_rs)
         else:

@@ -21,6 +21,7 @@
 # IN THE SOFTWARE.
 #
 
+import base64
 from datetime import datetime
 
 from tests.unit import unittest
@@ -35,6 +36,7 @@ from boto.ec2.blockdevicemapping import EBSBlockDeviceType, BlockDeviceMapping
 
 from boto.ec2.autoscale import launchconfig, LaunchConfiguration
 
+
 class TestAutoScaleGroup(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
@@ -42,7 +44,7 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
         super(TestAutoScaleGroup, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <CreateLaunchConfigurationResponse>
               <ResponseMetadata>
                 <RequestId>requestid</RequestId>
@@ -79,7 +81,7 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
             'Action': 'CreateAutoScalingGroup',
             'AutoScalingGroupName': 'foo',
             'VPCZoneIdentifier': 'vpc_zone_1',
-            }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
+        }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
 
     def test_autoscaling_group_vpc_zone_identifier_list(self):
         self.set_http_response(status_code=200)
@@ -91,7 +93,7 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
             'Action': 'CreateAutoScalingGroup',
             'AutoScalingGroupName': 'foo',
             'VPCZoneIdentifier': 'vpc_zone_1,vpc_zone_2',
-            }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
+        }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
 
     def test_autoscaling_group_vpc_zone_identifier_multi(self):
         self.set_http_response(status_code=200)
@@ -103,14 +105,14 @@ class TestAutoScaleGroup(AWSMockServiceTestCase):
             'Action': 'CreateAutoScalingGroup',
             'AutoScalingGroupName': 'foo',
             'VPCZoneIdentifier': 'vpc_zone_1,vpc_zone_2',
-            }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
+        }, ignore_params_values=['MaxSize', 'MinSize', 'LaunchConfigurationName', 'Version'])
 
 
 class TestAutoScaleGroupHonorCooldown(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
     def default_body(self):
-        return """
+        return b"""
             <SetDesiredCapacityResponse>
               <ResponseMetadata>
                 <RequestId>9fb7e2db-6998-11e2-a985-57c82EXAMPLE</RequestId>
@@ -128,6 +130,7 @@ class TestAutoScaleGroupHonorCooldown(AWSMockServiceTestCase):
             'HonorCooldown': 'true',
         }, ignore_params_values=['Version'])
 
+
 class TestScheduledGroup(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
@@ -135,7 +138,7 @@ class TestScheduledGroup(AWSMockServiceTestCase):
         super(TestScheduledGroup, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <PutScheduledUpdateGroupActionResponse>
                 <ResponseMetadata>
                   <RequestId>requestid</RequestId>
@@ -165,11 +168,12 @@ class TestScheduledGroup(AWSMockServiceTestCase):
             'Recurrence': '0 10 * * *',
         }, ignore_params_values=['Version'])
 
+
 class TestParseAutoScaleGroupResponse(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
     def default_body(self):
-        return """
+        return b"""
           <DescribeAutoScalingGroupsResult>
              <AutoScalingGroups>
                <member>
@@ -238,7 +242,7 @@ class TestDescribeTerminationPolicies(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
     def default_body(self):
-        return """
+        return b"""
           <DescribeTerminationPolicyTypesResponse>
             <DescribeTerminationPolicyTypesResult>
               <TerminationPolicyTypes>
@@ -263,12 +267,13 @@ class TestDescribeTerminationPolicies(AWSMockServiceTestCase):
             ['ClosestToNextInstanceHour', 'Default',
              'NewestInstance', 'OldestInstance', 'OldestLaunchConfiguration'])
 
+
 class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
     def default_body(self):
         # This is a dummy response
-        return """
+        return b"""
         <DescribeLaunchConfigurationsResponse>
           <DescribeLaunchConfigurationsResult>
             <LaunchConfigurations>
@@ -289,6 +294,10 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
                   <Enabled>true</Enabled>
                 </InstanceMonitoring>
                 <EbsOptimized>false</EbsOptimized>
+                <ClassicLinkVPCId>vpc-12345</ClassicLinkVPCId>
+                <ClassicLinkVPCSecurityGroups>
+                    <member>sg-1234</member>
+                </ClassicLinkVPCSecurityGroups>
               </member>
             </LaunchConfigurations>
           </DescribeLaunchConfigurationsResult>
@@ -315,6 +324,9 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
         self.assertEqual(response[0].instance_monitoring.enabled, 'true')
         self.assertEqual(response[0].ebs_optimized, False)
         self.assertEqual(response[0].block_device_mappings, [])
+        self.assertEqual(response[0].classic_link_vpc_id, 'vpc-12345')
+        self.assertEqual(response[0].classic_link_vpc_security_groups,
+                         ['sg-1234'])
 
         self.assert_request_parameters({
             'Action': 'DescribeLaunchConfigurations',
@@ -331,12 +343,13 @@ class TestLaunchConfigurationDescribe(AWSMockServiceTestCase):
             'LaunchConfigurationNames.member.2': 'my-test2'
         }, ignore_params_values=['Version'])
 
+
 class TestLaunchConfiguration(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
     def default_body(self):
         # This is a dummy response
-        return """
+        return b"""
         <DescribeLaunchConfigurationsResponse>
         </DescribeLaunchConfigurationsResponse>
         """
@@ -345,25 +358,26 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
         # This unit test is based on #753 and #1343
         self.set_http_response(status_code=200)
         dev_sdf = EBSBlockDeviceType(snapshot_id='snap-12345')
-        dev_sdg = EBSBlockDeviceType(snapshot_id='snap-12346')
 
         bdm = BlockDeviceMapping()
         bdm['/dev/sdf'] = dev_sdf
-        bdm['/dev/sdg'] = dev_sdg
 
         lc = launchconfig.LaunchConfiguration(
-                connection=self.service_connection,
-                name='launch_config',
-                image_id='123456',
-                instance_type = 'm1.large',
-                security_groups = ['group1', 'group2'],
-                spot_price='price',
-                block_device_mappings = [bdm],
-                associate_public_ip_address = True,
-                volume_type='atype',
-                delete_on_termination=False,
-                iops=3000
-                )
+            connection=self.service_connection,
+            name='launch_config',
+            image_id='123456',
+            instance_type='m1.large',
+            user_data='#!/bin/bash',
+            security_groups=['group1'],
+            spot_price='price',
+            block_device_mappings=[bdm],
+            associate_public_ip_address=True,
+            volume_type='atype',
+            delete_on_termination=False,
+            iops=3000,
+            classic_link_vpc_id='vpc-1234',
+            classic_link_vpc_security_groups=['classic_link_group']
+        )
 
         response = self.service_connection.create_launch_configuration(lc)
 
@@ -372,21 +386,20 @@ class TestLaunchConfiguration(AWSMockServiceTestCase):
             'BlockDeviceMappings.member.1.DeviceName': '/dev/sdf',
             'BlockDeviceMappings.member.1.Ebs.DeleteOnTermination': 'false',
             'BlockDeviceMappings.member.1.Ebs.SnapshotId': 'snap-12345',
-            'BlockDeviceMappings.member.2.DeviceName': '/dev/sdg',
-            'BlockDeviceMappings.member.2.Ebs.DeleteOnTermination': 'false',
-            'BlockDeviceMappings.member.2.Ebs.SnapshotId': 'snap-12346',
             'EbsOptimized': 'false',
             'LaunchConfigurationName': 'launch_config',
             'ImageId': '123456',
+            'UserData': base64.b64encode(b'#!/bin/bash').decode('utf-8'),
             'InstanceMonitoring.Enabled': 'false',
             'InstanceType': 'm1.large',
             'SecurityGroups.member.1': 'group1',
-            'SecurityGroups.member.2': 'group2',
             'SpotPrice': 'price',
-            'AssociatePublicIpAddress' : 'true',
+            'AssociatePublicIpAddress': 'true',
             'VolumeType': 'atype',
             'DeleteOnTermination': 'false',
             'Iops': 3000,
+            'ClassicLinkVPCId': 'vpc-1234',
+            'ClassicLinkVPCSecurityGroups.member.1': 'classic_link_group'
         }, ignore_params_values=['Version'])
 
 
@@ -397,7 +410,7 @@ class TestCreateAutoScalePolicy(AWSMockServiceTestCase):
         super(TestCreateAutoScalePolicy, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <PutScalingPolicyResponse xmlns="http://autoscaling.amazonaws.com\
             /doc/2011-01-01/">
               <PutScalingPolicyResult>
@@ -472,7 +485,7 @@ class TestPutNotificationConfiguration(AWSMockServiceTestCase):
         super(TestPutNotificationConfiguration, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <PutNotificationConfigurationResponse>
               <ResponseMetadata>
                 <RequestId>requestid</RequestId>
@@ -502,7 +515,7 @@ class TestDeleteNotificationConfiguration(AWSMockServiceTestCase):
         super(TestDeleteNotificationConfiguration, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <DeleteNotificationConfigurationResponse>
               <ResponseMetadata>
                 <RequestId>requestid</RequestId>
@@ -523,11 +536,12 @@ class TestDeleteNotificationConfiguration(AWSMockServiceTestCase):
             'TopicARN': 'arn:aws:sns:us-east-1:19890506:AutoScaling-Up',
         }, ignore_params_values=['Version'])
 
+
 class TestAutoScalingTag(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
     def default_body(self):
-        return """
+        return b"""
         <CreateOrUpdateTagsResponse>
             <ResponseMetadata>
                 <RequestId>requestId</RequestId>
@@ -546,7 +560,7 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
                 resource_id='sg-00000000',
                 resource_type='auto-scaling-group',
                 propagate_at_launch=True
-                ),
+            ),
             Tag(
                 connection=self.service_connection,
                 key='bravo',
@@ -554,8 +568,7 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
                 resource_id='sg-00000000',
                 resource_type='auto-scaling-group',
                 propagate_at_launch=False
-                )]
-
+            )]
 
         response = self.service_connection.create_or_update_tags(tags)
 
@@ -582,7 +595,6 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
             ('PropagateAtLaunch', 'true', 'propagate_at_launch')]:
                 self.check_tag_attributes_set(i[0], i[1], i[2])
 
-
     def check_tag_attributes_set(self, name, value, attr):
         tag = Tag()
         tag.endElement(name, value, None)
@@ -599,7 +611,7 @@ class TestAttachInstances(AWSMockServiceTestCase):
         super(TestAttachInstances, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <AttachInstancesResponse>
               <ResponseMetadata>
                 <RequestId>requestid</RequestId>
@@ -610,8 +622,8 @@ class TestAttachInstances(AWSMockServiceTestCase):
     def test_attach_instances(self):
         self.set_http_response(status_code=200)
         self.service_connection.attach_instances(
-          'autoscale',
-          ['inst2', 'inst1', 'inst4']
+            'autoscale',
+            ['inst2', 'inst1', 'inst4']
         )
         self.assert_request_parameters({
             'Action': 'AttachInstances',
@@ -622,6 +634,69 @@ class TestAttachInstances(AWSMockServiceTestCase):
         }, ignore_params_values=['Version'])
 
 
+class TestDetachInstances(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def setUp(self):
+        super(TestDetachInstances, self).setUp()
+
+    def default_body(self):
+        return b"""
+            <DetachInstancesResponse>
+              <ResponseMetadata>
+                <RequestId>requestid</RequestId>
+              </ResponseMetadata>
+            </DetachInstancesResponse>
+        """
+
+    def test_detach_instances(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.detach_instances(
+            'autoscale',
+            ['inst2', 'inst1', 'inst4']
+        )
+        self.assert_request_parameters({
+            'Action': 'DetachInstances',
+            'AutoScalingGroupName': 'autoscale',
+            'InstanceIds.member.1': 'inst2',
+            'InstanceIds.member.2': 'inst1',
+            'InstanceIds.member.3': 'inst4',
+            'ShouldDecrementDesiredCapacity': 'true',
+        }, ignore_params_values=['Version'])
+
+    def test_detach_instances_with_decrement_desired_capacity(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.detach_instances(
+            'autoscale',
+            ['inst2', 'inst1', 'inst4'],
+            True
+        )
+        self.assert_request_parameters({
+            'Action': 'DetachInstances',
+            'AutoScalingGroupName': 'autoscale',
+            'InstanceIds.member.1': 'inst2',
+            'InstanceIds.member.2': 'inst1',
+            'InstanceIds.member.3': 'inst4',
+            'ShouldDecrementDesiredCapacity': 'true',
+        }, ignore_params_values=['Version'])
+
+    def test_detach_instances_without_decrement_desired_capacity(self):
+        self.set_http_response(status_code=200)
+        self.service_connection.detach_instances(
+            'autoscale',
+            ['inst2', 'inst1', 'inst4'],
+            False
+        )
+        self.assert_request_parameters({
+            'Action': 'DetachInstances',
+            'AutoScalingGroupName': 'autoscale',
+            'InstanceIds.member.1': 'inst2',
+            'InstanceIds.member.2': 'inst1',
+            'InstanceIds.member.3': 'inst4',
+            'ShouldDecrementDesiredCapacity': 'false',
+        }, ignore_params_values=['Version'])
+
+
 class TestGetAccountLimits(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
@@ -629,7 +704,7 @@ class TestGetAccountLimits(AWSMockServiceTestCase):
         super(TestGetAccountLimits, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeAccountLimitsAnswer>
               <MaxNumberOfAutoScalingGroups>6</MaxNumberOfAutoScalingGroups>
               <MaxNumberOfLaunchConfigurations>3</MaxNumberOfLaunchConfigurations>
@@ -648,6 +723,7 @@ class TestGetAccountLimits(AWSMockServiceTestCase):
         self.assertEqual(limits.max_autoscaling_groups, 6)
         self.assertEqual(limits.max_launch_configurations, 3)
 
+
 class TestGetAdjustmentTypes(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
 
@@ -655,7 +731,7 @@ class TestGetAdjustmentTypes(AWSMockServiceTestCase):
         super(TestGetAdjustmentTypes, self).setUp()
 
     def default_body(self):
-        return """
+        return b"""
             <DescribeAdjustmentTypesResponse xmlns="http://autoscaling.amazonaws.com/doc/201-01-01/">
               <DescribeAdjustmentTypesResult>
                 <AdjustmentTypes>
@@ -675,6 +751,7 @@ class TestGetAdjustmentTypes(AWSMockServiceTestCase):
               </ResponseMetadata>
             </DescribeAdjustmentTypesResponse>
         """
+
     def test_autoscaling_adjustment_types(self):
         self.set_http_response(status_code=200)
         response = self.service_connection.get_all_adjustment_types()
@@ -693,7 +770,7 @@ class TestLaunchConfigurationDescribeWithBlockDeviceTypes(AWSMockServiceTestCase
 
     def default_body(self):
         # This is a dummy response
-        return """
+        return b"""
         <DescribeLaunchConfigurationsResponse>
           <DescribeLaunchConfigurationsResult>
             <LaunchConfigurations>

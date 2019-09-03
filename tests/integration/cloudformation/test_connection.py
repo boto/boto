@@ -10,6 +10,14 @@ BASIC_EC2_TEMPLATE = {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "AWS CloudFormation Sample Template EC2InstanceSample",
     "Parameters": {
+        "Parameter1": {
+          "Description": "Test Parameter 1", 
+          "Type": "String"
+        },
+        "Parameter2": {
+          "Description": "Test Parameter 2", 
+          "Type": "String"
+        }
     },
     "Mappings": {
         "RegionMap": {
@@ -32,7 +40,14 @@ BASIC_EC2_TEMPLATE = {
                     ]
                 },
                 "UserData": {
-                    "Fn::Base64": "a" * 15000
+                    "Fn::Base64": {
+                           "Fn::Join":[
+                                       "", 
+                                       [{"Ref": "Parameter1"},
+                                        {"Ref": "Parameter2"}]
+                            ]
+                    } 
+                    
                 }
             }
         }
@@ -102,7 +117,9 @@ class TestCloudformationConnection(unittest.TestCase):
         # See https://github.com/boto/boto/issues/1037
         body = self.connection.create_stack(
             self.stack_name,
-            template_body=json.dumps(BASIC_EC2_TEMPLATE))
+            template_body=json.dumps(BASIC_EC2_TEMPLATE),
+            parameters=[('Parameter1', 'initial_value'),
+                        ('Parameter2', 'initial_value')])
         self.addCleanup(self.connection.delete_stack, self.stack_name)
 
         # A newly created stack should have events
@@ -114,9 +131,39 @@ class TestCloudformationConnection(unittest.TestCase):
         self.assertEqual(None, policy)
 
         # Our new stack should show up in the stack list
-        stacks = self.connection.describe_stacks()
-        self.assertEqual(self.stack_name, stacks[0].stack_name)
+        stacks = self.connection.describe_stacks(self.stack_name)
+        stack = stacks[0]
+        self.assertEqual(self.stack_name, stack.stack_name)
+        
+        params = [(p.key, p.value) for p in stack.parameters]
+        self.assertEquals([('Parameter1', 'initial_value'),
+                           ('Parameter2', 'initial_value')], params)
+        
+        for _ in range(30):
+            stack.update()
+            if stack.stack_status.find("PROGRESS") == -1:
+                break
+            time.sleep(5)
+        
+        body = self.connection.update_stack(
+             self.stack_name,
+             template_body=json.dumps(BASIC_EC2_TEMPLATE),
+             parameters=[('Parameter1', '', True),
+                         ('Parameter2', 'updated_value')])
+        
+        stacks = self.connection.describe_stacks(self.stack_name)
+        stack = stacks[0]
+        params = [(p.key, p.value) for p in stacks[0].parameters]
+        self.assertEquals([('Parameter1', 'initial_value'),
+                           ('Parameter2', 'updated_value')], params)
 
-
+        # Waiting for the update to complete to unblock the delete_stack in the
+        # cleanup.
+        for _ in range(30):
+            stack.update()
+            if stack.stack_status.find("PROGRESS") == -1:
+                break
+            time.sleep(5)
+        
 if __name__ == '__main__':
     unittest.main()

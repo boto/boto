@@ -21,6 +21,7 @@
 #
 from datetime import datetime
 
+
 class Datapoint(dict):
 
     def __init__(self, connection=None):
@@ -37,4 +38,3 @@ class Datapoint(dict):
             self[name] = datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
         elif name != 'member':
             self[name] = value
-

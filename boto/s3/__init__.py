@@ -1,5 +1,6 @@
 # Copyright (c) 2006-2012 Mitch Garnaat http://garnaat.org/
 # Copyright (c) 2010, Eucalyptus Systems, Inc.
+# Copyright (c) 2014, Steven Richards <sbrichards@mit.edu>
 # All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +24,7 @@
 #
 
 from boto.regioninfo import RegionInfo, get_regions
+from boto.regioninfo import connect
 
 
 class S3RegionInfo(RegionInfo):
@@ -49,7 +51,7 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.regioninfo.RegionInfo`
     """
-    from .connection import S3Connection
+    from boto.s3.connection import S3Connection
     return get_regions(
         's3',
         region_cls=S3RegionInfo,
@@ -58,7 +60,16 @@ def regions():
 
 
 def connect_to_region(region_name, **kw_params):
-    for region in regions():
-        if region.name == region_name:
+    from boto.s3.connection import S3Connection
+    if 'host' in kw_params:
+        host = kw_params.pop('host')
+        if host not in ['', None]:
+            region = S3RegionInfo(
+                name='custom',
+                endpoint=host,
+                connection_cls=S3Connection
+            )
             return region.connect(**kw_params)
-    return None
+
+    return connect('s3', region_name, region_cls=S3RegionInfo,
+                   connection_cls=S3Connection, **kw_params)

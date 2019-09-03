@@ -88,7 +88,7 @@ class FPSTestCase(unittest.TestCase):
         try:
             self.fps.write_off_debt(CreditInstrumentId='foo',
                                     AdjustmentAmount=123.45)
-        except Exception, e:
+        except Exception as e:
             print e
 
     @unittest.skip('cosmetic')

@@ -79,6 +79,7 @@ class Domain(SWFBase):
                 'aws_access_key_id': self.aws_access_key_id,
                 'aws_secret_access_key': self.aws_secret_access_key,
                 'domain': self.name,
+                'region': self.region,
             })
             act_objects.append(ActivityType(**act_args))
         return act_objects
@@ -96,6 +97,7 @@ class Domain(SWFBase):
                 'aws_access_key_id': self.aws_access_key_id,
                 'aws_secret_access_key': self.aws_secret_access_key,
                 'domain': self.name,
+                'region': self.region,
             })
             
             wf_objects.append(WorkflowType(**wf_args))
@@ -128,6 +130,7 @@ class Domain(SWFBase):
                 'aws_access_key_id': self.aws_access_key_id,
                 'aws_secret_access_key': self.aws_secret_access_key,
                 'domain': self.name,
+                'region': self.region,
             })
             
             exe_objects.append(WorkflowExecution(**exe_args))

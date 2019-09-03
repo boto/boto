@@ -7,8 +7,8 @@ from boto.dynamodb2.fields import (HashKey, RangeKey,
 from boto.dynamodb2.items import Item
 from boto.dynamodb2.layer1 import DynamoDBConnection
 from boto.dynamodb2.results import ResultSet, BatchGetResultSet
-from boto.dynamodb2.types import (Dynamizer, FILTER_OPERATORS, QUERY_OPERATORS,
-                                  STRING)
+from boto.dynamodb2.types import (NonBooleanDynamizer, Dynamizer, FILTER_OPERATORS,
+                                  QUERY_OPERATORS, STRING)
 from boto.exception import JSONResponseError
 
 
@@ -23,6 +23,18 @@ class Table(object):
     ``users`` table or a ``forums`` table.
     """
     max_batch_get = 100
+
+    _PROJECTION_TYPE_TO_INDEX = dict(
+        global_indexes=dict(
+            ALL=GlobalAllIndex,
+            KEYS_ONLY=GlobalKeysOnlyIndex,
+            INCLUDE=GlobalIncludeIndex,
+        ), local_indexes=dict(
+            ALL=AllIndex,
+            KEYS_ONLY=KeysOnlyIndex,
+            INCLUDE=IncludeIndex,
+        )
+    )
 
     def __init__(self, table_name, schema=None, throughput=None, indexes=None,
                  global_indexes=None, connection=None):
@@ -85,7 +97,7 @@ class Table(object):
             ...     ],
             ...     throughput={
             ...       'read':10,
-            ...       'write":10,
+            ...       'write':10,
             ...     }),
             ... ], connection=dynamodb2.connect_to_region('us-west-2',
             ...     aws_access_key_id='key',
@@ -109,6 +121,9 @@ class Table(object):
         if throughput is not None:
             self.throughput = throughput
 
+        self._dynamizer = NonBooleanDynamizer()
+
+    def use_boolean(self):
         self._dynamizer = Dynamizer()
 
     @classmethod
@@ -122,9 +137,9 @@ class Table(object):
         to define the key structure of the table.
 
         **IMPORTANT** - You should consider the usage pattern of your table
-        up-front, as the schema & indexes can **NOT** be modified once the
-        table is created, requiring the creation of a new table & migrating
-        the data should you wish to revise it.
+        up-front, as the schema can **NOT** be modified once the table is
+        created, requiring the creation of a new table & migrating the data
+        should you wish to revise it.
 
         **IMPORTANT** - If the table already exists in DynamoDB, additional
         calls to this method will result in an error. If you just need
@@ -163,7 +178,8 @@ class Table(object):
             ...     'write': 10,
             ... }, indexes=[
             ...     KeysOnlyIndex('MostRecentlyJoined', parts=[
-            ...         RangeKey('date_joined')
+            ...         HashKey('username'),
+            ...         RangeKey('date_joined'),
             ... ]), global_indexes=[
             ...     GlobalAllIndex('UsersByZipcode', parts=[
             ...         HashKey('zipcode'),
@@ -264,25 +280,25 @@ class Table(object):
 
         return schema
 
-    def _introspect_indexes(self, raw_indexes):
+    def _introspect_all_indexes(self, raw_indexes, map_indexes_projection):
         """
-        Given a raw index structure back from a DynamoDB response, parse
-        out & build the high-level Python objects that represent them.
+        Given a raw index/global index structure back from a DynamoDB response,
+        parse out & build the high-level Python objects that represent them.
         """
         indexes = []
 
         for field in raw_indexes:
-            index_klass = AllIndex
+            index_klass = map_indexes_projection.get('ALL')
             kwargs = {
                 'parts': []
             }
 
             if field['Projection']['ProjectionType'] == 'ALL':
-                index_klass = AllIndex
+                index_klass = map_indexes_projection.get('ALL')
             elif field['Projection']['ProjectionType'] == 'KEYS_ONLY':
-                index_klass = KeysOnlyIndex
+                index_klass = map_indexes_projection.get('KEYS_ONLY')
             elif field['Projection']['ProjectionType'] == 'INCLUDE':
-                index_klass = IncludeIndex
+                index_klass = map_indexes_projection.get('INCLUDE')
                 kwargs['includes'] = field['Projection']['NonKeyAttributes']
             else:
                 raise exceptions.UnknownIndexFieldError(
@@ -297,16 +313,33 @@ class Table(object):
 
         return indexes
 
+    def _introspect_indexes(self, raw_indexes):
+        """
+        Given a raw index structure back from a DynamoDB response, parse
+        out & build the high-level Python objects that represent them.
+        """
+        return self._introspect_all_indexes(
+            raw_indexes, self._PROJECTION_TYPE_TO_INDEX.get('local_indexes'))
+
+    def _introspect_global_indexes(self, raw_global_indexes):
+        """
+        Given a raw global index structure back from a DynamoDB response, parse
+        out & build the high-level Python objects that represent them.
+        """
+        return self._introspect_all_indexes(
+            raw_global_indexes,
+            self._PROJECTION_TYPE_TO_INDEX.get('global_indexes'))
+
     def describe(self):
         """
         Describes the current structure of the table in DynamoDB.
 
-        This information will be used to update the ``schema``, ``indexes``
-        and ``throughput`` information on the ``Table``. Some calls, such as
-        those involving creating keys or querying, will require this
-        information to be populated.
+        This information will be used to update the ``schema``, ``indexes``,
+        ``global_indexes`` and ``throughput`` information on the ``Table``. Some
+        calls, such as those involving creating keys or querying, will require
+        this information to be populated.
 
-        It also returns the full raw datastructure from DynamoDB, in the
+        It also returns the full raw data structure from DynamoDB, in the
         event you'd like to parse out additional information (such as the
         ``ItemCount`` or usage information).
 
@@ -339,19 +372,26 @@ class Table(object):
             raw_indexes = result['Table'].get('LocalSecondaryIndexes', [])
             self.indexes = self._introspect_indexes(raw_indexes)
 
+        # Build the global index information as well.
+        raw_global_indexes = result['Table'].get('GlobalSecondaryIndexes', [])
+        self.global_indexes = self._introspect_global_indexes(raw_global_indexes)
+
         # This is leaky.
         return result
 
-    def update(self, throughput, global_indexes=None):
+    def update(self, throughput=None, global_indexes=None):
         """
-        Updates table attributes in DynamoDB.
+        Updates table attributes and global indexes in DynamoDB.
 
-        Currently, the only thing you can modify about a table after it has
-        been created is the throughput.
-
-        Requires a ``throughput`` parameter, which should be a
+        Optionally accepts a ``throughput`` parameter, which should be a
         dictionary. If provided, it should specify a ``read`` & ``write`` key,
         both of which should have an integer value associated with them.
+
+        Optionally accepts a ``global_indexes`` parameter, which should be a
+        dictionary. If provided, it should specify the index name, which is also
+        a dict containing a ``read`` & ``write`` key, both of which
+        should have an integer value associated with them. If you are writing
+        new code, please use ``Table.update_global_secondary_index``.
 
         Returns ``True`` on success.
 
@@ -376,13 +416,17 @@ class Table(object):
             ...     }
             ... })
             True
-
         """
-        self.throughput = throughput
-        data = {
-            'ReadCapacityUnits': int(self.throughput['read']),
-            'WriteCapacityUnits': int(self.throughput['write']),
-        }
+
+        data = None
+
+        if throughput:
+            self.throughput = throughput
+            data = {
+                'ReadCapacityUnits': int(self.throughput['read']),
+                'WriteCapacityUnits': int(self.throughput['write']),
+            }
+
         gsi_data = None
 
         if global_indexes:
@@ -399,12 +443,170 @@ class Table(object):
                     },
                 })
 
-        self.connection.update_table(
-            self.table_name,
-            provisioned_throughput=data,
-            global_secondary_index_updates=gsi_data
-        )
-        return True
+        if throughput or global_indexes:
+            self.connection.update_table(
+                self.table_name,
+                provisioned_throughput=data,
+                global_secondary_index_updates=gsi_data,
+            )
+
+            return True
+        else:
+            msg = 'You need to provide either the throughput or the ' \
+                  'global_indexes to update method'
+            boto.log.error(msg)
+
+            return False
+
+    def create_global_secondary_index(self, global_index):
+        """
+        Creates a global index in DynamoDB after the table has been created.
+
+        Requires a ``global_indexes`` parameter, which should be a
+        ``GlobalBaseIndexField`` subclass representing the desired index.
+
+        To update ``global_indexes`` information on the ``Table``, you'll need
+        to call ``Table.describe``.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # To create a global index
+            >>> users.create_global_secondary_index(
+            ...     global_index=GlobalAllIndex(
+            ...         'TheIndexNameHere', parts=[
+            ...             HashKey('requiredHashkey', data_type=STRING),
+            ...             RangeKey('optionalRangeKey', data_type=STRING)
+            ...         ],
+            ...         throughput={
+            ...             'read': 2,
+            ...             'write': 1,
+            ...         })
+            ... )
+            True
+
+        """
+
+        if global_index:
+            gsi_data = []
+            gsi_data_attr_def = []
+
+            gsi_data.append({
+                "Create": global_index.schema()
+            })
+
+            for attr_def in global_index.parts:
+                gsi_data_attr_def.append(attr_def.definition())
+
+            self.connection.update_table(
+                self.table_name,
+                global_secondary_index_updates=gsi_data,
+                attribute_definitions=gsi_data_attr_def
+            )
+
+            return True
+        else:
+            msg = 'You need to provide the global_index to ' \
+                  'create_global_secondary_index method'
+            boto.log.error(msg)
+
+            return False
+
+    def delete_global_secondary_index(self, global_index_name):
+        """
+        Deletes a global index in DynamoDB after the table has been created.
+
+        Requires a ``global_index_name`` parameter, which should be a simple
+        string of the name of the global secondary index.
+
+        To update ``global_indexes`` information on the ``Table``, you'll need
+        to call ``Table.describe``.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # To delete a global index
+            >>> users.delete_global_secondary_index('TheIndexNameHere')
+            True
+
+        """
+
+        if global_index_name:
+            gsi_data = [
+                {
+                    "Delete": {
+                        "IndexName": global_index_name
+                    }
+                }
+            ]
+
+            self.connection.update_table(
+                self.table_name,
+                global_secondary_index_updates=gsi_data,
+            )
+
+            return True
+        else:
+            msg = 'You need to provide the global index name to ' \
+                  'delete_global_secondary_index method'
+            boto.log.error(msg)
+
+            return False
+
+    def update_global_secondary_index(self, global_indexes):
+        """
+        Updates a global index(es) in DynamoDB after the table has been created.
+
+        Requires a ``global_indexes`` parameter, which should be a
+        dictionary. If provided, it should specify the index name, which is also
+        a dict containing a ``read`` & ``write`` key, both of which
+        should have an integer value associated with them.
+
+        To update ``global_indexes`` information on the ``Table``, you'll need
+        to call ``Table.describe``.
+
+        Returns ``True`` on success.
+
+        Example::
+
+            # To update a global index
+            >>> users.update_global_secondary_index(global_indexes={
+            ...     'TheIndexNameHere': {
+            ...         'read': 15,
+            ...         'write': 5,
+            ...     }
+            ... })
+            True
+
+        """
+
+        if global_indexes:
+            gsi_data = []
+
+            for gsi_name, gsi_throughput in global_indexes.items():
+                gsi_data.append({
+                    "Update": {
+                        "IndexName": gsi_name,
+                        "ProvisionedThroughput": {
+                            "ReadCapacityUnits": int(gsi_throughput['read']),
+                            "WriteCapacityUnits": int(gsi_throughput['write']),
+                        },
+                    },
+                })
+
+            self.connection.update_table(
+                self.table_name,
+                global_secondary_index_updates=gsi_data,
+            )
+            return True
+        else:
+            msg = 'You need to provide the global indexes to ' \
+                  'update_global_secondary_index method'
+            boto.log.error(msg)
+
+            return False
 
     def delete(self):
         """
@@ -467,6 +669,8 @@ class Table(object):
         should be fetched)
 
         Returns an ``Item`` instance containing all the data for that record.
+
+        Raises an ``ItemNotFound`` exception if the item is not found.
 
         Example::
 
@@ -648,16 +852,35 @@ class Table(object):
         self.connection.update_item(self.table_name, raw_key, item_data, **kwargs)
         return True
 
-    def delete_item(self, **kwargs):
+    def delete_item(self, expected=None, conditional_operator=None, **kwargs):
         """
-        Deletes an item in DynamoDB.
+        Deletes a single item. You can perform a conditional delete operation
+        that deletes the item if it exists, or if it has an expected attribute
+        value.
+
+        Conditional deletes are useful for only deleting items if specific
+        conditions are met. If those conditions are met, DynamoDB performs
+        the delete. Otherwise, the item is not deleted.
+
+        To specify the expected attribute values of the item, you can pass a
+        dictionary of conditions to ``expected``. Each condition should follow
+        the pattern ``<attributename>__<comparison_operator>=<value_to_expect>``.
 
         **IMPORTANT** - Be careful when using this method, there is no undo.
 
         To specify the key of the item you'd like to get, you can specify the
         key attributes as kwargs.
 
-        Returns ``True`` on success.
+        Optionally accepts an ``expected`` parameter which is a dictionary of
+        expected attribute value conditions.
+
+        Optionally accepts a ``conditional_operator`` which applies to the
+        expected attribute value conditions:
+
+        + `AND` - If all of the conditions evaluate to true (default)
+        + `OR` - True if at least one condition evaluates to true
+
+        Returns ``True`` on success, ``False`` on failed conditional delete.
 
         Example::
 
@@ -676,9 +899,21 @@ class Table(object):
             ... })
             True
 
+            # Conditional delete
+            >>> users.delete_item(username='johndoe',
+            ...                   expected={'balance__eq': 0})
+            True
         """
+        expected = self._build_filters(expected, using=FILTER_OPERATORS)
         raw_key = self._encode_keys(kwargs)
-        self.connection.delete_item(self.table_name, raw_key)
+
+        try:
+            self.connection.delete_item(self.table_name, raw_key,
+                                        expected=expected,
+                                        conditional_operator=conditional_operator)
+        except exceptions.ConditionalCheckFailedException:
+            return False
+
         return True
 
     def get_key_fields(self):
@@ -757,6 +992,9 @@ class Table(object):
         An internal method for taking query/scan-style ``**kwargs`` & turning
         them into the raw structure DynamoDB expects for filtering.
         """
+        if filter_kwargs is None:
+            return
+
         filters = {}
 
         for field_and_op, value in filter_kwargs.items():
@@ -828,19 +1066,22 @@ class Table(object):
 
     def query_2(self, limit=None, index=None, reverse=False,
                 consistent=False, attributes=None, max_page_size=None,
+                query_filter=None, conditional_operator=None,
                 **filter_kwargs):
         """
         Queries for a set of matching items in a DynamoDB table.
 
         Queries can be performed against a hash key, a hash+range key or
-        against any data stored in your local secondary indexes.
+        against any data stored in your local secondary indexes. Query filters
+        can be used to filter on arbitrary fields.
 
         **Note** - You can not query against arbitrary fields within the data
-        stored in DynamoDB.
+        stored in DynamoDB unless you specify ``query_filter`` values.
 
         To specify the filters of the items you'd like to get, you can specify
         the filters as kwargs. Each filter kwarg should follow the pattern
-        ``<fieldname>__<filter_operation>=<value_to_look_for>``.
+        ``<fieldname>__<filter_operation>=<value_to_look_for>``. Query filters
+        are specified in the same way.
 
         Optionally accepts a ``limit`` parameter, which should be an integer
         count of the total number of items to return. (Default: ``None`` -
@@ -869,7 +1110,16 @@ class Table(object):
         the scan from drowning out other queries. (Default: ``None`` -
         fetch as many as DynamoDB will return)
 
-        Returns a ``ResultSet``, which transparently handles the pagination of
+        Optionally accepts a ``query_filter`` which is a dictionary of filter
+        conditions against any arbitrary field in the returned data.
+
+        Optionally accepts a ``conditional_operator`` which applies to the
+        query filter conditions:
+
+        + `AND` - True if all filter conditions evaluate to true (default)
+        + `OR` - True if at least one filter condition evaluates to true
+
+        Returns a ``ResultSet`` containing ``Item``s, which transparently handles the pagination of
         results you get back.
 
         Example::
@@ -907,6 +1157,18 @@ class Table(object):
             'John'
             'Fred'
 
+            # Filter by non-indexed field(s)
+            >>> results = users.query(
+            ...     last_name__eq='Doe',
+            ...     reverse=True,
+            ...     query_filter={
+            ...         'first_name__beginswith': 'A'
+            ...     }
+            ... )
+            >>> for res in results:
+            ...     print res['first_name'] + ' ' + res['last_name']
+            'Alice Doe'
+
         """
         if self.schema:
             if len(self.schema) == 1:
@@ -935,20 +1197,26 @@ class Table(object):
             'consistent': consistent,
             'select': select,
             'attributes_to_get': attributes,
+            'query_filter': query_filter,
+            'conditional_operator': conditional_operator,
         })
         results.to_call(self._query, **kwargs)
         return results
 
-    def query_count(self, index=None, consistent=False, **filter_kwargs):
+    def query_count(self, index=None, consistent=False, conditional_operator=None,
+                    query_filter=None, scan_index_forward=True, limit=None,
+                    exclusive_start_key=None, **filter_kwargs):
         """
         Queries the exact count of matching items in a DynamoDB table.
 
         Queries can be performed against a hash key, a hash+range key or
-        against any data stored in your local secondary indexes.
+        against any data stored in your local secondary indexes. Query filters
+        can be used to filter on arbitrary fields.
 
         To specify the filters of the items you'd like to get, you can specify
         the filters as kwargs. Each filter kwarg should follow the pattern
-        ``<fieldname>__<filter_operation>=<value_to_look_for>``.
+        ``<fieldname>__<filter_operation>=<value_to_look_for>``. Query filters
+        are specified in the same way.
 
         Optionally accepts an ``index`` parameter, which should be a string of
         name of the local secondary index you want to query against.
@@ -959,8 +1227,36 @@ class Table(object):
         the data (more expensive). (Default: ``False`` - use eventually
         consistent reads)
 
+        Optionally accepts a ``query_filter`` which is a dictionary of filter
+        conditions against any arbitrary field in the returned data.
+
+        Optionally accepts a ``conditional_operator`` which applies to the
+        query filter conditions:
+
+        + `AND` - True if all filter conditions evaluate to true (default)
+        + `OR` - True if at least one filter condition evaluates to true
+
+        Optionally accept a ``exclusive_start_key`` which is used to get
+        the remaining items when a query cannot return the complete count.
+
         Returns an integer which represents the exact amount of matched
         items.
+
+        :type scan_index_forward: boolean
+        :param scan_index_forward: Specifies ascending (true) or descending
+            (false) traversal of the index. DynamoDB returns results reflecting
+            the requested order determined by the range key. If the data type
+            is Number, the results are returned in numeric order. For String,
+            the results are returned in order of ASCII character code values.
+            For Binary, DynamoDB treats each byte of the binary data as
+            unsigned when it compares binary values.
+
+        If ScanIndexForward is not specified, the results are returned in
+            ascending order.
+
+        :type limit: integer
+        :param limit: The maximum number of items to evaluate (not necessarily
+            the number of matching items).
 
         Example::
 
@@ -983,18 +1279,38 @@ class Table(object):
             using=QUERY_OPERATORS
         )
 
-        raw_results = self.connection.query(
-            self.table_name,
-            index_name=index,
-            consistent_read=consistent,
-            select='COUNT',
-            key_conditions=key_conditions,
+        built_query_filter = self._build_filters(
+            query_filter,
+            using=FILTER_OPERATORS
         )
-        return int(raw_results.get('Count', 0))
+
+        count_buffer = 0
+        last_evaluated_key = exclusive_start_key
+
+        while True:
+            raw_results = self.connection.query(
+                self.table_name,
+                index_name=index,
+                consistent_read=consistent,
+                select='COUNT',
+                key_conditions=key_conditions,
+                query_filter=built_query_filter,
+                conditional_operator=conditional_operator,
+                limit=limit,
+                scan_index_forward=scan_index_forward,
+                exclusive_start_key=last_evaluated_key
+            )
+
+            count_buffer += int(raw_results.get('Count', 0))
+            last_evaluated_key = raw_results.get('LastEvaluatedKey')
+            if not last_evaluated_key or count_buffer < 1:
+                break
+
+        return count_buffer
 
     def _query(self, limit=None, index=None, reverse=False, consistent=False,
                exclusive_start_key=None, select=None, attributes_to_get=None,
-               **filter_kwargs):
+               query_filter=None, conditional_operator=None, **filter_kwargs):
         """
         The internal method that performs the actual queries. Used extensively
         by ``ResultSet`` to perform each (paginated) request.
@@ -1005,6 +1321,7 @@ class Table(object):
             'consistent_read': consistent,
             'select': select,
             'attributes_to_get': attributes_to_get,
+            'conditional_operator': conditional_operator,
         }
 
         if reverse:
@@ -1021,6 +1338,11 @@ class Table(object):
         kwargs['key_conditions'] = self._build_filters(
             filter_kwargs,
             using=QUERY_OPERATORS
+        )
+
+        kwargs['query_filter'] = self._build_filters(
+            query_filter,
+            using=FILTER_OPERATORS
         )
 
         raw_results = self.connection.query(
@@ -1049,13 +1371,14 @@ class Table(object):
         }
 
     def scan(self, limit=None, segment=None, total_segments=None,
-             max_page_size=None, attributes=None, **filter_kwargs):
+             max_page_size=None, attributes=None, conditional_operator=None,
+             **filter_kwargs):
         """
         Scans across all items within a DynamoDB table.
 
         Scans can be performed against a hash key or a hash+range key. You can
         additionally filter the results after the table has been read but
-        before the response is returned.
+        before the response is returned by using query filters.
 
         To specify the filters of the items you'd like to get, you can specify
         the filters as kwargs. Each filter kwarg should follow the pattern
@@ -1120,12 +1443,14 @@ class Table(object):
             'segment': segment,
             'total_segments': total_segments,
             'attributes': attributes,
+            'conditional_operator': conditional_operator,
         })
         results.to_call(self._scan, **kwargs)
         return results
 
     def _scan(self, limit=None, exclusive_start_key=None, segment=None,
-              total_segments=None, attributes=None, **filter_kwargs):
+              total_segments=None, attributes=None, conditional_operator=None,
+              **filter_kwargs):
         """
         The internal method that performs the actual scan. Used extensively
         by ``ResultSet`` to perform each (paginated) request.
@@ -1135,6 +1460,7 @@ class Table(object):
             'segment': segment,
             'total_segments': total_segments,
             'attributes_to_get': attributes,
+            'conditional_operator': conditional_operator,
         }
 
         if exclusive_start_key:
@@ -1175,7 +1501,7 @@ class Table(object):
             'last_key': last_key,
         }
 
-    def batch_get(self, keys, consistent=False):
+    def batch_get(self, keys, consistent=False, attributes=None):
         """
         Fetches many specific items in batch from a table.
 
@@ -1185,6 +1511,10 @@ class Table(object):
         Optionally accepts a ``consistent`` parameter, which should be a
         boolean. If you provide ``True``, a strongly consistent read will be
         used. (Default: False)
+
+        Optionally accepts an ``attributes`` parameter, which should be a
+        tuple. If you provide any attributes only these will be fetched
+        from DynamoDB.
 
         Returns a ``ResultSet``, which transparently handles the pagination of
         results you get back.
@@ -1212,10 +1542,10 @@ class Table(object):
         # We pass the keys to the constructor instead, so it can maintain it's
         # own internal state as to what keys have been processed.
         results = BatchGetResultSet(keys=keys, max_batch_get=self.max_batch_get)
-        results.to_call(self._batch_get, consistent=False)
+        results.to_call(self._batch_get, consistent=consistent, attributes=attributes)
         return results
 
-    def _batch_get(self, keys, consistent=False):
+    def _batch_get(self, keys, consistent=False, attributes=None):
         """
         The internal method that performs the actual batch get. Used extensively
         by ``BatchGetResultSet`` to perform each (paginated) request.
@@ -1228,6 +1558,9 @@ class Table(object):
 
         if consistent:
             items[self.table_name]['ConsistentRead'] = True
+
+        if attributes is not None:
+            items[self.table_name]['AttributesToGet'] = attributes
 
         for key_data in keys:
             raw_key = {}
@@ -1248,9 +1581,9 @@ class Table(object):
             })
             results.append(item)
 
-        raw_unproccessed = raw_results.get('UnprocessedKeys', {})
+        raw_unprocessed = raw_results.get('UnprocessedKeys', {}).get(self.table_name, {})
 
-        for raw_key in raw_unproccessed.get('Keys', []):
+        for raw_key in raw_unprocessed.get('Keys', []):
             py_key = {}
 
             for key, value in raw_key.items():

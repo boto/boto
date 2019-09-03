@@ -107,3 +107,32 @@ u'vpn-12ef67bv'
 >>> tunnels = vpns[0].tunnels
 >>> tunnels
 [VpnTunnel: 177.12.34.56, VpnTunnel: 177.12.34.57]
+
+
+To Create VPC Peering Connection
+--------------------------------
+>>> vpcs = c.get_all_vpcs()
+>>> vpc_peering_connection = c.create_vpc_peering_connection(vpcs[0].id, vpcs[1].id)
+>>> vpc_peering_connection
+VpcPeeringConnection:pcx-18987471
+
+To Accept VPC Peering Connection
+--------------------------------
+>>> vpc_peering_connections = c.get_all_vpc_peering_connections()
+>>> vpc_peering_connection = vpc_peering_connections[0]
+>>> vpc_peering_connection.status_code
+u'pending-acceptance'
+>>> vpc_peering_connection = c.accept_vpc_peering_connection(vpc_peering_connection.id)
+>>> vpc_peering_connection.update()
+u'active'
+
+To Reject VPC Peering Connection
+--------------------------------
+>>> vpc_peering_connections = c.get_all_vpc_peering_connections()
+>>> vpc_peering_connection = vpc_peering_connections[0]
+>>> vpc_peering_connection.status_code
+u'pending-acceptance
+>>> c.reject_vpc_peering_connection(vpc_peering_connection.id)
+>>> vpc_peering_connection.update()
+u'rejected'
+

@@ -42,3 +42,10 @@ you'd like it listed here, please submit a `pull request`_ adding it!
     pre-configured webservers to a cluster (including updating the load
     balancer), performing automated software deployments and creating backups -
     each with just one call from the commandline.
+
+**iamer**
+    https://pypi.python.org/pypi/iamer
+    IAMer dump and load your AWS IAM configuration into text files. Once
+    dumped, you can version the resulting json and ini files to keep track of
+    changes, and even ask your team mates to do Pull Requests when they want
+    access to something.

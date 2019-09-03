@@ -20,8 +20,9 @@
 # IN THE SOFTWARE.
 #
 
-from regioninfo import SQSRegionInfo
+from boto.sqs.regioninfo import SQSRegionInfo
 from boto.regioninfo import get_regions
+from boto.regioninfo import connect
 
 
 def regions():
@@ -31,14 +32,15 @@ def regions():
     :rtype: list
     :return: A list of :class:`boto.sqs.regioninfo.RegionInfo`
     """
+    from boto.sqs.connection import SQSConnection
     return get_regions(
         'sqs',
-        region_cls=SQSRegionInfo
+        region_cls=SQSRegionInfo,
+        connection_cls=SQSConnection
     )
 
 
 def connect_to_region(region_name, **kw_params):
-    for region in regions():
-        if region.name == region_name:
-            return region.connect(**kw_params)
-    return None
+    from boto.sqs.connection import SQSConnection
+    return connect('sqs', region_name, region_cls=SQSRegionInfo,
+                   connection_cls=SQSConnection, **kw_params)

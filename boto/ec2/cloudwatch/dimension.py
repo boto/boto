@@ -20,6 +20,7 @@
 # IN THE SOFTWARE.
 #
 
+
 class Dimension(dict):
 
     def startElement(self, name, attrs, connection):
@@ -35,4 +36,3 @@ class Dimension(dict):
                 self[self._name] = [value]
         else:
             setattr(self, name, value)
-

@@ -23,12 +23,12 @@ import base64
 import binascii
 import os
 import re
-import StringIO
+
+from boto.compat import StringIO, six
 from boto.exception import BotoClientError
 from boto.s3.key import Key as S3Key
 from boto.s3.keyfile import KeyFile
-from boto.utils import compute_hash
-from boto.utils import get_utf8_value
+from boto.utils import compute_hash, get_utf8able_str
 
 class Key(S3Key):
     """
@@ -130,6 +130,8 @@ class Key(S3Key):
                 self.content_encoding = value
             elif key == 'x-goog-stored-content-length':
                 self.size = int(value)
+            elif key == 'x-goog-storage-class':
+                self.storage_class = value
 
     def open_read(self, headers=None, query_args='',
                   override_num_retries=None, response_headers=None):
@@ -269,7 +271,7 @@ class Key(S3Key):
 
         :type fp: file
         :param fp: The file pointer to upload. The file pointer must
-            point point at the offset from which you wish to upload.
+            point at the offset from which you wish to upload.
             ie. if uploading the full file, it should point at the
             start of the file. Normally when a file is opened for
             reading, the fp will point at the first byte. See the
@@ -704,7 +706,7 @@ class Key(S3Key):
         self.md5 = None
         self.base64md5 = None
 
-        fp = StringIO.StringIO(get_utf8_value(s))
+        fp = StringIO(get_utf8able_str(s))
         r = self.set_contents_from_file(fp, headers, replace, cb, num_cb,
                                         policy, md5,
                                         if_generation=if_generation)
@@ -933,9 +935,9 @@ class Key(S3Key):
         if content_type:
             headers['Content-Type'] = content_type
         resp = self.bucket.connection.make_request(
-            'PUT', get_utf8_value(self.bucket.name), get_utf8_value(self.name),
+            'PUT', self.bucket.name, self.name,
             headers=headers, query_args='compose',
-            data=get_utf8_value(compose_req_xml))
+            data=compose_req_xml)
         if resp.status < 200 or resp.status > 299:
             raise self.bucket.connection.provider.storage_response_error(
                 resp.status, resp.reason, resp.read())

@@ -8,5 +8,5 @@ include boto/pyami/copybot.cfg
 include boto/services/sonofmmm.cfg
 include boto/mturk/test/*.doctest
 include boto/mturk/test/.gitignore
-recursive-include tests *.py *.txt
+recursive-include tests *.json *.py *.txt
 recursive-include docs *

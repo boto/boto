@@ -4,9 +4,9 @@
 # Test to ensure initalization of InstanceGroup object emits appropriate errors
 # if bidprice is not specified, but allows float, int, Decimal.
 
-import unittest
 from decimal import Decimal
 
+from tests.compat import unittest
 from boto.emr.instance_group import InstanceGroup
 
 

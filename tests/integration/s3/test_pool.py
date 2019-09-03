@@ -23,12 +23,11 @@
 """
 Some multi-threading tests of boto in a greenlet environment.
 """
+from __future__ import print_function
 
 import boto
 import time
 import uuid
-
-from StringIO import StringIO
 
 from threading import Thread
 
@@ -45,7 +44,7 @@ def put_object(bucket, name):
     bucket.new_key(name).set_contents_from_string(name)
 
 def get_object(bucket, name):
-    assert bucket.get_key(name).get_contents_as_string() == name
+    assert bucket.get_key(name).get_contents_as_string().decode('utf-8') == name
 
 def test_close_connections():
     """
@@ -57,7 +56,7 @@ def test_close_connections():
     dependencies are added to the test suite.
     """
     
-    print "Running test_close_connections"
+    print("Running test_close_connections")
 
     # Connect to S3
     s3 = boto.connect_s3()
@@ -117,9 +116,9 @@ def read_big_object(s3, bucket, name, count):
         out = WriteAndCount()
         key.get_contents_to_file(out)
         if out.size != BIG_SIZE:
-            print out.size, BIG_SIZE
+            print(out.size, BIG_SIZE)
         assert out.size == BIG_SIZE
-        print "    pool size:", s3._pool.size()
+        print("    pool size:", s3._pool.size())
 
 class LittleQuerier(object):
 
@@ -145,9 +144,9 @@ class LittleQuerier(object):
             key = self.bucket.get_key(self.small_names[i])
             expected = str(i)
             rh = { 'response-content-type' : 'small/' + str(i) }
-            actual = key.get_contents_as_string(response_headers = rh)
+            actual = key.get_contents_as_string(response_headers = rh).decode('utf-8')
             if expected != actual:
-                print "AHA:", repr(expected), repr(actual)
+                print("AHA:", repr(expected), repr(actual))
             assert expected == actual
             count += 1
 
@@ -193,7 +192,7 @@ def test_reuse_connections():
     you can see that it's happening.
     """
 
-    print "Running test_reuse_connections"
+    print("Running test_reuse_connections")
 
     # Connect to S3
     s3 = boto.connect_s3()
@@ -207,11 +206,11 @@ def test_reuse_connections():
         bucket.new_key(name).set_contents_from_string(str(i))
 
     # Wait, clean the connection pool, and make sure it's empty.
-    print "    waiting for all connections to become stale"
+    print("    waiting for all connections to become stale")
     time.sleep(s3._pool.STALE_DURATION + 1)
     s3._pool.clean()
     assert s3._pool.size() == 0
-    print "    pool is empty"
+    print("    pool is empty")
     
     # Create a big object in S3.
     big_name = str(uuid.uuid4())

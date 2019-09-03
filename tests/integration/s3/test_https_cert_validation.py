@@ -38,10 +38,12 @@ Note that this test assumes two external dependencies are available:
 import os
 import ssl
 import unittest
+import mock
 
 from nose.plugins.attrib import attr
 
 import boto
+from boto.pyami.config import Config
 from boto import exception, https_connection
 from boto.gs.connection import GSConnection
 from boto.s3.connection import S3Connection
@@ -66,29 +68,33 @@ INVALID_HOSTNAME_HOST = os.environ.get('INVALID_HOSTNAME_HOST', 'www')
 @attr('notdefault', 'ssl')
 class CertValidationTest(unittest.TestCase):
     def setUp(self):
-        # Clear config
-        for section in boto.config.sections():
-            boto.config.remove_section(section)
+        self.config = Config()
 
         # Enable https_validate_certificates.
-        boto.config.add_section('Boto')
-        boto.config.setbool('Boto', 'https_validate_certificates', True)
+        self.config.add_section('Boto')
+        self.config.setbool('Boto', 'https_validate_certificates', True)
 
         # Set up bogus credentials so that the auth module is willing to go
         # ahead and make a request; the request should fail with a service-level
         # error if it does get to the service (S3 or GS).
-        boto.config.add_section('Credentials')
-        boto.config.set('Credentials', 'gs_access_key_id', 'xyz')
-        boto.config.set('Credentials', 'gs_secret_access_key', 'xyz')
-        boto.config.set('Credentials', 'aws_access_key_id', 'xyz')
-        boto.config.set('Credentials', 'aws_secret_access_key', 'xyz')
+        self.config.add_section('Credentials')
+        self.config.set('Credentials', 'gs_access_key_id', 'xyz')
+        self.config.set('Credentials', 'gs_secret_access_key', 'xyz')
+        self.config.set('Credentials', 'aws_access_key_id', 'xyz')
+        self.config.set('Credentials', 'aws_secret_access_key', 'xyz')
+
+        self._config_patch = mock.patch('boto.config', self.config)
+        self._config_patch.start()
+
+    def tearDown(self):
+        self._config_patch.stop()
 
     def enableProxy(self):
-        boto.config.set('Boto', 'proxy', PROXY_HOST)
-        boto.config.set('Boto', 'proxy_port', PROXY_PORT)
+        self.config.set('Boto', 'proxy', PROXY_HOST)
+        self.config.set('Boto', 'proxy_port', PROXY_PORT)
 
     def assertConnectionThrows(self, connection_class, error):
-        conn = connection_class()
+        conn = connection_class('fake_id', 'fake_secret')
         self.assertRaises(error, conn.get_all_buckets)
 
     def do_test_valid_cert(self):
@@ -107,7 +113,7 @@ class CertValidationTest(unittest.TestCase):
         self.do_test_valid_cert()
 
     def do_test_invalid_signature(self):
-        boto.config.set('Boto', 'ca_certificates_file', DEFAULT_CA_CERTS_FILE)
+        self.config.set('Boto', 'ca_certificates_file', DEFAULT_CA_CERTS_FILE)
         self.assertConnectionThrows(S3Connection, ssl.SSLError)
         self.assertConnectionThrows(GSConnection, ssl.SSLError)
 
@@ -119,14 +125,14 @@ class CertValidationTest(unittest.TestCase):
         self.do_test_invalid_signature()
 
     def do_test_invalid_host(self):
-        boto.config.set('Credentials', 'gs_host', INVALID_HOSTNAME_HOST)
-        boto.config.set('Credentials', 's3_host', INVALID_HOSTNAME_HOST)
+        self.config.set('Credentials', 'gs_host', INVALID_HOSTNAME_HOST)
+        self.config.set('Credentials', 's3_host', INVALID_HOSTNAME_HOST)
         self.assertConnectionThrows(S3Connection, ssl.SSLError)
         self.assertConnectionThrows(GSConnection, ssl.SSLError)
 
     def do_test_invalid_host(self):
-        boto.config.set('Credentials', 'gs_host', INVALID_HOSTNAME_HOST)
-        boto.config.set('Credentials', 's3_host', INVALID_HOSTNAME_HOST)
+        self.config.set('Credentials', 'gs_host', INVALID_HOSTNAME_HOST)
+        self.config.set('Credentials', 's3_host', INVALID_HOSTNAME_HOST)
         self.assertConnectionThrows(
                 S3Connection, https_connection.InvalidCertificateException)
         self.assertConnectionThrows(

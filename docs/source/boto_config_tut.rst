@@ -10,9 +10,9 @@ Introduction
 There is a growing list of configuration options for the boto library. Many of
 these options can be passed into the constructors for top-level objects such as
 connections. Some options, such as credentials, can also be read from
-environment variables (e.g. ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``).
-It is also possible to manage these options in a central place through the use
-of boto config files.
+environment variables (e.g. ``AWS_ACCESS_KEY_ID``, ``AWS_SECRET_ACCESS_KEY``,
+``AWS_SECURITY_TOKEN`` and ``AWS_PROFILE``). It is also possible to manage
+these options in a central place through the use of boto config files.
 
 Details
 -------
@@ -23,7 +23,14 @@ on startup, the boto library looks for configuration files in the following loca
 and in the following order:
 
 * /etc/boto.cfg - for site-wide settings that all users on this machine will use
+* (if profile is given) ~/.aws/credentials - for credentials shared between SDKs
+* (if profile is given) ~/.boto - for user-specific settings
+* ~/.aws/credentials - for credentials shared between SDKs
 * ~/.boto - for user-specific settings
+
+**Comments** 
+You can comment out a line by putting a '#' at the beginning of the line, just like in Python code.
+
 
 In Windows, create a text file that has any name (e.g. boto.config). It's
 recommended that you put this file in your user folder. Then set 
@@ -58,6 +65,8 @@ boto requests. The order of precedence for authentication credentials is:
 
 * Credentials passed into the Connection class constructor.
 * Credentials specified by environment variables
+* Credentials specified as named profiles in the shared credential file.
+* Credentials specified by default in the shared credential file.
 * Credentials specified as named profiles in the config file.
 * Credentials specified by default in the config file.
 
@@ -84,6 +93,22 @@ of profiles within your configuration files and then reference them by name
 when you instantiate your connection. If you specify a profile that does not
 exist in the configuration, the keys used under the ``[Credentials]`` heading
 will be applied by default.
+
+The shared credentials file in ``~/.aws/credentials`` uses a slightly
+different format. For example::
+
+    [default]
+    aws_access_key_id = <your default access key>
+    aws_secret_access_key = <your default secret key>
+
+    [name_goes_here]
+    aws_access_key_id = <access key for this profile>
+    aws_secret_access_key = <secret key for this profile>
+
+    [another_profile]
+    aws_access_key_id = <access key for this profile>
+    aws_secret_access_key = <secret key for this profile>
+    aws_security_token = <optional security token for this profile>
 
 For greater security, the secret key can be stored in a keyring and
 retrieved via the keyring package.  To use a keyring, use ``keyring``,
@@ -148,7 +173,7 @@ For example::
 :connection_stale_duration: Amount of time to wait in seconds before a
   connection will stop getting reused. AWS will disconnect connections which
   have been idle for 180 seconds.
-:is_secure: Is the connection over SSL. This setting will overide passed in
+:is_secure: Is the connection over SSL. This setting will override passed in
   values.
 :https_validate_certificates: Validate HTTPS certificates. This is on by default
 :ca_certificates_file: Location of CA certificates or the keyword "system".
@@ -163,6 +188,9 @@ For example::
   Provide an absolute path to a custom JSON file, which gets merged into the
   defaults. (This can also be specified with the ``BOTO_ENDPOINTS``
   environment variable instead.)
+:use_endpoint_heuristics: Allows using endpoint heuristics to guess
+  endpoints for regions that aren't built in. This can also be specified with
+  the ``BOTO_USE_ENDPOINT_HEURISTICS`` environment variable.
 
 These settings will default to::
 
@@ -174,6 +202,7 @@ These settings will default to::
     http_socket_timeout = 60
     send_crlf_after_proxy_auth_headers = False
     endpoints_path = /path/to/my/boto/endpoints.json
+    use_endpoint_heuristics = False
 
 You can control the timeouts and number of retries used when retrieving
 information from the Metadata Service (this is used for retrieving credentials

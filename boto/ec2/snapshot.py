@@ -28,6 +28,21 @@ from boto.ec2.zone import Zone
 
 
 class Snapshot(TaggedEC2Object):
+    """
+    Represents an EBS snapshot.
+    :ivar id: The unique ID of the snapshot.
+    :ivar volume_id: The ID of the volume this snapshot was created
+    from.
+    :ivar status: The status of the snapshot.
+    :ivar progress: The percent complete of the snapshot.
+    :ivar start_time: The timestamp of when the snapshot was created.
+    :ivar owner_id: The id of the account that owns the snapshot.
+    :ivar owner_alias: The alias of the account that owns the snapshot.
+    :ivar volume_size: The size (in GB) of the volume the snapshot was created from.
+    :ivar description: The description of the snapshot.
+    :ivar encrypted: True if this snapshot is encrypted
+    """
+
     AttrName = 'createVolumePermission'
 
     def __init__(self, connection=None):
@@ -41,6 +56,7 @@ class Snapshot(TaggedEC2Object):
         self.owner_alias = None
         self.volume_size = None
         self.description = None
+        self.encrypted = None
 
     def __repr__(self):
         return 'Snapshot:%s' % self.id
@@ -65,6 +81,8 @@ class Snapshot(TaggedEC2Object):
                 self.volume_size = value
         elif name == 'description':
             self.description = value
+        elif name == 'encrypted':
+            self.encrypted = (value.lower() == 'true')
         else:
             setattr(self, name, value)
 
@@ -138,7 +156,7 @@ class Snapshot(TaggedEC2Object):
 
         :type volume_type: string
         :param volume_type: The type of the volume. (optional).  Valid
-            values are: standard | io1.
+            values are: standard | io1 | gp2.
 
         :type iops: int
         :param iops: The provisioned IOPs you want to associate with
@@ -152,6 +170,7 @@ class Snapshot(TaggedEC2Object):
             self.id,
             volume_type,
             iops,
+            self.encrypted,
             dry_run=dry_run
         )
 
@@ -181,6 +200,3 @@ class SnapshotAttribute(object):
             self.snapshot_id = value
         else:
             setattr(self, name, value)
-
-
-
