@@ -69,7 +69,7 @@ if six.PY2:
     def is_binary(n):
         return isinstance(n, Binary)
 
-else:  # PY3
+else:  # PY3+
     def is_str(n):
         return (isinstance(n, str) or
                 isinstance(n, type) and issubclass(n, str))

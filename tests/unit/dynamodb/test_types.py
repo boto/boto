@@ -120,7 +120,7 @@ class TestBinary(unittest.TestCase):
         with self.assertRaises(TypeError):
             types.Binary(1)
 
-    @unittest.skipUnless(six.PY3, "Python 3 only")
+    @unittest.skipUnless(not six.PY2, "Python 3+ only")
     def test_bytes_input(self):
         data = types.Binary(1)
         self.assertEqual(data, b'\x00')
@@ -140,7 +140,7 @@ class TestBinary(unittest.TestCase):
         # Check that the value field is of type bytes
         self.assertEqual(type(data.value), bytes)
 
-    @unittest.skipUnless(six.PY3, "Python 3 only")
+    @unittest.skipUnless(not six.PY2, "Python 3+ only")
     def test_unicode_py3(self):
         with self.assertRaises(TypeError):
             types.Binary(u'\x01')

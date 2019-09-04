@@ -125,7 +125,7 @@ def compute_hashes_from_fileobj(fileobj, chunk_size=1024 * 1024):
 
     """
     # Python 3+, not binary
-    if six.PY3 and hasattr(fileobj, 'mode') and 'b' not in fileobj.mode:
+    if not six.PY2 and hasattr(fileobj, 'mode') and 'b' not in fileobj.mode:
         raise ValueError('File-like object must be opened in binary mode!')
 
     linear_hash = hashlib.sha256()

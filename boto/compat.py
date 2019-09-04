@@ -57,14 +57,7 @@ from boto.vendored.six.moves.urllib.parse import parse_qs, quote, unquote, \
 from boto.vendored.six.moves.urllib.parse import unquote_plus
 from boto.vendored.six.moves.urllib.request import urlopen
 
-if six.PY3:
-    # StandardError was removed, so use the base exception type instead
-    StandardError = Exception
-    long_type = int
-    from configparser import ConfigParser, NoOptionError, NoSectionError
-    unquote_str = unquote_plus
-    parse_qs_safe = parse_qs
-else:
+if six.PY2:
     StandardError = StandardError
     long_type = long
     from ConfigParser import SafeConfigParser as ConfigParser
@@ -100,3 +93,11 @@ else:
                 result[decoded_name] = decoded_value
             return result
         return qs_dict
+
+else:
+    # StandardError was removed, so use the base exception type instead
+    StandardError = Exception
+    long_type = int
+    from configparser import ConfigParser, NoOptionError, NoSectionError
+    unquote_str = unquote_plus
+    parse_qs_safe = parse_qs

@@ -52,7 +52,7 @@ ENCRYPTION_CONFIG_ARG = 'encryptionConfig'
 LIFECYCLE_ARG = 'lifecycle'
 STORAGE_CLASS_ARG='storageClass'
 _ERROR_DETAILS_REGEX_STR = r'<Details>(?P<details>.*)</Details>'
-if six.PY3:
+if not six.PY2:
     _ERROR_DETAILS_REGEX_STR = _ERROR_DETAILS_REGEX_STR.encode('ascii')
 ERROR_DETAILS_REGEX = re.compile(_ERROR_DETAILS_REGEX_STR)
 
@@ -361,7 +361,7 @@ class Bucket(S3Bucket):
                     details = (('<Details>%s. Note that Full Control access'
                                 ' is required to access ACLs.</Details>') %
                                details)
-                    if six.PY3:
+                    if not six.PY2:
                         # All args to re.sub() must be of same type
                         details = details.encode('utf-8')
                     body = re.sub(ERROR_DETAILS_REGEX, details, body)

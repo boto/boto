@@ -1197,7 +1197,7 @@ def write_to_fd(fd, data):
     if six.PY2:
         fd.write(data)
         return
-    # PY3 logic:
+    # PY3+ logic:
     if isinstance(data, bytes):
         if ((hasattr(fd, 'mode') and 'b' in fd.mode) or
                 isinstance(fd, io.BytesIO)):

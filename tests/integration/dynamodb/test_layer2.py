@@ -460,7 +460,7 @@ class DynamoDBLayer2Test(unittest.TestCase):
         retrieved = table.get_item('foo', 'bar')
         self.assertEqual(retrieved['decimalvalue'], Decimal('1.12345678912345'))
 
-    @unittest.skipIf(six.PY3, "skipping lossy_float_conversion test for Python 3.x")
+    @unittest.skipIf(not six.PY2, "skipping lossy_float_conversion test for Python 3+")
     def test_lossy_float_conversion(self):
         table = self.create_sample_table()
         item = table.new_item('foo', 'bar')

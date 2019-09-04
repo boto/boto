@@ -140,7 +140,7 @@ class TestFileHash(unittest.TestCase):
 
             compute_hashes_from_fileobj(f, chunk_size=512)
 
-    @unittest.skipUnless(six.PY3, 'Python 3 requires reading binary!')
+    @unittest.skipUnless(not six.PY2, 'Python 3 requires reading binary!')
     def test_compute_hash_tempfile_py3(self):
         # Note the missing 'b' in the mode!
         with tempfile.TemporaryFile(mode='w+') as f:
