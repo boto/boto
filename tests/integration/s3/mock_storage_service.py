@@ -283,6 +283,9 @@ class MockBucket(object):
         else:
             return '<Subresource/>'
 
+    def get_tags(self):
+      return []
+
     def new_key(self, key_name=None):
         mock_key = MockKey(self, key_name)
         self.keys[key_name] = mock_key
