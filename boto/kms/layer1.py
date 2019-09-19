@@ -175,7 +175,7 @@ class KMSConnection(AWSQueryConnection):
 
         :type key_id: string
         :param key_id: A unique key identifier for a customer master key. This
-            value can be a globally unique identifier, an ARN, or an alias.
+            value can be a globally unique identifier or an ARN.
 
         :type grantee_principal: string
         :param grantee_principal: Principal given permission by the grant to
