@@ -330,6 +330,8 @@ class MWSConnection(AWSQueryConnection):
     def _parse_response(self, parser, contenttype, body):
         if not contenttype.startswith('text/xml'):
             return body
+        if hasattr(parser, 'GetReportResult'):
+            return body
         handler = XmlHandler(parser, self)
         xml.sax.parseString(body, handler)
         return parser
