@@ -1064,10 +1064,10 @@ def detect_potential_sigv4(func):
 
 def detect_potential_s3sigv4(func):
     def _wrapper(self):
-        if os.environ.get('S3_USE_SIGV4', False):
+        if os.environ.get('S3_USE_SIGV4', True):
             return ['hmac-v4-s3']
 
-        if boto.config.get('s3', 'use-sigv4', False):
+        if boto.config.get('s3', 'use-sigv4', True):
             return ['hmac-v4-s3']
 
         if not hasattr(self, 'host'):
