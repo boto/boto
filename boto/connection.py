@@ -543,6 +543,8 @@ class AWSAuthConnection(object):
             self.http_connection_kwargs['timeout'] = config.getint(
                 'Boto', 'http_socket_timeout', 70)
 
+        is_anonymous_connection = getattr(self, 'anon', False)
+
         if isinstance(provider, Provider):
             # Allow overriding Provider
             self.provider = provider
@@ -552,7 +554,8 @@ class AWSAuthConnection(object):
                                      aws_access_key_id,
                                      aws_secret_access_key,
                                      security_token,
-                                     profile_name)
+                                     profile_name,
+                                     anon=is_anonymous_connection)
 
         # Allow config file to override default host, port, and host header.
         if self.provider.host:
@@ -920,7 +923,7 @@ class AWSAuthConnection(object):
         while i <= num_retries:
             # Use binary exponential backoff to desynchronize client requests.
             next_sleep = min(random.random() * (2 ** i),
-                             boto.config.get('Boto', 'max_retry_delay', 60))
+                             float(boto.config.get('Boto', 'max_retry_delay', 60)))
             try:
                 # we now re-sign each request before it is retried
                 boto.log.debug('Token: %s' % self.provider.security_token)
@@ -1102,8 +1105,10 @@ class AWSQueryConnection(AWSAuthConnection):
     def _required_auth_capability(self):
         return []
 
+
     def get_utf8_value(self, value):
         return boto.utils.get_utf8_value(value)
+
 
     def make_request(self, action, params=None, path='/', verb='GET'):
         http_request = self.build_base_http_request(verb, path, None,

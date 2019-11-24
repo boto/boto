@@ -1,19 +1,14 @@
 language: python
 python:
-  - "2.6"
   - "2.7"
-  - "3.3"
-  - "3.4"
   - "3.5"
   - "3.6"
+  - "3.7"
+  - "3.8"
   - "pypy"
-matrix:
-  include:
-    - python: "3.7"
-      dist: xenial    # required for Python 3.7 (travis-ci/travis-ci#9069)
-      sudo: required  # required for Python 3.7 (travis-ci/travis-ci#9069)
 env:
   - BOTO_CONFIG=/tmp/nowhere
+
 before_install:
   - if [ "$TRAVIS_PULL_REQUEST" != "false" ] && [ "$TRAVIS_BRANCH" == "master" ]; then
       echo "No pull requests can be sent to the master branch" 1>&2;
@@ -22,9 +17,11 @@ before_install:
   - sudo apt-get update
   - sudo apt-get --reinstall install -qq language-pack-en language-pack-de
   - sudo apt-get install swig
+
 install:
   - pip install -U 'setuptools<40'
   - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then travis_retry pip install -r requirements-py26.txt; fi
   - if [[ $TRAVIS_PYTHON_VERSION == 3.3 ]]; then travis_retry pip install -r requirements-py33.txt; fi
   - travis_retry pip install -r requirements.txt
+
 script: python tests/test.py default
