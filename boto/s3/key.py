@@ -407,8 +407,8 @@ class Key(object):
     # Python 3 iterator support
     __next__ = next
 
-    def read(self, size=0):
-        self.open_read()
+    def read(self, size=0, headers=None):
+        self.open_read(headers=headers)
         if size == 0:
             data = self.resp.read()
         else:
@@ -1131,7 +1131,7 @@ class Key(object):
 
         if self.bucket is not None:
             if not replace:
-                if self.bucket.lookup(self.name):
+                if self.bucket.lookup(self.name, headers=headers):
                     return
             self.send_file(fp, headers, cb, num_cb, query_args,
                            chunked_transfer=True, size=size)
@@ -1305,7 +1305,7 @@ class Key(object):
             if self.name is None:
                 self.name = self.md5
             if not replace:
-                if self.bucket.lookup(self.name):
+                if self.bucket.lookup(self.name, headers=headers):
                     return
 
             self.send_file(fp, headers=headers, cb=cb, num_cb=num_cb,
