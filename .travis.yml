@@ -17,17 +17,37 @@ matrix:
     - os: linux
       dist: trusty
       python: "3.4"
+    - arch: arm64
+      os: linux
+      dist: trusty
+      python: "3.4"
     # Xenial Tests
     - os: linux
+      dist: xenial
+      python: "2.7"
+    - arch: arm64
+      os: linux
       dist: xenial
       python: "2.7"
     - os: linux
       dist: xenial
       python: "3.5"
+    - arch: arm64
+      os: linux
+      dist: xenial
+      python: "3.5"
     - os: linux
       dist: xenial
       python: "3.6"
+    - arch: arm64
+      os: linux
+      dist: xenial
+      python: "3.6"
     - os: linux
+      dist: xenial
+      python: "3.7"
+    - arch: arm64
+      os: linux
       dist: xenial
       python: "3.7"
     - os: linux
@@ -44,6 +64,7 @@ before_install:
       echo "No pull requests can be sent to the master branch" 1>&2;
       exit 1;
     fi
+  - echo 'KEY' >> $HOME/.ssh/known_hosts
   - sudo apt-get update
   - sudo apt-get --reinstall install -qq language-pack-en language-pack-de
   - sudo apt-get install swig
