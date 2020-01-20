@@ -21,13 +21,19 @@
 import xml.sax
 import hashlib
 import string
-import collections
 from boto.connection import AWSQueryConnection
 from boto.exception import BotoServerError
 import boto.mws.exception
 import boto.mws.response
 from boto.handler import XmlHandler
 from boto.compat import filter, map, six, encodebytes
+
+try:
+    # Python 3.3+
+    from collections.abc import Iterable, Mapping
+except ImportError:
+    from collections import Iterable, Mapping
+
 
 __all__ = ['MWSConnection']
 
@@ -109,7 +115,7 @@ def http_body(field):
 def destructure_object(value, into, prefix, members=False):
     if isinstance(value, boto.mws.response.ResponseElement):
         destructure_object(value.__dict__, into, prefix, members=members)
-    elif isinstance(value, collections.Mapping):
+    elif isinstance(value, Mapping):
         for name in value:
             if name.startswith('_'):
                 continue
@@ -117,7 +123,7 @@ def destructure_object(value, into, prefix, members=False):
                                members=members)
     elif isinstance(value, six.string_types):
         into[prefix] = value
-    elif isinstance(value, collections.Iterable):
+    elif isinstance(value, Iterable):
         for index, element in enumerate(value):
             suffix = (members and '.member.' or '.') + str(index + 1)
             destructure_object(element, into, prefix + suffix,
