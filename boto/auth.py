@@ -1062,18 +1062,6 @@ def detect_potential_sigv4(func):
     return _wrapper
 
 
-def get_boolean_value(string):
-    """Determine the boolean value based on the string."""
-    if string is not None:
-      if string.lower() in ('true', '1'):
-          return True
-      elif string.lower() in ('false', '0'):
-          return False
-    # For anything that did not match, we return None to determine
-    # that the value is not defined.
-    return None
-
-
 def convert_to_bool(val):
     if val is None or isinstance(val, bool):
         return val
@@ -1090,8 +1078,8 @@ def detect_potential_s3sigv4(func):
         env_use_sigv4_flag = os.environ.get('S3_USE_SIGV4')
         cfg_use_sigv4_flag = boto.config.get('s3', 'use-sigv4')
         for flag in env_use_sigv4_flag, cfg_use_sigv4_flag:
+            flag = convert_to_bool(flag)
             if flag is not None:
-                flag = convert_to_bool(flag)
                 return ['hmac-v4-s3'] if flag else func(self)
 
         # Use default for non-aws hosts. Adding a url scheme is necessary if
