@@ -591,7 +591,6 @@ def test_s3_sigv4_default():
 def test_s3_special_domain_signature_version():
     # Tests for specific domains, including the global host and custom domains.
     special_domains = [
-        's3.amazonaws.com',
         'storage.googleapis.com',
         'mycustomdomain.example.com',
         's3.amazonaws.com.example.com',
@@ -600,6 +599,13 @@ def test_s3_special_domain_signature_version():
 
     for domain in special_domains:
         yield S3SignatureVersionTestCase(domain, 'nope').run
+
+
+def test_s3_default_signature_version():
+  # Default region.
+  # s3.amazonaws.com is an alias to s2.us-east-1.amazonaws.com
+  case = S3SignatureVersionTestCase('s3.amazonaws.com', 'hmac-v4-s3')
+  yield case.run
 
 
 def test_s3_anon_signature_version():
@@ -643,24 +649,40 @@ class S3SignatureVersionTestCase(object):
         assert_equal(auth, [self.expected_signature_version], message)
 
 
-class TestS3SigV4OptIn(MockServiceWithConfigTestCase):
+class TestS3SigV4OptInAndOut(MockServiceWithConfigTestCase):
     connection_class = FakeS3Connection
 
     def test_sigv4_opt_in_config(self):
         # Opt-in via the config.
         self.config = {
             's3': {
-                'use-sigv4': True,
+                'use-sigv4': 'true',
             },
         }
         fake = FakeS3Connection()
         self.assertEqual(fake._required_auth_capability(), ['hmac-v4-s3'])
 
+    def test_sigv4_opt_out_config(self):
+        # Opt-in via the config.
+        self.config = {
+            's3': {
+                'use-sigv4': 'False',
+            },
+        }
+        fake = FakeS3Connection()
+        self.assertEqual(fake._required_auth_capability(), ['nope'])
+
     def test_sigv4_opt_in_env(self):
         # Opt-in via the ENV.
-        self.environ['S3_USE_SIGV4'] = True
+        self.environ['S3_USE_SIGV4'] = 'True'
         fake = FakeS3Connection(host='s3.amazonaws.com')
         self.assertEqual(fake._required_auth_capability(), ['hmac-v4-s3'])
+
+    def test_sigv4_opt_out_env(self):
+        # Opt-in via the ENV.
+        self.environ['S3_USE_SIGV4'] = 'False'
+        fake = FakeS3Connection(host='s3.amazonaws.com')
+        self.assertEqual(fake._required_auth_capability(), ['nope'])
 
 
 class TestSigV4OptIn(MockServiceWithConfigTestCase):

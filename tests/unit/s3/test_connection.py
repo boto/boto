@@ -33,7 +33,7 @@ class TestSignatureAlteration(AWSMockServiceTestCase):
     def test_unchanged(self):
         self.assertEqual(
             self.service_connection._required_auth_capability(),
-            ['s3']
+            ['hmac-v4-s3']
         )
 
     def test_switched(self):
@@ -126,7 +126,7 @@ class TestSigV4HostError(MockServiceWithConfigTestCase):
     def test_historical_behavior(self):
         self.assertEqual(
             self.service_connection._required_auth_capability(),
-            ['s3']
+            ['hmac-v4-s3']
         )
         self.assertEqual(self.service_connection.host, 's3.amazonaws.com')
 
@@ -140,15 +140,6 @@ class TestSigV4HostError(MockServiceWithConfigTestCase):
                 'use-sigv4': True,
             }
         }
-
-        # Should raise an error if no host is given in either the config or
-        # in connection arguments.
-        with self.assertRaises(HostRequiredError):
-            # No host+SigV4 == KABOOM
-            self.connection_class(
-                aws_access_key_id='less',
-                aws_secret_access_key='more'
-            )
 
         # Ensure passing a ``host`` in the connection args still works.
         conn = self.connection_class(
