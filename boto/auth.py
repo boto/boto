@@ -612,8 +612,11 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         # S3 does **NOT** do path normalization that SigV4 typically does.
         # Urlencode the path, **NOT** ``auth_path`` (because vhosting).
         path = urllib.parse.urlparse(http_request.path)
+        # urlparse might convert the path to unicode in python2.7.
+        # The urllib's quote function does not work well with unicode string.
+        path_str = six.ensure_str(path.path)
         # Because some quoting may have already been applied, let's back it out.
-        unquoted = urllib.parse.unquote(path.path)
+        unquoted = urllib.parse.unquote(path_str)
         # Requote, this time addressing all characters.
         encoded = urllib.parse.quote(unquoted, safe='/~')
         return encoded
