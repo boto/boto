@@ -191,12 +191,10 @@ class S3Connection(AWSAuthConnection):
             anon = boto.config.getbool('s3', 'no_sign_request', False)
         self.anon = anon
 
-        no_host_provided = False
         if host is NoHostProvided:
             host = boto.config.get('s3', 'host')
             if host is None:
                 host = self.DefaultHost
-                no_host_provided = True
 
         super(S3Connection, self).__init__(host,
                 aws_access_key_id, aws_secret_access_key,
@@ -205,13 +203,6 @@ class S3Connection(AWSAuthConnection):
                 path=path, provider=provider, security_token=security_token,
                 suppress_consec_slashes=suppress_consec_slashes,
                 validate_certs=validate_certs, profile_name=profile_name)
-        # We need to delay until after the call to ``super`` before checking
-        # to see if SigV4 is in use.
-        if no_host_provided:
-            if 'hmac-v4-s3' in self._required_auth_capability():
-                raise HostRequiredError(
-                    "When using SigV4, you must specify a 'host' parameter."
-                )
 
     @detect_potential_s3sigv4
     def _required_auth_capability(self):
