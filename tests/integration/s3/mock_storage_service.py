@@ -36,6 +36,7 @@ from hashlib import md5
 from boto.utils import compute_md5
 from boto.utils import find_matching_headers
 from boto.utils import merge_headers_by_name
+from boto.utils import write_to_fd
 from boto.s3.prefix import Prefix
 from boto.compat import six
 
@@ -90,13 +91,13 @@ class MockKey(object):
                              version_id=NOT_IMPL,
                              res_download_handler=NOT_IMPL):
         data = six.ensure_binary(self.data)
-        fp.write(data)
+        write_to_fd(fp, data)
 
     def get_file(self, fp, headers=NOT_IMPL, cb=NOT_IMPL, num_cb=NOT_IMPL,
                  torrent=NOT_IMPL, version_id=NOT_IMPL,
                  override_num_retries=NOT_IMPL):
         data = six.ensure_binary(self.data)
-        fp.write(data)
+        write_to_fd(fp, data)
 
     def _handle_headers(self, headers):
         if not headers:
