@@ -685,6 +685,9 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
                     if part == 's3':
                         # If it's by itself, the region is the previous part.
                         region_name = parts[-offset]
+                        # if using dualstack endpoint for IPv6 you have go one more
+                        if region_name == 'dualstack':
+                            region_name = parts[offset-1]
 
                         # Unless it's Vhosted classic
                         if region_name == 'amazonaws':
