@@ -66,6 +66,7 @@ from boto.exception import AWSConnectionError
 from boto.exception import BotoClientError
 from boto.exception import BotoServerError
 from boto.exception import PleaseRetryException
+from boto.exception import S3ResponseError
 from boto.provider import Provider
 from boto.resultset import ResultSet
 
@@ -1062,16 +1063,164 @@ class AWSAuthConnection(object):
         return HTTPRequest(method, self.protocol, host, self.port,
                            path, auth_path, params, headers, data)
 
+    def _find_s3_host(self, endpoint):
+        # An s3 endpoint is of the form bucket-name.s3(.{region}).amazonaws.com,
+        # where the host is everything after "bucket-name." Note that ".s3."
+        # can also appear in bucket-name, so we need to find the last
+        # occurrence of ".s3." to find the host.
+        ix = endpoint.rfind('.s3.')
+        if ix == -1:
+            return None
+        return ix + 1
+
+    def _get_s3_host(self, endpoint):
+        ix = self._find_s3_host(endpoint)
+        if ix:
+            return endpoint[ix:]
+
+    def _change_s3_host(self, endpoint, new_host):
+        ix = self._find_s3_host(endpoint)
+        if ix:
+            return endpoint[:ix] + new_host
+
+    def _fix_s3_endpoint_region(self, endpoint, correct_region):
+        """Return a new bucket endpoint that uses correct_region.
+        Return None if host substitution is not possible.
+        """
+        if not (endpoint and correct_region):
+            return None
+        new_host = 's3.%s.amazonaws.com' % correct_region
+        new_endpoint = self._change_s3_host(endpoint, new_host)
+        if new_endpoint:
+            return new_endpoint
+        boto.log.debug('Could not change s3 host for %s' % endpoint)
+
+    def _get_correct_s3_endpoint_from_response(self, request,
+                                               err, get_header):
+        """Attempt to return a new s3 endpoint using the correct region to
+        access a bucket. Return None if a retry is not possible."""
+
+        # 1. Look at error response headers, if available.
+        if callable(get_header):
+            region = get_header('x-amz-bucket-region')
+            if region:
+                boto.log.debug('Got correct region from response headers.')
+                return self._fix_s3_endpoint_region(request.host, region)
+
+        # 2. Look in the response body.
+        if err.region:
+            boto.log.debug('Got correct region from parsed xml in err.region.')
+            return self._fix_s3_endpoint_region(request.host, err.region)
+        elif err.error_code == 'IllegalLocationConstraintException':
+            region_regex = (
+                'The (.*?) location constraint is incompatible for the region '
+                'specific endpoint this request was sent to\.'
+            )
+            match = re.search(region_regex, err.body)
+            if match and match.group(1) != 'unspecified':
+                region = match.group(1)
+                boto.log.debug('Got correct region from response body.')
+                return self._fix_s3_endpoint_region(request.host, region)
+        elif err.endpoint:
+            boto.log.debug('Got correct endpoint from response body.')
+            return err.endpoint
+
+        # 3. Last resort: send another request.
+        boto.log.debug('Sending a bucket HEAD request to get correct region.')
+        req = self.build_base_http_request(
+            'HEAD', '/', '/', {}, None, '', request.host)
+        bucket_head_response = self._mexe(req, None, None)
+        region = bucket_head_response.getheader('x-amz-bucket-region')
+        if region:
+            boto.log.debug('Got correct region from a bucket head request.')
+            return self._fix_s3_endpoint_region(request.host, region)
+
+    def _change_s3_host_from_error(self, request, err, get_header=None):
+        new_endpoint = self._get_correct_s3_endpoint_from_response(
+            request,
+            err,
+            get_header
+        )
+        if not new_endpoint:
+            return None
+
+        msg = 'This request was sent to %s, ' % request.host
+        msg += 'when it should have been sent to %s. ' % new_endpoint
+        request.host = new_endpoint
+
+        new_host = self._get_s3_host(new_endpoint)
+        if new_host and new_host != self.host:
+            msg += 'This error may have arisen because your S3 host, '
+            msg += 'currently %s, is configured incorrectly. ' % self.host
+            msg += 'Please change your configuration to use %s ' % new_host
+            msg += 'to avoid multiple unnecessary redirects '
+            msg += 'and signing attempts.'
+            self.host = new_host
+
+        boto.log.debug(msg)
+        return request
+
+    def _get_request_for_s3_retry(self, http_request, response, err):
+        if response:
+            body = response.read()
+            if body:
+                body = body.decode('utf-8')
+            # wrap response in an S3 error so its xml body is parsed.
+            err = S3ResponseError(response.status, response.reason, body)
+            return self._change_s3_host_from_error(
+                http_request,
+                err,
+                get_header=response.getheader
+            )
+        elif err:
+            return self._change_s3_host_from_error(
+                http_request,
+                err
+            )
+
     def make_request(self, method, path, headers=None, data='', host=None,
                      auth_path=None, sender=None, override_num_retries=None,
                      params=None, retry_handler=None):
-        """Makes a request to the server, with stock multiple-retry logic."""
+        """Make a request to the server.
+        Include logic for retrying on s3 region errors.
+        """
         if params is None:
             params = {}
-        http_request = self.build_base_http_request(method, path, auth_path,
-                                                    params, headers, data, host)
-        return self._mexe(http_request, sender, override_num_retries,
-                          retry_handler=retry_handler)
+        http_request = self.build_base_http_request(
+            method, path, auth_path, params, headers, data, host)
+        response, err = None, None
+        try:
+            response = self._mexe(http_request, sender, override_num_retries,
+                                  retry_handler=retry_handler)
+        except S3ResponseError as e:
+            # Sender functions passed into _mexe often call
+            # connection.getresponse directly, and raise their own exceptions
+            # if a request fails. See _send_file_internal in s3/key.py. The
+            # exception can contain information useful for a retry, however,
+            # so it needs to be in scope for the retry logic below.
+            err = e
+
+        status = (response or err).status
+        if http_request.host.endswith('amazonaws.com') and status in [301, 400]:
+            retry_request = self._get_request_for_s3_retry(
+                http_request,
+                response,
+                err
+            )
+            if retry_request:
+                return self._mexe(retry_request, sender, override_num_retries,
+                                  retry_handler=retry_handler)
+
+        if response:
+            # Note: a response returned here will not be readable using
+            # response.read(amt) if it came from an s3 request and its status
+            # code is 301 or 400. This is because response.read() is called
+            # above under these conditions, and response.read(amt) does not
+            # return bytes after read has been called once. Make sure to check
+            # for a non-error status code before calling response.read(amt)!
+            return response
+        elif err:
+            raise err
 
     def close(self):
         """(Optional) Close any open HTTP connections.  This is non-destructive,
