@@ -88,7 +88,7 @@ class Bootstrap(ScriptBase):
             if update.find(':') >= 0:
                 method, version = update.split(':')
             else:
-                version = 'master'
+                version = 'main'
             self.run('git checkout %s' % version, cwd=location)
         else:
             # first remove the symlink needed when running from subversion

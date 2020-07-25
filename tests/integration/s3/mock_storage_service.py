@@ -88,7 +88,7 @@ class MockKey(object):
                              torrent=NOT_IMPL,
                              version_id=NOT_IMPL,
                              res_download_handler=NOT_IMPL):
-        fp.write(self.data)
+        fp.write(six.ensure_binary(self.data))
 
     def get_file(self, fp, headers=NOT_IMPL, cb=NOT_IMPL, num_cb=NOT_IMPL,
                  torrent=NOT_IMPL, version_id=NOT_IMPL,
@@ -188,7 +188,7 @@ class MockKey(object):
 
     def set_etag(self):
         """
-        Set etag attribute by generating hex MD5 checksum on current 
+        Set etag attribute by generating hex MD5 checksum on current
         contents of mock key.
         """
         m = md5()
@@ -213,11 +213,11 @@ class MockKey(object):
         """
         tup = compute_md5(fp)
         # Returned values are MD5 hash, base64 encoded MD5 hash, and file size.
-        # The internal implementation of compute_md5() needs to return the 
+        # The internal implementation of compute_md5() needs to return the
         # file size but we don't want to return that value to the external
         # caller because it changes the class interface (i.e. it might
-        # break some code) so we consume the third tuple value here and 
-        # return the remainder of the tuple to the caller, thereby preserving 
+        # break some code) so we consume the third tuple value here and
+        # return the remainder of the tuple to the caller, thereby preserving
         # the existing interface.
         self.size = tup[2]
         return tup[0:2]
@@ -268,7 +268,7 @@ class MockBucket(object):
             # Return ACL for the bucket.
             return self.acls[self.name]
 
-    def get_def_acl(self, key_name=NOT_IMPL, headers=NOT_IMPL, 
+    def get_def_acl(self, key_name=NOT_IMPL, headers=NOT_IMPL,
                     version_id=NOT_IMPL):
         # Return default ACL for the bucket.
         return self.def_acl

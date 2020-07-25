@@ -130,7 +130,7 @@ class KMSConnection(AWSQueryConnection):
 
     def create_alias(self, alias_name, target_key_id):
         """
-        Creates a display name for a customer master key. An alias can
+        Creates a display name for a customer main key. An alias can
         be used to identify a key and should be unique. The console
         enforces a one-to-one mapping between the alias and a key. An
         alias name can contain only alphanumeric characters, forward
@@ -174,7 +174,7 @@ class KMSConnection(AWSQueryConnection):
         #. RevokeGrant
 
         :type key_id: string
-        :param key_id: A unique key identifier for a customer master key. This
+        :param key_id: A unique key identifier for a customer main key. This
             value can be a globally unique identifier, an ARN, or an alias.
 
         :type grantee_principal: string
@@ -222,7 +222,7 @@ class KMSConnection(AWSQueryConnection):
 
     def create_key(self, policy=None, description=None, key_usage=None):
         """
-        Creates a customer master key. Customer master keys can be
+        Creates a customer main key. Customer main keys can be
         used to encrypt small amounts of data (less than 4K) directly,
         but they are most commonly used to encrypt or envelope data
         keys that are then used to encrypt customer data. For more
@@ -306,10 +306,10 @@ class KMSConnection(AWSQueryConnection):
     def describe_key(self, key_id):
         """
         Provides detailed information about the specified customer
-        master key.
+        main key.
 
         :type key_id: string
-        :param key_id: Unique identifier of the customer master key to be
+        :param key_id: Unique identifier of the customer main key to be
             described. This can be an ARN, an alias, or a globally unique
             identifier.
 
@@ -323,7 +323,7 @@ class KMSConnection(AWSQueryConnection):
         Marks a key as disabled, thereby preventing its use.
 
         :type key_id: string
-        :param key_id: Unique identifier of the customer master key to be
+        :param key_id: Unique identifier of the customer main key to be
             disabled. This can be an ARN, an alias, or a globally unique
             identifier.
 
@@ -337,7 +337,7 @@ class KMSConnection(AWSQueryConnection):
         Disables rotation of the specified key.
 
         :type key_id: string
-        :param key_id: Unique identifier of the customer master key for which
+        :param key_id: Unique identifier of the customer main key for which
             rotation is to be disabled. This can be an ARN, an alias, or a
             globally unique identifier.
 
@@ -352,7 +352,7 @@ class KMSConnection(AWSQueryConnection):
         have up to 25 enabled keys at one time.
 
         :type key_id: string
-        :param key_id: Unique identifier of the customer master key to be
+        :param key_id: Unique identifier of the customer main key to be
             enabled. This can be an ARN, an alias, or a globally unique
             identifier.
 
@@ -363,10 +363,10 @@ class KMSConnection(AWSQueryConnection):
 
     def enable_key_rotation(self, key_id):
         """
-        Enables rotation of the specified customer master key.
+        Enables rotation of the specified customer main key.
 
         :type key_id: string
-        :param key_id: Unique identifier of the customer master key for which
+        :param key_id: Unique identifier of the customer main key for which
             rotation is to be enabled. This can be an ARN, an alias, or a
             globally unique identifier.
 
@@ -378,11 +378,11 @@ class KMSConnection(AWSQueryConnection):
     def encrypt(self, key_id, plaintext, encryption_context=None,
                 grant_tokens=None):
         """
-        Encrypts plaintext into ciphertext by using a customer master
+        Encrypts plaintext into ciphertext by using a customer main
         key.
 
         :type key_id: string
-        :param key_id: Unique identifier of the customer master. This can be an
+        :param key_id: Unique identifier of the customer main. This can be an
             ARN, an alias, or the Key ID.
 
         :type plaintext: blob
@@ -420,7 +420,7 @@ class KMSConnection(AWSQueryConnection):
                           grant_tokens=None):
         """
         Generates a secure data key. Data keys are used to encrypt and
-        decrypt data. They are wrapped by customer master keys.
+        decrypt data. They are wrapped by customer main keys.
 
         :type key_id: string
         :param key_id: Unique identifier of the key. This can be an ARN, an
@@ -472,7 +472,7 @@ class KMSConnection(AWSQueryConnection):
                                             number_of_bytes=None,
                                             grant_tokens=None):
         """
-        Returns a key wrapped by a customer master key without the
+        Returns a key wrapped by a customer main key without the
         plaintext copy of that key. To retrieve the plaintext, see
         GenerateDataKey.
 
@@ -651,7 +651,7 @@ class KMSConnection(AWSQueryConnection):
 
     def list_keys(self, limit=None, marker=None):
         """
-        Lists the customer master keys.
+        Lists the customer main keys.
 
         :type limit: integer
         :param limit: Specify this parameter only when paginating results to
@@ -702,7 +702,7 @@ class KMSConnection(AWSQueryConnection):
                    source_encryption_context=None,
                    destination_encryption_context=None, grant_tokens=None):
         """
-        Encrypts data on the server side with a new customer master
+        Encrypts data on the server side with a new customer main
         key without exposing the plaintext of the data on the client
         side. The data is first decrypted and then encrypted. This
         operation can also be used to change the encryption context of

@@ -509,7 +509,7 @@ class TestTruncatedGetAllRRSetsRoute53(AWSMockServiceTestCase):
       <TTL>1800</TTL>
       <ResourceRecords>
         <ResourceRecord>
-          <Value>ns-1929.awsdns-93.net. hostmaster.awsdns.net. 1 10800 3600 604800 1800</Value>
+          <Value>ns-1929.awsdns-93.net. hostmain.awsdns.net. 1 10800 3600 604800 1800</Value>
         </ResourceRecord>
       </ResourceRecords>
     </ResourceRecordSet>

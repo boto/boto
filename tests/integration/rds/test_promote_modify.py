@@ -22,38 +22,38 @@ class PromoteReadReplicaTest(unittest.TestCase):
 
     def setUp(self):
         self.conn = RDSConnection()
-        self.masterDB_name = "boto-db-%s" % str(int(time.time()))
-        self.replicaDB_name = "replica-%s" % self.masterDB_name
-        self.renamedDB_name = "renamed-replica-%s" % self.masterDB_name
+        self.mainDB_name = "boto-db-%s" % str(int(time.time()))
+        self.replicaDB_name = "replica-%s" % self.mainDB_name
+        self.renamedDB_name = "renamed-replica-%s" % self.mainDB_name
 
   
     def tearDown(self):
         instances = self.conn.get_all_dbinstances()
-        for db in [self.masterDB_name, self.replicaDB_name, self.renamedDB_name]:
+        for db in [self.mainDB_name, self.replicaDB_name, self.renamedDB_name]:
             for i in instances:
                 if i.id == db:
                     self.conn.delete_dbinstance(db, skip_final_snapshot=True)
 
     def test_promote(self):
         print '--- running RDS promotion & renaming tests ---'
-        self.masterDB = self.conn.create_dbinstance(self.masterDB_name, 5, 'db.t1.micro', 'root', 'bototestpw')
+        self.mainDB = self.conn.create_dbinstance(self.mainDB_name, 5, 'db.t1.micro', 'root', 'bototestpw')
         
-        # Wait up to 15 minutes for the masterDB to become available
-        print '--- waiting for "%s" to become available  ---' % self.masterDB_name
+        # Wait up to 15 minutes for the mainDB to become available
+        print '--- waiting for "%s" to become available  ---' % self.mainDB_name
         wait_timeout = time.time() + (15 * 60)
         time.sleep(60)
  
-        instances = self.conn.get_all_dbinstances(self.masterDB_name)
+        instances = self.conn.get_all_dbinstances(self.mainDB_name)
         inst = instances[0]
 
         while wait_timeout > time.time() and inst.status != 'available':
             time.sleep(15)
-            instances = self.conn.get_all_dbinstances(self.masterDB_name)
+            instances = self.conn.get_all_dbinstances(self.mainDB_name)
             inst = instances[0]
 
         self.assertTrue(inst.status == 'available')
 
-        self.replicaDB = self.conn.create_dbinstance_read_replica(self.replicaDB_name, self.masterDB_name)
+        self.replicaDB = self.conn.create_dbinstance_read_replica(self.replicaDB_name, self.mainDB_name)
 
         # Wait up to 15 minutes for the replicaDB to become available
         print '--- waiting for "%s" to become available  ---' % self.replicaDB_name
@@ -92,8 +92,8 @@ class PromoteReadReplicaTest(unittest.TestCase):
         self.assertTrue(inst.status == 'available')
         self.assertFalse(inst.status_infos)
 
-        # Verify that the master no longer has any read replicas
-        instances = self.conn.get_all_dbinstances(self.masterDB_name)
+        # Verify that the main no longer has any read replicas
+        instances = self.conn.get_all_dbinstances(self.mainDB_name)
         inst = instances[0]
         self.assertFalse(inst.read_replica_dbinstance_identifiers)
 
@@ -101,7 +101,7 @@ class PromoteReadReplicaTest(unittest.TestCase):
 
         self.renamedDB = self.conn.modify_dbinstance(self.replicaDB_name, new_instance_id=self.renamedDB_name, apply_immediately=True)
 
-        # Wait up to 15 minutes for the masterDB to become available
+        # Wait up to 15 minutes for the mainDB to become available
         print '--- waiting for "%s" to exist  ---' % self.renamedDB_name
 
         wait_timeout = time.time() + (15 * 60)

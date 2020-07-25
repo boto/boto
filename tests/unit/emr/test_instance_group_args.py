@@ -19,7 +19,7 @@ class TestInstanceGroupArgs(unittest.TestCase):
         """
         with self.assertRaisesRegexp(ValueError, 'bidprice must be specified'):
             InstanceGroup(1, 'MASTER', 'm1.small',
-                          'SPOT', 'master')
+                          'SPOT', 'main')
 
     def test_bidprice_missing_ondemand(self):
         """
@@ -27,14 +27,14 @@ class TestInstanceGroupArgs(unittest.TestCase):
         ON_DEMAND.
         """
         instance_group = InstanceGroup(1, 'MASTER', 'm1.small',
-                                       'ON_DEMAND', 'master')
+                                       'ON_DEMAND', 'main')
 
     def test_bidprice_Decimal(self):
         """
         Test InstanceGroup init works with bidprice type = Decimal.
         """
         instance_group = InstanceGroup(1, 'MASTER', 'm1.small',
-                                       'SPOT', 'master', bidprice=Decimal(1.10))
+                                       'SPOT', 'main', bidprice=Decimal(1.10))
         self.assertEquals('1.10', instance_group.bidprice[:4])
 
     def test_bidprice_float(self):
@@ -42,7 +42,7 @@ class TestInstanceGroupArgs(unittest.TestCase):
         Test InstanceGroup init works with bidprice type = float.
         """
         instance_group = InstanceGroup(1, 'MASTER', 'm1.small',
-                                       'SPOT', 'master', bidprice=1.1)
+                                       'SPOT', 'main', bidprice=1.1)
         self.assertEquals('1.1', instance_group.bidprice)
 
     def test_bidprice_string(self):
@@ -50,7 +50,7 @@ class TestInstanceGroupArgs(unittest.TestCase):
         Test InstanceGroup init works with bidprice type = string.
         """
         instance_group = InstanceGroup(1, 'MASTER', 'm1.small',
-                                       'SPOT', 'master', bidprice='1.1')
+                                       'SPOT', 'main', bidprice='1.1')
         self.assertEquals('1.1', instance_group.bidprice)
 
 if __name__ == "__main__":

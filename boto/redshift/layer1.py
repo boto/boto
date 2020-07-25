@@ -310,8 +310,8 @@ class RedshiftConnection(AWSQueryConnection):
             verb='POST',
             path='/', params=params)
 
-    def create_cluster(self, cluster_identifier, node_type, master_username,
-                       master_user_password, db_name=None, cluster_type=None,
+    def create_cluster(self, cluster_identifier, node_type, main_username,
+                       main_user_password, db_name=None, cluster_type=None,
                        cluster_security_groups=None,
                        vpc_security_group_ids=None,
                        cluster_subnet_group_name=None,
@@ -391,9 +391,9 @@ class RedshiftConnection(AWSQueryConnection):
         Valid Values: `dw1.xlarge` | `dw1.8xlarge` | `dw2.large` |
             `dw2.8xlarge`.
 
-        :type master_username: string
-        :param master_username:
-        The user name associated with the master user account for the cluster
+        :type main_username: string
+        :param main_username:
+        The user name associated with the main user account for the cluster
             that is being created.
 
         Constraints:
@@ -404,9 +404,9 @@ class RedshiftConnection(AWSQueryConnection):
         + Cannot be a reserved word. A list of reserved words can be found in
               `Reserved Words`_ in the Amazon Redshift Database Developer Guide.
 
-        :type master_user_password: string
-        :param master_user_password:
-        The password associated with the master user account for the cluster
+        :type main_user_password: string
+        :param main_user_password:
+        The password associated with the main user account for the cluster
             that is being created.
 
         Constraints:
@@ -573,8 +573,8 @@ class RedshiftConnection(AWSQueryConnection):
         params = {
             'ClusterIdentifier': cluster_identifier,
             'NodeType': node_type,
-            'MasterUsername': master_username,
-            'MasterUserPassword': master_user_password,
+            'MainUsername': main_username,
+            'MainUserPassword': main_user_password,
         }
         if db_name is not None:
             params['DBName'] = db_name
@@ -2253,7 +2253,7 @@ class RedshiftConnection(AWSQueryConnection):
                        node_type=None, number_of_nodes=None,
                        cluster_security_groups=None,
                        vpc_security_group_ids=None,
-                       master_user_password=None,
+                       main_user_password=None,
                        cluster_parameter_group_name=None,
                        automated_snapshot_retention_period=None,
                        preferred_maintenance_window=None,
@@ -2264,7 +2264,7 @@ class RedshiftConnection(AWSQueryConnection):
         """
         Modifies the settings for a cluster. For example, you can add
         another security or parameter group, update the preferred
-        maintenance window, or change the master user password.
+        maintenance window, or change the main user password.
         Resetting a cluster password or modifying the security groups
         associated with a cluster do not need a reboot. However,
         modifying a parameter group requires a reboot for parameters
@@ -2345,11 +2345,11 @@ class RedshiftConnection(AWSQueryConnection):
         :param vpc_security_group_ids: A list of virtual private cloud (VPC)
             security groups to be associated with the cluster.
 
-        :type master_user_password: string
-        :param master_user_password:
-        The new password for the cluster master user. This change is
+        :type main_user_password: string
+        :param main_user_password:
+        The new password for the cluster main user. This change is
             asynchronously applied as soon as possible. Between the time of the
-            request and the completion of the request, the `MasterUserPassword`
+            request and the completion of the request, the `MainUserPassword`
             element exists in the `PendingModifiedValues` element of the
             operation response.
 
@@ -2464,8 +2464,8 @@ class RedshiftConnection(AWSQueryConnection):
             self.build_list_params(params,
                                    vpc_security_group_ids,
                                    'VpcSecurityGroupIds.member')
-        if master_user_password is not None:
-            params['MasterUserPassword'] = master_user_password
+        if main_user_password is not None:
+            params['MainUserPassword'] = main_user_password
         if cluster_parameter_group_name is not None:
             params['ClusterParameterGroupName'] = cluster_parameter_group_name
         if automated_snapshot_retention_period is not None:

@@ -988,7 +988,7 @@ class QualificationRequest(BaseAutoResultElement):
         if name == 'Answer':
             answer_rs = ResultSet([('Answer', QuestionFormAnswer)])
             h = handler.XmlHandler(answer_rs, connection)
-            value = connection.get_utf8_value(value)
+            value = connection.get_utf8able_str(value)
             xml.sax.parseString(value, h)
             self.answers.append(answer_rs)
         else:
@@ -1013,7 +1013,7 @@ class Assignment(BaseAutoResultElement):
         if name == 'Answer':
             answer_rs = ResultSet([('Answer', QuestionFormAnswer)])
             h = handler.XmlHandler(answer_rs, connection)
-            value = connection.get_utf8_value(value)
+            value = connection.get_utf8able_str(value)
             xml.sax.parseString(value, h)
             self.answers.append(answer_rs)
         else:

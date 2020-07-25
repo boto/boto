@@ -44,8 +44,8 @@ class TestRDS2Connection(unittest.TestCase):
             allocated_storage=5,
             db_instance_class='db.t1.micro',
             engine='postgres',
-            master_username='bototestuser',
-            master_user_password='testtestt3st',
+            main_username='bototestuser',
+            main_user_password='testtestt3st',
             # Try to limit the impact & test options.
             multi_az=False,
             backup_retention_period=0

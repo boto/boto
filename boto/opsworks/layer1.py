@@ -2124,7 +2124,7 @@ class OpsWorksConnection(AWSQueryConnection):
         :param rds_db_instance_arn: The Amazon RDS instance's ARN.
 
         :type db_user: string
-        :param db_user: The database's master user name.
+        :param db_user: The database's main user name.
 
         :type db_password: string
         :param db_password: The database password.
@@ -2785,7 +2785,7 @@ class OpsWorksConnection(AWSQueryConnection):
         :param rds_db_instance_arn: The Amazon RDS instance's ARN.
 
         :type db_user: string
-        :param db_user: The master user name.
+        :param db_user: The main user name.
 
         :type db_password: string
         :param db_password: The database password.

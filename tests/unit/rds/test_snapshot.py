@@ -27,7 +27,7 @@ class TestDescribeDBSnapshots(AWSMockServiceTestCase):
                     <EngineVersion>5.1.50</EngineVersion>
                     <DBSnapshotIdentifier>mydbsnapshot</DBSnapshotIdentifier>
                     <SnapshotType>manual</SnapshotType>
-                    <MasterUsername>master</MasterUsername>
+                    <MainUsername>main</MainUsername>
                     <OptionGroupName>myoptiongroupname</OptionGroupName>
                     <Iops>1000</Iops>
                     <PercentProgress>100</PercentProgress>
@@ -47,7 +47,7 @@ class TestDescribeDBSnapshots(AWSMockServiceTestCase):
                     <EngineVersion>5.1.49</EngineVersion>
                     <DBSnapshotIdentifier>mysnapshot1</DBSnapshotIdentifier>
                     <SnapshotType>manual</SnapshotType>
-                    <MasterUsername>sa</MasterUsername>
+                    <MainUsername>sa</MainUsername>
                     <OptionGroupName>myoptiongroupname</OptionGroupName>
                     <Iops>1000</Iops>
                 </DBSnapshot>
@@ -64,7 +64,7 @@ class TestDescribeDBSnapshots(AWSMockServiceTestCase):
                     <EngineVersion>5.1.47</EngineVersion>
                     <DBSnapshotIdentifier>rds:simcoprod01-2012-04-02-00-01</DBSnapshotIdentifier>
                     <SnapshotType>automated</SnapshotType>
-                    <MasterUsername>master</MasterUsername>
+                    <MainUsername>main</MainUsername>
                     <OptionGroupName>myoptiongroupname</OptionGroupName>
                     <Iops>1000</Iops>
                 </DBSnapshot>
@@ -118,7 +118,7 @@ class TestCreateDBSnapshot(AWSMockServiceTestCase):
                 <EngineVersion>5.1.50</EngineVersion>
                 <DBSnapshotIdentifier>mydbsnapshot</DBSnapshotIdentifier>
                 <SnapshotType>manual</SnapshotType>
-                <MasterUsername>master</MasterUsername>
+                <MainUsername>main</MainUsername>
                 </DBSnapshot>
             </CreateDBSnapshotResult>
             <ResponseMetadata>
@@ -160,7 +160,7 @@ class TestCopyDBSnapshot(AWSMockServiceTestCase):
                 <EngineVersion>5.1.50</EngineVersion>
                 <DBSnapshotIdentifier>mycopieddbsnapshot</DBSnapshotIdentifier>
                 <SnapshotType>manual</SnapshotType>
-                <MasterUsername>master</MasterUsername>
+                <MainUsername>main</MainUsername>
                 </DBSnapshot>
             </CopyDBSnapshotResult>
             <ResponseMetadata>
@@ -202,7 +202,7 @@ class TestDeleteDBSnapshot(AWSMockServiceTestCase):
                 <EngineVersion>5.1.47</EngineVersion>
                 <DBSnapshotIdentifier>mysnapshot2</DBSnapshotIdentifier>
                 <SnapshotType>manual</SnapshotType>
-                <MasterUsername>master</MasterUsername>
+                <MainUsername>main</MainUsername>
                 </DBSnapshot>
             </DeleteDBSnapshotResult>
             <ResponseMetadata>
@@ -257,7 +257,7 @@ class TestRestoreDBInstanceFromDBSnapshot(AWSMockServiceTestCase):
                 <PreferredMaintenanceWindow>sat:07:30-sat:08:00</PreferredMaintenanceWindow>
                 <AllocatedStorage>10</AllocatedStorage>
                 <DBInstanceClass>db.m1.large</DBInstanceClass>
-                <MasterUsername>master</MasterUsername>
+                <MainUsername>main</MainUsername>
                 </DBInstance>
             </RestoreDBInstanceFromDBSnapshotResult>
             <ResponseMetadata>

@@ -21,6 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+from __future__ import division
+
 import boto
 from boto import handler
 from boto.resultset import ResultSet
@@ -49,6 +51,7 @@ import re
 import base64
 from collections import defaultdict
 from boto.compat import BytesIO, six, StringIO, urllib
+from boto.utils import get_utf8able_str
 
 # as per http://goo.gl/BDuud (02/19/2011)
 
@@ -201,7 +204,7 @@ class Bucket(object):
         response.read()
         # Allow any success status (2xx) - for example this lets us
         # support Range gets, which return status 206:
-        if response.status / 100 == 2:
+        if response.status // 100 == 2:
             k = self.key_class(self)
             provider = self.connection.provider
             k.metadata = boto.utils.get_aws_metadata(response.msg, provider)
@@ -846,7 +849,8 @@ class Bucket(object):
         """
         headers = headers or {}
         provider = self.connection.provider
-        src_key_name = boto.utils.get_utf8_value(src_key_name)
+        src_key_name = get_utf8able_str(src_key_name)
+        
         if preserve_acl:
             if self.name == src_bucket_name:
                 src_bucket = self
@@ -875,8 +879,6 @@ class Bucket(object):
         if response.status == 200:
             key = self.new_key(new_key_name)
             h = handler.XmlHandler(key, self)
-            if not isinstance(body, bytes):
-                body = body.encode('utf-8')
             xml.sax.parseString(body, h)
             if hasattr(key, 'Error'):
                 raise provider.storage_copy_error(key.Code, key.Message, body)

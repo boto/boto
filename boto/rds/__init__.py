@@ -138,8 +138,8 @@ class RDSConnection(AWSQueryConnection):
                           id,
                           allocated_storage,
                           instance_class,
-                          master_username,
-                          master_password,
+                          main_username,
+                          main_password,
                           port=3306,
                           engine='MySQL5.1',
                           db_name=None,
@@ -168,8 +168,8 @@ class RDSConnection(AWSQueryConnection):
         # security_groups should be db_security_groups according to API docs but has been left
         # security_groups for backwards compatibility
         #
-        # master_password should be master_user_password according to API docs but has been left
-        # master_password for backwards compatibility
+        # main_password should be main_user_password according to API docs but has been left
+        # main_password for backwards compatibility
         #
         # instance_class should be db_instance_class according to API docs but has been left
         # instance_class for backwards compatibility
@@ -222,8 +222,8 @@ class RDSConnection(AWSQueryConnection):
                        * sqlserver-web
                        * postgres
 
-        :type master_username: str
-        :param master_username: Name of master user for the DBInstance.
+        :type main_username: str
+        :param main_username: Name of main user for the DBInstance.
 
                                 * MySQL must be;
                                   - 1--16 alphanumeric characters
@@ -240,8 +240,8 @@ class RDSConnection(AWSQueryConnection):
                                   - first character must be a letter
                                   - cannot be a reserver SQL Server word
 
-        :type master_password: str
-        :param master_password: Password of master user for the DBInstance.
+        :type main_password: str
+        :param main_password: Password of main user for the DBInstance.
 
                                 * MySQL must be 8--41 alphanumeric characters
 
@@ -398,8 +398,8 @@ class RDSConnection(AWSQueryConnection):
         # engine => Engine
         # engine_version => EngineVersion
         # license_model => LicenseModel
-        # master_username => MasterUsername
-        # master_user_password => MasterUserPassword
+        # main_username => MainUsername
+        # main_user_password => MainUserPassword
         # multi_az => MultiAZ
         # option_group_name => OptionGroupName
         # port => Port
@@ -423,8 +423,8 @@ class RDSConnection(AWSQueryConnection):
                   'EngineVersion': engine_version,
                   'Iops': iops,
                   'LicenseModel': license_model,
-                  'MasterUsername': master_username,
-                  'MasterUserPassword': master_password,
+                  'MainUsername': main_username,
+                  'MainUserPassword': main_password,
                   'MultiAZ': str(multi_az).lower() if multi_az else None,
                   'OptionGroupName': option_group_name,
                   'Port': port,
@@ -562,7 +562,7 @@ class RDSConnection(AWSQueryConnection):
 
     def modify_dbinstance(self, id, param_group=None, security_groups=None,
                           preferred_maintenance_window=None,
-                          master_password=None, allocated_storage=None,
+                          main_password=None, allocated_storage=None,
                           instance_class=None,
                           backup_retention_period=None,
                           preferred_backup_window=None,
@@ -593,8 +593,8 @@ class RDSConnection(AWSQueryConnection):
                                              occur.
                                              Default is Sun:05:00-Sun:09:00
 
-        :type master_password: str
-        :param master_password: Password of master user for the DBInstance.
+        :type main_password: str
+        :param main_password: Password of main user for the DBInstance.
                                 Must be 4-15 alphanumeric characters.
 
         :type allocated_storage: int
@@ -680,8 +680,8 @@ class RDSConnection(AWSQueryConnection):
             self.build_list_params(params, l, 'VpcSecurityGroupIds.member')
         if preferred_maintenance_window:
             params['PreferredMaintenanceWindow'] = preferred_maintenance_window
-        if master_password:
-            params['MasterUserPassword'] = master_password
+        if main_password:
+            params['MainUserPassword'] = main_password
         if allocated_storage:
             params['AllocatedStorage'] = allocated_storage
         if instance_class:

@@ -34,10 +34,10 @@ class DBSnapshot(object):
     :ivar id: Specifies the identifier for the DB Snapshot (DBSnapshotIdentifier)
     :ivar instance_create_time: Specifies the time (UTC) when the snapshot was taken
     :ivar instance_id: Specifies the the DBInstanceIdentifier of the DB Instance this DB Snapshot was created from (DBInstanceIdentifier)
-    :ivar master_username: Provides the master username for the DB Instance
+    :ivar main_username: Provides the main username for the DB Instance
     :ivar port: Specifies the port that the database engine was listening on at the time of the snapshot
     :ivar snapshot_create_time: Provides the time (UTC) when the snapshot was taken
-    :ivar status: Specifies the status of this DB Snapshot. Possible values are [ available, backing-up, creating, deleted, deleting, failed, modifying, rebooting, resetting-master-credentials ]
+    :ivar status: Specifies the status of this DB Snapshot. Possible values are [ available, backing-up, creating, deleted, deleting, failed, modifying, rebooting, resetting-main-credentials ]
     :ivar iops: Specifies the Provisioned IOPS (I/O operations per second) value of the DB instance at the time of the snapshot.
     :ivar option_group_name: Provides the option group name for the DB snapshot.
     :ivar percent_progress: The percentage of the estimated data that has been transferred.
@@ -56,7 +56,7 @@ class DBSnapshot(object):
         self.port = None
         self.status = None
         self.availability_zone = None
-        self.master_username = None
+        self.main_username = None
         self.allocated_storage = None
         self.instance_id = None
         self.availability_zone = None
@@ -93,8 +93,8 @@ class DBSnapshot(object):
             self.status = value
         elif name == 'AvailabilityZone':
             self.availability_zone = value
-        elif name == 'MasterUsername':
-            self.master_username = value
+        elif name == 'MainUsername':
+            self.main_username = value
         elif name == 'AllocatedStorage':
             self.allocated_storage = int(value)
         elif name == 'SnapshotTime':

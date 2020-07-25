@@ -321,8 +321,8 @@ class RDSConnection(AWSQueryConnection):
             path='/', params=params)
 
     def create_db_instance(self, db_instance_identifier, allocated_storage,
-                           db_instance_class, engine, master_username,
-                           master_user_password, db_name=None,
+                           db_instance_class, engine, main_username,
+                           main_user_password, db_name=None,
                            db_security_groups=None,
                            vpc_security_group_ids=None,
                            availability_zone=None, db_subnet_group_name=None,
@@ -417,9 +417,9 @@ class RDSConnection(AWSQueryConnection):
         Valid Values: `MySQL` | `oracle-se1` | `oracle-se` | `oracle-ee` |
             `sqlserver-ee` | `sqlserver-se` | `sqlserver-ex` | `sqlserver-web`
 
-        :type master_username: string
-        :param master_username:
-        The name of master user for the client DB instance.
+        :type main_username: string
+        :param main_username:
+        The name of main user for the client DB instance.
 
         **MySQL**
 
@@ -452,8 +452,8 @@ class RDSConnection(AWSQueryConnection):
         + First character must be a letter.
         + Cannot be a reserved word for the chosen database engine.
 
-        :type master_user_password: string
-        :param master_user_password: The password for the master database user.
+        :type main_user_password: string
+        :param main_user_password: The password for the main database user.
             Can be any printable ASCII character except "/", '"', or "@".
         Type: String
 
@@ -536,7 +536,7 @@ class RDSConnection(AWSQueryConnection):
 
 
         + Must be a value from 0 to 8
-        + Cannot be set to 0 if the DB instance is a master instance with read
+        + Cannot be set to 0 if the DB instance is a main instance with read
               replicas
 
         :type preferred_backup_window: string
@@ -656,8 +656,8 @@ class RDSConnection(AWSQueryConnection):
             'AllocatedStorage': allocated_storage,
             'DBInstanceClass': db_instance_class,
             'Engine': engine,
-            'MasterUsername': master_username,
-            'MasterUserPassword': master_user_password,
+            'MainUsername': main_username,
+            'MainUserPassword': main_user_password,
         }
         if db_name is not None:
             params['DBName'] = db_name
@@ -2488,7 +2488,7 @@ class RDSConnection(AWSQueryConnection):
                            allocated_storage=None, db_instance_class=None,
                            db_security_groups=None,
                            vpc_security_group_ids=None,
-                           apply_immediately=None, master_user_password=None,
+                           apply_immediately=None, main_user_password=None,
                            db_parameter_group_name=None,
                            backup_retention_period=None,
                            preferred_backup_window=None,
@@ -2616,14 +2616,14 @@ class RDSConnection(AWSQueryConnection):
 
         Default: `False`
 
-        :type master_user_password: string
-        :param master_user_password:
-        The new password for the DB instance master user. Can be any printable
+        :type main_user_password: string
+        :param main_user_password:
+        The new password for the DB instance main user. Can be any printable
             ASCII character except "/", '"', or "@".
 
         Changing this parameter does not result in an outage and the change is
             asynchronously applied as soon as possible. Between the time of the
-            request and the completion of the request, the `MasterUserPassword`
+            request and the completion of the request, the `MainUserPassword`
             element exists in the `PendingModifiedValues` element of the
             operation response.
 
@@ -2634,7 +2634,7 @@ class RDSConnection(AWSQueryConnection):
             characters (SQL Server).
 
         Amazon RDS API actions never return the password, so this action
-            provides a way to regain access to a master instance user if the
+            provides a way to regain access to a main instance user if the
             password is lost.
 
         :type db_parameter_group_name: string
@@ -2668,7 +2668,7 @@ class RDSConnection(AWSQueryConnection):
 
 
         + Must be a value from 0 to 8
-        + Cannot be set to 0 if the DB instance is a master instance with read
+        + Cannot be set to 0 if the DB instance is a main instance with read
               replicas or if the DB instance is a read replica
 
         :type preferred_backup_window: string
@@ -2820,8 +2820,8 @@ class RDSConnection(AWSQueryConnection):
         if apply_immediately is not None:
             params['ApplyImmediately'] = str(
                 apply_immediately).lower()
-        if master_user_password is not None:
-            params['MasterUserPassword'] = master_user_password
+        if main_user_password is not None:
+            params['MainUserPassword'] = main_user_password
         if db_parameter_group_name is not None:
             params['DBParameterGroupName'] = db_parameter_group_name
         if backup_retention_period is not None:
