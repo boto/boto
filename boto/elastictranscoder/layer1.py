@@ -118,10 +118,10 @@ class ElasticTranscoderConnection(AWSAuthConnection):
         :type playlists: list
         :param playlists: If you specify a preset in `PresetId` for which the
             value of `Container` is ts (MPEG-TS), Playlists contains
-            information about the master playlists that you want Elastic
+            information about the main playlists that you want Elastic
             Transcoder to create.
-        We recommend that you create only one master playlist. The maximum
-            number of master playlists in a job is 30.
+        We recommend that you create only one main playlist. The maximum
+            number of main playlists in a job is 30.
 
         """
         uri = '/2012-09-25/jobs'

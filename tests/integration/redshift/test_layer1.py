@@ -36,8 +36,8 @@ class TestRedshiftLayer1Management(unittest.TestCase):
         self.api = RedshiftConnection()
         self.cluster_prefix = 'boto-redshift-cluster-%s'
         self.node_type = 'dw.hs1.xlarge'
-        self.master_username = 'mrtest'
-        self.master_password = 'P4ssword'
+        self.main_username = 'mrtest'
+        self.main_password = 'P4ssword'
         self.db_name = 'simon'
         # Redshift was taking ~20 minutes to bring clusters up in testing.
         self.wait_time = 60 * 20
@@ -50,7 +50,7 @@ class TestRedshiftLayer1Management(unittest.TestCase):
         cluster_id = self.cluster_id()
         self.api.create_cluster(
             cluster_id, self.node_type,
-            self.master_username, self.master_password,
+            self.main_username, self.main_password,
             db_name=self.db_name, number_of_nodes=3
         )
 
@@ -71,7 +71,7 @@ class TestRedshiftLayer1Management(unittest.TestCase):
         cluster_id = self.cluster_id()
         self.api.create_cluster(
             cluster_id, self.node_type,
-            self.master_username, self.master_password,
+            self.main_username, self.main_password,
             db_name=self.db_name, number_of_nodes=3
         )
 
