@@ -194,7 +194,8 @@ class TestAWSAuthConnection(unittest.TestCase):
       )
       conn.https_validate_certificates = True
       dummy_cert = {
-          'subjectAltName': (('DNS', 's3.amazonaws.com'), ('DNS', '*.s3.amazonaws.com')),
+          'subjectAltName': (('DNS', 's3.amazonaws.com'),
+                             ('DNS', '*.s3.amazonaws.com')),
       }
       mock_sock = mock.Mock()
       create_connection_mock.return_value = mock_sock
