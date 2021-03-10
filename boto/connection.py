@@ -833,10 +833,14 @@ class AWSAuthConnection(object):
             boto.log.debug(msg)
             key_file = self.http_connection_kwargs.get('key_file', None)
             cert_file = self.http_connection_kwargs.get('cert_file', None)
-            sslSock = ssl.wrap_socket(sock, keyfile=key_file,
-                                      certfile=cert_file,
-                                      cert_reqs=ssl.CERT_REQUIRED,
-                                      ca_certs=self.ca_certificates_file)
+
+            context = ssl.create_default_context()
+            context.verify_mode = ssl.CERT_REQUIRED
+            context.check_hostname = True
+            if cert_file:
+              context.load_cert_chain(cert_file, key_file)
+            context.load_verify_locations(self.ca_certificates_file)
+            sslSock = context.wrap_socket(sock, server_hostname=self.host)
             cert = sslSock.getpeercert()
             hostname = self.host.split(':', 0)[0]
             if not https_connection.ValidateCertificateHostname(cert, hostname):
