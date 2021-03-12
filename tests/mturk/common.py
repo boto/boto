@@ -5,7 +5,7 @@ import datetime
 from boto.mturk.question import (
         Question, QuestionContent, AnswerSpecification, FreeTextAnswer,
 )
-from _init_environment import SetHostMTurkConnection, config_environment
+from ._init_environment import SetHostMTurkConnection, config_environment
 
 class MTurkCommon(unittest.TestCase):
         def setUp(self):
@@ -20,7 +20,8 @@ class MTurkCommon(unittest.TestCase):
                 qn_content.append_field('Text', 'What is a boto no hit type?')
 
                 # create the question specification
-                qn = Question(identifier=str(uuid.uuid4()),
+                qn = Question(
+                        identifier=str(uuid.uuid4()),
                         content=qn_content,
                         answer_spec=AnswerSpecification(FreeTextAnswer()))
                 return qn

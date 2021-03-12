@@ -30,9 +30,10 @@ Some integration tests for the GSConnection
 
 import os
 import re
-import StringIO
 import urllib
 import xml.sax
+
+from six import StringIO
 
 from boto import handler
 from boto import storage_uri

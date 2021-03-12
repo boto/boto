@@ -3,7 +3,7 @@ import uuid
 import datetime
 from boto.mturk.question import ExternalQuestion
 
-from _init_environment import SetHostMTurkConnection, external_url, \
+from ._init_environment import SetHostMTurkConnection, external_url, \
         config_environment
 
 class Test(unittest.TestCase):

@@ -484,7 +484,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
             # HTTPResponse objects.
             self.assertEqual(mocked_mexe.call_count, 1)
             self.assertEqual(
-                mocked_mexe.call_args.args[0].host,
+                mocked_mexe.call_args[0][0].host,
                 self.default_host
             )
 
@@ -502,7 +502,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
                 self.assertEqual(response, error_response)
                 self.assertEqual(mocked_mexe.call_count, 1)
                 self.assertEqual(
-                    mocked_mexe.call_args.args[0].host,
+                    mocked_mexe.call_args[0][0].host,
                     other_host
                 )
 
@@ -518,7 +518,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
             self.assertEqual(cm.exception, error_response)
             self.assertEqual(mocked_mexe.call_count, 1)
             self.assertEqual(
-                mocked_mexe.call_args.args[0].host,
+                mocked_mexe.call_args[0][0].host,
                 self.default_host
             )
 
@@ -535,7 +535,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
             self.assertEqual(cm.exception, error_response)
             self.assertEqual(mocked_mexe.call_count, 1)
             self.assertEqual(
-                mocked_mexe.call_args.args[0].host,
+                mocked_mexe.call_args[0][0].host,
                 other_host
             )
 
@@ -553,7 +553,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
                 self.assertEqual(response, self.success_response)
                 self.assertEqual(mocked_mexe.call_count, 2)
                 self.assertEqual(
-                    mocked_mexe.call_args.args[0].host,
+                    mocked_mexe.call_args[0][0].host,
                     self.default_retried_host
                 )
 
@@ -572,7 +572,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
             self.assertEqual(response, self.success_response)
             self.assertEqual(mocked_mexe.call_count, 2)
             self.assertEqual(
-                mocked_mexe.call_args.args[0].host,
+                mocked_mexe.call_args[0][0].host,
                 self.default_retried_host
             )
 
@@ -591,7 +591,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
             self.assertEqual(response, self.success_response)
             self.assertEqual(mocked_mexe.call_count, 2)
             self.assertEqual(
-                mocked_mexe.call_args.args[0].host,
+                mocked_mexe.call_args[0][0].host,
                 'a.s3.a.s3.us-east-2.amazonaws.com'
             )
 
@@ -610,7 +610,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
             self.assertEqual(response, self.success_response)
             self.assertEqual(mocked_mexe.call_count, 2)
             self.assertEqual(
-                mocked_mexe.call_args.args[0].host,
+                mocked_mexe.call_args[0][0].host,
                 self.default_retried_host
             )
 
@@ -628,7 +628,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
                 self.assertEqual(response, self.success_response)
                 self.assertEqual(mocked_mexe.call_count, 2)
                 self.assertEqual(
-                    mocked_mexe.call_args.args[0].host,
+                    mocked_mexe.call_args[0][0].host,
                     self.default_retried_host
                 )
 
@@ -646,7 +646,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
                 self.assertEqual(response, self.success_response)
                 self.assertEqual(mocked_mexe.call_count, 2)
                 self.assertEqual(
-                    mocked_mexe.call_args.args[0].host,
+                    mocked_mexe.call_args[0][0].host,
                     self.default_retried_host
                 )
 
@@ -665,7 +665,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
                 self.assertEqual(response, self.success_response)
                 self.assertEqual(mocked_mexe.call_count, 3)
                 self.assertEqual(
-                    mocked_mexe.call_args.args[0].host,
+                    mocked_mexe.call_args[0][0].host,
                     self.default_retried_host
                 )
 
@@ -684,7 +684,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
                 self.assertEqual(response, self.success_response)
                 self.assertEqual(mocked_mexe.call_count, 3)
                 self.assertEqual(
-                    mocked_mexe.call_args.args[0].host,
+                    mocked_mexe.call_args[0][0].host,
                     self.default_retried_host
                 )
 
@@ -703,7 +703,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
                 self.assertEqual(response, self.success_response)
                 self.assertEqual(mocked_mexe.call_count, 3)
                 self.assertEqual(
-                    mocked_mexe.call_args.args[0].host,
+                    mocked_mexe.call_args[0][0].host,
                     self.default_retried_host
                 )
 
@@ -722,7 +722,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
                 self.assertEqual(response, error_response)
                 self.assertEqual(mocked_mexe.call_count, 2)
                 self.assertEqual(
-                    mocked_mexe.call_args.args[0].host,
+                    mocked_mexe.call_args[0][0].host,
                     self.default_host
                 )
 
@@ -742,7 +742,7 @@ class TestMakeRequestRetriesWithCorrectHost(AWSMockServiceTestCase):
                 self.assertEqual(cm.exception, error_response)
                 self.assertEqual(mocked_mexe.call_count, 2)
                 self.assertEqual(
-                    mocked_mexe.call_args.args[0].host,
+                    mocked_mexe.call_args[0][0].host,
                     self.default_host
                 )
 

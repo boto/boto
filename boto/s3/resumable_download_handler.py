@@ -19,11 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 import errno
-import httplib
 import os
 import re
 import socket
 import time
+
+import six.moves.http_client as httplib
+
 import boto
 from boto import config, storage_uri_for_key
 from boto.connection import AWSAuthConnection

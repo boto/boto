@@ -19,14 +19,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 import errno
-import httplib
 import os
 import random
 import re
 import socket
 import time
-import urlparse
 from hashlib import md5
+
+import six.moves.http_client as httplib
+from six.moves import urllib as urlparse
+
 from boto import config, UserAgent
 from boto.connection import AWSAuthConnection
 from boto.exception import InvalidUriError

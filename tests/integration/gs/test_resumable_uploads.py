@@ -23,11 +23,12 @@
 Tests of Google Cloud Storage resumable uploads.
 """
 
-import StringIO
 import errno
 import random
 import os
 import time
+
+from six import StringIO
 
 import boto
 from boto import storage_uri
@@ -35,7 +36,7 @@ from boto.gs.resumable_upload_handler import ResumableUploadHandler
 from boto.exception import InvalidUriError
 from boto.exception import ResumableTransferDisposition
 from boto.exception import ResumableUploadException
-from cb_test_harness import CallbackTestHarness
+from .cb_test_harness import CallbackTestHarness
 from tests.integration.gs.testcase import GSTestCase
 
 

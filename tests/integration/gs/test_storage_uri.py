@@ -25,7 +25,8 @@
 
 import binascii
 import re
-import StringIO
+
+from six import StringIO
 
 from boto import storage_uri
 from boto.exception import BotoClientError

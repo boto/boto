@@ -70,7 +70,7 @@ class S3ConnectionTest (unittest.TestCase):
         url = k.generate_url(3600, force_http=True)
         file = urlopen(url)
         assert s1 == file.read().decode('utf-8'), 'invalid URL %s' % url
-        url = k.generate_url(3600, force_http=True, headers={'x-amz-x-token' : 'XYZ'})
+        url = k.generate_url(3600, force_http=True, headers={'x-amz-x-token': 'XYZ'})
         file = urlopen(url)
         assert s1 == file.read().decode('utf-8'), 'invalid URL %s' % url
         rh = {'response-content-disposition': 'attachment; filename="foo.txt"'}
@@ -88,7 +88,7 @@ class S3ConnectionTest (unittest.TestCase):
         con = http_client.HTTPConnection(up.hostname, up.port)
         con.request("PUT", up.path + '?' + up.query, body="hello there")
         resp = con.getresponse()
-        assert 200 == resp.status
+        self.assertEqual(200, resp.status)
         assert b"hello there" == k.get_contents_as_string()
         bucket.delete_key(k)
         # test a few variations on get_all_keys - first load some data
