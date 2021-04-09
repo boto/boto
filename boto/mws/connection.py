@@ -54,7 +54,7 @@ api_version_path = {
     'OffAmazonPayments': ('2013-01-01', 'SellerId',
                           '/OffAmazonPayments/2013-01-01'),
     'Finances':          ('2015-05-01', 'SellerId', '/Finances/2015-05-01'),
-    
+
 }
 content_md5 = lambda c: encodebytes(hashlib.md5(c).digest()).strip()
 decorated_attrs = ('action', 'response', 'section',
@@ -249,6 +249,10 @@ def api_action(section, quota, restore, *api):
                 raise KeyError(message)
             kw['Action'] = action
             kw['Version'] = version
+
+            if self.MWSAuthToken:
+                kw['MWSAuthToken'] = self.MWSAuthToken
+
             response = self._response_factory(action, connection=self)
             request = dict(path=path, quota=quota, restore=restore)
             return func(self, request, response, *args, **kw)
@@ -272,6 +276,8 @@ class MWSConnection(AWSQueryConnection):
         self._sandboxed = kw.pop('sandbox', False)
         self.Merchant = kw.pop('Merchant', None) or kw.get('SellerId')
         self.SellerId = kw.pop('SellerId', None) or self.Merchant
+        self.MWSAuthToken = kw.pop('MWSAuthToken', None)
+
         kw = self._setup_factories(kw.pop('factory_scopes', []), **kw)
         super(MWSConnection, self).__init__(*args, **kw)
 

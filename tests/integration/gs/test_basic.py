@@ -51,6 +51,12 @@ CORS_DOC = ('<CorsConfig><Cors><Origins><Origin>origin1.example.com'
             '<ResponseHeader>bar</ResponseHeader></ResponseHeaders>'
             '</Cors></CorsConfig>')
 
+ENCRYPTION_CONFIG_WITH_KEY = (
+    '<?xml version="1.0" encoding="UTF-8"?>\n'
+    '<EncryptionConfiguration>'
+    '<DefaultKmsKeyName>%s</DefaultKmsKeyName>'
+    '</EncryptionConfiguration>')
+
 LIFECYCLE_EMPTY = ('<?xml version="1.0" encoding="UTF-8"?>'
                    '<LifecycleConfiguration></LifecycleConfiguration>')
 LIFECYCLE_DOC = ('<?xml version="1.0" encoding="UTF-8"?>'
@@ -491,3 +497,34 @@ class GSBasicTest(GSTestCase):
         uri.configure_billing(requester_pays=False)
         billing = uri.get_billing_config()
         self.assertEqual(billing, BILLING_DISABLED)
+
+    def test_encryption_config_bucket(self):
+        """Test setting and getting of EncryptionConfig on gs Bucket objects."""
+        # Create a new bucket.
+        bucket = self._MakeBucket()
+        bucket_name = bucket.name
+        # Get EncryptionConfig and make sure it's empty.
+        encryption_config = bucket.get_encryption_config()
+        self.assertIsNone(encryption_config.default_kms_key_name)
+        # Testing set functionality would require having an existing Cloud KMS
+        # key. Since we can't hardcode a key name or dynamically create one, we
+        # only test here that we're creating the correct XML document to send to
+        # GCS.
+        xmldoc = bucket._construct_encryption_config_xml(
+            default_kms_key_name='dummykey')
+        self.assertEqual(xmldoc, ENCRYPTION_CONFIG_WITH_KEY % 'dummykey')
+        # Test that setting an empty encryption config works.
+        bucket.set_encryption_config()
+
+    def test_encryption_config_storage_uri(self):
+        """Test setting and getting of EncryptionConfig with storage_uri."""
+        # Create a new bucket.
+        bucket = self._MakeBucket()
+        bucket_name = bucket.name
+        uri = storage_uri('gs://' + bucket_name)
+        # Get EncryptionConfig and make sure it's empty.
+        encryption_config = uri.get_encryption_config()
+        self.assertIsNone(encryption_config.default_kms_key_name)
+
+        # Test that setting an empty encryption config works.
+        uri.set_encryption_config()
