@@ -992,11 +992,14 @@ class Key(object):
             # object.
             amz_server_side_encryption_customer_algorithm = response.getheader(
                 'x-amz-server-side-encryption-customer-algorithm', None)
+            amz_server_side_encryption_aws_kms_key_id = response.getheader(
+                'x-amz-server-side-encryption-aws-kms-key-id', None)
             # The same is applicable for KMS-encrypted objects in gs buckets.
             goog_customer_managed_encryption = response.getheader(
                 'x-goog-encryption-kms-key-name', None)
             if (amz_server_side_encryption_customer_algorithm is None and
-                    goog_customer_managed_encryption is None):
+                    goog_customer_managed_encryption is None and
+                    amz_server_side_encryption_aws_kms_key_id is None):
                 if self.etag != '"%s"' % md5:
                     raise provider.storage_data_error(
                         'ETag from S3 did not match computed MD5. '
