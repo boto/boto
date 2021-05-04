@@ -1,3 +1,7 @@
+.. warning::
+    **This package is no longer maintained and has been replaced by** `Boto3 <https://github.com/boto/boto3>`__.
+    **Issues and pull requests are not reviewed. If you are having an issue with the** `Boto3 <https://github.com/boto/boto3>`__ **package or the** `AWS CLI <https://github.com/aws/aws-cli>`__, **please open an issue on their respective repositories.**
+    
 ####
 boto
 ####
@@ -5,11 +9,10 @@ boto 2.49.0
 
 Released: 11-July-2018
 
-.. image:: https://travis-ci.org/boto/boto.svg?branch=develop
-        :target: https://travis-ci.org/boto/boto
-
 .. image:: https://pypip.in/d/boto/badge.svg
         :target: https://pypi.python.org/pypi/boto/
+
+
 
 ******
 Boto 3
