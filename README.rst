@@ -13,25 +13,6 @@ Released: 11-July-2018
         :target: https://pypi.python.org/pypi/boto/
 
 
-
-******
-Boto 3
-******
-
-`Boto3 <https://github.com/boto/boto3>`__, the next version of Boto, is now
-stable and recommended for general use.  It can be used side-by-side with Boto
-in the same project, so it is easy to start using Boto3 in your existing
-projects as well as new projects. Going forward, API updates and all new
-feature work will be focused on Boto3.
-
-To assist users who still depend on Boto and cannot immediately switch over, we
-will be triaging and addressing critical issues and PRs in Boto in the short
-term. As more users make the switch to Boto3, we expect to reduce our
-maintenance involvement over time. If we decide on a cutoff date or any
-significant changes to our maintenance plan, we will make pre-announcements
-well ahead of schedule to allow ample time for our users to adapt/migrate.
-
-
 ************
 Introduction
 ************
