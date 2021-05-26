@@ -1,7 +1,6 @@
-.. warning::
-    **This package is no longer maintained and has been replaced by** `Boto3 <https://github.com/boto/boto3>`__.
-    **Issues and pull requests are not reviewed. If you are having an issue with the** `Boto3 <https://github.com/boto/boto3>`__ **package or the** `AWS CLI <https://github.com/aws/aws-cli>`__, **please open an issue on their respective repositories.**
-    
+**This package is no longer maintained and has been replaced by** `Boto3 <https://github.com/boto/boto3>`__.
+**Issues and pull requests are not reviewed. If you are having an issue with the** `Boto3 <https://github.com/boto/boto3>`__ **package or the** `AWS CLI <https://github.com/aws/aws-cli>`__, **please open an issue on their respective repositories.**
+
 ####
 boto
 ####
