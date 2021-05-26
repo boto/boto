@@ -1,0 +1,13 @@
+name: PRs are not reviewed
+
+on:
+  pull_request
+
+jobs:
+  fail:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail PRs
+        run: |
+          echo "This repository is not maintained and PRs are not reviewed. Please use the 'boto3' package (https://github.com/boto/boto3/)."
+          exit 1
