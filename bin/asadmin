@@ -164,10 +164,11 @@ def migrate_instances(autoscale, name):
     g = get_group(autoscale, name)
 
     old_instances = g.instances
+    old_instances_count = len(old_instances)
     ec2 = boto.connect_ec2()
     for old_instance in old_instances:
         print "Terminating instance " + old_instance.instance_id
-        ec2.terminate_instances([old_instance.instance_id])
+        autoscale.terminate_instance(old_instance.instance_id, False)
         while True:
             g = get_group(autoscale, name)
             new_instances = g.instances
@@ -182,6 +183,10 @@ def migrate_instances(autoscale, name):
                     instancesReady = False
                     print "Waiting for instances to be ready...."
                     break
+            if len(new_instances) < old_instances_count:
+                instancesReady = False
+                print "Waiting for new instance to be created..."
+
             if(not hasOldInstance and instancesReady):
                 break
             else:
