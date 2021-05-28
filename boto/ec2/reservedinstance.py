@@ -29,7 +29,7 @@ class ReservedInstancesOffering(EC2Object):
                  availability_zone=None, duration=None, fixed_price=None,
                  usage_price=None, description=None, instance_tenancy=None,
                  currency_code=None, offering_type=None,
-                 recurring_charges=None, pricing_details=None):
+                 recurring_charges=None, pricing_details=None, scope=None):
         super(ReservedInstancesOffering, self).__init__(connection)
         self.id = id
         self.instance_type = instance_type
@@ -43,6 +43,7 @@ class ReservedInstancesOffering(EC2Object):
         self.offering_type = offering_type
         self.recurring_charges = recurring_charges
         self.pricing_details = pricing_details
+        self.scope = scope
 
     def __repr__(self):
         return 'ReservedInstanceOffering:%s' % self.id
@@ -79,6 +80,8 @@ class ReservedInstancesOffering(EC2Object):
             self.offering_type = value
         elif name == 'marketplace':
             self.marketplace = True if value == 'true' else False
+        elif name == 'scope':
+            self.scope = value
 
     def describe(self):
         print('ID=%s' % self.id)
