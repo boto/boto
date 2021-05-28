@@ -622,6 +622,7 @@ class MTurkConnection(AWSQueryConnection):
                                   keywords=None,
                                   retry_delay=None,
                                   test=None,
+                                  test_xml=None,
                                   answer_key=None,
                                   answer_key_xml=None,
                                   test_duration=None,
@@ -647,6 +648,9 @@ class MTurkConnection(AWSQueryConnection):
 
         test: a QuestionForm
 
+        test_xml: an XML string of your test, for automatically
+           scored qualification tests. Alternative to using the QuestionForm.
+
         answer_key: an XML string of your answer key, for automatically
            scored qualification tests.
            (Consider implementing an AnswerKey class for this to support.)
@@ -671,6 +675,9 @@ class MTurkConnection(AWSQueryConnection):
             assert(isinstance(test, QuestionForm))
             assert(test_duration is not None)
             params['Test'] = test.get_as_xml()
+
+        if text_xml is not None:
+            params['Test'] = text_xml   # xml
 
         if test_duration is not None:
             params['TestDurationInSeconds'] = test_duration
