@@ -30,7 +30,7 @@ Prominent Differences
   manageable.
 
 .. _`official API operations`: http://docs.aws.amazon.com/AmazonRDS/latest/APIReference/Welcome.html
-.. _`jmespath`: https://github.com/boto/jmespath
+.. _`jmespath`: https://github.com/jmespath/jmespath.py
 .. _`jsonq`: https://github.com/edmund-huber/jsonq
 
 
