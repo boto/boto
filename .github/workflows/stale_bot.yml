@@ -1,0 +1,32 @@
+name: "Close stale issues and pull requests"
+
+# Controls when the action will run.
+on:
+  schedule:
+  - cron: "0 * * * *"
+
+jobs:
+  issue-cleanup:
+    runs-on: ubuntu-latest
+    name: Stale issue job
+    steps:
+    - uses: aws-actions/stale-issue-cleanup@v4
+      with:
+        issue-types: issues,pull_requests
+        ancient-issue-message: Greetings! This issue hasn't been active in longer 
+          than one year. Since this repository is no longer maintained, community comments can continue to be made but they will not be reviewed by AWS. In the absence of further activity, this issue will close soon.
+        ancient-pr-message: Greetings! This pull request hasn't been active in longer 
+          than one year. Since this repository is no longer maintained, community comments can continue to be made but they will not be reviewed by AWS. In the absence of further activity, this pull request will close soon.
+
+        # Don't set closed-for-staleness label to skip closing very old issues
+        # regardless of label
+        closed-for-staleness-label: closed-for-staleness
+
+        # Issue timing
+        days-before-ancient: 365
+        days-before-close: 7
+
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        loglevel: DEBUG
+        # Set dry-run to true to not perform label or close actions.
+        dry-run: true
