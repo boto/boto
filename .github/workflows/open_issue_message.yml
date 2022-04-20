@@ -10,4 +10,6 @@ jobs:
             with:
             # These inputs are both required
             repo-token: "${{ secrets.GITHUB_TOKEN }}"
-            message: "This package is no longer maintained and has been replaced by [`boto3`](https://github.com/boto/boto3/). Issues are not triaged or reviewed by AWS. The issues in this repository can be used by the community for support purposes. If you are having an issue with the [`boto3`](https://github.com/boto/boto3/) package or the [AWS CLI](https://github.com/aws/aws-cli/), please open an issue on their respective repositories."
+            message: |
+                     ### ⚠️DEPRECATION NOTICE⚠️ 
+                     This package is no longer maintained and has been replaced by [`boto3`](https://github.com/boto/boto3/). Issues are not triaged or reviewed by AWS. The issues in this repository can be used by the community for support purposes. If you are having an issue with the [`boto3`](https://github.com/boto/boto3/) package or the [AWS CLI](https://github.com/aws/aws-cli/), please open an issue on their respective repositories.
