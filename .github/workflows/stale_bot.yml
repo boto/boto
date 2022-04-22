@@ -23,7 +23,7 @@ jobs:
         closed-for-staleness-label: closed-for-staleness
 
         # Issue timing
-        days-before-ancient: 365
+        days-before-ancient: 2555
         days-before-close: 7
 
         repo-token: ${{ secrets.GITHUB_TOKEN }}
