@@ -21,9 +21,11 @@ jobs:
         # Don't set closed-for-staleness label to skip closing very old issues
         # regardless of label
         closed-for-staleness-label: closed-for-staleness
-
+        stale-issue-label: closing-soon
+        stale-pr-label: closing-soon
+        
         # Issue timing
-        days-before-ancient: 2555
+        days-before-ancient: 2922
         days-before-close: 7
 
         repo-token: ${{ secrets.GITHUB_TOKEN }}
