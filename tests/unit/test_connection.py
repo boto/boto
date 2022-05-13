@@ -22,6 +22,9 @@
 import os
 import socket
 
+from mock import Mock
+
+from boto.vendored import six
 from tests.compat import mock, unittest
 from httpretty import HTTPretty
 
@@ -30,6 +33,15 @@ from boto.compat import json, parse_qs
 from boto.connection import AWSQueryConnection, AWSAuthConnection, HTTPRequest
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
+
+
+def _mock_sendall(data, **flags):
+    """
+    Mocks `socket.sendall`:
+    https://docs.python.org/3/library/socket.html#socket.socket.sendall
+    """
+    if not isinstance(data, six.binary_type):
+        raise TypeError("a bytes-like object is required, not '%s'" % type(data))
 
 
 class TestListParamsSerialization(unittest.TestCase):
@@ -176,7 +188,7 @@ class TestAWSAuthConnection(unittest.TestCase):
         self.assertEqual(conn.proxy_port, 8180)
         del os.environ['http_proxy']
 
-    @mock.patch.object(socket, 'create_connection')
+    @mock.patch.object(socket, 'create_connection', return_value=Mock(sendall=_mock_sendall))
     @mock.patch('boto.compat.http_client.HTTPResponse')
     @mock.patch('boto.compat.http_client.ssl')
     def test_proxy_ssl(self, ssl_mock, http_response_mock,
