@@ -233,7 +233,7 @@ class HmacAuthV2Handler(AuthHandler, HmacKeys):
 class HmacAuthV3Handler(AuthHandler, HmacKeys):
     """Implements the new Version 3 HMAC authorization used by Route53."""
 
-    capability = ['hmac-v3', 'route53', 'ses']
+    capability = ['hmac-v3', 'route53']
 
     def __init__(self, host, config, provider):
         AuthHandler.__init__(self, host, config, provider)
@@ -334,7 +334,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
     Implements the new Version 4 HMAC authorization.
     """
 
-    capability = ['hmac-v4']
+    capability = ['hmac-v4', 'ses']
 
     def __init__(self, host, config, provider,
                  service_name=None, region_name=None):
