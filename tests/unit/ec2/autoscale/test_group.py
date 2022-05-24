@@ -198,6 +198,10 @@ class TestParseAutoScaleGroupResponse(AWSMockServiceTestCase):
                    <member>us-east-1c</member>
                    <member>us-east-1a</member>
                  </AvailabilityZones>
+                 <TargetGroupARNs>
+                   <member>arn:aws:elasticloadbalancing:us-east-1:388764158521:targetgroup/awseb-AWSEB-ZHP/e56</member>
+                   <member>arn:aws:elasticloadbalancing:us-east-1:388764158521:targetgroup/awseb-AWSEB-ZHP/j23</member>
+                 </TargetGroupARNs>
                  <LoadBalancerNames/>
                  <MinSize>1</MinSize>
                  <VPCZoneIdentifier/>
@@ -236,6 +240,9 @@ class TestParseAutoScaleGroupResponse(AWSMockServiceTestCase):
         self.assertEqual(as_group.termination_policies,
                          ['OldestInstance', 'OldestLaunchConfiguration'])
         self.assertEqual(as_group.instance_id, 'Something')
+        self.assertEqual(as_group.target_group_arns,
+                         ['arn:aws:elasticloadbalancing:us-east-1:388764158521:targetgroup/awseb-AWSEB-ZHP/e56',
+                          'arn:aws:elasticloadbalancing:us-east-1:388764158521:targetgroup/awseb-AWSEB-ZHP/j23'])
 
 
 class TestDescribeTerminationPolicies(AWSMockServiceTestCase):
