@@ -38,6 +38,7 @@ u'...'
 ...                                 lifetime=60*65,
 ...                                 max_assignments=2,
 ...                                 annotation='An annotation from boto create_hit_from_hit_type test',
+...                                 unique_request_token='A unique token',
 ...                                 response_groups=['Minimal',
 ...                                                  'HITDetail',
 ...                                                  'HITQuestion',
@@ -97,6 +98,10 @@ u'HIT Type for testing Boto'
 # annotation is correct
 >>> hit.RequesterAnnotation
 u'An annotation from boto create_hit_from_hit_type test'
+
+# unique request token is correct
+>>> hit.UniqueRequestToken
+u'A unique token'
 
 # not reviewed yet
 >>> hit.HITReviewStatus

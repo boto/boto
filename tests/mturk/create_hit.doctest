@@ -29,6 +29,7 @@
 ...                                 duration=60*6,
 ...                                 approval_delay=60*60,
 ...                                 annotation='An annotation from boto create_hit test',
+...                                 unique_request_token='A unique token',
 ...                                 response_groups=['Minimal',
 ...                                                  'HITDetail',
 ...                                                  'HITQuestion',
@@ -87,6 +88,10 @@ u'Boto create_hit description'
 # annotation is correct
 >>> hit.RequesterAnnotation
 u'An annotation from boto create_hit test'
+
+# unique request token is correct
+>>> hit.UniqueRequestToken
+u'A unique token'
 
 >>> hit.HITReviewStatus
 u'NotReviewed'
