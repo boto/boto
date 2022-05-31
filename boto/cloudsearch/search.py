@@ -80,13 +80,14 @@ class Query(object):
 
     RESULTS_PER_PAGE = 500
 
-    def __init__(self, q=None, bq=None, rank=None,
-                 return_fields=None, size=10,
-                 start=0, facet=None, facet_constraints=None,
-                 facet_sort=None, facet_top_n=None, t=None):
+    def __init__(self, q=None, bq=None, rank=None, return_fields=None,
+                 size=10, start=0, facet=None, facet_constraints=None,
+                 facet_sort=None, facet_top_n=None, t=None,
+                 rank_expressions=None):
 
         self.q = q
         self.bq = bq
+        self.rank_expressions = rank_expressions or {}
         self.rank = rank or []
         self.return_fields = return_fields or []
         self.start = start
@@ -116,6 +117,10 @@ class Query(object):
 
         if self.bq:
             params['bq'] = self.bq
+
+        if self.rank_expressions:
+            for k, v in self.rank_expressions.iteritems():
+                params['rank-%s' % k] = v
 
         if self.rank:
             params['rank'] = ','.join(self.rank)
@@ -154,15 +159,18 @@ class SearchConnection(object):
 
     def build_query(self, q=None, bq=None, rank=None, return_fields=None,
                     size=10, start=0, facet=None, facet_constraints=None,
-                    facet_sort=None, facet_top_n=None, t=None):
+                    facet_sort=None, facet_top_n=None, t=None,
+                    rank_expressions=None):
+
         return Query(q=q, bq=bq, rank=rank, return_fields=return_fields,
-                     size=size, start=start, facet=facet,
-                     facet_constraints=facet_constraints,
-                     facet_sort=facet_sort, facet_top_n=facet_top_n, t=t)
+                     size=size, start=start, facet=facet, facet_constraints=facet_constraints,
+                     facet_sort=facet_sort, facet_top_n=facet_top_n, t=t,
+                     rank_expressions=rank_expressions)
 
     def search(self, q=None, bq=None, rank=None, return_fields=None,
                size=10, start=0, facet=None, facet_constraints=None,
-               facet_sort=None, facet_top_n=None, t=None):
+               facet_sort=None, facet_top_n=None, t=None,
+               rank_expressions=None):
         """
         Send a query to CloudSearch
 
@@ -219,6 +227,12 @@ class SearchConnection(object):
         :param t: Specify ranges for specific fields
             ``{'year': '2000..2005'}``
 
+        :type rank_expressions: dict
+        :param rank_expressions: Use to define rank expressions in the search
+            request. These expressions are not stored within your domain
+            configuration
+            ``{'exp1': sin(text_relevance), exp2:cos(text_relevance)}``
+
         :rtype: :class:`boto.cloudsearch.search.SearchResults`
         :return: Returns the results of this search
 
@@ -265,12 +279,10 @@ class SearchConnection(object):
         ...     facet_sort={'author': 'count'})
         """
 
-        query = self.build_query(q=q, bq=bq, rank=rank,
-                                 return_fields=return_fields,
-                                 size=size, start=start, facet=facet,
-                                 facet_constraints=facet_constraints,
-                                 facet_sort=facet_sort,
-                                 facet_top_n=facet_top_n, t=t)
+        query = self.build_query(q=q, bq=bq, rank=rank, return_fields=return_fields,
+                                 size=size, start=start, facet=facet, facet_constraints=facet_constraints,
+                                 facet_sort=facet_sort, facet_top_n=facet_top_n, t=t,
+                                 rank_expressions=rank_expressions)
         return self(query)
 
     def __call__(self, query):
