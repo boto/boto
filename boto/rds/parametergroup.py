@@ -137,13 +137,17 @@ class Parameter(object):
             raise ValueError('value must be of type str')
         if self.allowed_values:
             choices = self.allowed_values.split(',')
-            if value not in choices:
+            if value not in choices and not value.startswith('{'):
                 raise ValueError('value must be in %s' % self.allowed_values)
         self._value = value
 
     def _set_integer_value(self, value):
         if isinstance(value, basestring):
-            value = int(value)
+            if value.startswith('{'):
+                self._set_string_value(value)
+                return
+            else:
+                value = int(value)
         if isinstance(value, int) or isinstance(value, long):
             if self.allowed_values:
                 min, max = self.allowed_values.split('-')
@@ -180,7 +184,8 @@ class Parameter(object):
         if self.type == 'string':
             return self._value
         elif self.type == 'integer':
-            if not isinstance(self._value, int) and not isinstance(self._value, long):
+            if not isinstance(self._value, int) and not isinstance(self._value, long) and \
+               not (isinstance(self._value, basestring) and self._value.startswith('{')):
                 self._set_integer_value(self._value)
             return self._value
         elif self.type == 'boolean':
