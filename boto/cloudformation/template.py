@@ -49,3 +49,48 @@ class TemplateParameter(object):
             self.parameter_key = value
         else:
             setattr(self, name, value)
+
+
+class StackTemplate(object):
+    template_version = '2010-09-09'
+    
+    def __init__(self, description, parameters=None, mappings=None, resources=None, outputs=None):
+        self.description = description
+        self.parameters = parameters
+        self.mappings = mappings
+        self.resources = resources
+        self.outputs = outputs
+    
+    def to_object(self):
+        obj = {}
+        resources = {}
+        attrs = {
+            'parameters': 'Parameters',
+            'mappings': 'Mappings',
+            'resources': 'Resources',
+            'outputs': 'Outputs'
+        }
+        
+        for attr, name in attrs.iteritems():
+            value = getattr(self, attr, None)
+            if not value:
+                continue
+            # Build a dict containing the items for this attribute
+            items = {}
+            for k, v in value.iteritems():
+                items[k] = v.to_object()
+            obj[name] = items
+        
+        obj['AWSTemplateFormatVersion'] = self.template_version
+        return obj
+
+class StackParameter(object):
+    TYPES = ['String', 'Number', 'CommaDelimitedList']
+
+    def __init__(self, type, default=None):
+        self.type = type
+
+    def to_object(self):
+        return {
+            'Type': self.type
+        }
