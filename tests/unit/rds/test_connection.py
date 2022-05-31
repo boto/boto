@@ -782,6 +782,117 @@ class TestRDSOptionGroupOptions(AWSMockServiceTestCase):
         self.assertEqual(options.depends_on, [])
 
 
+class TestRDSDescribeDBParameters(AWSMockServiceTestCase):
+    connection_class = RDSConnection
+
+    def setUp(self):
+        super(TestRDSDescribeDBParameters, self).setUp()
+
+    def default_body(self):
+        return """
+        <DescribeDBParametersResponse xmlns="http://rds.amazonaws.com/doc/2013-05-15/">
+          <DescribeDBParametersResult>
+            <Parameters>
+              <Parameter>
+                <ParameterValue>/rdsdbbin/mysql</ParameterValue>
+                <DataType>string</DataType>
+                <Source>system</Source>
+                <IsModifiable>false</IsModifiable>
+                <Description>The MySQL installation base directory.</Description>
+                <ApplyType>static</ApplyType>
+                <ParameterName>basedir</ParameterName>
+              </Parameter>
+              <Parameter>
+                <ParameterValue>32768</ParameterValue>
+                <DataType>integer</DataType>
+                <Source>system</Source>
+                <IsModifiable>true</IsModifiable>
+                <Description>The size of the cache to hold the SQL statements for the binary log during a transaction.</Description>
+                <ApplyType>dynamic</ApplyType>
+                <AllowedValues>4096-9223372036854775807</AllowedValues>
+                <ParameterName>binlog_cache_size</ParameterName>
+              </Parameter>
+              <Parameter>
+                <ParameterValue>1</ParameterValue>
+                <DataType>boolean</DataType>
+                <Source>engine-default</Source>
+                <IsModifiable>false</IsModifiable>
+                <Description>Controls whether user-defined functions that have only an xxx symbol for the main function can be loaded</Description>
+                <ApplyType>static</ApplyType>
+                <AllowedValues>0,1</AllowedValues>
+                <ParameterName>allow-suspicious-udfs</ParameterName>
+              </Parameter>
+              <Parameter>
+                <ParameterValue>false</ParameterValue>
+                <DataType>boolean</DataType>
+                <Source>engine-default</Source>
+                <IsModifiable>true</IsModifiable>
+                <Description>Print a symbolic stack trace on failure</Description>
+                <ApplyType>static</ApplyType>
+                <ParameterName>enable-pstack</ParameterName>
+              </Parameter>
+            </Parameters>
+          </DescribeDBParametersResult>
+          <ResponseMetadata>
+            <RequestId>8743f2cf-bf41-11de-8c8e-49155882c409</RequestId>
+          </ResponseMetadata>
+        </DescribeDBParametersResponse>
+        """
+
+    def test_get_all_dbparameters(self):
+        self.set_http_response(status_code=200)
+        response = self.service_connection.get_all_dbparameters()
+        self.assertEqual(len(response), 4)
+        param_1 = response[0]
+        self.assertEqual(param_1.group, None)
+        self.assertEqual(param_1.name, 'basedir')
+        self.assertEqual(param_1.value, '/rdsdbbin/mysql')
+        self.assertEqual(param_1.type, 'string')
+        self.assertEqual(param_1.source, 'system')
+        self.assertEqual(param_1.is_modifiable, False)
+        self.assertEqual(param_1.description, 'The MySQL installation base directory.')
+        self.assertEqual(param_1.apply_method, None)
+        self.assertEqual(param_1.allowed_values, None)
+        self.assertEqual(param_1.apply_type, 'static')
+
+        param_2 = response[1]
+        self.assertEqual(param_2.group, None)
+        self.assertEqual(param_2.name, 'binlog_cache_size')
+        self.assertEqual(param_2.value, 32768)
+        self.assertEqual(param_2.type, 'integer')
+        self.assertEqual(param_2.source, 'system')
+        self.assertEqual(param_2.is_modifiable, True)
+        self.assertEqual(param_2.description, 'The size of the cache to hold the SQL statements for the binary log during a transaction.')
+        self.assertEqual(param_2.apply_method, None)
+        self.assertEqual(param_2.allowed_values, '4096-9223372036854775807')
+        self.assertEqual(param_2.apply_type, 'dynamic')
+
+        param_3 = response[2]
+        self.assertEqual(param_3.group, None)
+        self.assertEqual(param_3.name, 'allow-suspicious-udfs')
+        self.assertEqual(param_3.value, True)
+        self.assertEqual(param_3.type, 'boolean')
+        self.assertEqual(param_3.source, 'engine-default')
+        self.assertEqual(param_3.is_modifiable, False)
+        self.assertEqual(param_3.description, 'Controls whether user-defined functions that have only an xxx symbol for the main function can be loaded')
+        self.assertEqual(param_3.apply_method, None)
+        self.assertEqual(param_3.allowed_values, '0,1')
+        self.assertEqual(param_3.apply_type, 'static')
+
+        param_4 = response[3]
+        self.assertEqual(param_4.group, None)
+        self.assertEqual(param_4.name, 'enable-pstack')
+        self.assertEqual(param_4.value, False)
+        self.assertEqual(param_4.type, 'boolean')
+        self.assertEqual(param_4.source, 'engine-default')
+        self.assertEqual(param_4.is_modifiable, True)
+        self.assertEqual(param_4.description, 'Print a symbolic stack trace on failure')
+        self.assertEqual(param_4.apply_method, None)
+        self.assertEqual(param_4.allowed_values, None)
+        self.assertEqual(param_4.apply_type, 'static')
+
+
+
 if __name__ == '__main__':
     unittest.main()
 
