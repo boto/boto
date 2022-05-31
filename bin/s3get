@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+# Author: Lee Trager
+#
+__doc__ = "s3_get is a simple tool to retrieve items from your S3 bucket"
+
+import sys
+import argparse
+import os
+from boto.s3.connection import S3Connection,OrdinaryCallingFormat
+from boto.exception import S3ResponseError
+
+def main():
+   parser = argparse.ArgumentParser(description = __doc__)
+   parser.add_argument("-e", "--echo", help="Just echo the signed URL, don't actually download it", metavar='TIMEOUT', nargs='?', const=60, type=int)
+   parser.add_argument("-p", "--public", help="Make a key public and return the public URL", action="store_true")
+   parser.add_argument("-t", "--torrent", help="Get the torrent", action="store_true")
+   parser.add_argument("-o", "--output", help="Filename to output to. '-' outputs to stdout", type=str)
+   parser.add_argument("bucket", help="The bucket you want to retrieve the key from")
+   parser.add_argument("keys", help="The key(s) you want to download from the bucket", nargs='+')
+   
+   args = parser.parse_args()
+
+   if args.output is not None and len(args.keys) > 1 and args.output != '-':
+      sys.stderr.write("Setting the output file name only supported when grabbing one file or outputting to stdout\n")
+      sys.exit(-1)
+
+   if args.echo and args.torrent:
+      sys.stderr.write("Can not echo the URL for a torrent to a file\n")
+      sys.exit(-1)
+
+   # Use OrdinaryCallingFormat so retrieval of keys in mixed case buckets work
+   conn = S3Connection(calling_format=OrdinaryCallingFormat())
+
+   bucket = conn.get_bucket(args.bucket)
+
+   for key_name in args.keys:
+      key = bucket.get_key(key_name)
+
+      if args.public:
+         key.make_public()
+         print key.generate_url(0, query_auth=False)
+         continue
+
+      if args.echo:
+         print key.generate_url(args.echo)
+         continue
+
+      if args.output == '-':
+         fp = sys.stdout
+      elif args.output is not None:
+         fp = open(args.output, 'wb')
+      else:
+         filename = os.path.basename(key_name)
+         if args.torrent:
+            filename = filename + '.torrent'
+         fp = open(filename, 'wb')
+
+      key.get_contents_to_file(fp, torrent=args.torrent)
+
+if __name__ == '__main__':
+   main()
