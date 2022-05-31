@@ -183,6 +183,7 @@ class JobFlow(EmrObject):
         self.steps = None
         self.instancegroups = None
         self.bootstrapactions = None
+        self.unknownelements = {}
 
     def startElement(self, name, attrs, connection):
         if name == 'Steps':
@@ -508,4 +509,6 @@ class BootstrapActionList(EmrObject):
             self.actions = ResultSet([('member', BootstrapAction)])
             return self.actions
         else:
-            return None
+            newclass = type(str(name).rstrip('s'), (EmrObject,), {})
+            self.unknownelements[str(name).lower()] = ResultSet([('member', newclass)])
+            return self.unknownelements[str(name).lower()]
