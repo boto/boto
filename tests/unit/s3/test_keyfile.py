@@ -42,6 +42,8 @@ class KeyfileTest(unittest.TestCase):
 
     def testReadFull(self):
         self.assertEqual(self.keyfile.read(len(self.contents)), self.contents)
+        self.assertEqual(self.keyfile.read(), self.contents)
+        self.assertEqual(self.keyfile.read(-1), self.contents)
 
     def testReadPartial(self):
         self.assertEqual(self.keyfile.read(5), self.contents[:5])
