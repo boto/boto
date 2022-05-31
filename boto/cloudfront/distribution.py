@@ -603,8 +603,8 @@ class Distribution(object):
                                          valid_after=valid_after_time,
                                          ip_address=ip_address)
 
-            encoded_policy = self._url_base64_encode(policy)
-            params["Policy"] = encoded_policy
+        encoded_policy = self._url_base64_encode(policy)
+        params["Policy"] = encoded_policy
         #sign the policy
         signature = self._sign_string(policy, private_key_file, private_key_string)
         #now base64 encode the signature (URL safe as well)
