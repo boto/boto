@@ -65,6 +65,8 @@ class OptionStatus(dict):
         self.update_version = int(status['UpdateVersion'])
 
     def _update_options(self, options):
+        if isinstance(options, unicode):
+            options = json.loads(options)
         if options:
             self.update(options)
 
@@ -83,8 +85,18 @@ class OptionStatus(dict):
                     for key in self.refresh_key:
                         data = data[key]
         if data:
-            self._update_status(data['Status'])
-            self._update_options(data['Options'])
+            if data.get('UpdateServiceAccessPoliciesResponse', None):
+                self._update_status(data['UpdateServiceAccessPoliciesResponse']\
+                    ['UpdateServiceAccessPoliciesResult']\
+                    ['AccessPolicies']\
+                    ['Status'])
+                self._update_options(data['UpdateServiceAccessPoliciesResponse']\
+                    ['UpdateServiceAccessPoliciesResult']\
+                    ['AccessPolicies']\
+                    ['Options'])
+            else:
+                self._update_status(data['Status'])
+                self._update_options(data['Options'])
 
     def to_json(self):
         """
@@ -161,9 +173,11 @@ class ServicePoliciesStatus(OptionStatus):
                         if condition_name == 'IpAddress':
                             add_statement = False
                             condition = statement['Condition'][condition_name]
+                            condition_value = condition['aws:SourceIp']
+                            if not isinstance(condition_value, list):
+                                condition['aws:SourceIp'] = [condition_value]
                             if ip not in condition['aws:SourceIp']:
                                 condition['aws:SourceIp'].append(ip)
-
             if add_statement:
                 s = self.new_statement(arn, ip)
                 self['Statement'].append(s)
