@@ -289,6 +289,8 @@ class TestS3HmacAuthV4Handler(unittest.TestCase):
                 'User-Agent': 'Boto',
                 'X-AMZ-Content-sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
                 'X-AMZ-Date': '20130605T193245Z',
+                'X-AMZ-Copy-Source-Range': 'bytes=0-999999999',
+                'X-AMZ-Copy-Source': 'some/key',
             },
             body=''
         )
@@ -476,9 +478,11 @@ max-keys=0
 host:awesome-bucket.s3-us-west-2.amazonaws.com
 user-agent:Boto
 x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+x-amz-copy-source:some/key
+x-amz-copy-source-range:bytes=0-999999999
 x-amz-date:20130605T193245Z
 
-host;user-agent;x-amz-content-sha256;x-amz-date
+host;user-agent;x-amz-content-sha256;x-amz-copy-source;x-amz-copy-source-range;x-amz-date
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
 
         authed_req = self.auth.canonical_request(self.awesome_bucket_request)
@@ -494,9 +498,11 @@ max-keys=0
 host:awesome-bucket.s3-us-west-2.amazonaws.com
 user-agent:Boto
 x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+x-amz-copy-source:some/key
+x-amz-copy-source-range:bytes=0-999999999
 x-amz-date:20130605T193245Z
 
-host;user-agent;x-amz-content-sha256;x-amz-date
+host;user-agent;x-amz-content-sha256;x-amz-copy-source;x-amz-copy-source-range;x-amz-date
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
 
         # Pre-mangle it. In practice, this happens as part of ``add_auth``,
@@ -515,6 +521,8 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"""
             'user-agent:Boto\n'
             'x-amz-content-sha256:e3b0c44298fc1c149afbf4c8996fb92427ae'
             '41e4649b934ca495991b7852b855\n'
+            'x-amz-copy-source:some/key\n'
+            'x-amz-copy-source-range:bytes=0-999999999\n'
             'x-amz-date:20130605T193245Z'
         )
 
