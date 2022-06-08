@@ -902,6 +902,9 @@
       "regions": {
         "cn-north-1": {
           "description": "China (Beijing)"
+        },
+        "cn-northwest-1": {
+          "description": "China (Ningxia)"
         }
       }, 
       "services": {
@@ -913,27 +916,32 @@
             ]
           }, 
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "cloudformation": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "cloudtrail": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "config": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "directconnect": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "dynamodb": {
@@ -944,7 +952,8 @@
             ]
           }, 
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "ec2": {
@@ -955,17 +964,20 @@
             ]
           }, 
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "elasticache": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "elasticbeanstalk": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "elasticloadbalancing": {
@@ -976,7 +988,8 @@
             ]
           }, 
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "elasticmapreduce": {
@@ -987,7 +1000,8 @@
             ]
           }, 
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "glacier": {
@@ -998,7 +1012,8 @@
             ]
           }, 
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "iam": {
@@ -1015,12 +1030,14 @@
         }, 
         "kinesis": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "logs": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "monitoring": {
@@ -1031,17 +1048,20 @@
             ]
           }, 
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "rds": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "redshift": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "s3": {
@@ -1055,7 +1075,8 @@
             ]
           }, 
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "sns": {
@@ -1066,7 +1087,8 @@
             ]
           }, 
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "sqs": {
@@ -1078,22 +1100,26 @@
             "sslCommonName": "{region}.queue.{dnsSuffix}"
           }, 
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "storagegateway": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "sts": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }, 
         "swf": {
           "endpoints": {
-            "cn-north-1": {}
+            "cn-north-1": {},
+            "cn-northwest-1": {}
           }
         }
       }
