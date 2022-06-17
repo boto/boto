@@ -29,6 +29,7 @@ class TestProvider(unittest.TestCase):
         self.shared_config = {}
 
         self.metadata_patch = mock.patch('boto.utils.get_instance_metadata')
+        self.container_metadata_patch = mock.patch('boto.utils.get_container_credentials')
         self.config_patch = mock.patch('boto.provider.config.get',
                                        self.get_config)
         self.has_config_patch = mock.patch('boto.provider.config.has_option',
@@ -40,6 +41,7 @@ class TestProvider(unittest.TestCase):
         self.environ_patch = mock.patch('os.environ', self.environ)
 
         self.get_instance_metadata = self.metadata_patch.start()
+        self.get_container_metadata = self.container_metadata_patch.start()
         self.get_instance_metadata.return_value = None
         self.config_patch.start()
         self.has_config_patch.start()
@@ -47,9 +49,9 @@ class TestProvider(unittest.TestCase):
         self.has_config_object_patch.start()
         self.environ_patch.start()
 
-
     def tearDown(self):
         self.metadata_patch.stop()
+        self.container_metadata_patch.stop()
         self.config_patch.stop()
         self.has_config_patch.stop()
         self.config_object_patch.stop()
@@ -343,6 +345,35 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(
             self.get_instance_metadata.call_args[1]['data'],
             'meta-data/iam/security-credentials/')
+        self.assertFalse(self.get_container_metadata.called)
+
+    def test_metadata_server_credentials_with_container_credentials(self):
+        self.get_container_metadata.return_value = INSTANCE_CONFIG
+        self.environ[provider.CONTAINER_CREDENTIALS_ENV_VAR] = 'container_creds'
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'iam_access_key')
+        self.assertEqual(p.secret_key, 'iam_secret_key')
+        self.assertEqual(p.security_token, 'iam_token')
+        self.assertEqual(
+            self.get_container_metadata.call_args[0][0],
+            'container_creds')
+        self.assertFalse(self.get_instance_metadata.called)
+
+    def test_metadata_server_credentials_with_container_credentials_fallback_to_instance_credentials(self):
+        self.environ[provider.CONTAINER_CREDENTIALS_ENV_VAR] = 'container_creds'
+        self.get_container_metadata.return_value = None
+        self.get_instance_metadata.return_value = INSTANCE_CONFIG
+
+        p = provider.Provider('aws')
+        self.assertEqual(p.access_key, 'iam_access_key')
+        self.assertEqual(p.secret_key, 'iam_secret_key')
+        self.assertEqual(p.security_token, 'iam_token')
+        self.assertEqual(
+            self.get_container_metadata.call_args[0][0],
+            'container_creds')
+        self.assertEqual(
+            self.get_instance_metadata.call_args[1]['data'],
+            'meta-data/iam/security-credentials/')
 
     def test_metadata_server_returns_bad_type(self):
         self.get_instance_metadata.return_value = {
@@ -350,6 +381,7 @@ class TestProvider(unittest.TestCase):
         }
         with self.assertRaises(InvalidInstanceMetadataError):
             p = provider.Provider('aws')
+            self.assertFalse(self.get_container_metadata.called)
 
     def test_metadata_server_returns_empty_string(self):
         self.get_instance_metadata.return_value = {
@@ -357,6 +389,7 @@ class TestProvider(unittest.TestCase):
         }
         with self.assertRaises(InvalidInstanceMetadataError):
             p = provider.Provider('aws')
+            self.assertFalse(self.get_container_metadata.called)
 
     def test_metadata_server_returns_missing_keys(self):
         self.get_instance_metadata.return_value = {
@@ -369,6 +402,7 @@ class TestProvider(unittest.TestCase):
         }
         with self.assertRaises(InvalidInstanceMetadataError):
             p = provider.Provider('aws')
+            self.assertFalse(self.get_container_metadata.called)
 
     def test_refresh_credentials(self):
         now = datetime.utcnow()
@@ -403,6 +437,7 @@ class TestProvider(unittest.TestCase):
         self.assertEqual(p.access_key, 'second_access_key')
         self.assertEqual(p.secret_key, 'second_secret_key')
         self.assertEqual(p.security_token, 'second_token')
+        self.assertFalse(self.get_container_metadata.called)
 
     @mock.patch('boto.provider.config.getint')
     @mock.patch('boto.provider.config.getfloat')
@@ -417,6 +452,7 @@ class TestProvider(unittest.TestCase):
         self.get_instance_metadata.assert_called_with(
             timeout=4.0, num_retries=10,
             data='meta-data/iam/security-credentials/')
+        self.assertFalse(self.get_container_metadata.called)
 
     def test_provider_google(self):
         self.environ['GS_ACCESS_KEY_ID'] = 'env_access_key'

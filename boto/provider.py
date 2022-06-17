@@ -70,6 +70,8 @@ STORAGE_PERMISSIONS_ERROR = 'StoragePermissionsError'
 STORAGE_RESPONSE_ERROR = 'StorageResponseError'
 NO_CREDENTIALS_PROVIDED = object()
 
+CONTAINER_CREDENTIALS_ENV_VAR = 'AWS_CONTAINER_CREDENTIALS_RELATIVE_URI'
+
 
 class ProfileNotFoundError(ValueError):
     pass
@@ -388,15 +390,24 @@ class Provider(object):
         # get_instance_metadata is imported here because of a circular
         # dependency.
         boto.log.debug("Retrieving credentials from metadata server.")
-        from boto.utils import get_instance_metadata
+        from boto.utils import get_instance_metadata, get_container_credentials
         timeout = config.getfloat('Boto', 'metadata_service_timeout', 1.0)
         attempts = config.getint('Boto', 'metadata_service_num_attempts', 1)
         # The num_retries arg is actually the total number of attempts made,
         # so the config options is named *_num_attempts to make this more
         # clear to users.
-        metadata = get_instance_metadata(
-            timeout=timeout, num_retries=attempts,
-            data='meta-data/iam/security-credentials/')
+        metadata = None
+        if CONTAINER_CREDENTIALS_ENV_VAR in os.environ:
+            # Try to get the container credentials if the environment variable is set.
+            metadata = get_container_credentials(os.environ[CONTAINER_CREDENTIALS_ENV_VAR],
+                                                 timeout=timeout, num_retries=attempts)
+
+        if not metadata:
+            # Try to get ec2 instance metadata if no container credentials.
+            metadata = get_instance_metadata(
+                timeout=timeout, num_retries=attempts,
+                data='meta-data/iam/security-credentials/')
+
         if metadata:
             creds = self._get_credentials_from_metadata(metadata)
             self._access_key = creds[0]
@@ -409,6 +420,7 @@ class Provider(object):
             boto.log.debug("Retrieved credentials will expire in %s at: %s",
                            self._credential_expiry_time - datetime.now(),
                            expires_at)
+
 
     def _get_credentials_from_metadata(self, metadata):
         # Given metadata, return a tuple of (access, secret, token, expiration)

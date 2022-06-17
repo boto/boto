@@ -240,17 +240,26 @@ def retry_url(url, retry_on_404=True, num_retries=10, timeout=None):
     return ''
 
 
-def _get_instance_metadata(url, num_retries, timeout=None):
-    return LazyLoadMetadata(url, num_retries, timeout)
+def _get_instance_metadata(url, num_retries, timeout=None, is_container_metadata=False):
+    return LazyLoadMetadata(url, num_retries, timeout, is_container_metadata)
 
 
 class LazyLoadMetadata(dict):
-    def __init__(self, url, num_retries, timeout=None):
+    def __init__(self, url, num_retries, timeout=None, is_container_metadata=False):
         self._url = url
         self._num_retries = num_retries
         self._leaves = {}
         self._dicts = []
         self._timeout = timeout
+
+        if is_container_metadata:
+            # Container metadata doesn't have path based keys,
+            # so we'll just do the get once in materialize()
+            key = url.split('/')[-1]
+            self._leaves[key] = ''
+            self[key] = None
+            return
+
         data = boto.utils.retry_url(self._url, num_retries=self._num_retries, timeout=self._timeout)
         if data:
             fields = data.split('\n')
@@ -405,6 +414,25 @@ def get_instance_metadata(version='latest', url='http://169.254.169.254',
     except urllib.error.URLError:
         boto.log.exception("Exception caught when trying to retrieve "
                            "instance metadata for: %s", data)
+        return None
+
+
+def get_container_credentials(relative_container_uri,
+                              url='http://169.254.170.2',
+                              timeout=None,
+                              num_retries=5):
+    """
+    Support ECS Task Credentials
+    https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html
+    """
+    try:
+        metadata_url = '%s%s' % (url, relative_container_uri)
+        return _get_instance_metadata(metadata_url, num_retries=num_retries,
+                                      timeout=timeout,
+                                      is_container_metadata=True)
+    except urllib.error.URLError:
+        boto.log.exception("Exception caught when trying to retrieve "
+                           "instance metadata for: %s", relative_container_uri)
         return None
 
 
