@@ -19,5 +19,13 @@ class CFInvalidationTest(unittest.TestCase):
         self.assertEqual(batch.escape("/nowildcard"), "/nowildcard")
         self.assertEqual(batch.escape("/other special characters"), "/other%20special%20characters")
 
+    def test_argument_escape(self):
+        """
+        Test that query string parameters are retained as literals
+        See: http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/QueryStringParameters.html
+        """
+        batch = cf.invalidation.InvalidationBatch()
+        self.assertEqual(batch.escape("/foo/bar/baz.jpg?filtered=false&size=*"), "/foo/bar/baz.jpg?filtered=false&size=*")
+
 if __name__ == '__main__':
     unittest.main()
