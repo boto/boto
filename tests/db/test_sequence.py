@@ -95,7 +95,7 @@ class TestDBHandler(object):
         for v in [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144]:
             assert(s.next() == v)
             assert(s.val == v)
-            assert(s2.val == v) # it shouldn't matter which reference we use since it's garunteed to be consistent
+            assert(s2.val == v) # it shouldn't matter which reference we use since it's guaranteed to be consistent
 
     def test_sequence_string(self):
         """Test the String incrementation sequence"""
