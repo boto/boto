@@ -49,6 +49,7 @@ import tempfile
 import random
 import smtplib
 import datetime
+import os
 import re
 import io
 import email.mime.multipart
@@ -442,6 +443,27 @@ def get_instance_userdata(version='latest', sep=None,
                 t = nvpair.split('=')
                 user_data[t[0].strip()] = t[1].strip()
     return user_data
+
+
+def get_container_credentials(url='http://169.254.170.2', timeout=None,
+                              num_retries=5):
+    """
+    Returns the container credentials from the task metadata service as a
+    nested Python dictionary. This function has the same semantics as
+    get_instance_metadata.
+    """
+    relative_uri = os.environ.get('AWS_CONTAINER_CREDENTIALS_RELATIVE_URI')
+    if not relative_uri:
+        return None
+    try:
+        metadata_url = '%s/%s' % (url, relative_uri)
+        data = retry_url(metadata_url, num_retries=num_retries, timeout=timeout)
+        return json.loads(data)
+    except urllib.error.URLError:
+        boto.log.exception("Exception caught when trying to retrieve "
+                           "container metadata")
+        return None
+
 
 ISO8601 = '%Y-%m-%dT%H:%M:%SZ'
 ISO8601_MS = '%Y-%m-%dT%H:%M:%S.%fZ'

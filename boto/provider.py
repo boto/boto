@@ -387,18 +387,26 @@ class Provider(object):
     def _populate_keys_from_metadata_server(self):
         # get_instance_metadata is imported here because of a circular
         # dependency.
-        boto.log.debug("Retrieving credentials from metadata server.")
-        from boto.utils import get_instance_metadata
+        from boto.utils import get_container_credentials, get_instance_metadata
         timeout = config.getfloat('Boto', 'metadata_service_timeout', 1.0)
         attempts = config.getint('Boto', 'metadata_service_num_attempts', 1)
+        creds = None
         # The num_retries arg is actually the total number of attempts made,
         # so the config options is named *_num_attempts to make this more
         # clear to users.
-        metadata = get_instance_metadata(
-            timeout=timeout, num_retries=attempts,
-            data='meta-data/iam/security-credentials/')
-        if metadata:
-            creds = self._get_credentials_from_metadata(metadata)
+        boto.log.debug('Retrieving credentials from task metadata server.')
+        creds_dict = get_container_credentials(
+            timeout=timeout, num_retries=attempts)
+        if creds_dict:
+            creds = self._get_credentials(creds_dict)
+        else:
+            boto.log.debug('Retrieving credentials from instance metadata server.')
+            metadata = get_instance_metadata(
+                timeout=timeout, num_retries=attempts,
+                data='meta-data/iam/security-credentials/')
+            if metadata:
+                creds = self._get_credentials_from_instance_metadata(metadata)
+        if creds:
             self._access_key = creds[0]
             self._secret_key = creds[1]
             self._security_token = creds[2]
@@ -410,30 +418,33 @@ class Provider(object):
                            self._credential_expiry_time - datetime.now(),
                            expires_at)
 
-    def _get_credentials_from_metadata(self, metadata):
-        # Given metadata, return a tuple of (access, secret, token, expiration)
-        # On errors, an InvalidInstanceMetadataError will be raised.
+    def _get_credentials_from_instance_metadata(self, metadata):
         # The "metadata" is a lazy loaded dictionary means that it's possible
         # to still encounter errors as we traverse through the metadata dict.
         # We try to be careful and raise helpful error messages when this
         # happens.
-        creds = list(metadata.values())[0]
-        if not isinstance(creds, dict):
+        creds_dict = list(metadata.values())[0]
+        if not isinstance(creds_dict, dict):
             # We want to special case a specific error condition which is
             # where get_instance_metadata() returns an empty string on
             # error conditions.
-            if creds == '':
+            if creds_dict == '':
                 msg = 'an empty string'
             else:
-                msg = 'type: %s' % creds
+                msg = 'type: %s' % creds_dict
             raise InvalidInstanceMetadataError("Expected a dict type of "
                                                "credentials instead received "
                                                "%s" % (msg))
+        return self._get_credentials(creds_dict)
+
+    def _get_credentials(self, creds_dict):
+        # Return a tuple of (access, secret, token, expiration).
+        # On errors, an InvalidInstanceMetadataError will be raised.
         try:
-            access_key = creds['AccessKeyId']
-            secret_key = self._convert_key_to_str(creds['SecretAccessKey'])
-            security_token = creds['Token']
-            expires_at = creds['Expiration']
+            access_key = creds_dict['AccessKeyId']
+            secret_key = self._convert_key_to_str(creds_dict['SecretAccessKey'])
+            security_token = creds_dict['Token']
+            expires_at = creds_dict['Expiration']
         except KeyError as e:
             raise InvalidInstanceMetadataError(
                 "Credentials from instance metadata missing "
