@@ -665,6 +665,7 @@ class S3HmacAuthV4Handler(HmacAuthV4Handler, AuthHandler):
         # - bukkit.s3.cn-north-1.amazonaws.com.cn - (Vhosted Beijing region)
         parts = self.split_host_parts(host)
 
+        region_name = ''
         if self.region_name is not None:
             region_name = self.region_name
         else:
