@@ -603,6 +603,49 @@ class TestAutoScalingTag(AWSMockServiceTestCase):
         else:
             self.assertEqual(getattr(tag, attr), value)
 
+class TestAutoScalingTagFilter(AWSMockServiceTestCase):
+    connection_class = AutoScaleConnection
+
+    def default_body(self):
+        return b"""
+        <DescribeTagsResponse>
+            <ResponseMetadata>
+                <RequestId>requestId</RequestId>
+            </ResponseMetadata>
+        </DescribeTagsResponse>
+        """
+
+    def test_get_all_tags_key(self):
+        self.set_http_response(status_code=200)
+
+        filters = {
+                'key': 'bravo'
+        }
+
+        response = self.service_connection.get_all_tags(filters=filters)
+
+        self.assert_request_parameters({
+            'Action': 'DescribeTags',
+            'Filters.member.1.Name': 'key',
+            'Filters.member.1.Values.member.1': 'bravo'
+        }, ignore_params_values=['Version'])
+
+
+    def test_get_all_tags_value(self):
+        self.set_http_response(status_code=200)
+
+        filters = {
+                'value': ['sierra']
+        }
+
+        response = self.service_connection.get_all_tags(filters=filters)
+
+        self.assert_request_parameters({
+            'Action': 'DescribeTags',
+            'Filters.member.1.Name': 'value',
+            'Filters.member.1.Values.member.1': 'sierra',
+        }, ignore_params_values=['Version'])
+
 
 class TestAttachInstances(AWSMockServiceTestCase):
     connection_class = AutoScaleConnection
