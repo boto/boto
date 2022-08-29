@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import boto
 from boto.gs.bucket import Bucket
 from boto.s3.connection import S3Connection
 from boto.s3.connection import SubdomainCallingFormat
@@ -33,14 +34,14 @@ class Location(object):
 class GSConnection(S3Connection):
 
     DefaultHost = 'storage.googleapis.com'
+    DefaultCallingFormat = 'boto.s3.connection.OrdinaryCallingFormat'
     QueryString = 'Signature=%s&Expires=%d&GoogleAccessId=%s'
 
     def __init__(self, gs_access_key_id=None, gs_secret_access_key=None,
                  is_secure=True, port=None, proxy=None, proxy_port=None,
                  proxy_user=None, proxy_pass=None,
                  host=DefaultHost, debug=0, https_connection_factory=None,
-                 calling_format=SubdomainCallingFormat(), path='/',
-                 suppress_consec_slashes=True):
+                 calling_format=None, path='/', suppress_consec_slashes=True):
         super(GSConnection, self).__init__(gs_access_key_id, gs_secret_access_key,
                  is_secure, port, proxy, proxy_port, proxy_user, proxy_pass,
                  host, debug, https_connection_factory, calling_format, path,
