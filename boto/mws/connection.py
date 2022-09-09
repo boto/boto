@@ -53,6 +53,8 @@ api_version_path = {
                           '/Subscriptions/2013-07-01'),
     'OffAmazonPayments': ('2013-01-01', 'SellerId',
                           '/OffAmazonPayments/2013-01-01'),
+    'Finances':          ('2015-05-01', 'SellerId', '/Finances/2015-05-01'),
+
 }
 content_md5 = lambda c: encodebytes(hashlib.md5(c).digest()).strip()
 decorated_attrs = ('action', 'response', 'section',
@@ -247,6 +249,10 @@ def api_action(section, quota, restore, *api):
                 raise KeyError(message)
             kw['Action'] = action
             kw['Version'] = version
+
+            if self.MWSAuthToken:
+                kw['MWSAuthToken'] = self.MWSAuthToken
+
             response = self._response_factory(action, connection=self)
             request = dict(path=path, quota=quota, restore=restore)
             return func(self, request, response, *args, **kw)
@@ -270,6 +276,8 @@ class MWSConnection(AWSQueryConnection):
         self._sandboxed = kw.pop('sandbox', False)
         self.Merchant = kw.pop('Merchant', None) or kw.get('SellerId')
         self.SellerId = kw.pop('SellerId', None) or self.Merchant
+        self.MWSAuthToken = kw.pop('MWSAuthToken', None)
+
         kw = self._setup_factories(kw.pop('factory_scopes', []), **kw)
         super(MWSConnection, self).__init__(*args, **kw)
 
@@ -323,7 +331,10 @@ class MWSConnection(AWSQueryConnection):
                                                response.reason, body)
         digest = response.getheader('Content-MD5')
         if digest is not None:
-            assert content_md5(body) == digest
+            if type(content_md5(body)) is bytes:
+                assert content_md5(body).decode() == digest
+            else:
+                assert content_md5(body) == digest
         contenttype = response.getheader('Content-Type')
         return self._parse_response(parser, contenttype, body)
 
@@ -1165,4 +1176,24 @@ class MWSConnection(AWSQueryConnection):
         """Returns the operational status of the Off-Amazon Payments API
            section.
         """
+        return self._post_request(request, kw, response)
+
+    @api_action('Finances', 2, 30, 'ListFinancialEvents')
+    def list_financial_events(self, request, response, **kw):
+        """Returns a list of financial events"""
+        return self._post_request(request, kw, response)
+
+    @requires(['NextToken'])
+    @api_action('Finances', 2, 30, 'ListFinancialEventsByNextToken')
+    def list_financial_events_by_next_token(self, request, response, **kw):
+        return self._post_request(request, kw, response)
+
+    @requires(['FinancialEventGroupStartedAfter'])
+    @api_action('Finances', 2, 30, 'ListFinancialEventGroups')
+    def list_financial_event_groups(self, request, response, **kw):
+        return self._post_request(request, kw, response)
+
+    @requires(['NextToken'])
+    @api_action('Finances', 2, 30, 'ListFinancialEventGroupsByNextToken')
+    def list_financial_event_groups_by_next_token(self, request, response, **kw):
         return self._post_request(request, kw, response)

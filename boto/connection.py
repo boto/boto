@@ -504,6 +504,7 @@ class AWSAuthConnection(object):
         self.handle_proxy(proxy, proxy_port, proxy_user, proxy_pass)
         # define exceptions from http_client that we want to catch and retry
         self.http_exceptions = (http_client.HTTPException, socket.error,
+                                socket.timeout,
                                 socket.gaierror, http_client.BadStatusLine)
         # define subclasses of the above that are not retryable.
         self.http_unretryable_exceptions = []
@@ -796,17 +797,17 @@ class AWSAuthConnection(object):
         else:
             sock = socket.create_connection((self.proxy, int(self.proxy_port)))
         boto.log.debug("Proxy connection: CONNECT %s HTTP/1.0\r\n", host)
-        sock.sendall("CONNECT %s HTTP/1.0\r\n" % host)
-        sock.sendall("User-Agent: %s\r\n" % UserAgent)
+        sock.sendall(("CONNECT %s HTTP/1.0\r\n" % host).encode('ascii'))
+        sock.sendall(("User-Agent: %s\r\n" % UserAgent).encode('ascii'))
         if self.proxy_user and self.proxy_pass:
             for k, v in self.get_proxy_auth_header().items():
-                sock.sendall("%s: %s\r\n" % (k, v))
+                sock.sendall(("%s: %s\r\n" % (k, v)).encode('ascii'))
             # See discussion about this config option at
             # https://groups.google.com/forum/?fromgroups#!topic/boto-dev/teenFvOq2Cc
             if config.getbool('Boto', 'send_crlf_after_proxy_auth_headers', False):
-                sock.sendall("\r\n")
+                sock.sendall(b"\r\n")
         else:
-            sock.sendall("\r\n")
+            sock.sendall(b"\r\n")
         resp = http_client.HTTPResponse(sock, strict=True, debuglevel=self.debug)
         resp.begin()
 
@@ -858,7 +859,7 @@ class AWSAuthConnection(object):
         return path
 
     def get_proxy_auth_header(self):
-        auth = encodebytes(self.proxy_user + ':' + self.proxy_pass)
+        auth = encodebytes(self.proxy_user.encode() + b':' + self.proxy_pass.encode()).decode("ascii")
         return {'Proxy-Authorization': 'Basic %s' % auth}
 
     # For passing proxy information to other connection libraries, e.g. cloudsearch2
