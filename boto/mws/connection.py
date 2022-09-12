@@ -18,10 +18,10 @@
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
+from collections import abc
 import xml.sax
 import hashlib
 import string
-import collections
 from boto.connection import AWSQueryConnection
 from boto.exception import BotoServerError
 import boto.mws.exception
@@ -109,7 +109,7 @@ def http_body(field):
 def destructure_object(value, into, prefix, members=False):
     if isinstance(value, boto.mws.response.ResponseElement):
         destructure_object(value.__dict__, into, prefix, members=members)
-    elif isinstance(value, collections.Mapping):
+    elif isinstance(value, abc.Mapping):
         for name in value:
             if name.startswith('_'):
                 continue
@@ -117,7 +117,7 @@ def destructure_object(value, into, prefix, members=False):
                                members=members)
     elif isinstance(value, six.string_types):
         into[prefix] = value
-    elif isinstance(value, collections.Iterable):
+    elif isinstance(value, abc.Iterable):
         for index, element in enumerate(value):
             suffix = (members and '.member.' or '.') + str(index + 1)
             destructure_object(element, into, prefix + suffix,
