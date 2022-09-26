@@ -8,9 +8,9 @@ Deprecation notice
 ####
 boto
 ####
-boto 2.49.0
+boto 2.49.1
 
-Released: 11-July-2018
+Released: TBD
 
 .. image:: https://pypip.in/d/boto/badge.svg
         :target: https://pypi.python.org/pypi/boto/

@@ -54,7 +54,7 @@ api_version_path = {
     'OffAmazonPayments': ('2013-01-01', 'SellerId',
                           '/OffAmazonPayments/2013-01-01'),
 }
-content_md5 = lambda c: encodebytes(hashlib.md5(c).digest()).strip()
+content_md5 = lambda c: encodebytes(hashlib.md5(c).digest()).strip().decode('utf-8')
 decorated_attrs = ('action', 'response', 'section',
                    'quota', 'restore', 'version')
 api_call_map = {}
@@ -329,6 +329,8 @@ class MWSConnection(AWSQueryConnection):
 
     def _parse_response(self, parser, contenttype, body):
         if not contenttype.startswith('text/xml'):
+            return body
+        if hasattr(parser, 'GetReportResult'):
             return body
         handler = XmlHandler(parser, self)
         xml.sax.parseString(body, handler)
