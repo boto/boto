@@ -568,7 +568,7 @@ class Key(S3Key):
                 self.name = self.md5
 
             if not replace:
-                if self.bucket.lookup(self.name):
+                if self.bucket.lookup(self.name, headers=headers):
                     return
 
             if if_generation is not None:
