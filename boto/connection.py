@@ -899,7 +899,7 @@ class AWSAuthConnection(object):
         """
         boto.log.debug('Method: %s' % request.method)
         boto.log.debug('Path: %s' % request.path)
-        boto.log.debug('Data: %s' % request.body)
+        boto.log.debug('Data: %r' % request.body)
         boto.log.debug('Headers: %s' % request.headers)
         boto.log.debug('Host: %s' % request.host)
         boto.log.debug('Port: %s' % request.port)

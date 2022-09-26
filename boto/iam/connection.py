@@ -98,7 +98,7 @@ class IAMConnection(AWSQueryConnection):
                 return {}
         else:
             boto.log.error('%s %s' % (response.status, response.reason))
-            boto.log.error('%s' % body)
+            boto.log.error('%r' % body)
             raise self.ResponseError(response.status, response.reason, body)
 
     #
