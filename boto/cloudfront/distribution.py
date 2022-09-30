@@ -653,12 +653,13 @@ class Distribution(object):
         Requires the rsa library be installed.
         """
         try:
-            import rsa
+            from M2Crypto import EVP
         except ImportError:
-            raise NotImplementedError("Boto depends on the python rsa "
+            raise NotImplementedError("Boto depends on the M2Crypto "
                                       "library to generate signed URLs for "
                                       "CloudFront")
         # Make sure only one of private_key_file and private_key_string is set
+
         if private_key_file and private_key_string:
             raise ValueError("Only specify the private_key_file or the private_key_string not both")
         if not private_key_file and not private_key_string:
@@ -673,8 +674,11 @@ class Distribution(object):
                 private_key_string = private_key_file.read()
 
         # Sign it!
-        private_key = rsa.PrivateKey.load_pkcs1(private_key_string)
-        signature = rsa.sign(str(message), private_key, 'SHA-1')
+        key = EVP.load_key_string(private_key_string)
+        key.reset_context(md='sha1')
+        key.sign_init()
+        key.sign_update(str(message))
+        signature = key.sign_final()
         return signature
 
     @staticmethod
