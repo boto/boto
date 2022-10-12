@@ -411,6 +411,7 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
         """
         canonical = []
 
+        normalized_headers = {}
         for header in headers_to_sign:
             c_name = header.lower().strip()
             raw_value = str(headers_to_sign[header])
@@ -418,8 +419,11 @@ class HmacAuthV4Handler(AuthHandler, HmacKeys):
                 c_value = raw_value.strip()
             else:
                 c_value = ' '.join(raw_value.strip().split())
-            canonical.append('%s:%s' % (c_name, c_value))
-        return '\n'.join(sorted(canonical))
+            normalized_headers[c_name] = c_value
+        
+        for key in sorted(normalized_headers):
+            canonical.append('%s:%s' % (key, normalized_headers[key]))
+        return '\n'.join(canonical)
 
     def signed_headers(self, headers_to_sign):
         l = ['%s' % n.lower().strip() for n in headers_to_sign]
