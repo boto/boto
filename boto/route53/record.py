@@ -70,7 +70,7 @@ class ResourceRecordSets(ResultSet):
     def add_change(self, action, name, type, ttl=600,
                    alias_hosted_zone_id=None, alias_dns_name=None, identifier=None,
                    weight=None, region=None, alias_evaluate_target_health=None,
-                   health_check=None, failover=None):
+                   health_check=None, failover=None, resource_records=None):
         """
         Add a change request to the set.
 
@@ -135,13 +135,17 @@ class ResourceRecordSets(ResultSet):
         :type failover: str
         :param failover: *Failover resource record sets only* Whether this is the
             primary or secondary resource record set.
+
+        :type resource_records: array of str
+        :param resource_records: Resource record values to match against the record
+            to change.
         """
         change = Record(name, type, ttl,
                         alias_hosted_zone_id=alias_hosted_zone_id,
                         alias_dns_name=alias_dns_name, identifier=identifier,
                         weight=weight, region=region,
                         alias_evaluate_target_health=alias_evaluate_target_health,
-                        health_check=health_check, failover=failover)
+                        health_check=health_check, failover=failover, resource_records=resource_records)
         self.changes.append([action, change])
         return change
 
