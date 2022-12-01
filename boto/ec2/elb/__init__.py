@@ -30,6 +30,7 @@ from boto.ec2.instanceinfo import InstanceInfo
 from boto.ec2.elb.loadbalancer import LoadBalancer, LoadBalancerZones
 from boto.ec2.elb.instancestate import InstanceState
 from boto.ec2.elb.healthcheck import HealthCheck
+from boto.ec2.elb.tag import TagDescriptions
 from boto.regioninfo import RegionInfo, get_regions, load_regions
 from boto.regioninfo import connect
 import boto
@@ -755,3 +756,70 @@ class ELBConnection(AWSQueryConnection):
                                'Subnets.member.%d')
         return self.get_list('DetachLoadBalancerFromSubnets',
                              params, None)
+
+    # Tag methods
+
+    @staticmethod
+    def _build_tag_parameters(tags):
+        params = {}
+        for idx, key in enumerate(sorted(tags.keys()), start=1):
+            params['Tags.member.%d.Key' % idx] = key
+            value = tags[key]
+            if value is not None:
+                params['Tags.member.%d.Value' % idx] = value
+        return params
+
+    def get_all_tags(self, load_balancer_names):
+        """
+        Retrieve all the metadata tags associated with your ELB(s).
+
+        :type load_balancer_names: list
+        :param load_balancer_names: A list of load balancer names.
+
+        :rtype: :class:`boto.ec2.elb.tag.TagDescriptions`
+        :return: A dictionary mapping load balancer names to
+            :class:`boto.ec2.elb.tag.Tags`.
+        """
+        params = {}
+        self.build_list_params(params, load_balancer_names,
+                               'LoadBalancerNames.member.%d')
+
+        return self.get_object('DescribeTags', params, TagDescriptions,
+                               verb='POST')
+
+    def add_tags(self, load_balancer_names, tags):
+        """
+        Create new metadata tags for the specified resource ids.
+
+        :type load_balancer_names: list
+        :param load_balancer_names: A list of load balancer names.
+
+        :type tags: dict
+        :param tags: A dictionary containing the name/value pairs.
+                     If you want to create only a tag name, the
+                     value for that tag should be the empty string
+                     (e.g. '').
+        """
+        params = {}
+        self.build_list_params(params, load_balancer_names,
+                               'LoadBalancerNames.member.%d')
+        params.update(self._build_tag_parameters(tags))
+        return self.get_status('AddTags', params, verb='POST')
+
+    def remove_tags(self, load_balancer_names, tags):
+        """
+        Delete metadata tags for the specified ELBs.
+
+        :type load_balancer_names: list
+        :param load_balancer_names: A list of load balancer names.
+
+        :type tags: list
+        :param tags: A list containing just tag names for the tags to be
+                     deleted.
+        """
+        params = {}
+        self.build_list_params(params, load_balancer_names,
+                               'LoadBalancerNames.member.%d')
+        self.build_list_params(params, tags,
+                               'Tags.member.%d.Key')
+        return self.get_status('RemoveTags', params, verb='POST')
