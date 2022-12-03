@@ -244,6 +244,12 @@ class TestSigV4Presigned(MockServiceWithConfigTestCase):
         self.assertTrue(url.startswith(
             'http://examplebucket.s3.amazonaws.com/test.txt?'))
 
+        # Test various characters in the object name are handled correctly
+        url = conn.generate_url_sigv4(86400, 'GET', bucket='examplebucket',
+            key='abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/0123456789_.-~!@#$%^&*', iso_date='20140625T000000Z')
+
+        self.assertIn('a00028aba0c606240cbf3a687fb2a3b1b3f89155d167e9fe5fea3f10d9522d11', url)
+
     def test_sigv4_presign_optional_params(self):
         self.config = {
             's3': {
