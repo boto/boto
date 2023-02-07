@@ -937,7 +937,7 @@ class IAMConnection(AWSQueryConnection):
         params = {'UserName': user_name}
         return self.get_response('GetLoginProfile', params)
 
-    def create_login_profile(self, user_name, password):
+    def create_login_profile(self, user_name, password, password_reset_required = None):
         """
         Creates a login profile for the specified user, give the user the
         ability to access AWS services and the AWS Management Console.
@@ -948,9 +948,15 @@ class IAMConnection(AWSQueryConnection):
         :type password: string
         :param password: The new password for the user
 
+        :type password_reset_required: bool
+        :param password_reset_rquired: Whether the user is required to set a
+            new password on next sign-in
+
         """
         params = {'UserName': user_name,
                   'Password': password}
+        if password_reset_required is not None:
+            params['PasswordResetRequired'] = str(password_reset_required).lower()
         return self.get_response('CreateLoginProfile', params)
 
     def delete_login_profile(self, user_name):
