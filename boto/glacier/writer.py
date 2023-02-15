@@ -45,38 +45,61 @@ class _Partitioner(object):
     call flush() to ensure that a short final part results in a final send_fn
     call.
 
+    This class is exception safe.  It is assumed that if the send_fn() raises
+    an exception, the part was not successfully sent.  Subsequent calls to
+    write() or flush() will attempt to re-send the failed part(s) using
+    send_fn().
+
     """
     def __init__(self, part_size, send_fn):
         self.part_size = part_size
         self.send_fn = send_fn
+        # full parts (buffers of length part_size)
+        self._parts = []
+        # working partial buffer (less than length part_size)
         self._buffer = []
         self._buffer_size = 0
 
     def write(self, data):
-        if data == b'':
-            return
-        self._buffer.append(data)
-        self._buffer_size += len(data)
-        while self._buffer_size > self.part_size:
+        self._add_data(data)
+        while self._parts:
             self._send_part()
 
-    def _send_part(self):
-        data = b''.join(self._buffer)
-        # Put back any data remaining over the part size into the
-        # buffer
-        if len(data) > self.part_size:
-            self._buffer = [data[self.part_size:]]
-            self._buffer_size = len(self._buffer[0])
-        else:
+    def _add_data(self, data):
+        n_left = len(data)
+        if n_left == 0:
+            return
+        i = 0
+        if self._buffer_size and n_left + self._buffer_size >= self.part_size:
+            # create new full part using existing buffer plus some of new data
+            need = self.part_size - self._buffer_size
+            self._buffer.append(data[i:i+need])
+            i = i + need
+            n_left = n_left - need
+            self._parts.append(b''.join(self._buffer))
             self._buffer = []
             self._buffer_size = 0
-        # The part we will send
-        part = data[:self.part_size]
-        self.send_fn(part)
+        while n_left >= self.part_size:
+            # add new full part from new data
+            self._parts.append(data[i:i+self.part_size])
+            i = i + self.part_size
+            n_left = n_left - self.part_size
+        if n_left:
+            # add remaining new data to buffer (partial)
+            self._buffer.append(data[i:])
+            self._buffer_size = self._buffer_size + n_left
+
+    def _send_part(self):
+        self.send_fn(self._parts[0])
+        self._parts = self._parts[1:]
 
     def flush(self):
-        if self._buffer_size > 0:
+        while self._parts:
             self._send_part()
+        if self._buffer_size:
+            self.send_fn(b''.join(self._buffer))
+            self._buffer = []
+            self._buffer_size = 0
 
 
 class _Uploader(object):
@@ -214,6 +237,16 @@ class Writer(object):
         self.next_part_index = 0
 
     def write(self, data):
+        """Add data to be written to the archive.
+
+        An exception may be raised by a failure in a lower layer. If this
+        occurs, fix the underlying problem and simply continue writing data. No
+        data will be lost. The part being uploaded when the failure occured
+        will be retried on the next write(), or close() call.
+
+        :param data: arbitrary number of bytes of data
+
+        """
         if self.closed:
             raise ValueError("I/O operation on closed file")
         self.partitioner.write(data)
