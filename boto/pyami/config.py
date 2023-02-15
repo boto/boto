@@ -150,7 +150,7 @@ class Config(object):
     def get_value(self, section, name, default=None):
         return self.get(section, name, default)
 
-    def get(self, section, name, default=None):
+    def get(self, section, name, default=None, raw=None, vars=None):
         try:
             return self._parser.get(section, name)
         except (NoOptionError, NoSectionError):
