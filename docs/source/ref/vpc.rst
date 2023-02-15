@@ -32,6 +32,13 @@ boto.vpc.internetgateway
    :members:   
    :undoc-members:
 
+boto.vpc.natgateway
+------------------------
+
+.. automodule:: boto.vpc.natgateway
+   :members:
+   :undoc-members:
+
 boto.vpc.routetable
 -------------------
 
