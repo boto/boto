@@ -27,6 +27,7 @@ import unittest
 import time
 import os
 import socket
+from urllib.parse import urlparse
 
 from boto.s3.connection import S3Connection
 from boto.s3.bucket import Bucket
@@ -64,7 +65,8 @@ class S3ConnectionTest (unittest.TestCase):
         assert s1 == fp.read(), 'corrupted file'
         fp.close()
         # test generated URLs
-        url = k.generate_url(3600)
+        url = k.generate_url(3600, query_parameters={'test_key': 'test_value'})
+        assert '&test_key=test_value' in urlparse(url).query
         file = urlopen(url)
         assert s1 == file.read().decode('utf-8'), 'invalid URL %s' % url
         url = k.generate_url(3600, force_http=True)

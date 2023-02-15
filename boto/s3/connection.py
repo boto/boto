@@ -371,7 +371,7 @@ class S3Connection(AWSAuthConnection):
     def generate_url_sigv4(self, expires_in, method, bucket='', key='',
                             headers=None, force_http=False,
                             response_headers=None, version_id=None,
-                            iso_date=None):
+                            iso_date=None, query_parameters=None):
         path = self.calling_format.build_path_base(bucket, key)
         auth_path = self.calling_format.build_auth_path(bucket, key)
         host = self.calling_format.build_host(self.server_name(), bucket)
@@ -387,6 +387,9 @@ class S3Connection(AWSAuthConnection):
         if response_headers is not None:
             params.update(response_headers)
 
+        if query_parameters:
+            params.update(query_parameters)
+
         http_request = self.build_base_http_request(method, path, auth_path,
                                                     headers=headers, host=host,
                                                     params=params)
@@ -396,12 +399,13 @@ class S3Connection(AWSAuthConnection):
 
     def generate_url(self, expires_in, method, bucket='', key='', headers=None,
                      query_auth=True, force_http=False, response_headers=None,
-                     expires_in_absolute=False, version_id=None):
+                     expires_in_absolute=False, version_id=None, query_parameters=None):
         if self._auth_handler.capability[0] == 'hmac-v4-s3' and query_auth:
             # Handle the special sigv4 case
             return self.generate_url_sigv4(expires_in, method, bucket=bucket,
                 key=key, headers=headers, force_http=force_http,
-                response_headers=response_headers, version_id=version_id)
+                response_headers=response_headers, version_id=version_id,
+                query_parameters=query_parameters)
 
         headers = headers or {}
         if expires_in_absolute:
@@ -418,6 +422,12 @@ class S3Connection(AWSAuthConnection):
         if response_headers:
             for k, v in response_headers.items():
                 extra_qp.append("%s=%s" % (k, urllib.parse.quote(v)))
+        if query_parameters:
+            for k, v in query_parameters.items():
+                if v:
+                    extra_qp.append("%s=%s" % (k, urllib.parse.quote(v)))
+                else:
+                    extra_qp.append("%s" % k)
         if self.provider.security_token:
             headers['x-amz-security-token'] = self.provider.security_token
         if extra_qp:
