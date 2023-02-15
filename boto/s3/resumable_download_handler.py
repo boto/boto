@@ -19,13 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 import errno
-import httplib
 import os
 import re
 import socket
 import time
 import boto
 from boto import config, storage_uri_for_key
+from boto.compat import http_client
 from boto.connection import AWSAuthConnection
 from boto.exception import ResumableDownloadException
 from boto.exception import ResumableTransferDisposition
@@ -92,7 +92,7 @@ class ResumableDownloadHandler(object):
 
     MIN_ETAG_LEN = 5
 
-    RETRYABLE_EXCEPTIONS = (httplib.HTTPException, IOError, socket.error,
+    RETRYABLE_EXCEPTIONS = (http_client.HTTPException, IOError, socket.error,
                             socket.gaierror)
 
     def __init__(self, tracker_file_name=None, num_retries=None):
@@ -181,7 +181,7 @@ class ResumableDownloadHandler(object):
         """
         cur_file_size = get_cur_file_size(fp, position_to_eof=True)
 
-        if (cur_file_size and 
+        if (cur_file_size and
             self.etag_value_for_current_download and
             self.etag_value_for_current_download == key.etag.strip('"\'')):
             # Try to resume existing transfer.
@@ -226,13 +226,13 @@ class ResumableDownloadHandler(object):
         Retrieves a file from a Key
         :type key: :class:`boto.s3.key.Key` or subclass
         :param key: The Key object from which upload is to be downloaded
-        
+
         :type fp: file
         :param fp: File pointer into which data should be downloaded
-        
+
         :type headers: string
         :param: headers to send when retrieving the files
-        
+
         :type cb: function
         :param cb: (optional) a callback function that will be called to report
              progress on the download.  The callback should accept two integer
@@ -240,13 +240,13 @@ class ResumableDownloadHandler(object):
              been successfully transmitted from the storage service and
              the second representing the total number of bytes that need
              to be transmitted.
-        
+
         :type num_cb: int
         :param num_cb: (optional) If a callback is specified with the cb
              parameter this parameter determines the granularity of the callback
              by defining the maximum number of times the callback will be
              called during the file transfer.
-             
+
         :type torrent: bool
         :param torrent: Flag for whether to get a torrent for the file
 
@@ -279,7 +279,7 @@ class ResumableDownloadHandler(object):
                                                  torrent, version_id, hash_algs)
                 # Download succceded, so remove the tracker file (if have one).
                 self._remove_tracker_file()
-                # Previously, check_final_md5() was called here to validate 
+                # Previously, check_final_md5() was called here to validate
                 # downloaded file's checksum, however, to be consistent with
                 # non-resumable downloads, this call was removed. Checksum
                 # validation of file contents should be done by the caller.
@@ -341,7 +341,7 @@ class ResumableDownloadHandler(object):
             # which we can safely ignore.
             try:
                 key.close()
-            except httplib.IncompleteRead:
+            except http_client.IncompleteRead:
                 pass
 
             sleep_time_secs = 2**progress_less_iterations
