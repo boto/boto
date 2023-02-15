@@ -44,6 +44,20 @@ CORS_BODY_3 = (
     '</CORSRule>'
     '</CORSConfiguration>')
 
+CORS_BODY_4 = (
+    '<CORSConfiguration>'
+    '<CORSRule>'
+    '<AllowedMethod>PUT</AllowedMethod>'
+    '<AllowedOrigin>http://www.example.com</AllowedOrigin>'
+    '<AllowedHeader>foo</AllowedHeader>'
+    '<AllowedHeader>bar</AllowedHeader>'
+    '</CORSRule>'
+    '<CORSRule>'
+    '<AllowedMethod>PUT</AllowedMethod>'
+    '<AllowedOrigin>http://www.example.com</AllowedOrigin>'
+    '<AllowedHeader>foo</AllowedHeader>'
+    '</CORSRule>'
+    '</CORSConfiguration>')
 
 class TestCORSConfiguration(unittest.TestCase):
 
@@ -71,6 +85,14 @@ class TestCORSConfiguration(unittest.TestCase):
         cfg = CORSConfiguration()
         cfg.add_rule('GET', '*')
         self.assertEqual(cfg.to_xml(), CORS_BODY_3)
+
+    def test_allowed_header(self):
+        cfg = CORSConfiguration()
+        cfg.add_rule('PUT', 'http://www.example.com',
+                     allowed_header=['foo', 'bar'])
+        cfg.add_rule('PUT', 'http://www.example.com',
+                     allowed_header='foo')
+        self.assertEqual(cfg.to_xml(), CORS_BODY_4)
 
 
 if __name__ == "__main__":

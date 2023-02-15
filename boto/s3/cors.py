@@ -195,11 +195,11 @@ class CORSConfiguration(list):
             allowed_method = [allowed_method]
         if not isinstance(allowed_origin, (list, tuple)):
             allowed_origin = [allowed_origin]
-        if not isinstance(allowed_origin, (list, tuple)):
-            if allowed_origin is None:
-                allowed_origin = []
+        if not isinstance(allowed_header, (list, tuple)):
+            if allowed_header is None:
+                allowed_header = []
             else:
-                allowed_origin = [allowed_origin]
+                allowed_header = [allowed_header]
         if not isinstance(expose_header, (list, tuple)):
             if expose_header is None:
                 expose_header = []
