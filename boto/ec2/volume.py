@@ -26,7 +26,34 @@ Represents an EC2 Elastic Block Storage Volume
 """
 from boto.resultset import ResultSet
 from boto.ec2.tag import Tag
-from boto.ec2.ec2object import TaggedEC2Object
+from boto.ec2.ec2object import TaggedEC2Object, EC2Object
+
+class ImportVolumeTask(EC2Object):
+
+    def __init__(self, connection=None):
+        super(ImportVolumeTask, self).__init__(connection)
+        self.id = None
+        self.volume_id = None
+        self.bytes_converted = None
+        self.state = None
+
+    def __repr__(self):
+        return 'ImportVolumeTask:%s' % self.id
+
+    def startElement(self, name, attrs, connection):
+        return None
+
+    def endElement(self, name, value, connection):
+        if name == 'conversionTaskId':
+            self.id = value
+        elif name == 'bytesConverted':
+            self.bytes_converted = value
+        elif name == 'id':
+            self.volume_id = value
+        elif name == 'state':
+            self.state = value
+        else:
+            setattr(self, name, value)
 
 
 class Volume(TaggedEC2Object):
