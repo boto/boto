@@ -83,7 +83,7 @@ def ValidateCertificateHostname(cert, hostname):
     return False
 
 
-class CertValidatingHTTPSConnection(http_client.HTTPConnection):
+class CertValidatingHTTPSConnection(http_client.HTTPSConnection):
     """An HTTPConnection that connects over SSL and validates certificates."""
 
     default_port = http_client.HTTPS_PORT
@@ -108,7 +108,8 @@ class CertValidatingHTTPSConnection(http_client.HTTPConnection):
             # we conditionally add it here.
             kwargs['strict'] = strict
 
-        http_client.HTTPConnection.__init__(self, host=host, port=port, **kwargs)
+        http_client.HTTPSConnection.__init__(self, host=host, port=port,
+                            key_file=key_file, cert_file=cert_file, **kwargs)
         self.key_file = key_file
         self.cert_file = cert_file
         self.ca_certs = ca_certs
