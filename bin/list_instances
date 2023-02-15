@@ -7,37 +7,90 @@ from optparse import OptionParser
 import boto
 from boto.ec2 import regions
 
-
 HEADERS = {
-    'ID': {'get': attrgetter('id'), 'length':15},
-    'Zone': {'get': attrgetter('placement'), 'length':15},
-    'Groups': {'get': attrgetter('groups'), 'length':30},
-    'Hostname': {'get': attrgetter('public_dns_name'), 'length':50},
-    'PrivateHostname': {'get': attrgetter('private_dns_name'), 'length':50},
-    'State': {'get': attrgetter('state'), 'length':15},
-    'Image': {'get': attrgetter('image_id'), 'length':15},
-    'Type': {'get': attrgetter('instance_type'), 'length':15},
-    'IP': {'get': attrgetter('ip_address'), 'length':16},
-    'PrivateIP': {'get': attrgetter('private_ip_address'), 'length':16},
-    'Key': {'get': attrgetter('key_name'), 'length':25},
+    'ID': {'get': attrgetter('id'),
+           'length': len('i-12345678901234567') + 1},
+    'Zone': {'get': attrgetter('placement'), 'length': 15},
+    'Groups': {'get': attrgetter('groups'), 'length': 30},
+    'Hostname': {'get': attrgetter('public_dns_name'), 'length': 50},
+    'PrivateHostname': {'get': attrgetter('private_dns_name'), 'length': 50},
+    'State': {'get': attrgetter('state'), 'length': 15},
+    'Image': {'get': attrgetter('image_id'), 'length': 15},
+    'Type': {'get': attrgetter('instance_type'), 'length': 15},
+    'IP': {'get': attrgetter('ip_address'), 'length': 16},
+    'PrivateIP': {'get': attrgetter('private_ip_address'), 'length': 16},
+    'Key': {'get': attrgetter('key_name'), 'length': 25},
     'T:': {'length': 30},
+    'LaunchIndex': {'get': attrgetter('ami_launch_index')},
+    'Architecture': {'get': attrgetter('architecture')},
+    'EbsOptimized': {'get': attrgetter('ebs_optimized')},
+    'GroupName': {'get': attrgetter('group_name'), 'length': 10},
+    'Hypervisor': {'get': attrgetter('hypervisor')},
+    'Profile': {'get': attrgetter('instance_profile'), 'length': 16,
+                'field': 'arn'},
+    'Kernel': {'get': attrgetter('kernel'), 'length': 13},
+    'LaunchTime': {'get': attrgetter('launch_time'), 'length': 25},
+    'Monitored': {'get': attrgetter('monitored')},
+    'MonState': {'get': attrgetter('monitoring_state')},
+    'PlacementGroup': {'get': attrgetter('placement_group')},
+    'PlacementTenancy': {'get': attrgetter('placement_tenancy')},
+    'Platform': {'get': attrgetter('platform'), 'length':  len('windows') + 1},
+    'RootDeviceName': {'get': attrgetter('root_device_name'),
+                       'length':  len('/dev/sda1') + 1},
+    'RootDeviceType': {'get': attrgetter('root_device_type'),
+                       'length':  len('instance-store') + 1},
+    'SpotId': {'get': attrgetter('spot_instance_request_id'),
+               'length':  len('spot-DEADBEEF') + 1},
+    'SubnetId': {'get': attrgetter('subnet_id'),
+                 'length':  len('subnet-DEADBEEF') + 1},
+    'VirtType': {'get': attrgetter('virtualization_type'),
+                 'length':  len('paravirtual') + 1},
+    'VpcId': {'get': attrgetter('vpc_id'), 'length':  len('vpc-DEADBEEF') + 1},
 }
+
 
 def get_column(name, instance=None):
     if name.startswith('T:'):
         _, tag = name.split(':', 1)
         return instance.tags.get(tag, '')
-    return HEADERS[name]['get'](instance)
+    if 'field' in HEADERS[name]:
+        obj = HEADERS[name]['get'](instance)
+        if obj is None:
+            return None
+        else:
+            return obj[HEADERS[name]['field']]
+    else:
+        return HEADERS[name]['get'](instance)
 
 
 def main():
-    parser = OptionParser()
-    parser.add_option("-r", "--region", help="Region (default us-east-1)", dest="region", default="us-east-1")
-    parser.add_option("-H", "--headers", help="Set headers (use 'T:tagname' for including tags)", default=None, action="store", dest="headers", metavar="ID,Zone,Groups,Hostname,State,T:Name")
-    parser.add_option("-t", "--tab", help="Tab delimited, skip header - useful in shell scripts", action="store_true", default=False)
-    parser.add_option("-f", "--filter", help="Filter option sent to DescribeInstances API call, format is key1=value1,key2=value2,...", default=None)
-    (options, args) = parser.parse_args()
+    parse = OptionParser()
+    parse.add_option("-r", "--region",
+                     help="Region (default us-east-1)",
+                     dest="region",
+                     default="us-east-1")
 
+    header_names = [x for x in HEADERS.keys() if x != 'T:']
+    header_help = "%s, T:Name" % ', '.join(header_names)
+    parse.add_option("-H", "--headers",
+                     help="Set headers (use 'T:tagname' for including tags) " +
+                     header_help,
+                     default=None,
+                     action="store",
+                     dest="headers")
+
+    parse.add_option("-t", "--tab",
+                     help="Tab delimited, skip header - useful in shell " +
+                     "scripts",
+                     action="store_true",
+                     default=False)
+
+    parse.add_option("-f", "--filter",
+                     help="Filter option sent to DescribeInstances API " +
+                     "call, format is key1=value1,key2=value2,...",
+                     default=None)
+
+    (options, _args) = parse.parse_args()
 
     # Connect the region
     for r in regions():
@@ -53,16 +106,24 @@ def main():
     if options.headers:
         headers = tuple(options.headers.split(','))
     else:
-        headers = ("ID", 'Zone', "Groups", "Hostname")
+        headers = ("ID", 'Zone', "Groups", "Hostname", "T:Name")
 
     # Create format string
     format_string = ""
-    for h in headers:
-        if h.startswith('T:'):
+    for header in headers:
+        if header.startswith('T:'):
             format_string += "%%-%ds" % HEADERS['T:']['length']
         else:
-            format_string += "%%-%ds" % HEADERS[h]['length']
+            length = 0
 
+            if 'length' in HEADERS[header]:
+                length = HEADERS[header]['length']
+
+            # Ensure length at least as long as column header
+            if length < (len(header) + 1):
+                length = len(header) + 1
+
+            format_string += "%%-%ds" % length
 
     # Parse filters (if any)
     if options.filter:
@@ -80,11 +141,10 @@ def main():
         groups = [g.name for g in r.groups]
         for i in r.instances:
             i.groups = ','.join(groups)
-            if options.tab: 
+            if options.tab:
                 print("\t".join(tuple(get_column(h, i) for h in headers)))
             else:
                 print(format_string % tuple(get_column(h, i) for h in headers))
- 
 
 if __name__ == "__main__":
     main()
