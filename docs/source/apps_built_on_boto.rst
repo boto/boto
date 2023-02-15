@@ -49,3 +49,8 @@ you'd like it listed here, please submit a `pull request`_ adding it!
     dumped, you can version the resulting json and ini files to keep track of
     changes, and even ask your team mates to do Pull Requests when they want
     access to something.
+
+**ec2-security-groups-dumper**
+    https://pypi.python.org/pypi/ec2-security-groups-dumper
+    Dump your EC2 Security Groups as a CSV or JSON file. Makes it possible to
+    maintain your firewall rules in git.
