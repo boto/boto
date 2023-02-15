@@ -60,6 +60,10 @@ class ResultSet(list):
         self.is_truncated = False
         self.next_token = None
         self.status = True
+        self.continuation_token = None
+        self.next_continuation_token = None
+        self.key_count = None
+        self.start_after = None
 
     def startElement(self, name, attrs, connection):
         for t in self.markers:
@@ -130,6 +134,14 @@ class ResultSet(list):
                 pass
         elif name == 'IsValid':
             self.status = self.to_boolean(value, 'True')
+        elif name == 'ContinuationToken':
+            self.continuation_token = value
+        elif name == 'NextContinuationToken':
+            self.next_continuation_token = value
+        elif name == 'KeyCount':
+            self.key_count = int(value)
+        elif name == 'StartAfter':
+            self.start_after = value
         else:
             setattr(self, name, value)
 

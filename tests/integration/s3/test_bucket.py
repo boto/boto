@@ -40,8 +40,108 @@ from boto.s3.lifecycle import Rule
 from boto.s3.acl import Grant
 from boto.s3.tagging import Tags, TagSet
 from boto.s3.website import RedirectLocation
+from boto.s3.key import Key
+from boto.s3.deletemarker import DeleteMarker
+from boto.s3.prefix import Prefix
 from boto.compat import unquote_str
 
+class S3BucketV2Test (unittest.TestCase):
+    s3 = True
+
+    def setUp(self):
+        self.conn = S3Connection()
+        self.bucket_name = 'bucket-%d' % int(time.time())
+        self.bucket = self.conn.create_bucket(self.bucket_name)
+
+    def tearDown(self):
+        for key in self.bucket:
+            key.delete()
+        self.bucket.delete()
+
+    def test_list_objects_v2(self):
+        expected = ["a/", "b", "c", "d", u"あい", u"ほげ"]
+        for key_name in expected:
+            key = self.bucket.new_key(key_name)
+            key.set_contents_from_string(key_name)
+
+        rs = self.bucket.get_all_keys_v2()
+        i = 0
+        for key in rs:
+            self.assertEqual(key.name, expected[i])
+            self.assertEqual(key.owner, None)
+            i += 1
+        self.assertEqual(rs.key_count, len(expected))
+        self.assertEqual(rs.is_truncated, False)
+        self.assertEqual(rs.next_continuation_token, None)
+
+        rs = self.bucket.get_all_keys_v2(max_keys=2, delimiter='/')
+        for key in rs:
+            if isinstance(key, Key):
+                self.assertEqual(key.name, "b")
+                self.assertEqual(key.owner, None)
+            elif isinstance(key, Prefix):
+                self.assertEqual(key.name, "a/")
+            else:
+                self.fail()
+        self.assertEqual(rs.key_count, 2)
+        self.assertTrue(rs.is_truncated)
+        self.assertNotEqual(rs.next_continuation_token, None)
+
+        rs = self.bucket.get_all_keys_v2(start_after="b", fetch_owner="true")
+        i = 0
+        for key in rs:
+            self.assertEqual(key.name, expected[i+2])
+            self.assertNotEqual(key.owner.id, None)
+            i += 1
+        self.assertEqual(rs.key_count, 4)
+        self.assertEqual(rs.start_after, "b")
+        self.assertEqual(rs.is_truncated, False)
+        self.assertEqual(rs.next_continuation_token, None)
+
+        rs = self.bucket.get_all_keys_v2(start_after="あい", fetch_owner="true")
+        i = 0
+        for key in rs:
+            self.assertEqual(key.name, expected[i+5])
+            self.assertNotEqual(key.owner.id, None)
+            i += 1
+        self.assertEqual(rs.key_count, 1)
+        self.assertEqual(rs.start_after, u"あい")
+        self.assertEqual(rs.is_truncated, False)
+        self.assertEqual(rs.next_continuation_token, None)
+
+        rs = self.bucket.get_all_keys_v2(prefix="あ", fetch_owner="true")
+        for key in rs:
+            self.assertEqual(key.name, expected[4])
+            self.assertNotEqual(key.owner.id, None)
+        self.assertEqual(rs.key_count, 1)
+        self.assertEqual(rs.is_truncated, False)
+        self.assertEqual(rs.next_continuation_token, None)
+
+        rs = self.bucket.get_all_keys_v2(fetch_owner="true", encoding_type="url")
+        i = 0
+        for key in rs:
+            self.assertEqual(unquote_str(key.name), expected[i])
+            self.assertNotEqual(key.owner.id, None)
+            i += 1
+        self.assertEqual(rs.key_count, 6)
+        self.assertEqual(rs.is_truncated, False)
+        self.assertEqual(rs.next_continuation_token, None)
+
+        more_results = True
+        token = None
+        i = 0
+        while more_results:
+            rs = self.bucket.get_all_keys_v2(max_keys=1, continuation_token=token)
+            for key in rs:
+                self.assertEqual(key.name, expected[i])
+                i += 1
+            token = rs.next_continuation_token
+            more_results= rs.is_truncated
+
+        rs = self.bucket.list_v2()
+        for key in rs:
+            self.assertEqual(key.name, expected.pop(0))
+        self.assertEqual(expected, [])
 
 class S3BucketTest (unittest.TestCase):
     s3 = True

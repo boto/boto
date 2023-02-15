@@ -36,6 +36,7 @@ from boto.s3.multipart import CompleteMultiPartUpload
 from boto.s3.multidelete import MultiDeleteResult
 from boto.s3.multidelete import Error
 from boto.s3.bucketlistresultset import BucketListResultSet
+from boto.s3.bucketlistresultset import BucketListResultSetV2
 from boto.s3.bucketlistresultset import VersionedBucketListResultSet
 from boto.s3.bucketlistresultset import MultiPartUploadListResultSet
 from boto.s3.lifecycle import Lifecycle
@@ -285,6 +286,67 @@ class Bucket(object):
         return BucketListResultSet(self, prefix, delimiter, marker, headers,
                                    encoding_type=encoding_type)
 
+    def list_v2(self, prefix='', delimiter='', fetch_owner=None,
+                start_after='', headers=None, encoding_type=None):
+        """
+        List key objects within a bucket.  This returns an instance of an
+        BucketListResultSetV2 that automatically handles all of the result
+        paging, etc. from S3.  You just need to keep iterating until
+        there are no more results.
+
+        Called with no arguments, this will return an iterator object across
+        all keys within the bucket.
+
+        The Key objects returned by the iterator are obtained by parsing
+        the results of a GET on the bucket, also known as the List Objects
+        request.  The XML returned by this request contains only a subset
+        of the information about each key.  Certain metadata fields such
+        as Content-Type and user metadata are not available in the XML.
+        Therefore, if you want these additional metadata fields you will
+        have to do a HEAD request on the Key in the bucket.
+
+        :type prefix: string
+        :param prefix: allows you to limit the listing to a particular
+            prefix.  For example, if you call the method with
+            prefix='/foo/' then the iterator will only cycle through
+            the keys that begin with the string '/foo/'.
+
+        :type delimiter: string
+        :param delimiter: can be used in conjunction with the prefix
+            to allow you to organize and browse your keys
+            hierarchically. See http://goo.gl/Xx63h for more details.
+
+        :type fetch_owner: string
+        :param fetch_owner: By default, this API does not return the Owner
+            information in the response. If you want the owner information
+            in the response, you can specify this parameter with the value
+            set to true.
+
+        :type start_after: string
+        :param start_after: The object name if you want to have key names
+            after a specific object key in your key space. Amazon S3 lists
+            objects in UTF-8 character encoding in lexicographical order.
+
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
+
+        :rtype: :class:`boto.s3.bucketlistresultset.BucketListResultSetV2`
+        :return: an instance of a BucketListResultSetV2 that handles paging,
+                 etc
+        """
+        return BucketListResultSetV2(self, prefix, delimiter, fetch_owner,
+                                     start_after, headers,
+                                     encoding_type=encoding_type)
+
     def list_versions(self, prefix='', delimiter='', key_marker='',
                       version_id_marker='', headers=None, encoding_type=None):
         """
@@ -380,6 +442,12 @@ class Bucket(object):
             key = key.replace('_', '-')
             if key == 'maxkeys':
                 key = 'max-keys'
+            if key == 'startafter':
+                key = 'start-after'
+            if key == 'fetchowner':
+                key = 'fetch-owner'
+            if key == 'continuationtoken':
+                key = 'continuation-token'
             if not isinstance(value, six.string_types + (six.binary_type,)):
                 value = six.text_type(value)
             if not isinstance(value, six.binary_type):
@@ -427,6 +495,72 @@ class Bucket(object):
         for kwarg in kwargs:
             if kwarg not in names:
                 raise TypeError('Invalid argument "%s"!' % kwarg)
+
+    def get_all_keys_v2(self, headers=None, **params):
+        """
+        A lower-level method for listing contents of a bucket.  This
+        closely models the actual S3 API and requires you to manually
+        handle the paging of results.  For a higher-level method that
+        handles the details of paging for you, you can use the list
+        method.
+
+        :type max_keys: int
+        :param max_keys: The maximum number of keys to retrieve
+
+        :type prefix: string
+        :param prefix: The prefix of the keys you want to retrieve
+
+        :type fetch_owner: string
+        :param fetch_owner: By default, this API does not return the Owner
+            information in the response. If you want the owner information
+            in the response, you can specify this parameter with the value
+            set to true.
+
+        :type start_after: string
+        :param start_after: The object name if you want to have key names
+            after a specific object key in your key space. Amazon S3 lists
+            objects in UTF-8 character encoding in lexicographical order.
+
+        :type continuation_token: string
+        :param continuation_token: When the Amazon S3 response to this API
+            call is truncated, the response also includes
+            the NextContinuationToken element, the value of which you can use
+            in the next request as the continuation-token to list the next set
+            of objects.
+
+        :type delimiter: string
+        :param delimiter: If this optional, Unicode string parameter
+            is included with your request, then keys that contain the
+            same string between the prefix and the first occurrence of
+            the delimiter will be rolled up into a single result
+            element in the CommonPrefixes collection. These rolled-up
+            keys are not returned elsewhere in the response.
+
+        :param encoding_type: Requests Amazon S3 to encode the response and
+            specifies the encoding method to use.
+
+            An object key can contain any Unicode character; however, XML 1.0
+            parser cannot parse some characters, such as characters with an
+            ASCII value from 0 to 10. For characters that are not supported in
+            XML 1.0, you can add this parameter to request that Amazon S3
+            encode the keys in the response.
+
+            Valid options: ``url``
+        :type encoding_type: string
+
+        :rtype: ResultSet
+        :return: The result from S3 listing the keys requested
+
+        """
+        self.validate_kwarg_names(params, ['maxkeys', 'max_keys', 'prefix',
+                                           'fetchowner', 'fetch_owner',
+                                           'startafter', 'start_after',
+                                           'continuationtoken',
+                                           'continuation_token',
+                                           'delimiter', 'encoding_type'])
+        return self._get_all([('Contents', self.key_class),
+                              ('CommonPrefixes', Prefix)],
+                             'list-type=2', headers, **params)
 
     def get_all_keys(self, headers=None, **params):
         """
