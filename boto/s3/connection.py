@@ -150,6 +150,7 @@ class Location(object):
     APSoutheast = 'ap-southeast-1'
     APSoutheast2 = 'ap-southeast-2'
     CNNorth1 = 'cn-north-1'
+    APSouth1 = 'ap-south-1'
 
 
 class NoHostProvided(object):
