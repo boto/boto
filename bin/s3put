@@ -61,9 +61,10 @@ SYNOPSIS
     s3put [-a/--access_key <access_key>] [-s/--secret_key <secret_key>]
           -b/--bucket <bucket_name> [-c/--callback <num_cb>]
           [-d/--debug <debug_level>] [-i/--ignore <ignore_dirs>]
-          [-n/--no_op] [-p/--prefix <prefix>] [-k/--key_prefix <key_prefix>]
-          [-q/--quiet] [-g/--grant grant] [-w/--no_overwrite] [-r/--reduced]
-          [--header] [--region <name>] [--host <s3_host>]""" + \
+          [-n/--no_op] [-p/--prefix <prefix>] [-e/--encrypt_key]
+          [-k/--key_prefix <key_prefix>] [-q/--quiet] [-g/--grant grant]
+          [-w/--no_overwrite] [-r/--reduced] [--header] [--region <name>]
+          [--host <s3_host>]""" + \
           usage_flag_multipart_capable + """ path [path...]
 
     Where
@@ -98,6 +99,9 @@ SYNOPSIS
                      /bar/fie.baz
                  The prefix must end in a trailing separator and if it
                  does not then one will be added.
+        encrypt_key - If specified, the new copy of the object will
+                      be encrypted on the server-side by S3 and will be stored
+                      in an encrypted form while at rest in S3.
         key_prefix - A prefix to be added to the S3 key name, after any
                      stripping of the file path is done based on the
                      "-p/--prefix" option.
@@ -185,8 +189,8 @@ def check_valid_region(conn, region):
         sys.exit(1)
 
 def multipart_upload(bucketname, aws_key, aws_secret, source_path, keyname,
-                     reduced, debug, cb, num_cb, acl='private', headers={},
-                     guess_mimetype=True, parallel_processes=4,
+                     reduced, debug, cb, num_cb, encrypt_key, acl='private',
+                     headers={}, guess_mimetype=True, parallel_processes=4,
                      region=DEFAULT_REGION):
     """
     Parallel multipart upload.
@@ -202,7 +206,8 @@ def multipart_upload(bucketname, aws_key, aws_secret, source_path, keyname,
         headers.update({'Content-Type': mtype})
 
     mp = bucket.initiate_multipart_upload(keyname, headers=headers,
-                                          reduced_redundancy=reduced)
+                                          reduced_redundancy=reduced,
+                                          encrypt_key=encrypt_key)
 
     source_size = os.stat(source_path).st_size
     bytes_per_chunk = max(int(math.sqrt(5242880) * math.sqrt(source_size)),
@@ -256,6 +261,7 @@ def main():
     quiet = False
     no_op = False
     prefix = '/'
+    encrypt_key = False
     key_prefix = ''
     grant = None
     no_overwrite = False
@@ -267,11 +273,11 @@ def main():
 
     try:
         opts, args = getopt.getopt(
-            sys.argv[1:], 'a:b:c::d:g:hi:k:np:qs:wr',
-            ['access_key=', 'bucket=', 'callback=', 'debug=', 'help', 'grant=',
-             'ignore=', 'key_prefix=', 'no_op', 'prefix=', 'quiet',
-             'secret_key=', 'no_overwrite', 'reduced', 'header=', 'multipart',
-             'host=', 'region='])
+            sys.argv[1:], 'a:b:c::d:eg:hi:k:np:qs:wr',
+            ['access_key=', 'bucket=', 'callback=', 'debug=', 'encrypt_key',
+             'help', 'grant=', 'ignore=', 'key_prefix=', 'no_op', 'prefix=',
+             'quiet', 'secret_key=', 'no_overwrite', 'reduced', 'header=',
+             'multipart', 'host=', 'region='])
     except:
         usage(1)
 
@@ -301,6 +307,8 @@ def main():
             if prefix[-1] != os.sep:
                 prefix = prefix + os.sep
             prefix = expand_path(prefix)
+        if o in ('-e', '--encrypt_key'):
+            encrypt_key = True
         if o in ('-k', '--key_prefix'):
             key_prefix = a
         if o in ('-q', '--quiet'):
@@ -428,11 +436,12 @@ def main():
                                  aws_secret_access_key, fullpath, key_name,
                                  reduced, debug, cb, num_cb,
                                  grant or 'private', headers,
-                                 region=region or DEFAULT_REGION)
+                                 region=region or DEFAULT_REGION,
+                                 encrypt_key=encrypt_key)
             else:
                 singlepart_upload(b, key_name, fullpath, cb=cb, num_cb=num_cb,
                                   policy=grant, reduced_redundancy=reduced,
-                                  headers=headers)
+                                  headers=headers, encrypt_key=encrypt_key)
 
 if __name__ == "__main__":
     main()
