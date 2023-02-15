@@ -751,6 +751,49 @@ class SNSConnection(AWSQueryConnection):
         return self._make_request(action='GetEndpointAttributes',
                                   params=params)
 
+    def get_subscription_attributes(self, subscription_arn):
+        """
+        The `SetSubscriptionAttributes` action returns all of the
+        properties of a subscription.
+
+        :type subscription_arn: string
+        :param subscription_arn: The ARN of the subscription whose properties you want to get.
+        """
+        params = {'SubscriptionArn': subscription_arn}
+        return self._make_request(action='GetSubscriptionAttributes',
+                                  params=params)
+
+    def set_subscription_attributes(self, subscription_arn, attribute_name, attribute_value):
+        """
+        The `SetSubscriptionAttributes` action Allows a subscription
+        owner to set an attribute of the topic to a new value.
+
+        :type subscription_arn: string
+        :param subscription_arn: The ARN of the subscription to modify.
+
+        :type attribute_name: string
+        :param attribute_name: The name of the attribute you want to set.
+            Only a subset of the subscriptions attributes are mutable.  Valid values:
+
+
+        + `DeliveryPolicy` (attribute_value must be a dictionary)
+
+        + `RawMessageDelivery` (attribute_value must be a boolean)
+
+        :type attribute_value: dict or bool
+        :param attribute_value: The new value for the attribute. For `DeliveryPolicy`
+            it is a dict for, `RawMessageDelivery` it's a bool.
+        """
+        if attribute_name == 'RawMessageDelivery' and not isinstance(attribute_value, bool):
+            raise TypeError("'attribute_value' must be boolean type for 'RawMessageDelivery' attribute value")
+        params = {
+            'AttributeName': attribute_name,
+            'SubscriptionArn': subscription_arn,
+            'AttributeValue': json.dumps(attribute_value)
+        }
+        return self._make_request(action='SetSubscriptionAttributes',
+                                  params=params)
+
     def _make_request(self, action, params, path='/', verb='GET'):
         params['ContentType'] = 'JSON'
         response = self.make_request(action=action, verb=verb,
