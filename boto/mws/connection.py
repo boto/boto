@@ -247,6 +247,10 @@ def api_action(section, quota, restore, *api):
                 raise KeyError(message)
             kw['Action'] = action
             kw['Version'] = version
+            try:
+            	kw['MWSAuthToken'] = self.MWSAuthToken
+            except AttributeError:
+                pass
             response = self._response_factory(action, connection=self)
             request = dict(path=path, quota=quota, restore=restore)
             return func(self, request, response, *args, **kw)
@@ -270,6 +274,10 @@ class MWSConnection(AWSQueryConnection):
         self._sandboxed = kw.pop('sandbox', False)
         self.Merchant = kw.pop('Merchant', None) or kw.get('SellerId')
         self.SellerId = kw.pop('SellerId', None) or self.Merchant
+        try:
+        	self.MWSAuthToken = kw.pop('MWSAuthToken')
+    	except KeyError:
+	    	pass
         kw = self._setup_factories(kw.pop('factory_scopes', []), **kw)
         super(MWSConnection, self).__init__(*args, **kw)
 
