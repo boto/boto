@@ -197,7 +197,7 @@ and uses `restructured text`_ for the markup language.
 
 
 .. _nose: http://readthedocs.org/docs/nose/en/latest/
-.. _tagging: http://nose.readthedocs.org/en/latest/plugins/attrib.html
+.. _tagging: https://nose.readthedocs.io/en/latest/plugins/attrib.html
 .. _tox: http://tox.testrun.org/latest/
 .. _virtualenvwrapper: http://www.doughellmann.com/projects/virtualenvwrapper/
 .. _sphinx: http://sphinx.pocoo.org/
