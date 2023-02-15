@@ -52,6 +52,7 @@ import sys
 import time
 import xml.sax
 import copy
+from collections import deque
 
 from boto import auth
 from boto import auth_handler
@@ -120,7 +121,7 @@ class HostConnectionPool(object):
     """
 
     def __init__(self):
-        self.queue = []
+        self.queue = deque()
 
     def size(self):
         """
@@ -149,8 +150,8 @@ class HostConnectionPool(object):
         # from the queue.  Connections that aren't ready are returned
         # to the end of the queue with an updated time, on the
         # assumption that somebody is actively reading the response.
-        for _ in range(len(self.queue)):
-            (conn, _) = self.queue.pop(0)
+        for _ in six.moves.range(len(self.queue)):
+            (conn, _) = self.queue.popleft()
             if self._conn_ready(conn):
                 return conn
             else:
@@ -187,7 +188,7 @@ class HostConnectionPool(object):
         # Note that we do not close the connection here -- somebody
         # may still be reading from it.
         while len(self.queue) > 0 and self._pair_stale(self.queue[0]):
-            self.queue.pop(0)
+            self.queue.popleft()
 
     def _pair_stale(self, pair):
         """

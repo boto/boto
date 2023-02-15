@@ -27,7 +27,7 @@ from httpretty import HTTPretty
 
 from boto import UserAgent
 from boto.compat import json, parse_qs
-from boto.connection import AWSQueryConnection, AWSAuthConnection, HTTPRequest
+from boto.connection import AWSQueryConnection, AWSAuthConnection, HTTPRequest, HostConnectionPool, ConnectionPool
 from boto.exception import BotoServerError
 from boto.regioninfo import RegionInfo
 
@@ -552,6 +552,40 @@ class TestHTTPRequest(unittest.TestCase):
         # relying on other code cast the value later. (Python 2.7.0, for
         # example, assumes headers are of type str.)
         self.assertIsInstance(request.headers['Content-Length'], str)
+
+
+class TestHostConnectionPool(unittest.TestCase):
+    def test_put_get(self):
+        pool = HostConnectionPool()
+        self.assertEqual(pool.size(), 0)
+        conn = object()
+        pool.put(conn)
+        self.assertEqual(pool.size(), 1)
+        c = pool.get()
+        self.assertIs(c, conn)
+        self.assertEqual(pool.size(), 0)
+
+    def test_conn_not_ready(self):
+        pool = HostConnectionPool()
+        conn = mock.Mock()
+        conn._HTTPConnection__response = mock.Mock()
+        conn._HTTPConnection__response.isclosed = mock.Mock(return_value=False)
+        pool.put(conn)
+        c = pool.get()
+        self.assertIsNot(c, conn)
+        # The non-ready connection stays in pool
+        self.assertEqual(pool.size(), 1)
+
+    def test_discard_stale(self):
+        pool = HostConnectionPool()
+        conn = object()
+        with mock.patch('time.time', mock.Mock(return_value=0)):
+            pool.put(conn)
+        with mock.patch('time.time', mock.Mock(return_value=ConnectionPool.STALE_DURATION + 1)):
+            c = pool.get()
+        # The stale connection should be discarded and a new connection should be returned
+        self.assertIsNot(c, conn)
+        self.assertEqual(pool.size(), 0)
 
 if __name__ == '__main__':
     unittest.main()
