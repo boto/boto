@@ -24,7 +24,7 @@ import boto
 from boto.compat import json
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
-from boto.exception import JSONResponseError
+from boto.exception import BotoServerError
 from boto.redshift import exceptions
 
 
@@ -60,7 +60,7 @@ class RedshiftConnection(AWSQueryConnection):
     APIVersion = "2012-12-01"
     DefaultRegionName = "us-east-1"
     DefaultRegionEndpoint = "redshift.us-east-1.amazonaws.com"
-    ResponseError = JSONResponseError
+    ResponseError = BotoServerError
 
     _faults = {
         "SnapshotCopyAlreadyDisabled": exceptions.SnapshotCopyAlreadyDisabled,
