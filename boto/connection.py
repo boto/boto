@@ -475,7 +475,7 @@ class AWSAuthConnection(object):
         self.num_retries = 6
         # Override passed-in is_secure setting if value was defined in config.
         if config.has_option('Boto', 'is_secure'):
-            is_secure = config.getboolean('Boto', 'is_secure')
+            is_secure = config.getbool('Boto', 'is_secure')
         self.is_secure = is_secure
         # Whether or not to validate server certificates.
         # The default is now to validate certificates.  This can be

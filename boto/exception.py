@@ -30,7 +30,7 @@ import xml.sax
 import boto
 
 from boto import handler
-from boto.compat import json, StandardError
+from boto.compat import json, six, StandardError
 from boto.resultset import ResultSet
 
 
@@ -112,7 +112,10 @@ class BotoServerError(StandardError):
             else:
                 try:
                     h = handler.XmlHandlerWrapper(self, self)
-                    h.parseString(self.body)
+                    if six.PY2:
+                        h.parseString(self.body.encode('utf-8'))
+                    else:
+                        h.parseString(self.body)
                 except (TypeError, xml.sax.SAXParseException):
                     # What if it's JSON? Let's try that.
                     try:
