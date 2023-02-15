@@ -280,7 +280,7 @@ class Table(object):
 
         return schema
 
-    def _introspect_all_indexes(self, raw_indexes, map_indexes_projection):
+    def _introspect_all_indexes(self, raw_indexes, raw_attributes, map_indexes_projection):
         """
         Given a raw index/global index structure back from a DynamoDB response,
         parse out & build the high-level Python objects that represent them.
@@ -308,26 +308,29 @@ class Table(object):
                 )
 
             name = field['IndexName']
-            kwargs['parts'] = self._introspect_schema(field['KeySchema'], None)
+            kwargs['parts'] = self._introspect_schema(field['KeySchema'], raw_attributes)
             indexes.append(index_klass(name, **kwargs))
 
         return indexes
 
-    def _introspect_indexes(self, raw_indexes):
+    def _introspect_indexes(self, raw_indexes, raw_attributes):
         """
         Given a raw index structure back from a DynamoDB response, parse
         out & build the high-level Python objects that represent them.
         """
         return self._introspect_all_indexes(
-            raw_indexes, self._PROJECTION_TYPE_TO_INDEX.get('local_indexes'))
+            raw_indexes,
+            raw_attributes,
+            self._PROJECTION_TYPE_TO_INDEX.get('local_indexes'))
 
-    def _introspect_global_indexes(self, raw_global_indexes):
+    def _introspect_global_indexes(self, raw_global_indexes, raw_attributes):
         """
         Given a raw global index structure back from a DynamoDB response, parse
         out & build the high-level Python objects that represent them.
         """
         return self._introspect_all_indexes(
             raw_global_indexes,
+            raw_attributes,
             self._PROJECTION_TYPE_TO_INDEX.get('global_indexes'))
 
     def describe(self):
@@ -361,6 +364,8 @@ class Table(object):
         self.throughput['read'] = int(raw_throughput['ReadCapacityUnits'])
         self.throughput['write'] = int(raw_throughput['WriteCapacityUnits'])
 
+        raw_attributes = None
+
         if not self.schema:
             # Since we have the data, build the schema.
             raw_schema = result['Table'].get('KeySchema', [])
@@ -370,11 +375,11 @@ class Table(object):
         if not self.indexes:
             # Build the index information as well.
             raw_indexes = result['Table'].get('LocalSecondaryIndexes', [])
-            self.indexes = self._introspect_indexes(raw_indexes)
+            self.indexes = self._introspect_indexes(raw_indexes, raw_attributes)
 
         # Build the global index information as well.
         raw_global_indexes = result['Table'].get('GlobalSecondaryIndexes', [])
-        self.global_indexes = self._introspect_global_indexes(raw_global_indexes)
+        self.global_indexes = self._introspect_global_indexes(raw_global_indexes, raw_attributes)
 
         # This is leaky.
         return result
