@@ -24,19 +24,26 @@
 
 class HealthCheck(object):
     """
-    Represents an EC2 Access Point Health Check. See
-    :ref:`elb-configuring-a-health-check` for a walkthrough on configuring
-    load balancer health checks.
+    Represents an EC2 Access Point Health Check.
+    See :ref:`elb-configuring-a-health-check` for a walkthrough on
+    configuring load balancer health checks.
     """
     def __init__(self, access_point=None, interval=30, target=None,
                  healthy_threshold=3, timeout=5, unhealthy_threshold=5):
         """
-        :ivar str access_point: The name of the load balancer this
-            health check is associated with.
-        :ivar int interval: Specifies how many seconds there are between
-            health checks.
-        :ivar str target: Determines what to check on an instance. See the
-            Amazon HealthCheck_ documentation for possible Target values.
+        :ivar str access_point:
+            The associated load balancer object for this health check.
+        :ivar int timeout:
+            Amount of seconds to wait on health check attempt.
+        :ivar str target:
+            Check target on an instance. See the Amazon HealthCheck_
+            documentation for possible Target values.
+        :ivar int interval:
+            Amount of seconds between health checks attempts.
+        :ivar int unhealthy_threshold:
+            Amount of successful checks until unhealthy.
+        :ivar int healthy_threshold:
+            Amount of successful checks until healthy.
 
         .. _HealthCheck: http://docs.amazonwebservices.com/ElasticLoadBalancing/latest/APIReference/API_HealthCheck.html
         """
@@ -80,8 +87,9 @@ class HealthCheck(object):
         if not self.access_point:
             return
 
-        new_hc = self.connection.configure_health_check(self.access_point,
-                                                        self)
+        new_hc = self.access_point.connection.configure_health_check(
+                                              self.access_point.name,
+                                              self)
         self.interval = new_hc.interval
         self.target = new_hc.target
         self.healthy_threshold = new_hc.healthy_threshold
