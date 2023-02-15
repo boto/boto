@@ -22,6 +22,7 @@
 from tests.unit import unittest
 from mock import Mock
 
+from boto.sqs.message import Message
 from boto.sqs.queue import Queue
 
 from nose.plugins.attrib import attr
@@ -45,6 +46,28 @@ class TestQueue(unittest.TestCase):
             connection=connection,
             url='https://sqs.us-east-1.amazonaws.com/id/queuename')
         self.assertEqual(q.name, 'queuename')
+
+    @attr(sqs=True)
+    def test_queue_attributes(self):
+        connection = Mock()
+        connection.region.name = 'us-east-1'
+
+        attribute_key='test_key'
+        attribute_value='test_value'
+
+        def create_message(*args, **kwargs):
+          attributes = kwargs['attributes']
+          message = Message()
+          message.attributes[attributes] = attribute_value
+          return [message]
+
+        connection.receive_message = Mock(side_effect=create_message)
+        q = Queue(
+            connection=connection,
+            url='https://sqs.us-east-1.amazonaws.com/id/queuename')
+
+        message = q.read(attributes=attribute_key)
+        self.assertEqual(message.attributes[attribute_key], attribute_value)
 
 
 if __name__ == '__main__':
