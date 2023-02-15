@@ -25,7 +25,7 @@ Represents a connection to the EC2 service.
 
 from boto.ec2.connection import EC2Connection
 from boto.resultset import ResultSet
-from boto.vpc.vpc import VPC
+from boto.vpc.vpc import VPC, VPCAttribute
 from boto.vpc.customergateway import CustomerGateway
 from boto.vpc.networkacl import NetworkAcl
 from boto.vpc.routetable import RouteTable
@@ -151,6 +151,22 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteVpc', params)
 
+    def describe_vpc_attribute(self, vpc_id, attribute=None, dry_run=False):
+        """
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        """
+        params = {
+            'VpcId': vpc_id
+        }
+        if attribute is not None:
+            params['Attribute'] = attribute
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('DescribeVpcAttribute', params,
+                               VPCAttribute, verb='POST')
+
     def modify_vpc_attribute(self, vpc_id,
                              enable_dns_support=None,
                              enable_dns_hostnames=None, dry_run=False):
@@ -177,18 +193,14 @@ class VPCConnection(EC2Connection):
         """
         params = {'VpcId': vpc_id}
         if enable_dns_support is not None:
-            if enable_dns_support:
-                params['EnableDnsSupport.Value'] = 'true'
-            else:
-                params['EnableDnsSupport.Value'] = 'false'
+            params['EnableDnsSupport.Value'] = (
+                'true' if enable_dns_support else 'false')
         if enable_dns_hostnames is not None:
-            if enable_dns_hostnames:
-                params['EnableDnsHostnames.Value'] = 'true'
-            else:
-                params['EnableDnsHostnames.Value'] = 'false'
+            params['EnableDnsHostnames.Value'] = (
+                'true' if enable_dns_hostnames else 'false')
         if dry_run:
             params['DryRun'] = 'true'
-        return self.get_status('ModifyVpcAttribute', params)
+        return self.get_status('ModifyVpcAttribute', params, verb='POST')
 
     # Route Tables
 
@@ -1548,7 +1560,7 @@ class VPCConnection(EC2Connection):
             params['DryRun'] = 'true'
         return self.get_status('DeleteVpnConnectionRoute', params)
 
-    def get_all_vpc_peering_connections(self, vpc_peering_connection_ids=None, 
+    def get_all_vpc_peering_connections(self, vpc_peering_connection_ids=None,
                                         filters=None, dry_run=False):
         """
         Retrieve information about your VPC peering connections. You
@@ -1567,20 +1579,20 @@ class VPCConnection(EC2Connection):
             Possible filter keys are:
 
             * *accepter-vpc-info.cidr-block* - The CIDR block of the peer VPC.
-            * *accepter-vpc-info.owner-id* - The AWS account ID of the owner 
+            * *accepter-vpc-info.owner-id* - The AWS account ID of the owner
                 of the peer VPC.
             * *accepter-vpc-info.vpc-id* - The ID of the peer VPC.
-            * *expiration-time* - The expiration date and time for the VPC 
+            * *expiration-time* - The expiration date and time for the VPC
                 peering connection.
-            * *requester-vpc-info.cidr-block* - The CIDR block of the 
+            * *requester-vpc-info.cidr-block* - The CIDR block of the
                 requester's VPC.
-            * *requester-vpc-info.owner-id* - The AWS account ID of the 
+            * *requester-vpc-info.owner-id* - The AWS account ID of the
                 owner of the requester VPC.
             * *requester-vpc-info.vpc-id* - The ID of the requester VPC.
             * *status-code* - The status of the VPC peering connection.
-            * *status-message* - A message that provides more information 
+            * *status-message* - A message that provides more information
                 about the status of the VPC peering connection, if applicable.
-            
+
         :type dry_run: bool
         :param dry_run: Set to True if the operation should not actually run.
 
@@ -1595,8 +1607,8 @@ class VPCConnection(EC2Connection):
         if dry_run:
             params['DryRun'] = 'true'
         return self.get_list('DescribeVpcPeeringConnections', params, [('item', VpcPeeringConnection)])
-    
-    def create_vpc_peering_connection(self, vpc_id, peer_vpc_id, 
+
+    def create_vpc_peering_connection(self, vpc_id, peer_vpc_id,
                                       peer_owner_id=None, dry_run=False):
         """
         Create a new VPN Peering connection.
@@ -1620,14 +1632,14 @@ class VPCConnection(EC2Connection):
         if dry_run:
             params['DryRun'] = 'true'
 
-        return self.get_object('CreateVpcPeeringConnection', params, 
+        return self.get_object('CreateVpcPeeringConnection', params,
                                VpcPeeringConnection)
 
     def delete_vpc_peering_connection(self, vpc_peering_connection_id, dry_run=False):
         """
-        Deletes a VPC peering connection. Either the owner of the requester 
-        VPC or the owner of the peer VPC can delete the VPC peering connection 
-        if it's in the active state. The owner of the requester VPC can delete 
+        Deletes a VPC peering connection. Either the owner of the requester
+        VPC or the owner of the peer VPC can delete the VPC peering connection
+        if it's in the active state. The owner of the requester VPC can delete
         a VPC peering connection in the pending-acceptance state.
 
         :type vpc_peering_connection_id: str
@@ -1646,8 +1658,8 @@ class VPCConnection(EC2Connection):
 
     def reject_vpc_peering_connection(self, vpc_peering_connection_id, dry_run=False):
         """
-        Rejects a VPC peering connection request. The VPC peering connection 
-        must be in the pending-acceptance state. 
+        Rejects a VPC peering connection request. The VPC peering connection
+        must be in the pending-acceptance state.
 
         :type vpc_peering_connection_id: str
         :param vpc_peering_connection_id: The ID of the VPC peering connection.
@@ -1665,8 +1677,8 @@ class VPCConnection(EC2Connection):
 
     def accept_vpc_peering_connection(self, vpc_peering_connection_id, dry_run=False):
         """
-        Acceptss a VPC peering connection request. The VPC peering connection 
-        must be in the pending-acceptance state. 
+        Acceptss a VPC peering connection request. The VPC peering connection
+        must be in the pending-acceptance state.
 
         :type vpc_peering_connection_id: str
         :param vpc_peering_connection_id: The ID of the VPC peering connection.
@@ -1681,7 +1693,7 @@ class VPCConnection(EC2Connection):
         if dry_run:
             params['DryRun'] = 'true'
 
-        return self.get_object('AcceptVpcPeeringConnection', params, 
+        return self.get_object('AcceptVpcPeeringConnection', params,
                                VpcPeeringConnection)
 
     def get_all_classic_link_vpcs(self, vpc_ids=None, filters=None,

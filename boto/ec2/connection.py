@@ -62,7 +62,7 @@ from boto.ec2.instancetype import InstanceType
 from boto.ec2.instancestatus import InstanceStatusSet
 from boto.ec2.volumestatus import VolumeStatusSet
 from boto.ec2.networkinterface import NetworkInterface
-from boto.ec2.attributes import AccountAttribute, VPCAttribute
+from boto.ec2.attributes import AccountAttribute
 from boto.ec2.blockdevicemapping import BlockDeviceMapping, BlockDeviceType
 from boto.exception import EC2ResponseError
 from boto.compat import six
@@ -4445,42 +4445,6 @@ class EC2Connection(AWSQueryConnection):
             params['DryRun'] = 'true'
         return self.get_list('DescribeAccountAttributes', params,
                              [('item', AccountAttribute)], verb='POST')
-
-    def describe_vpc_attribute(self, vpc_id, attribute=None, dry_run=False):
-        """
-        :type dry_run: bool
-        :param dry_run: Set to True if the operation should not actually run.
-
-        """
-        params = {
-            'VpcId': vpc_id
-        }
-        if attribute is not None:
-            params['Attribute'] = attribute
-        if dry_run:
-            params['DryRun'] = 'true'
-        return self.get_object('DescribeVpcAttribute', params,
-                               VPCAttribute, verb='POST')
-
-    def modify_vpc_attribute(self, vpc_id, enable_dns_support=None,
-                             enable_dns_hostnames=None, dry_run=False):
-        """
-        :type dry_run: bool
-        :param dry_run: Set to True if the operation should not actually run.
-
-        """
-        params = {
-            'VpcId': vpc_id
-        }
-        if enable_dns_support is not None:
-            params['EnableDnsSupport.Value'] = (
-                'true' if enable_dns_support else 'false')
-        if enable_dns_hostnames is not None:
-            params['EnableDnsHostnames.Value'] = (
-                'true' if enable_dns_hostnames else 'false')
-        if dry_run:
-            params['DryRun'] = 'true'
-        return self.get_status('ModifyVpcAttribute', params, verb='POST')
 
     def get_all_classic_link_instances(self, instance_ids=None, filters=None,
                                        dry_run=False, max_results=None,
