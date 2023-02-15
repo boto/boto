@@ -24,7 +24,7 @@ import boto
 from boto.compat import json
 from boto.connection import AWSQueryConnection
 from boto.regioninfo import RegionInfo
-from boto.exception import JSONResponseError
+from boto.exception import get_error_name, JSONResponseError
 from boto.cloudhsm import exceptions
 
 
@@ -270,7 +270,7 @@ class CloudHSMConnection(AWSQueryConnection):
         Lists the Availability Zones that have available AWS CloudHSM
         capacity.
 
-        
+
         """
         params = {}
         return self.make_request(action='ListAvailableZones',
@@ -441,7 +441,7 @@ class CloudHSMConnection(AWSQueryConnection):
                 return json.loads(response_body)
         else:
             json_body = json.loads(response_body)
-            fault_name = json_body.get('__type', None)
+            fault_name = get_error_name(json_body.get('__type', None))
             exception_class = self._faults.get(fault_name, self.ResponseError)
             raise exception_class(response.status, response.reason,
                                   body=json_body)

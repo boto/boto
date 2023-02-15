@@ -33,6 +33,10 @@ from boto import handler
 from boto.compat import json, StandardError
 from boto.resultset import ResultSet
 
+def get_error_name(error_type):
+    if error_type:
+        return error_type.split('#')[-1]
+    return error_type
 
 class BotoClientError(StandardError):
     """
@@ -378,9 +382,7 @@ class JSONResponseError(BotoServerError):
         self.body = body
         if self.body:
             self.error_message = self.body.get('message', None)
-            self.error_code = self.body.get('__type', None)
-            if self.error_code:
-                self.error_code = self.error_code.split('#')[-1]
+            self.error_code = get_error_name(self.body.get('__type', None))
 
 
 class DynamoDBResponseError(JSONResponseError):
