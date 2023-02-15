@@ -146,7 +146,7 @@ class Parameter(object):
             value = int(value)
         if isinstance(value, int) or isinstance(value, long):
             if self.allowed_values:
-                min, max = self.allowed_values.split('-')
+                min, max = self.allowed_values.rsplit('-', 1)
                 if value < int(min) or value > int(max):
                     raise ValueError('range is %s' % self.allowed_values)
             self._value = value
