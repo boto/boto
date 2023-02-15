@@ -549,11 +549,12 @@ class EC2Connection(AWSQueryConnection):
         Retrieve all the instance reservations associated with your account.
 
         .. note::
-        This method's current behavior is deprecated in favor of
-        :meth:`get_all_reservations`.  A future major release will change
-        :meth:`get_all_instances` to return a list of
-        :class:`boto.ec2.instance.Instance` objects as its name suggests.
-        To obtain that behavior today, use :meth:`get_only_instances`.
+
+            This method's current behavior is deprecated in favor of
+            :meth:`get_all_reservations`.  A future major release will change
+            :meth:`get_all_instances` to return a list of
+            :class:`boto.ec2.instance.Instance` objects as its name suggests.
+            To obtain that behavior today, use :meth:`get_only_instances`.
 
         :type instance_ids: list
         :param instance_ids: A list of strings of instance IDs

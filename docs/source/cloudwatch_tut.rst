@@ -58,6 +58,7 @@ load balancers, the list of available metrics would grow considerably.
 Once you have the list of available metrics, you can actually
 query the CloudWatch system for that metric.  
 Let's choose the CPU utilization metric for one of the ImageID.::
+
     >>> m_image = metrics[7]
     >>> m_image
     Metric:CPUUtilization

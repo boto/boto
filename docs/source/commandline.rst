@@ -39,6 +39,7 @@ The included utilities available are:
     Works with CloudWatch
 
 ``dynamodb_dump``
+
 ``dynamodb_load``
     Handle dumping/loading data from DynamoDB tables
 

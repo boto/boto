@@ -12,14 +12,14 @@ boto.route53.domains
    :undoc-members:
 
 boto.route53.domains.layer1
--------------------
+---------------------------
 
 .. automodule:: boto.route53.domains.layer1
    :members:
    :undoc-members:
 
 boto.route53.domains.exceptions
------------------------
+-------------------------------
 
 .. automodule:: boto.route53.domains.exceptions
    :members:

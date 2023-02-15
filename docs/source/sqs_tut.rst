@@ -219,11 +219,11 @@ visible in the queue.  Give it a minute or two and they will all show up.
 If you want a slightly simpler way to read messages from a queue, you
 can use the read method.  It will either return the message read or
 it will return None if no messages were available.  You can also pass
-a visibility_timeout parameter to read, if you desire:
+a visibility_timeout parameter to read, if you desire::
 
->>> m = q.read(60)
->>> m.get_body()
-u'This is my first message'
+    >>> m = q.read(60)
+    >>> m.get_body()
+    u'This is my first message'
 
 Reading Message Attributes
 --------------------------
@@ -231,9 +231,9 @@ By default, no arbitrary message attributes are returned when requesting
 messages. You can change this behavior by specifying the names of attributes
 you wish to have returned::
 
->>> rs = queue.get_messages(message_attributes=['name1', 'name2'])
->>> print rs[0].message_attributes['name1']['string_value']
-'I am a string'
+    >>> rs = queue.get_messages(message_attributes=['name1', 'name2'])
+    >>> print rs[0].message_attributes['name1']['string_value']
+    'I am a string'
 
 A special value of ``All`` or ``.*`` may be passed to return all available
 message attributes.
