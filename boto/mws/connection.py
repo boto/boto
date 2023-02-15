@@ -54,10 +54,14 @@ api_version_path = {
     'OffAmazonPayments': ('2013-01-01', 'SellerId',
                           '/OffAmazonPayments/2013-01-01'),
 }
-content_md5 = lambda c: encodebytes(hashlib.md5(c).digest()).strip()
+
 decorated_attrs = ('action', 'response', 'section',
                    'quota', 'restore', 'version')
 api_call_map = {}
+
+
+def content_md5(c):
+    return encodebytes(hashlib.md5(c).digest()).decode('utf-8').strip()
 
 
 def add_attrs_from(func, to):
