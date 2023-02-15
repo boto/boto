@@ -142,6 +142,7 @@ class DynamoDBConnection(AWSQueryConnection):
     DefaultRegionEndpoint = "dynamodb.us-east-1.amazonaws.com"
     ServiceName = "DynamoDB"
     TargetPrefix = "DynamoDB_20120810"
+    AuthServiceName = "dynamodb"
     ResponseError = JSONResponseError
 
     _faults = {
