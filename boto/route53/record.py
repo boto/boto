@@ -264,6 +264,13 @@ class Record(object):
     def __repr__(self):
         return '<Record:%s:%s:%s>' % (self.name, self.type, self.to_print())
 
+    def __eq__(self, other):
+        return ((self.name, self.type, self.identifier) ==
+                (other.name, other.type, other.identifier))
+
+    def __hash__(self):
+        return hash((self.name, self.type, self.identifier))
+
     def add_value(self, value):
         """Add a resource record value"""
         self.resource_records.append(value)
