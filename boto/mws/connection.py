@@ -611,6 +611,56 @@ class MWSConnection(AWSQueryConnection):
         """
         return self._post_request(request, kw, response)
 
+    @requires(['ShipmentId', 'IsPartnered', 'ShipmentType', 'TransportDetails'])
+    @boolean_arguments('IsPartnered')
+    @structured_objects('TransportDetails', members=True)
+    @api_action('Inbound', 30, 2)
+    def put_transport_content(self, request, response, **kw):
+        """Sends transportation information to Amazon about an inbound
+           shipment.
+        """
+        return self._post_request(request, kw, response)
+
+    @requires(['ShipmentId'])
+    @api_action('Inbound', 30, 2)
+    def estimate_transport_request(self, request, response, **kw):
+        """Requests an estimate of the shipping cost for an inbound
+           shipment.
+        """
+        return self._post_request(request, kw, response)
+
+    @requires(['ShipmentId'])
+    @api_action('Inbound', 30, 2)
+    def get_transport_content(self, request, response, **kw):
+        """Returns current transportation information about an inbound
+           shipment.
+        """
+        return self._post_request(request, kw, response)
+
+    @requires(['ShipmentId'])
+    @api_action('Inbound', 30, 2)
+    def confirm_transport_request(self, request, response, **kw):
+        """Confirms that you accept the Amazon-partnered shipping estimate
+           and you request that the Amazon-partnered carrier ship your
+           inbound shipment.
+        """
+        return self._post_request(request, kw, response)
+
+    @requires(['ShipmentId', 'PageType'])
+    @api_action('Inbound', 30, 2)
+    def get_package_labels(self, request, response, **kw):
+        """Returns package labels.
+        """
+        return self._post_request(request, kw, response)
+
+    @requires(['ShipmentId'])
+    @api_action('Inbound', 30, 2)
+    def void_transport_request(self, request, response, **kw):
+        """Voids a previously-confirmed request to ship your inbound
+           shipment using an Amazon-partnered carrier.
+        """
+        return self._post_request(request, kw, response)
+
     @requires(['SellerSkus'], ['QueryStartDateTime'])
     @structured_lists('SellerSkus.member')
     @api_action('Inventory', 30, 0.5)
