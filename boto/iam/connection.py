@@ -31,23 +31,25 @@ DEFAULT_POLICY_DOCUMENTS = {
         'Statement': [
             {
                 'Principal': {
-                    'Service': ['ec2.amazonaws.com']
+                    'Service': 'ec2.amazonaws.com'
                 },
                 'Effect': 'Allow',
-                'Action': ['sts:AssumeRole']
+                'Action': 'sts:AssumeRole'
             }
-        ]
+        ],
+        'Version': '2008-10-17'
     },
     'amazonaws.com.cn': {
         'Statement': [
             {
                 'Principal': {
-                    'Service': ['ec2.amazonaws.com.cn']
+                    'Service': 'ec2.amazonaws.com.cn'
                 },
                 'Effect': 'Allow',
-                'Action': ['sts:AssumeRole']
+                'Action': 'sts:AssumeRole'
             }
-        ]
+        ],
+        'Version': '2008-10-17'
     },
 }
 # For backward-compatibility, we'll preserve this here.
@@ -1102,7 +1104,15 @@ class IAMConnection(AWSQueryConnection):
             params['Path'] = path
         return self.get_response('CreateInstanceProfile', params)
 
-    def _build_policy(self, assume_role_policy_document=None):
+    def build_policy(self, assume_role_policy_document=None):
+        """
+        Build default policy document when `assume_role_policy_document` is not
+        specified.
+
+        :type assume_role_policy_document: str
+        :return: Serialized to string JSON document of the policy
+        :rtype: str
+        """
         if assume_role_policy_document is not None:
             if isinstance(assume_role_policy_document, six.string_types):
                 # Historically, they had to pass a string. If it's a string,
@@ -1146,7 +1156,7 @@ class IAMConnection(AWSQueryConnection):
         """
         params = {
             'RoleName': role_name,
-            'AssumeRolePolicyDocument': self._build_policy(
+            'AssumeRolePolicyDocument': self.build_policy(
                 assume_role_policy_document
             ),
         }
