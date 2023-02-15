@@ -20,8 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+import gzip
+import mock
 import os
 import unittest
+from boto.compat import BytesIO
 from boto.s3.keyfile import KeyFile
 from tests.integration.s3.mock_storage_service import MockConnection
 from tests.integration.s3.mock_storage_service import MockBucket
@@ -81,6 +84,39 @@ class KeyfileTest(unittest.TestCase):
         self.assertEqual(self.keyfile.tell(), 50)
         self.assertEqual(self.keyfile.read(1), '')
 
+    def testReadEnd(self):
+        """Tests read behavior at the end of a file. If we read with a larger
+        buffer size, we should end up with a location that's actually at the
+        end of the file.
+        """
+        self.keyfile.seek(5)
+        read = self.keyfile.read(len(self.contents))
+        self.assertTrue(len(read) < len(self.contents))
+        self.assertEqual(self.keyfile.tell(), len(self.contents))
+        self.assertEqual(len(self.contents), self.keyfile.key.size)
+
+    def testReadReopens(self):
+        """The current implementation for boto keys will re-open the
+        read stream after it reaches the end.
+
+        [1st] fd.read() --> contents until EOF
+        [2nd] fd.read() --> contents until EOF
+
+        This is different from normal fd behavior,
+
+        [1st] fd.read() --> contents until EOF
+        [2nd] fd.read() --> ''
+        [3rd] fd.read() --> ''
+
+        Since we want keyfile to be interchanageable with existing
+        FD-like functions, let's go for the latter functionality.
+        """
+        self.keyfile.seek(0)
+        n = len(self.contents)
+        self.assertEqual(self.keyfile.read(n), self.contents)
+        for _ in range(10):
+            self.assertEqual(self.keyfile.read(n), '')
+
     def testSeekEnd(self):
         self.assertEqual(self.keyfile.read(4), self.contents[:4])
         self.keyfile.seek(0, os.SEEK_END)
@@ -112,3 +148,47 @@ class KeyfileTest(unittest.TestCase):
         self.keyfile.key.data = 'test'
         self.keyfile.key.set_etag()
         self.assertEqual(self.keyfile.key.etag, '098f6bcd4621d373cade4e832627b4f6')
+
+
+# NOTE: Even though gzip is zlib compatible, they write slightly
+# different formats. So, we're doing this instead of zlib.compress()
+def get_gzip_compressed(uncompressed):
+    fd = BytesIO()
+    z_fd = gzip.GzipFile(fileobj=fd, mode='w')
+    z_fd.write(uncompressed)
+    z_fd.close()
+    return fd.getvalue()
+
+
+class BinaryReadKeyFile(KeyFile, object):
+    """KeyFile whose read() method returns bytes. This is because of not deciding
+    whether to return '' or b'' at the end of the file. (see keyfile.py:read)
+    """
+
+    def read(self, size):
+        res = super(BinaryReadKeyFile, self).read(size)
+        return (
+            bytes(res, 'ascii')
+            if not isinstance(res, bytes)
+            else res
+        )
+
+
+class KeyfileGzipCompatibleTest(unittest.TestCase):
+    """
+    Mini [shouldn't be slow] integration test to test gzip compatibility.
+    """
+
+    def setUp(self):
+        service_connection = MockConnection()
+        self.uncompressed_contents = b'0123456789'
+        self.compressed_contents = get_gzip_compressed(self.uncompressed_contents)
+        bucket = MockBucket(service_connection, 'mybucket')
+        key = bucket.new_key('mykey')
+        key.set_contents_from_string(self.compressed_contents)
+        self.keyfile = BinaryReadKeyFile(key)
+
+    def testGzipCompatible(self):
+        z_fd = gzip.GzipFile(fileobj=self.keyfile, mode='r')
+        contents = z_fd.read()
+        self.assertEqual(contents, self.uncompressed_contents)
