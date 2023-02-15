@@ -350,6 +350,33 @@ class StepConfig(EmrObject):
         else:
             return None
 
+class StepTimeline(EmrObject):
+    Fields = set([
+        'CreationDateTime',
+        'StartDateTime',
+        'EndDateTime'
+    ])
+
+class StepStatus(EmrObject):
+    Fields = set([
+        'State',
+        'StateChangeReason',
+        'Timeline'
+    ])
+
+    def __init__(self, connection=None):
+        self.connection = connection
+        self.timeline = None
+
+    def startElement(self, name, attrs, connection):
+        if name == 'Timeline':
+            self.timeline = StepTimeline()
+            return self.timeline
+        elif name == 'StateChangeReason':
+            self.statechangereason = ClusterStateChangeReason()
+            return self.statechangereason
+        else:
+            return None
 
 class HadoopStep(EmrObject):
     Fields = set([
@@ -368,7 +395,7 @@ class HadoopStep(EmrObject):
             self.config = StepConfig()
             return self.config
         elif name == 'Status':
-            self.status = ClusterStatus()
+            self.status = StepStatus()
             return self.status
         else:
             return None
@@ -468,7 +495,7 @@ class StepSummary(EmrObject):
 
     def startElement(self, name, attrs, connection):
         if name == 'Status':
-            self.status = ClusterStatus()
+            self.status = StepStatus()
             return self.status
         elif name == 'Config':
             self.config = StepConfig()
