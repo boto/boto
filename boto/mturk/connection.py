@@ -798,6 +798,14 @@ class MTurkConnection(AWSQueryConnection):
                   'IntegerValue': integer_value}
         return self._process_request('GrantQualification', params)
 
+    def reject_qualification(self, qualification_request_id, integer_value=1, reason=None):
+        """TODO: Document."""
+        params = {'QualificationRequestId': qualification_request_id,
+                  'IntegerValue': integer_value}
+        if reason:
+            params['Reason'] = reason
+        return self._process_request('RejectQualification', params)
+
     def revoke_qualification(self, subject_id, qualification_type_id,
                              reason=None):
         """TODO: Document."""
