@@ -417,3 +417,16 @@ class Zone(object):
         if ns is not None:
             ns = ns.resource_records
         return ns
+
+    def update_comment(self, comment=""):
+        """
+        Request that this zone's comment be updated. 
+
+        :type comment: str
+        :param comment: The new comment for the hosted zone. If you don't 
+            specify a value for Comment, Amazon Route 53 deletes the existing 
+            value of the Comment element, if any.
+
+        """
+        return self.route53connection.update_hosted_zone_comment(self.id,comment)
+
