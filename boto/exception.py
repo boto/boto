@@ -373,10 +373,8 @@ class JSONResponseError(BotoServerError):
         (e.g. ConditionalCheckFailedException)
     """
     def __init__(self, status, reason, body=None, *args):
-        self.status = status
-        self.reason = reason
-        self.body = body
-        if self.body:
+        super(JSONResponseError, self).__init__(status, reason, body, *args)
+        if body:
             self.error_message = self.body.get('message', None)
             self.error_code = self.body.get('__type', None)
             if self.error_code:
