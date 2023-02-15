@@ -382,7 +382,7 @@ class S3Connection(AWSAuthConnection):
 
         params = {}
         if version_id is not None:
-            params['VersionId'] = version_id
+            params['versionId'] = version_id
 
         if response_headers is not None:
             params.update(response_headers)
