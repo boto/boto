@@ -94,6 +94,21 @@ class Route(object):
         elif name == 'origin':
             self.origin = value
 
+class RouteTableListElement(list):
+
+    def __init__(self, connection=None):
+        self = None
+
+    def __repr__(self):
+        return 'RouteTableListElement'
+
+    def startElement(self, name, value, connection):
+        pass 
+
+    def endElement(self, name, value, connection):
+        if name == 'item':
+            self = self.append(value)
+
 class RouteAssociation(object):
     def __init__(self, connection=None):
         self.id = None
