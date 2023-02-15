@@ -22,8 +22,13 @@
 # IN THE SOFTWARE.
 #
 from math import ceil
-from boto.compat import json, map, six
+from boto.compat import json, six
 import requests
+
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 
 
 class SearchServiceException(Exception):
@@ -52,7 +57,10 @@ class SearchResults(object):
         if 'facets' in attrs:
             for (facet, values) in attrs['facets'].items():
                 if 'constraints' in values:
-                    self.facets[facet] = dict((k, v) for (k, v) in map(lambda x: (x['value'], x['count']), values['constraints']))
+                    _facet_data = OrderedDict()
+                    for x in values.get('constraints', []):
+                        _facet_data[x['value']] = x['count']
+                    self.facets[facet] = _facet_data
 
         self.num_pages_needed = ceil(self.hits / self.query.real_size)
 
@@ -101,7 +109,7 @@ class Query(object):
     def update_size(self, new_size):
         self.size = new_size
         self.real_size = Query.RESULTS_PER_PAGE if (self.size >
-            Query.RESULTS_PER_PAGE or self.size == 0) else self.size
+                                                    Query.RESULTS_PER_PAGE or self.size == 0) else self.size
 
     def to_params(self):
         """Transform search parameters from instance properties to a dictionary
@@ -289,7 +297,7 @@ class SearchConnection(object):
         body = r.content.decode('utf-8')
         try:
             data = json.loads(body)
-        except ValueError as e:
+        except ValueError:
             if r.status_code == 403:
                 msg = ''
                 import re
@@ -305,10 +313,10 @@ class SearchConnection(object):
             for m in data['messages']:
                 if m['severity'] == 'fatal':
                     raise SearchServiceException("Error processing search %s "
-                        "=> %s" % (params, m['message']), query)
+                                                 "=> %s" % (params, m['message']), query)
         elif 'error' in data:
             raise SearchServiceException("Unknown error processing search %s"
-                % json.dumps(data), query)
+                                         % json.dumps(data), query)
 
         data['query'] = query
         data['search_service'] = self
@@ -372,6 +380,3 @@ class SearchConnection(object):
         """
         query.update_size(1)
         return self(query).hits
-
-
-
