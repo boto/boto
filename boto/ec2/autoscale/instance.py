@@ -22,6 +22,24 @@
 
 class Instance(object):
     def __init__(self, connection=None):
+        """
+        A representation of an EC2 instance returned by get_all_autoscaling_instances
+
+        :type instance_id: str
+        :param instance_id: EC2 instance ID.
+
+        :type health_status: str
+        :param health_status: Instance health.
+
+        :type lifecycle_state: str
+        :param lifecycle_state: Current lifecycle state.
+
+        :type availability_zone: str
+        :param availability_zone: Instance availability zone.
+
+        :type group_name: str
+        :param group_name: AutoScaling group name.
+        """
         self.connection = connection
         self.instance_id = None
         self.health_status = None
