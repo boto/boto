@@ -110,8 +110,13 @@ class GSVersioningTest(GSTestCase):
 
         k = b.get_key("foo", generation=g1)
         self.assertEqual(k.get_contents_as_string(), s1)
+        k.open()
+        self.assertEqual(k.read(), s1)
+
         k = b.get_key("foo", generation=g2)
+        k.open()
         self.assertEqual(k.get_contents_as_string(), s2)
+        self.assertEqual(k.read(), s2)
 
     def testVersionedBucketCannedAcl(self):
         b = self._MakeVersionedBucket()
