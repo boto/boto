@@ -301,3 +301,48 @@ class S3BucketTest (unittest.TestCase):
         self.assertEqual(s.find("<ID>"), -1)
         # Confirm Prefix is '' and not set to 'None'
         self.assertNotEqual(s.find("<Prefix></Prefix>"), -1)
+
+class S3BucketPolicyTest (unittest.TestCase):
+    s3 = True
+
+    def make_json(self):
+        s = '{\n'
+        s += '"Statement": [\n'
+        s += '{\n'
+        s += '"Sid": "Stmt",\n'
+        s += '"Action": [\n'
+        s += '"s3:GetObject"\n'
+        s += '],\n'
+        s += '"Effect": "Allow",\n'
+        s += '"Resource": "arn:aws:s3:::%s/*",\n' % self.bucket_name
+        s += '"Condition": {\n'
+        s += '"IpAddress": {\n'
+        s += '"aws:SourceIp": "1.1.1.0/24"\n'
+        s += '}\n'
+        s += '},\n'
+        s += '"Principal": "*"\n'
+        s += '}\n'
+        s += ']\n'
+        s += '}\n'
+        return s
+
+    def setUp(self):
+        self.conn = S3Connection()
+        self.bucket_name = 'bucket-%d' % int(time.time())
+        self.bucket = self.conn.create_bucket(self.bucket_name)
+
+    def tearDown(self):
+        for key in self.bucket:
+            key.delete()
+        self.bucket.delete()
+
+    def test_bucket_policy(self):
+        json = self.make_json()
+        self.bucket.set_policy(json)
+        response = self.bucket.get_policy()
+        self.assertTrue(len(response) > 0)
+        self.bucket.delete_policy()
+        try:
+            response = self.bucket.get_policy()
+        except S3ResponseError as e:
+            self.assertEqual(e.error_code, 'NoSuchBucketPolicy')
