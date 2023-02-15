@@ -30,6 +30,7 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
             """)
         self.pk_id = "PK123456789754"
         self.dist = Distribution()
+        self.sign_string_methods = [self.dist._sign_string_cryptography, self.dist._sign_string_rsa, self.dist._sign_string]
         self.canned_policy = (
             '{"Statement":[{"Resource":'
             '"http://d604721fxaaqy9.cloudfront.net/horizon.jpg'
@@ -93,9 +94,10 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
                     "v0pYdWJkflDKJ3xIu7lbwRpSkG98NBlgPi4ZJpRRnVX4kXAJK6td"
                     "Nx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCMIYHIaiOB6~5j"
                     "t9w2EOwi6sIIqrg_")
-        sig = self.dist._sign_string(self.canned_policy, private_key_string=self.pk_str)
-        encoded_sig = self.dist._url_base64_encode(sig)
-        self.assertEqual(expected, encoded_sig)
+        for sign_string in self.sign_string_methods:
+            sig = sign_string(self.canned_policy, private_key_string=self.pk_str)
+            encoded_sig = self.dist._url_base64_encode(sig)
+            self.assertEqual(expected, encoded_sig)
 
     def test_sign_canned_policy_pk_file(self):
         """
@@ -108,10 +110,11 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
                     "t9w2EOwi6sIIqrg_")
         pk_file = tempfile.TemporaryFile()
         pk_file.write(self.pk_str)
-        pk_file.seek(0)
-        sig = self.dist._sign_string(self.canned_policy, private_key_file=pk_file)
-        encoded_sig = self.dist._url_base64_encode(sig)
-        self.assertEqual(expected, encoded_sig)
+        for sign_string in self.sign_string_methods:
+            pk_file.seek(0)
+            sig = sign_string(self.canned_policy, private_key_file=pk_file)
+            encoded_sig = self.dist._url_base64_encode(sig)
+            self.assertEqual(expected, encoded_sig)
 
     def test_sign_canned_policy_pk_file_name(self):
         """
@@ -125,9 +128,10 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         pk_file = tempfile.NamedTemporaryFile()
         pk_file.write(self.pk_str)
         pk_file.flush()
-        sig = self.dist._sign_string(self.canned_policy, private_key_file=pk_file.name)
-        encoded_sig = self.dist._url_base64_encode(sig)
-        self.assertEqual(expected, encoded_sig)
+        for sign_string in self.sign_string_methods:
+            sig = sign_string(self.canned_policy, private_key_file=pk_file.name)
+            encoded_sig = self.dist._url_base64_encode(sig)
+            self.assertEqual(expected, encoded_sig)
 
     def test_sign_canned_policy_pk_file_like(self):
         """
@@ -140,10 +144,11 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
                     "t9w2EOwi6sIIqrg_")
         pk_file = StringIO()
         pk_file.write(self.pk_str)
-        pk_file.seek(0)
-        sig = self.dist._sign_string(self.canned_policy, private_key_file=pk_file)
-        encoded_sig = self.dist._url_base64_encode(sig)
-        self.assertEqual(expected, encoded_sig)
+        for sign_string in self.sign_string_methods:
+            pk_file.seek(0)
+            sig = sign_string(self.canned_policy, private_key_file=pk_file)
+            encoded_sig = self.dist._url_base64_encode(sig)
+            self.assertEqual(expected, encoded_sig)
 
     def test_sign_canned_policy_unicode(self):
         """
@@ -154,9 +159,10 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
                     "Nx6FucDB7OVqzcxkxHsGFd8VCG1BkC-Afh9~lOCMIYHIaiOB6~5j"
                     "t9w2EOwi6sIIqrg_")
         unicode_policy = six.text_type(self.canned_policy)
-        sig = self.dist._sign_string(unicode_policy, private_key_string=self.pk_str)
-        encoded_sig = self.dist._url_base64_encode(sig)
-        self.assertEqual(expected, encoded_sig)
+        for sign_string in self.sign_string_methods:
+            sig = sign_string(unicode_policy, private_key_string=self.pk_str)
+            encoded_sig = self.dist._url_base64_encode(sig)
+            self.assertEqual(expected, encoded_sig)
 
     def test_sign_custom_policy_1(self):
         """
@@ -166,9 +172,10 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
                     "T6pYmhHYzuDsFH4Jpsctke2Ux6PCXcKxUcTIm8SO4b29~1QvhMl-"
                     "CIojki3Hd3~Unxjw7Cpo1qRjtvrimW0DPZBZYHFZtiZXsaPt87yB"
                     "P9GWnTQoaVysMxQ_")
-        sig = self.dist._sign_string(self.custom_policy_1, private_key_string=self.pk_str)
-        encoded_sig = self.dist._url_base64_encode(sig)
-        self.assertEqual(expected, encoded_sig)
+        for sign_string in self.sign_string_methods:
+            sig = sign_string(self.custom_policy_1, private_key_string=self.pk_str)
+            encoded_sig = self.dist._url_base64_encode(sig)
+            self.assertEqual(expected, encoded_sig)
 
     def test_sign_custom_policy_2(self):
         """
@@ -178,9 +185,10 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
                     "mBa2Zv1Wjj8dDET4XSL~Myh44CLQdu4dOH~N9huH7QfPSR~O4tIO"
                     "S1WWcP~2JmtVPoQyLlEc8YHRCuN3nVNZJ0m4EZcXXNAS-0x6Zco2"
                     "SYx~hywTRxWR~5Q_")
-        sig = self.dist._sign_string(self.custom_policy_2, private_key_string=self.pk_str)
-        encoded_sig = self.dist._url_base64_encode(sig)
-        self.assertEqual(expected, encoded_sig)
+        for sign_string in self.sign_string_methods:
+            sig = sign_string(self.custom_policy_2, private_key_string=self.pk_str)
+            encoded_sig = self.dist._url_base64_encode(sig)
+            self.assertEqual(expected, encoded_sig)
 
     def test_create_canned_policy(self):
         """
@@ -203,7 +211,7 @@ class CloudfrontSignedUrlsTest(unittest.TestCase):
         self.assertEqual(1, len(date_less_than.keys()))
         aws_epoch_time = date_less_than["AWS:EpochTime"]
         self.assertEqual(expires, aws_epoch_time)
-        
+
     def test_custom_policy_expires_and_policy_url(self):
         """
         Test that a custom policy can be created with an expire time and an
