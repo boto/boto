@@ -84,26 +84,26 @@ class Key(object):
         <Days>%s</Days>
       </RestoreRequest>"""
 
-
     BufferSize = boto.config.getint('Boto', 'key_buffer_size', 8192)
 
     # The object metadata fields a user can set, other than custom metadata
     # fields (i.e., those beginning with a provider-specific prefix like
     # x-amz-meta).
-    base_user_settable_fields = set(["cache-control", "content-disposition",
-                                    "content-encoding", "content-language",
-                                    "content-md5", "content-type",
-                                     "x-robots-tag", "expires"])
+    base_user_settable_fields_capitalized = set([
+        "Cache-Control", "Content-Disposition",
+        "Content-Encoding", "Content-Language",
+        "Content-MD5", "Content-Type",
+        "X-Robots-Tag", "Expires"])
+    base_user_settable_fields = set([header.lower() for header in
+                                     base_user_settable_fields_capitalized])
     _underscore_base_user_settable_fields = set()
     for f in base_user_settable_fields:
-      _underscore_base_user_settable_fields.add(f.replace('-', '_'))
+        _underscore_base_user_settable_fields.add(f.replace('-', '_'))
     # Metadata fields, whether user-settable or not, other than custom
     # metadata fields (i.e., those beginning with a provider specific prefix
     # like x-amz-meta).
     base_fields = (base_user_settable_fields |
                    set(["last-modified", "content-length", "date", "etag"]))
-
-
 
     def __init__(self, bucket=None, name=None):
         self.bucket = bucket
@@ -559,6 +559,31 @@ class Key(object):
         """
         return self.bucket.delete_key(self.name, version_id=self.version_id,
                                       headers=headers)
+
+    def user_settable_metadata(self):
+        """
+        Returns the HTTP header metadata that is normally stored directly on a
+        key object as attributes (which do not make it into the object's
+        'metadata' attribute).
+        """
+        def _metadata():
+            for mdname in self.base_user_settable_fields_capitalized:
+                attr_name = mdname.lower().replace('-', '_')
+                if hasattr(self, attr_name):
+                    mdval = getattr(self, attr_name)
+                    if mdval is not None:
+                        yield mdname, mdval
+        return dict(_metadata())
+
+    def full_metadata(self):
+        """
+        Returns all metadata in a form that can be used to update an existing
+        key conveniently.  This includes the HTTP header metadata that is
+        normally missing from the 'metadata' attribute.
+        """
+        metadata = self.user_settable_metadata()
+        metadata.update(self.metadata)
+        return metadata
 
     def get_metadata(self, name):
         return self.metadata.get(name)

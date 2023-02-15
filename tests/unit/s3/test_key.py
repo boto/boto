@@ -151,6 +151,28 @@ class TestS3Key(AWSMockServiceTestCase):
             validate_dst_bucket=True,
         )
 
+    def key_us_meta(self):
+        key = Key()
+        key.cache_control = 'public, max-age=86400'
+        key.content_type = 'image/jpeg'
+        metadata = {'Cache-Control': key.cache_control,
+                    'Content-Type': key.content_type}
+        return key, metadata
+
+    def test_user_settable_metadata(self):
+        key, expected = self.key_us_meta()
+        key.set_metadata('no', 'effect')
+        metadata = key.user_settable_metadata()
+        self.assertEqual(metadata, expected)
+
+    def test_full_metadata(self):
+        key, expected = self.key_us_meta()
+        key.set_metadata('takes', 'effect')
+        key.set_metadata('this', 'too')
+        metadata = key.full_metadata()
+        expected.update({'takes': 'effect', 'this': 'too'})
+        self.assertEqual(metadata, expected)
+
 
 def counter(fn):
     def _wrapper(*args, **kwargs):
