@@ -112,6 +112,11 @@ class Route53Connection(AWSAuthConnection):
         :param int start_marker: start marker to pass when fetching additional
             results after a truncated list
         :param list zone_list: a HostedZones list to prepend to results
+
+        :rtype: :class:`boto.jsonresponse.Element`
+
+        :raise :class:`boto.route53.exception.DNSServerError`: Failed to get
+            successful result.
         """
         params = {}
         if start_marker:
@@ -134,6 +139,53 @@ class Route53Connection(AWSAuthConnection):
             next_marker = e['ListHostedZonesResponse']['NextMarker']
             zone_list = e['ListHostedZonesResponse']['HostedZones']
             e = self.get_all_hosted_zones(next_marker, zone_list)
+        return e
+
+    def get_all_hosted_zones_by_name(self, dns_name=None, hosted_zone_id=None,
+                                     zone_list=None):
+        """
+        Returns a Python data structure with information about all
+        Hosted Zones defined for the AWS account.
+
+        :param string dns_name: Specifies the first dnsname to be returned in
+            the list of domains. Mostly meant to be used with hosted_zone_id.
+            If left blank, will return all dns records.
+        :param string hosted_zone_id: Should not be included in first query
+            to get_all_hosted_zones_by_name, but should be used, along with
+            dns_name when dealing with truncated lists.
+        :param list zone_list: a HostedZones list to prepend to results
+
+        :rtype: :class:`boto.jsonresponse.Element`
+
+        :raise :class:`boto.route53.exception.DNSServerError`: Failed to get
+            successful result.
+        """
+        params = {}
+        if dns_name:
+            params['dnsname'] = dns_name
+        if hosted_zone_id:
+            params['hostedzoneid'] = hosted_zone_id
+        response = self.make_request('GET',
+                                     '/%s/hostedzonesbyname' % self.Version,
+                                     params=params)
+        body = response.read()
+        boto.log.debug(body)
+        if response.status >= 300:
+            raise exception.DNSServerError(response.status,
+                                           response.reason,
+                                           body)
+        e = boto.jsonresponse.Element(list_marker='HostedZones',
+                                      item_marker=('HostedZone',))
+        h = boto.jsonresponse.XmlHandler(e, None)
+        h.parse(body)
+        response = e['ListHostedZonesByNameResponse']
+        if zone_list:
+            response['HostedZones'].extend(zone_list)
+        while e.get('IsTruncated', None):
+            dns_name = response['NextDNSName']
+            hosted_zone_id = response['NextHostedZoneId']
+            e = self.get_all_hosted_zones_by_name(dns_name, hosted_zone_id,
+                                                  zone_list)
         return e
 
     def get_hosted_zone(self, hosted_zone_id):
