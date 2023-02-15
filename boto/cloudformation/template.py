@@ -44,7 +44,7 @@ class TemplateParameter(object):
         elif name == "Description":
             self.description = value
         elif name == "NoEcho":
-            self.no_echo = bool(value)
+            self.no_echo = (value == 'true')
         elif name == "ParameterKey":
             self.parameter_key = value
         else:
