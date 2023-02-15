@@ -358,7 +358,7 @@ class SNSConnection(AWSQueryConnection):
             policy['Statement'] = []
         # See if a Statement with the Sid exists already.
         for s in policy['Statement']:
-            if s['Sid'] == sid:
+            if 'Sid' in s and s['Sid'] == sid:
                 sid_exists = True
         if not sid_exists:
             statement = {'Action': 'SQS:SendMessage',
