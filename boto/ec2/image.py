@@ -72,6 +72,7 @@ class Image(TaggedEC2Object):
         self.hypervisor = None
         self.instance_lifecycle = None
         self.sriov_net_support = None
+        self.ena_support = False
 
     def __repr__(self):
         return 'Image:%s' % self.id
@@ -140,6 +141,8 @@ class Image(TaggedEC2Object):
             self.instance_lifecycle = value
         elif name == 'sriovNetSupport':
             self.sriov_net_support = value
+        elif name == 'enaSupport':
+            self.ena_support = (value == 'true')
         else:
             setattr(self, name, value)
 
