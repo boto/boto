@@ -210,7 +210,7 @@ class ConnectionPool(object):
     """
 
     #
-    # The amout of time between calls to clean.
+    # The amount of time between calls to clean.
     #
 
     CLEAN_INTERVAL = 5.0
@@ -223,7 +223,7 @@ class ConnectionPool(object):
     #
     # Experimentation in July 2011 shows that AWS starts timing things
     # out after three minutes.  The 60 seconds here is conservative so
-    # we should never hit that 3-minute timout.
+    # we should never hit that 3-minute timeout.
     #
 
     STALE_DURATION = 60.0
@@ -1022,7 +1022,7 @@ class AWSAuthConnection(object):
             time.sleep(next_sleep)
             i += 1
         # If we made it here, it's because we have exhausted our retries
-        # and stil haven't succeeded.  So, if we have a response object,
+        # and still haven't succeeded.  So, if we have a response object,
         # use it to raise an exception.
         # Otherwise, raise the exception that must have already happened.
         if self.request_hook is not None:
