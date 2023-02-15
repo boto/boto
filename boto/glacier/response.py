@@ -36,7 +36,7 @@ class GlacierResponse(dict):
         if response_headers:
             for header_name, item_name in response_headers:
                 self[item_name] = http_response.getheader(header_name)
-        if http_response.status != 204: 
+        if not (http_response.status == 204 or http_response.status == 206):
             if http_response.getheader('Content-Type') == 'application/json':
                 body = json.loads(http_response.read().decode('utf-8'))
                 self.update(body)

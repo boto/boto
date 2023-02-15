@@ -31,5 +31,13 @@ class TestResponse(AWSMockServiceTestCase):
         result = GlacierResponse(response,response.getheaders())
         self.assertEquals(result.status, response.status)
 
+    def test_206_incomplete_body_isnt_passed_to_json(self):
+        incomplete_json_body = """{
+            "incomplete_json": {
+                "some_id": "incomplete string"""
+        response = self.create_response(status_code=206, header=[('Content-Type','application/json')], body=incomplete_json_body)
+        result = GlacierResponse(response,response.getheaders())
+        self.assertEquals(result.status, response.status)
+
 if __name__ == '__main__':
     unittest.main()
