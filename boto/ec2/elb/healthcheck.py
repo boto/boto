@@ -24,28 +24,35 @@
 
 class HealthCheck(object):
     """
-    Represents an EC2 Access Point Health Check. See
-    :ref:`elb-configuring-a-health-check` for a walkthrough on configuring
-    load balancer health checks.
+    Represents an EC2 Access Point Health Check.
+    See :ref:`elb-configuring-a-health-check` for a walkthrough
+    on configuring load balancer health checks.
     """
-    def __init__(self, access_point=None, interval=30, target=None,
-                 healthy_threshold=3, timeout=5, unhealthy_threshold=5):
+    def __init__(self, load_balancer=None, timeout=5, target=None,
+                 interval=30, unhealthy_threshold=5, healthy_threshold=3):
         """
-        :ivar str access_point: The name of the load balancer this
-            health check is associated with.
-        :ivar int interval: Specifies how many seconds there are between
-            health checks.
-        :ivar str target: Determines what to check on an instance. See the
-            Amazon HealthCheck_ documentation for possible Target values.
+        :ivar object load_balancer:
+            The associated load balancer object for this health check.
+        :ivar int timeout:
+            Amount of seconds to wait on health check attempt.
+        :ivar str target:
+            Check target on an instance. See the Amazon HealthCheck_
+            documentation for possible Target values.
+        :ivar int interval:
+            Amount of seconds between health checks attempts.
+        :ivar int unhealthy_threshold:
+            Amount of successful checks until unhealthy.
+        :ivar int healthy_threshold:
+            Amount of successful checks until healthy.
 
         .. _HealthCheck: http://docs.amazonwebservices.com/ElasticLoadBalancing/latest/APIReference/API_HealthCheck.html
         """
-        self.access_point = access_point
-        self.interval = interval
-        self.target = target
-        self.healthy_threshold = healthy_threshold
+        self.load_balancer = load_balancer
         self.timeout = timeout
+        self.target = target
+        self.interval = interval
         self.unhealthy_threshold = unhealthy_threshold
+        self.healthy_threshold = healthy_threshold
 
     def __repr__(self):
         return 'HealthCheck:%s' % self.target
@@ -73,17 +80,17 @@ class HealthCheck(object):
         load balancer, this method applies this instance's health check
         values to the load balancer it is attached to.
 
-        .. note:: This method will not do anything if the :py:attr:`access_point`
-            attribute isn't set, as is the case with a newly instantiated
-            HealthCheck instance.
+        .. note:: This method requires the :py:attr:`load_balancer` attribute.
+            Newly instantiated HealthCheck instances do not have this attribute.
         """
-        if not self.access_point:
-            return
+        if self.load_balancer == None:
+            return None
 
-        new_hc = self.connection.configure_health_check(self.access_point,
-                                                        self)
-        self.interval = new_hc.interval
+        new_hc = self.load_balancer.connection.configure_health_check(
+                                               self.load_balancer.name,
+                                               self)
         self.target = new_hc.target
-        self.healthy_threshold = new_hc.healthy_threshold
-        self.unhealthy_threshold = new_hc.unhealthy_threshold
         self.timeout = new_hc.timeout
+        self.interval = new_hc.interval
+        self.unhealthy_threshold = new_hc.unhealthy_threshold
+        self.healthy_threshold = new_hc.healthy_threshold
