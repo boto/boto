@@ -15,14 +15,14 @@
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 # OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABIL-
 # ITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
-# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+# SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 # WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 #
 import getopt
 import sys
-import imp
+import importlib
 import time
 import boto
 
@@ -132,7 +132,7 @@ def main():
             print('Reloading module %s to S3' % params['script_name'])
         else:
             print('Copying module %s to S3' % params['script_name'])
-        l = imp.find_module(params['script_name'])
+        l = importlib.util.find_spec(params['script_name'])
         c = boto.connect_s3()
         bucket = c.get_bucket(params['script_bucket'])
         key = bucket.new_key(params['script_name'] + '.py')
