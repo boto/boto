@@ -71,7 +71,7 @@ def _import_module(filename):
     (name, ext) = os.path.splitext(name)
 
     spec = importlib.machinery.PathFinder().find_spec(name, [path])
-    return importlib.util.module_from_spec(spec)S
+    return importlib.util.module_from_spec(spec)
 
 _plugin_loaded = False
 
