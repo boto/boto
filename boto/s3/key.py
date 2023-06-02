@@ -38,6 +38,8 @@ from boto.compat import BytesIO, six, urllib, encodebytes
 from boto.exception import BotoClientError
 from boto.exception import StorageDataError
 from boto.exception import PleaseRetryException
+from boto.exception import ResumableDownloadException
+from boto.exception import ResumableTransferDisposition
 from boto.provider import Provider
 from boto.s3.keyfile import KeyFile
 from boto.s3.user import User
@@ -326,9 +328,15 @@ class Key(object):
                 if (name.lower() == 'content-length' and
                         'Content-Range' not in response_headers):
                     self.size = int(value)
+                    self._size_of_range = self.size
                 elif name.lower() == 'content-range':
-                    end_range = re.sub('.*/(.*)', '\\1', value)
-                    self.size = int(end_range)
+                    range_information = re.search(r'(\d+)-(\d+)\/(\d+)', value)
+                    self.size = int(range_information.group(3))  # The object's total size.
+
+                    start_range = int(range_information.group(1))
+                    end_range = int(range_information.group(2))
+                    # Values are zero indexed and inclusive.
+                    self._size_of_range = end_range - start_range + 1
                 elif name.lower() in Key.base_fields:
                     self.__dict__[name.lower().replace('-', '_')] = value
             self.handle_version_headers(self.resp)
@@ -1567,6 +1575,12 @@ class Key(object):
                     if i == cb_count or cb_count == -1:
                         cb(data_len, cb_size)
                         i = 0
+            if data_len < self._size_of_range:
+                raise ResumableDownloadException(
+                    'Download stream truncated. Received {} of {} bytes.'.format(
+                        data_len, self._size_of_range),
+                    ResumableTransferDisposition.WAIT_BEFORE_RETRY
+                )
         except IOError as e:
             if e.errno == errno.ENOSPC:
                 raise StorageDataError('Out of space for destination file '
