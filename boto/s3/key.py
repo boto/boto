@@ -1575,7 +1575,7 @@ class Key(object):
                     if i == cb_count or cb_count == -1:
                         cb(data_len, cb_size)
                         i = 0
-            if data_len < self._size_of_range:
+            if hasattr(self, '_size_of_range') and data_len < self._size_of_range:
                 raise ResumableDownloadException(
                     'Download stream truncated. Received {} of {} bytes.'.format(
                         data_len, self._size_of_range),
