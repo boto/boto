@@ -10,12 +10,12 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
-import mock
 import os
 import json
 
 from nose.tools import assert_equal
 
+from tests.compat import mock
 from tests.unit import unittest
 import boto
 from boto.endpoints import BotoEndpointResolver
