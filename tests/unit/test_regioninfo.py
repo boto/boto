@@ -20,13 +20,13 @@
 # IN THE SOFTWARE.
 #
 import os
-import mock
 
 import boto
 from boto.pyami.config import Config
 from boto.regioninfo import RegionInfo, load_endpoint_json, merge_endpoints
 from boto.regioninfo import load_regions, get_regions, connect
 
+from tests.compat import mock
 from tests.unit import unittest
 
 

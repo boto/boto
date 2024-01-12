@@ -37,10 +37,10 @@ import unittest
 import time
 from boto.compat import StringIO
 
-import mock
-
 import boto
 from boto.s3.connection import S3Connection
+
+from tests.compat import mock
 
 
 class S3MultiPartUploadTest(unittest.TestCase):

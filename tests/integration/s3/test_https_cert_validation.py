@@ -38,7 +38,6 @@ Note that this test assumes two external dependencies are available:
 import os
 import ssl
 import unittest
-import mock
 
 from nose.plugins.attrib import attr
 
@@ -47,6 +46,8 @@ from boto.pyami.config import Config
 from boto import exception, https_connection
 from boto.gs.connection import GSConnection
 from boto.s3.connection import S3Connection
+
+from tests.compat import mock
 
 
 # File 'other_cacerts.txt' contains a valid CA certificate of a CA that is used
